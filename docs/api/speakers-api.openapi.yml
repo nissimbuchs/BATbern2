@@ -259,6 +259,167 @@ paths:
         '400':
           description: Bad request - validation errors
 
+  /events/{eventCode}/speakers/{speakerId}/status:
+    put:
+      tags:
+        - Speaker Status
+      summary: Update speaker status
+      description: |
+        Update the workflow status of a speaker for a specific event.
+        Story 5.4: Speaker Status Management (AC1-2, AC10-12)
+
+        Valid state transitions:
+        - IDENTIFIED → CONTACTED, DECLINED
+        - CONTACTED → READY, DECLINED
+        - READY → ACCEPTED, DECLINED
+        - ACCEPTED → SLOT_ASSIGNED, CONFIRMED (cannot go back to DECLINED)
+        - DECLINED is terminal (cannot transition out)
+
+      operationId: updateSpeakerStatus
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          description: Speaker pool ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerStatusResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+  /events/{eventCode}/speakers/{speakerId}/status/history:
+    get:
+      tags:
+        - Speaker Status
+      summary: Get speaker status history
+      description: |
+        Retrieve the complete status change history for a speaker.
+        Story 5.4: Speaker Status Management (AC3-4, AC15)
+
+      operationId: getSpeakerStatusHistory
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          description: Speaker pool ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Status history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatusHistoryItem'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+  /events/{eventCode}/speakers/status-summary:
+    get:
+      tags:
+        - Speaker Status
+      summary: Get status dashboard summary
+      description: |
+        Get aggregated speaker status counts and metrics for the status dashboard.
+        Story 5.4: Speaker Status Management (AC5-6, AC13)
+
+        Returns:
+        - Status counts by workflow state
+        - Acceptance rate percentage
+        - Threshold status (min/max slots)
+        - Overflow detection
+
+      operationId: getStatusSummary
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+      responses:
+        '200':
+          description: Status summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSummaryResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
 components:
   schemas:
     SpeakerResponse:
@@ -386,24 +547,24 @@ components:
     SpeakerWorkflowState:
       type: string
       enum:
-        - open
-        - contacted
-        - ready
-        - declined
-        - accepted
-        - slot_assigned
-        - quality_reviewed
-        - final_agenda
+        - IDENTIFIED
+        - CONTACTED
+        - READY
+        - DECLINED
+        - ACCEPTED
+        - SLOT_ASSIGNED
+        - QUALITY_REVIEWED
+        - FINAL_AGENDA
       description: |
-        Speaker coordination workflow state:
-        - open: Initial state, speaker identified but not yet contacted
-        - contacted: Invitation sent to speaker
-        - ready: Speaker confirmed availability and interest
-        - declined: Speaker declined invitation
-        - accepted: Speaker accepted invitation and confirmed participation
-        - slot_assigned: Speaker assigned to specific time slot
-        - quality_reviewed: Speaker's content passed quality review
-        - final_agenda: Speaker finalized in published agenda
+        Speaker coordination workflow state (UPPER_CASE as per coding-standards.md):
+        - IDENTIFIED: Initial state, speaker identified but not yet contacted
+        - CONTACTED: Invitation sent to speaker
+        - READY: Speaker confirmed availability and interest
+        - DECLINED: Speaker declined invitation
+        - ACCEPTED: Speaker accepted invitation and confirmed participation
+        - SLOT_ASSIGNED: Speaker assigned to specific time slot
+        - QUALITY_REVIEWED: Speaker's content passed quality review
+        - FINAL_AGENDA: Speaker finalized in published agenda
 
     SpeakerSlotPreferences:
       type: object
@@ -507,3 +668,165 @@ components:
         totalPages:
           type: integer
           description: Total number of pages
+
+    # Story 5.4: Speaker Status Management Schemas
+
+    UpdateStatusRequest:
+      type: object
+      description: Request to update speaker status (Story 5.4 AC1-4)
+      required:
+        - newStatus
+      properties:
+        newStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        reason:
+          type: string
+          description: Optional reason for status change (max 2000 characters)
+          maxLength: 2000
+          example: "Speaker confirmed availability via email"
+
+    SpeakerStatusResponse:
+      type: object
+      description: Response after status update (Story 5.4)
+      properties:
+        speakerId:
+          type: string
+          format: uuid
+          description: Speaker pool ID
+        eventCode:
+          type: string
+          description: Event code (ADR-003)
+          example: BATbern56
+        currentStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        previousStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        changedByUsername:
+          type: string
+          description: Organizer who made the change
+          example: john.doe
+        changeReason:
+          type: string
+          description: Reason for the change
+          example: "Speaker confirmed availability"
+        changedAt:
+          type: string
+          format: date-time
+          description: When the change occurred
+
+    StatusHistoryItem:
+      type: object
+      description: Single status change record (Story 5.4 AC3-4)
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: History record ID
+        previousStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        newStatus:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        changedByUsername:
+          type: string
+          description: Organizer who made the change
+          example: john.doe
+        changeReason:
+          type: string
+          description: Reason for the change
+        changedAt:
+          type: string
+          format: date-time
+          description: When the change occurred
+
+    StatusSummaryResponse:
+      type: object
+      description: Status dashboard summary (Story 5.4 AC5-6, AC13)
+      properties:
+        eventCode:
+          type: string
+          description: Event code (ADR-003)
+          example: BATbern56
+        statusCounts:
+          type: object
+          description: Count of speakers in each status
+          additionalProperties:
+            type: integer
+          example:
+            IDENTIFIED: 3
+            CONTACTED: 5
+            READY: 2
+            ACCEPTED: 6
+            DECLINED: 1
+        totalSpeakers:
+          type: integer
+          description: Total number of speakers
+          example: 17
+        acceptedCount:
+          type: integer
+          description: Number of accepted speakers
+          example: 6
+        declinedCount:
+          type: integer
+          description: Number of declined speakers
+          example: 1
+        pendingCount:
+          type: integer
+          description: Number of pending speakers (not accepted/declined)
+          example: 10
+        acceptanceRate:
+          type: number
+          format: double
+          description: Acceptance rate percentage
+          example: 35.29
+        minSlotsRequired:
+          type: integer
+          description: Minimum speakers required for event
+          example: 6
+        maxSlotsAllowed:
+          type: integer
+          description: Maximum speakers allowed for event
+          example: 8
+        thresholdMet:
+          type: boolean
+          description: Whether minimum threshold is met
+          example: true
+        overflowDetected:
+          type: boolean
+          description: Whether accepted count exceeds maximum (AC13)
+          example: false
+
+    ErrorResponse:
+      type: object
+      description: Standard error response format
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+        path:
+          type: string
+          description: Request path that caused the error
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: "Bad Request"
+        message:
+          type: string
+          description: Error message
+          example: "Validation failed: reason must not exceed 2000 characters"
+        correlationId:
+          type: string
+          format: uuid
+          description: Unique error correlation ID for tracing
+        severity:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+          description: Error severity level
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true

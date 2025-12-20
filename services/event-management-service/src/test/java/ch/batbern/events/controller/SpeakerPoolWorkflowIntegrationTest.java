@@ -212,9 +212,9 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                // Then: Status is 'identified'
+                // Then: Status is 'IDENTIFIED'
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("identified"));
+                .andExpect(jsonPath("$.status").value("IDENTIFIED"));
     }
 
     // ==================== Validation Tests ====================

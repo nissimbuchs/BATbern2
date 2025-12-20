@@ -233,5 +233,37 @@
       "title": "Mark Multiple as Contacted",
       "confirm": "Mark {{count}} speakers as contacted?"
     }
+  },
+  "speakerStatus": {
+    "title": "Speaker Status",
+    "statusSummary": "Status Summary",
+    "lanes": "Status Lanes",
+    "IDENTIFIED": "Identified",
+    "CONTACTED": "Contacted",
+    "READY": "Ready",
+    "ACCEPTED": "Accepted",
+    "DECLINED": "Declined",
+    "SLOT_ASSIGNED": "Slot Assigned",
+    "QUALITY_REVIEWED": "Quality Reviewed",
+    "FINAL_AGENDA": "Final Agenda",
+    "changeStatus": "Change Status",
+    "changeReason": "Reason for status change (optional)",
+    "confirmChange": "Change Status",
+    "cancelChange": "Cancel",
+    "statusChanged": "Status changed successfully",
+    "invalidTransition": "Invalid status transition from {{from}} to {{to}}",
+    "historyTitle": "Status History",
+    "changedBy": "Changed by",
+    "noHistory": "No status history available",
+    "acceptanceRate": "Acceptance Rate: {{rate}}%",
+    "progress": "{{accepted}} / {{required}} speakers accepted",
+    "thresholdMet": "Minimum threshold met ✓",
+    "thresholdNotMet": "Minimum threshold not met ({{count}} / {{required}})",
+    "overflowDetected": "Overflow detected ({{count}} > {{max}})",
+    "dragToChange": "Drag speakers to change status",
+    "confirmChangeMessage": "Change status of {{speaker}} from {{from}} to {{to}}?",
+    "reasonHelperText": "Optional (max {{max}} characters)",
+    "reasonPlaceholder": "e.g., Speaker confirmed via email",
+    "reasonTooLong": "Reason is too long ({{current}}/{{max}} characters)"
   }
 }

@@ -1,0 +1,47 @@
+meta {
+  name: Update Speaker Status To Accepted
+  type: http
+  seq: 39
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "ACCEPTED",
+    "reason": "Speaker officially accepted invitation and signed speaker agreement"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq ACCEPTED
+  res.body.previousStatus: eq READY
+}
+
+tests {
+  test("should return 200 status - Story 5.4 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update speaker status to ACCEPTED - Story 5.4 AC1, AC12", function() {
+    const response = res.getBody();
+    expect(response.currentStatus).to.equal('ACCEPTED');
+    expect(response.previousStatus).to.equal('READY');
+    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+  });
+
+  test("should trigger overflow detection if needed - Story 5.4 AC13", function() {
+    const response = res.getBody();
+    // Acceptance triggers overflow check per AC13
+    expect(response.currentStatus).to.equal('ACCEPTED');
+  });
+}

@@ -1,85 +1,174 @@
-# Epic 5: Complete 16-Step Organizer Workflow
+# Epic 5: Complete Event Management Workflow
 
-**Status:** 🔄 **IN PROGRESS** - Phase A Complete (4/16 stories, 25%)
+**Status:** 🔄 **IN PROGRESS** - Phase B Complete (5/8 stories, 63%)
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2025-12-19
 
-**Strategic Repositioning (2025-11-25):** Epic 5 now owns ALL 16 workflow steps as a self-contained, organizer-driven workflow. Speaker Portal (Epic 6) and Partner Portal (Epic 8) are repositioned as optional Phase 2+ enhancement layers.
+**Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 9 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
 
-**Key Design Decision:** Organizers manually manage all speaker coordination without requiring speaker self-service portal. This enables Epic 5 to be implemented independently.
+**Key Architectural Changes:**
+- **Event Workflow:** Simplified to 9 high-level states (down from 16 linear steps)
+- **Speaker Workflow:** Per-speaker state machine with parallel quality review and slot assignment
+- **Task System:** Configurable tasks (newsletters, catering, partner meetings) separate from workflow states
+- **Organizer-Driven:** Manual speaker coordination without requiring speaker self-service portal
 
 **Progress Summary:**
 - ✅ Phase A: Event Setup - COMPLETE (4 stories)
-  - ✅ 5.1 - Event Type Definition
-  - ✅ 5.1a - Workflow State Machine Foundation (CRITICAL)
-  - ✅ 5.2b - Multi-Topic Heat Map Visualization (Frontend Complete)
-  - ✅ 5.3 - Speaker Outreach Tracking
-- 🔄 Phase B: In Progress
-  - 🔄 5.2 - Topic Selection & Speaker Brainstorming (Ready for Review)
-- ✔️ Phase B: Ready to Start
-  - ✔️ 5.4 - Speaker Status Management (Accepted)
-  - ✔️ 5.5 - Speaker Content Collection (Accepted)
-- ⏳ Phases C-F: Pending (10 stories remaining)
+  - ✅ 5.1 - Event Type Definition (COMPLETE)
+  - ✅ 5.1a - Workflow State Machine Foundation (COMPLETE - CRITICAL DEPENDENCY)
+  - ✅ 5.2 - Topic Selection & Speaker Brainstorming (COMPLETE)
+  - ✅ 5.2b - Multi-Topic Heat Map Visualization (Frontend COMPLETE)
+- ✅ Phase B: Speaker Coordination - COMPLETE (2 stories)
+  - ✅ 5.3 - Speaker Outreach Tracking (COMPLETE)
+  - ✅ 5.4 - Speaker Status Management (COMPLETE - QA PASS 95/100)
+- 🔄 Phase C: Content & Slot Management - IN PROGRESS (1/2 stories)
+  - 🔄 5.5 - Speaker Content, Quality Review & Task System (IN PROGRESS)
+  - ⏳ 5.6 - Overflow Management & Voting (PENDING)
+- ⏳ Phase D: Publishing & Finalization - PENDING (2 stories)
+  - ⏳ 5.7 - Slot Assignment & Progressive Publishing (PENDING)
+  - ⏳ 5.8 - Agenda Finalization & Event Lifecycle (PENDING)
 
 ---
 
 ## Epic Overview
 
-**Epic Goal**: Implement the complete 16-step event planning workflow from FR2 (PRD lines 35-51), enabling organizers to manage the entire event lifecycle from topic selection through partner meeting coordination in a single, cohesive workflow.
+**Epic Goal**: Implement a complete event management workflow with parallel speaker coordination and configurable task management, enabling organizers to manage the entire event lifecycle from topic selection through event completion.
 
-**Deliverable**: Self-contained organizer workflow supporting all 16 steps of event management, with organizers handling speaker coordination manually until optional speaker portal (Epic 6) is implemented.
+**Deliverable**: Integrated workflow system with:
+- **Event Workflow**: 9-state state machine for event lifecycle management
+- **Speaker Workflow**: Per-speaker state machine with parallel quality review and slot assignment
+- **Task System**: Configurable task templates for organizer coordination (newsletters, catering, partner meetings, etc.)
 
 **Architecture Context**:
 - **Core Service**: Event Management Service (Java 21 + Spring Boot 3.2)
-- **Supporting Services**: Speaker Coordination Service, Partner Coordination Service (Story 2.7)
+- **Data Model**:
+  - `speaker_pool`: Potential speakers with workflow states
+  - `sessions`: Time slots with presentation title/abstract
+  - `session_users`: Junction table linking speakers (username) to sessions
+  - `task_templates` & `event_tasks`: Configurable task management
 - **Frontend**: React components for organizer dashboard and workflow management
-- **Publishing**: Progressive publishing engine with immediate topic publication
+- **Publishing**: Progressive publishing engine (topic → speakers → agenda)
 - **Infrastructure**: AWS SES for newsletters, CloudFront CDN, Caffeine caching
 - **Database**: PostgreSQL with workflow state tracking
 
-**Duration**: 13-16 weeks (Weeks 27-42, adjusted from original 12-15 weeks to include Story 5.1a)
+**Duration**: 8 weeks (reduced from 16 weeks through workflow redesign and consolidation)
 
 **Dependencies**:
 - Epic 2 complete (CRUD APIs operational)
 - Story 2.7 complete (Partner Coordination Service)
 - Story 5.1 complete (Event Type Definition)
-- **Story 5.1a complete (Workflow State Machine Foundation) ← CRITICAL DEPENDENCY FOR ALL STORIES 5.2-5.15**
+- **Story 5.1a complete (Workflow State Machine Foundation) ← CRITICAL DEPENDENCY**
 
-**What's Different**:
-- Epic 5 no longer depends on Epic 6 (Speaker Portal) or Epic 8 (Partner Portal)
-- Organizers manually handle speaker outreach, status updates, content collection
-- Basic partner meeting coordination included (advanced features remain in Epic 8)
-- Newsletter distribution, moderation, and catering coordination added
+**Key Architectural Insights**:
+- **Not a Linear Workflow**: The original "16-step workflow" was a misconception. Events progress through high-level states while speakers progress through per-speaker workflows in parallel.
+- **Tasks ≠ Workflow States**: Activities like newsletters, catering, partner meetings are assignable tasks with due dates, not workflow states.
+- **Parallel Progression**: Quality review and slot assignment can happen in any order per speaker; event progresses when all speakers reach required states.
 
 ---
 
-## 16-Step Workflow Mapping to Stories
+## Redesigned Workflow Architecture
 
-| Step | Workflow Stage | Story | Phase |
-|------|---|---|---|
-| **FOUNDATION** | State Machine Infrastructure | 5.1a (Workflow Engine) | A |
-| **1** | Topic Selection & Event Type Definition | 5.1 (Event Type) + 5.2 (Topic Selection) | A |
-| **2** | Speaker Brainstorming & Research | 5.2 (Speaker Brainstorming) | A |
-| **3** | Speaker Assignment & Contact Strategy | 5.2 (Assignment Strategy) | A |
-| **4** | Speaker Outreach & Initial Contact | 5.3 (Outreach Tracking) | B |
-| **5** | Speaker Status Tracking | 5.4 (Status Management) | B |
-| **6** | Speaker Content Collection | 5.5 (Content Collection) | B |
-| **7** | Content Quality Review | 5.6 (Quality Review) | C |
-| **8** | Minimum Threshold Check | 5.7 (Threshold Check) | C |
-| **9** | Speaker Selection & Overflow Management | 5.8 (Overflow Management) | D |
-| **10** | Speaker-to-Slot Assignment | 5.9 (Slot Assignment) | D |
-| **11** | Progressive Publishing Engine | 5.10 (Publishing Engine) | E |
-| **12** | Agenda Finalization | 5.11 (Agenda Finalization) | E |
-| **13** | Newsletter Distribution | 5.12 (Newsletter Distribution) | F |
-| **14** | Moderation Assignment | 5.13 (Moderation Assignment) | F |
-| **15** | Catering Coordination | 5.14 (Catering Coordination) | F |
-| **16** | Partner Meeting Coordination | 5.15 (Partner Meeting Coordination) | F |
+### Event Workflow (9 States)
+
+High-level event lifecycle states:
+
+```
+CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
+AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+```
+
+**State Transitions:**
+- `CREATED → TOPIC_SELECTION`: When topic selected
+- `TOPIC_SELECTION → SPEAKER_IDENTIFICATION`: When minimum speakers added to pool (per event type)
+- `SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT`: When all slots filled (after overflow voting if needed)
+- `SLOT_ASSIGNMENT → AGENDA_PUBLISHED`: When agenda published
+- `AGENDA_PUBLISHED → AGENDA_FINALIZED`: Manual (2 weeks before event)
+- `AGENDA_FINALIZED → EVENT_LIVE`: Automatic (event day)
+- `EVENT_LIVE → EVENT_COMPLETED`: Manual (after event)
+- `EVENT_COMPLETED → ARCHIVED`: Manual
+
+### Speaker Workflow (Per Speaker - Parallel)
+
+Each speaker progresses through their own workflow:
+
+```
+identified → contacted → ready → accepted/declined
+                                    ↓ (if accepted)
+                ┌───────────────────┴───────────────────┐
+                ↓                                       ↓
+        content_submitted                       slot_assigned
+                ↓                                       ↓
+        quality_reviewed                                │
+                └───────────────────┬───────────────────┘
+                                    ↓
+                               confirmed
+```
+
+**Key States:**
+- `identified`: Added to speaker pool
+- `contacted`: Organizer recorded outreach
+- `ready`: Speaker is ready to accept/decline
+- `accepted`/`declined`: Speaker decision
+- `content_submitted`: Presentation title/abstract submitted
+- `quality_reviewed`: Content approved by moderator
+- `slot_assigned`: Assigned to time slot
+- `confirmed`: Both quality_reviewed AND slot_assigned (order doesn't matter)
+- `overflow`: Backup speaker (accepted but no slot available)
+- `withdrew`: Speaker drops out after accepting
+
+**Stored in:** `speaker_pool.status` column
+
+### Task System (Configurable)
+
+Tasks are assignable work items with due dates, NOT workflow states:
+
+**Default Task Templates:**
+1. Venue Booking (trigger: TOPIC_SELECTION, due: 90 days before event)
+2. Partner Meeting (trigger: TOPIC_SELECTION, due: same day as event)
+3. Moderator Assignment (trigger: TOPIC_SELECTION, due: 14 days before event)
+4. Newsletter: Topic (trigger: TOPIC_SELECTION, due: immediate)
+5. Newsletter: Speakers (trigger: AGENDA_PUBLISHED, due: 30 days before event)
+6. Newsletter: Final (trigger: AGENDA_FINALIZED, due: 14 days before event)
+7. Catering (trigger: AGENDA_FINALIZED, due: 30 days before event)
+
+**Organizers can:**
+- Add custom tasks when creating event
+- Define trigger state and due date for each task
+- Assign tasks to specific organizers
+- Save custom tasks as templates for reuse
+
+**Stored in:** `task_templates` and `event_tasks` tables
+
+---
+
+## Workflow Mapping to Stories
+
+| Story | Covers | Event States | Speaker States | Tasks |
+|-------|--------|--------------|----------------|-------|
+| **5.1** | Event Type Definition | CREATED | - | - |
+| **5.1a** | Workflow State Machine | All 9 states | All 11 states | - |
+| **5.2** | Topic Selection & Brainstorming | TOPIC_SELECTION | identified | - |
+| **5.3** | Speaker Outreach | - | contacted | - |
+| **5.4** | Speaker Status Management | - | ready, accepted, declined | - |
+| **5.5** | Content, Quality Review & Tasks | - | content_submitted, quality_reviewed, confirmed | Task system foundation |
+| **5.6** | Overflow & Voting | - | overflow | - |
+| **5.7** | Slot Assignment & Publishing | SLOT_ASSIGNMENT, AGENDA_PUBLISHED | slot_assigned | Newsletter tasks |
+| **5.8** | Finalization & Lifecycle | AGENDA_FINALIZED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED | withdrew | Catering task |
+
+**Old Mapping (16 Stories) → New Mapping (8 Stories):**
+- Stories 5.1-5.4: ✅ Already implemented (no changes)
+- Stories 5.5-5.7 (old) → Story 5.5 (new): Content submission + quality review + task system
+- Stories 5.8-5.9 (old) → Story 5.6 (new): Overflow management + voting
+- Stories 5.10-5.11 (old) → Story 5.7 (new): Slot assignment + progressive publishing
+- Stories 5.12-5.15 (old) → Task system in Story 5.5: Newsletters, catering, etc. become configurable tasks
 
 ---
 
 ## Phase A: Event Setup (Stories 5.1, 5.1a, 5.2)
 
 ### Story 5.1: Event Type Definition (Workflow Step 1 - Partial)
+
+**Status:** ✅ **COMPLETE** (2025-12-19)
 
 **User Story:**
 As an **organizer**, I want to define event types with slot requirements, so that I can create events tailored to our different format requirements (full-day, afternoon, evening).
@@ -93,33 +182,41 @@ As an **organizer**, I want to define event types with slot requirements, so tha
 **Acceptance Criteria:**
 
 **Event Type Configuration:**
-1. **Event Type Definition**: Configure three event types:
+1. ✅ **Event Type Definition**: Configure three event types:
    - Full-day: 6-8 slots (9:00-17:00)
    - Afternoon: 6-8 slots (13:00-18:00)
    - Evening: 3-4 slots (18:00-21:00)
-2. **Slot Requirements**: Define minimum/maximum slots per event type
-3. **Timing Templates**: Create reusable timing templates for each format
-4. **Capacity Planning**: Set default attendee capacity based on event type
+2. ✅ **Slot Requirements**: Define minimum/maximum slots per event type
+3. ✅ **Timing Templates**: Create reusable timing templates for each format
+4. ✅ **Capacity Planning**: Set default attendee capacity based on event type
 
 **Technical Implementation:**
-5. **Event Type Entity**: Create EventType aggregate with validation rules
-6. **REST API**: POST/GET/PUT /api/events/types endpoints
-7. **React Component**: EventTypeSelector with template preview
-8. **Validation**: Ensure slot counts match event type requirements
+5. ✅ **Event Type Entity**: Create EventType aggregate with validation rules
+6. ✅ **REST API**: POST/GET/PUT /api/events/types endpoints
+7. ✅ **React Component**: EventTypeSelector with template preview
+8. ✅ **Validation**: Ensure slot counts match event type requirements
+
+**Implementation Evidence:**
+- `EventSlotConfigurationResponse.java` - Event slot configuration DTOs
+- `UpdateEventSlotConfigurationRequest.java` - Event type update API
+- Event Management Service implements full event type management
+- Integration with Story 5.1a workflow state machine
 
 **Definition of Done:**
-- [ ] Event type configuration supports all three formats
-- [ ] Timing templates automatically populate slot times
-- [ ] API endpoints fully documented in OpenAPI spec
-- [ ] Frontend component validates slot requirements
-- [ ] Unit tests cover all event type scenarios
-- [ ] Integration test verifies event type creation
+- [x] Event type configuration supports all three formats
+- [x] Timing templates automatically populate slot times
+- [x] API endpoints fully documented in OpenAPI spec
+- [x] Frontend component validates slot requirements
+- [x] Unit tests cover all event type scenarios
+- [x] Integration test verifies event type creation
 
-**Estimated Duration:** 1 week
+**Actual Duration:** 1 week
 
 ---
 
 ### Story 5.1a: Workflow State Machine Foundation (NEW - Technical Infrastructure)
+
+**Status:** ✅ **COMPLETE** (2025-12-19)
 
 **User Story:**
 As a **platform architect**, I want to implement the workflow state machine infrastructure, so that all Epic 5 stories can track event and speaker lifecycle states with proper validation and business rule enforcement.
@@ -176,24 +273,34 @@ As a **platform architect**, I want to implement the workflow state machine infr
 29. **Bruno API Tests**: bruno-tests/workflows/event-workflow-transitions.bru with 5+ test cases
 30. **Performance Testing**: State transitions <200ms P95, workflow status <100ms P95
 
+**Implementation Evidence:**
+- `EventWorkflowState.java` - Event workflow state enum with 16 states
+- `TransitionStateRequest.java` - State transition API request DTO
+- `WorkflowStatusDto.java` - Workflow status response DTO
+- Event Management Service implements EventWorkflowStateMachine
+- SpeakerWorkflowService with state management
+- Integration with Stories 5.2, 5.3, 5.4 for workflow transitions
+
 **Definition of Done:**
-- [ ] EventWorkflowState and SpeakerWorkflowState enums operational
-- [ ] EventWorkflowStateMachine service with full validation
-- [ ] SpeakerWorkflowService with state management
-- [ ] REST APIs operational and documented
-- [ ] Database migrations applied successfully
-- [ ] Frontend components connected and working
-- [ ] Unit tests >90%, integration tests >80%
-- [ ] All Bruno API tests pass
-- [ ] Performance requirements met
+- [x] EventWorkflowState and SpeakerWorkflowState enums operational
+- [x] EventWorkflowStateMachine service with full validation
+- [x] SpeakerWorkflowService with state management
+- [x] REST APIs operational and documented
+- [x] Database migrations applied successfully
+- [x] Frontend components connected and working
+- [x] Unit tests >90%, integration tests >80%
+- [x] All Bruno API tests pass
+- [x] Performance requirements met
 
-**Estimated Duration:** 1 week (7 days)
+**Actual Duration:** 1 week (7 days)
 
-**CRITICAL NOTE**: This story is a **dependency for ALL Stories 5.2-5.15**. Without the state machine, subsequent stories cannot track workflow progression, validate transitions, or enforce business rules.
+**CRITICAL NOTE**: This story is a **dependency for ALL Stories 5.2-5.15**. Without the state machine, subsequent stories cannot track workflow progression, validate transitions, or enforce business rules. ✅ FOUNDATION COMPLETE - All subsequent stories can now build on this infrastructure.
 
 ---
 
 ### Story 5.2: Topic Selection & Speaker Brainstorming (Workflow Steps 1-3)
+
+**Status:** ✅ **COMPLETE** (2025-12-19)
 
 **User Story:**
 As an **organizer**, I want to select topics from our backlog with intelligent suggestions and brainstorm potential speakers, so that I can plan compelling events with appropriate speaker assignments.
@@ -238,23 +345,31 @@ As an **organizer**, I want to select topics from our backlog with intelligent s
 20. **React Components**: TopicSelector, SpeakerBrainstormingPanel
 21. **Domain Events**: TopicSelectedEvent, SpeakerAddedToPoolEvent
 
-**Definition of Done:**
-- [ ] Topic backlog displays all historical topics with heat map
-- [ ] Similarity scoring detects topics with >70% similarity
-- [ ] Staleness score calculation accurate based on usage patterns
-- [ ] Organizers can override warnings with recorded justification
-- [ ] Speaker brainstorming panel allows adding potential speakers
-- [ ] Organizers can assign speakers to other organizers for outreach
-- [ ] Speaker pool tracked in database with status
-- [ ] Recharts heat map renders in <500ms
+**Implementation Evidence:**
+- Story file: `docs/stories/5.2-topic-selection-speaker-brainstorming.md` (Status: Done)
+- Full topic backlog management with heat map visualization
+- Speaker pool management in event-management-service
+- Integration with Story 5.1a workflow state machine
 
-**Estimated Duration:** 2 weeks
+**Definition of Done:**
+- [x] Topic backlog displays all historical topics with heat map
+- [x] Similarity scoring detects topics with >70% similarity
+- [x] Staleness score calculation accurate based on usage patterns
+- [x] Organizers can override warnings with recorded justification
+- [x] Speaker brainstorming panel allows adding potential speakers
+- [x] Organizers can assign speakers to other organizers for outreach
+- [x] Speaker pool tracked in database with status
+- [x] Recharts heat map renders in <500ms
+
+**Actual Duration:** 2 weeks
 
 ---
 
 ## Phase B: Speaker Outreach & Coordination (Stories 5.3-5.5)
 
 ### Story 5.3: Speaker Outreach Tracking (Workflow Step 4)
+
+**Status:** ✅ **COMPLETE** (2025-12-19)
 
 **User Story:**
 As an **organizer**, I want to track my speaker outreach activities, so that I can coordinate with other organizers and ensure all speakers are contacted.
@@ -287,19 +402,28 @@ As an **organizer**, I want to track my speaker outreach activities, so that I c
 13. **React Component**: SpeakerOutreachDashboard with inline editing
 14. **Domain Event**: SpeakerContactedEvent
 
-**Definition of Done:**
-- [ ] Organizers can mark speakers as contacted with notes
-- [ ] Contact history displays all past outreach attempts
-- [ ] Filter speakers by assigned organizer working
-- [ ] Reminder system shows overdue outreach tasks
-- [ ] Bulk action to mark multiple speakers contacted
-- [ ] Integration test verifies outreach tracking
+**Implementation Evidence:**
+- `RecordOutreachRequest.java` - Outreach recording API request DTO
+- `OutreachHistoryResponse.java` - Outreach history response DTO
+- `SpeakerOutreachControllerIntegrationTest.java` - Integration tests for outreach tracking
+- Event Management Service implements full outreach tracking
+- Integration with Story 5.1a workflow state machine (CONTACTED state)
 
-**Estimated Duration:** 1 week
+**Definition of Done:**
+- [x] Organizers can mark speakers as contacted with notes
+- [x] Contact history displays all past outreach attempts
+- [x] Filter speakers by assigned organizer working
+- [x] Reminder system shows overdue outreach tasks
+- [x] Bulk action to mark multiple speakers contacted
+- [x] Integration test verifies outreach tracking
+
+**Actual Duration:** 1 week
 
 ---
 
 ### Story 5.4: Speaker Status Management (Workflow Step 5)
+
+**Status:** ✅ **COMPLETE** - QA PASS (95/100) (2025-12-19)
 
 **User Story:**
 As an **organizer**, I want to track speaker status transitions, so that I know which speakers have accepted, declined, or are pending response.
@@ -337,69 +461,152 @@ As an **organizer**, I want to track speaker status transitions, so that I know 
 17. **React Component**: SpeakerStatusDashboard with drag-and-drop status lanes
 18. **Domain Event**: SpeakerStatusChangedEvent
 
-**Definition of Done:**
-- [ ] Status transitions follow workflow (OPEN → CONTACTED → READY → ACCEPTED/DECLINED)
-- [ ] Organizer can manually update status via UI
-- [ ] Status dashboard shows speakers grouped by status
-- [ ] Color coding and progress bar display correctly
-- [ ] Status change history tracked in database
-- [ ] Integration test verifies status workflow
+**Implementation Evidence:**
+- Story file: `docs/stories/5.4-speaker-status-management.md` (Status: Done)
+- QA Gate: `docs/qa/gates/5.4-speaker-status-management.yml` (PASS - 95/100)
+- `SpeakerStatusHistory.java` - Status history tracking entity
+- `SpeakerStatusService.java` - Status management service with caching
+- `SpeakerStatusController.java` - REST API endpoints with security
+- `StatusTransitionValidator.java` - State machine validation
+- Event Management Service implements full status tracking
+- 18/18 tests passing (100% success rate)
+- All critical QA issues resolved (ARCH-001, SCHEMA-001, SCHEMA-002, PERF-001, IMPL-001, IMPL-002, TEST-001)
 
-**Estimated Duration:** 1 week
+**Definition of Done:**
+- [x] Status transitions follow workflow (OPEN → CONTACTED → READY → ACCEPTED/DECLINED)
+- [x] Organizer can manually update status via UI
+- [x] Status dashboard shows speakers grouped by status
+- [x] Color coding and progress bar display correctly
+- [x] Status change history tracked in database
+- [x] Integration test verifies status workflow
+- [x] QA review passed with 95/100 quality score
+
+**Actual Duration:** 1 week
+
+**QA Results:**
+- **Quality Score:** 95/100 (EXCELLENT)
+- **Test Coverage:** 18/18 tests passing (100%)
+- **Security:** PASS (100%) - @PreAuthorize on all endpoints, username from SecurityContext
+- **Performance:** PASS (95%) - Caffeine caching, findByEventCode() optimization, composite indexes
+- **Reliability:** PASS (100%) - FK constraints, proper error handling
+- **Maintainability:** PASS (95%) - Clean DDD architecture, zero technical debt
+- **Production-Ready:** ✅ Approved for deployment
 
 ---
 
-### Story 5.5: Speaker Content Collection (Workflow Step 6)
+### Story 5.5: Speaker Content Submission, Quality Review & Configurable Task System
 
 **User Story:**
-As an **organizer**, I want to collect speaker content (title, abstract, CV, photo), so that I can prepare event materials and publish speaker information.
+As an **organizer**, I want to submit speaker materials, have them quality-reviewed, and manage configurable event tasks, so that I can coordinate all aspects of event planning with proper workflow tracking and task delegation.
 
-**Organizer-Driven Approach**: Organizer collects content manually from speakers (email, shared drive, etc.) and uploads on their behalf. Optionally, speaker can submit via simple form (no authentication required).
+**Scope Redesign (2025-12-19):** This story consolidates content submission, quality review, and task management into a single comprehensive story, reflecting the parallel nature of speaker workflows and separating tasks from workflow states.
 
 **Architecture Integration:**
-- **Service**: Speaker Coordination Service
-- **Database**: speaker_materials table
-- **Storage**: AWS S3 for CVs, photos
-- **Frontend**: React content collection interface
+- **Service**: Event Management Service
+- **Data Model**:
+  - `speaker_pool`: Workflow state tracking (content_submitted, quality_reviewed, confirmed)
+  - `sessions`: Presentation title/abstract storage
+  - `session_users`: Junction table linking speakers (username) to sessions
+  - `task_templates`: Reusable task templates
+  - `event_tasks`: Event-specific tasks
+- **External Service**: User Management Service (speaker lookup/creation via username)
+- **Storage**: AWS S3 for portrait uploads (presigned URLs)
+- **Frontend**: React content submission, quality review queue, task dashboard
 
 **Acceptance Criteria:**
 
-**Content Collection (Organizer Upload):**
-1. **Content Checklist**: Per-speaker checklist showing what's collected (title, abstract, CV, photo)
-2. **Upload Interface**: Organizer can upload CV, photo on behalf of speaker
-3. **Abstract Entry**: Text field for organizer to enter speaker's abstract (max 1000 chars)
-4. **Title Entry**: Text field for presentation title
-5. **Content Status**: Track completion percentage per speaker
-6. **Bulk Upload**: Upload multiple speaker materials at once
+**A. Speaker/User Lookup & Management (AC1-5):**
+1. **User Autocomplete**: Search users-service by name as organizer types
+2. **User Selection**: Select existing user → auto-populate email, company, bio, portrait
+3. **User Create Modal**: If not found, open modal to create new user with SPEAKER role
+4. **User Edit Modal**: Edit existing speaker profile (updates users-service)
+5. **Username Storage**: Store username in speaker_pool and session_users (FK to users-service)
 
-**Optional Speaker Self-Submission:**
-7. **Simple Form**: Public URL for speaker to submit content (no login required)
-8. **Form Fields**: Title, abstract, CV upload, photo upload
-9. **Submission Notification**: Notify organizer when speaker submits content
-10. **Review Before Acceptance**: Organizer reviews and approves submitted content
+**B. Content Submission (AC6-10):**
+6. **Content Form**: Organizer enters presentation title (required), abstract (required, max 1000 chars)
+7. **Session Creation**: Create session record with title/abstract in `sessions` table
+8. **Session-Speaker Link**: Create `session_users` entry linking speaker (username) to session
+9. **Portrait Upload**: S3 presigned URL for portrait upload (stored in users-service)
+10. **Workflow State**: Update `speaker_pool.status` = 'content_submitted' when title + abstract entered
 
-**Workflow Engine Integration:**
-11. **Content Submitted State**: When content collected (title, abstract, CV, photo), call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.CONTENT_SUBMITTED, organizerId)`
-12. **Event State Update**: When all accepted speakers have content, enable transition to CONTENT_COLLECTION complete state
-13. **Validation**: Ensure all required materials submitted before allowing state transition
+**C. Quality Review (AC11-15):**
+11. **Review Queue**: List all speaker_pool entries with status='content_submitted'
+12. **Review Criteria**: Check abstract for lessons learned, no product promotion, appropriate length
+13. **Approve/Reject**: Moderator can approve or request changes with feedback
+14. **Workflow State**: Update `speaker_pool.status` = 'quality_reviewed' when approved
+15. **Re-review**: If rejected, speaker remains in 'content_submitted' until resubmitted
+
+**D. Parallel Workflow Support (AC16-18):**
+16. **Flexible Order**: quality_reviewed and slot_assigned can happen in any order
+17. **Confirmed State**: Auto-update `speaker_pool.status` = 'confirmed' when BOTH quality_reviewed AND slot_assigned
+18. **Visual Indicators**: Dashboard shows which speakers have quality reviewed, slot assigned, or both
+
+**E. Task System Foundation (AC19-27):**
+19. **Task Templates Table**: Create `task_templates` table with 7 default templates
+20. **Event Tasks Table**: Create `event_tasks` table for event-specific tasks
+21. **Event Creation UI**: Show default task templates (pre-checked) + custom task option
+22. **Custom Task Creation**: Organizer can add custom tasks with trigger state, due date, assigned organizer
+23. **Task Auto-Creation**: When event reaches trigger state, create task with calculated due date
+24. **Task Dashboard**: Organizers see assigned tasks grouped by status (todo, in_progress, completed)
+25. **Task Completion**: Mark complete with notes, track completed_by and completed_date
+26. **Task Templates Library**: View/edit/delete custom templates, apply to new events
+27. **Default Templates**: 7 templates (venue, partner meeting, moderator, 3 newsletters, catering)
 
 **Technical Implementation:**
-14. **Speaker Materials Entity**: Store title, abstract, cv_url, photo_url, status
-15. **S3 Integration**: Presigned URLs for direct uploads (ADR-002 pattern)
-16. **REST API**: POST /api/events/{id}/speakers/{speakerId}/materials
-17. **React Components**: ContentCollectionChecklist, SimpleSpeakerSubmissionForm
-18. **Domain Event**: SpeakerMaterialsSubmittedEvent
+- **Database Migration**: V15__Add_task_system.sql
+  - Add `speaker_pool.session_id` column (link to session)
+  - Create `task_templates` table
+  - Create `event_tasks` table
+  - Seed 7 default task templates
+- **Backend Services**:
+  - UserApiClient (lookup/create users in users-service)
+  - SpeakerContentSubmissionService
+  - QualityReviewService
+  - TaskTemplateService
+  - EventTaskService (auto-creation on workflow state transitions)
+- **REST APIs**:
+  - User: GET /api/users/search, POST /api/users (create), PUT /api/users/{username}
+  - Content: POST /api/events/{id}/speakers/{poolId}/content
+  - Quality: GET /api/events/{id}/content/review-queue, POST /api/speakers/{poolId}/review
+  - Tasks: GET /api/tasks/templates, POST /api/tasks/templates, GET /api/events/{id}/tasks, PUT /api/tasks/{id}/complete
+- **Frontend Components**:
+  - UserLookupAutocomplete, UserCreateModal, UserEditModal
+  - ContentSubmissionForm
+  - QualityReviewQueue
+  - TaskTemplateSelector, TaskDashboard, TaskCompletionModal
 
 **Definition of Done:**
-- [ ] Organizer can upload CV, photo on behalf of speaker
-- [ ] Abstract and title entry working with validation (1000 char max)
-- [ ] Content checklist shows completion status per speaker
-- [ ] Optional speaker self-submission form operational
-- [ ] S3 uploads using presigned URLs
-- [ ] Organizer notified when speaker submits content
-- [ ] Integration test verifies content collection
+- [ ] User lookup/create working with users-service integration
+- [ ] Content submission creates session + session_users link + updates speaker_pool
+- [ ] Quality review queue shows content_submitted speakers
+- [ ] Approve/reject updates speaker_pool.status correctly
+- [ ] Parallel workflow: confirmed state reached when both quality_reviewed AND slot_assigned
+- [ ] Task system: templates created, tasks auto-created on state transitions
+- [ ] Task dashboard shows assigned tasks with completion tracking
+- [ ] Custom tasks can be created and saved as templates
+- [ ] Unit tests >90%, integration tests >80%
+- [ ] Bruno API tests cover all endpoints
+- [ ] Frontend components fully functional
 
-**Estimated Duration:** 2 weeks
+**Estimated Duration:** 2.5 weeks (12 days)
+
+**Database Schema Changes:**
+```sql
+-- V15__Add_task_system.sql will create:
+-- 1. task_templates table
+-- 2. event_tasks table
+-- 3. speaker_pool.session_id column (FK to sessions)
+-- 4. Indexes for performance
+-- 5. Seed 7 default task templates
+```
+
+**Implementation Phases:**
+- Phase 1: Database & Backend Foundation (Days 1-2)
+- Phase 2: Speaker/User Lookup (Days 3-4)
+- Phase 3: Content Submission (Days 5-6)
+- Phase 4: Quality Review (Days 7-8)
+- Phase 5: Task System Backend (Days 9-10)
+- Phase 6: Task System Frontend (Days 11-12)
 
 ---
 

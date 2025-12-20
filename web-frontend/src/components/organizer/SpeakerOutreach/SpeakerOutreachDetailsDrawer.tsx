@@ -115,7 +115,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
               <Chip
                 label={speaker.status}
                 size="small"
-                color={speaker.status === 'contacted' ? 'success' : 'default'}
+                color={speaker.status === 'CONTACTED' ? 'success' : 'default'}
               />
             </Box>
           </Paper>

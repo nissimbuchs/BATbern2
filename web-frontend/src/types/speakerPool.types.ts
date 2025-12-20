@@ -4,6 +4,11 @@
  * Types for Speaker Brainstorming and Pool Management.
  */
 
+import type { components } from '@/types/generated/speakers-api.types';
+
+// Use OpenAPI generated workflow state type
+export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
+
 // ============================================================================
 // Speaker Pool Types
 // ============================================================================
@@ -15,23 +20,10 @@ export interface SpeakerPoolEntry {
   company?: string;
   expertise?: string;
   assignedOrganizerId?: string | null;
-  status: SpeakerPoolStatus;
+  status: SpeakerWorkflowState;
   notes?: string;
   createdAt: string;
 }
-
-export type SpeakerPoolStatus =
-  | 'identified'
-  | 'contacted'
-  | 'ready'
-  | 'accepted'
-  | 'declined'
-  | 'content_submitted'
-  | 'quality_reviewed'
-  | 'slot_assigned'
-  | 'confirmed'
-  | 'withdrew'
-  | 'overflow';
 
 // ============================================================================
 // Request/Response DTOs
@@ -56,6 +48,6 @@ export interface SpeakerPoolUI extends SpeakerPoolEntry {
 }
 
 export interface SpeakerPoolFilters {
-  status?: SpeakerPoolStatus;
+  status?: SpeakerWorkflowState;
   assignedOrganizerId?: string;
 }

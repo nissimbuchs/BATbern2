@@ -1,0 +1,79 @@
+package ch.batbern.events.repository;
+
+import ch.batbern.events.domain.EventTask;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Repository for EventTask entity (Story 5.5 AC19-27).
+ *
+ * Provides data access for event-specific tasks assigned to organizers.
+ */
+@Repository
+public interface EventTaskRepository extends JpaRepository<EventTask, UUID> {
+
+    /**
+     * Find all tasks for a specific event.
+     *
+     * @param eventId the event ID
+     * @return list of tasks for this event
+     */
+    List<EventTask> findByEventId(UUID eventId);
+
+    /**
+     * Find all tasks assigned to a specific organizer.
+     *
+     * @param username the organizer's username
+     * @return list of tasks assigned to this organizer
+     */
+    List<EventTask> findByAssignedOrganizerUsername(String username);
+
+    /**
+     * Find all tasks by status.
+     *
+     * @param status the task status ('todo', 'in_progress', 'completed')
+     * @return list of tasks with this status
+     */
+    List<EventTask> findByStatus(String status);
+
+    /**
+     * Find all tasks for an event with a specific status.
+     *
+     * @param eventId the event ID
+     * @param status the task status
+     * @return list of tasks
+     */
+    List<EventTask> findByEventIdAndStatus(UUID eventId, String status);
+
+    /**
+     * Find all tasks assigned to an organizer with a specific status.
+     *
+     * @param username the organizer's username
+     * @param status the task status
+     * @return list of tasks
+     */
+    List<EventTask> findByAssignedOrganizerUsernameAndStatus(String username, String status);
+
+    /**
+     * Check if a task already exists for an event from a specific template.
+     * Used for idempotency (AC36) - prevent duplicate task creation.
+     *
+     * @param eventId the event ID
+     * @param templateId the template ID
+     * @return true if task exists
+     */
+    boolean existsByEventIdAndTemplateId(UUID eventId, UUID templateId);
+
+    /**
+     * Check if tasks already exist for an event and trigger state.
+     * Used for idempotency at workflow transition level.
+     *
+     * @param eventId the event ID
+     * @param triggerState the trigger state
+     * @return true if tasks exist
+     */
+    boolean existsByEventIdAndTriggerState(UUID eventId, String triggerState);
+}
