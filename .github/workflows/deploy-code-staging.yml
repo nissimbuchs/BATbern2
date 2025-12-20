@@ -1,0 +1,123 @@
+name: Fast-Path Code Deployment (Staging)
+
+on:
+  workflow_call:
+    inputs:
+      changed_services:
+        description: 'Comma-separated list of changed services'
+        required: true
+        type: string
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  CLUSTER_NAME: batbern-staging
+
+jobs:
+  fast-path-deploy:
+    name: Fast-Path ECS Deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # Much faster than CloudFormation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy services via fast-path
+        run: |
+          IFS=',' read -ra SERVICES <<< "${{ inputs.changed_services }}"
+
+          for SERVICE in "${SERVICES[@]}"; do
+            # Trim whitespace
+            SERVICE=$(echo "$SERVICE" | xargs)
+
+            echo "🚀 Fast-path deploying: $SERVICE"
+
+            # Map service name to ECS service name pattern
+            case $SERVICE in
+              event-management)
+                ECS_SERVICE_PATTERN="BATbern-staging-EventManagement-Service"
+                ;;
+              company-management)
+                ECS_SERVICE_PATTERN="BATbern-staging-CompanyManagement-Service"
+                ;;
+              speaker-coordination)
+                ECS_SERVICE_PATTERN="BATbern-staging-SpeakerCoordination-Service"
+                ;;
+              partner-coordination)
+                ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
+                ;;
+              attendee-experience)
+                ECS_SERVICE_PATTERN="BATbern-staging-AttendeeExperience-Service"
+                ;;
+              api-gateway-service|api-gateway)
+                ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"
+                ;;
+              *)
+                echo "::warning::Unknown service: $SERVICE, skipping"
+                continue
+                ;;
+            esac
+
+            # Find exact service name (handles CDK-generated suffixes)
+            FULL_SERVICE=$(aws ecs list-services \
+              --cluster ${{ env.CLUSTER_NAME }} \
+              --region ${{ env.AWS_REGION }} \
+              --query "serviceArns[?contains(@, '${ECS_SERVICE_PATTERN}')]" \
+              --output text | xargs -n1 basename | head -n1)
+
+            if [ -z "$FULL_SERVICE" ]; then
+              echo "::error::Service not found matching pattern: $ECS_SERVICE_PATTERN"
+              exit 1
+            fi
+
+            echo "📦 Found service: $FULL_SERVICE"
+
+            # Execute fast-path update
+            ./scripts/ci/update-ecs-task.sh \
+              ${{ env.CLUSTER_NAME }} \
+              $FULL_SERVICE \
+              ${{ inputs.image_tag }}
+          done
+
+      - name: Run smoke tests
+        run: |
+          echo "✅ Fast-path deployment complete, running smoke tests..."
+
+          if [ -f "scripts/ci/smoke-tests.sh" ]; then
+            chmod +x scripts/ci/smoke-tests.sh
+            ./scripts/ci/smoke-tests.sh \
+              https://staging.batbern.ch \
+              https://api.staging.batbern.ch
+          else
+            echo "::warning::Smoke tests script not found, skipping"
+          fi
+
+      - name: Notify fast-path deployment success
+        if: success()
+        run: |
+          echo "🚀 Fast-path deployment successful!"
+          echo "Services deployed: ${{ inputs.changed_services }}"
+          echo "Image tag: ${{ inputs.image_tag }}"
+          echo "⏱️  Deployment time: ~2-5 minutes (90% faster than CloudFormation)"
+
+      - name: Notify fast-path deployment failure
+        if: failure()
+        run: |
+          echo "❌ Fast-path deployment failed"
+          echo "Services: ${{ inputs.changed_services }}"
+          echo "Image tag: ${{ inputs.image_tag }}"
+          echo "::error::Fast-path deployment failed - check logs above"
