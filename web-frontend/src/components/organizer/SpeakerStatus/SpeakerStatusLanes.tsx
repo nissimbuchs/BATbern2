@@ -50,7 +50,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 // Status lanes to display
-const STATUS_LANES: SpeakerWorkflowState[] = ['IDENTIFIED', 'CONTACTED', 'READY', 'ACCEPTED', 'DECLINED'];
+const STATUS_LANES: SpeakerWorkflowState[] = [
+  'IDENTIFIED',
+  'CONTACTED',
+  'READY',
+  'ACCEPTED',
+  'DECLINED',
+];
 
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventCode,

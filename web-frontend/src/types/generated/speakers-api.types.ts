@@ -277,26 +277,26 @@ export interface components {
      */
     SpeakerAvailability: 'available' | 'busy' | 'unavailable';
     /**
-     * @description Speaker coordination workflow state:
-     *     - open: Initial state, speaker identified but not yet contacted
-     *     - contacted: Invitation sent to speaker
-     *     - ready: Speaker confirmed availability and interest
-     *     - declined: Speaker declined invitation
-     *     - accepted: Speaker accepted invitation and confirmed participation
-     *     - slot_assigned: Speaker assigned to specific time slot
-     *     - quality_reviewed: Speaker's content passed quality review
-     *     - final_agenda: Speaker finalized in published agenda
+     * @description Speaker coordination workflow state (UPPER_CASE as per coding-standards.md):
+     *     - IDENTIFIED: Initial state, speaker identified but not yet contacted
+     *     - CONTACTED: Invitation sent to speaker
+     *     - READY: Speaker confirmed availability and interest
+     *     - DECLINED: Speaker declined invitation
+     *     - ACCEPTED: Speaker accepted invitation and confirmed participation
+     *     - SLOT_ASSIGNED: Speaker assigned to specific time slot
+     *     - QUALITY_REVIEWED: Speaker's content passed quality review
+     *     - FINAL_AGENDA: Speaker finalized in published agenda
      * @enum {string}
      */
     SpeakerWorkflowState:
-      | 'open'
-      | 'contacted'
-      | 'ready'
-      | 'declined'
-      | 'accepted'
-      | 'slot_assigned'
-      | 'quality_reviewed'
-      | 'final_agenda';
+      | 'IDENTIFIED'
+      | 'CONTACTED'
+      | 'READY'
+      | 'DECLINED'
+      | 'ACCEPTED'
+      | 'SLOT_ASSIGNED'
+      | 'QUALITY_REVIEWED'
+      | 'FINAL_AGENDA';
     SpeakerSlotPreferences: {
       /**
        * @description Speaker username (ADR-003)

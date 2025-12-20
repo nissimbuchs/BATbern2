@@ -17,10 +17,10 @@ package ch.batbern.shared.types;
  * 8. Pre-Event (NEWSLETTER_SENT, EVENT_READY)
  * 9. Post-Event (PARTNER_MEETING_COMPLETE, ARCHIVED)
  *
- * Database Storage Pattern (per coding-standards.md):
- * - Java: EventWorkflowState.SPEAKER_OUTREACH (UPPER_CASE with underscores)
- * - Database: 'speaker_outreach' (lowercase with underscores)
- * - Converter: EventWorkflowStateConverter handles automatic conversion
+ * Enum Value Flow (per coding-standards.md):
+ * - Java/JSON/API: SPEAKER_OUTREACH (UPPER_CASE with underscores)
+ * - Database: 'speaker_outreach' (lowercase_snake_case via AttributeConverter)
+ * - Converter: EventWorkflowStateConverter handles Java ↔ Database conversion
  *
  * @see ch.batbern.events.converter.EventWorkflowStateConverter
  */

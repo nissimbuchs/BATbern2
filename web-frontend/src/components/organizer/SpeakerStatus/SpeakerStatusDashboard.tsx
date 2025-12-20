@@ -62,10 +62,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
   });
 
   // Fetch speaker pool data for lanes
-  const {
-    data: speakers,
-    isLoading: speakersLoading,
-  } = useQuery({
+  const { data: speakers, isLoading: speakersLoading } = useQuery({
     queryKey: ['speakerPool', eventCode],
     queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
     refetchInterval: 30000, // Poll every 30 seconds

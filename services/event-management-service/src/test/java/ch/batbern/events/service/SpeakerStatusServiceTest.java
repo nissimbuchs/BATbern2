@@ -60,11 +60,14 @@ public class SpeakerStatusServiceTest {
     @Mock
     private EventTypeService eventTypeService;
 
+    @Mock
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, sessionRepository);
     }
 
     /**
@@ -157,7 +160,7 @@ public class SpeakerStatusServiceTest {
             .thenReturn(Optional.of(event));
         when(eventTypeService.getEventType(EventType.FULL_DAY))
             .thenReturn(slotConfig);
-        when(repository.findByEventCode(eventCode))
+        when(speakerPoolRepository.findByEventId(event.getId()))
             .thenReturn(new ArrayList<>());
 
         // When
