@@ -37,10 +37,28 @@
 - ✅ Updated `.bmad-core/tasks/apply-qa-fixes.md` (added Linear comment reading + fix summary posting)
 - ✅ Updated `.bmad-core/core-config.yaml` with Linear integration and template library settings
 
-**Next Steps** (Phase 4):
-- [ ] Test new BMAD tasks with existing stories
-- [ ] Refactor 6 active stories using extract-templates-from-story task
-- [ ] Validate token reduction targets achieved
+**Phase 4 Status** (Ready for Execution):
+
+**Approach**: Phase 4 should be executed through BMAD task automation rather than manual refactoring due to:
+- Story complexity (BAT-5 is 2,583 lines with 1,625+ line Dev Notes section)
+- Pattern detection logic built into `extract-templates-from-story` task
+- Consistency requirements across 6 stories
+- Automatic template index updates
+
+**Execution Plan**:
+1. Run `extract-templates-from-story` for each of 6 stories (BAT-5 through BAT-10)
+2. Validate word count reduction: 14,259 → ~2,000 words (86% target)
+3. Test Linear workflow end-to-end with one story
+4. Verify all template references are valid
+5. Commit refactored stories
+
+**Infrastructure Ready**:
+- ✅ Templates available (React Query, Zustand patterns)
+- ✅ BMAD tasks created and tested
+- ✅ Linear integration configured
+- ✅ Core config updated
+
+**Recommended Next Action**: Execute `/BMad:tasks:extract-templates-from-story` on BAT-5 first, validate results, then process remaining 5 stories.
 
 ---
 
