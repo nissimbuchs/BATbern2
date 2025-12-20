@@ -168,8 +168,8 @@ export class CICDStack extends cdk.Stack {
         'rds:AddTagsToResource',
       ],
       resources: [
-        `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -184,7 +184,7 @@ export class CICDStack extends cdk.Stack {
         'logs:DescribeLogStreams',
       ],
       resources: [
-        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/ecs/batbern-${config.envName}-*`,
+        `arn:aws:logs:${this.region}:${this.account}:log-group:/aws/ecs/BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -207,7 +207,7 @@ export class CICDStack extends cdk.Stack {
       effect: iam.Effect.ALLOW,
       actions: ['iam:PassRole'],
       resources: [
-        `arn:aws:iam::${this.account}:role/batbern-${config.envName}-*`,
+        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
       ],
       conditions: {
         StringEquals: {
@@ -276,8 +276,8 @@ export class CICDStack extends cdk.Stack {
         `arn:aws:s3:::cdk-*-assets-${this.account}-*`,
         `arn:aws:s3:::cdk-*-assets-${this.account}-*/*`,
         // Application buckets
-        `arn:aws:s3:::batbern-${config.envName}-*`,
-        `arn:aws:s3:::batbern-${config.envName}-*/*`,
+        `arn:aws:s3:::BATbern-${config.envName}-*`,
+        `arn:aws:s3:::BATbern-${config.envName}-*/*`,
       ],
     }));
 
@@ -309,9 +309,9 @@ export class CICDStack extends cdk.Stack {
         'iam:UntagPolicy',
       ],
       resources: [
-        `arn:aws:iam::${this.account}:role/batbern-${config.envName}-*`,
+        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
         `arn:aws:iam::${this.account}:role/cdk-*`,
-        `arn:aws:iam::${this.account}:policy/batbern-${config.envName}-*`,
+        `arn:aws:iam::${this.account}:policy/BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -336,7 +336,7 @@ export class CICDStack extends cdk.Stack {
         'lambda:GetPolicy',
       ],
       resources: [
-        `arn:aws:lambda:${this.region}:${this.account}:function:batbern-${config.envName}-*`,
+        `arn:aws:lambda:${this.region}:${this.account}:function:BATbern-${config.envName}-*`,
         `arn:aws:lambda:${this.region}:${this.account}:function:cdk-*`,
       ],
     }));
@@ -413,10 +413,10 @@ export class CICDStack extends cdk.Stack {
         'rds:DescribeDBClusters',
       ],
       resources: [
-        `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:cluster:batbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:subgrp:batbern-${config.envName}-*`,
-        `arn:aws:rds:${this.region}:${this.account}:pg:batbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:subgrp:BATbern-${config.envName}-*`,
+        `arn:aws:rds:${this.region}:${this.account}:pg:BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -442,10 +442,10 @@ export class CICDStack extends cdk.Stack {
         'elasticache:RemoveTagsFromResource',
       ],
       resources: [
-        `arn:aws:elasticache:${this.region}:${this.account}:cluster:batbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:replicationgroup:batbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:subnetgroup:batbern-${config.envName}-*`,
-        `arn:aws:elasticache:${this.region}:${this.account}:parametergroup:batbern-${config.envName}-*`,
+        `arn:aws:elasticache:${this.region}:${this.account}:cluster:BATbern-${config.envName}-*`,
+        `arn:aws:elasticache:${this.region}:${this.account}:replicationgroup:BATbern-${config.envName}-*`,
+        `arn:aws:elasticache:${this.region}:${this.account}:subnetgroup:BATbern-${config.envName}-*`,
+        `arn:aws:elasticache:${this.region}:${this.account}:parametergroup:BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -531,7 +531,7 @@ export class CICDStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:kms:${this.region}:${this.account}:key/*`,
-        `arn:aws:kms:${this.region}:${this.account}:alias/batbern-${config.envName}-*`,
+        `arn:aws:kms:${this.region}:${this.account}:alias/BATbern-${config.envName}-*`,
       ],
     }));
 
@@ -572,7 +572,7 @@ export class CICDStack extends cdk.Stack {
         'logs:UntagLogGroup',
       ],
       resources: [
-        `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:batbern-${config.envName}-*`,
+        `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:BATbern-${config.envName}-*`,
         `arn:aws:logs:${this.region}:${this.account}:log-group:*`,
       ],
     }));
@@ -618,7 +618,7 @@ export class CICDStack extends cdk.Stack {
         'iam:PassRole',
       ],
       resources: [
-        `arn:aws:iam::${this.account}:role/batbern-${config.envName}-*`,
+        `arn:aws:iam::${this.account}:role/BATbern-${config.envName}-*`,
         `arn:aws:iam::${this.account}:role/cdk-*`,
       ],
       conditions: {
