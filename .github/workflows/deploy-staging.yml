@@ -138,9 +138,10 @@ jobs:
           # If any service changed, we might need database backup
           if [ -n "$CHANGED_SERVICES" ]; then
             echo "services=true" >> $GITHUB_OUTPUT
-            # Check if Dockerfile or flyway migrations changed (needs backup)
-            if echo "$CHANGED_FILES" | grep -qE "Dockerfile|db/migration/"; then
+            # Check if actual Flyway migrations changed (V*.sql files only)
+            if echo "$CHANGED_FILES" | grep -qE "db/migration/V[0-9]+.*\.sql"; then
               echo "needs_database_backup=true" >> $GITHUB_OUTPUT
+              echo "✓ Database migration detected - backup will be created"
             fi
           else
             echo "services=false" >> $GITHUB_OUTPUT
@@ -226,42 +227,121 @@ jobs:
       - name: Determine Docker image tag
         id: image-tag
         run: |
-          # Use the same tag format as build.yml (short SHA + staging + run number)
+          # Use direct commit SHA and run number (eliminates GitHub API call)
           SHORT_SHA="${GITHUB_SHA:0:7}"
-
-          # Find the most recent build workflow run number for this commit
-          # Query GitHub API to get the latest successful build run
-          BUILD_RUN=$(gh api \
-            repos/${{ github.repository }}/actions/runs \
-            -f event=push \
-            -f status=completed \
-            -f branch=develop \
-            --jq ".workflow_runs[] | select(.head_sha == \"${{ github.sha }}\" and .name == \"Build Pipeline\") | .run_number" \
-            | head -n 1 | tr -d '[:space:]')
-
-          # Validate BUILD_RUN is a number
-          if [ -n "$BUILD_RUN" ] && [[ "$BUILD_RUN" =~ ^[0-9]+$ ]]; then
-            IMAGE_TAG="${SHORT_SHA}-staging.${BUILD_RUN}"
-            echo "Found build run $BUILD_RUN for commit ${{ github.sha }}"
-          else
-            # Fallback: use 'latest' tag if we can't find the build run
-            echo "::warning::Could not find valid build run number (got: '$BUILD_RUN'), using 'latest' tag"
-            IMAGE_TAG="latest"
-          fi
-
-          # Validate IMAGE_TAG format (alphanumeric, dots, dashes only)
-          if [[ ! "$IMAGE_TAG" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-            echo "::error::Invalid IMAGE_TAG format: $IMAGE_TAG"
-            echo "::error::IMAGE_TAG must contain only alphanumeric characters, dots, dashes, and underscores"
-            exit 1
-          fi
+          IMAGE_TAG="${SHORT_SHA}-staging.${GITHUB_RUN_NUMBER}"
 
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "Using Docker image tag: $IMAGE_TAG"
-        env:
-          GH_TOKEN: ${{ github.token }}
+
+      - name: Determine deployment strategy
+        id: deployment-strategy
+        run: |
+          # Check if this qualifies for fast-path deployment
+          CODE_ONLY="false"
+
+          # Get changed files for analysis
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # Fast-path conditions:
+          # 1. No infrastructure changes
+          # 2. No Dockerfile changes
+          # 3. No database migrations
+          # 4. Only service code changes
+
+          if [ "${{ steps.changes.outputs.infrastructure }}" != "true" ] && \
+             ! echo "$CHANGED_FILES" | grep -qE "Dockerfile|db/migration/V[0-9]+.*\.sql" && \
+             [ -n "${{ steps.changes.outputs.changed_services }}" ] && \
+             [ "${{ steps.changes.outputs.changed_services }}" != "all-services" ]; then
+            CODE_ONLY="true"
+            echo "🚀 Fast-path eligible: Code-only changes detected"
+            echo "   Services: ${{ steps.changes.outputs.changed_services }}"
+          else
+            echo "📦 Standard deployment required"
+            if [ "${{ steps.changes.outputs.infrastructure }}" = "true" ]; then
+              echo "   Reason: Infrastructure changes detected"
+            elif echo "$CHANGED_FILES" | grep -qE "Dockerfile"; then
+              echo "   Reason: Dockerfile changes detected"
+            elif echo "$CHANGED_FILES" | grep -qE "db/migration/V[0-9]+.*\.sql"; then
+              echo "   Reason: Database migration changes detected"
+            fi
+          fi
+
+          echo "code_only=$CODE_ONLY" >> $GITHUB_OUTPUT
+
+      - name: Fast-path code deployment
+        if: steps.deployment-strategy.outputs.code_only == 'true'
+        run: |
+          echo "🚀 Executing fast-path deployment (bypasses CloudFormation)"
+
+          IFS=',' read -ra SERVICES <<< "${{ steps.changes.outputs.changed_services }}"
+
+          for SERVICE in "${SERVICES[@]}"; do
+            # Trim whitespace
+            SERVICE=$(echo "$SERVICE" | xargs)
+
+            echo "📦 Fast-path deploying: $SERVICE"
+
+            # Map service name to ECS service name pattern
+            case $SERVICE in
+              event-management)
+                ECS_SERVICE_PATTERN="BATbern-staging-EventManagement-Service"
+                ;;
+              company-management)
+                ECS_SERVICE_PATTERN="BATbern-staging-CompanyManagement-Service"
+                ;;
+              speaker-coordination)
+                ECS_SERVICE_PATTERN="BATbern-staging-SpeakerCoordination-Service"
+                ;;
+              partner-coordination)
+                ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
+                ;;
+              attendee-experience)
+                ECS_SERVICE_PATTERN="BATbern-staging-AttendeeExperience-Service"
+                ;;
+              api-gateway-service|api-gateway)
+                ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"
+                ;;
+              *)
+                echo "::warning::Unknown service: $SERVICE, skipping"
+                continue
+                ;;
+            esac
+
+            # Find exact service name
+            FULL_SERVICE=$(aws ecs list-services \
+              --cluster batbern-staging \
+              --region ${{ env.AWS_REGION }} \
+              --query "serviceArns[?contains(@, '${ECS_SERVICE_PATTERN}')]" \
+              --output text | xargs -n1 basename | head -n1)
+
+            if [ -z "$FULL_SERVICE" ]; then
+              echo "::error::Service not found matching pattern: $ECS_SERVICE_PATTERN"
+              exit 1
+            fi
+
+            echo "✅ Found service: $FULL_SERVICE"
+
+            # Execute fast-path update
+            chmod +x ./scripts/ci/update-ecs-task.sh
+            ./scripts/ci/update-ecs-task.sh \
+              batbern-staging \
+              $FULL_SERVICE \
+              ${{ steps.image-tag.outputs.IMAGE_TAG }}
+          done
+
+          echo "🎉 Fast-path deployment complete (2-5 min vs 30-40 min with CloudFormation)"
 
       - name: Deploy infrastructure to staging
+        if: steps.deployment-strategy.outputs.code_only != 'true'
         working-directory: ./infrastructure
         run: |
           if [ ! -f "package.json" ]; then
@@ -281,14 +361,14 @@ jobs:
 
           # Determine which stacks to deploy
           STACKS_TO_DEPLOY=""
+          USE_LAYER_DEPLOYMENT=false
 
           # Map changed services to stack names
           CHANGED_SERVICES="${{ steps.changes.outputs.changed_services }}"
 
           if [ "${{ steps.changes.outputs.deploy_all }}" = "true" ]; then
-            echo "📦 Infrastructure changes detected: deploying all service stacks"
-            # Deploy all service stacks when infrastructure code changes
-            STACKS_TO_DEPLOY="BATbern-staging-EventManagement BATbern-staging-SpeakerCoordination BATbern-staging-PartnerCoordination BATbern-staging-AttendeeExperience BATbern-staging-CompanyManagement BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
+            echo "📦 Infrastructure changes detected: using layer-based deployment"
+            USE_LAYER_DEPLOYMENT=true
           elif [ "$CHANGED_SERVICES" = "all-services" ]; then
             # Shared kernel changed - deploy all service stacks
             echo "🔄 Shared kernel changed: deploying all service stacks"
@@ -336,12 +416,27 @@ jobs:
           fi
 
           # Deploy the selected stacks
-          if [ -n "$STACKS_TO_DEPLOY" ]; then
+          if [ "$USE_LAYER_DEPLOYMENT" = "true" ]; then
+            echo ""
+            echo "🏗️  Deploying all layers sequentially (maximum parallelization per layer)"
+            npm run deploy:staging:all-layers \
+              --context version=${{ github.sha }}
+          elif [ -n "$STACKS_TO_DEPLOY" ]; then
             echo ""
             echo "Deploying stacks: $STACKS_TO_DEPLOY"
-            npm run deploy:staging:selective -- $STACKS_TO_DEPLOY \
-              --context version=${{ github.sha }} \
-              --require-approval never
+
+            # Use hotswap mode for code-only changes (bypasses CloudFormation for 10-15 min savings)
+            if [ "${{ steps.changes.outputs.infrastructure }}" != "true" ]; then
+              echo "🚀 Using hotswap mode (code-only changes detected)"
+              npm run deploy:staging:hotswap -- $STACKS_TO_DEPLOY \
+                --context version=${{ github.sha }} \
+                --require-approval never
+            else
+              echo "📦 Using standard deployment (infrastructure changes detected)"
+              npm run deploy:staging:selective -- $STACKS_TO_DEPLOY \
+                --context version=${{ github.sha }} \
+                --require-approval never
+            fi
           else
             echo "⚠️  No stacks to deploy (no relevant changes detected)"
             exit 0
@@ -351,7 +446,15 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
+      - name: Re-authenticate before ECS stabilization
+        if: steps.deployment-strategy.outputs.code_only != 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Wait for ECS services to stabilize
+        if: steps.deployment-strategy.outputs.code_only != 'true'
         run: |
           if aws ecs describe-clusters --clusters batbern-staging --region ${{ env.AWS_REGION }} 2>/dev/null; then
             services=(
