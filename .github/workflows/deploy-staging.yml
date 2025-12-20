@@ -592,34 +592,125 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
-      - name: Deploy infrastructure to staging (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true'
+      # Selective deployment - deploy each service individually with re-auth
+      - name: Selective Deploy - Company Management
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
         working-directory: ./infrastructure
         run: |
-          STACKS_TO_DEPLOY="${{ steps.prepare-deployment.outputs.stacks_to_deploy }}"
+          echo "🎯 Selective deployment: Company Management Service"
+          npm run deploy:staging:layer4-company-management --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
-          if [ -n "$STACKS_TO_DEPLOY" ]; then
-            echo ""
-            echo "Deploying stacks: $STACKS_TO_DEPLOY"
+      - name: Re-authenticate after Company Management (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'company-management')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
 
-            # Use hotswap mode for code-only changes (bypasses CloudFormation for 10-15 min savings)
-            if [ "${{ steps.changes.outputs.infrastructure }}" != "true" ]; then
-              echo "🚀 Using hotswap mode (code-only changes detected)"
-              npm run deploy:staging:hotswap -- $STACKS_TO_DEPLOY \
-                --context version=${{ github.sha }} \
-                --require-approval never
-            else
-              echo "📦 Using standard deployment (infrastructure changes detected)"
-              npm run deploy:staging:selective -- $STACKS_TO_DEPLOY \
-                --context version=${{ github.sha }} \
-                --require-approval never
-            fi
-          else
-            echo "⚠️  No stacks to deploy (no relevant changes detected)"
-            exit 0
-          fi
+      - name: Selective Deploy - Event Management
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Event Management Service"
+          npm run deploy:staging:layer4-event-management --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
-          echo "✅ CDK deployment completed successfully"
+      - name: Re-authenticate after Event Management (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - Speaker Coordination
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Speaker Coordination Service"
+          npm run deploy:staging:layer4-speaker-coordination --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Speaker Coordination (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'speaker-coordination')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - Partner Coordination
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Partner Coordination Service"
+          npm run deploy:staging:layer4-partner-coordination --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Partner Coordination (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'partner-coordination')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - Attendee Experience
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Attendee Experience Service"
+          npm run deploy:staging:layer4-attendee-experience --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after Attendee Experience (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'attendee-experience')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - API Gateway Service
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: API Gateway Service"
+          npm run deploy:staging:layer4-api-gateway-service --context version=${{ github.sha }}
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after API Gateway Service (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - API Gateway (if changed)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: API Gateway"
+          AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-ApiGateway --context environment=staging --context version=${{ github.sha }} --require-approval never
+        env:
+          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+
+      - name: Re-authenticate after API Gateway (selective)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'api-gateway')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Selective Deploy - Frontend (if changed)
+        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && steps.changes.outputs.frontend == 'true'
+        working-directory: ./infrastructure
+        run: |
+          echo "🎯 Selective deployment: Frontend"
+          AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Frontend --context environment=staging --context version=${{ github.sha }} --require-approval never
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
