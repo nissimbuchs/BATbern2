@@ -96,8 +96,62 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for git diff
+
+      - name: Detect if service should be built
+        id: should-build
+        run: |
+          # Determine base and head SHA for comparison
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # If we can't get diff (e.g., first push), build everything
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "⚠️  Cannot determine changed files, will build all services"
+            echo "build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Determine service directory
+          if [ "${{ matrix.service }}" = "api-gateway" ]; then
+            SERVICE_DIR="api-gateway"
+          else
+            SERVICE_DIR="services/${{ matrix.service }}"
+          fi
+
+          # Check if we should build this service
+          SHOULD_BUILD="false"
+
+          # Build if infrastructure changed (deploy will deploy all)
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package"; then
+            echo "✓ Infrastructure changes detected - building all services"
+            SHOULD_BUILD="true"
+          # Build if shared-kernel changed (deploy will deploy all)
+          elif echo "$CHANGED_FILES" | grep -q "^shared-kernel/"; then
+            echo "✓ Shared kernel changes detected - building all services"
+            SHOULD_BUILD="true"
+          # Build if this specific service changed
+          elif echo "$CHANGED_FILES" | grep -q "^${SERVICE_DIR}/"; then
+            echo "✓ Service ${{ matrix.service }} changes detected"
+            SHOULD_BUILD="true"
+          else
+            echo "ℹ️  No changes detected for ${{ matrix.service }}, skipping build"
+            SHOULD_BUILD="false"
+          fi
+
+          echo "build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 21
+        if: steps.should-build.outputs.build == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -105,6 +159,7 @@ jobs:
           cache: 'gradle'
 
       - name: Determine service directory
+        if: steps.should-build.outputs.build == 'true'
         id: service-dir
         run: |
           if [ "${{ matrix.service }}" = "api-gateway" ]; then
@@ -114,6 +169,7 @@ jobs:
           fi
 
       - name: Check if service exists
+        if: steps.should-build.outputs.build == 'true'
         id: check-service
         run: |
           if [ -d "${{ steps.service-dir.outputs.dir }}" ]; then
@@ -124,7 +180,7 @@ jobs:
           fi
 
       - name: Build and test service with coverage
-        if: steps.check-service.outputs.exists == 'true'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
         run: |
           chmod +x gradlew
           # Build from root to resolve shared-kernel dependency
@@ -137,11 +193,11 @@ jobs:
           fi
 
       - name: Set up Docker Buildx
-        if: steps.check-service.outputs.exists == 'true'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        if: steps.check-service.outputs.exists == 'true'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true'
         run: |
           # Generate version tag
           VERSION="${GITHUB_SHA:0:7}"
@@ -169,18 +225,18 @@ jobs:
             .
 
       - name: Configure AWS credentials
-        if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Push to ECR
-        if: steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
+        if: steps.should-build.outputs.build == 'true' && steps.check-service.outputs.exists == 'true' && github.event_name == 'push'
         run: |
           # Generate version tag
           VERSION="${GITHUB_SHA:0:7}"
