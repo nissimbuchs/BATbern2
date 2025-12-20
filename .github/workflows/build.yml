@@ -403,6 +403,102 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
 
+      - name: Detect which modules changed
+        id: detect-changes
+        run: |
+          # Determine base and head SHA for comparison
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+
+          # If we can't get diff, analyze everything
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "⚠️  Cannot determine changed files, will analyze all modules"
+            echo "analyze_all=true" >> $GITHUB_OUTPUT
+            echo "modules=shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Determine what changed
+          ANALYZE_ALL="false"
+          CHANGED_SERVICES=""
+
+          # If infrastructure or shared-kernel changed, analyze everything
+          if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|bin)/|^infrastructure/package|^shared-kernel/"; then
+            echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"
+            ANALYZE_ALL="true"
+          fi
+
+          # If only CI/docs/workflow files changed, skip SonarCloud entirely
+          if ! echo "$CHANGED_FILES" | grep -qE "^(shared-kernel|api-gateway|services|web-frontend)/"; then
+            echo "ℹ️  Only CI/docs/workflow files changed - skipping SonarCloud analysis"
+            echo "analyze_all=false" >> $GITHUB_OUTPUT
+            echo "modules=" >> $GITHUB_OUTPUT
+            echo "skip_analysis=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Detect which services changed
+          MODULES="shared-kernel"  # Always include shared-kernel
+
+          if echo "$CHANGED_FILES" | grep -q "^api-gateway/"; then
+            MODULES="$MODULES,api-gateway"
+            CHANGED_SERVICES="$CHANGED_SERVICES api-gateway"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^services/event-management-service/"; then
+            MODULES="$MODULES,event-management-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES event-management-service"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^services/speaker-coordination-service/"; then
+            MODULES="$MODULES,speaker-coordination-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES speaker-coordination-service"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^services/partner-coordination-service/"; then
+            MODULES="$MODULES,partner-coordination-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES partner-coordination-service"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^services/attendee-experience-service/"; then
+            MODULES="$MODULES,attendee-experience-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES attendee-experience-service"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^services/company-user-management-service/"; then
+            MODULES="$MODULES,company-user-management-service"
+            CHANGED_SERVICES="$CHANGED_SERVICES company-user-management-service"
+          fi
+
+          if echo "$CHANGED_FILES" | grep -q "^web-frontend/"; then
+            MODULES="$MODULES,web-frontend"
+            CHANGED_SERVICES="$CHANGED_SERVICES web-frontend"
+          fi
+
+          # If analyze all, include all modules
+          if [ "$ANALYZE_ALL" = "true" ]; then
+            MODULES="shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend"
+          fi
+
+          echo "analyze_all=$ANALYZE_ALL" >> $GITHUB_OUTPUT
+          echo "modules=$MODULES" >> $GITHUB_OUTPUT
+          echo "changed_services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+          echo "skip_analysis=false" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "📊 SonarCloud Analysis Plan:"
+          echo "  Analyze All: $ANALYZE_ALL"
+          echo "  Modules: $MODULES"
+          echo "  Changed Services: ${CHANGED_SERVICES:-none}"
+
       # ─────────────────────────────────────────────────────────
       # Java Setup & Coverage Generation
       # ─────────────────────────────────────────────────────────
@@ -414,33 +510,38 @@ jobs:
           cache: 'gradle'
 
       - name: Build shared-kernel and generate coverage
+        if: steps.detect-changes.outputs.skip_analysis != 'true'
         run: |
           chmod +x gradlew
           # Build from root to use monorepo settings.gradle (consistent with other services)
-          # Always compile and test to ensure classes exist for SonarCloud
           # (GitHub Actions jobs are isolated - build artifacts from build-shared-kernel job aren't available here)
           ./gradlew :shared-kernel:clean :shared-kernel:compileJava :shared-kernel:test :shared-kernel:jacocoTestReport --no-daemon
 
       - name: Build api-gateway and generate coverage
+        if: steps.detect-changes.outputs.skip_analysis != 'true' && contains(steps.detect-changes.outputs.modules, 'api-gateway')
         run: |
           chmod +x gradlew
-          # Build from root to use monorepo settings.gradle (consistent with other services)
-          # Always compile and test to ensure classes exist for SonarCloud
-          # (GitHub Actions jobs are isolated - build artifacts from build-services job aren't available here)
+          echo "Building api-gateway (changed or analyze_all=true)..."
           ./gradlew :api-gateway:clean :api-gateway:compileJava :api-gateway:test :api-gateway:jacocoTestReport --no-daemon
 
       - name: Build services and generate coverage
+        if: steps.detect-changes.outputs.skip_analysis != 'true'
         run: |
           chmod +x gradlew
-          # Always build all services to ensure .class files exist for SonarCloud analysis
-          # (GitHub Actions jobs are isolated - build artifacts from build-services job aren't available here)
+          # Only build services that changed (or all if analyze_all=true)
+          MODULES="${{ steps.detect-changes.outputs.modules }}"
+
           for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
-            if [ -d "services/$service" ]; then
-              echo "Building services/$service..."
-              # Build from root using gradle task path to resolve shared-kernel dependency
-              ./gradlew :services:$service:clean :services:$service:compileJava :services:$service:test :services:$service:jacocoTestReport --no-daemon
+            # Check if this service is in the modules list
+            if echo "$MODULES" | grep -q "$service"; then
+              if [ -d "services/$service" ]; then
+                echo "✓ Building services/$service (changed or analyze_all=true)..."
+                ./gradlew :services:$service:clean :services:$service:compileJava :services:$service:test :services:$service:jacocoTestReport --no-daemon
+              else
+                echo "::warning::Service $service does not exist yet, skipping"
+              fi
             else
-              echo "::warning::Service $service does not exist yet, skipping coverage generation"
+              echo "ℹ️  Skipping services/$service (no changes detected)"
             fi
           done
 
@@ -455,9 +556,10 @@ jobs:
           cache-dependency-path: web-frontend/package-lock.json
 
       - name: Install frontend dependencies and generate coverage
-        if: hashFiles('web-frontend/package.json') != ''
+        if: steps.detect-changes.outputs.skip_analysis != 'true' && contains(steps.detect-changes.outputs.modules, 'web-frontend')
         working-directory: ./web-frontend
         run: |
+          echo "✓ Building web-frontend (changed or analyze_all=true)..."
           npm ci
           npm test -- --coverage --run || echo "::warning::Frontend tests failed or not configured"
 
@@ -465,6 +567,7 @@ jobs:
       # SonarCloud Scan
       # ─────────────────────────────────────────────────────────
       - name: Cache SonarCloud packages
+        if: steps.detect-changes.outputs.skip_analysis != 'true'
         uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
@@ -472,16 +575,18 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: SonarCloud Scan
+        if: steps.detect-changes.outputs.skip_analysis != 'true'
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           # Note: sonar-project.properties contains full multi-module configuration
-          # These args provide explicit overrides and debugging
+          # Override modules based on what changed
           args: >
             -Dsonar.projectKey=nissimbuchs_BATbern2
             -Dsonar.organization=nissimbuchs
+            -Dsonar.modules=${{ steps.detect-changes.outputs.modules }}
             -Dsonar.verbose=true
 
   # ═══════════════════════════════════════════════════════════
