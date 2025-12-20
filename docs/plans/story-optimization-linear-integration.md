@@ -29,10 +29,18 @@
   - BAT-10: Attendees API Consolidation (epic-1, status-draft)
 - ✅ Updated all 6 story files with Linear issue links
 
-**Next Steps** (Phase 3):
-- [ ] Create BMAD tasks (sync-story-to-linear, extract-templates-from-story)
-- [ ] Update core-config.yaml with Linear integration settings
-- [ ] Modify existing BMAD tasks (create-next-story, qa-gate, apply-qa-fixes)
+**Phase 3 Completed** ✅:
+- ✅ Created `.bmad-core/tasks/sync-story-to-linear.md` (bidirectional story-Linear sync)
+- ✅ Created `.bmad-core/tasks/extract-templates-from-story.md` (automated template extraction)
+- ✅ Updated `.bmad-core/tasks/create-next-story.md` (added Linear sync + template references)
+- ✅ Updated `.bmad-core/tasks/qa-gate.md` (added Linear comment posting + label/status updates)
+- ✅ Updated `.bmad-core/tasks/apply-qa-fixes.md` (added Linear comment reading + fix summary posting)
+- ✅ Updated `.bmad-core/core-config.yaml` with Linear integration and template library settings
+
+**Next Steps** (Phase 4):
+- [ ] Test new BMAD tasks with existing stories
+- [ ] Refactor 6 active stories using extract-templates-from-story task
+- [ ] Validate token reduction targets achieved
 
 ---
 

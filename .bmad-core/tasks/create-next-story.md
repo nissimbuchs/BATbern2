@@ -159,6 +159,12 @@ Consolidate ALL context into actionable implementation guide:
 - **Integration Code**: EventBridge event schemas, service calls
 - **Testing Patterns**: Domain-specific test requirements
 
+**NEW - Template References**: When applicable patterns exist in template library:
+- Reference existing templates instead of duplicating full code
+- Format: `**Implementation Pattern**: See [template-name](path/to/template.md)`
+- Include only story-specific deviations (<50 lines)
+- Check `docs/templates/README.md` for available templates
+
 Include actual code snippets that can be copy-pasted.
 Every technical detail MUST include source reference.
 
@@ -193,6 +199,10 @@ Based on the domain, add specific considerations:
 - Ensure cross-domain dependencies are documented
 - Update status to "Draft" and save the story file
 - Execute `.bmad-core/tasks/execute-checklist` with `.bmad-core/checklists/story-draft-checklist.md`
+- **NEW**: If Linear integration is enabled in core-config.yaml (`linear.enabled: true` and `linear.autoSyncOnStoryCreate: true`):
+  - Execute `.bmad-core/tasks/sync-story-to-linear` with story file path
+  - This will create a Linear issue, add bidirectional links, and apply appropriate labels
+  - Capture Linear issue ID and URL for output summary
 - Provide summary to user including:
   - Story created: `{devStoryLocation}/{epicNum}.{storyNum}.{story_title_short}.md`
   - Status: Draft
@@ -201,6 +211,7 @@ Based on the domain, add specific considerations:
   - Key architecture sections referenced
   - Wireframes referenced (if applicable)
   - Cross-domain dependencies noted
+  - **NEW**: Linear Issue: BAT-{N} ({linear_url}) (if synced)
   - Checklist results
   - Next steps: Review the story draft and validate domain context is complete
 

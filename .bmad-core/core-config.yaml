@@ -17,9 +17,36 @@ devLoadAlwaysFiles:
   - docs/architecture/coding-standards.md
   - docs/architecture/tech-stack.md
   - docs/architecture/source-tree.md
+  - docs/templates/README.md
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories
 slashPrefix: BMad
+
+# Linear Integration
+linear:
+  enabled: true
+  team: BATbern
+  teamId: 978bcf9f-669c-464b-a0a4-a162072e575c
+  autoSyncOnStoryCreate: true
+  postQaToLinear: true
+  issuePrefix: BAT
+  statusMapping:
+    Draft: Backlog
+    InProgress: In Progress
+    Review: In Review
+    Done: Done
+    Accepted: Done
+
+# Template Library
+templates:
+  location: docs/templates
+  indexFile: docs/templates/README.md
+  categories:
+    - backend
+    - frontend
+    - infrastructure
+  extractionMinLines: 50
+
 bugs:
   system: github-issues
   labels:
