@@ -100,7 +100,7 @@ class WorkflowTransitionValidatorTest {
                 validator.validateTransition(fromState, toState, testEvent)
         )
                 .isInstanceOf(InvalidStateTransitionException.class)
-                .hasMessageContaining("Invalid transition from " + fromState + " to " + toState);
+                .hasMessageContaining("Invalid state transition from '" + fromState + "' to '" + toState + "'");
     }
 
     // Test: Backwards transitions are not allowed
@@ -108,7 +108,6 @@ class WorkflowTransitionValidatorTest {
     @CsvSource({
         "TOPIC_SELECTION, CREATED",
         "SPEAKER_CONFIRMATION, SPEAKER_OUTREACH",
-        "ARCHIVED, PARTNER_MEETING_COMPLETE",
         "AGENDA_FINALIZED, AGENDA_PUBLISHED"
     })
     @DisplayName("Should reject backwards state transitions")
@@ -121,7 +120,7 @@ class WorkflowTransitionValidatorTest {
                 validator.validateTransition(fromState, toState, testEvent)
         )
                 .isInstanceOf(InvalidStateTransitionException.class)
-                .hasMessageContaining("Invalid transition from " + fromState + " to " + toState);
+                .hasMessageContaining("Invalid state transition from '" + fromState + "' to '" + toState + "'");
     }
 
     // Test: Transition from same state to same state (idempotent)

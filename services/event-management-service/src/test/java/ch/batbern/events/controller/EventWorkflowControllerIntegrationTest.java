@@ -152,7 +152,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .content(invalidTransitionRequest))
                 // Then: Should return 422 Unprocessable Entity
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.message", containsString("Invalid transition")))
+                .andExpect(jsonPath("$.message", containsString("Invalid state transition")))
                 .andExpect(jsonPath("$.message", containsString("CREATED")))
                 .andExpect(jsonPath("$.message", containsString("ARCHIVED")));
 
@@ -179,7 +179,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .content("{\"targetState\": \"CREATED\"}"))
                 // Then: Should return 422 Unprocessable Entity
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.message", containsString("Invalid transition")));
+                .andExpect(jsonPath("$.message", containsString("Invalid state transition")));
     }
 
     /**

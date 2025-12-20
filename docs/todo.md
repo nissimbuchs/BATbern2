@@ -2,11 +2,12 @@
 
 ## Errors:
 - cannot see the results of 5.4
-- all buttons below session speaker tables fail
-- addind speakers to the pool directly adds it to the session
-- organizer dropdown in add to pool not selectable
-- organizer dropdown when not in select topic page, shows user.nissim, but not real organizer users
-- adding a speaker to the speaker pool from the speaker pool page, does not create a session it seams, or its a caching problem
+- 5.4 mentions speacker coordianation service, but there we do all in event ,anagement service
+- as ux epert to help with eventdetail and eventdetaildit pages and where to put all the session pages. use tabs?
+- update prd with new flow
+- ask ux expert to reorganize better the user-guide.
+- ask user expert to use playwright on localhost to get screenshots of all the major screens and pages
+- company
 
 ## Documentation & Website
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one

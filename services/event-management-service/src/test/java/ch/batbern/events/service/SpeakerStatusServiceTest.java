@@ -90,8 +90,6 @@ public class SpeakerStatusServiceTest {
         speaker.setId(speakerId);
         speaker.setSessionId(sessionId);
 
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
-            .thenReturn(new ArrayList<>());
         when(speakerPoolRepository.findById(speakerId))
             .thenReturn(Optional.of(speaker));
         when(repository.save(any(SpeakerStatusHistory.class)))
@@ -128,8 +126,6 @@ public class SpeakerStatusServiceTest {
         request.setNewStatus(SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
-            .thenReturn(new ArrayList<>());
         when(speakerPoolRepository.findById(speakerId))
             .thenReturn(Optional.empty());
 
