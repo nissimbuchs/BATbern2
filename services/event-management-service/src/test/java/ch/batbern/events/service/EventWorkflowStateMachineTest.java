@@ -1,7 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.events.exception.WorkflowValidationException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -120,7 +120,7 @@ class EventWorkflowStateMachineTest {
     void should_throwWorkflowException_when_invalidStateTransition_attempted() {
         // Given: Event in CREATED state attempting invalid transition to ARCHIVED
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
-        doThrow(new InvalidStateTransitionException(EventWorkflowState.CREATED, EventWorkflowState.ARCHIVED))
+        doThrow(new InvalidStateTransitionException("\1", "\2"))
                 .when(transitionValidator).validateTransition(any(), any(), any());
 
         // When/Then: Transition should fail

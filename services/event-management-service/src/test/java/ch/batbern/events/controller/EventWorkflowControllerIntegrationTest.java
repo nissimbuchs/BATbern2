@@ -150,8 +150,8 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidTransitionRequest))
-                // Then: Should return 400 Bad Request
-                .andExpect(status().isBadRequest())
+                // Then: Should return 422 Unprocessable Entity
+                .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message", containsString("Invalid transition")))
                 .andExpect(jsonPath("$.message", containsString("CREATED")))
                 .andExpect(jsonPath("$.message", containsString("ARCHIVED")));
@@ -162,12 +162,12 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     }
 
     /**
-     * Test 3.2a: should_return400_when_invalidBackwardTransition_attempted
+     * Test 3.2a: should_return422_when_invalidBackwardTransition_attempted
      * Additional test for backward transitions (not allowed)
      */
     @Test
-    @DisplayName("Should return 400 when invalid backward transition is attempted")
-    void should_return400_when_invalidBackwardTransition_attempted() throws Exception {
+    @DisplayName("Should return 422 when invalid backward transition is attempted")
+    void should_return422_when_invalidBackwardTransition_attempted() throws Exception {
         // Given: Event in SPEAKER_BRAINSTORMING state
         testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
         eventRepository.save(testEvent);
@@ -177,8 +177,8 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetState\": \"CREATED\"}"))
-                // Then: Should return 400 Bad Request
-                .andExpect(status().isBadRequest())
+                // Then: Should return 422 Unprocessable Entity
+                .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message", containsString("Invalid transition")));
     }
 

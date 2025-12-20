@@ -1,7 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

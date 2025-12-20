@@ -1,5 +1,13 @@
 # BATbern Project TODO
 
+## Errors:
+- cannot see the results of 5.4
+- all buttons below session speaker tables fail
+- addind speakers to the pool directly adds it to the session
+- organizer dropdown in add to pool not selectable
+- organizer dropdown when not in select topic page, shows user.nissim, but not real organizer users
+- adding a speaker to the speaker pool from the speaker pool page, does not create a session it seams, or its a caching problem
+
 ## Documentation & Website
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one
 
