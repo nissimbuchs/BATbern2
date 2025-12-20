@@ -15,6 +15,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerStatusDashboard } from '../SpeakerStatusDashboard';
 import { speakerStatusService } from '@/services/speakerStatusService';
+import { speakerPoolService } from '@/services/speakerPoolService';
 import type { components } from '@/types/generated/speakers-api.types';
 
 type StatusSummaryResponse = components['schemas']['StatusSummaryResponse'];
@@ -23,6 +24,12 @@ type StatusSummaryResponse = components['schemas']['StatusSummaryResponse'];
 vi.mock('@/services/speakerStatusService', () => ({
   speakerStatusService: {
     getStatusSummary: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/speakerPoolService', () => ({
+  speakerPoolService: {
+    getSpeakerPool: vi.fn(),
   },
 }));
 
@@ -62,6 +69,9 @@ describe('SpeakerStatusDashboard', () => {
       },
     });
     vi.clearAllMocks();
+
+    // Default mock for speaker pool (empty array)
+    vi.mocked(speakerPoolService.getSpeakerPool).mockResolvedValue([]);
   });
 
   const renderWithQuery = (component: React.ReactElement) => {
