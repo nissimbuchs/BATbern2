@@ -83,10 +83,10 @@ public EngagementScore calculateEngagement(Partner partner) {
 |----------|-------------|-------|-----------------|--------|
 | [react-query-caching-pattern.md](frontend/react-query-caching-pattern.md) | React Query hooks for server state management with caching | 280 | 2.5.3, 2.8.1 | ✅ Available |
 | [zustand-store-pattern.md](frontend/zustand-store-pattern.md) | Zustand store for UI state (filters, view mode, selections) | 240 | 2.5.3, 2.8.1 | ✅ Available |
+| [api-service-pattern.md](frontend/api-service-pattern.md) | Axios client with interceptors, error handling, resource expansion | 320 | 2.5.3, 2.8.1 | ✅ Available |
+| [form-validation-pattern.md](frontend/form-validation-pattern.md) | React Hook Form + Zod validation with auto-save patterns | 350 | 2.5.3 | ✅ Available |
+| [i18n-pattern.md](frontend/i18n-pattern.md) | react-i18next setup, translation files, locale formatting | 280 | 2.5.3 | ✅ Available |
 | [react-component-pattern.md](frontend/react-component-pattern.md) | Atomic design structure, props, Material-UI integration | 300 | 2.5.3, 2.8.1 | 📋 Planned |
-| [form-validation-pattern.md](frontend/form-validation-pattern.md) | React Hook Form + Zod validation patterns | 200 | Various | 📋 Planned |
-| [i18n-pattern.md](frontend/i18n-pattern.md) | react-i18next setup, translation files, key structure | 150 | 2.5.3 | 📋 Planned |
-| [api-service-pattern.md](frontend/api-service-pattern.md) | Axios client with interceptors, error handling | 200 | All frontend stories | 📋 Planned |
 
 ### Infrastructure Templates
 
@@ -170,13 +170,19 @@ Update a template when:
 
 Track major template changes in this section:
 
+- **2025-12-20**: Phase 4 template extraction completed (8 templates available)
+  - ✅ **Frontend**: api-service-pattern.md (extracted from Story 2.5.3, lines 1396-1493)
+  - ✅ **Frontend**: form-validation-pattern.md (extracted from Story 2.5.3, lines 1412-1596)
+  - ✅ **Frontend**: i18n-pattern.md (extracted from Story 2.5.3, lines 960-1115)
+  - **Token Savings**: Story 2.5.3 reduced by ~487 lines (97+170+135+85 from patterns)
+  - 📋 **Remaining**: 6 templates planned for future extraction
+
 - **2025-01-20**: Phase 1 template extraction completed (5 templates available)
   - ✅ **Backend**: spring-boot-service-foundation.md (extracted from docs/guides/, Story 2.2, 2.7)
   - ✅ **Backend**: jwt-propagation-pattern.md (extracted from docs/guides/microservices-http-clients.md, Story 2.7)
   - ✅ **Backend**: integration-test-pattern.md (extracted from docs/architecture/coding-standards.md, Story 2.8.1)
   - ✅ **Frontend**: react-query-caching-pattern.md (extracted from Story 2.5.3, 2.8.1)
   - ✅ **Frontend**: zustand-store-pattern.md (extracted from Story 2.5.3, 2.8.1)
-  - 📋 **Remaining**: 9 templates planned for future extraction
 
 ---
 
