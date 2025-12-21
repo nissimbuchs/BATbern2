@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {
-  Box,
   Paper,
   Typography,
   Button,

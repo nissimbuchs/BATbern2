@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {
-  Box,
   Paper,
   Typography,
   Button,
@@ -45,7 +44,7 @@ interface TeamMember {
   speakersContacted?: number;
 }
 
-export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode }) => {
+export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _eventCode }) => {
   const { t } = useTranslation('events');
 
   // Mock team data
