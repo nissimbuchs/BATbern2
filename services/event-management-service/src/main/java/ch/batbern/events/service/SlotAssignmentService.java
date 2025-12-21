@@ -98,7 +98,8 @@ public class SlotAssignmentService {
         SpeakerWorkflowState currentState = speaker.getStatus();
         if (!isValidForSlotAssignment(currentState)) {
             throw new IllegalStateException(
-                    String.format("Speaker %s in state %s cannot be assigned to slot (must be ACCEPTED, CONTENT_SUBMITTED, or QUALITY_REVIEWED)",
+                    String.format("Speaker %s in state %s cannot be assigned to slot "
+                            + "(must be ACCEPTED, CONTENT_SUBMITTED, or QUALITY_REVIEWED)",
                             speakerId, currentState));
         }
 
@@ -106,7 +107,8 @@ public class SlotAssignmentService {
         speaker.setSessionId(sessionId);
         speakerPoolRepository.save(speaker);
 
-        log.info("Assigned speaker {} to session {} (slot: {}) for event {} by organizer {} - speaker remains in state {}",
+        log.info("Assigned speaker {} to session {} (slot: {}) for event {} by organizer {} "
+                        + "- speaker remains in state {}",
                 speakerId, sessionId, session.getStartTime(), eventCode, organizerUsername, currentState);
 
         // Note: If speaker is already in QUALITY_REVIEWED state, they should be manually

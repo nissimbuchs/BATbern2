@@ -78,7 +78,8 @@ public class QualityReviewService {
         log.info("Approving content for speaker pool entry: {} by moderator: {}", poolId, moderatorUsername);
 
         SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Speaker pool entry not found: " + poolId));
 
         ch.batbern.shared.types.SpeakerWorkflowState previousState = speaker.getStatus();
         speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
@@ -117,7 +118,8 @@ public class QualityReviewService {
         }
 
         SpeakerPool speaker = speakerPoolRepository.findById(java.util.UUID.fromString(poolId))
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + poolId));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Speaker pool entry not found: " + poolId));
 
         // Update notes with rejection feedback
         String existingNotes = speaker.getNotes() != null ? speaker.getNotes() + "\n\n" : "";
@@ -148,10 +150,12 @@ public class QualityReviewService {
 
         // Reload speaker to get fresh data (handles optimistic locking)
         SpeakerPool freshSpeaker = speakerPoolRepository.findById(speaker.getId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Speaker pool entry not found: " + speaker.getId()));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "Speaker pool entry not found: " + speaker.getId()));
 
         // Check condition 1: Status is quality_reviewed
-        boolean isQualityReviewed = freshSpeaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED;
+        boolean isQualityReviewed =
+                freshSpeaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED;
 
         // Check condition 2: Session has start_time (slot assigned)
         boolean hasSlotAssigned = false;

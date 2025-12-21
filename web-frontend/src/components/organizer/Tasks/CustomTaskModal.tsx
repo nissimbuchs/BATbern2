@@ -41,6 +41,7 @@ import {
   taskService,
   type CreateTaskTemplateRequest,
   type CreateEventTaskRequest,
+  type EventTaskResponse,
 } from '@/services/taskService';
 
 // Event workflow states (from EventWorkflowState enum)

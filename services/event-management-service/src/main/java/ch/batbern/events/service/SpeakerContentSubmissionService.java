@@ -200,9 +200,9 @@ public class SpeakerContentSubmissionService {
 
             // Fix inconsistency
             speaker.setSessionId(null);
-            if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED ||
-                speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED ||
-                speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED) {
+            if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
+                    || speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
+                    || speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED) {
                 speaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
             }
             speakerPoolRepository.save(speaker);

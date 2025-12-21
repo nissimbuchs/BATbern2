@@ -253,7 +253,7 @@ interface TaskItemProps {
   isOverdue: boolean;
   locale: Locale;
   onComplete: (taskId: string) => void;
-  t: (key: string, defaultValue?: string) => string;
+  t: ReturnType<typeof useTranslation>['t'];
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, isOverdue, locale, onComplete, t }) => {

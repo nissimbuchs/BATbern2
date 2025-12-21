@@ -64,7 +64,6 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   customTasks,
   onTemplateToggle,
   onAssigneeChange,
-  onAddCustomTask,
   onEditCustomTask,
   onDeleteCustomTask,
 }) => {
@@ -83,20 +82,12 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
 
   // Separate default and custom templates
   const defaultTemplates = allTemplates.filter((t) => t.isDefault);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _customTemplates = allTemplates.filter((t) => !t.isDefault);
 
   // Mock organizers list (in real app, fetch from users service)
   const organizers = [organizerUsername, 'organizer1@example.com', 'organizer2@example.com'];
 
   const handleAddCustomTask = () => {
     setIsCustomTaskModalOpen(true);
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleCustomTaskCreated = () => {
-    setIsCustomTaskModalOpen(false);
-    onAddCustomTask();
   };
 
   if (isLoading) {

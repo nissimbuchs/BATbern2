@@ -334,7 +334,7 @@ interface TaskColumnProps {
   status: 'pending' | 'todo' | 'completed';
   locale: Locale;
   onComplete?: (taskId: string) => void;
-  t: (key: string, defaultValue?: string) => string;
+  t: ReturnType<typeof useTranslation>['t'];
 }
 
 const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComplete, t }) => {

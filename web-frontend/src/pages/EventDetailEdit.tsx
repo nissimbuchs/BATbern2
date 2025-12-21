@@ -497,7 +497,9 @@ const EventDetailEdit: React.FC = () => {
             onViewFullAgenda={handleViewFullAgenda}
             onManageSpeakerAssignments={handleManageSpeakerAssignments}
             onManageSpeakerOutreach={
-              !isLateStage(event.workflowState) ? handleManageSpeakerOutreach : undefined
+              !isLateStage(event.workflowState || 'CREATED')
+                ? handleManageSpeakerOutreach
+                : undefined
             }
             onAutoAssignSpeakers={handleAutoAssignSpeakers}
             onSessionUpdate={handleSessionUpdate}
