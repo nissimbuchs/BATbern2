@@ -112,6 +112,196 @@
 
 ---
 
+## Phase 6: Migration of Existing Active Stories (NEXT)
+
+**Goal**: Migrate 6 existing active stories to Linear-first format with full Linear API updates
+
+**Status**: 🔄 In Progress (1/6 complete)
+
+### Completed Work
+- ✅ Created BAT-10 stub template (`BAT-10.attendees-api-consolidation.md`)
+- ✅ Established migration pattern and workflow
+
+### Migration Workflow (Per Story)
+
+**For Each Story**:
+1. **Read Current Story File**
+   - Extract product view sections (Story, Domain, AC, Tasks, Test Scenarios, DoD)
+   - Identify Dev Agent Record sections (if any)
+   - Note file size and complexity
+
+2. **Update Linear Issue** via `mcp__linear-server__update_issue`:
+   - Fetch current Linear issue using `mcp__linear-server__get_issue(issueId)`
+   - Format product view content using Linear-first template:
+     ```markdown
+     ## User Story
+     **As a** {role}
+     **I want** {capability}
+     **so that** {benefit}
+
+     ## Context
+     {background}
+
+     ## Domain Context
+     {primary domain, services, dependencies}
+
+     ## Requirements Context
+     {FRs, workflow steps, AC source}
+
+     ## Architecture Context
+     {patterns, schema references, infrastructure - high level}
+
+     ## Acceptance Criteria
+     1. [ ] AC1: {description}
+     2. [ ] AC2: {description}
+
+     ## Test Specifications (TDD) - Product View
+     **AC1 Tests** (what to test):
+     - Test 1.1: should_{behavior}_when_{condition}
+
+     ## Tasks / Subtasks (TDD Workflow)
+     - [ ] Task 0: Schema Validation (if JPA)
+     - [ ] Task 1: E2E Tests (RED)
+     - [ ] Task 2a: Backend Tests (RED)
+     - [ ] Task 2b: Backend Implementation (GREEN)
+     - [ ] Task 3a: Frontend Tests (RED)
+     - [ ] Task 3b: Frontend Implementation (GREEN)
+     - [ ] Task X: Infrastructure Setup
+     - [ ] Task Y: Refactoring (REFACTOR)
+
+     ## Definition of Done
+     - [ ] All tests written before implementation
+     - [ ] All ACs have tests
+     - [ ] Unit tests >90% coverage
+     - [ ] Integration tests >80% coverage
+     - [ ] Code follows conventions
+
+     ## Implementation Details
+     📄 **Dev Notes**: [`docs/stories/BAT-{N}.{slug}.md`](github-link)
+
+     ## Technical Stack
+     - Frontend/Backend/Database: {stack}
+     ```
+   - Call `mcp__linear-server__update_issue(issueId, { description: formattedContent })`
+
+3. **Create Local Stub File**
+   - New filename: `BAT-{N}.{slug}.md` (e.g., `BAT-5.event-management-frontend.md`)
+   - Include warning header: "⚠️ IMPORTANT: Story Content Location"
+   - Include Linear issue link
+   - **Preserve Dev Agent Record** if story has implementation:
+     - Template References
+     - Test Implementation Details (file locations, Testcontainers config)
+     - Story-Specific Implementation (deviations)
+     - API Contracts, Database Schema
+     - File List (existing files)
+     - Completion Notes (existing notes)
+     - Change Log
+   - **For Draft stories**: Use placeholder Dev Agent Record sections
+
+4. **Verify Migration**
+   - Confirm Linear issue updated successfully
+   - Confirm local stub created with correct content
+   - Verify bidirectional links work
+   - Keep old story file as backup (don't delete yet)
+
+### Stories to Migrate
+
+| Story | BAT | File | Lines | Status | Complexity | Est. Time |
+|-------|-----|------|-------|--------|------------|-----------|
+| ✅ 1.15a.9 | BAT-10 | attendees-api-consolidation | 110 | Draft | Low | ✅ Done |
+| 🔄 2.5.3 | BAT-5 | event-management-frontend | 2,077 | In Progress | High | 20 min |
+| 📋 1.18 | BAT-6 | codebase-structure-consolidation | 583 | Draft | Medium | 10 min |
+| 📋 1.15a.10 | BAT-7 | notifications-api-consolidation | 135 | Draft | Low | 5 min |
+| 📋 1.15a.11 | BAT-8 | remaining-resources-consolidation | 138 | Draft | Low | 5 min |
+| 📋 1.15a.8 | BAT-9 | organizers-api-consolidation | 128 | Draft | Low | 5 min |
+
+**Total Estimated Time**: ~45 minutes for full migration
+
+### Migration Order
+
+**Phase 6A - Small Draft Stories** (Quick wins):
+1. ✅ BAT-10 (110 lines) - Template established
+2. BAT-7 (135 lines)
+3. BAT-8 (138 lines)
+4. BAT-9 (128 lines)
+
+**Phase 6B - Medium Draft Story**:
+5. BAT-6 (583 lines)
+
+**Phase 6C - Large In-Progress Story** (Most complex):
+6. BAT-5 (2,077 lines) - Has template references, Dev Agent Record, extensive implementation notes
+
+### Special Considerations
+
+**BAT-5 (Event Management Frontend)**:
+- Already optimized with template references in Phase 4
+- Has existing Dev Agent Record sections
+- Must preserve:
+  - Template References (api-service-pattern, form-validation-pattern, i18n-pattern, react-query-caching-pattern, zustand-store-pattern)
+  - File List (extensive list of created/modified files)
+  - Completion Notes (implementation decisions)
+  - Debug Log references
+- Extract to Linear:
+  - Full user story with context
+  - All 15 Acceptance Criteria
+  - Test Scenarios (comprehensive E2E + component tests)
+  - Tasks/Subtasks (TDD workflow)
+  - Definition of Done
+
+**BAT-6 (Codebase Structure)**:
+- Medium-sized, architectural story
+- May have cross-cutting concerns
+- Verify infrastructure changes are documented
+
+**BAT-7, 8, 9 (API Consolidation Stories)**:
+- Small, focused API consolidation tasks
+- Similar structure (can batch process)
+- Minimal Dev Agent Record needed
+
+### Post-Migration Actions
+
+**After All 6 Stories Migrated**:
+1. Verify all Linear issues updated successfully
+2. Verify all local stubs created
+3. Test dev agent with one stub (fetch from Linear, update tasks)
+4. Rename old story files: `{old-name}.md.bak` (keep as backup)
+5. Update plan file with completion status
+6. Commit all changes:
+   ```bash
+   git add docs/stories/BAT-*.md
+   git add docs/stories/*.bak
+   git commit -m "feat(stories): migrate 6 active stories to Linear-first format"
+   ```
+
+### Rollback Plan
+
+If migration needs to be reverted:
+1. Delete new `BAT-*.md` stub files
+2. Restore old story files from `.bak` backups
+3. Revert Linear issue descriptions (if needed)
+
+### Success Criteria
+
+- ✅ All 6 Linear issues have full product view content
+- ✅ All 6 local stubs created with Dev Agent Record
+- ✅ Dev agent can successfully fetch from Linear and implement
+- ✅ No information loss from migration
+- ✅ Backward references preserved (File List, Completion Notes)
+
+### Current Status
+
+**Phase 6A Progress**: 1/4 complete (25%)
+- ✅ BAT-10: Stub created, ready for Linear update
+- ⏸️ BAT-7: Pending
+- ⏸️ BAT-8: Pending
+- ⏸️ BAT-9: Pending
+
+**Next Step**: Update BAT-10 Linear issue with product view, then proceed with BAT-7, 8, 9
+
+**Blocked Until**: User approval to proceed with full migration
+
+---
+
 ## Overview
 
 **Problems Solved**:
