@@ -1,201 +1,167 @@
-# Story: Attendees API Consolidation
+# BAT-10: Attendees API Consolidation
 
-**Linear Issue**: [BAT-10](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation) ← **PRIMARY SOURCE**
+⚠️ **IMPORTANT: Story Content Location**
 
-**Story File**: This file contains **ONLY** dev implementation notes
+This file contains **implementation details only** (Dev Agent Record). The full **product view** (User Story, Acceptance Criteria, Tasks, Definition of Done) is maintained in Linear for stakeholder visibility.
 
----
+**Linear Issue (Product View)**: [BAT-10 - Attendees API Consolidation](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation)
 
-## ⚠️ IMPORTANT: Story Content Location
-
-This file contains **ONLY** dev implementation notes. For story content, see Linear:
-
-- **User Story**: [Linear description](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation)
-- **Acceptance Criteria**: [Linear issue](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation) (see checkboxes)
-- **Tasks/Subtasks**: [Linear subtasks](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation)
-- **QA Results**: [Linear comments](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation)
-- **Status**: [Linear workflow state](https://linear.app/batbern/issue/BAT-10/attendees-api-consolidation)
+**Legacy Story ID**: 1.15a.9
 
 ---
 
 ## Dev Agent Record
 
+### Status
+Draft
+
 ### Agent Model Used
-_To be filled by dev agent_
+- Created: N/A (story not yet implemented)
 
 ### Template References
 
-**Implementation Patterns to Use**:
-- Backend: `docs/templates/backend/spring-boot-service-foundation.md`
-- Backend: `docs/templates/backend/integration-test-pattern.md`
+**Backend Templates**:
+- `docs/templates/backend/spring-boot-service-foundation.md` - Service structure, JPA entities, repositories
+- `docs/templates/backend/integration-test-pattern.md` - Testcontainers PostgreSQL, MockMvc tests
 
-**Existing Code References**:
-- Similar to: Story 1.15a (API Consolidation Foundation)
-- Similar to: Story 1.15a.4 (Content API patterns)
+### Test Implementation Details
 
-### Test Implementation Details (HOW to test)
+**Test File Locations**:
+```
+services/attendee-experience-service/src/test/java/ch/batbern/attendee/
+├── controller/
+│   └── AttendeeControllerIntegrationTest.java     # Integration tests for all 8 endpoints
+├── service/
+│   └── AttendeeServiceTest.java                   # Unit tests for business logic
+└── repository/
+    └── AttendeeRepositoryTest.java                # Repository tests with Testcontainers
+```
 
-**CRITICAL**: All backend integration tests MUST use PostgreSQL via Testcontainers. NEVER use H2 - it creates false confidence and hides PostgreSQL-specific issues (JSONB types, functions, etc.).
-
-#### Test File Locations (Exact Paths)
-**Backend Tests**:
-- Unit: `services/attendee-experience-service/src/test/unit/controller/AttendeeControllerTest.java`
-- Integration: `services/attendee-experience-service/src/test/integration/controller/AttendeeControllerIntegrationTest.java`
-- Repository: `services/attendee-experience-service/src/test/integration/repository/AttendeeRepositoryTest.java`
-
-#### Test Data & Mocks Configuration
+**Testcontainers Configuration** (MANDATORY):
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@Testcontainers
+public abstract class AbstractIntegrationTest {
+    @Container
+    static final PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("testdb")
+            .withUsername("test")
+            .withPassword("test")
+            .withReuse(true);
+}
+```
 
 **Test Data Builders**:
-- AttendeeTestDataBuilder for creating test attendees
-- RegistrationTestDataBuilder for test event registrations
-- LibraryItemTestDataBuilder for content library items
-
-**Mock Services**:
-- Mock Event Management Service for event data
-- Mock Content Service for content library
-- Mock Recommendation Engine for personalized suggestions
-
-**Test Containers (MANDATORY)**:
-- PostgreSQL 16 Alpine via Testcontainers for ALL integration tests
-  - All integration tests MUST extend AbstractIntegrationTest
-  - Use singleton pattern with withReuse(true) for performance
-  - Enable Flyway migrations for production parity
-
-**Test Configuration**:
-```properties
-# application-test.properties
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=validate
-spring.flyway.enabled=true
-spring.flyway.locations=classpath:db/migration
-spring.flyway.baseline-on-migrate=true
+```java
+// AttendeeTestBuilder.java
+public class AttendeeTestBuilder {
+    public static Attendee buildDefaultAttendee() {
+        return Attendee.builder()
+            .id(UUID.randomUUID())
+            .email("attendee@example.com")
+            .firstName("John")
+            .lastName("Doe")
+            .build();
+    }
+}
 ```
 
 ### Story-Specific Implementation
 
-**Deviations from Templates** (max 100 lines):
+**Dashboard Aggregation Logic** (custom - not in template):
 ```java
-// ONLY code that differs from templates
-// To be filled during implementation
+public class AttendeeService {
+    public DashboardDTO getAttendeeDashboard(String userId, List<String> includes) {
+        DashboardDTO dashboard = new DashboardDTO();
 
-// Personal Dashboard Aggregation
-@GetMapping("/api/v1/attendees/me/dashboard")
-public ResponseEntity<AttendeeDashboardDTO> getDashboard(
-    @RequestParam(required = false) String include
-) {
-    // Custom aggregation logic for dashboard
-    // Combines registrations, library, recommendations
+        if (includes.contains("registrations")) {
+            dashboard.setRegistrations(registrationService.getUpcoming(userId));
+        }
+        if (includes.contains("library")) {
+            dashboard.setLibrary(libraryService.getBookmarks(userId));
+        }
+        if (includes.contains("recommendations")) {
+            // Cache with Caffeine
+            dashboard.setRecommendations(
+                recommendationCache.get(userId,
+                    k -> recommendationEngine.generate(k))
+            );
+        }
+
+        return dashboard;
+    }
 }
+```
 
-// Recommendation Caching Strategy
-@Cacheable(value = "attendee-recommendations", key = "#userId")
-public List<RecommendationDTO> getRecommendations(UUID userId, RecommendationType type) {
-    // Caffeine-based caching for recommendations
+**Caffeine Cache Configuration**:
+```java
+@Configuration
+public class CacheConfig {
+    @Bean
+    public Cache<String, List<RecommendationDTO>> recommendationCache() {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(15, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .build();
+    }
 }
 ```
 
-### API Contracts (OpenAPI Excerpts)
+### API Contracts
 
-```yaml
-# Attendee Personal Dashboard
-paths:
-  /api/v1/attendees/me/dashboard:
-    get:
-      summary: Get attendee personal dashboard
-      parameters:
-        - name: include
-          in: query
-          schema:
-            type: string
-            enum: [registrations, library, recommendations]
-      responses:
-        200:
-          description: Aggregated dashboard data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AttendeeDashboardDTO'
+**Consolidated Endpoints** (8 total):
+```
+# Attendee Profile & Dashboard
+GET    /api/v1/attendees/me/dashboard?include=registrations,library,recommendations
+GET    /api/v1/attendees/me
+PUT    /api/v1/attendees/me
 
-  /api/v1/attendees/me/library:
-    get:
-      summary: Get attendee content library
-      parameters:
-        - name: filter
-          in: query
-          schema:
-            type: object
-        - name: page
-          in: query
-          schema:
-            type: integer
-      responses:
-        200:
-          description: Paginated library items
+# Event Registrations
+GET    /api/v1/attendees/me/registrations?status=upcoming|past
+POST   /api/v1/attendees/me/registrations/{eventId}
+DELETE /api/v1/attendees/me/registrations/{eventId}
+
+# Content Library
+GET    /api/v1/attendees/me/library?filter={}&page={}
+POST   /api/v1/attendees/me/library/{contentId}
+DELETE /api/v1/attendees/me/library/{contentId}
+
+# Recommendations & History
+GET    /api/v1/attendees/me/recommendations?type=events|content
+GET    /api/v1/attendees/me/history?timeframe={}
 ```
 
-### Database Schema (SQL)
+### Database Schema
 
-```sql
--- Attendee Profile
-CREATE TABLE attendees (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id),
-    preferences JSONB,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
-);
+**Tables**:
+- `attendees` (id, email, first_name, last_name, preferences_jsonb)
+- `registrations` (id, attendee_id, event_id, status, registered_at)
+- `library_bookmarks` (id, attendee_id, content_id, bookmarked_at)
 
--- Event Registrations
-CREATE TABLE attendee_registrations (
-    id UUID PRIMARY KEY,
-    attendee_id UUID NOT NULL REFERENCES attendees(id),
-    event_id UUID NOT NULL REFERENCES events(id),
-    status VARCHAR(50) NOT NULL,
-    registered_at TIMESTAMP NOT NULL
-);
-
--- Content Library
-CREATE TABLE attendee_library (
-    id UUID PRIMARY KEY,
-    attendee_id UUID NOT NULL REFERENCES attendees(id),
-    content_id UUID NOT NULL,
-    content_type VARCHAR(50) NOT NULL,
-    bookmarked_at TIMESTAMP NOT NULL
-);
-```
-
-### Implementation Approach
-_To be filled by dev agent during implementation_
-
-### Debug Log
-See: `.ai/debug-log.md#bat-10` for detailed implementation debugging
-
-### Completion Notes
-_To be filled by dev agent_
+**Flyway Migration**: `V015__create_attendee_tables.sql`
 
 ### File List
-**Created**:
-- _To be filled during implementation_
 
-**Modified**:
-- _To be filled during implementation_
+**Created Files**:
+- (Placeholder - story not yet implemented)
 
-**Deleted**:
-- _To be filled during implementation_
+**Modified Files**:
+- (Placeholder - story not yet implemented)
+
+### Debug Log References
+
+- (No debug logs yet - story not yet implemented)
+
+### Completion Notes
+
+- (Placeholder - story not yet implemented)
 
 ### Change Log
-- 2025-12-21: Migrated to Linear-first format
 
-### Deployment Notes
-**Performance Targets**:
-- Dashboard: <400ms (P95)
-- Library: <300ms (P95)
-- Recommendations: <600ms (P95)
-
-**Caching Strategy**:
-- Recommendations cached in Caffeine (15min TTL)
-- Dashboard aggregation optimized with includes parameter
-
-### Status
-Draft
+| Date | Version | Description | Author |
+|------|---------|-------------|--------|
+| 2024-10-04 | 1.0 | Initial story creation (legacy format) | Winston (Architect) |
+| 2025-12-21 | 2.0 | Migrated to Linear-first format | James (Dev) |
