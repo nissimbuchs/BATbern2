@@ -58,23 +58,57 @@
   - Added `*sync-to-linear` command to dev agent
   - Both tasks now available in BMAD workflow
 
+**Phase 5 Completed** ✅ (2025-12-21):
+- ✅ Implemented Linear-first workflow architecture
+- ✅ Updated `.bmad-core/tasks/create-next-story.md` with dual-mode support:
+  - Linear-First Mode (Steps 6A, 7A, 8A): Creates Linear issue first, then minimal local stub
+  - Legacy Mode (Steps 6B, 7B, 8B): Creates full local story file (backward compatible)
+- ✅ Updated `.bmad-core/core-config.yaml`:
+  - Added `linearIsSourceOfTruth: true` flag
+  - Enables Linear-first mode for new stories
+- ✅ Updated `.bmad-core/agents/dev.md`:
+  - Added initialization to detect story mode
+  - Linear-first: Fetch story/AC/tasks from Linear, update checkboxes in Linear
+  - Legacy: Read from local file, update checkboxes locally
+  - Only update Dev Agent Record sections in local stub
+- ✅ Verified QA agent compatibility (already updated in Phase 3)
+- ✅ Committed: [3999a55] feat(bmad): implement Linear-first workflow for story management
+
+**Linear-First Content Split**:
+- **Linear (Product View - WHAT)**:
+  - User Story, Domain Context, Architecture Context
+  - Acceptance Criteria (checkboxes)
+  - Test Scenarios by AC (high-level)
+  - Tasks/Subtasks (TDD workflow)
+  - Definition of Done
+- **Local Stub (Implementation Details - HOW)**:
+  - Template References
+  - Test File Locations (exact paths)
+  - Testcontainers Configuration (PostgreSQL mandatory)
+  - Test Data Builders & Mocks
+  - Story-Specific Implementation (deviations only)
+  - API Contracts, Database Schema
+  - File List, Debug Log, Completion Notes
+
 **Remaining Work**:
-1. ⏸️ Extract templates from 4 remaining stories:
-   - BAT-6: 1.18.codebase-structure-consolidation.md
-   - BAT-7: 1.15a.10.notifications-api-consolidation.md
-   - BAT-8: 1.15a.11.remaining-resources-consolidation.md
-   - BAT-9: 1.15a.8.organizers-api-consolidation.md
-2. ⏸️ Test Linear workflow end-to-end with one story
-3. ⏸️ Verify all template references are valid
-4. ⏸️ Commit refactored stories
+1. ⏸️ Extract templates from 4 remaining stories (optional)
+2. ⏸️ Test Linear-first workflow end-to-end with one new story
+3. ⏸️ Migrate existing active stories to Linear-first format (optional)
 
-**Infrastructure Ready**:
+**Infrastructure Complete**:
 - ✅ Templates available (8/14 templates, 57% complete)
-- ✅ BMAD tasks created and integrated into dev agent
+- ✅ BMAD tasks created and integrated
 - ✅ Linear integration configured
-- ✅ Core config updated
+- ✅ Linear-first workflow implemented
+- ✅ Dual-mode support (Linear-first + Legacy)
 
-**Recommended Next Action**: Continue template extraction for remaining 4 stories OR test Linear workflow end-to-end.
+**Expected Results**:
+- **Token Savings**: 2,500 lines → 300 lines per story (88% reduction)
+- **Stakeholder Visibility**: Product view in Linear (stakeholder-friendly)
+- **Developer Focus**: Implementation details in local stub (dev-friendly)
+- **Backward Compatible**: Existing stories continue to work
+
+**Recommended Next Action**: Test Linear-first workflow by creating a new story with SM agent.
 
 ---
 
