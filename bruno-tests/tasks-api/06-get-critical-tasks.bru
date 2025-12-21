@@ -1,0 +1,49 @@
+meta {
+  name: Get Critical Tasks
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/tasks/my-tasks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  critical: true
+}
+
+assert {
+  res.status: eq 200
+  res.body: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC24", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return only critical tasks - Story 5.5 AC24", function() {
+    const response = res.getBody();
+    expect(response).to.be.an('array');
+
+    // Critical tasks are overdue or due soon (within 3 days)
+    // All returned tasks should have due dates in the past or within 3 days
+    if (response.length > 0) {
+      const now = new Date();
+      const threeDaysFromNow = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
+
+      response.forEach(task => {
+        if (task.dueDate) {
+          const dueDate = new Date(task.dueDate);
+          expect(dueDate.getTime()).to.be.at.most(threeDaysFromNow.getTime());
+        }
+      });
+    }
+  });
+}

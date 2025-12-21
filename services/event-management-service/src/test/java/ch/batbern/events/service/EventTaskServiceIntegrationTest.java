@@ -99,7 +99,9 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * AC23: Tasks transition to "todo" when event reaches trigger state
+     * AC23: Tasks transition to "todo" when event reaches trigger state.
+     *
+     * Tests EventWorkflowTransitionListener integration with EventTaskService.
      */
     @Test
     void should_activatePendingTasks_when_eventReachesTriggerState() {
@@ -111,8 +113,8 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
         List<EventTask> pendingTasks = eventTaskRepository.findByEventId(event.getId());
         assertThat(pendingTasks).allMatch(task -> "pending".equals(task.getStatus()));
 
-        // When: Event transitions to TOPIC_SELECTION
-        eventWorkflowStateMachine.transitionToState(event.getId().toString(), EventWorkflowState.TOPIC_SELECTION, TEST_ORGANIZER);
+        // When: Event transitions to TOPIC_SELECTION (this triggers EventWorkflowTransitionEvent)
+        eventWorkflowStateMachine.transitionToState(event.getEventCode(), EventWorkflowState.TOPIC_SELECTION, TEST_ORGANIZER);
 
         // Then: Tasks activated to status="todo"
         List<EventTask> activatedTasks = eventTaskRepository.findByEventId(event.getId());

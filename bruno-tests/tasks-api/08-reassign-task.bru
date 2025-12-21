@@ -1,0 +1,45 @@
+meta {
+  name: Reassign Task
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/tasks/{{testTaskId}}/reassign
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newOrganizerUsername": "{{testOrganizerUsername}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.assignedOrganizerUsername: eq {{testOrganizerUsername}}
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC27", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update assigned organizer - Story 5.5 AC27", function() {
+    const response = res.getBody();
+    expect(response.assignedOrganizerUsername).to.equal('{{testOrganizerUsername}}');
+  });
+
+  test("should preserve other task fields - Story 5.5 AC27", function() {
+    const response = res.getBody();
+    expect(response.taskName).to.be.a('string');
+    expect(response.status).to.be.a('string');
+    expect(response.triggerState).to.be.a('string');
+  });
+}

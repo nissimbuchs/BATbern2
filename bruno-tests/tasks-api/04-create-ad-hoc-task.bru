@@ -1,0 +1,46 @@
+meta {
+  name: Create Ad-Hoc Task
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/events/{{testEventCode}}/tasks
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "taskName": "Test Ad-Hoc Task",
+    "triggerState": "topic_selection",
+    "assignedOrganizerUsername": "{{testUsername}}",
+    "notes": "Test task notes"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.taskName: eq Test Ad-Hoc Task
+}
+
+tests {
+  test("should return 201 status - Story 5.5 AC22", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created task - Story 5.5 AC22", function() {
+    const response = res.getBody();
+    expect(response.id).to.be.a('string');
+    expect(response.taskName).to.equal('Test Ad-Hoc Task');
+    expect(response.triggerState).to.equal('topic_selection');
+    expect(response.assignedOrganizerUsername).to.equal('{{testUsername}}');
+    expect(response.notes).to.equal('Test task notes');
+    expect(response.status).to.equal('pending');
+  });
+}

@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,35 +100,51 @@ public class EventTaskService {
     }
 
     /**
-     * Auto-create tasks for an event when it transitions to a workflow state.
+     * Auto-activate pending tasks when event reaches a trigger state.
      *
      * Called by EventWorkflowTransitionEvent listener (AC23).
+     * Activates tasks created with status="pending" at event creation,
+     * transitioning them to status="todo" when the event reaches their trigger state.
      * Idempotent - safe to call multiple times for same event/state (AC36).
      *
      * @param eventId the event ID
-     * @param triggeredState the workflow state that triggered task creation
-     * @param eventDate the event date (used for due date calculation)
-     * @return list of created tasks
+     * @param triggeredState the workflow state that triggered task activation (lowercase_snake_case)
+     * @param eventDate the event date (used for due date recalculation if needed)
+     * @return list of activated tasks
      */
     @Transactional
     public List<EventTask> autoCreateTasksForState(
             UUID eventId,
             String triggeredState,
-            LocalDateTime eventDate
+            Instant eventDate
     ) {
-        log.info("Auto-creating tasks for event {} at state: {}", eventId, triggeredState);
+        log.info("Activating pending tasks for event {} at state: {}", eventId, triggeredState);
 
-        // TODO: Implement task auto-creation (Phase 5)
-        // 1. Check idempotency: existsByEventIdAndTriggerState()
-        // 2. If already processed, log and return empty list (AC36)
-        // 3. Find all templates with trigger_state = triggeredState
-        // 4. For each template:
-        //    a. Check if task already exists (existsByEventIdAndTemplateId)
-        //    b. If not, create task with calculated due date
-        //    c. Set status='todo', assigned_organizer from template
-        // 5. Return list of created tasks
+        // Find all pending tasks for this event
+        List<EventTask> pendingTasks = eventTaskRepository.findByEventIdAndStatus(eventId, "pending");
 
-        throw new UnsupportedOperationException("Task auto-creation not yet implemented");
+        // Filter tasks that match the triggered state
+        List<EventTask> tasksToActivate = pendingTasks.stream()
+                .filter(task -> triggeredState.equals(task.getTriggerState()))
+                .toList();
+
+        if (tasksToActivate.isEmpty()) {
+            log.debug("No pending tasks found for event {} with trigger state {}", eventId, triggeredState);
+            return List.of();
+        }
+
+        // Activate tasks: change status from "pending" to "todo"
+        tasksToActivate.forEach(task -> {
+            task.setStatus("todo");
+            log.debug("Activated task: {} (template: {}, trigger: {})",
+                    task.getTaskName(), task.getTemplateId(), triggeredState);
+        });
+
+        // Save all activated tasks
+        List<EventTask> activatedTasks = eventTaskRepository.saveAll(tasksToActivate);
+
+        log.info("Activated {} tasks for event {} at state {}", activatedTasks.size(), eventId, triggeredState);
+        return activatedTasks;
     }
 
     /**
@@ -278,6 +292,7 @@ public class EventTaskService {
      * @param triggerState the trigger state
      * @param dueDate the due date
      * @param assignedOrganizerUsername the assigned organizer (optional)
+     * @param notes optional task notes
      * @return the created task
      */
     @Transactional
@@ -286,16 +301,27 @@ public class EventTaskService {
             String taskName,
             String triggerState,
             Instant dueDate,
-            String assignedOrganizerUsername
+            String assignedOrganizerUsername,
+            String notes
     ) {
         log.info("Creating ad-hoc task for event {}: {}", eventId, taskName);
 
-        // TODO: Implement ad-hoc task creation (Phase 5)
         // 1. Create task with template_id=null (ad-hoc marker)
-        // 2. Set provided fields
-        // 3. Set status='todo'
-        // 4. Save and return
+        EventTask task = new EventTask();
+        task.setEventId(eventId);
+        task.setTemplateId(null); // Ad-hoc tasks have no template
+        task.setTaskName(taskName);
+        task.setTriggerState(triggerState);
+        task.setDueDate(dueDate);
+        task.setAssignedOrganizerUsername(assignedOrganizerUsername);
+        task.setStatus("todo"); // Ad-hoc tasks start as todo
+        if (notes != null && !notes.trim().isEmpty()) {
+            task.setNotes(notes);
+        }
 
-        throw new UnsupportedOperationException("Ad-hoc task creation not yet implemented");
+        EventTask saved = eventTaskRepository.save(task);
+        log.info("Created ad-hoc task {} for event {}", saved.getId(), eventId);
+
+        return saved;
     }
 }
