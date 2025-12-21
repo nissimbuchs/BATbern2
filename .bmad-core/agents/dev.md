@@ -58,14 +58,31 @@ core_principles:
 commands:
   - help: Show numbered list of the following commands to allow selection
   - develop-story:
-      - order-of-execution: 'Read (first or next) task→Implement Task and its subtasks→Write tests→Execute validations→Only if ALL pass, then update the task checkbox with [x]→Update story section File List to ensure it lists and new or modified or deleted source file→repeat order-of-execution until complete'
+      - initialization:
+          - Step 1: Read local story file
+          - Step 2: Detect story mode by checking for "⚠️ IMPORTANT: Story Content Location" header
+          - Step 3a (Linear-First Mode): Extract Linear issue ID from header (BAT-N pattern)
+          - Step 3b (Linear-First Mode): Fetch story from Linear using mcp__linear-server__get_issue
+          - Step 3c (Linear-First Mode): Parse Linear description for story, AC, tasks
+          - Step 3d (Linear-First Mode): Display to user - title, story, AC list, task list
+          - Step 4 (Legacy Mode): Read story/AC/tasks from local file
+      - order-of-execution:
+          - LINEAR-FIRST MODE: 'Read next uncompleted task from Linear description→Implement task and subtasks→Write tests→Execute validations→Only if ALL pass, update task checkbox IN LINEAR using mcp__linear-server__update_issue→Update ONLY Dev Agent Record sections in local file (File List, Debug Log, Completion Notes, Change Log)→Repeat until all tasks complete'
+          - LEGACY MODE: 'Read (first or next) task from local file→Implement task and subtasks→Write tests→Execute validations→Only if ALL pass, update task checkbox in local file→Update story section File List→Repeat until complete'
       - story-file-updates-ONLY:
-          - CRITICAL: ONLY UPDATE THE STORY FILE WITH UPDATES TO SECTIONS INDICATED BELOW. DO NOT MODIFY ANY OTHER SECTIONS.
-          - CRITICAL: You are ONLY authorized to edit these specific sections of story files - Tasks / Subtasks Checkboxes, Dev Agent Record section and all its subsections, Agent Model Used, Debug Log References, Completion Notes List, File List, Change Log, Status
-          - CRITICAL: DO NOT modify Status, Story, Acceptance Criteria, Dev Notes, Testing sections, or any other sections not listed above
+          - LINEAR-FIRST MODE:
+              - CRITICAL: Do NOT update story/AC/tasks in local file (they don't exist!)
+              - CRITICAL: Do NOT update task checkboxes in local file (update them in Linear instead!)
+              - ONLY update Dev Agent Record sections: Template References, Test Implementation Details, Story-Specific Implementation, API Contracts, Database Schema, Implementation Approach, Debug Log, Completion Notes, File List, Change Log, Deployment Notes, Status
+          - LEGACY MODE:
+              - CRITICAL: ONLY UPDATE THE STORY FILE WITH UPDATES TO SECTIONS INDICATED BELOW
+              - CRITICAL: You are ONLY authorized to edit - Tasks/Subtasks Checkboxes, Dev Agent Record section and all subsections, Agent Model Used, Debug Log References, Completion Notes List, File List, Change Log, Status
+              - CRITICAL: DO NOT modify Story, Acceptance Criteria, Dev Notes, Testing sections
       - blocking: 'HALT for: Unapproved deps needed, confirm with user | Ambiguous after story check | 3 failures attempting to implement or fix something repeatedly | Missing config | Failing regression'
       - ready-for-review: 'Code matches requirements + All validations pass + Follows standards + File List complete'
-      - completion: "All Tasks and Subtasks marked [x] and have tests→Validations and full regression passes (DON'T BE LAZY, EXECUTE ALL TESTS and CONFIRM)→Ensure File List is Complete→If bugs.autoProcessOnStoryComplete is true in core-config, run process-bugs task to fix any acceptance testing bugs→run the task execute-checklist for the checklist story-dod-checklist→set story status: 'Ready for Review'→HALT"
+      - completion:
+          - LINEAR-FIRST MODE: "All tasks marked [x] IN LINEAR→Validations and full regression pass→File List complete in local file→If bugs.autoProcessOnStoryComplete, run process-bugs→Run execute-checklist for story-dod-checklist→Update Linear status to 'In Review' using mcp__linear-server__update_issue→Update local status to 'Ready for Review'→HALT"
+          - LEGACY MODE: "All tasks marked [x] in local file→Validations and full regression pass→File List complete→If bugs.autoProcessOnStoryComplete, run process-bugs→Run execute-checklist for story-dod-checklist→Set story status 'Ready for Review'→HALT"
   - explain: teach me what and why you did whatever you just did in detail so I can learn. Explain to me as if you were training a junior engineer.
   - review-qa: run task `apply-qa-fixes.md'
   - run-tests: Execute linting and tests

@@ -30,6 +30,7 @@ linear:
   autoSyncOnStoryCreate: true
   postQaToLinear: true
   issuePrefix: BAT
+  linearIsSourceOfTruth: true  # When true: Linear has product view (story/AC/tasks), local files have only dev notes
   statusMapping:
     Draft: Backlog
     InProgress: In Progress
