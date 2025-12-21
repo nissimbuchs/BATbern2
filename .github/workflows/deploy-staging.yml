@@ -694,7 +694,7 @@ jobs:
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: API Gateway"
-          AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-ApiGateway --context environment=staging --context version=${{ github.sha }} --require-approval never
+          npx cdk deploy BATbern-staging-ApiGateway --context environment=staging --context version=${{ github.sha }} --require-approval never
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
@@ -710,7 +710,7 @@ jobs:
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Frontend"
-          AWS_PROFILE=batbern-staging cdk deploy BATbern-staging-Frontend --context environment=staging --context version=${{ github.sha }} --require-approval never
+          npx cdk deploy BATbern-staging-Frontend --context environment=staging --context version=${{ github.sha }} --require-approval never
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
