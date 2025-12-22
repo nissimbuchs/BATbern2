@@ -70,10 +70,6 @@ export const EventManagementDashboard: React.FC = () => {
     setFilters(newFilters);
   };
 
-  const handleEventEdit = (eventCode: string) => {
-    navigate(`/organizer/events/${eventCode}/edit`);
-  };
-
   const handleEventClick = (eventCode: string) => {
     navigate(`/organizer/events/${eventCode}`);
   };
@@ -134,7 +130,6 @@ export const EventManagementDashboard: React.FC = () => {
               <EventList
                 events={eventsData?.data || []}
                 isLoading={isLoadingEvents}
-                onEventEdit={handleEventEdit}
                 onEventClick={handleEventClick}
               />
 

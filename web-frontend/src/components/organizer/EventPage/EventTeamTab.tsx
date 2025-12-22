@@ -12,6 +12,7 @@ import {
   Stack,
   Divider,
   Avatar,
+  Alert,
   Table,
   TableBody,
   TableCell,
@@ -21,11 +22,7 @@ import {
   Chip,
   IconButton,
 } from '@mui/material';
-import {
-  PersonAdd as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-} from '@mui/icons-material';
+import { PersonAdd as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { Event, EventDetailUI } from '@/types/event.types';
 
@@ -44,10 +41,10 @@ interface TeamMember {
   speakersContacted?: number;
 }
 
-export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _eventCode }) => {
+export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
 
-  // Mock team data
+  // ⚠️ MOCK DATA - Team members (backend integration pending)
   const team: TeamMember[] = [
     {
       id: '1',
@@ -107,12 +104,27 @@ export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _e
 
   return (
     <Stack spacing={3}>
+      {/* MOCK DATA Warning */}
+      <Alert severity="warning" icon={false}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="body2" fontWeight="bold">
+            ⚠️ MOCK DATA FOR UI DEMONSTRATION
+          </Typography>
+        </Stack>
+        <Typography variant="body2">
+          All team member data shown below is mock data. Backend integration is pending.
+        </Typography>
+      </Alert>
+
       {/* Team Assignments */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            {t('eventPage.team.teamAssignments', 'Team Assignments')}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h6">
+              {t('eventPage.team.teamAssignments', 'Team Assignments')}
+            </Typography>
+            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
+          </Stack>
           <Button variant="outlined" startIcon={<AddIcon />} size="small">
             {t('eventPage.team.addMember', 'Add Team Member')}
           </Button>
@@ -172,9 +184,12 @@ export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _e
 
       {/* Outreach Distribution */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('eventPage.team.outreachDistribution', 'Speaker Outreach Distribution')}
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+          <Typography variant="h6">
+            {t('eventPage.team.outreachDistribution', 'Speaker Outreach Distribution')}
+          </Typography>
+          <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
+        </Stack>
         <Divider sx={{ mb: 2 }} />
 
         <TableContainer>
@@ -182,18 +197,10 @@ export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _e
             <TableHead>
               <TableRow>
                 <TableCell>{t('eventPage.team.organizer', 'Organizer')}</TableCell>
-                <TableCell align="center">
-                  {t('eventPage.team.assigned', 'Assigned')}
-                </TableCell>
-                <TableCell align="center">
-                  {t('eventPage.team.contacted', 'Contacted')}
-                </TableCell>
-                <TableCell align="center">
-                  {t('eventPage.team.pending', 'Pending')}
-                </TableCell>
-                <TableCell align="center">
-                  {t('eventPage.team.progress', 'Progress')}
-                </TableCell>
+                <TableCell align="center">{t('eventPage.team.assigned', 'Assigned')}</TableCell>
+                <TableCell align="center">{t('eventPage.team.contacted', 'Contacted')}</TableCell>
+                <TableCell align="center">{t('eventPage.team.pending', 'Pending')}</TableCell>
+                <TableCell align="center">{t('eventPage.team.progress', 'Progress')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -203,7 +210,9 @@ export const EventTeamTab: React.FC<EventTeamTabProps> = ({ event, eventCode: _e
                   const pending = (member.speakersAssigned || 0) - (member.speakersContacted || 0);
                   const progress =
                     member.speakersAssigned && member.speakersAssigned > 0
-                      ? Math.round(((member.speakersContacted || 0) / member.speakersAssigned) * 100)
+                      ? Math.round(
+                          ((member.speakersContacted || 0) / member.speakersAssigned) * 100
+                        )
                       : 0;
                   return (
                     <TableRow key={member.id}>

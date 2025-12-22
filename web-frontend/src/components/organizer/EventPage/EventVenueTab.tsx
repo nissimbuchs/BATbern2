@@ -5,16 +5,7 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  Divider,
-  Chip,
-  Alert,
-} from '@mui/material';
+import { Box, Paper, Typography, Button, Stack, Divider, Chip, Alert } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
   LocationOn as LocationIcon,
@@ -36,14 +27,20 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
   const eventUI = event as EventDetailUI;
 
-  // Mock schedule data (would come from API in real implementation)
+  // ⚠️ MOCK DATA - Schedule data (backend integration pending)
   const schedule = [
     { time: '08:00', activity: t('eventPage.venue.registration', 'Registration & Coffee') },
     { time: '09:00', activity: t('eventPage.venue.sessionsStart', 'Sessions Begin (Slots 1-3)') },
     { time: '12:30', activity: t('eventPage.venue.lunch', 'Lunch Break') },
-    { time: '14:00', activity: t('eventPage.venue.sessionsContinue', 'Sessions Continue (Slots 4-6)') },
+    {
+      time: '14:00',
+      activity: t('eventPage.venue.sessionsContinue', 'Sessions Continue (Slots 4-6)'),
+    },
     { time: '16:00', activity: t('eventPage.venue.coffee', 'Coffee Break') },
-    { time: '16:30', activity: t('eventPage.venue.sessionsAfternoon', 'Sessions Continue (Slots 7-9)') },
+    {
+      time: '16:30',
+      activity: t('eventPage.venue.sessionsAfternoon', 'Sessions Continue (Slots 7-9)'),
+    },
     { time: '18:00', activity: t('eventPage.venue.networking', 'Networking Apéro') },
     { time: '19:00', activity: t('eventPage.venue.eventEnds', 'Event Ends') },
   ];
@@ -53,9 +50,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
       {/* Venue Information */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            {t('eventPage.venue.venueTitle', 'Venue')}
-          </Typography>
+          <Typography variant="h6">{t('eventPage.venue.venueTitle', 'Venue')}</Typography>
           <Button size="small" startIcon={<EditIcon />}>
             {t('eventPage.venue.changeVenue', 'Change Venue')}
           </Button>
@@ -106,8 +101,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
         {/* Booking Status */}
         {eventUI.booking ? (
           <Alert severity="success" sx={{ mt: 2 }}>
-            ✓ {t('eventPage.venue.confirmed', 'Confirmed')} (
-            {eventUI.booking.confirmationNumber})
+            ✓ {t('eventPage.venue.confirmed', 'Confirmed')} ({eventUI.booking.confirmationNumber})
           </Alert>
         ) : (
           <Alert severity="warning" sx={{ mt: 2 }}>
@@ -121,9 +115,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Stack direction="row" spacing={1} alignItems="center">
             <CateringIcon color="action" />
-            <Typography variant="h6">
-              {t('eventPage.venue.catering', 'Catering')}
-            </Typography>
+            <Typography variant="h6">{t('eventPage.venue.catering', 'Catering')}</Typography>
           </Stack>
           <Button size="small" startIcon={<EditIcon />}>
             {t('eventPage.venue.configureCatering', 'Configure')}
@@ -147,10 +139,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
                 />
               )}
               {eventUI.catering.dietaryRequirements?.vegan && (
-                <Chip
-                  label={`${eventUI.catering.dietaryRequirements.vegan} Vegan`}
-                  size="small"
-                />
+                <Chip label={`${eventUI.catering.dietaryRequirements.vegan} Vegan`} size="small" />
               )}
               {eventUI.catering.dietaryRequirements?.glutenFree && (
                 <Chip
@@ -172,15 +161,17 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
           <Stack direction="row" spacing={1} alignItems="center">
             <ScheduleIcon color="action" />
-            <Typography variant="h6">
-              {t('eventPage.venue.schedule', 'Day Schedule')}
-            </Typography>
+            <Typography variant="h6">{t('eventPage.venue.schedule', 'Day Schedule')}</Typography>
+            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
           </Stack>
           <Button size="small" startIcon={<EditIcon />}>
             {t('eventPage.venue.editSchedule', 'Edit')}
           </Button>
         </Stack>
         <Divider sx={{ mb: 2 }} />
+        <Alert severity="info" sx={{ mb: 2 }}>
+          ⚠️ This is mock data for UI demonstration. Backend integration pending.
+        </Alert>
 
         <Stack spacing={1}>
           {schedule.map((item, index) => (
@@ -194,10 +185,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
                 borderColor: 'divider',
               }}
             >
-              <Typography
-                variant="body2"
-                sx={{ fontFamily: 'monospace', minWidth: 50 }}
-              >
+              <Typography variant="body2" sx={{ fontFamily: 'monospace', minWidth: 50 }}>
                 {item.time}
               </Typography>
               <Typography variant="body2">{item.activity}</Typography>

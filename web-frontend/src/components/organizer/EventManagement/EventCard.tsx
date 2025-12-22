@@ -9,7 +9,7 @@
  * - Progress bar (workflow completion %)
  * - Workflow step indicator (Step X/16)
  * - Event details (title, date, type)
- * - Quick actions (Edit, View Details)
+ * - Quick actions (Topic Selection for early-stage events)
  * - Status badge
  * - Attendee information
  */
@@ -25,12 +25,7 @@ import {
   Box,
   Stack,
 } from '@mui/material';
-import {
-  Edit as EditIcon,
-  Event as EventIcon,
-  People as PeopleIcon,
-  Topic as TopicIcon,
-} from '@mui/icons-material';
+import { Event as EventIcon, People as PeopleIcon, Topic as TopicIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -46,11 +41,10 @@ import {
 
 interface EventCardProps {
   event: Event;
-  onEdit?: (eventCode: string) => void;
   onCardClick?: (eventCode: string) => void;
 }
 
-export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick }) => {
+export const EventCard: React.FC<EventCardProps> = ({ event, onCardClick }) => {
   const { t, i18n } = useTranslation('events');
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
@@ -68,12 +62,6 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
   const locale = i18n.language === 'de' ? de : enUS;
   const eventDate = eventUI.eventDate || event.date;
   const formattedDate = format(new Date(eventDate), 'dd MMM yyyy', { locale });
-
-  const handleEdit = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEdit?.(event.eventCode);
-  };
 
   const handleSelectTopic = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -191,27 +179,15 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
 
       {/* Quick Actions */}
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-        {isHovered && (
-          <>
-            {isEarlyStage(workflowState) && (
-              <IconButton
-                size="small"
-                onClick={handleSelectTopic}
-                aria-label={`Select topic for ${event.title}`}
-                color="primary"
-              >
-                <TopicIcon />
-              </IconButton>
-            )}
-            <IconButton
-              size="small"
-              onClick={handleEdit}
-              aria-label={`Edit ${event.title}`}
-              color="primary"
-            >
-              <EditIcon />
-            </IconButton>
-          </>
+        {isHovered && isEarlyStage(workflowState) && (
+          <IconButton
+            size="small"
+            onClick={handleSelectTopic}
+            aria-label={`Select topic for ${event.title}`}
+            color="primary"
+          >
+            <TopicIcon />
+          </IconButton>
         )}
       </CardActions>
     </Card>

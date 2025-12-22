@@ -18,6 +18,7 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Alert,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -57,7 +58,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
-  // Mock notification rules
+  // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
     {
       id: '1',
@@ -88,9 +89,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   ]);
 
   const handleToggleNotification = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n)));
   };
 
   const handleDeleteEvent = () => {
@@ -139,9 +138,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               {t('eventPage.settings.createdAt', 'Created')}:
             </Typography>
             <Typography variant="body2">
-              {event.createdAt
-                ? format(new Date(event.createdAt), 'MMMM d, yyyy')
-                : '-'}
+              {event.createdAt ? format(new Date(event.createdAt), 'MMMM d, yyyy') : '-'}
             </Typography>
           </Stack>
           <Stack direction="row" spacing={2}>
@@ -149,9 +146,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               {t('eventPage.settings.lastModified', 'Last Modified')}:
             </Typography>
             <Typography variant="body2">
-              {event.updatedAt
-                ? format(new Date(event.updatedAt), 'MMMM d, yyyy HH:mm')
-                : '-'}
+              {event.updatedAt ? format(new Date(event.updatedAt), 'MMMM d, yyyy HH:mm') : '-'}
             </Typography>
           </Stack>
         </Stack>
@@ -165,6 +160,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             <Typography variant="h6">
               {t('eventPage.settings.notifications', 'Notifications')}
             </Typography>
+            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
           </Stack>
           <Typography variant="body2" color="text.secondary">
             {notifications.filter((n) => n.enabled).length}{' '}
@@ -172,6 +168,9 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </Typography>
         </Stack>
         <Divider sx={{ mb: 2 }} />
+        <Alert severity="info" sx={{ mb: 2 }}>
+          ⚠️ This is mock notification data. Backend integration pending.
+        </Alert>
 
         <List disablePadding>
           {notifications.map((rule) => (
@@ -319,9 +318,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCancelDialogOpen(false)}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
+          <Button onClick={() => setCancelDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
           <Button onClick={handleCancelEvent} color="warning" variant="contained">
             {t('eventPage.settings.confirmCancelBtn', 'Yes, Cancel Event')}
           </Button>
@@ -342,9 +339,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
-            {t('common.cancel', 'Cancel')}
-          </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
           <Button onClick={handleDeleteEvent} color="error" variant="contained">
             {t('eventPage.settings.confirmDeleteBtn', 'Yes, Delete Event')}
           </Button>

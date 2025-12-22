@@ -54,7 +54,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
   const { t, i18n } = useTranslation('events');
   const locale = i18n.language === 'de' ? de : enUS;
 
-  // Mock timeline data
+  // ⚠️ MOCK DATA - Publishing timeline (backend integration pending)
   const timeline: TimelineItem[] = [
     {
       phase: t('eventPage.publishing.topicPublished', 'Topic Published'),
@@ -88,7 +88,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
     },
   ];
 
-  // Mock quality checks
+  // ⚠️ MOCK DATA - Quality checkpoints (backend integration pending)
   const qualityChecks: QualityCheck[] = [
     {
       name: t('eventPage.publishing.abstractLength', 'Abstract length validation'),
@@ -145,12 +145,28 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
   return (
     <Stack spacing={3}>
+      {/* MOCK DATA Warning */}
+      <Alert severity="warning" icon={false}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography variant="body2" fontWeight="bold">
+            ⚠️ MOCK DATA FOR UI DEMONSTRATION
+          </Typography>
+        </Stack>
+        <Typography variant="body2">
+          All publishing timeline and quality checkpoint data shown below is mock data. Backend
+          integration is pending.
+        </Typography>
+      </Alert>
+
       {/* Publishing Status */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">
-            {t('eventPage.publishing.status', 'Publishing Status')}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="h6">
+              {t('eventPage.publishing.status', 'Publishing Status')}
+            </Typography>
+            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
+          </Stack>
           <Button variant="outlined" startIcon={<SettingsIcon />} size="small">
             {t('eventPage.publishing.configure', 'Configure')}
           </Button>
@@ -182,9 +198,12 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
       {/* Publishing Timeline */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('eventPage.publishing.timeline', 'Publishing Timeline')}
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+          <Typography variant="h6">
+            {t('eventPage.publishing.timeline', 'Publishing Timeline')}
+          </Typography>
+          <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
+        </Stack>
         <Divider sx={{ mb: 2 }} />
 
         <List>
@@ -224,9 +243,12 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
 
       {/* Quality Checkpoints */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('eventPage.publishing.qualityCheckpoints', 'Quality Checkpoints')}
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
+          <Typography variant="h6">
+            {t('eventPage.publishing.qualityCheckpoints', 'Quality Checkpoints')}
+          </Typography>
+          <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
+        </Stack>
         <Divider sx={{ mb: 2 }} />
 
         <Stack spacing={1}>
