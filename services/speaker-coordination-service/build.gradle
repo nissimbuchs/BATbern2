@@ -21,6 +21,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 }
 
+// Flyway configuration - service-specific table name
+flyway {
+    table = 'flyway_schema_history_speaker_coordination'
+}
+
 // OpenAPI Generator - if this service has an API spec, configure it here
 // openApiGenerate {
 //     generatorName = 'spring'

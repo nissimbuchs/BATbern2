@@ -32,6 +32,11 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 }
 
+// Flyway configuration - service-specific table name
+flyway {
+    table = 'flyway_schema_history_event_management'
+}
+
 // OpenAPI Generator - Generate API interfaces and DTOs from OpenAPI spec
 openApiGenerate {
     generatorName = 'spring'

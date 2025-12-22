@@ -44,6 +44,11 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
+// Flyway configuration - service-specific table name
+flyway {
+    table = 'flyway_schema_history_partner_coordination'
+}
+
 // OpenAPI Generator - Generate API interfaces and DTOs from partners-api spec
 openApiGenerate {
     generatorName = "spring"
