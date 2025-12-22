@@ -531,7 +531,7 @@ interface Event {
 }
 
 // EventStatus enum removed in V17 migration (2025-12-15)
-// Replaced by EventWorkflowState (16-step Epic 5 workflow)
+// Replaced by EventWorkflowState (9-state workflow, see 06a-workflow-state-machines.md)
 
 enum EventType {
   FULL_DAY = 'full_day',        // 6-8 slots
@@ -539,8 +539,9 @@ enum EventType {
   EVENING = 'evening'           // 3-4 slots
 }
 
-// Epic 5: 16-step Enhanced Organizer Workflow (Story 5.1a)
+// Epic 5: 9-state Event Workflow (Story 5.1a)
 // Introduced in V12 migration, became the sole state field in V17 migration
+// See 06a-workflow-state-machines.md for complete workflow documentation
 enum EventWorkflowState {
   CREATED = 'CREATED',
   TOPIC_SELECTION = 'TOPIC_SELECTION',
@@ -1255,7 +1256,7 @@ interface GDPRConsent {
 
 ### Anonymous Registration Account Linking
 
-**Pattern**: Email-based automatic linking (ADR-005)
+**Pattern**: Email-based automatic linking (ADR-007 - supersedes ADR-005)
 
 **Use Case**: A user registers anonymously for an event, then later creates a Cognito account with the same email address.
 
@@ -1955,7 +1956,7 @@ CREATE INDEX idx_attendees_newsletter ON attendees(newsletter_subscription) WHER
 
 -- Event registrations (many-to-many)
 -- Supports both authenticated (attendee_id) and anonymous (anonymous_email) registrations
--- See ADR-005 for anonymous registration pattern and account linking workflow
+-- See ADR-007 for unified user profile pattern (supersedes ADR-005 dual-table approach)
 CREATE TABLE event_registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL, -- References event service

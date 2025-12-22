@@ -1,4 +1,4 @@
-# ADR-006: Unified User Profile for Anonymous and Authenticated Users
+# ADR-007: Unified User Profile for Anonymous and Authenticated Users
 
 **Status**: Accepted
 **Date**: 2025-11-08

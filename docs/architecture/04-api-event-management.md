@@ -3,9 +3,9 @@
 **Last Updated**: 2025-11-08
 **ADR References**:
 - [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
-- [ADR-005: Anonymous Event Registration](./ADR-005-anonymous-event-registration.md)
+- [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md) (supersedes ADR-005)
 
-This document outlines the Event Management Domain API, which handles event lifecycle management, organizer workflows, and the comprehensive 16-step workflow automation including slot management, quality control, overflow handling, and real-time collaboration.
+This document outlines the Event Management Domain API, which handles event lifecycle management, organizer workflows, and the comprehensive 9-state workflow automation including slot management, quality control, overflow handling, and real-time collaboration (see 06a-workflow-state-machines.md).
 
 ## Identifier Strategy
 
@@ -24,7 +24,7 @@ This document outlines the Event Management Domain API, which handles event life
 
 The Event Management API provides endpoints for:
 - Event CRUD operations and status management
-- 16-step workflow state management
+- 9-state workflow state management
 - Slot configuration and assignment management
 - Event timeline and milestone tracking
 - Topic backlog management with ML-powered similarity and staleness detection
@@ -158,7 +158,7 @@ responses:
 
 ### Event Registration Operations
 
-**ADR-005 Reference**: Anonymous Event Registration
+**ADR-007 Reference**: Unified User Profile (supersedes ADR-005)
 **Story**: 4.1.5a Architecture Consolidation
 
 Event registrations support both anonymous (public) and authenticated users. Anonymous users can register without creating a Cognito account. User profiles are created/found via User Management Service API.
@@ -171,7 +171,7 @@ tags: [Event Registration]
 summary: Register for an event (public access, no authentication required)
 description: |
   Allows anonymous public users to register for events without creating an account.
-  Creates/finds user_profile via User Management Service (ADR-004, ADR-005).
+  Creates/finds user_profile via User Management Service (ADR-004, ADR-007).
   Registration is for the WHOLE EVENT, not individual sessions.
 security: []  # Public endpoint - no authentication required
 parameters:
@@ -909,9 +909,9 @@ responses:
 
 ### Event Registration (Public Access)
 
-**ADR Reference**: [ADR-005: Anonymous Event Registration](./ADR-005-anonymous-event-registration.md)
+**ADR Reference**: [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md) (supersedes ADR-005)
 
-Event registration endpoints support **both anonymous and authenticated registration**. Anonymous users can register with just email and personal details (no account required). When they later create a Cognito account with the same email, their past registrations are automatically linked.
+Event registration endpoints support **both anonymous and authenticated registration**. Anonymous users can register with just email and personal details (no account required). When they later create a Cognito account with the same email, their past registrations are automatically linked via the unified user_profiles table.
 
 **Key Features**:
 - ✅ Public access (no authentication required)
@@ -945,7 +945,7 @@ description: |
   - When anonymous user creates Cognito account with same email
   - All past registrations with that email are automatically claimed
   - Registrations become visible in user's authenticated dashboard
-  - See ADR-005 for details
+  - See ADR-007 for details
 
 security: []  # Public endpoint - no authentication required
 
@@ -1481,7 +1481,7 @@ EventWorkflow:
 
 EventWorkflowState:
   type: string
-  description: 16-step Epic 5 workflow (Story 5.1a - introduced in V12 migration, replaced legacy status field in V17)
+  description: 9-state event workflow (Story 5.1a - see 06a-workflow-state-machines.md)
   enum:
     - CREATED
     - TOPIC_SELECTION
@@ -1965,7 +1965,7 @@ AssignSlotRequest:
 CreateRegistrationRequest:
   type: object
   description: |
-    Request to register for an event (ADR-005: anonymous registration).
+    Request to register for an event (ADR-007: unified user profile).
     Creates/finds user_profile via User Management Service.
     Registration is for the WHOLE EVENT, not individual sessions.
   required:
@@ -2005,7 +2005,7 @@ CreateRegistrationRequest:
 Registration:
   type: object
   description: |
-    Event registration (ADR-004, ADR-005).
+    Event registration (ADR-004, ADR-007).
     References user via attendee_username (cross-service).
     User details fetched from User Management Service API.
   properties:
