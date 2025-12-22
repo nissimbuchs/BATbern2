@@ -3,8 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.domain.TopicUsageHistory;
-import ch.batbern.events.dto.TopicUsageHistoryResponse;
 import ch.batbern.events.dto.TopicUsageHistoryWithEventDetails;
+import ch.batbern.events.mapper.TopicMapper;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
@@ -41,6 +41,7 @@ public class TopicService {
     private final SimilarityCalculationService similarityCalculationService;
     private final EventRepository eventRepository;
     private final EventWorkflowStateMachine eventWorkflowStateMachine;
+    private final TopicMapper topicMapper;
 
     public TopicService(
             TopicRepository topicRepository,
@@ -48,13 +49,15 @@ public class TopicService {
             StalenessScoreService stalenessScoreService,
             SimilarityCalculationService similarityCalculationService,
             EventRepository eventRepository,
-            EventWorkflowStateMachine eventWorkflowStateMachine) {
+            EventWorkflowStateMachine eventWorkflowStateMachine,
+            TopicMapper topicMapper) {
         this.topicRepository = topicRepository;
         this.topicUsageHistoryRepository = topicUsageHistoryRepository;
         this.stalenessScoreService = stalenessScoreService;
         this.similarityCalculationService = similarityCalculationService;
         this.eventRepository = eventRepository;
         this.eventWorkflowStateMachine = eventWorkflowStateMachine;
+        this.topicMapper = topicMapper;
     }
 
     /**
@@ -172,14 +175,27 @@ public class TopicService {
      * @return List of usage history with event details (eventNumber, eventCode, eventDate)
      */
     @Transactional(readOnly = true)
-    public List<TopicUsageHistoryResponse> getUsageHistoryWithEventDetails(UUID topicId) {
+    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> getUsageHistoryWithEventDetails(UUID topicId) {
         // Use the efficient single-query method
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topicId));
 
-        // Convert to response DTOs
+        // Convert to generated DTOs
         return history.stream()
-                .map(TopicUsageHistoryWithEventDetails::toResponse)
+                .map(h -> {
+                    ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
+                            new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
+                    dto.setEventNumber(h.getEventNumber());
+                    dto.setEventCode(h.getEventCode());
+                    dto.setEventDate(h.getEventDate() != null ?
+                            java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
+                    dto.setUsedDate(h.getUsedDate() != null ?
+                            h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                    dto.setAttendance(h.getAttendeeCount());
+                    dto.setEngagementScore(h.getEngagementScore() != null ?
+                            h.getEngagementScore().floatValue() : null);
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -191,7 +207,7 @@ public class TopicService {
      * @return List of usage history with event details (eventNumber, eventCode, eventDate)
      */
     @Transactional(readOnly = true)
-    public List<TopicUsageHistoryResponse> getUsageHistoryWithEventDetailsByCode(String topicCode) {
+    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> getUsageHistoryWithEventDetailsByCode(String topicCode) {
         Topic topic = topicRepository.findByTopicCode(topicCode)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
@@ -199,9 +215,22 @@ public class TopicService {
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topic.getId()));
 
-        // Convert to response DTOs
+        // Convert to generated DTOs
         return history.stream()
-                .map(TopicUsageHistoryWithEventDetails::toResponse)
+                .map(h -> {
+                    ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
+                            new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
+                    dto.setEventNumber(h.getEventNumber());
+                    dto.setEventCode(h.getEventCode());
+                    dto.setEventDate(h.getEventDate() != null ?
+                            java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
+                    dto.setUsedDate(h.getUsedDate() != null ?
+                            h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                    dto.setAttendance(h.getAttendeeCount());
+                    dto.setEngagementScore(h.getEngagementScore() != null ?
+                            h.getEngagementScore().floatValue() : null);
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -636,7 +665,7 @@ public class TopicService {
      * @return List of topic responses with usageHistory populated
      */
     @Transactional(readOnly = true)
-    public List<ch.batbern.events.dto.TopicResponse> enrichTopicsWithUsageHistory(List<Topic> topics) {
+    public List<ch.batbern.events.dto.generated.topics.Topic> enrichTopicsWithUsageHistory(List<Topic> topics) {
         if (topics.isEmpty()) {
             return List.of();
         }
@@ -650,24 +679,122 @@ public class TopicService {
         List<ch.batbern.events.dto.TopicUsageHistoryWithEventDetails> allHistories =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(topicIds);
 
-        // Group histories by topicId (UUID) for efficient lookup
-        java.util.Map<UUID, List<ch.batbern.events.dto.TopicUsageHistoryResponse>> historyByTopicId =
+        // Group histories by topicId (UUID) and convert to generated DTOs
+        java.util.Map<UUID, List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>> historyByTopicId =
                 allHistories.stream()
                         .collect(Collectors.groupingBy(
                                 ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getTopicId,
                                 Collectors.mapping(
-                                        ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::toResponse,
+                                        h -> {
+                                            ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
+                                                    new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
+                                            dto.setEventNumber(h.getEventNumber());
+                                            dto.setEventCode(h.getEventCode());
+                                            dto.setEventDate(h.getEventDate() != null ?
+                                                    java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
+                                            dto.setUsedDate(h.getUsedDate() != null ?
+                                                    h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                                            dto.setAttendance(h.getAttendeeCount());
+                                            dto.setEngagementScore(h.getEngagementScore() != null ?
+                                                    h.getEngagementScore().floatValue() : null);
+                                            return dto;
+                                        },
                                         Collectors.toList()
                                 )
                         ));
 
-        // Convert to DTOs and attach usage history
+        // Convert to generated DTOs using mapper and attach usage history
         return topics.stream()
-                .map(topic -> {
-                    ch.batbern.events.dto.TopicResponse response = ch.batbern.events.dto.TopicResponse.from(topic);
-                    response.setUsageHistory(historyByTopicId.getOrDefault(topic.getId(), List.of()));
-                    return response;
-                })
+                .map(topic -> topicMapper.toDtoWithUsageHistory(
+                        topic,
+                        historyByTopicId.getOrDefault(topic.getId(), List.of())
+                ))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert similarity scores from entity (UUID-based) to DTOs (topicCode-based).
+     * Performs batch lookup to avoid N+1 queries.
+     *
+     * @param entityScores List of similarity scores from entity
+     * @return List of similarity score DTOs with topicCode instead of UUID
+     */
+    public List<ch.batbern.events.dto.generated.topics.SimilarityScore> convertSimilarityScoresToDtos(
+            List<Topic.SimilarityScore> entityScores) {
+        if (entityScores == null || entityScores.isEmpty()) {
+            return List.of();
+        }
+
+        // Batch fetch all topics by UUIDs to avoid N+1 queries
+        List<UUID> topicIds = entityScores.stream()
+                .map(Topic.SimilarityScore::getTopicId)
+                .collect(Collectors.toList());
+
+        List<Topic> topics = topicRepository.findAllById(topicIds);
+
+        // Create a map of UUID → topicCode for quick lookup
+        java.util.Map<UUID, String> uuidToCodeMap = topics.stream()
+                .collect(Collectors.toMap(Topic::getId, Topic::getTopicCode));
+
+        // Map similarity scores, converting UUID to topicCode
+        return entityScores.stream()
+                .map(entityScore -> {
+                    String topicCode = uuidToCodeMap.get(entityScore.getTopicId());
+                    if (topicCode == null) {
+                        // Topic was deleted or not found - skip this similarity score
+                        return null;
+                    }
+                    ch.batbern.events.dto.generated.topics.SimilarityScore dto =
+                            new ch.batbern.events.dto.generated.topics.SimilarityScore();
+                    dto.setTopicCode(topicCode);
+                    dto.setScore(entityScore.getScore() != null ? entityScore.getScore().floatValue() : null);
+                    return dto;
+                })
+                .filter(dto -> dto != null) // Filter out null entries for deleted topics
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Calculate color zone based on staleness score.
+     * Business logic:
+     * - null → GRAY
+     * - < 50 → RED (too recent)
+     * - 50-83 → YELLOW (caution)
+     * - >= 83 → GREEN (safe to reuse)
+     *
+     * @param staleness Staleness score (0-100)
+     * @return Color zone enum
+     */
+    public static ch.batbern.events.dto.generated.topics.TopicColorZone calculateColorZone(Integer staleness) {
+        if (staleness == null) {
+            return ch.batbern.events.dto.generated.topics.TopicColorZone.GRAY;
+        }
+        if (staleness < 50) {
+            return ch.batbern.events.dto.generated.topics.TopicColorZone.RED;
+        } else if (staleness <= 83) {
+            return ch.batbern.events.dto.generated.topics.TopicColorZone.YELLOW;
+        } else {
+            return ch.batbern.events.dto.generated.topics.TopicColorZone.GREEN;
+        }
+    }
+
+    /**
+     * Calculate status based on staleness score.
+     * Business logic:
+     * - null or >= 83 → AVAILABLE (green zone)
+     * - 50-82 → CAUTION (yellow zone)
+     * - < 50 → UNAVAILABLE (red zone)
+     *
+     * @param staleness Staleness score (0-100)
+     * @return Status enum
+     */
+    public static ch.batbern.events.dto.generated.topics.TopicStatus calculateStatus(Integer staleness) {
+        if (staleness == null || staleness >= 83) {
+            return ch.batbern.events.dto.generated.topics.TopicStatus.AVAILABLE;
+        } else if (staleness >= 50) {
+            return ch.batbern.events.dto.generated.topics.TopicStatus.CAUTION;
+        } else {
+            return ch.batbern.events.dto.generated.topics.TopicStatus.UNAVAILABLE;
+        }
     }
 }

@@ -1,12 +1,11 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Topic;
-import ch.batbern.events.dto.OverrideStalenesRequest;
+import ch.batbern.events.dto.generated.topics.CreateTopicRequest;
+import ch.batbern.events.dto.generated.topics.OverrideStalenessRequest;
+import ch.batbern.events.dto.generated.topics.TopicListResponse;
 import ch.batbern.events.dto.TopicFilterRequest;
-import ch.batbern.events.dto.TopicListResponse;
-import ch.batbern.events.dto.TopicRequest;
-import ch.batbern.events.dto.TopicResponse;
-import ch.batbern.events.dto.TopicUsageHistoryResponse;
+import ch.batbern.events.mapper.TopicMapper;
 import ch.batbern.events.service.TopicService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,10 +48,12 @@ import java.util.stream.Collectors;
 public class TopicController {
 
     private final TopicService topicService;
+    private final TopicMapper topicMapper;
     private final ObjectMapper objectMapper;
 
-    public TopicController(TopicService topicService, ObjectMapper objectMapper) {
+    public TopicController(TopicService topicService, TopicMapper topicMapper, ObjectMapper objectMapper) {
         this.topicService = topicService;
+        this.topicMapper = topicMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -101,37 +102,56 @@ public class TopicController {
         Page<Topic> topicPage = topicService.getAllTopics(category, status, pageable);
 
         // Get the topic list for processing
-        List<Topic> topics = topicPage.getContent();
+        final List<Topic> baseTopics = topicPage.getContent();
 
         // If include=similarity, recalculate similarity scores on-demand
+        final List<Topic> topics;
         if (includeSimilarity) {
-            topics = topics.stream()
+            topics = baseTopics.stream()
                     .map(topic -> {
                         topicService.calculateSimilarityForTopic(topic);
                         // Refresh topic from database to get updated similarity scores
                         return topicService.getTopicById(topic.getId()).orElse(topic);
                     })
                     .collect(Collectors.toList());
+        } else {
+            topics = baseTopics;
         }
 
-        // Convert to DTOs (with optional history enrichment)
-        List<TopicResponse> topicResponses;
+        // Convert to DTOs (with optional history and similarity enrichment)
+        List<ch.batbern.events.dto.generated.topics.Topic> topicDtos;
         if (includeHistory) {
             // Fetch and attach usage history for all topics (GitHub Issue #379)
-            // enrichTopicsWithUsageHistory takes Topic entities and returns TopicResponses
-            topicResponses = topicService.enrichTopicsWithUsageHistory(topics);
+            topicDtos = topicService.enrichTopicsWithUsageHistory(topics);
+        } else if (includeSimilarity) {
+            // Convert topics with similarity scores
+            topicDtos = topics.stream()
+                    .map(topic -> {
+                        // Convert similarity scores from UUID to topicCode
+                        var similarityScores = topicService.convertSimilarityScoresToDtos(
+                                topic.getSimilarityScores()
+                        );
+                        return topicMapper.toDtoWithSimilarityScores(topic, similarityScores);
+                    })
+                    .collect(Collectors.toList());
         } else {
-            // Simple conversion without history
-            topicResponses = topics.stream()
-                    .map(TopicResponse::from)
+            // Simple conversion without history or similarity
+            topicDtos = topics.stream()
+                    .map(topicMapper::toDto)
                     .collect(Collectors.toList());
         }
 
         // Build response with pagination metadata (1-based for API)
-        TopicListResponse response = new TopicListResponse(
-                topicResponses,
-                new TopicListResponse.PaginationMetadata(page, limit, topicPage.getTotalElements())
-        );
+        int totalPages = (int) Math.ceil((double) topicPage.getTotalElements() / limit);
+        ch.batbern.shared.api.PaginationMetadata pagination = ch.batbern.shared.api.PaginationMetadata.builder()
+                .page(page)
+                .limit(limit)
+                .totalItems(topicPage.getTotalElements())
+                .totalPages(totalPages)
+                .hasNext(page < totalPages)
+                .hasPrev(page > 1)
+                .build();
+        TopicListResponse response = new TopicListResponse(topicDtos, pagination);
 
         return ResponseEntity.ok(response);
     }
@@ -176,7 +196,7 @@ public class TopicController {
      */
     @GetMapping("/{topicCode}")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TopicResponse> getTopicByCode(
+    public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> getTopicByCode(
             @PathVariable String topicCode,
             @RequestParam(required = false) String include) {
 
@@ -188,13 +208,23 @@ public class TopicController {
         Topic topic = topicOpt.get();
 
         // If include=similarity, recalculate similarity scores on-demand
-        if (include != null && include.contains("similarity")) {
+        boolean includeSimilarity = include != null && include.contains("similarity");
+        if (includeSimilarity) {
             topicService.calculateSimilarityForTopic(topic);
             // Refresh topic from database to get updated similarity scores
             topic = topicService.getTopicByCode(topicCode).orElse(topic);
         }
 
-        return ResponseEntity.ok(TopicResponse.from(topic));
+        // Convert to DTO (with similarity scores if requested)
+        ch.batbern.events.dto.generated.topics.Topic dto;
+        if (includeSimilarity) {
+            var similarityScores = topicService.convertSimilarityScoresToDtos(topic.getSimilarityScores());
+            dto = topicMapper.toDtoWithSimilarityScores(topic, similarityScores);
+        } else {
+            dto = topicMapper.toDto(topic);
+        }
+
+        return ResponseEntity.ok(dto);
     }
 
     /**
@@ -205,7 +235,8 @@ public class TopicController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TopicResponse> createTopic(@Valid @RequestBody TopicRequest request) {
+    public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> createTopic(
+            @Valid @RequestBody CreateTopicRequest request) {
         Topic topic = topicService.createTopic(
                 request.getTitle(),
                 request.getDescription(),
@@ -213,7 +244,7 @@ public class TopicController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TopicResponse.from(topic));
+                .body(topicMapper.toDto(topic));
     }
 
     /**
@@ -225,9 +256,9 @@ public class TopicController {
      */
     @PutMapping("/{topicCode}")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TopicResponse> updateTopic(
+    public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> updateTopic(
             @PathVariable String topicCode,
-            @Valid @RequestBody TopicRequest request) {
+            @Valid @RequestBody CreateTopicRequest request) {
 
         Topic topic = topicService.updateTopicByCode(
                 topicCode,
@@ -236,7 +267,7 @@ public class TopicController {
                 request.getCategory()
         );
 
-        return ResponseEntity.ok(TopicResponse.from(topic));
+        return ResponseEntity.ok(topicMapper.toDto(topic));
     }
 
     /**
@@ -263,9 +294,9 @@ public class TopicController {
      */
     @PutMapping("/{topicCode}/override-staleness")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TopicResponse> overrideStaleness(
+    public ResponseEntity<ch.batbern.events.dto.generated.topics.Topic> overrideStaleness(
             @PathVariable String topicCode,
-            @Valid @RequestBody OverrideStalenesRequest request) {
+            @Valid @RequestBody OverrideStalenessRequest request) {
 
         Topic topic = topicService.overrideStalenessByCode(
                 topicCode,
@@ -273,7 +304,7 @@ public class TopicController {
                 request.getJustification()
         );
 
-        return ResponseEntity.ok(TopicResponse.from(topic));
+        return ResponseEntity.ok(topicMapper.toDto(topic));
     }
 
     /**
@@ -284,11 +315,12 @@ public class TopicController {
      */
     @GetMapping("/{topicCode}/similar")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<TopicResponse>> getSimilarTopics(@PathVariable String topicCode) {
+    public ResponseEntity<List<ch.batbern.events.dto.generated.topics.Topic>> getSimilarTopics(
+            @PathVariable String topicCode) {
         List<Topic> similarTopics = topicService.getSimilarTopicsByCode(topicCode);
 
-        List<TopicResponse> response = similarTopics.stream()
-                .map(TopicResponse::from)
+        List<ch.batbern.events.dto.generated.topics.Topic> response = similarTopics.stream()
+                .map(topicMapper::toDto)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -303,7 +335,8 @@ public class TopicController {
      */
     @GetMapping("/{topicCode}/usage-history")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<TopicUsageHistoryResponse>> getUsageHistory(@PathVariable String topicCode) {
+    public ResponseEntity<List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>> getUsageHistory(
+            @PathVariable String topicCode) {
         // Verify topic exists
         Optional<Topic> topic = topicService.getTopicByCode(topicCode);
         if (topic.isEmpty()) {
@@ -311,7 +344,8 @@ public class TopicController {
         }
 
         // Fetch usage history with event details (GitHub Issue #379: returns eventNumber, no UUIDs)
-        List<TopicUsageHistoryResponse> response = topicService.getUsageHistoryWithEventDetailsByCode(topicCode);
+        List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> response =
+                topicService.getUsageHistoryWithEventDetailsByCode(topicCode);
 
         return ResponseEntity.ok(response);
     }

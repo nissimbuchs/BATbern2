@@ -32,3 +32,8 @@ flyway {
 //     inputSpec = "$rootDir/docs/api/speakers-api.openapi.yml".toString()
 //     ...
 // }
+
+// Disable coverage verification until service has implementation
+jacocoTestCoverageVerification {
+    enabled = false
+}

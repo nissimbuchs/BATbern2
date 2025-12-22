@@ -7,13 +7,36 @@
 
 ## Progress Summary
 
-| Story | Status | Commits | Notes |
-|-------|--------|---------|-------|
-| Story 1: Topics API | 🔶 **IN PROGRESS** | `4141fe8`, `216a966` | Pending: switch to generated DTOs |
+| Story | Status | Test Results | Notes |
+|-------|--------|--------------|-------|
+| **Story 1: Topics API** | ✅ **COMPLETE** | 17/17 passing | Backend migrated to generated DTOs + Pure Mapper pattern refactoring |
 | Story 2: Speakers API | 🔲 Not Started | - | - |
 | Story 3: Events API | 🔲 Not Started | - | - |
 | Story 4: Companies API | 🔲 Not Started | - | - |
 | Story 5: Users API | 🔲 Not Started | - | - |
+
+### Story 1: Topics API - Completion Details
+
+**Phase 1: Backend Migration** ✅ COMPLETE
+- ✅ Generated DTOs from `topics-api.openapi.yml`
+- ✅ Created TopicMapper for entity↔DTO conversion
+- ✅ Updated TopicService to return generated DTOs
+- ✅ Updated TopicController to use generated DTOs
+- ✅ Deleted 5 manual Topic DTOs
+- ✅ Updated all 17 integration tests (100% passing)
+
+**Phase 2: Pure Mapper Refactoring** ✅ COMPLETE (2025-12-22)
+- ✅ Extracted business logic from TopicMapper to TopicService
+  - Moved `calculateColorZone()` to TopicService (static method)
+  - Moved `calculateStatus()` to TopicService (static method)
+  - Moved `convertSimilarityScoresToDtos()` to TopicService (batch query method)
+- ✅ TopicMapper now follows Pure Mapper pattern (no business logic, no repository dependencies)
+- ✅ Updated TopicController to handle similarity score conversion
+- ✅ All 17 integration tests still passing after refactoring
+- ✅ Updated ADR-006 with Pure Mapper pattern documentation
+- ✅ Added layered architecture diagram to ADR-006
+
+**Ready for Story 2** (Speakers API migration can begin following the refined pattern)
 
 ## Standard Migration Sequence (Per Story)
 
@@ -35,35 +58,104 @@ Each story follows this **exact sequence**:
 │  - ./gradlew :services:<service>:compileJava                                │
 │  - Verify generated classes in build/generated-*/                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 4: CREATE MAPPER CLASS                                                │
-│  - Create TopicMapper.java (or similar) for entity↔DTO conversion          │
-│  - Use generated DTO builders                                               │
-│  - Move business logic (colorZone, status) to mapper                        │
+│  Step 4: CREATE PURE MAPPER CLASS                                           │
+│  - Create XxxMapper.java for entity↔DTO conversion                          │
+│  - NO repository dependencies (Pure Mapper pattern)                         │
+│  - Implement toDto(Entity) → Generated DTO                                  │
+│  - Implement toEntity(Generated DTO) → Entity                               │
+│  - Handle type conversions (LocalDateTime → OffsetDateTime)                 │
+│  - Delegate business logic to Service static methods                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 5: UPDATE BACKEND TO USE GENERATED DTOs                               │
+│  Step 5: UPDATE SERVICE LAYER                                               │
+│  - Add business logic methods (static if pure functions)                    │
+│    - calculateColorZone(), calculateStatus()                                │
+│    - convertSimilarityScoresToDtos() (batch queries)                        │
+│  - Inject Mapper into service constructor                                   │
+│  - Change method signatures to return Generated DTOs                        │
+│  - Use mapper.toDto() when returning to controller                          │
+│  - Keep internal logic working with entities                                │
+│  - Remove all manual DTO returns                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 6: UPDATE CONTROLLER LAYER                                            │
 │  - Update imports: ch.batbern.*.dto.* → ch.batbern.*.dto.generated.*        │
-│  - Update controller to use mapper + generated DTOs                         │
-│  - Update service layer if needed                                           │
+│  - Inject Mapper (if direct entity access needed)                           │
+│  - Update method signatures to accept/return Generated DTOs                 │
+│  - Call service methods (which now return Generated DTOs)                   │
+│  - Remove manual DTO conversions                                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 6: DELETE MANUAL DTOs                                                 │
-│  - Remove old manual DTO files                                              │
-│  - Verify no remaining imports                                              │
+│  Step 7: DELETE MANUAL DTOs                                                 │
+│  - Remove old manual DTO files from src/main/java/.../dto/                  │
+│  - Verify no remaining imports (compile check)                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 7: UPDATE ENTITY (if needed)                                          │
+│  Step 8: UPDATE ENTITY (if needed for ADR-003)                              │
 │  - Add meaningful ID field (topicCode, eventCode)                           │
-│  - Create database migration                                                │
-│  - Add repository methods                                                   │
+│  - Create Flyway migration                                                  │
+│  - Add repository methods (findByCode, etc.)                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 8: REGENERATE FRONTEND TYPES                                          │
+│  Step 9: REGENERATE FRONTEND TYPES                                          │
 │  - npm run generate:api-types                                               │
 │  - Fix TypeScript errors in components                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  Step 9: RUN TESTS & COMMIT                                                 │
-│  - Backend: ./gradlew test                                                  │
+│  Step 10: RUN TESTS & COMMIT                                                │
+│  - Backend: ./gradlew :services:<service>:test                              │
 │  - Frontend: npm test                                                       │
 │  - Update Bruno API tests                                                   │
 │  - Commit changes                                                           │
 └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Layered Architecture & Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 1: CONTROLLER (API Boundary)                             │
+│  - Accepts: Generated DTOs (from OpenAPI)                       │
+│  - Returns: Generated DTOs (for OpenAPI compliance)             │
+│  - Uses: Service methods (which return generated DTOs)          │
+│  - Uses: Mapper (only if direct entity conversion needed)       │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 2: MAPPER (Pure Conversion Logic)                       │
+│  - toDto(Entity) → Generated DTO                                │
+│  - toEntity(Generated DTO) → Entity                             │
+│  - Type conversions: LocalDateTime → OffsetDateTime             │
+│  - NO business logic (Pure Mapper pattern)                      │
+│  - NO repository dependencies                                   │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 3: SERVICE (Business Logic & Data Enrichment)           │
+│  - Works with: Entities internally                              │
+│  - Returns: Generated DTOs to controller                        │
+│  - Uses: Mapper to convert entities → DTOs before returning     │
+│  - Uses: Repository for data access                             │
+│  - Contains: Business logic (colorZone, status calculations)    │
+│  - Handles: UUID → topicCode conversions (batch queries)        │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 4: REPOSITORY (Data Access)                             │
+│  - Works with: Entities                                         │
+│  - Returns: Entities                                            │
+│  - JPA/Hibernate database interaction                           │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 5: ENTITY (Domain Model)                                │
+│  - JPA annotations                                              │
+│  - Internal UUID + External meaningful ID (ADR-003)             │
+│  - Never exposed directly to API                                │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 6: DATABASE (PostgreSQL)                                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Executive Summary
@@ -709,3 +801,37 @@ Before starting each story, complete this checklist:
 - [ ] Update controllers to use new DTOs
 - [ ] Update services to map entities to new DTOs
 - [ ] Update tests to use new field names
+
+---
+
+## References & Documentation
+
+### Architecture Documentation
+- **ADR-006**: OpenAPI Contract-First Code Generation (updated 2025-12-22)
+  - Includes Pure Mapper pattern
+  - Includes layered architecture diagram
+  - Includes builder pattern configuration
+  - Location: `docs/architecture/ADR-006-openapi-contract-first-code-generation.md`
+
+### Implementation Patterns
+- **User API**: Pure Mapper pattern example
+  - Service: `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserService.java`
+  - Mapper: `services/company-user-management-service/src/main/java/ch/batbern/companyuser/service/UserResponseMapper.java`
+
+- **Topic API**: Pure Mapper pattern with business logic in service
+  - Service: `services/event-management-service/src/main/java/ch/batbern/events/service/TopicService.java`
+  - Mapper: `services/event-management-service/src/main/java/ch/batbern/events/mapper/TopicMapper.java`
+  - Controller: `services/event-management-service/src/main/java/ch/batbern/events/controller/TopicController.java`
+
+### Comparison Analysis
+- **Generated DTO Comparison**: User API vs Topic API
+  - Comprehensive comparison of implementation patterns
+  - Identifies inconsistencies and recommendations
+  - Location: Created during Story 1 (reference for future migrations)
+
+### Next Steps
+When starting **Story 2: Speakers API**, reference:
+1. This migration plan (updated with Pure Mapper pattern)
+2. ADR-006 (updated with layered architecture)
+3. Topic API implementation (completed reference example)
+4. Generated DTO comparison document (pattern consistency)
