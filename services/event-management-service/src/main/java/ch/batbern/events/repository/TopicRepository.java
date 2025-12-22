@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -18,9 +19,27 @@ import java.util.UUID;
  * - Topic listing with filtering
  * - Staleness-based sorting
  * - Full-text search (using PostgreSQL tsvector)
+ *
+ * ADR-003: Use topicCode (slug-format) as the primary external identifier.
  */
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, UUID> {
+
+    /**
+     * Find topic by topicCode (ADR-003 primary lookup).
+     * Used for all API operations by external identifier.
+     */
+    Optional<Topic> findByTopicCode(String topicCode);
+
+    /**
+     * Check if topic exists by topicCode.
+     */
+    boolean existsByTopicCode(String topicCode);
+
+    /**
+     * Find topic by title (for duplicate detection).
+     */
+    Optional<Topic> findByTitleIgnoreCase(String title);
 
     /**
      * Find all active topics.

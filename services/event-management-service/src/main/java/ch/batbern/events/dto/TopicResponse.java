@@ -4,16 +4,16 @@ import ch.batbern.events.domain.Topic;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * Response DTO for topic data (Story 5.2).
  * GitHub Issue #379: Added optional usageHistory field for heatmap visualization.
+ * ADR-003: Uses topicCode (slug-format) as the external identifier instead of UUID.
  */
 public class TopicResponse {
 
-    private UUID id;
+    private String topicCode; // ADR-003: Slug-format identifier for external API
     private String title;
     private String description;
     private String category;
@@ -34,10 +34,11 @@ public class TopicResponse {
 
     /**
      * Create TopicResponse from Topic entity.
+     * ADR-003: Maps entity to DTO with topicCode instead of UUID.
      */
     public static TopicResponse from(Topic topic) {
         TopicResponse response = new TopicResponse();
-        response.setId(topic.getId());
+        response.setTopicCode(topic.getTopicCode());
         response.setTitle(topic.getTitle());
         response.setDescription(topic.getDescription());
         response.setCategory(topic.getCategory());
@@ -83,12 +84,12 @@ public class TopicResponse {
 
     // Getters and Setters
 
-    public UUID getId() {
-        return id;
+    public String getTopicCode() {
+        return topicCode;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setTopicCode(String topicCode) {
+        this.topicCode = topicCode;
     }
 
     public String getTitle() {
@@ -205,32 +206,46 @@ public class TopicResponse {
 
     /**
      * Nested DTO for similarity scores.
+     * ADR-003: Uses topicCode instead of UUID for external API.
+     *
+     * NOTE: The internal Topic.SimilarityScore still stores UUID for database efficiency.
+     * The conversion from UUID to topicCode requires a repository lookup which should
+     * be done at the service layer for efficiency (batch conversion).
+     * For now, we store the UUID string temporarily until batch conversion is implemented.
      */
     public static class SimilarityScoreDto {
-        private UUID topicId;
+        private String topicCode; // ADR-003: External identifier
         private Double score;
 
         public SimilarityScoreDto() {
         }
 
-        public SimilarityScoreDto(UUID topicId, Double score) {
-            this.topicId = topicId;
+        public SimilarityScoreDto(String topicCode, Double score) {
+            this.topicCode = topicCode;
             this.score = score;
         }
 
+        /**
+         * Create from internal SimilarityScore.
+         * NOTE: This uses UUID.toString() as a temporary measure.
+         * For proper topicCode, use SimilarityScoreDto(String, Double) constructor
+         * with the actual topicCode resolved via repository.
+         */
         public static SimilarityScoreDto from(Topic.SimilarityScore similarityScore) {
+            // TODO: Resolve UUID to topicCode via repository for full ADR-003 compliance
+            // For now, use UUID string as placeholder (will be updated in future migration)
             return new SimilarityScoreDto(
-                similarityScore.getTopicId(),
+                similarityScore.getTopicId().toString(),
                 similarityScore.getScore()
             );
         }
 
-        public UUID getTopicId() {
-            return topicId;
+        public String getTopicCode() {
+            return topicCode;
         }
 
-        public void setTopicId(UUID topicId) {
-            this.topicId = topicId;
+        public void setTopicCode(String topicCode) {
+            this.topicCode = topicCode;
         }
 
         public Double getScore() {

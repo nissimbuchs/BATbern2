@@ -131,7 +131,7 @@ public class TopicService {
     }
 
     /**
-     * Get topic by ID.
+     * Get topic by ID (internal use).
      *
      * @param id Topic ID
      * @return Optional containing topic if found
@@ -139,6 +139,17 @@ public class TopicService {
     @Transactional(readOnly = true)
     public Optional<Topic> getTopicById(UUID id) {
         return topicRepository.findById(id);
+    }
+
+    /**
+     * Get topic by topicCode (ADR-003 external identifier).
+     *
+     * @param topicCode Topic code (slug-format)
+     * @return Optional containing topic if found
+     */
+    @Transactional(readOnly = true)
+    public Optional<Topic> getTopicByCode(String topicCode) {
+        return topicRepository.findByTopicCode(topicCode);
     }
 
     /**
@@ -154,7 +165,7 @@ public class TopicService {
     }
 
     /**
-     * Get usage history for a specific topic with event details.
+     * Get usage history for a specific topic with event details - by ID.
      * GitHub Issue #379: Returns eventNumber instead of UUID per architectural requirement.
      *
      * @param topicId Topic ID
@@ -165,6 +176,28 @@ public class TopicService {
         // Use the efficient single-query method
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topicId));
+
+        // Convert to response DTOs
+        return history.stream()
+                .map(TopicUsageHistoryWithEventDetails::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get usage history for a specific topic with event details - by code (ADR-003).
+     * GitHub Issue #379: Returns eventNumber instead of UUID per architectural requirement.
+     *
+     * @param topicCode Topic code (slug-format)
+     * @return List of usage history with event details (eventNumber, eventCode, eventDate)
+     */
+    @Transactional(readOnly = true)
+    public List<TopicUsageHistoryResponse> getUsageHistoryWithEventDetailsByCode(String topicCode) {
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
+
+        // Use the efficient single-query method
+        List<TopicUsageHistoryWithEventDetails> history =
+                topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topic.getId()));
 
         // Convert to response DTOs
         return history.stream()
@@ -199,7 +232,7 @@ public class TopicService {
     }
 
     /**
-     * Update existing topic (Story 5.2a - Edit Topic Feature).
+     * Update existing topic by ID (internal use).
      *
      * @param topicId Topic ID
      * @param title Updated title
@@ -224,7 +257,34 @@ public class TopicService {
     }
 
     /**
-     * Delete topic (Story 5.2a - Delete Topic Feature).
+     * Update existing topic by code (ADR-003).
+     *
+     * @param topicCode Topic code (slug-format)
+     * @param title Updated title
+     * @param description Updated description
+     * @param category Updated category
+     * @return Updated topic
+     */
+    public Topic updateTopicByCode(String topicCode, String title, String description, String category) {
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
+
+        topic.setTitle(title);
+        topic.setDescription(description);
+        topic.setCategory(category);
+        // Note: topicCode could be regenerated if title changes significantly
+        // For now, we keep the original topicCode for URL stability
+
+        Topic savedTopic = topicRepository.save(topic);
+
+        // Recalculate similarity scores after update
+        calculateSimilarityScoresForTopic(savedTopic);
+
+        return savedTopic;
+    }
+
+    /**
+     * Delete topic by ID (internal use).
      * Only allowed if topic has never been used (no events attached).
      *
      * @param topicId Topic ID
@@ -234,6 +294,29 @@ public class TopicService {
     public void deleteTopic(UUID topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        // Safety check: prevent deletion if topic has been used
+        if (topic.getUsageCount() > 0 || topic.getLastUsedDate() != null) {
+            throw new IllegalStateException(
+                "Cannot delete topic that has been used in events. "
+                + "Topic has been used " + topic.getUsageCount() + " time(s)."
+            );
+        }
+
+        topicRepository.delete(topic);
+    }
+
+    /**
+     * Delete topic by code (ADR-003).
+     * Only allowed if topic has never been used (no events attached).
+     *
+     * @param topicCode Topic code (slug-format)
+     * @throws IllegalArgumentException if topic not found
+     * @throws IllegalStateException if topic has been used
+     */
+    public void deleteTopicByCode(String topicCode) {
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
         // Safety check: prevent deletion if topic has been used
         if (topic.getUsageCount() > 0 || topic.getLastUsedDate() != null) {
@@ -263,7 +346,7 @@ public class TopicService {
     }
 
     /**
-     * Override staleness score with justification (AC7).
+     * Override staleness score with justification (AC7) - by ID.
      *
      * @param topicId Topic ID
      * @param overrideStaleness New staleness score
@@ -285,6 +368,31 @@ public class TopicService {
         topic.setStalenessScore(overrideStaleness);
         // Note: In a full implementation, we'd track the override in an audit log
         // For now, we're just updating the score
+
+        return topicRepository.save(topic);
+    }
+
+    /**
+     * Override staleness score with justification (AC7) - by code (ADR-003).
+     *
+     * @param topicCode Topic code (slug-format)
+     * @param overrideStaleness New staleness score
+     * @param justification Justification for override
+     * @return Updated topic
+     */
+    public Topic overrideStalenessByCode(String topicCode, int overrideStaleness, String justification) {
+        if (overrideStaleness < 0 || overrideStaleness > 100) {
+            throw new IllegalArgumentException("Staleness score must be between 0 and 100");
+        }
+
+        if (justification == null || justification.isBlank()) {
+            throw new IllegalArgumentException("Justification is required for staleness override");
+        }
+
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
+
+        topic.setStalenessScore(overrideStaleness);
 
         return topicRepository.save(topic);
     }
@@ -359,7 +467,7 @@ public class TopicService {
     }
 
     /**
-     * Get similar topics with similarity >70% (duplicate detection, AC5).
+     * Get similar topics with similarity >70% (duplicate detection, AC5) - by ID.
      *
      * @param topicId Topic ID
      * @return List of similar topics
@@ -368,6 +476,27 @@ public class TopicService {
     public List<Topic> getSimilarTopics(UUID topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        // Filter similarity scores >70% (duplicate threshold)
+        List<UUID> similarTopicIds = topic.getSimilarityScores().stream()
+                .filter(score -> score.getScore() > 0.70)
+                .map(Topic.SimilarityScore::getTopicId)
+                .collect(Collectors.toList());
+
+        // Fetch and return similar topics
+        return topicRepository.findAllById(similarTopicIds);
+    }
+
+    /**
+     * Get similar topics with similarity >70% (duplicate detection, AC5) - by code (ADR-003).
+     *
+     * @param topicCode Topic code (slug-format)
+     * @return List of similar topics
+     */
+    @Transactional(readOnly = true)
+    public List<Topic> getSimilarTopicsByCode(String topicCode) {
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
         // Filter similarity scores >70% (duplicate threshold)
         List<UUID> similarTopicIds = topic.getSimilarityScores().stream()
@@ -493,35 +622,35 @@ public class TopicService {
     }
 
     /**
-     * Enrich topic responses with usage history (GitHub Issue #379).
+     * Enrich topic entities with usage history and convert to responses (GitHub Issue #379).
      * Uses a single JOIN query to fetch all usage history with event details efficiently.
+     *
+     * ADR-003: Takes Topic entities (with UUID) and returns TopicResponses (with topicCode).
      *
      * Performance: Single SQL query with JOIN instead of N+1 queries.
      * For 100 topics with average 3 history records each:
      * - Old approach: 1 + 100 + 300 = 401 queries
      * - New approach: 1 query
      *
-     * @param topicResponses List of topic responses to enrich
+     * @param topics List of Topic entities to enrich
      * @return List of topic responses with usageHistory populated
      */
     @Transactional(readOnly = true)
-    public List<ch.batbern.events.dto.TopicResponse> enrichTopicsWithUsageHistory(
-            List<ch.batbern.events.dto.TopicResponse> topicResponses) {
-
-        if (topicResponses.isEmpty()) {
-            return topicResponses;
+    public List<ch.batbern.events.dto.TopicResponse> enrichTopicsWithUsageHistory(List<Topic> topics) {
+        if (topics.isEmpty()) {
+            return List.of();
         }
 
-        // Extract all topic IDs
-        List<UUID> topicIds = topicResponses.stream()
-                .map(ch.batbern.events.dto.TopicResponse::getId)
+        // Extract all topic IDs (internal UUIDs for database query)
+        List<UUID> topicIds = topics.stream()
+                .map(Topic::getId)
                 .collect(Collectors.toList());
 
         // Fetch ALL usage history for ALL topics in ONE query with JOIN
         List<ch.batbern.events.dto.TopicUsageHistoryWithEventDetails> allHistories =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(topicIds);
 
-        // Group histories by topicId for efficient lookup
+        // Group histories by topicId (UUID) for efficient lookup
         java.util.Map<UUID, List<ch.batbern.events.dto.TopicUsageHistoryResponse>> historyByTopicId =
                 allHistories.stream()
                         .collect(Collectors.groupingBy(
@@ -532,13 +661,13 @@ public class TopicService {
                                 )
                         ));
 
-        // Attach usage history to each topic response
-        for (ch.batbern.events.dto.TopicResponse topicResponse : topicResponses) {
-            List<ch.batbern.events.dto.TopicUsageHistoryResponse> histories =
-                    historyByTopicId.getOrDefault(topicResponse.getId(), List.of());
-            topicResponse.setUsageHistory(histories);
-        }
-
-        return topicResponses;
+        // Convert to DTOs and attach usage history
+        return topics.stream()
+                .map(topic -> {
+                    ch.batbern.events.dto.TopicResponse response = ch.batbern.events.dto.TopicResponse.from(topic);
+                    response.setUsageHistory(historyByTopicId.getOrDefault(topic.getId(), List.of()));
+                    return response;
+                })
+                .collect(Collectors.toList());
     }
 }

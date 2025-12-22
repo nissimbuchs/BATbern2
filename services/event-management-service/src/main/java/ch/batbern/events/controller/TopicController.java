@@ -30,18 +30,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * REST controller for topic management (Story 5.2).
  *
+ * ADR-003: All endpoints use topicCode (slug-format) as the external identifier.
+ *
  * Endpoints:
  * - GET /api/v1/topics - List all topics with filters
- * - GET /api/v1/topics/{id} - Get topic by ID
+ * - GET /api/v1/topics/{topicCode} - Get topic by code
  * - POST /api/v1/topics - Create new topic
- * - PUT /api/v1/topics/{id}/override-staleness - Override staleness score
- * - GET /api/v1/topics/{id}/similar - Get similar topics
+ * - PUT /api/v1/topics/{topicCode}/override-staleness - Override staleness score
+ * - GET /api/v1/topics/{topicCode}/similar - Get similar topics
  */
 @RestController
 @RequestMapping("/api/v1/topics")
@@ -99,22 +100,31 @@ public class TopicController {
         // Fetch paginated topics from service
         Page<Topic> topicPage = topicService.getAllTopics(category, status, pageable);
 
-        // Convert to DTOs
-        List<TopicResponse> topicResponses = topicPage.getContent().stream()
-                .map(topic -> {
-                    // If include=similarity, recalculate similarity scores on-demand
-                    if (includeSimilarity) {
+        // Get the topic list for processing
+        List<Topic> topics = topicPage.getContent();
+
+        // If include=similarity, recalculate similarity scores on-demand
+        if (includeSimilarity) {
+            topics = topics.stream()
+                    .map(topic -> {
                         topicService.calculateSimilarityForTopic(topic);
                         // Refresh topic from database to get updated similarity scores
-                        topic = topicService.getTopicById(topic.getId()).orElse(topic);
-                    }
-                    return TopicResponse.from(topic);
-                })
-                .collect(Collectors.toList());
+                        return topicService.getTopicById(topic.getId()).orElse(topic);
+                    })
+                    .collect(Collectors.toList());
+        }
 
-        // If include=history, fetch and attach usage history for all topics (GitHub Issue #379)
+        // Convert to DTOs (with optional history enrichment)
+        List<TopicResponse> topicResponses;
         if (includeHistory) {
-            topicResponses = topicService.enrichTopicsWithUsageHistory(topicResponses);
+            // Fetch and attach usage history for all topics (GitHub Issue #379)
+            // enrichTopicsWithUsageHistory takes Topic entities and returns TopicResponses
+            topicResponses = topicService.enrichTopicsWithUsageHistory(topics);
+        } else {
+            // Simple conversion without history
+            topicResponses = topics.stream()
+                    .map(TopicResponse::from)
+                    .collect(Collectors.toList());
         }
 
         // Build response with pagination metadata (1-based for API)
@@ -158,19 +168,19 @@ public class TopicController {
     }
 
     /**
-     * Get topic by ID.
+     * Get topic by code (ADR-003).
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier)
      * @param include Optional comma-separated list of fields to include (e.g., "similarity")
      * @return Topic details
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{topicCode}")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<TopicResponse> getTopicById(
-            @PathVariable UUID id,
+    public ResponseEntity<TopicResponse> getTopicByCode(
+            @PathVariable String topicCode,
             @RequestParam(required = false) String include) {
 
-        Optional<Topic> topicOpt = topicService.getTopicById(id);
+        Optional<Topic> topicOpt = topicService.getTopicByCode(topicCode);
         if (topicOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -181,7 +191,7 @@ public class TopicController {
         if (include != null && include.contains("similarity")) {
             topicService.calculateSimilarityForTopic(topic);
             // Refresh topic from database to get updated similarity scores
-            topic = topicService.getTopicById(id).orElse(topic);
+            topic = topicService.getTopicByCode(topicCode).orElse(topic);
         }
 
         return ResponseEntity.ok(TopicResponse.from(topic));
@@ -209,18 +219,18 @@ public class TopicController {
     /**
      * Update existing topic (Story 5.2a - Edit Topic Feature).
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier, ADR-003)
      * @param request Topic update request
      * @return Updated topic
      */
-    @PutMapping("/{id}")
+    @PutMapping("/{topicCode}")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TopicResponse> updateTopic(
-            @PathVariable UUID id,
+            @PathVariable String topicCode,
             @Valid @RequestBody TopicRequest request) {
 
-        Topic topic = topicService.updateTopic(
-                id,
+        Topic topic = topicService.updateTopicByCode(
+                topicCode,
                 request.getTitle(),
                 request.getDescription(),
                 request.getCategory()
@@ -233,32 +243,32 @@ public class TopicController {
      * Delete topic (Story 5.2a - Delete Topic Feature).
      * Only allowed if topic has never been used (no events attached).
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier, ADR-003)
      * @return 204 No Content on success
      * @throws IllegalStateException if topic has been used
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{topicCode}")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Void> deleteTopic(@PathVariable UUID id) {
-        topicService.deleteTopic(id);
+    public ResponseEntity<Void> deleteTopic(@PathVariable String topicCode) {
+        topicService.deleteTopicByCode(topicCode);
         return ResponseEntity.noContent().build();
     }
 
     /**
      * Override staleness score with justification (AC7).
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier, ADR-003)
      * @param request Override request with staleness score and justification
      * @return Updated topic
      */
-    @PutMapping("/{id}/override-staleness")
+    @PutMapping("/{topicCode}/override-staleness")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TopicResponse> overrideStaleness(
-            @PathVariable UUID id,
+            @PathVariable String topicCode,
             @Valid @RequestBody OverrideStalenesRequest request) {
 
-        Topic topic = topicService.overrideStaleness(
-                id,
+        Topic topic = topicService.overrideStalenessByCode(
+                topicCode,
                 request.getStalenessScore(),
                 request.getJustification()
         );
@@ -269,13 +279,13 @@ public class TopicController {
     /**
      * Get similar topics (>70% similarity) for duplicate detection (AC5).
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier, ADR-003)
      * @return List of similar topics
      */
-    @GetMapping("/{id}/similar")
+    @GetMapping("/{topicCode}/similar")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<TopicResponse>> getSimilarTopics(@PathVariable UUID id) {
-        List<Topic> similarTopics = topicService.getSimilarTopics(id);
+    public ResponseEntity<List<TopicResponse>> getSimilarTopics(@PathVariable String topicCode) {
+        List<Topic> similarTopics = topicService.getSimilarTopicsByCode(topicCode);
 
         List<TopicResponse> response = similarTopics.stream()
                 .map(TopicResponse::from)
@@ -288,20 +298,20 @@ public class TopicController {
      * Get usage history for a topic (AC2).
      * Returns historical usage data for heat map visualization.
      *
-     * @param id Topic ID
+     * @param topicCode Topic code (slug-format identifier, ADR-003)
      * @return List of usage history records
      */
-    @GetMapping("/{id}/usage-history")
+    @GetMapping("/{topicCode}/usage-history")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<TopicUsageHistoryResponse>> getUsageHistory(@PathVariable UUID id) {
+    public ResponseEntity<List<TopicUsageHistoryResponse>> getUsageHistory(@PathVariable String topicCode) {
         // Verify topic exists
-        Optional<Topic> topic = topicService.getTopicById(id);
+        Optional<Topic> topic = topicService.getTopicByCode(topicCode);
         if (topic.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         // Fetch usage history with event details (GitHub Issue #379: returns eventNumber, no UUIDs)
-        List<TopicUsageHistoryResponse> response = topicService.getUsageHistoryWithEventDetails(id);
+        List<TopicUsageHistoryResponse> response = topicService.getUsageHistoryWithEventDetailsByCode(topicCode);
 
         return ResponseEntity.ok(response);
     }
