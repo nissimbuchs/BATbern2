@@ -133,10 +133,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   };
 
   // Session handlers
-  const handleViewSessionDetails = (sessionId: string) => {
-    console.log('View session details:', sessionId);
-  };
-
   const handleEditSlot = (sessionId: string) => {
     console.log('Edit slot:', sessionId);
   };
@@ -234,12 +230,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
       {/* Add Speakers Panel (Collapsible) */}
       <Collapse in={addPanelOpen}>
         <Paper sx={{ p: 2 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={2}
-          >
+          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h6">
               {t('events:eventPage.speakers.addToPool', 'Add Speakers to Pool')}
             </Typography>
@@ -300,11 +291,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
       {/* View Content */}
       <Box>
         {currentView === 'kanban' && speakers && (
-          <SpeakerStatusLanes
-            eventCode={eventCode}
-            speakers={speakers}
-            onStatusChange={() => {}}
-          />
+          <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} onStatusChange={() => {}} />
         )}
 
         {currentView === 'table' && speakers && (
@@ -319,19 +306,49 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', borderBottom: '1px solid #ddd' }}>
+                    <th
+                      style={{
+                        textAlign: 'left',
+                        padding: '12px 8px',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
                       {t('organizer:speakerBrainstorm.form.speakerName', 'Speaker')}
                     </th>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', borderBottom: '1px solid #ddd' }}>
+                    <th
+                      style={{
+                        textAlign: 'left',
+                        padding: '12px 8px',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
                       {t('organizer:speakerBrainstorm.form.company', 'Company')}
                     </th>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', borderBottom: '1px solid #ddd' }}>
+                    <th
+                      style={{
+                        textAlign: 'left',
+                        padding: '12px 8px',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
                       {t('common:status', 'Status')}
                     </th>
-                    <th style={{ textAlign: 'left', padding: '12px 8px', borderBottom: '1px solid #ddd' }}>
+                    <th
+                      style={{
+                        textAlign: 'left',
+                        padding: '12px 8px',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
                       {t('organizer:speakerOutreach.assigned', 'Assigned To')}
                     </th>
-                    <th style={{ textAlign: 'right', padding: '12px 8px', borderBottom: '1px solid #ddd' }}>
+                    <th
+                      style={{
+                        textAlign: 'right',
+                        padding: '12px 8px',
+                        borderBottom: '1px solid #ddd',
+                      }}
+                    >
                       {t('common:actions', 'Actions')}
                     </th>
                   </tr>
@@ -383,7 +400,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
                           {speaker.assignedOrganizerId || '-'}
                         </Typography>
                       </td>
-                      <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee', textAlign: 'right' }}>
+                      <td
+                        style={{
+                          padding: '12px 8px',
+                          borderBottom: '1px solid #eee',
+                          textAlign: 'right',
+                        }}
+                      >
                         <Button size="small" variant="text">
                           {t('common:viewDetails', 'Details')}
                         </Button>
@@ -407,13 +430,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             <SpeakersSessionsTable
               sessions={sessions}
               eventCode={eventCode}
-              onViewDetails={handleViewSessionDetails}
               onEditSlot={handleEditSlot}
               onViewMaterials={handleViewMaterials}
               onViewFullAgenda={handleViewFullAgenda}
               onManageSpeakerAssignments={handleManageSpeakerAssignments}
               onManageSpeakerOutreach={handleManageSpeakerOutreach}
               onAutoAssignSpeakers={handleAutoAssignSpeakers}
+              onSessionUpdate={async () => {}}
             />
           </Paper>
         )}

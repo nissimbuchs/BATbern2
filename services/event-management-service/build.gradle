@@ -93,6 +93,7 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
     generatorName = 'spring'
     inputSpec = "$rootDir/docs/api/topics-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-topics".toString()
+    apiPackage = 'ch.batbern.events.api.generated.topics'
     modelPackage = 'ch.batbern.events.dto.generated.topics'
     validateSpec = false  // Skip validation for custom license fields
 
@@ -143,6 +144,7 @@ task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.t
     generatorName = 'spring'
     inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-users-client".toString()
+    apiPackage = 'ch.batbern.events.api.generated.users'
     modelPackage = 'ch.batbern.events.dto.generated.users'
     validateSpec = false
 
