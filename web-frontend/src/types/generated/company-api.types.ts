@@ -356,6 +356,11 @@ export interface components {
       industry?: string;
       /** @example Leading Swiss IT consulting firm */
       description?: string;
+      /**
+       * @description Upload ID from three-phase upload via /api/v1/logos/presigned-url (optional)
+       * @example abc123-def456
+       */
+      logoUploadId?: string;
     };
     UpdateCompanyRequest: {
       /**
@@ -376,6 +381,11 @@ export interface components {
       industry?: string;
       /** @example Leading Swiss IT consulting firm */
       description?: string;
+      /**
+       * @description Upload ID from three-phase upload (set to empty string to remove logo)
+       * @example abc123-def456
+       */
+      logoUploadId?: string;
     };
     UIDValidationResponse: {
       /** @example true */

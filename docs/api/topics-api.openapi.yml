@@ -632,26 +632,18 @@ components:
         title:
           type: string
           description: Topic title (must be unique)
+          maxLength: 500
           example: 'Cloud Native Security Patterns'
         description:
           type: string
           description: Detailed topic description
+          maxLength: 5000
         category:
           type: string
           description: Topic category
           example: 'Security'
-        keywords:
-          type: array
-          items:
-            type: string
-          description: Keywords for similarity matching
-          example: ['cloud', 'security', 'patterns']
-        relatedTopics:
-          type: array
-          items:
-            type: string
-            format: uuid
-          description: IDs of related topics
+        # Note: keywords and relatedTopics were removed during field reconciliation
+        # (not implemented in current backend). Can be re-added when feature is implemented.
 
     OverrideStalenessRequest:
       type: object

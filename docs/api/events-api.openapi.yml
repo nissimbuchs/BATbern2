@@ -3450,7 +3450,7 @@ components:
         title:
           type: string
           minLength: 1
-          maxLength: 255
+          maxLength: 200
         eventNumber:
           type: integer
         date:
@@ -3513,7 +3513,7 @@ components:
       properties:
         title:
           type: string
-          maxLength: 255
+          maxLength: 200
         eventNumber:
           type: integer
         date:

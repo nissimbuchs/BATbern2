@@ -372,17 +372,6 @@ export interface components {
        * @example Security
        */
       category: string;
-      /**
-       * @description Keywords for similarity matching
-       * @example [
-       *       "cloud",
-       *       "security",
-       *       "patterns"
-       *     ]
-       */
-      keywords?: string[];
-      /** @description IDs of related topics */
-      relatedTopics?: string[];
     };
     OverrideStalenessRequest: {
       /**
