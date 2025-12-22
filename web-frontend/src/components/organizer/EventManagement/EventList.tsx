@@ -18,12 +18,14 @@ import type { Event } from '@/types/event.types';
 interface EventListProps {
   events: Event[];
   isLoading?: boolean;
+  onEventEdit?: (eventCode: string) => void;
   onEventClick?: (eventCode: string) => void;
 }
 
 export const EventList: React.FC<EventListProps> = ({
   events,
   isLoading = false,
+  onEventEdit,
   onEventClick,
 }) => {
   const { t } = useTranslation('events');
@@ -68,7 +70,7 @@ export const EventList: React.FC<EventListProps> = ({
         {events.map((event) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={event.eventCode}>
             <Box data-testid={`event-card-${event.eventCode}`}>
-              <EventCard event={event} onCardClick={onEventClick} />
+              <EventCard event={event} onEdit={onEventEdit} onCardClick={onEventClick} />
             </Box>
           </Grid>
         ))}

@@ -40,6 +40,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
+import { useEventStore } from '@/stores/eventStore';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
@@ -74,11 +75,10 @@ export const EventPage: React.FC = () => {
   const { t } = useTranslation('events');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { openEditModal } = useEventStore();
 
   // Get current tab from URL, default to 'overview'
-  const currentTab = isValidTab(searchParams.get('tab'))
-    ? searchParams.get('tab')!
-    : 'overview';
+  const currentTab = isValidTab(searchParams.get('tab')) ? searchParams.get('tab')! : 'overview';
 
   // Fetch event data with resource expansion
   const {
@@ -162,11 +162,18 @@ export const EventPage: React.FC = () => {
     );
   }
 
+  // Handle edit button click
+  const handleEdit = () => {
+    if (eventCode) {
+      openEditModal(eventCode);
+    }
+  };
+
   // Render current tab content
   const renderTabContent = () => {
     switch (currentTab) {
       case 'overview':
-        return <EventOverviewTab event={event} eventCode={eventCode!} />;
+        return <EventOverviewTab event={event} eventCode={eventCode!} onEdit={handleEdit} />;
       case 'speakers':
         return <EventSpeakersTab eventCode={eventCode!} />;
       case 'venue':
@@ -243,15 +250,8 @@ export const EventPage: React.FC = () => {
 
       {/* Mobile Bottom Navigation */}
       {isMobile && (
-        <Paper
-          sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }}
-          elevation={3}
-        >
-          <BottomNavigation
-            value={currentTab}
-            onChange={handleMobileNavChange}
-            showLabels
-          >
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+          <BottomNavigation value={currentTab} onChange={handleMobileNavChange} showLabels>
             {TABS.map((tab) => (
               <BottomNavigationAction
                 key={tab.id}

@@ -46,6 +46,7 @@ export const EventManagementDashboard: React.FC = () => {
     closeCreateModal,
     isEditModalOpen,
     selectedEventCode,
+    openEditModal,
     closeEditModal,
   } = useEventStore();
 
@@ -68,6 +69,10 @@ export const EventManagementDashboard: React.FC = () => {
 
   const handleFiltersChange = (newFilters: EventFilters) => {
     setFilters(newFilters);
+  };
+
+  const handleEventEdit = (eventCode: string) => {
+    openEditModal(eventCode);
   };
 
   const handleEventClick = (eventCode: string) => {
@@ -130,6 +135,7 @@ export const EventManagementDashboard: React.FC = () => {
               <EventList
                 events={eventsData?.data || []}
                 isLoading={isLoadingEvents}
+                onEventEdit={handleEventEdit}
                 onEventClick={handleEventClick}
               />
 

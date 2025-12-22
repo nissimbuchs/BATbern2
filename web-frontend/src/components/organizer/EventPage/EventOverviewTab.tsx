@@ -37,9 +37,10 @@ import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowSt
 interface EventOverviewTabProps {
   event: Event | EventDetailUI;
   eventCode: string;
+  onEdit?: () => void;
 }
 
-export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, eventCode }) => {
+export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, eventCode, onEdit }) => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('events');
   const locale = i18n.language === 'de' ? de : enUS;
@@ -65,10 +66,11 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const totalSpeakers = 12; // Default for full-day event
   const speakerPercent = Math.round((confirmedSpeakers / totalSpeakers) * 100);
 
-  // Handle navigation
+  // Handle edit
   const handleEditDetails = () => {
-    // Open edit form - for now navigate to same page, could open modal
-    navigate(`/organizer/events/${eventCode}?tab=overview&edit=true`);
+    if (onEdit) {
+      onEdit();
+    }
   };
 
   const handlePreviewPublic = () => {
@@ -148,20 +150,11 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
         {/* Event Details Card */}
         <Grid size={{ xs: 12, md: 7 }}>
           <Paper sx={{ p: 3, height: '100%' }}>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6">
                 {t('eventPage.overview.eventDetails', 'Event Details')}
               </Typography>
-              <Button
-                size="small"
-                startIcon={<EditIcon />}
-                onClick={handleEditDetails}
-              >
+              <Button size="small" startIcon={<EditIcon />} onClick={handleEditDetails}>
                 {t('common.edit', 'Edit')}
               </Button>
             </Stack>
@@ -248,9 +241,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               <Box>
                 <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
                   <PeopleIcon fontSize="small" color="action" />
-                  <Typography variant="subtitle2">
-                    {t('form.capacity', 'Capacity')}
-                  </Typography>
+                  <Typography variant="subtitle2">{t('form.capacity', 'Capacity')}</Typography>
                 </Stack>
                 <Typography variant="body1" gutterBottom>
                   {event.currentAttendeeCount || 0} / {event.venueCapacity || 0}{' '}
@@ -289,8 +280,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   📋 {t('eventPage.overview.materials', 'Materials')}
                 </Typography>
                 <Typography variant="body1">
-                  {eventUI.pendingMaterialsCount || 0}{' '}
-                  {t('eventPage.overview.pending', 'pending')}
+                  {eventUI.pendingMaterialsCount || 0} {t('eventPage.overview.pending', 'pending')}
                 </Typography>
               </Box>
 
@@ -330,25 +320,13 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           {t('eventPage.overview.quickActions', 'Quick Actions')}
         </Typography>
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-          <Button
-            variant="outlined"
-            startIcon={<EmailIcon />}
-            onClick={handleSendNotification}
-          >
+          <Button variant="outlined" startIcon={<EmailIcon />} onClick={handleSendNotification}>
             {t('eventPage.overview.sendNotification', 'Send Notification')}
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<PreviewIcon />}
-            onClick={handlePreviewPublic}
-          >
+          <Button variant="outlined" startIcon={<PreviewIcon />} onClick={handlePreviewPublic}>
             {t('eventPage.overview.previewPublic', 'Preview Public Page')}
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<TimelineIcon />}
-            onClick={handleViewTimeline}
-          >
+          <Button variant="outlined" startIcon={<TimelineIcon />} onClick={handleViewTimeline}>
             {t('eventPage.overview.viewTimeline', 'View Timeline')}
           </Button>
         </Stack>

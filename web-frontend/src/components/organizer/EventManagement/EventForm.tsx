@@ -160,7 +160,7 @@ interface EventFormProps {
 
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
@@ -610,7 +610,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setShowUnsavedWarning(false);
   };
 
-  if (!hasEditPermission) {
+  // Don't show permission error while auth is still loading
+  if (!isAuthLoading && !hasEditPermission) {
     return (
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogContent>
