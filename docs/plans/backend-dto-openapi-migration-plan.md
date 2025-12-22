@@ -394,3 +394,149 @@ Per ADR-003, some UUIDs are acceptable:
 - `SpeakerConfirmationRequest.java`
 - `TransitionStateRequest.java`
 - `WorkflowStatusDto.java`
+
+## Appendix D: Field Reconciliation (OpenAPI vs Manual DTO)
+
+**CRITICAL**: Before generating DTOs, the OpenAPI spec must be reconciled with manual DTOs.
+The OpenAPI spec becomes the source of truth - any discrepancy must be resolved first.
+
+### D.1 Topics API Reconciliation
+
+#### CreateTopicRequest
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `title` | ✅ string, required | ✅ string, @NotBlank | ✅ Aligned |
+| `description` | ✅ string | ✅ string, max 5000 | ✅ Aligned |
+| `category` | ✅ string, required | ✅ string, @NotBlank | ✅ Aligned |
+| `keywords` | ✅ string[] | ❌ **MISSING** | ⚠️ **Add to DTO or remove from spec?** |
+| `relatedTopics` | ✅ uuid[] | ❌ **MISSING** | ⚠️ **Add to DTO or remove from spec?** |
+
+**Recommendation**:
+- If `keywords` and `relatedTopics` are planned features, keep in OpenAPI and implement
+- If not needed, remove from OpenAPI spec before generating
+
+#### TopicResponse (Topic schema)
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `id` | uuid | UUID | ⚠️ **Change to topicCode (ADR-003)** |
+| `title` | string | String | ✅ Aligned |
+| `description` | string | String | ✅ Aligned |
+| `category` | string | String | ✅ Aligned |
+| `createdDate` | date-time | LocalDateTime | ✅ Aligned |
+| `lastUsedDate` | date-time | LocalDateTime | ✅ Aligned |
+| `usageCount` | integer | Integer | ✅ Aligned |
+| `stalenessScore` | integer | Integer | ✅ Aligned |
+| `colorZone` | enum | String | ⚠️ **OpenAPI has enum, DTO has String** |
+| `status` | enum | String | ⚠️ **OpenAPI has enum, DTO has String** |
+| `similarityScores` | array | List<SimilarityScoreDto> | ✅ Aligned (structure) |
+| `similarityScores[].topicId` | uuid | UUID | ⚠️ **Change to topicCode (ADR-003)** |
+| `active` | boolean | Boolean | ✅ Aligned |
+| `createdAt` | date-time | LocalDateTime | ✅ Aligned |
+| `updatedAt` | date-time | LocalDateTime | ✅ Aligned |
+| `usageHistory` | array | List<TopicUsageHistoryResponse> | ✅ Aligned |
+
+---
+
+### D.2 Companies API Reconciliation
+
+#### CreateCompanyRequest
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `name` | string, pattern `^[A-Za-z0-9]+$`, required | String, @NotBlank | ⚠️ **DTO allows spaces, OpenAPI doesn't** |
+| `displayName` | string, max 255 | String, max 255 | ✅ Aligned |
+| `swissUID` | string, pattern | String, @Pattern | ✅ Aligned |
+| `website` | uri, max 500 | String, max 500 | ✅ Aligned |
+| `industry` | string, max 100 | String, max 100 | ✅ Aligned |
+| `description` | string, **max 5000** | String, **max 2000** | ⚠️ **Mismatch: 5000 vs 2000** |
+| `logoUploadId` | ❌ **MISSING** | ✅ String | ⚠️ **Add to OpenAPI spec** |
+
+**Recommendation**:
+- Add `logoUploadId` to OpenAPI spec (it's used in the workflow)
+- Decide on `description` maxLength: recommend 5000 (more generous)
+- Fix `name` pattern: OpenAPI is stricter (alphanumeric only)
+
+#### UpdateCompanyRequest
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| Same fields as Create | ... | ... | Same issues |
+| `logoUploadId` | ❌ **MISSING** | ✅ String | ⚠️ **Add to OpenAPI spec** |
+
+---
+
+### D.3 Speakers API Reconciliation
+
+#### SpeakerStatusResponse
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `speakerId` | uuid | UUID | ⚠️ **Change to speakerUsername (ADR-003/004)** |
+| `eventCode` | string | String | ✅ Aligned |
+| `status` | enum | String | ⚠️ **Verify enum values match** |
+| `updatedAt` | date-time | LocalDateTime | ✅ Aligned |
+
+#### SpeakerPoolResponse
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `id` | uuid | UUID | ⚠️ **Remove or use composite key (ADR-003)** |
+| `eventId` | uuid | UUID | ⚠️ **Change to eventCode (ADR-003)** |
+| `speakerName` | string | String | ✅ Aligned |
+| `company` | string | String | ✅ Aligned |
+| `status` | enum | String | ⚠️ **Verify enum values match** |
+| `sessionId` | uuid | UUID | ⚠️ **Change to sessionCode (ADR-003)** |
+| `notes` | string | String | ✅ Aligned |
+
+---
+
+### D.4 Events API Reconciliation
+
+#### EventResponse
+
+| Field | OpenAPI Spec | Manual DTO | Decision Required |
+|-------|--------------|------------|-------------------|
+| `eventCode` | string | String | ✅ Aligned (already meaningful ID) |
+| `topicId` | uuid | UUID | ⚠️ **Change to topicCode (ADR-003)** |
+| `name` | string | String | ✅ Aligned |
+| `description` | string | String | ✅ Aligned |
+| `eventDate` | date | LocalDate | ✅ Aligned |
+| `status` | enum | String/Enum | ⚠️ **Verify enum values match** |
+| `workflowState` | enum | Enum | ✅ Aligned |
+| ... | ... | ... | Continue verification |
+
+---
+
+## Appendix E: Pre-Migration Checklist
+
+Before starting each story, complete this checklist:
+
+### For Each API Domain:
+
+- [ ] **Field-by-field comparison** completed (use Appendix D as template)
+- [ ] **Decisions documented** for each discrepancy:
+  - [ ] Missing fields: Add to OpenAPI or confirm not needed?
+  - [ ] Extra fields in DTO: Add to OpenAPI?
+  - [ ] Type mismatches: Which is correct?
+  - [ ] Validation differences: Which constraints apply?
+- [ ] **ADR-003 violations identified** and new meaningful IDs designed
+- [ ] **Entity changes planned** (add new code fields if needed)
+- [ ] **Frontend impact assessed** (which components use these fields?)
+
+### OpenAPI Spec Updates (Before Generation):
+
+- [ ] All UUIDs replaced with meaningful string IDs
+- [ ] All missing fields from manual DTOs added
+- [ ] All validation constraints aligned
+- [ ] Enum values match between spec and implementation
+- [ ] Path parameters updated (e.g., `/{id}` → `/{topicCode}`)
+
+### After OpenAPI Updates:
+
+- [ ] Regenerate frontend types and verify no TypeScript errors
+- [ ] Regenerate backend DTOs and verify no compilation errors
+- [ ] Update controllers to use new DTOs
+- [ ] Update services to map entities to new DTOs
+- [ ] Update tests to use new field names
