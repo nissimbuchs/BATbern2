@@ -339,5 +339,10 @@
         "parseError": "Parse error: {{error}}"
       }
     }
+  },
+  "organizer": {
+    "select": "Select Organizer",
+    "all": "All Organizers",
+    "unassigned": "Unassigned"
   }
 }

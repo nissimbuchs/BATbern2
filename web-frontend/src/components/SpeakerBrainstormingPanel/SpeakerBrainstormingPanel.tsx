@@ -22,16 +22,13 @@ import {
   Chip,
   Alert,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Divider,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool, useAddSpeakerToPool } from '@/hooks/useSpeakerPool';
 import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
+import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 
 export interface SpeakerBrainstormingPanelProps {
   eventCode: string;
@@ -140,26 +137,17 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           disabled={addSpeakerMutation.isPending}
         />
 
-        <FormControl fullWidth size="small">
-          <InputLabel>
-            {t('speakerBrainstorm.form.assignOrganizer', 'Assign to Organizer (Optional)')}
-          </InputLabel>
-          <Select
-            value={assignedOrganizerId}
-            onChange={(e) => setAssignedOrganizerId(e.target.value)}
-            label={t('speakerBrainstorm.form.assignOrganizer', 'Assign to Organizer (Optional)')}
-            disabled={addSpeakerMutation.isPending || organizers.length === 0}
-          >
-            <MenuItem value="">
-              <em>{t('speakerBrainstorm.form.unassigned', 'Unassigned')}</em>
-            </MenuItem>
-            {organizers.map((org) => (
-              <MenuItem key={org.id} value={org.id}>
-                {org.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <OrganizerSelect
+          value={assignedOrganizerId}
+          onChange={(organizerId) => setAssignedOrganizerId(organizerId)}
+          organizers={organizers}
+          label={t('speakerBrainstorm.form.assignOrganizer', 'Assign to Organizer (Optional)')}
+          size="small"
+          fullWidth
+          disabled={addSpeakerMutation.isPending || organizers.length === 0}
+          includeUnassigned={true}
+          includeAllOption={false}
+        />
 
         <TextField
           fullWidth

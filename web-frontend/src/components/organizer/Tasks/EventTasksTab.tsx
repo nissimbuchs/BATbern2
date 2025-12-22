@@ -20,8 +20,6 @@ import {
   Paper,
   Checkbox,
   FormControlLabel,
-  TextField,
-  MenuItem,
   IconButton,
   Button,
   Divider,
@@ -31,6 +29,7 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -42,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from './CustomTaskModal';
+import { OrganizerSelect, useOrganizers } from '@/components/shared/OrganizerSelect';
 
 interface EventTasksTabProps {
   eventId: string | null; // Null for new event creation
@@ -49,6 +49,7 @@ interface EventTasksTabProps {
   selectedTemplates: string[]; // Array of template IDs
   templateAssignees: Record<string, string>; // Map of templateId -> username
   customTasks: EventTaskResponse[];
+  disabledTemplates?: string[]; // Templates that have task instances (can't be unchecked)
   onTemplateToggle: (templateId: string, checked: boolean) => void;
   onAssigneeChange: (templateId: string, assignee: string) => void;
   onAddCustomTask: () => void;
@@ -62,6 +63,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   selectedTemplates,
   templateAssignees,
   customTasks,
+  disabledTemplates = [],
   onTemplateToggle,
   onAssigneeChange,
   onEditCustomTask,
@@ -69,6 +71,9 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
+
+  // Fetch organizers
+  const { organizers } = useOrganizers();
 
   // Fetch all task templates
   const {
@@ -82,9 +87,6 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
 
   // Separate default and custom templates
   const defaultTemplates = allTemplates.filter((t) => t.isDefault);
-
-  // Mock organizers list (in real app, fetch from users service)
-  const organizers = [organizerUsername, 'organizer1@example.com', 'organizer2@example.com'];
 
   const handleAddCustomTask = () => {
     setIsCustomTaskModalOpen(true);
@@ -134,6 +136,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
             {defaultTemplates.map((template) => {
               const isSelected = selectedTemplates.includes(template.id);
               const assignee = templateAssignees[template.id] || '';
+              const hasTaskInstance = disabledTemplates.includes(template.id);
 
               return (
                 <ListItem
@@ -145,6 +148,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     mb: 1,
                     flexDirection: 'column',
                     alignItems: 'stretch',
+                    backgroundColor: hasTaskInstance ? 'action.disabledBackground' : 'inherit',
                   }}
                 >
                   <Stack direction="row" spacing={2} alignItems="center" width="100%">
@@ -154,31 +158,38 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                         <Checkbox
                           checked={isSelected}
                           onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
+                          disabled={hasTaskInstance}
                         />
                       }
-                      label={template.name}
+                      label={
+                        hasTaskInstance ? (
+                          <>
+                            {template.name}
+                            <Chip
+                              label={t('tasks.taskExists', 'Task exists')}
+                              size="small"
+                              color="info"
+                              sx={{ ml: 1 }}
+                            />
+                          </>
+                        ) : (
+                          template.name
+                        )
+                      }
                       sx={{ flex: 1 }}
                     />
 
                     {/* Assignee Dropdown */}
-                    <TextField
-                      select
-                      size="small"
+                    <OrganizerSelect
                       value={assignee}
-                      onChange={(e) => onAssigneeChange(template.id, e.target.value)}
+                      onChange={(organizerId) => onAssigneeChange(template.id, organizerId)}
+                      organizers={organizers}
                       label={t('tasks.assignTo', 'Assign To')}
                       sx={{ minWidth: 200 }}
-                      disabled={!isSelected}
-                    >
-                      <MenuItem value="">
-                        <em>{t('tasks.unassigned', 'Unassigned')}</em>
-                      </MenuItem>
-                      {organizers.map((org) => (
-                        <MenuItem key={org} value={org}>
-                          {org}
-                        </MenuItem>
-                      ))}
-                    </TextField>
+                      disabled={!isSelected || hasTaskInstance}
+                      includeUnassigned={true}
+                      includeAllOption={false}
+                    />
 
                     {/* Info Icon */}
                     <Tooltip

@@ -4,9 +4,11 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.dto.CompleteTaskRequest;
 import ch.batbern.events.dto.CreateEventTaskRequest;
+import ch.batbern.events.dto.CreateTasksFromTemplatesRequest;
 import ch.batbern.events.dto.EventTaskResponse;
 import ch.batbern.events.dto.ReassignTaskRequest;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventTaskService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -15,8 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,11 +34,12 @@ import java.util.stream.Collectors;
  * Story 5.5: Configurable Task System (AC21-27)
  *
  * Endpoints:
- * - GET  /api/v1/events/{eventCode}/tasks         - List tasks for event
- * - POST /api/v1/events/{eventCode}/tasks         - Create ad-hoc task
- * - GET  /api/v1/tasks/my-tasks                   - Get tasks assigned to current organizer
- * - PUT  /api/v1/tasks/{taskId}/complete          - Mark task complete
- * - PUT  /api/v1/tasks/{taskId}/reassign          - Reassign task to different organizer
+ * - GET  /api/v1/events/{eventCode}/tasks                - List tasks for event
+ * - POST /api/v1/events/{eventCode}/tasks                - Create ad-hoc task
+ * - POST /api/v1/events/{eventCode}/tasks/from-templates - Create tasks from templates
+ * - GET  /api/v1/tasks/my-tasks                          - Get tasks assigned to current organizer
+ * - PUT  /api/v1/tasks/{taskId}/complete                 - Mark task complete
+ * - PUT  /api/v1/tasks/{taskId}/reassign                 - Reassign task to different organizer
  *
  * Security: All endpoints require ORGANIZER role
  */
@@ -49,6 +50,7 @@ public class EventTaskController {
 
     private final EventTaskService eventTaskService;
     private final EventRepository eventRepository;
+    private final SecurityContextHelper securityContextHelper;
 
     /**
      * List all tasks for an event.
@@ -108,6 +110,49 @@ public class EventTaskController {
     }
 
     /**
+     * Create tasks from templates for an event.
+     * Story 5.5 AC21: Task template instantiation with assignees
+     *
+     * @param eventCode event code
+     * @param request request containing template IDs and assignees
+     * @return list of created tasks
+     */
+    @PostMapping("/api/v1/events/{eventCode}/tasks/from-templates")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<EventTaskResponse>> createTasksFromTemplates(
+            @PathVariable String eventCode,
+            @Valid @RequestBody CreateTasksFromTemplatesRequest request) {
+
+        log.info("POST /api/v1/events/{}/tasks/from-templates - {} templates",
+                eventCode, request.getTemplates().size());
+
+        // Find event by code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventCode));
+
+        // Convert DTO configs to service records
+        List<EventTaskService.TemplateAssignmentConfig> configs = request.getTemplates().stream()
+                .map(t -> new EventTaskService.TemplateAssignmentConfig(
+                        t.getTemplateId(),
+                        t.getAssignedOrganizerUsername()
+                ))
+                .collect(Collectors.toList());
+
+        // Create tasks
+        List<EventTask> tasks = eventTaskService.createTasksFromTemplatesWithAssignees(
+                event.getId(),
+                configs
+        );
+
+        List<EventTaskResponse> response = tasks.stream()
+                .map(EventTaskResponse::fromEntity)
+                .collect(Collectors.toList());
+
+        log.info("Created {} tasks from templates for event {}", response.size(), eventCode);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
      * Get tasks assigned to current organizer.
      * Story 5.5 AC24: List tasks for current organizer
      *
@@ -119,7 +164,7 @@ public class EventTaskController {
     public ResponseEntity<List<EventTaskResponse>> getMyTasks(
             @RequestParam(required = false, defaultValue = "false") boolean critical) {
 
-        String username = getCurrentUsername();
+        String username = securityContextHelper.getCurrentUsername();
         log.info("GET /api/v1/tasks/my-tasks - username: {}, critical: {}", username, critical);
 
         List<EventTask> tasks = critical
@@ -147,7 +192,7 @@ public class EventTaskController {
             @PathVariable UUID taskId,
             @Valid @RequestBody CompleteTaskRequest request) {
 
-        String completedByUsername = getCurrentUsername();
+        String completedByUsername = securityContextHelper.getCurrentUsername();
         log.info("PUT /api/v1/tasks/{}/complete - completedBy: {}", taskId, completedByUsername);
 
         EventTask task = eventTaskService.completeTask(taskId, completedByUsername, request.getNotes());
@@ -180,12 +225,4 @@ public class EventTaskController {
     }
 
     // === Helper Methods ===
-
-    /**
-     * Get current authenticated username from security context.
-     */
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null ? authentication.getName() : "system";
-    }
 }

@@ -83,6 +83,18 @@ export interface CreateEventTaskRequest {
 }
 
 /**
+ * Create Tasks from Templates Request DTO (matches backend CreateTasksFromTemplatesRequest.java)
+ */
+export interface CreateTasksFromTemplatesRequest {
+  templates: TemplateConfig[];
+}
+
+export interface TemplateConfig {
+  templateId: string;
+  assignedOrganizerUsername?: string;
+}
+
+/**
  * Complete Task Request DTO (matches backend CompleteTaskRequest.java)
  */
 export interface CompleteTaskRequest {
@@ -206,6 +218,28 @@ class TaskService {
   ): Promise<EventTaskResponse> {
     const response = await apiClient.post<EventTaskResponse>(
       `${EVENTS_API_PATH}/${eventCode}/tasks`,
+      request
+    );
+
+    return response.data;
+  }
+
+  /**
+   * Create tasks from templates (AC21)
+   *
+   * Creates multiple tasks for an event from selected templates with assignees
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param request Template configurations (templateId + assignee)
+   * @returns List of created tasks
+   * @throws Error if validation fails (400), event not found (404), unauthorized (401, 403)
+   */
+  async createTasksFromTemplates(
+    eventCode: string,
+    request: CreateTasksFromTemplatesRequest
+  ): Promise<EventTaskResponse[]> {
+    const response = await apiClient.post<EventTaskResponse[]>(
+      `${EVENTS_API_PATH}/${eventCode}/tasks/from-templates`,
       request
     );
 

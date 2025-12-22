@@ -11,9 +11,9 @@
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one
 
 ## Architecture & Development
-- [ ] topics have UUID in api, against ADR-003
-- [ ] event has dto and generated dto in backend, should only use generated dto's.
-- [ ] event has metadata in api payload for theme and eventType that are both obsolete
+- [on branch claude/review-branches-BROGI] topics have UUID in api, against ADR-003
+- [on branch claude/review-branches-BROGI] event has dto and generated dto in backend, should only use generated dto's.
+- [] event has metadata in api payload for theme and eventType that are both obsolete
 - [ ] TODO: story-1.16-workflow-visualisation wirframe was never implemented. shows up when you press on the progress bar
 
 Accessing the PostgeSQL through the tunnel:

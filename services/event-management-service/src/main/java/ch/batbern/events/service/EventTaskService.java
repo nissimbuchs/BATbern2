@@ -6,6 +6,7 @@ import ch.batbern.events.domain.TaskTemplate;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.TaskTemplateRepository;
+import ch.batbern.shared.types.EventWorkflowState;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,27 +124,51 @@ public class EventTaskService {
         // Find all pending tasks for this event
         List<EventTask> pendingTasks = eventTaskRepository.findByEventIdAndStatus(eventId, "pending");
 
-        // Filter tasks that match the triggered state
+        // Convert triggered state to enum for comparison (lowercase_snake_case -> UPPERCASE)
+        EventWorkflowState currentState;
+        try {
+            currentState = EventWorkflowState.valueOf(triggeredState.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid workflow state: {}, cannot activate tasks", triggeredState);
+            return List.of();
+        }
+
+        int currentStateOrdinal = currentState.ordinal();
+
+        // Filter tasks with trigger states <= current state (handles state skipping)
+        // e.g., if jumping CREATED -> SPEAKER_BRAINSTORMING, activate tasks for:
+        // CREATED, TOPIC_SELECTION, and SPEAKER_BRAINSTORMING
         List<EventTask> tasksToActivate = pendingTasks.stream()
-                .filter(task -> triggeredState.equals(task.getTriggerState()))
+                .filter(task -> {
+                    try {
+                        EventWorkflowState taskTriggerState = EventWorkflowState.valueOf(
+                                task.getTriggerState().toUpperCase()
+                        );
+                        return taskTriggerState.ordinal() <= currentStateOrdinal;
+                    } catch (IllegalArgumentException e) {
+                        log.warn("Invalid trigger state on task {}: {}", task.getId(), task.getTriggerState());
+                        return false;
+                    }
+                })
                 .toList();
 
         if (tasksToActivate.isEmpty()) {
-            log.debug("No pending tasks found for event {} with trigger state {}", eventId, triggeredState);
+            log.debug("No pending tasks found for event {} with trigger state <= {}", eventId, triggeredState);
             return List.of();
         }
 
         // Activate tasks: change status from "pending" to "todo"
         tasksToActivate.forEach(task -> {
             task.setStatus("todo");
-            log.debug("Activated task: {} (template: {}, trigger: {})",
-                    task.getTaskName(), task.getTemplateId(), triggeredState);
+            log.info("Activated task: {} (trigger: {} <= current: {})",
+                    task.getTaskName(), task.getTriggerState(), triggeredState);
         });
 
         // Save all activated tasks
         List<EventTask> activatedTasks = eventTaskRepository.saveAll(tasksToActivate);
 
-        log.info("Activated {} tasks for event {} at state {}", activatedTasks.size(), eventId, triggeredState);
+        log.info("Activated {} tasks for event {} at state {} (including skipped states)",
+                activatedTasks.size(), eventId, triggeredState);
         return activatedTasks;
     }
 
@@ -283,6 +308,70 @@ public class EventTaskService {
 
         return updated;
     }
+
+    /**
+     * Create tasks from templates with assigned organizers (Story 5.5 AC21).
+     *
+     * Used during event creation/editing to generate tasks from selected templates.
+     * Unlike createTasksForEvent(), this method accepts assignee information per template.
+     * Idempotent - safe to call multiple times (AC36).
+     *
+     * @param eventId the event ID
+     * @param templateConfigs list of template IDs with optional assignees
+     * @return list of created tasks
+     */
+    @Transactional
+    public List<EventTask> createTasksFromTemplatesWithAssignees(
+            UUID eventId,
+            List<TemplateAssignmentConfig> templateConfigs
+    ) {
+        log.info("Creating {} tasks from templates for event {}", templateConfigs.size(), eventId);
+
+        // Get event to access date for due date calculation
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
+
+        List<EventTask> createdTasks = new ArrayList<>();
+
+        for (TemplateAssignmentConfig config : templateConfigs) {
+            // Idempotency check (AC36)
+            if (eventTaskRepository.existsByEventIdAndTemplateId(eventId, config.templateId())) {
+                log.debug("Task already exists for event {} and template {}, skipping",
+                        eventId, config.templateId());
+                continue;
+            }
+
+            // Fetch template
+            TaskTemplate template = taskTemplateRepository.findById(config.templateId())
+                    .orElseThrow(() -> new EntityNotFoundException("Template not found: " + config.templateId()));
+
+            // Create task with assigned organizer
+            EventTask task = new EventTask();
+            task.setEventId(eventId);
+            task.setTemplateId(template.getId());
+            task.setTaskName(template.getName());
+            task.setTriggerState(template.getTriggerState());
+            task.setDueDate(calculateDueDate(template, event.getDate()));
+            task.setStatus("pending"); // AC21 - tasks start as pending
+            task.setAssignedOrganizerUsername(config.assignedOrganizerUsername()); // Set assignee from config
+
+            EventTask saved = eventTaskRepository.save(task);
+            createdTasks.add(saved);
+            log.debug("Created task {} from template {} assigned to {}",
+                    saved.getId(), template.getId(), config.assignedOrganizerUsername());
+        }
+
+        log.info("Created {} tasks for event {}", createdTasks.size(), eventId);
+        return createdTasks;
+    }
+
+    /**
+     * Configuration for creating a task from a template with an assignee.
+     *
+     * @param templateId the template ID
+     * @param assignedOrganizerUsername the organizer username to assign (can be null)
+     */
+    public record TemplateAssignmentConfig(UUID templateId, String assignedOrganizerUsername) {}
 
     /**
      * Create an ad-hoc task (not from template).

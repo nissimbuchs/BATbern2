@@ -339,5 +339,10 @@
         "parseError": "Fehler beim Parsen: {{error}}"
       }
     }
+  },
+  "organizer": {
+    "select": "Organisator auswählen",
+    "all": "Alle Organisatoren",
+    "unassigned": "Nicht zugewiesen"
   }
 }

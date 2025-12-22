@@ -47,6 +47,39 @@ public class SecurityContextHelper {
     }
 
     /**
+     * Gets the current authenticated user's username from JWT token or mock user
+     * Used for task assignment and other username-based operations (ADR-003: meaningful IDs)
+     * ADR-001: Custom claims are set by PreTokenGeneration Lambda from database
+     * @return Username (custom:username claim from JWT or username from mock user)
+     * @throws SecurityException if not authenticated
+     */
+    public String getCurrentUsername() {
+        Authentication authentication = getAuthentication();
+
+        if (authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            // ADR-001: PreTokenGeneration Lambda sets 'custom:username' claim from database
+            String username = jwt.getClaim("custom:username");
+            if (username == null) {
+                log.warn("custom:username claim not found in JWT, falling back to subject (UUID). "
+                        + "This indicates PreTokenGeneration Lambda may not be configured properly.");
+                return jwt.getSubject(); // Fallback to subject for backward compatibility
+            }
+            return username;
+        } else if (authentication.getPrincipal() instanceof User) {
+            // In test environment with @WithMockUser, use username
+            User user = (User) authentication.getPrincipal();
+            return user.getUsername();
+        } else if (authentication.getPrincipal() instanceof String) {
+            // Fallback for simple test authentication with String principal
+            return (String) authentication.getPrincipal();
+        } else {
+            log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
+            throw new SecurityException("Unsupported authentication principal type");
+        }
+    }
+
+    /**
      * Gets the current authenticated user's email from JWT token or mock user
      * @return User email (email claim from JWT or username from mock user)
      * @throws SecurityException if not authenticated

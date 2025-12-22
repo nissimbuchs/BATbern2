@@ -52,6 +52,7 @@ import { workflowService } from '@/services/workflowService';
 import { useQueryClient } from '@tanstack/react-query';
 import { EventTasksTab } from '../Tasks/EventTasksTab';
 import type { EventTaskResponse } from '@/services/taskService';
+import { taskService } from '@/services/taskService';
 
 // mapWorkflowStateToStatus function removed - no longer needed
 // Backend now uses workflowState directly (Phase 1-2 migration complete)
@@ -178,6 +179,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const [overrideReason, setOverrideReason] = useState('');
   const [currentTab, setCurrentTab] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+  const [disabledTemplates, setDisabledTemplates] = useState<string[]>([]); // Templates with task instances
   const [templateAssignees, setTemplateAssignees] = useState<Record<string, string>>({});
   const [customTasks, setCustomTasks] = useState<EventTaskResponse[]>([]);
 
@@ -195,6 +197,55 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       setThemeImageUploadId(event.themeImageUploadId ?? undefined);
     }
   }, [event, open, mode]);
+
+  // Fetch existing event tasks when opening in edit mode (Story 5.5 AC21)
+  // Pre-select all default templates if no tasks exist yet
+  useEffect(() => {
+    if (open && mode === 'edit' && event) {
+      const loadExistingTasksAndTemplates = async () => {
+        try {
+          // Fetch existing tasks
+          const existingTasks = await taskService.listEventTasks(event.eventCode);
+
+          // Find which templates already have task instances
+          const templatesWithInstances = existingTasks
+            .filter((task) => task.templateId !== null)
+            .map((task) => task.templateId as string);
+
+          if (templatesWithInstances.length > 0) {
+            // Tasks exist - mark these templates as selected AND disabled
+            setSelectedTemplates(templatesWithInstances);
+            setDisabledTemplates(templatesWithInstances); // Disable templates with task instances
+
+            // Map assignees from existing tasks
+            const assigneesMap: Record<string, string> = {};
+            existingTasks.forEach((task) => {
+              if (task.templateId && task.assignedOrganizerUsername) {
+                assigneesMap[task.templateId] = task.assignedOrganizerUsername;
+              }
+            });
+            setTemplateAssignees(assigneesMap);
+          } else {
+            // No tasks exist yet - pre-select all default templates (but don't disable them)
+            // Fetch all templates to get default ones
+            const allTemplates = await taskService.listAllTemplates();
+            const defaultTemplateIds = allTemplates
+              .filter((template) => template.isDefault)
+              .map((template) => template.id);
+
+            setSelectedTemplates(defaultTemplateIds);
+            setDisabledTemplates([]); // No templates are disabled yet
+            setTemplateAssignees({});
+          }
+        } catch (error) {
+          console.error('Failed to load existing tasks:', error);
+          // Don't fail the entire dialog if task loading fails
+        }
+      };
+
+      loadExistingTasksAndTemplates();
+    }
+  }, [open, mode, event]);
 
   // Create validation schema with translations
   const eventSchema = createEventSchema(t);
@@ -405,7 +456,26 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       };
 
       // Use mutation hook for proper cache management (MVC pattern)
-      await createEventMutation.mutateAsync(createData);
+      const createdEvent = await createEventMutation.mutateAsync(createData);
+
+      // Create tasks from selected templates (Story 5.5 AC21)
+      if (selectedTemplates.length > 0) {
+        const templateConfigs = selectedTemplates.map((templateId) => ({
+          templateId,
+          assignedOrganizerUsername: templateAssignees[templateId] || undefined,
+        }));
+
+        try {
+          await taskService.createTasksFromTemplates(createdEvent.eventCode, {
+            templates: templateConfigs,
+          });
+        } catch (taskError) {
+          console.error('Failed to create tasks from templates:', taskError);
+          // Don't fail the entire operation if task creation fails
+          // Event is already created, tasks can be added later
+        }
+      }
+
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -428,7 +498,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         (changedFields as Record<string, unknown>).themeImageUploadId = themeImageUploadId;
       }
 
-      if (Object.keys(changedFields).length === 0) {
+      // Only skip update if no event fields changed AND no templates selected
+      if (Object.keys(changedFields).length === 0 && selectedTemplates.length === 0) {
         onClose();
         return;
       }
@@ -466,6 +537,39 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
         queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
         queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
+      }
+
+      // Create tasks from selected templates (Story 5.5 AC21)
+      // Backend is idempotent - only creates tasks that don't already exist
+      console.log('=== Task Creation Debug ===');
+      console.log('selectedTemplates:', selectedTemplates);
+      console.log('templateAssignees:', templateAssignees);
+      console.log('selectedTemplates.length:', selectedTemplates.length);
+
+      if (selectedTemplates.length > 0) {
+        const templateConfigs = selectedTemplates.map((templateId) => ({
+          templateId,
+          assignedOrganizerUsername: templateAssignees[templateId] || undefined,
+        }));
+
+        console.log('Creating tasks with configs:', templateConfigs);
+
+        try {
+          const createdTasks = await taskService.createTasksFromTemplates(event.eventCode, {
+            templates: templateConfigs,
+          });
+
+          console.log('✓ Successfully created tasks:', createdTasks);
+
+          // Invalidate tasks cache to show newly created tasks
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        } catch (taskError) {
+          console.error('❌ Failed to create tasks from templates:', taskError);
+          // Don't fail the entire operation if task creation fails
+          // Event is already updated, tasks can be added later
+        }
+      } else {
+        console.log('⚠️ No templates selected, skipping task creation');
       }
 
       onSuccess?.();
@@ -847,6 +951,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 selectedTemplates={selectedTemplates}
                 templateAssignees={templateAssignees}
                 customTasks={customTasks}
+                disabledTemplates={disabledTemplates} // Templates with task instances are disabled
                 onTemplateToggle={(templateId, checked) => {
                   if (checked) {
                     setSelectedTemplates([...selectedTemplates, templateId]);
