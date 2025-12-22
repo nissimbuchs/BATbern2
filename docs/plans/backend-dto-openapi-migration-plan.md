@@ -9,11 +9,62 @@
 
 | Story | Status | Commits | Notes |
 |-------|--------|---------|-------|
-| Story 1: Topics API | ✅ **COMPLETE** | `4141fe8`, `216a966` | Full migration to topicCode |
+| Story 1: Topics API | 🔶 **IN PROGRESS** | `4141fe8`, `216a966` | Pending: switch to generated DTOs |
 | Story 2: Speakers API | 🔲 Not Started | - | - |
 | Story 3: Events API | 🔲 Not Started | - | - |
 | Story 4: Companies API | 🔲 Not Started | - | - |
 | Story 5: Users API | 🔲 Not Started | - | - |
+
+## Standard Migration Sequence (Per Story)
+
+Each story follows this **exact sequence**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Step 1: UPDATE OPENAPI SPEC (ADR-003)                                      │
+│  - Replace UUIDs with meaningful identifiers (topicCode, eventCode, etc.)   │
+│  - Update path parameters (/{id} → /{topicCode})                            │
+│  - Add pattern validation (^[a-z0-9-]+$)                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 2: CONFIGURE CODE GENERATION                                          │
+│  - Add openApiGenerate task to build.gradle                                 │
+│  - Set generateBuilders: 'true'                                             │
+│  - Configure modelPackage: 'ch.batbern.*.dto.generated.*'                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 3: RUN BUILD TO GENERATE DTOs                                         │
+│  - ./gradlew :services:<service>:compileJava                                │
+│  - Verify generated classes in build/generated-*/                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 4: CREATE MAPPER CLASS                                                │
+│  - Create TopicMapper.java (or similar) for entity↔DTO conversion          │
+│  - Use generated DTO builders                                               │
+│  - Move business logic (colorZone, status) to mapper                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 5: UPDATE BACKEND TO USE GENERATED DTOs                               │
+│  - Update imports: ch.batbern.*.dto.* → ch.batbern.*.dto.generated.*        │
+│  - Update controller to use mapper + generated DTOs                         │
+│  - Update service layer if needed                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 6: DELETE MANUAL DTOs                                                 │
+│  - Remove old manual DTO files                                              │
+│  - Verify no remaining imports                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 7: UPDATE ENTITY (if needed)                                          │
+│  - Add meaningful ID field (topicCode, eventCode)                           │
+│  - Create database migration                                                │
+│  - Add repository methods                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 8: REGENERATE FRONTEND TYPES                                          │
+│  - npm run generate:api-types                                               │
+│  - Fix TypeScript errors in components                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Step 9: RUN TESTS & COMMIT                                                 │
+│  - Backend: ./gradlew test                                                  │
+│  - Frontend: npm test                                                       │
+│  - Update Bruno API tests                                                   │
+│  - Commit changes                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Executive Summary
 
@@ -77,9 +128,9 @@ Rationale:
 
 ## Implementation Stories
 
-### Story 1: Topics API Migration ✅ COMPLETE
+### Story 1: Topics API Migration 🔶 IN PROGRESS
 
-**Status**: ✅ **COMPLETED** (2025-12-22)
+**Status**: 🔶 **IN PROGRESS** - Steps 1-2, 7-8 complete; Steps 3-6 pending
 **Scope**: Topics API domain only
 **Actual Effort**: Medium
 **Frontend Impact**: Medium
@@ -87,6 +138,19 @@ Rationale:
 **Commits**:
 - `4141fe8` - feat(api): migrate Topics API from UUID to topicCode (ADR-003)
 - `216a966` - feat(topics): migrate backend to topicCode identifier (ADR-003)
+
+**Progress by Step**:
+| Step | Description | Status |
+|------|-------------|--------|
+| 1 | Update OpenAPI spec | ✅ Done |
+| 2 | Configure code generation | ✅ Done |
+| 3 | Run build to generate DTOs | 🔲 Pending (requires network) |
+| 4 | Create TopicMapper class | 🔲 Pending |
+| 5 | Update backend to use generated DTOs | 🔲 Pending |
+| 6 | Delete manual DTOs | 🔲 Pending |
+| 7 | Update entity (topicCode field) | ✅ Done |
+| 8 | Regenerate frontend types | ✅ Done |
+| 9 | Run tests & commit | 🔲 Pending |
 
 #### 1.1 OpenAPI Spec Changes (`topics-api.openapi.yml`) ✅
 
@@ -165,13 +229,49 @@ Rationale:
 - [ ] Bruno API tests updated
 - [ ] Manual DTOs deleted (pending build verification)
 
-#### 1.5 Pending Items (Network Blocked)
+#### 1.5 Remaining Work (To Complete Locally)
 
-The following items require network access (Gradle 8.12 download):
-1. Run backend build to verify compilation
-2. Run backend integration tests
-3. Delete manual DTOs after verifying generated ones work
-4. Update Bruno API tests for new paths
+**Step 3: Run build to generate DTOs**
+```bash
+./gradlew :services:event-management-service:compileJava
+# Verify: ls services/event-management-service/build/generated-topics/src/main/java/ch/batbern/events/dto/generated/topics/
+```
+
+**Step 4: Create TopicMapper class**
+```java
+// services/event-management-service/src/main/java/ch/batbern/events/mapper/TopicMapper.java
+@Component
+public class TopicMapper {
+    public Topic toDto(ch.batbern.events.domain.Topic entity) {
+        return Topic.builder()
+            .topicCode(entity.getTopicCode())
+            .title(entity.getTitle())
+            // ... use builders from generated DTO
+            .build();
+    }
+}
+```
+
+**Step 5: Update backend imports**
+- Change imports in TopicController, TopicService from `ch.batbern.events.dto.*` to `ch.batbern.events.dto.generated.topics.*`
+- Use TopicMapper for entity↔DTO conversion
+
+**Step 6: Delete manual DTOs**
+```bash
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicResponse.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicRequest.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicListResponse.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicFilterRequest.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/OverrideStalenesRequest.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicUsageHistoryResponse.java
+rm services/event-management-service/src/main/java/ch/batbern/events/dto/TopicUsageHistoryWithEventDetails.java
+```
+
+**Step 9: Run tests**
+```bash
+./gradlew :services:event-management-service:test
+cd web-frontend && npm test
+```
 
 ---
 
