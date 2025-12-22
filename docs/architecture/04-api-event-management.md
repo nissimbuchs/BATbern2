@@ -3,7 +3,7 @@
 **Last Updated**: 2025-11-08
 **ADR References**:
 - [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
-- [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md) (supersedes ADR-005)
+- [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md)
 
 This document outlines the Event Management Domain API, which handles event lifecycle management, organizer workflows, and the comprehensive 9-state workflow automation including slot management, quality control, overflow handling, and real-time collaboration (see 06a-workflow-state-machines.md).
 
@@ -158,7 +158,7 @@ responses:
 
 ### Event Registration Operations
 
-**ADR-007 Reference**: Unified User Profile (supersedes ADR-005)
+**ADR-007 Reference**: Unified User Profile
 **Story**: 4.1.5a Architecture Consolidation
 
 Event registrations support both anonymous (public) and authenticated users. Anonymous users can register without creating a Cognito account. User profiles are created/found via User Management Service API.
@@ -909,7 +909,7 @@ responses:
 
 ### Event Registration (Public Access)
 
-**ADR Reference**: [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md) (supersedes ADR-005)
+**ADR Reference**: [ADR-007: Unified User Profile](./ADR-007-unified-user-profile.md)
 
 Event registration endpoints support **both anonymous and authenticated registration**. Anonymous users can register with just email and personal details (no account required). When they later create a Cognito account with the same email, their past registrations are automatically linked via the unified user_profiles table.
 
