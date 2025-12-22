@@ -46,7 +46,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/topics/{id}': {
+  '/topics/{topicCode}': {
     parameters: {
       query?: never;
       header?: never;
@@ -54,10 +54,10 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get topic by ID
+     * Get topic by code
      * @description Retrieve a specific topic with optional includes
      */
-    get: operations['getTopicById'];
+    get: operations['getTopicByCode'];
     /**
      * Update topic
      * @description Update an existing topic.
@@ -78,7 +78,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/topics/{id}/override-staleness': {
+  '/topics/{topicCode}/override-staleness': {
     parameters: {
       query?: never;
       header?: never;
@@ -102,7 +102,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/topics/{id}/similar': {
+  '/topics/{topicCode}/similar': {
     parameters: {
       query?: never;
       header?: never;
@@ -124,7 +124,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/topics/{id}/usage-history': {
+  '/topics/{topicCode}/usage-history': {
     parameters: {
       query?: never;
       header?: never;
@@ -221,11 +221,10 @@ export interface components {
     /** @description Topic entity for event management */
     Topic: {
       /**
-       * Format: uuid
-       * @description Topic unique identifier
-       * @example 550e8400-e29b-41d4-a716-446655440000
+       * @description Topic unique identifier (slug-format)
+       * @example cloud-native-security-2024
        */
-      id: string;
+      topicCode: string;
       /**
        * @description Topic title
        * @example Cloud Native Security Patterns
@@ -292,10 +291,10 @@ export interface components {
     /** @description Cosine similarity score to another topic */
     SimilarityScore: {
       /**
-       * Format: uuid
-       * @description ID of the similar topic
+       * @description Code of the similar topic (slug-format)
+       * @example cloud-architecture-patterns
        */
-      topicId: string;
+      topicCode: string;
       /**
        * Format: float
        * @description Cosine similarity score (0-1)
@@ -387,10 +386,10 @@ export interface components {
     };
     SelectTopicForEventRequest: {
       /**
-       * Format: uuid
-       * @description ID of the topic to select
+       * @description Code of the topic to select (slug-format)
+       * @example cloud-native-security-2024
        */
-      topicId: string;
+      topicCode: string;
       /** @description Optional justification for selection */
       justification?: string;
     };
@@ -522,7 +521,7 @@ export interface operations {
       409: components['responses']['Conflict'];
     };
   };
-  getTopicById: {
+  getTopicByCode: {
     parameters: {
       query?: {
         /** @description Comma-separated resources to include */
@@ -530,8 +529,8 @@ export interface operations {
       };
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };
@@ -555,8 +554,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };
@@ -585,8 +584,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };
@@ -617,8 +616,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };
@@ -648,8 +647,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };
@@ -673,8 +672,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Topic UUID */
-        id: string;
+        /** @description Topic code (slug-format identifier) */
+        topicCode: string;
       };
       cookie?: never;
     };

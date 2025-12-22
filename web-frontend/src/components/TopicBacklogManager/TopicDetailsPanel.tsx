@@ -72,10 +72,10 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   const [justification, setJustification] = useState('');
 
   // Fetch similar topics for duplicate detection (AC5)
-  const { data: similarTopics } = useSimilarTopics(topic.id);
+  const { data: similarTopics } = useSimilarTopics(topic.topicCode);
 
   // Fetch usage history for heat map visualization (AC2)
-  const { data: usageHistory } = useTopicUsageHistory(topic.id);
+  const { data: usageHistory } = useTopicUsageHistory(topic.topicCode);
 
   // Mutation for selecting topic
   const selectTopicMutation = useSelectTopicForEvent();
@@ -134,7 +134,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   // Check if there are high similarity warnings (>70%) - AC5
   const highSimilarityTopics =
     similarTopics?.filter((st) => {
-      const similarity = (topic.similarityScores ?? []).find((s) => s.topicId === st.id);
+      const similarity = (topic.similarityScores ?? []).find((s) => s.topicCode === st.topicCode);
       return similarity && similarity.score > 0.7;
     }) || [];
 
@@ -153,7 +153,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         {
           eventCode,
           request: {
-            topicId: topic.id,
+            topicCode: topic.topicCode,
             justification: justification || undefined,
           },
         },
@@ -161,7 +161,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           onSuccess: () => {
             // Call parent callback to show speaker brainstorming panel
             if (onTopicConfirm) {
-              onTopicConfirm(topic.id);
+              onTopicConfirm(topic.topicCode);
             }
           },
         }
@@ -240,7 +240,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         {/* Usage History Heat Map (AC2) */}
         {usageHistory && usageHistory.length > 0 && (
           <Box sx={{ mb: 2 }}>
-            <TopicHeatMap topicId={topic.id} usageHistory={usageHistory} />
+            <TopicHeatMap topicId={topic.topicCode} usageHistory={usageHistory} />
           </Box>
         )}
 
@@ -319,9 +319,9 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           </DialogContentText>
           <List dense>
             {highSimilarityTopics.map((st) => {
-              const similarity = (topic.similarityScores ?? []).find((s) => s.topicId === st.id);
+              const similarity = (topic.similarityScores ?? []).find((s) => s.topicCode === st.topicCode);
               return (
-                <ListItem key={st.id}>
+                <ListItem key={st.topicCode}>
                   <ListItemText
                     primary={st.title}
                     secondary={`${t('topicBacklog.dialogs.similar.similarity', 'Similarity')}: ${Math.round((similarity?.score || 0) * 100)}%`}
@@ -428,7 +428,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
             {t('topicBacklog.dialogs.delete.cancel', 'Cancel')}
           </Button>
           <Button
-            onClick={() => deleteTopicMutation.mutate(topic.id)}
+            onClick={() => deleteTopicMutation.mutate(topic.topicCode)}
             color="error"
             variant="contained"
             disabled={deleteTopicMutation.isPending}

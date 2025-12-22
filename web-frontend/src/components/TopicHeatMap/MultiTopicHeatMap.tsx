@@ -344,7 +344,7 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
         {/* Topic Rows */}
         {heatMapRows.map((row) => (
           <Box
-            key={row.topic.id}
+            key={row.topic.topicCode}
             onClick={() => onTopicSelect(row.topic)}
             sx={{
               display: 'flex',
@@ -352,7 +352,7 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
               cursor: 'pointer',
               minWidth: 'max-content',
               backgroundColor:
-                selectedTopicId === row.topic.id
+                selectedTopicId === row.topic.topicCode
                   ? alpha(theme.palette.primary.main, 0.1)
                   : 'transparent',
               '&:hover': {
@@ -376,7 +376,7 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
               <Typography
                 variant="body2"
                 noWrap
-                fontWeight={selectedTopicId === row.topic.id ? 'bold' : 'normal'}
+                fontWeight={selectedTopicId === row.topic.topicCode ? 'bold' : 'normal'}
               >
                 {row.topic.title}
               </Typography>
