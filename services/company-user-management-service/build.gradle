@@ -1,268 +1,63 @@
+// Company User Management Service
+// Common configuration is in root build.gradle
+// This file contains only service-specific dependencies and configuration
+
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.7'
-    id 'jacoco'
-    id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.17.0'
-    id 'org.openapi.generator' version '7.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
-group = 'ch.batbern'
-version = '1.0.0'
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Shared Kernel - Common types and utilities (multi-project dependency)
-    implementation project(':shared-kernel')
-
-    // Shared Kernel - Test fixtures for integration testing (Testcontainers PostgreSQL)
-    testImplementation testFixtures(project(':shared-kernel'))
-
-    // Spring Boot Core
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
-    // Database
-    runtimeOnly 'org.postgresql:postgresql'
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
-
-    // AWS SDK
-    implementation platform('software.amazon.awssdk:bom:2.39.0')  // Updated from 2.20.26 to fix S3Presigner NPE
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:url-connection-client'
-    implementation 'software.amazon.awssdk:eventbridge'
-    implementation 'software.amazon.awssdk:cognitoidentityprovider'  // Story 1.14-2 Task 12: Cognito Integration
-
-    // Caching - Caffeine (application-level in-memory cache)
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-
-    // Monitoring - Micrometer for metrics collection
-    implementation 'io.micrometer:micrometer-core'
-    implementation 'io.micrometer:micrometer-registry-cloudwatch2'
-
-    // Monitoring - AWS X-Ray for distributed tracing
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.15.1'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.15.1'
-
-    // Monitoring - Structured JSON logging
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
-
-    // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    // Spring Boot DevTools for hot reload
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
-    // OpenAPI/Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
-
-    // OpenAPI Generator - Required for generated code
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
-    implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'jakarta.annotation:jakarta.annotation-api'
-
-    // Testing
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:testcontainers:1.21.3'
-    testImplementation 'org.testcontainers:postgresql:1.21.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
-    testImplementation 'io.rest-assured:rest-assured:5.5.6'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
-    // Note: H2 removed - all integration tests use Testcontainers PostgreSQL for production parity
-}
-
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.10"
-}
-
-jacocoTestReport {
-    dependsOn test, classes
-    reports {
-        xml.required = true
-        html.required = true
-        csv.required = false
-    }
-
-    // Exclude generated code from coverage
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',                    // OpenAPI generated code
-                '**/dto/generated/**',                // Generated DTOs from users-api.openapi.yml
-                '**/api/generated/**',                // Generated API interfaces
-                '**/*Application.class',              // Spring Boot main class
-                '**/*Config.class',                   // Configuration classes
-                '**/*Configuration.class'             // Configuration classes
-            ])
-        }))
-    }
-}
-
-test.finalizedBy jacocoTestReport
-
-jacocoTestCoverageVerification {
-    dependsOn jacocoTestReport
-    violationRules {
-        rule {
-            limit {
-                // Use 60% threshold for incremental development
-                // TODO: Increase to 0.90 once service is fully implemented
-                minimum = 0.60
-            }
-        }
-    }
-
-    // Exclude generated code from coverage verification (same as jacocoTestReport)
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',                    // OpenAPI generated code
-                '**/dto/generated/**',                // Generated DTOs from users-api.openapi.yml
-                '**/api/generated/**',                // Generated API interfaces
-                '**/*Application.class',              // Spring Boot main class
-                '**/*Config.class',                   // Configuration classes
-                '**/*Configuration.class'             // Configuration classes
-            ])
-        }))
-    }
-}
-
-// Coverage verification runs only during explicit test tasks, not during build
-// check.dependsOn jacocoTestCoverageVerification
-
-// Checkstyle configuration
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // Allow build to succeed while generating quality reports
-    maxWarnings = 0
-}
-
-// Apply Trivy security scanning
-apply from: "../../gradle/trivy-security.gradle"
-
-// Generate build-info.properties for Spring Boot Actuator
-springBoot {
-    buildInfo()
-}
-
-// Configure git.properties generation
+// Git properties generation
 gitProperties {
     keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
     dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
     dateFormatTimeZone = "UTC"
-    // Allow build to continue if git directory is not available (e.g., in Docker)
     failOnNoGitDirectory = false
     extProperty = 'gitProps'
 }
 
-// Flyway configuration for database migrations
-flyway {
-    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
-    user = System.getProperty('flyway.user', 'batbern_user')
-    password = System.getProperty('flyway.password', 'batbern-dev-password')
-    locations = ['classpath:db/migration']
-    baselineOnMigrate = true
-    baselineVersion = '0'
+dependencies {
+    // Service-specific: AWS SDK (S3, Cognito, EventBridge)
+    implementation platform('software.amazon.awssdk:bom:2.39.0')
+    implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:url-connection-client'
+    implementation 'software.amazon.awssdk:eventbridge'
+    implementation 'software.amazon.awssdk:cognitoidentityprovider'
+
+    // Service-specific: Caching
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // Service-specific: Monitoring
+    implementation 'io.micrometer:micrometer-core'
+    implementation 'io.micrometer:micrometer-registry-cloudwatch2'
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.15.1'
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.15.1'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
+    // Service-specific: Testing
+    testImplementation 'io.rest-assured:rest-assured:5.5.6'
+    testImplementation 'org.awaitility:awaitility:4.2.0'
+
+    // Service-specific: DevTools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
-// OpenAPI Generator - Generate API interfaces and DTOs from OpenAPI spec
+// OpenAPI Generator - Generate API interfaces and DTOs
 openApiGenerate {
     generatorName = 'spring'
-    inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
+    inputSpec = "$rootDir/docs/api/companies-api.openapi.yml".toString()
     outputDir = "$buildDir/generated".toString()
     apiPackage = 'ch.batbern.companyuser.api.generated'
     modelPackage = 'ch.batbern.companyuser.dto.generated'
     invokerPackage = 'ch.batbern.companyuser.api.invoker'
+    validateSpec = false
 
-    // Import mappings - use shared-kernel types instead of generating
     importMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
     ]
 
-    // Type mappings - map OpenAPI schemas to shared-kernel classes
-    typeMappings = [
-        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
-    ]
-
-    configOptions = [
-        dateLibrary: 'java8',
-        interfaceOnly: 'true',              // Only generate API interfaces (we write controllers manually)
-        skipDefaultInterface: 'true',       // Don't generate default implementations
-        useTags: 'true',                    // Use OpenAPI tags to organize API interfaces
-        useSpringBoot3: 'true',             // Use Spring Boot 3 annotations
-        documentationProvider: 'none',      // Avoid conflicts with springdoc-openapi
-        openApiNullable: 'false',           // Don't use JsonNullable wrapper
-        hideGenerationTimestamp: 'true',    // Cleaner generated code
-        useBeanValidation: 'true',          // Include @Valid, @NotNull annotations
-        performBeanValidation: 'true',      // Enable bean validation
-        useOptional: 'false',               // Use standard types instead of Optional
-        delegatePattern: 'false',           // We implement interfaces directly
-        useJakartaEe: 'true',               // Use Jakarta EE (Spring Boot 3 requirement)
-        generateBuilders: 'true'            // Generate builder pattern for DTOs
-    ]
-
-    // Generate only models and API interfaces (skip implementation)
-    globalProperties = [
-        models: '',
-        apis: '',
-        supportingFiles: 'ApiUtil.java'
-    ]
-
-    // Skip generation of shared-kernel types
-    // These will be imported from shared-kernel instead
-    schemaMappings = [
-        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
-    ]
-}
-
-// OpenAPI Generator for Companies API - Generate API interfaces and DTOs
-task openApiGenerateCompanies(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
-    generatorName = 'spring'
-    inputSpec = "$rootDir/docs/api/companies-api.openapi.yml".toString()
-    outputDir = "$buildDir/generated-companies".toString()
-    apiPackage = 'ch.batbern.companyuser.api.generated.companies'
-    modelPackage = 'ch.batbern.companyuser.dto.generated.companies'
-    invokerPackage = 'ch.batbern.companyuser.api.invoker.companies'
-
-    // Import mappings - use shared-kernel types instead of generating
-    importMappings = [
-        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
-        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
-    ]
-
-    // Type mappings - map OpenAPI schemas to shared-kernel classes
     typeMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
@@ -281,7 +76,8 @@ task openApiGenerateCompanies(type: org.openapitools.generator.gradle.plugin.tas
         performBeanValidation: 'true',
         useOptional: 'false',
         delegatePattern: 'false',
-        useJakartaEe: 'true'
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
     ]
 
     globalProperties = [
@@ -296,21 +92,68 @@ task openApiGenerateCompanies(type: org.openapitools.generator.gradle.plugin.tas
     ]
 }
 
-// Make compileJava depend on both openApiGenerate tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateCompanies
+// Also generate user API interfaces
+task openApiGenerateUsers(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-users".toString()
+    apiPackage = 'ch.batbern.companyuser.api.generated'
+    modelPackage = 'ch.batbern.companyuser.dto.generated'
+    invokerPackage = 'ch.batbern.companyuser.api.invoker'
+    validateSpec = false
 
-// Add generated sources to source sets
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        'PaginatedResponse': 'ch.batbern.shared.dto.PaginatedResponse'
+    ]
+
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'true',
+        skipDefaultInterface: 'true',
+        useTags: 'true',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        delegatePattern: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'
+    ]
+
+    globalProperties = [
+        models: '',
+        apis: ''
+        // Omit supportingFiles to avoid ApiUtil duplication with first task
+    ]
+
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsers
+
 sourceSets {
     main {
         java {
             srcDir "$buildDir/generated/src/main/java"
-            srcDir "$buildDir/generated-companies/src/main/java"
+            srcDir "$buildDir/generated-users/src/main/java"
         }
     }
 }
 
-// Clean generated sources when running clean
 clean {
     delete "$buildDir/generated"
-    delete "$buildDir/generated-companies"
+    delete "$buildDir/generated-users"
 }

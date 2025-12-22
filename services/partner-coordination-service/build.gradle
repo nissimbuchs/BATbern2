@@ -1,98 +1,50 @@
+// Partner Coordination Service
+// Common configuration is in root build.gradle
+// This file contains only service-specific dependencies and configuration
+
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.7'
-    id 'jacoco'
-    id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.17.0'
-    id 'org.openapi.generator' version '7.2.0'
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
-group = 'ch.batbern'
-version = '1.0.0'
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-
-repositories {
-    mavenCentral()
+// Git properties generation
+gitProperties {
+    keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
+    dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+    dateFormatTimeZone = "UTC"
+    failOnNoGitDirectory = false
+    extProperty = 'gitProps'
 }
 
 dependencies {
-    // Shared Kernel - Common types and utilities (multi-project dependency)
-    implementation project(':shared-kernel')
-
-    // Shared Kernel - Test fixtures for integration testing (Testcontainers PostgreSQL)
-    testImplementation testFixtures(project(':shared-kernel'))
-
-    // Spring Boot Core
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // Spring Security - JWT token propagation for service-to-service communication
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
-    // Database
-    runtimeOnly 'org.postgresql:postgresql'
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
-
-    // HTTP Client for microservices communication (ADR-003)
-    // Uses RestTemplate (matching other services) NOT WebClient
-
-    // Caching - Caffeine (application-level in-memory cache)
+    // Service-specific: Caching
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
-    // Resilience4j for circuit breaker
+    // Service-specific: Resilience4j for circuit breaker
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
 
-    // AWS SDK
+    // Service-specific: AWS SDK
     implementation platform('software.amazon.awssdk:bom:2.39.0')
     implementation 'software.amazon.awssdk:eventbridge'
 
-    // Monitoring - Micrometer for metrics collection
+    // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-cloudwatch2'
-
-    // Monitoring - Structured JSON logging
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
-    // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    // Spring Boot DevTools for hot reload
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-
-    // OpenAPI/Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
-
-    // OpenAPI Generator - Required for generated code
-    implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
-    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
-    implementation 'jakarta.validation:jakarta.validation-api'
-    implementation 'jakarta.annotation:jakarta.annotation-api'
-
-    // Testing
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:testcontainers:1.21.3'
-    testImplementation 'org.testcontainers:postgresql:1.21.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
+    // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:5.5.6'
     testImplementation 'org.awaitility:awaitility:4.2.0'
-    // Note: H2 removed - all integration tests use Testcontainers PostgreSQL for production parity
+
+    // Service-specific: OpenAPI nullable (if needed for this service)
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+
+    // Service-specific: DevTools
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
-// OpenAPI Generator Configuration - Hybrid Contract-First Approach (ADR-006)
+// OpenAPI Generator - Generate API interfaces and DTOs from partners-api spec
 openApiGenerate {
     generatorName = "spring"
     inputSpec = "$rootDir/docs/api/partners-api.openapi.yml".toString()
@@ -100,7 +52,6 @@ openApiGenerate {
     apiPackage = "ch.batbern.partners.api.generated"
     modelPackage = "ch.batbern.partners.dto.generated"
 
-    // Import shared-kernel types (NOT generated)
     importMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
@@ -118,60 +69,60 @@ openApiGenerate {
     ]
 
     configOptions = [
-        interfaceOnly: "true",              // Only generate interfaces
-        useTags: "true",                    // Organize by OpenAPI tags
-        useSpringBoot3: "true",             // Spring Boot 3 annotations
-        useBeanValidation: "true",          // @Valid, @NotNull
-        useJakartaEe: "true",               // Jakarta EE (Spring Boot 3)
-        dateLibrary: "java8",               // java.time.* types
-        generateBuilders: "true",           // Generate builder pattern for DTOs
-        skipDefaultInterface: "true"        // No default methods
+        interfaceOnly: "true",
+        useTags: "true",
+        useSpringBoot3: "true",
+        useBeanValidation: "true",
+        useJakartaEe: "true",
+        dateLibrary: "java8",
+        generateBuilders: "true",
+        skipDefaultInterface: "true"
     ]
 }
 
-// Generate Company Service Client DTOs (from companies-api.openapi.yml)
-// Used for HTTP client responses when calling Company Service
+// Generate Company Service Client DTOs
 task generateCompanyClientDtos(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     generatorName = "java"
-    library = "native"              // Use native java library (jackson-compatible)
+    library = "native"
     inputSpec = "$rootDir/docs/api/companies-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-client-company".toString()
     modelPackage = "ch.batbern.partners.client.company.dto"
 
     globalProperties = [
-        models: "",                 // Generate models only
-        apis: "false",              // Skip API generation
-        supportingFiles: "false"    // Skip supporting files
+        models: "",
+        apis: "false",
+        supportingFiles: "false"
     ]
 
     configOptions = [
         dateLibrary: "java8",
         useJakartaEe: "true",
         serializationLibrary: "jackson",
-        openApiNullable: "false"    // Disable OpenAPI nullable (simpler POJOs)
+        openApiNullable: "false",
+        generateBuilders: "true"
     ]
 }
 
-// Generate User Service Client DTOs (from users-api.openapi.yml)
-// Used for HTTP client responses when calling User Service
+// Generate User Service Client DTOs
 task generateUserClientDtos(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     generatorName = "java"
-    library = "native"              // Use native java library (jackson-compatible)
+    library = "native"
     inputSpec = "$rootDir/docs/api/users-api.openapi.yml".toString()
     outputDir = "$buildDir/generated-client-user".toString()
     modelPackage = "ch.batbern.partners.client.user.dto"
 
     globalProperties = [
-        models: "",                 // Generate models only
-        apis: "false",              // Skip API generation
-        supportingFiles: "false"    // Skip supporting files
+        models: "",
+        apis: "false",
+        supportingFiles: "false"
     ]
 
     configOptions = [
         dateLibrary: "java8",
         useJakartaEe: "true",
         serializationLibrary: "jackson",
-        openApiNullable: "false"    // Disable OpenAPI nullable (simpler POJOs)
+        openApiNullable: "false",
+        generateBuilders: "true"
     ]
 }
 
@@ -183,105 +134,9 @@ sourceSets.main.java.srcDirs += "$buildDir/generated-client-user/src/main/java"
 // Generate before compile
 compileJava.dependsOn tasks.openApiGenerate, generateCompanyClientDtos, generateUserClientDtos
 
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.10"
-}
-
-jacocoTestReport {
-    dependsOn test, classes
-    reports {
-        xml.required = true
-        html.required = true
-        csv.required = false
-    }
-
-    // Exclude generated code from coverage
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',                    // OpenAPI generated code (main API)
-                '**/client/company/dto/**',           // Generated company client DTOs
-                '**/client/user/dto/**',              // Generated user client DTOs
-                '**/*Application.class',              // Spring Boot main class
-                '**/*Config.class',                   // Configuration classes
-                '**/*Configuration.class'             // Configuration classes
-            ])
-        }))
-    }
-}
-
-test.finalizedBy jacocoTestReport
-
-jacocoTestCoverageVerification {
-    dependsOn jacocoTestReport
-    violationRules {
-        rule {
-            limit {
-                // Use 60% threshold for incremental development
-                // TODO: Increase to 0.90 once service is fully implemented
-                minimum = 0.60
-            }
-        }
-    }
-
-    // Exclude generated code from coverage verification (same as jacocoTestReport)
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',                    // OpenAPI generated code (main API)
-                '**/client/company/dto/**',           // Generated company client DTOs
-                '**/client/user/dto/**',              // Generated user client DTOs
-                '**/*Application.class',              // Spring Boot main class
-                '**/*Config.class',                   // Configuration classes
-                '**/*Configuration.class'             // Configuration classes
-            ])
-        }))
-    }
-}
-
-// Coverage verification runs only during explicit test tasks, not during build
-// check.dependsOn jacocoTestCoverageVerification
-
-// Checkstyle configuration
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // Allow build to succeed while generating quality reports
-    maxWarnings = 0
-}
-
-// Apply Trivy security scanning
-apply from: "../../gradle/trivy-security.gradle"
-
-// Generate build-info.properties for Spring Boot Actuator
-springBoot {
-    buildInfo()
-}
-
-// Configure git.properties generation
-gitProperties {
-    keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
-    dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-    dateFormatTimeZone = "UTC"
-    // Allow build to continue if git directory is not available (e.g., in Docker)
-    failOnNoGitDirectory = false
-    extProperty = 'gitProps'
-}
-
-// Flyway configuration for database migrations
+// Override Flyway config for this service (different from default)
 flyway {
     url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
     user = System.getProperty('flyway.user', 'batbern_user')
     password = System.getProperty('flyway.password', 'batbern-dev-password')
-    locations = ['classpath:db/migration']
-    baselineOnMigrate = true
-    baselineVersion = '0'
 }

@@ -1,126 +1,28 @@
+// Attendee Experience Service
+// Common configuration is in root build.gradle
+// This file contains only service-specific dependencies and configuration
+
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.7'
-    id 'jacoco'
-    id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.17.0'
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
-group = 'ch.batbern'
-version = '1.0.0'
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
-
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.10"
-}
-
-jacocoTestReport {
-    dependsOn test, classes
-    reports {
-        xml.required = true
-        html.required = true
-        csv.required = false
-    }
-
-    // Exclude generated code from coverage
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',           // OpenAPI generated code
-                '**/*Application.class',     // Spring Boot main class
-                '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
-            ])
-        }))
-    }
-}
-
-test.finalizedBy jacocoTestReport
-
-jacocoTestCoverageVerification {
-    dependsOn jacocoTestReport
-    violationRules {
-        rule {
-            limit {
-                // Use 60% threshold for incremental development
-                // TODO: Increase to 0.90 once service is fully implemented
-                minimum = 0.60
-            }
-        }
-    }
-
-    // Exclude generated code from coverage verification (same as jacocoTestReport)
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: [
-                '**/generated/**',           // OpenAPI generated code
-                '**/*Application.class',     // Spring Boot main class
-                '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
-            ])
-        }))
-    }
-}
-
-// Coverage verification runs only during explicit test tasks, not during build
-// check.dependsOn jacocoTestCoverageVerification
-
-// Checkstyle configuration
-checkstyle {
-    toolVersion = '10.12.5'
-    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
-    ignoreFailures = true  // Allow build to succeed while generating quality reports
-    maxWarnings = 0
-}
-
-// Apply Trivy security scanning
-apply from: "../../gradle/trivy-security.gradle"
-
-// Generate build-info.properties for Spring Boot Actuator
-springBoot {
-    buildInfo()
-}
-
-// Configure git.properties generation
+// Git properties generation
 gitProperties {
     keys = ['git.branch', 'git.commit.id', 'git.commit.id.abbrev', 'git.commit.time']
     dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
     dateFormatTimeZone = "UTC"
-    // Allow build to continue if git directory is not available (e.g., in Docker)
     failOnNoGitDirectory = false
     extProperty = 'gitProps'
 }
 
-// Flyway configuration for database migrations
-flyway {
-    url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern')
-    user = System.getProperty('flyway.user', 'batbern_user')
-    password = System.getProperty('flyway.password', 'batbern-dev-password')
-    locations = ['classpath:db/migration']
-    baselineOnMigrate = true
-    baselineVersion = '0'
+dependencies {
+    // Service-specific dependencies go here
+    // (None yet - using common config from root build.gradle)
 }
+
+// OpenAPI Generator - if this service has an API spec, configure it here
+// openApiGenerate {
+//     generatorName = 'spring'
+//     inputSpec = "$rootDir/docs/api/attendees-api.openapi.yml".toString()
+//     ...
+// }
