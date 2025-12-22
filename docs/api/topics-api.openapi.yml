@@ -1,0 +1,749 @@
+openapi: 3.1.0
+info:
+  title: BATbern Topics API
+  version: 1.0.0
+  description: |
+    Topic Management API for BATbern Event Management Platform.
+
+    This API provides topic backlog management capabilities with:
+    - **Topic CRUD Operations**: Create, read, update, delete topics
+    - **Staleness Scoring**: Automatic and manual staleness score management
+    - **Similarity Detection**: Cosine similarity scoring for duplicate detection
+    - **Usage History**: Track topic usage across events
+    - **Event Integration**: Select topics for events
+
+    **Story 5.2**: Topic Selection and Backlog Management
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+    identifier: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Topics
+    description: Topic management operations
+  - name: Topic Analysis
+    description: Staleness and similarity analysis
+  - name: Event Topics
+    description: Topic selection for events
+
+paths:
+  /topics:
+    get:
+      tags:
+        - Topics
+      summary: List topics with filtering
+      description: |
+        Retrieve a paginated list of topics with optional filtering by category, status, and staleness.
+
+        **Acceptance Criteria**: AC1 (Story 5.2)
+
+        **Filter Syntax Examples**:
+        - Category filter: `{"category":"Architecture"}`
+        - Status filter: `{"status":"available"}`
+        - Combined: `{"category":"Architecture","status":"available"}`
+
+        **Include Options**:
+        - `similarity`: Include similarity scores to other topics
+        - `history`: Include usage history records
+
+      operationId: listTopics
+      parameters:
+        - name: filter
+          in: query
+          description: MongoDB-style JSON filter criteria
+          required: false
+          schema:
+            type: string
+            example: '{"category":"Architecture"}'
+        - name: sort
+          in: query
+          description: Sort field (prefix with - for descending)
+          required: false
+          schema:
+            type: string
+            example: '-stalenessScore'
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: include
+          in: query
+          description: Comma-separated resources to include (similarity, history)
+          required: false
+          schema:
+            type: string
+            example: 'similarity,history'
+      responses:
+        '200':
+          description: Paginated list of topics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Topics
+      summary: Create new topic
+      description: |
+        Create a new topic in the backlog.
+
+        **Acceptance Criteria**: AC8 (Story 5.2)
+
+        **Validation Rules**:
+        - Title must be unique
+        - Category is required
+        - Keywords are optional but improve similarity matching
+
+      operationId: createTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTopicRequest'
+      responses:
+        '201':
+          description: Topic created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /topics/{id}:
+    get:
+      tags:
+        - Topics
+      summary: Get topic by ID
+      description: Retrieve a specific topic with optional includes
+      operationId: getTopicById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+        - name: include
+          in: query
+          description: Comma-separated resources to include
+          required: false
+          schema:
+            type: string
+            example: 'similarity,history'
+      responses:
+        '200':
+          description: Topic retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Topics
+      summary: Update topic
+      description: |
+        Update an existing topic.
+
+        **Story 5.2a**: Edit Topic Feature
+      operationId: updateTopic
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTopicRequest'
+      responses:
+        '200':
+          description: Topic updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Topics
+      summary: Delete topic
+      description: |
+        Delete a topic. Only allowed if topic has never been used.
+
+        **Story 5.2a**: Delete Topic Feature
+      operationId: deleteTopic
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Topic deleted successfully
+        '400':
+          description: Topic has been used and cannot be deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /topics/{id}/override-staleness:
+    put:
+      tags:
+        - Topic Analysis
+      summary: Override staleness score
+      description: |
+        Manually override the staleness score with justification.
+
+        **Acceptance Criteria**: AC7 (Story 5.2)
+
+        Requires ORGANIZER role.
+      operationId: overrideStaleness
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideStalenessRequest'
+      responses:
+        '200':
+          description: Staleness score overridden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /topics/{id}/similar:
+    get:
+      tags:
+        - Topic Analysis
+      summary: Get similar topics
+      description: |
+        Get topics with >70% similarity for duplicate detection.
+
+        **Acceptance Criteria**: AC5 (Story 5.2)
+      operationId: getSimilarTopics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of similar topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /topics/{id}/usage-history:
+    get:
+      tags:
+        - Topic Analysis
+      summary: Get topic usage history
+      description: |
+        Get usage history for heat map visualization.
+
+        **Acceptance Criteria**: AC2 (Story 5.2)
+      operationId: getTopicUsageHistory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Topic UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Usage history records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicUsageHistory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /topics/recalculate-staleness:
+    post:
+      tags:
+        - Topic Analysis
+      summary: Recalculate staleness scores
+      description: |
+        Recalculate staleness scores for all topics.
+
+        **Authorization**: ORGANIZER role required
+      operationId: recalculateStaleness
+      responses:
+        '200':
+          description: Recalculation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Staleness scores recalculated for 42 topics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /topics/calculate-similarities:
+    post:
+      tags:
+        - Topic Analysis
+      summary: Calculate similarity scores
+      description: |
+        Calculate similarity scores for all topics.
+
+        **Acceptance Criteria**: AC4 (Story 5.2)
+
+        **Authorization**: ORGANIZER role required
+      operationId: calculateSimilarities
+      responses:
+        '200':
+          description: Calculation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: 'Similarity scores calculated for 42 topics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/topics:
+    post:
+      tags:
+        - Event Topics
+      summary: Select topic for event
+      description: |
+        Select a topic for an event and transition workflow state.
+
+        **Acceptance Criteria**: AC14 (Story 5.2)
+      operationId: selectTopicForEvent
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (e.g., BATbern56)
+          schema:
+            type: string
+            example: 'BATbern56'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectTopicForEventRequest'
+      responses:
+        '200':
+          description: Topic selected for event
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  schemas:
+    Topic:
+      type: object
+      description: Topic entity for event management
+      required:
+        - id
+        - title
+        - category
+        - stalenessScore
+        - colorZone
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Topic unique identifier
+          example: '550e8400-e29b-41d4-a716-446655440000'
+        title:
+          type: string
+          description: Topic title
+          example: 'Cloud Native Security Patterns'
+        description:
+          type: string
+          description: Detailed topic description
+          example: 'Best practices for securing cloud-native applications'
+        category:
+          type: string
+          description: Topic category
+          example: 'Security'
+        createdDate:
+          type: string
+          format: date-time
+          description: When the topic was created
+        lastUsedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the topic was last used in an event
+        usageCount:
+          type: integer
+          description: Number of times topic has been used
+          example: 3
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Staleness score (0-100, higher = safer to reuse)
+          example: 75
+        colorZone:
+          $ref: '#/components/schemas/TopicColorZone'
+        status:
+          $ref: '#/components/schemas/TopicStatus'
+        similarityScores:
+          type: array
+          description: Similarity scores to other topics
+          items:
+            $ref: '#/components/schemas/SimilarityScore'
+        active:
+          type: boolean
+          description: Whether the topic is active
+          default: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        usageHistory:
+          type: array
+          description: Usage history (populated when include=history)
+          items:
+            $ref: '#/components/schemas/TopicUsageHistory'
+
+    TopicColorZone:
+      type: string
+      description: Color coding for topic freshness visualization
+      enum:
+        - red
+        - yellow
+        - green
+        - gray
+      example: 'green'
+
+    TopicStatus:
+      type: string
+      description: Topic availability status
+      enum:
+        - available
+        - caution
+        - unavailable
+      example: 'available'
+
+    SimilarityScore:
+      type: object
+      description: Cosine similarity score to another topic
+      required:
+        - topicId
+        - score
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: ID of the similar topic
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Cosine similarity score (0-1)
+          example: 0.85
+
+    TopicUsageHistory:
+      type: object
+      description: Record of topic usage in an event
+      required:
+        - eventNumber
+        - usedDate
+        - attendance
+        - engagementScore
+      properties:
+        eventNumber:
+          type: integer
+          description: Event number (e.g., 56 for BATbern56)
+          example: 56
+        eventCode:
+          type: string
+          description: Human-readable event code
+          example: 'BATbern56'
+        eventDate:
+          type: string
+          format: date
+          description: Event date (ISO 8601)
+          example: '2025-03-15'
+        usedDate:
+          type: string
+          format: date-time
+          description: When the topic was used
+        attendance:
+          type: integer
+          description: Attendance count for this topic's session
+          example: 120
+        engagementScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Engagement score (0-1)
+          example: 0.78
+
+    TopicListResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    PaginationMetadata:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+      properties:
+        page:
+          type: integer
+          description: Current page (1-indexed)
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        total:
+          type: integer
+          description: Total number of items
+          example: 42
+
+    CreateTopicRequest:
+      type: object
+      required:
+        - title
+        - category
+      properties:
+        title:
+          type: string
+          description: Topic title (must be unique)
+          example: 'Cloud Native Security Patterns'
+        description:
+          type: string
+          description: Detailed topic description
+        category:
+          type: string
+          description: Topic category
+          example: 'Security'
+        keywords:
+          type: array
+          items:
+            type: string
+          description: Keywords for similarity matching
+          example: ['cloud', 'security', 'patterns']
+        relatedTopics:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: IDs of related topics
+
+    OverrideStalenessRequest:
+      type: object
+      required:
+        - stalenessScore
+        - justification
+      properties:
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: New staleness score
+          example: 80
+        justification:
+          type: string
+          description: Reason for overriding the score
+          example: 'Topic remains highly relevant due to recent industry developments'
+
+    SelectTopicForEventRequest:
+      type: object
+      required:
+        - topicId
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: ID of the topic to select
+        justification:
+          type: string
+          description: Optional justification for selection
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - timestamp
+      properties:
+        error:
+          type: string
+          example: 'VALIDATION_ERROR'
+        errorCode:
+          type: string
+          example: 'BAD_REQUEST'
+        message:
+          type: string
+          example: 'Invalid request data'
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict - resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from AWS Cognito
+
+security:
+  - bearerAuth: []

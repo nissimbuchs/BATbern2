@@ -134,7 +134,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
   // Check if there are high similarity warnings (>70%) - AC5
   const highSimilarityTopics =
     similarTopics?.filter((st) => {
-      const similarity = topic.similarityScores.find((s) => s.topicId === st.id);
+      const similarity = (topic.similarityScores ?? []).find((s) => s.topicId === st.id);
       return similarity && similarity.score > 0.7;
     }) || [];
 
@@ -319,7 +319,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           </DialogContentText>
           <List dense>
             {highSimilarityTopics.map((st) => {
-              const similarity = topic.similarityScores.find((s) => s.topicId === st.id);
+              const similarity = (topic.similarityScores ?? []).find((s) => s.topicId === st.id);
               return (
                 <ListItem key={st.id}>
                   <ListItemText

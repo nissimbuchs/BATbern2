@@ -1,78 +1,35 @@
 /**
  * Topic Management UI Types (Story 5.2)
  *
- * Types for Topic Selection and Backlog Management.
- * Extends generated OpenAPI types with UI-specific fields.
+ * UI-specific types for Topic Selection and Backlog Management.
+ * Core API types are imported from generated OpenAPI types.
+ *
+ * IMPORTANT: For backend API types, import directly from './generated/topics-api.types'
+ * This file contains ONLY frontend-specific types and extensions.
  */
 
-// ============================================================================
-// Topic Types (for API responses)
-// ============================================================================
-
-export interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  createdDate?: string;
-  lastUsedDate?: string | null;
-  usageCount?: number;
-  stalenessScore: number; // 0-100, higher = safer to reuse
-  colorZone: 'red' | 'yellow' | 'green' | 'gray'; // Color coding for freshness
-  status: 'available' | 'caution' | 'unavailable'; // Topic availability status
-  similarityScores: SimilarityScore[];
-  active?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  usageHistory?: TopicUsageHistory[]; // GitHub Issue #379: Populated when include=history
-}
-
-export interface SimilarityScore {
-  topicId: string;
-  score: number; // 0-1, cosine similarity score
-}
-
-export interface TopicUsageHistory {
-  eventNumber: number; // GitHub Issue #379: Event number (e.g., 56 for BATbern56) - no UUIDs in API
-  eventCode?: string; // GitHub Issue #379: Human-readable event code like "BATbern56"
-  eventDate?: string; // GitHub Issue #379: Actual event date (ISO 8601)
-  usedDate: string;
-  attendance: number;
-  engagementScore: number; // 0-1
-}
+import type { components } from './generated/topics-api.types';
 
 // ============================================================================
-// Request/Response DTOs
+// Re-export Generated API Types
 // ============================================================================
 
-export interface TopicListResponse {
-  data: Topic[];
-  pagination: PaginationMetadata;
-}
+export type Topic = components['schemas']['Topic'];
+export type TopicColorZone = components['schemas']['TopicColorZone'];
+export type TopicStatus = components['schemas']['TopicStatus'];
+export type SimilarityScore = components['schemas']['SimilarityScore'];
+export type TopicUsageHistory = components['schemas']['TopicUsageHistory'];
+export type TopicListResponse = components['schemas']['TopicListResponse'];
+export type PaginationMetadata = components['schemas']['PaginationMetadata'];
+export type CreateTopicRequest = components['schemas']['CreateTopicRequest'];
+export type OverrideStalenessRequest = components['schemas']['OverrideStalenessRequest'];
+export type SelectTopicForEventRequest = components['schemas']['SelectTopicForEventRequest'];
 
-export interface PaginationMetadata {
-  page: number;
-  limit: number;
-  total: number;
-}
+// Backward compatibility alias (fix typo in old code)
+export type OverrideStalenesRequest = OverrideStalenessRequest;
 
-export interface CreateTopicRequest {
-  title: string;
-  description?: string;
-  category: string;
-  keywords?: string[];
-  relatedTopics?: string[];
-}
-
-export interface OverrideStalenesRequest {
-  stalenessScore: number;
-  justification: string;
-}
-
-export interface SelectTopicForEventRequest {
-  topicId: string;
-  justification?: string;
-}
+// Re-export components for direct access
+export type { components } from './generated/topics-api.types';
 
 // ============================================================================
 // UI State Types (not in API)
@@ -80,7 +37,7 @@ export interface SelectTopicForEventRequest {
 
 export interface TopicFilters {
   category?: string;
-  status?: 'available' | 'caution' | 'unavailable';
+  status?: TopicStatus;
   lastUsedDateRange?: { start: Date; end: Date };
   partnerInterest?: 'high' | 'medium' | 'low';
   sort?: string; // e.g., "-stalenessScore" for descending
@@ -91,7 +48,6 @@ export interface TopicFilters {
 
 export interface TopicDetailsUI extends Topic {
   // UI-specific fields for enhanced display
-  usageHistory?: TopicUsageHistory[];
   partnerVotes?: PartnerVote[];
   metrics?: TopicMetrics;
   insights?: TopicInsights;
