@@ -12,7 +12,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS speaker_status_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     speaker_pool_id UUID NOT NULL,
-    session_id UUID NOT NULL,
     event_code VARCHAR(50) NOT NULL,
     previous_status VARCHAR(50) NOT NULL CHECK (previous_status IN (
         'identified', 'contacted', 'ready', 'accepted', 'declined',
@@ -66,7 +65,6 @@ CREATE TRIGGER update_speaker_status_history_updated_at BEFORE UPDATE ON speaker
 -- Comments documenting architecture alignment
 COMMENT ON TABLE speaker_status_history IS 'Status transition history for speakers during event planning (Workflow Step 5) - Story 5.4';
 COMMENT ON COLUMN speaker_status_history.speaker_pool_id IS 'References speaker_pool.id - speaker whose status changed';
-COMMENT ON COLUMN speaker_status_history.session_id IS 'Session context UUID for tracking the workflow session when status change occurred';
 COMMENT ON COLUMN speaker_status_history.event_code IS 'References events.event_code - event context for the status change';
 COMMENT ON COLUMN speaker_status_history.previous_status IS 'SpeakerWorkflowState before transition (lowercase_with_underscores in DB, UPPER_CASE in Java)';
 COMMENT ON COLUMN speaker_status_history.new_status IS 'SpeakerWorkflowState after transition (lowercase_with_underscores in DB, UPPER_CASE in Java)';
