@@ -1,5 +1,5 @@
 /**
- * TaskWidget Component (Story 5.5 Phase 6)
+ * TaskWidget Component (Story 5.5 Phase 6 - Modified for routing)
  *
  * AC24: Critical tasks widget for dashboard sidebar
  * Wireframe: docs/wireframes/5.5-content-review-task-system-ux-flow.md
@@ -8,11 +8,11 @@
  * - Displays critical tasks (overdue + due soon < 3 days)
  * - Groups tasks by urgency (overdue, due soon)
  * - Shows task name, event, due date, assignee
- * - "View All Tasks" button opens TaskBoardModal
+ * - "View All Tasks" button navigates to /organizer/tasks page
  * - Auto-refreshes on task completion
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   List,
   ListItem,
@@ -34,10 +34,10 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { format, isPast, isWithinInterval, addDays } from 'date-fns';
 import { de, enUS, type Locale } from 'date-fns/locale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
-import { TaskBoardModal } from './TaskBoardModal';
 
 interface TaskWidgetProps {
   organizerUsername: string;
@@ -46,8 +46,8 @@ interface TaskWidgetProps {
 export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => {
   const { t, i18n } = useTranslation('events');
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const locale = i18n.language === 'de' ? de : enUS;
-  const [isTaskBoardOpen, setIsTaskBoardOpen] = useState(false);
 
   // Fetch critical tasks
   const {
@@ -76,7 +76,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   };
 
   const handleViewAllTasks = () => {
-    setIsTaskBoardOpen(true);
+    navigate('/organizer/tasks');
   };
 
   // Categorize tasks by urgency
@@ -135,36 +135,27 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   // Empty state
   if (overdueTasks.length === 0 && dueSoonTasks.length === 0) {
     return (
-      <>
-        <Box textAlign="center" py={4}>
-          <Typography variant="h6" gutterBottom>
-            {t('tasks.criticalTasks', 'Critical Tasks')}
-          </Typography>
-          <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
-          <Typography variant="body2" color="text.secondary">
-            {t('tasks.noCriticalTasks', 'No critical tasks')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            {t('tasks.greatJob', 'Great job!')}
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleViewAllTasks}
-            sx={{ mt: 2 }}
-            endIcon={<OpenInNewIcon />}
-          >
-            {t('tasks.viewAllTasks', 'View All Tasks')}
-          </Button>
-        </Box>
-
-        {/* Task Board Modal */}
-        <TaskBoardModal
-          open={isTaskBoardOpen}
-          onClose={() => setIsTaskBoardOpen(false)}
-          organizerUsername={organizerUsername}
-        />
-      </>
+      <Box textAlign="center" py={4}>
+        <Typography variant="h6" gutterBottom>
+          {t('tasks.criticalTasks', 'Critical Tasks')}
+        </Typography>
+        <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
+        <Typography variant="body2" color="text.secondary">
+          {t('tasks.noCriticalTasks', 'No critical tasks')}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" gutterBottom>
+          {t('tasks.greatJob', 'Great job!')}
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleViewAllTasks}
+          sx={{ mt: 2 }}
+          endIcon={<OpenInNewIcon />}
+        >
+          {t('tasks.viewAllTasks', 'View All Tasks')}
+        </Button>
+      </Box>
     );
   }
 
@@ -232,13 +223,6 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
           {t('tasks.viewAllTasks', 'View All Tasks')}
         </Button>
       </Box>
-
-      {/* Task Board Modal */}
-      <TaskBoardModal
-        open={isTaskBoardOpen}
-        onClose={() => setIsTaskBoardOpen(false)}
-        organizerUsername={organizerUsername}
-      />
     </Box>
   );
 };

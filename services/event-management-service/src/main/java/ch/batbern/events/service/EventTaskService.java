@@ -285,6 +285,17 @@ public class EventTaskService {
     }
 
     /**
+     * Get all tasks (for all organizers).
+     * Story 5.5: Task dashboard with "All Tasks" filter
+     *
+     * @return list of all tasks
+     */
+    public List<EventTask> getAllTasks() {
+        log.debug("Fetching all tasks");
+        return eventTaskRepository.findAll();
+    }
+
+    /**
      * Reassign a task to a different organizer (AC27).
      *
      * @param taskId the task ID
@@ -305,6 +316,62 @@ public class EventTaskService {
 
         EventTask updated = eventTaskRepository.save(task);
         log.info("Task {} reassigned to {}", taskId, newOrganizerUsername);
+
+        return updated;
+    }
+
+    /**
+     * Update task status (for drag-and-drop transitions).
+     * Story 5.5: Allow manual status transitions via drag-and-drop
+     *
+     * Supported transitions:
+     * - pending → todo (manual activation)
+     * - pending → completed (skip todo phase)
+     * - todo → completed (normal completion)
+     * - todo → pending (revert to pending)
+     * - completed → todo (reopen task)
+     * - completed → pending (reopen and revert)
+     *
+     * @param taskId the task ID
+     * @param newStatus the new status
+     * @return the updated task
+     * @throws jakarta.persistence.EntityNotFoundException if task not found
+     */
+    @Transactional
+    public EventTask updateTaskStatus(UUID taskId, String newStatus) {
+        log.info("Updating task {} status to: {}", taskId, newStatus);
+
+        // Find task
+        EventTask task = eventTaskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+
+        // Validate status value
+        if (!newStatus.matches("pending|todo|in_progress|completed")) {
+            throw new IllegalArgumentException(
+                    "Invalid status: " + newStatus
+                            + ". Must be one of: pending, todo, in_progress, completed");
+        }
+
+        String oldStatus = task.getStatus();
+
+        // Update status
+        task.setStatus(newStatus);
+
+        // If transitioning to completed, set completion details (if not already set)
+        if ("completed".equals(newStatus) && task.getCompletedDate() == null) {
+            task.setCompletedDate(Instant.now());
+            // Note: completedByUsername should be set separately via completeTask() for proper tracking
+            // This is for drag-and-drop quick completion without notes
+        }
+
+        // If reopening from completed, clear completion details
+        if (!"completed".equals(newStatus) && "completed".equals(oldStatus)) {
+            task.setCompletedDate(null);
+            task.setCompletedByUsername(null);
+        }
+
+        EventTask updated = eventTaskRepository.save(task);
+        log.info("Task {} status updated from {} to {}", taskId, oldStatus, newStatus);
 
         return updated;
     }

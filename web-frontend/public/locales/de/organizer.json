@@ -322,5 +322,32 @@
       "feedbackRequired": "Feedback ist erforderlich",
       "unknown": "Ein unbekannter Fehler ist aufgetreten"
     }
+  },
+  "tasks": {
+    "taskBoard": "Aufgabenverwaltung",
+    "filter": "Filter",
+    "myTasks": "Meine Aufgaben",
+    "allTasks": "Alle Aufgaben",
+    "sortBy": "Sortieren nach",
+    "dueDate": "Fälligkeitsdatum",
+    "createdDate": "Erstellungsdatum",
+    "addCustomTask": "Eigene Aufgabe hinzufügen",
+    "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
+    "pending": "Ausstehend",
+    "pendingDescription": "Wartet auf Auslöser",
+    "toDo": "Zu erledigen",
+    "todoDescription": "Bereit zur Bearbeitung",
+    "inProgress": "In Bearbeitung",
+    "inProgressDescription": "Wird derzeit bearbeitet",
+    "completed": "Erledigt",
+    "completedDescription": "Abgeschlossene Aufgaben",
+    "completeTask": "Aufgabe abschließen",
+    "completionNotes": "Notizen zum Abschluss (Optional)",
+    "markComplete": "Als erledigt markieren",
+    "due": "Fällig",
+    "assignedTo": "Zugewiesen an",
+    "completedOn": "Abgeschlossen am",
+    "completedBy": "Abgeschlossen von",
+    "noTasks": "Keine Aufgaben"
   }
 }

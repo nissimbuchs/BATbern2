@@ -7,6 +7,7 @@ import ch.batbern.events.dto.CreateEventTaskRequest;
 import ch.batbern.events.dto.CreateTasksFromTemplatesRequest;
 import ch.batbern.events.dto.EventTaskResponse;
 import ch.batbern.events.dto.ReassignTaskRequest;
+import ch.batbern.events.dto.UpdateTaskStatusRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.EventTaskService;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
  * - GET  /api/v1/tasks/my-tasks                          - Get tasks assigned to current organizer
  * - PUT  /api/v1/tasks/{taskId}/complete                 - Mark task complete
  * - PUT  /api/v1/tasks/{taskId}/reassign                 - Reassign task to different organizer
+ * - PUT  /api/v1/tasks/{taskId}/status                   - Update task status (drag-and-drop)
  *
  * Security: All endpoints require ORGANIZER role
  */
@@ -70,7 +72,7 @@ public class EventTaskController {
 
         List<EventTask> tasks = eventTaskService.getEventTasks(event.getId());
         List<EventTaskResponse> response = tasks.stream()
-                .map(EventTaskResponse::fromEntity)
+                .map(task -> EventTaskResponse.fromEntity(task, event.getEventCode()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -105,7 +107,7 @@ public class EventTaskController {
                 request.getNotes()
         );
 
-        EventTaskResponse response = EventTaskResponse.fromEntity(task);
+        EventTaskResponse response = EventTaskResponse.fromEntity(task, event.getEventCode());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -144,8 +146,9 @@ public class EventTaskController {
                 configs
         );
 
+        String evtCode = event.getEventCode();
         List<EventTaskResponse> response = tasks.stream()
-                .map(EventTaskResponse::fromEntity)
+                .map(task -> EventTaskResponse.fromEntity(task, evtCode))
                 .collect(Collectors.toList());
 
         log.info("Created {} tasks from templates for event {}", response.size(), eventCode);
@@ -171,8 +174,54 @@ public class EventTaskController {
                 ? eventTaskService.getCriticalTasksForOrganizer(username)
                 : eventTaskService.getTasksForOrganizer(username);
 
+        // Fetch event codes for all tasks
+        java.util.Map<UUID, String> eventCodeMap = tasks.stream()
+                .map(EventTask::getEventId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        eventId -> eventId,
+                        eventId -> eventRepository.findById(eventId)
+                                .map(ch.batbern.events.domain.Event::getEventCode)
+                                .orElse(null)
+                ));
+
         List<EventTaskResponse> response = tasks.stream()
-                .map(EventTaskResponse::fromEntity)
+                .map(task -> EventTaskResponse.fromEntity(task, eventCodeMap.get(task.getEventId())))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get all tasks (for all organizers).
+     * Story 5.5: Task dashboard with "All Tasks" filter
+     *
+     * @param critical if true, return only critical tasks (overdue + due soon)
+     * @return list of all tasks
+     */
+    @GetMapping("/api/v1/tasks/all-tasks")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<EventTaskResponse>> getAllTasks(
+            @RequestParam(required = false, defaultValue = "false") boolean critical) {
+
+        log.info("GET /api/v1/tasks/all-tasks - critical: {}", critical);
+
+        // Get all tasks from the service
+        List<EventTask> tasks = eventTaskService.getAllTasks();
+
+        // Fetch event codes for all tasks
+        java.util.Map<UUID, String> eventCodeMap = tasks.stream()
+                .map(EventTask::getEventId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        eventId -> eventId,
+                        eventId -> eventRepository.findById(eventId)
+                                .map(Event::getEventCode)
+                                .orElse(null)
+                ));
+
+        List<EventTaskResponse> response = tasks.stream()
+                .map(task -> EventTaskResponse.fromEntity(task, eventCodeMap.get(task.getEventId())))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
@@ -196,7 +245,10 @@ public class EventTaskController {
         log.info("PUT /api/v1/tasks/{}/complete - completedBy: {}", taskId, completedByUsername);
 
         EventTask task = eventTaskService.completeTask(taskId, completedByUsername, request.getNotes());
-        EventTaskResponse response = EventTaskResponse.fromEntity(task);
+        String eventCode = eventRepository.findById(task.getEventId())
+                .map(Event::getEventCode)
+                .orElse(null);
+        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
 
         return ResponseEntity.ok(response);
     }
@@ -219,7 +271,37 @@ public class EventTaskController {
                 taskId, request.getNewOrganizerUsername());
 
         EventTask task = eventTaskService.reassignTask(taskId, request.getNewOrganizerUsername());
-        EventTaskResponse response = EventTaskResponse.fromEntity(task);
+        String eventCode = eventRepository.findById(task.getEventId())
+                .map(Event::getEventCode)
+                .orElse(null);
+        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update task status (for drag-and-drop).
+     * Story 5.5: Manual status transitions via drag-and-drop
+     *
+     * Allows transitions: pending ↔ todo ↔ completed
+     *
+     * @param taskId task ID
+     * @param request status update request
+     * @return updated task
+     */
+    @PutMapping("/api/v1/tasks/{taskId}/status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<EventTaskResponse> updateTaskStatus(
+            @PathVariable UUID taskId,
+            @Valid @RequestBody UpdateTaskStatusRequest request) {
+
+        log.info("PUT /api/v1/tasks/{}/status - newStatus: {}", taskId, request.getStatus());
+
+        EventTask task = eventTaskService.updateTaskStatus(taskId, request.getStatus());
+        String eventCode = eventRepository.findById(task.getEventId())
+                .map(Event::getEventCode)
+                .orElse(null);
+        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
 
         return ResponseEntity.ok(response);
     }

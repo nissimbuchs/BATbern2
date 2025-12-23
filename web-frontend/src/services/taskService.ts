@@ -37,6 +37,7 @@ export interface TaskTemplateResponse {
 export interface EventTaskResponse {
   id: string;
   eventId: string;
+  eventCode: string | null;
   templateId: string | null;
   taskName: string;
   triggerState: string;
@@ -106,6 +107,13 @@ export interface CompleteTaskRequest {
  */
 export interface ReassignTaskRequest {
   newOrganizerUsername: string;
+}
+
+/**
+ * Update Task Status Request DTO (matches backend UpdateTaskStatusRequest.java)
+ */
+export interface UpdateTaskStatusRequest {
+  status: 'pending' | 'todo' | 'in_progress' | 'completed';
 }
 
 /**
@@ -264,6 +272,22 @@ class TaskService {
   }
 
   /**
+   * Get all tasks (for all organizers)
+   * Story 5.5: Task dashboard with "All Tasks" filter
+   *
+   * @param critical If true, returns only critical tasks (overdue + due soon)
+   * @returns List of all tasks
+   * @throws Error if unauthorized (401, 403)
+   */
+  async getAllTasks(critical: boolean = false): Promise<EventTaskResponse[]> {
+    const response = await apiClient.get<EventTaskResponse[]>(`${TASKS_API_PATH}/all-tasks`, {
+      params: { critical },
+    });
+
+    return response.data;
+  }
+
+  /**
    * Complete task (AC25)
    *
    * Marks a task as completed with optional notes
@@ -296,6 +320,31 @@ class TaskService {
     const response = await apiClient.put<EventTaskResponse>(
       `${TASKS_API_PATH}/${taskId}/reassign`,
       request
+    );
+
+    return response.data;
+  }
+
+  /**
+   * Update task status (drag-and-drop)
+   *
+   * Changes task status via drag-and-drop transitions:
+   * - pending → todo (manual activation)
+   * - pending → completed (skip todo phase)
+   * - todo → completed (normal completion)
+   * - todo → pending (revert to pending)
+   * - completed → todo (reopen task)
+   * - completed → pending (reopen and revert)
+   *
+   * @param taskId Task UUID
+   * @param status New status
+   * @returns Updated task details
+   * @throws Error if task not found (404), invalid status (400), unauthorized (401, 403)
+   */
+  async updateTaskStatus(taskId: string, status: 'pending' | 'todo' | 'in_progress' | 'completed'): Promise<EventTaskResponse> {
+    const response = await apiClient.put<EventTaskResponse>(
+      `${TASKS_API_PATH}/${taskId}/status`,
+      { status }
     );
 
     return response.data;

@@ -322,5 +322,32 @@
       "feedbackRequired": "Feedback is required",
       "unknown": "An unknown error occurred"
     }
+  },
+  "tasks": {
+    "taskBoard": "Task Board",
+    "filter": "Filter",
+    "myTasks": "My Tasks",
+    "allTasks": "All Tasks",
+    "sortBy": "Sort By",
+    "dueDate": "Due Date",
+    "createdDate": "Created Date",
+    "addCustomTask": "Add Custom Task",
+    "errorLoadingTasks": "Failed to load tasks",
+    "pending": "Pending",
+    "pendingDescription": "Waiting for trigger state",
+    "toDo": "To Do",
+    "todoDescription": "Ready to work on",
+    "inProgress": "In Progress",
+    "inProgressDescription": "Currently being worked on",
+    "completed": "Completed",
+    "completedDescription": "Finished tasks",
+    "completeTask": "Complete Task",
+    "completionNotes": "Completion Notes (Optional)",
+    "markComplete": "Mark Complete",
+    "due": "Due",
+    "assignedTo": "Assigned to",
+    "completedOn": "Completed on",
+    "completedBy": "Completed by",
+    "noTasks": "No tasks"
   }
 }

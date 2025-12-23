@@ -22,6 +22,7 @@ public class EventTaskResponse {
 
     private UUID id;
     private UUID eventId;
+    private String eventCode;
     private UUID templateId;
     private String taskName;
     private String triggerState;
@@ -35,12 +36,17 @@ public class EventTaskResponse {
     private Instant updatedAt;
 
     /**
-     * Convert EventTask entity to response DTO.
+     * Convert EventTask entity to response DTO with event code.
+     *
+     * @param task EventTask entity
+     * @param eventCode Event code (can be null for tasks without an event)
+     * @return EventTaskResponse DTO
      */
-    public static EventTaskResponse fromEntity(EventTask task) {
+    public static EventTaskResponse fromEntity(EventTask task, String eventCode) {
         return EventTaskResponse.builder()
                 .id(task.getId())
                 .eventId(task.getEventId())
+                .eventCode(eventCode)
                 .templateId(task.getTemplateId())
                 .taskName(task.getTaskName())
                 .triggerState(task.getTriggerState())

@@ -9,8 +9,8 @@
  */
 
 import React, { useState } from 'react';
-import { AppBar, Box, Toolbar, IconButton, Badge, Avatar } from '@mui/material';
-import { Menu, Notifications } from '@mui/icons-material';
+import { AppBar, Box, Toolbar, IconButton, Badge, Avatar, Tooltip } from '@mui/material';
+import { Menu, Notifications, TaskAlt } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
 import UserMenuDropdown from './UserMenuDropdown';
@@ -18,6 +18,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
 import type { UserContext } from '@/types/auth';
@@ -31,6 +32,7 @@ const AppHeader = React.memo(function AppHeader({
   user: userProp,
   notifications: notificationsProp,
 }: AppHeaderProps = {}) {
+  const { t } = useTranslation();
   const { isMobile, isTablet } = useBreakpoints();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
@@ -53,6 +55,10 @@ const AppHeader = React.memo(function AppHeader({
   const handleNotificationClick = () => {
     setNotificationMenuOpen(!notificationMenuOpen);
     setNotificationDrawerOpen(true);
+  };
+
+  const handleTasksClick = () => {
+    navigate('/organizer/tasks');
   };
 
   const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -130,7 +136,7 @@ const AppHeader = React.memo(function AppHeader({
 
           <Box sx={{ flex: 1, display: { xs: 'block', md: 'none' } }} />
 
-          {/* Right Section: Notifications, User Menu */}
+          {/* Right Section: Notifications, Tasks, User Menu */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* Notifications */}
             <IconButton
@@ -165,6 +171,20 @@ const AppHeader = React.memo(function AppHeader({
                 </Box>
               )}
             </IconButton>
+
+            {/* Tasks - Only show for organizers */}
+            {currentRole === 'organizer' && (
+              <Tooltip title={t('navigation.tasks', 'Tasks')}>
+                <IconButton
+                  color="inherit"
+                  aria-label="tasks"
+                  onClick={handleTasksClick}
+                  data-testid="tasks-button"
+                >
+                  <TaskAlt />
+                </IconButton>
+              </Tooltip>
+            )}
 
             {/* User Menu */}
             <IconButton
