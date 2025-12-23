@@ -115,6 +115,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                         '**/generated/**',
                         '**/dto/generated/**',
                         '**/api/generated/**',
+                        '**/client/**/dto/**',
                         '**/*Application.class',
                         '**/*Config.class',
                         '**/*Configuration.class'
@@ -140,6 +141,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                         '**/generated/**',
                         '**/dto/generated/**',
                         '**/api/generated/**',
+                        '**/client/**/dto/**',
                         '**/*Application.class',
                         '**/*Config.class',
                         '**/*Configuration.class'

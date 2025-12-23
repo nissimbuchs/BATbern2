@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { type Locale } from 'date-fns/locale';
 import { type EventTaskResponse } from '@/services/taskService';
 import { type SxProps, type Theme } from '@mui/material/styles';
+import type { TFunction } from 'i18next';
 
 export interface TaskCardProps {
   task: EventTaskResponse;
@@ -37,12 +38,15 @@ export interface TaskCardProps {
   showTriggerState?: boolean;
   showCompletionInfo?: boolean;
   sx?: SxProps<Theme>;
-  t: (key: string, fallback?: string) => string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  t: TFunction<any, undefined>;
   // Drag-and-drop props (optional)
   draggableRef?: React.Ref<HTMLLIElement>;
   draggableStyle?: React.CSSProperties;
-  draggableListeners?: Record<string, (event: React.SyntheticEvent) => void>;
-  draggableAttributes?: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draggableListeners?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draggableAttributes?: any;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({

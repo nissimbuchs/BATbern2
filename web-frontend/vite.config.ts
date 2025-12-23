@@ -261,6 +261,7 @@ export default defineConfig({
         'src/utils/companyImport.ts',
         'src/utils/eventImport.ts',
         'src/utils/speakerImport.ts',
+        'src/hooks/useSessionBatchImport/**', // Session import - one-time migration utility
         // Batch import UI components - one-time migration screens
         'src/components/admin/BatchImport/**',
         'src/components/shared/Event/EventBatchImportModal.tsx',
