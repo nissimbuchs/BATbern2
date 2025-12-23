@@ -31,15 +31,11 @@ import {
   Paper,
   Stack,
   Chip,
-  IconButton,
   TextField,
   MenuItem,
   List,
-  ListItem,
-  ListItemText,
   CircularProgress,
   Alert,
-  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -50,7 +46,6 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { de, enUS, type Locale } from 'date-fns/locale';
 import {
   DndContext,
@@ -66,6 +61,7 @@ import {
 } from '@dnd-kit/core';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
+import { TaskCard } from '@/components/organizer/Tasks/TaskCard';
 import { useAuth } from '@/hooks/useAuth';
 
 const TaskBoardPage: React.FC = () => {
@@ -495,106 +491,26 @@ const DraggableTask: React.FC<DraggableTaskProps> = ({ task, status, locale, onC
     : undefined;
 
   return (
-    <ListItem
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
+    <TaskCard
+      task={task}
+      locale={locale}
+      onComplete={onComplete}
+      showCompleteButton={status !== 'completed'}
+      showEventCode={true}
+      showTriggerState={true}
+      showCompletionInfo={status === 'completed'}
+      draggableRef={setNodeRef}
+      draggableStyle={style}
+      draggableListeners={listeners}
+      draggableAttributes={attributes}
       sx={{
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1,
-        mb: 1,
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        bgcolor: 'background.paper',
         cursor: 'grab',
         '&:active': {
           cursor: 'grabbing',
         },
       }}
-    >
-      {/* Task Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="start" width="100%">
-        <Typography variant="subtitle2" fontWeight="bold">
-          {task.taskName}
-        </Typography>
-        {/* Show complete button for both pending and todo status */}
-        {(status === 'pending' || status === 'todo') && onComplete && (
-          <Tooltip title={t('tasks.markComplete', 'Mark complete')}>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onComplete(task.id);
-              }}
-            >
-              <CheckCircleIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Stack>
-
-      {/* Task Details */}
-      <ListItemText
-        secondaryTypographyProps={{ component: 'div' }}
-        secondary={
-          <Stack spacing={0.5} mt={1}>
-            {task.eventCode && (
-              <Chip
-                label={task.eventCode}
-                size="small"
-                color="primary"
-                sx={{ fontSize: '0.7rem', height: 22, width: 'fit-content', fontWeight: 'bold' }}
-              />
-            )}
-            {(task.dueDate || task.assignedOrganizerUsername) && (
-              <Stack direction="row" spacing={2} flexWrap="wrap">
-                {task.dueDate && (
-                  <Typography variant="caption" color="text.secondary">
-                    {t('tasks.due', 'Due')}:{' '}
-                    {format(new Date(task.dueDate), 'dd MMM yyyy HH:mm', { locale })}
-                  </Typography>
-                )}
-                {task.assignedOrganizerUsername && (
-                  <Typography variant="caption" color="text.secondary">
-                    {task.assignedOrganizerUsername}
-                  </Typography>
-                )}
-              </Stack>
-            )}
-            {task.triggerState && (
-              <Chip
-                label={task.triggerState}
-                size="small"
-                variant="outlined"
-                sx={{ fontSize: '0.65rem', height: 20, mt: 0.5 }}
-              />
-            )}
-            {status === 'completed' && task.completedDate && (
-              <Typography variant="caption" color="success.main">
-                {t('tasks.completedOn', 'Completed on')}:{' '}
-                {format(new Date(task.completedDate), 'dd MMM yyyy HH:mm', { locale })}
-              </Typography>
-            )}
-            {status === 'completed' && task.completedByUsername && (
-              <Typography variant="caption" color="text.secondary">
-                {t('tasks.completedBy', 'Completed by')}: {task.completedByUsername}
-              </Typography>
-            )}
-            {task.notes && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontStyle: 'italic', mt: 0.5 }}
-              >
-                {task.notes}
-              </Typography>
-            )}
-          </Stack>
-        }
-      />
-    </ListItem>
+      t={t}
+    />
   );
 };
 

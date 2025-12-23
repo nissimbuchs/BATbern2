@@ -12,31 +12,14 @@
  */
 
 import React from 'react';
-import {
-  List,
-  ListItem,
-  ListItemText,
-  Typography,
-  Box,
-  Button,
-  Chip,
-  Stack,
-  Skeleton,
-  IconButton,
-  Tooltip,
-} from '@mui/material';
-import {
-  Error as ErrorIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  OpenInNew as OpenInNewIcon,
-} from '@mui/icons-material';
+import { List, Typography, Box, Button, Chip, Stack, Skeleton } from '@mui/material';
+import { CheckCircle as CheckCircleIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { de, enUS, type Locale } from 'date-fns/locale';
-import { taskService, type EventTaskResponse } from '@/services/taskService';
+import { de, enUS } from 'date-fns/locale';
+import { taskService } from '@/services/taskService';
+import { TaskCard } from './TaskCard';
 
 interface TaskWidgetProps {
   organizerUsername: string;
@@ -154,12 +137,15 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
 
       <List sx={{ maxHeight: 400, overflow: 'auto' }}>
         {activeTasks.map((task) => (
-          <TaskItem
+          <TaskCard
             key={task.id}
             task={task}
-            isOverdue={false}
             locale={locale}
             onComplete={handleCompleteTask}
+            showCompleteButton={true}
+            showEventCode={true}
+            showTriggerState={false}
+            showCompletionInfo={false}
             t={t}
           />
         ))}
@@ -178,89 +164,5 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
         </Button>
       </Box>
     </Box>
-  );
-};
-
-/**
- * TaskItem Component
- *
- * Individual task item with complete action
- */
-interface TaskItemProps {
-  task: EventTaskResponse;
-  isOverdue: boolean;
-  locale: Locale;
-  onComplete: (taskId: string) => void;
-  t: ReturnType<typeof useTranslation>['t'];
-}
-
-const TaskItem: React.FC<TaskItemProps> = ({ task, isOverdue, locale, onComplete, t }) => {
-  const formattedDate = task.dueDate
-    ? format(new Date(task.dueDate), 'dd MMM yyyy', { locale })
-    : t('tasks.noDueDate', 'No due date');
-
-  return (
-    <ListItem
-      data-testid={`task-item-${task.id}`}
-      sx={{
-        border: 1,
-        borderColor: isOverdue ? 'error.main' : 'warning.main',
-        borderRadius: 1,
-        mb: 1,
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        bgcolor: isOverdue ? 'error.lighter' : 'warning.lighter',
-        '&:hover': {
-          bgcolor: isOverdue ? 'error.light' : 'warning.light',
-        },
-      }}
-    >
-      {/* Task Header */}
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
-        justifyContent="space-between"
-        width="100%"
-      >
-        <Stack direction="row" spacing={1} alignItems="center" flex={1}>
-          {isOverdue ? (
-            <ErrorIcon color="error" fontSize="small" />
-          ) : (
-            <WarningIcon color="warning" fontSize="small" />
-          )}
-          <Typography variant="subtitle2" fontWeight="bold" noWrap sx={{ flex: 1 }}>
-            {task.taskName}
-          </Typography>
-        </Stack>
-        <Tooltip title={t('tasks.markComplete', 'Mark complete')}>
-          <IconButton size="small" onClick={() => onComplete(task.id)} aria-label="Complete task">
-            <CheckCircleIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
-      {/* Task Details */}
-      <ListItemText
-        secondaryTypographyProps={{ component: 'div' }}
-        secondary={
-          <Stack spacing={0.5} mt={1}>
-            <Typography variant="caption" color="text.secondary">
-              {t('tasks.dueDate', 'Due')}: {formattedDate}
-            </Typography>
-            {task.assignedOrganizerUsername && (
-              <Typography variant="caption" color="text.secondary">
-                {t('tasks.assignedTo', 'Assigned to')}: {task.assignedOrganizerUsername}
-              </Typography>
-            )}
-            {task.notes && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                {task.notes}
-              </Typography>
-            )}
-          </Stack>
-        }
-      />
-    </ListItem>
   );
 };
