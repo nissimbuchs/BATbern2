@@ -21,14 +21,13 @@ import {
   ToggleButton,
   LinearProgress,
   Alert,
-  Collapse,
   IconButton,
   Divider,
   CircularProgress,
+  Drawer,
 } from '@mui/material';
 import {
   ViewKanban as KanbanIcon,
-  TableRows as TableIcon,
   CalendarMonth as SessionsIcon,
   Add as AddIcon,
   Close as CloseIcon,
@@ -37,7 +36,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
-import { speakerPoolService } from '@/services/speakerPoolService';
+import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
@@ -46,7 +45,7 @@ import SpeakerOutreachDetailsDrawer from '@/components/organizer/SpeakerOutreach
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 
-type ViewMode = 'kanban' | 'table' | 'sessions';
+type ViewMode = 'kanban' | 'sessions';
 
 interface EventSpeakersTabProps {
   eventCode: string;
@@ -59,13 +58,12 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Get view mode from URL, default to 'kanban'
   const viewParam = searchParams.get('view');
-  const currentView: ViewMode =
-    viewParam === 'table' || viewParam === 'sessions' ? viewParam : 'kanban';
+  const currentView: ViewMode = viewParam === 'sessions' ? 'sessions' : 'kanban';
 
   // Local state
-  const [addPanelOpen, setAddPanelOpen] = useState(false);
+  const [addSpeakerDrawerOpen, setAddSpeakerDrawerOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<SpeakerPoolEntry | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -75,13 +73,8 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     staleTime: 15000,
   });
 
-  // Fetch speaker pool
-  const { data: speakers, isLoading: speakersLoading } = useQuery({
-    queryKey: ['speakerPool', eventCode],
-    queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
-    refetchInterval: 30000,
-    staleTime: 15000,
-  });
+  // Fetch speaker pool (using hook for proper cache invalidation)
+  const { data: speakers, isLoading: speakersLoading } = useSpeakerPool(eventCode);
 
   // Fetch event data for sessions view
   const { data: event } = useEvent(eventCode, ['sessions']);
@@ -129,7 +122,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Handle speaker card click (open drawer)
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
     setSelectedSpeaker(speaker);
-    setDrawerOpen(true);
+    setDetailsDrawerOpen(true);
+  };
+
+  // Handle IDENTIFIED → CONTACTED transition (auto-open drawer with form)
+  const handleIdentifiedToContacted = (speaker: SpeakerPoolEntry) => {
+    setSelectedSpeaker(speaker);
+    setDetailsDrawerOpen(true);
   };
 
   // Session handlers
@@ -152,13 +151,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     setSearchParams(newParams, { replace: true });
   };
 
-  const handleManageSpeakerOutreach = () => {
-    // Switch to table view
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('view', 'table');
-    setSearchParams(newParams, { replace: true });
-  };
-
   const handleAutoAssignSpeakers = () => {
     console.log('Auto-assign speakers for:', eventCode);
   };
@@ -175,9 +167,9 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ height: '100%' }}>
       {/* Summary Bar */}
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, flexShrink: 0 }}>
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
@@ -218,38 +210,49 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => setAddPanelOpen(!addPanelOpen)}
+            onClick={() => setAddSpeakerDrawerOpen(true)}
           >
-            {addPanelOpen
-              ? t('events:eventPage.speakers.hideAdd', 'Hide')
-              : t('events:eventPage.speakers.addSpeakers', 'Add Speakers')}
+            {t('events:eventPage.speakers.addSpeakers', 'Add Speakers')}
           </Button>
         </Stack>
       </Paper>
 
-      {/* Add Speakers Panel (Collapsible) */}
-      <Collapse in={addPanelOpen}>
-        <Paper sx={{ p: 2 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+      {/* Add Speakers Drawer */}
+      <Drawer
+        anchor="right"
+        open={addSpeakerDrawerOpen}
+        onClose={() => setAddSpeakerDrawerOpen(false)}
+        PaperProps={{
+          sx: { width: { xs: '100%', sm: 500 } },
+        }}
+      >
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Header */}
+          <Box
+            sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+          >
             <Typography variant="h6">
               {t('events:eventPage.speakers.addToPool', 'Add Speakers to Pool')}
             </Typography>
-            <IconButton size="small" onClick={() => setAddPanelOpen(false)}>
+            <IconButton onClick={() => setAddSpeakerDrawerOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
-          </Stack>
-          <Divider sx={{ mb: 2 }} />
-          <SpeakerBrainstormingPanel
-            eventCode={eventCode}
-            organizers={[]}
-            showPoolList={false}
-            showHeader={false}
-          />
-        </Paper>
-      </Collapse>
+          </Box>
+          <Divider />
+
+          {/* Content */}
+          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
+            <SpeakerBrainstormingPanel
+              eventCode={eventCode}
+              showPoolList={false}
+              showHeader={false}
+            />
+          </Box>
+        </Box>
+      </Drawer>
 
       {/* View Toggle */}
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, flexShrink: 0 }}>
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           justifyContent="space-between"
@@ -265,10 +268,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             <ToggleButton value="kanban" aria-label="Kanban view">
               <KanbanIcon sx={{ mr: 1 }} />
               {t('events:eventPage.speakers.kanban', 'Kanban')}
-            </ToggleButton>
-            <ToggleButton value="table" aria-label="Table view">
-              <TableIcon sx={{ mr: 1 }} />
-              {t('events:eventPage.speakers.table', 'Table')}
             </ToggleButton>
             <ToggleButton value="sessions" aria-label="Sessions view">
               <SessionsIcon sx={{ mr: 1 }} />
@@ -289,140 +288,16 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
       </Paper>
 
       {/* View Content */}
-      <Box>
+      <Box sx={{ flex: 1, minHeight: 0 }}>
         {currentView === 'kanban' && speakers && (
-          <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} onStatusChange={() => {}} />
-        )}
-
-        {currentView === 'table' && speakers && (
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              {t('organizer:speakerOutreach.title', 'Speaker Outreach')}
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            {/* Simple table view of speakers with outreach info */}
-            <Box sx={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 8px',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      {t('organizer:speakerBrainstorm.form.speakerName', 'Speaker')}
-                    </th>
-                    <th
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 8px',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      {t('organizer:speakerBrainstorm.form.company', 'Company')}
-                    </th>
-                    <th
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 8px',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      {t('common:status', 'Status')}
-                    </th>
-                    <th
-                      style={{
-                        textAlign: 'left',
-                        padding: '12px 8px',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      {t('organizer:speakerOutreach.assigned', 'Assigned To')}
-                    </th>
-                    <th
-                      style={{
-                        textAlign: 'right',
-                        padding: '12px 8px',
-                        borderBottom: '1px solid #ddd',
-                      }}
-                    >
-                      {t('common:actions', 'Actions')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {speakers.map((speaker) => (
-                    <tr
-                      key={speaker.id}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleSpeakerClick(speaker)}
-                    >
-                      <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
-                        <Typography variant="body2" fontWeight="medium">
-                          {speaker.speakerName}
-                        </Typography>
-                      </td>
-                      <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {speaker.company || '-'}
-                        </Typography>
-                      </td>
-                      <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            display: 'inline-block',
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1,
-                            bgcolor:
-                              speaker.status === 'ACCEPTED'
-                                ? 'success.light'
-                                : speaker.status === 'DECLINED'
-                                  ? 'error.light'
-                                  : 'grey.200',
-                            color:
-                              speaker.status === 'ACCEPTED'
-                                ? 'success.dark'
-                                : speaker.status === 'DECLINED'
-                                  ? 'error.dark'
-                                  : 'text.primary',
-                          }}
-                        >
-                          {speaker.status}
-                        </Typography>
-                      </td>
-                      <td style={{ padding: '12px 8px', borderBottom: '1px solid #eee' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {speaker.assignedOrganizerId || '-'}
-                        </Typography>
-                      </td>
-                      <td
-                        style={{
-                          padding: '12px 8px',
-                          borderBottom: '1px solid #eee',
-                          textAlign: 'right',
-                        }}
-                      >
-                        <Button size="small" variant="text">
-                          {t('common:viewDetails', 'Details')}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Box>
-
-            {speakers.length === 0 && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                {t('events:eventPage.speakers.noSpeakers', 'No speakers in pool yet.')}
-              </Alert>
-            )}
-          </Paper>
+          <SpeakerStatusLanes
+            eventCode={eventCode}
+            speakers={speakers}
+            sessions={sessions}
+            onStatusChange={() => {}}
+            onIdentifiedToContacted={handleIdentifiedToContacted}
+            onSpeakerClick={handleSpeakerClick}
+          />
         )}
 
         {currentView === 'sessions' && (
@@ -434,7 +309,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               onViewMaterials={handleViewMaterials}
               onViewFullAgenda={handleViewFullAgenda}
               onManageSpeakerAssignments={handleManageSpeakerAssignments}
-              onManageSpeakerOutreach={handleManageSpeakerOutreach}
               onAutoAssignSpeakers={handleAutoAssignSpeakers}
               onSessionUpdate={async () => {}}
             />
@@ -444,10 +318,13 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
       {/* Speaker Details Drawer */}
       <SpeakerOutreachDetailsDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        open={detailsDrawerOpen}
+        onClose={() => setDetailsDrawerOpen(false)}
         speaker={selectedSpeaker}
         eventCode={eventCode}
+        showMarkContactedForm={
+          selectedSpeaker?.status === 'IDENTIFIED' || selectedSpeaker?.status === 'CONTACTED'
+        }
       />
     </Stack>
   );

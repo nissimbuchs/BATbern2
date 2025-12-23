@@ -29,6 +29,7 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { searchUsers } from '@/services/api/userManagementApi';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -75,7 +76,9 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
     onSuccess: () => {
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
-      queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+      // Invalidate event cache to update Sessions tab (matches ['event', eventCode, include])
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
 
       // Reset form and close drawer
       resetForm();

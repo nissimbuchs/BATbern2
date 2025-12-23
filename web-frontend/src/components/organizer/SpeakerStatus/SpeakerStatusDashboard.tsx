@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolService } from '@/services/speakerPoolService';
+import { useEvent } from '@/hooks/useEvents';
 import { SpeakerStatusLanes } from './SpeakerStatusLanes';
 
 export interface SpeakerStatusDashboardProps {
@@ -67,6 +68,9 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
     refetchInterval: 30000, // Poll every 30 seconds
     staleTime: 15000,
   });
+
+  // Fetch event with sessions for speaker card display (Story 5.6)
+  const { data: event } = useEvent(eventCode, ['sessions']);
 
   if (isLoading || speakersLoading) {
     return (
@@ -173,7 +177,11 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
       </Paper>
 
       {/* Speaker Status Lanes (Kanban Board) - AC4 */}
-      <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} />
+      <SpeakerStatusLanes
+        eventCode={eventCode}
+        speakers={speakers}
+        sessions={event?.sessions || []}
+      />
 
       {/* Status History Timeline - AC15 - TODO: Implement in speaker detail view with speakerId */}
     </Box>

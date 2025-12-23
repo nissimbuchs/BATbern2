@@ -341,11 +341,13 @@ class TaskService {
    * @returns Updated task details
    * @throws Error if task not found (404), invalid status (400), unauthorized (401, 403)
    */
-  async updateTaskStatus(taskId: string, status: 'pending' | 'todo' | 'in_progress' | 'completed'): Promise<EventTaskResponse> {
-    const response = await apiClient.put<EventTaskResponse>(
-      `${TASKS_API_PATH}/${taskId}/status`,
-      { status }
-    );
+  async updateTaskStatus(
+    taskId: string,
+    status: 'pending' | 'todo' | 'in_progress' | 'completed'
+  ): Promise<EventTaskResponse> {
+    const response = await apiClient.put<EventTaskResponse>(`${TASKS_API_PATH}/${taskId}/status`, {
+      status,
+    });
 
     return response.data;
   }

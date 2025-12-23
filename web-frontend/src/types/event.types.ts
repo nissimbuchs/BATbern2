@@ -38,6 +38,8 @@ export type CreateRegistrationRequest = components['schemas']['CreateRegistratio
  * Adds frontend-specific fields to the base Session type from API
  */
 export interface SessionUI extends Session {
+  // UUID id for speaker pool matching (Story 5.6)
+  id?: string;
   // UI-only fields for session management (Phase 2 features)
   slotNumber?: number; // Slot number in the agenda
   speaker?: {

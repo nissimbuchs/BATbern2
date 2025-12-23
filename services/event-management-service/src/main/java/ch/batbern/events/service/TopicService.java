@@ -175,7 +175,8 @@ public class TopicService {
      * @return List of usage history with event details (eventNumber, eventCode, eventDate)
      */
     @Transactional(readOnly = true)
-    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> getUsageHistoryWithEventDetails(UUID topicId) {
+    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>
+            getUsageHistoryWithEventDetails(UUID topicId) {
         // Use the efficient single-query method
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topicId));
@@ -187,13 +188,16 @@ public class TopicService {
                             new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
                     dto.setEventNumber(h.getEventNumber());
                     dto.setEventCode(h.getEventCode());
-                    dto.setEventDate(h.getEventDate() != null ?
-                            java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
-                    dto.setUsedDate(h.getUsedDate() != null ?
-                            h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                    dto.setEventDate(h.getEventDate() != null
+                            ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
+                            : null);
+                    dto.setUsedDate(h.getUsedDate() != null
+                            ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
+                            : null);
                     dto.setAttendance(h.getAttendeeCount());
-                    dto.setEngagementScore(h.getEngagementScore() != null ?
-                            h.getEngagementScore().floatValue() : null);
+                    dto.setEngagementScore(h.getEngagementScore() != null
+                            ? h.getEngagementScore().floatValue()
+                            : null);
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -207,7 +211,8 @@ public class TopicService {
      * @return List of usage history with event details (eventNumber, eventCode, eventDate)
      */
     @Transactional(readOnly = true)
-    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> getUsageHistoryWithEventDetailsByCode(String topicCode) {
+    public List<ch.batbern.events.dto.generated.topics.TopicUsageHistory>
+            getUsageHistoryWithEventDetailsByCode(String topicCode) {
         Topic topic = topicRepository.findByTopicCode(topicCode)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
@@ -222,13 +227,16 @@ public class TopicService {
                             new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
                     dto.setEventNumber(h.getEventNumber());
                     dto.setEventCode(h.getEventCode());
-                    dto.setEventDate(h.getEventDate() != null ?
-                            java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
-                    dto.setUsedDate(h.getUsedDate() != null ?
-                            h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                    dto.setEventDate(h.getEventDate() != null
+                            ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
+                            : null);
+                    dto.setUsedDate(h.getUsedDate() != null
+                            ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
+                            : null);
                     dto.setAttendance(h.getAttendeeCount());
-                    dto.setEngagementScore(h.getEngagementScore() != null ?
-                            h.getEngagementScore().floatValue() : null);
+                    dto.setEngagementScore(h.getEngagementScore() != null
+                            ? h.getEngagementScore().floatValue()
+                            : null);
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -690,13 +698,18 @@ public class TopicService {
                                                     new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
                                             dto.setEventNumber(h.getEventNumber());
                                             dto.setEventCode(h.getEventCode());
-                                            dto.setEventDate(h.getEventDate() != null ?
-                                                    java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault()) : null);
-                                            dto.setUsedDate(h.getUsedDate() != null ?
-                                                    h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime() : null);
+                                            dto.setEventDate(h.getEventDate() != null
+                                                    ? java.time.LocalDate.ofInstant(
+                                                            h.getEventDate(), java.time.ZoneId.systemDefault())
+                                                    : null);
+                                            dto.setUsedDate(h.getUsedDate() != null
+                                                    ? h.getUsedDate().atZone(
+                                                            java.time.ZoneId.systemDefault()).toOffsetDateTime()
+                                                    : null);
                                             dto.setAttendance(h.getAttendeeCount());
-                                            dto.setEngagementScore(h.getEngagementScore() != null ?
-                                                    h.getEngagementScore().floatValue() : null);
+                                            dto.setEngagementScore(h.getEngagementScore() != null
+                                                    ? h.getEngagementScore().floatValue()
+                                                    : null);
                                             return dto;
                                         },
                                         Collectors.toList()

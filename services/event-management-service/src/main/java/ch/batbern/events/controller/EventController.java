@@ -326,13 +326,14 @@ public class EventController {
      * @return List of session maps with public fields and speakers
      */
     private java.util.List<Map<String, Object>> expandSessions(Event event) {
-        // Find all sessions for this event
-        List<ch.batbern.events.domain.Session> sessions = sessionRepository.findByEventId(event.getId());
+        // Find all sessions for this event with speakers eagerly loaded (Story 5.5)
+        List<ch.batbern.events.domain.Session> sessions = sessionRepository.findByEventIdWithSpeakers(event.getId());
 
         // Convert to response format
         return sessions.stream()
                 .map(session -> {
                     Map<String, Object> sessionMap = new HashMap<>();
+                    sessionMap.put("id", session.getId()); // Story 5.6: Include UUID for speaker pool matching
                     sessionMap.put("sessionSlug", session.getSessionSlug());
                     sessionMap.put("eventCode", event.getEventCode());
                     sessionMap.put("title", session.getTitle());

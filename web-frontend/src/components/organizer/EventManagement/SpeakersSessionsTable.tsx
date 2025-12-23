@@ -49,7 +49,6 @@ import {
   Error as ErrorIcon,
   CalendarToday as CalendarIcon,
   AutoAwesome as AutoAssignIcon,
-  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -63,7 +62,6 @@ interface SpeakersSessionsTableProps {
   onViewMaterials: (sessionId: string) => void;
   onViewFullAgenda: (eventCode: string) => void;
   onManageSpeakerAssignments: (eventCode: string) => void;
-  onManageSpeakerOutreach?: (eventCode: string) => void;
   onAutoAssignSpeakers: (eventCode: string) => void;
   onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
   isLoading?: boolean;
@@ -77,7 +75,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   onViewMaterials,
   onViewFullAgenda,
   onManageSpeakerAssignments,
-  onManageSpeakerOutreach,
   onAutoAssignSpeakers,
   onSessionUpdate,
   isLoading = false,
@@ -246,15 +243,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           >
             {t('speakers.manageSpeakerAssignments')}
           </Button>
-          {onManageSpeakerOutreach && (
-            <Button
-              variant="outlined"
-              startIcon={<CalendarIcon />}
-              onClick={() => onManageSpeakerOutreach(eventCode)}
-            >
-              {t('speakers.speakerOutreach', 'Speaker Outreach')}
-            </Button>
-          )}
         </Stack>
       </Box>
     );
@@ -377,16 +365,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           >
             {t('speakers.manageSpeakerAssignments')}
           </Button>
-          {onManageSpeakerOutreach && (
-            <Button
-              variant="outlined"
-              startIcon={<PeopleIcon />}
-              onClick={() => onManageSpeakerOutreach(eventCode)}
-              fullWidth
-            >
-              {t('speakers.speakerOutreach', 'Speaker Outreach')}
-            </Button>
-          )}
           <Button
             variant="contained"
             color="primary"
@@ -560,15 +538,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         >
           {t('speakers.manageSpeakerAssignments')}
         </Button>
-        {onManageSpeakerOutreach && (
-          <Button
-            variant="outlined"
-            startIcon={<PeopleIcon />}
-            onClick={() => onManageSpeakerOutreach(eventCode)}
-          >
-            {t('speakers.speakerOutreach', 'Speaker Outreach')}
-          </Button>
-        )}
         <Button
           variant="contained"
           color="primary"

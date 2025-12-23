@@ -140,11 +140,11 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
         <OrganizerSelect
           value={assignedOrganizerId}
           onChange={(organizerId) => setAssignedOrganizerId(organizerId)}
-          organizers={organizers}
+          organizers={organizers.length > 0 ? organizers : undefined}
           label={t('speakerBrainstorm.form.assignOrganizer', 'Assign to Organizer (Optional)')}
           size="small"
           fullWidth
-          disabled={addSpeakerMutation.isPending || organizers.length === 0}
+          disabled={addSpeakerMutation.isPending}
           includeUnassigned={true}
           includeAllOption={false}
         />

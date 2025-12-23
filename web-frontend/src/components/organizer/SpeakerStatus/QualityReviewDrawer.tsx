@@ -42,6 +42,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { ReviewRequest, SpeakerContentResponse } from '@/services/speakerContentService';
 
@@ -90,7 +91,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
     onSuccess: () => {
       // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
-      queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
       queryClient.invalidateQueries({ queryKey: ['reviewQueue', eventCode] });
 
       // Close drawer

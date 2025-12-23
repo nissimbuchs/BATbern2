@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.BatchImportSessionRequest;
 import ch.batbern.events.dto.BatchImportSessionResult;
@@ -21,6 +22,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -167,6 +169,7 @@ public class SessionController {
      * POST /api/v1/events/{eventCode}/sessions
      */
     @PostMapping
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> createSession(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateSessionRequest request) {
@@ -211,6 +214,7 @@ public class SessionController {
      * PUT /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
     @PutMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> updateSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
@@ -261,6 +265,7 @@ public class SessionController {
      * @return Updated session response
      */
     @PatchMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> patchSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
@@ -322,6 +327,7 @@ public class SessionController {
      * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
     @DeleteMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> deleteSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug) {
@@ -361,6 +367,7 @@ public class SessionController {
      * @return BatchImportSessionResult with statistics and details
      */
     @PostMapping("/batch-import")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<BatchImportSessionResult> batchImportSessions(
             @PathVariable String eventCode,
             @Valid @RequestBody List<BatchImportSessionRequest> requests) {

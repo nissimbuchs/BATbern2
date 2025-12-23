@@ -12,8 +12,9 @@
  */
 
 import React, { useState } from 'react';
-import { Grid, Card, Typography, Avatar, Box, Chip, Paper } from '@mui/material';
+import { Grid, Card, Typography, Avatar, Box, Chip, Paper, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
   DndContext,
   DragEndEvent,
@@ -28,18 +29,23 @@ import {
 } from '@dnd-kit/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
 import { QualityReviewDrawer } from './QualityReviewDrawer';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { components } from '@/types/generated/speakers-api.types';
+import type { SessionUI } from '@/types/event.types';
 
 type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 export interface SpeakerStatusLanesProps {
   eventCode: string;
   speakers: SpeakerPoolEntry[];
+  sessions: SessionUI[];
   onStatusChange?: (speakerId: string, newStatus: SpeakerWorkflowState) => void;
+  onIdentifiedToContacted?: (speaker: SpeakerPoolEntry) => void; // Callback for IDENTIFIED → CONTACTED transition
+  onSpeakerClick?: (speaker: SpeakerPoolEntry) => void; // Callback for speaker card clicks (for statuses without specific drawers)
 }
 
 // Status color mapping (Story 5.5 - Extended to 7 lanes)
@@ -69,7 +75,10 @@ const STATUS_LANES: SpeakerWorkflowState[] = [
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventCode,
   speakers,
+  sessions,
   onStatusChange,
+  onIdentifiedToContacted,
+  onSpeakerClick,
 }) => {
   const { t } = useTranslation(['organizer', 'common']);
   const queryClient = useQueryClient();
@@ -111,9 +120,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       reason?: string;
     }) => speakerStatusService.updateStatus(eventCode, speakerId, newStatus, reason),
     onSuccess: (_, variables) => {
-      // Invalidate queries to refetch data
+      // Invalidate queries to refetch data (using correct query keys)
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
-      queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+      queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+      // Invalidate event cache to update sessions (Story 5.6)
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
 
       if (onStatusChange) {
         onStatusChange(variables.speakerId, variables.newStatus);
@@ -140,8 +151,26 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     const speaker = speakers.find((s) => s.id === speakerId);
 
     if (speaker && speaker.status !== newStatus) {
+      // Special handling for IDENTIFIED → CONTACTED - trigger callback (Story 5.6)
+      if (speaker.status === 'IDENTIFIED' && newStatus === 'CONTACTED') {
+        // First update the status
+        updateStatusMutation.mutate(
+          {
+            speakerId: speaker.id,
+            newStatus,
+          },
+          {
+            onSuccess: () => {
+              // Then trigger the callback to open drawer
+              if (onIdentifiedToContacted) {
+                onIdentifiedToContacted({ ...speaker, status: newStatus });
+              }
+            },
+          }
+        );
+      }
       // Special handling for CONTENT_SUBMITTED - open drawer instead of dialog
-      if (newStatus === 'CONTENT_SUBMITTED') {
+      else if (newStatus === 'CONTENT_SUBMITTED') {
         setCurrentSpeaker(speaker);
         setContentDrawerOpen(true);
       }
@@ -175,7 +204,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     setDialogState({ open: false });
   };
 
-  // Handle speaker card click (Story 5.5)
+  // Handle speaker card click (Story 5.5 + 5.6)
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
     // Open content submission drawer for ACCEPTED speakers
     if (speaker.status === 'ACCEPTED') {
@@ -186,6 +215,10 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     else if (speaker.status === 'CONTENT_SUBMITTED') {
       setReviewSpeaker(speaker);
       setReviewDrawerOpen(true);
+    }
+    // For other statuses (IDENTIFIED, CONTACTED, READY, etc.), use callback if provided
+    else if (onSpeakerClick) {
+      onSpeakerClick(speaker);
     }
   };
 
@@ -199,7 +232,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   );
 
   return (
-    <Box sx={{ width: '100%', mb: 3 }}>
+    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Typography variant="h6" gutterBottom>
         {t('organizer:speakerStatus.lanes')}
       </Typography>
@@ -213,12 +246,13 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <Grid container spacing={2} sx={{ width: '100%' }}>
+        <Grid container spacing={2} sx={{ width: '100%', flex: 1, minHeight: 0 }}>
           {STATUS_LANES.map((status) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }} key={status}>
+            <Grid size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }} key={status} sx={{ display: 'flex' }}>
               <StatusLane
                 status={status}
                 speakers={speakersByStatus[status] || []}
+                sessions={sessions}
                 color={STATUS_COLORS[status]}
                 onSpeakerClick={handleSpeakerClick}
               />
@@ -227,7 +261,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         </Grid>
 
         <DragOverlay>
-          {activeSpeaker ? <SpeakerCard speaker={activeSpeaker} isDragging /> : null}
+          {activeSpeaker ? (
+            <SpeakerCard speaker={activeSpeaker} sessions={sessions} isDragging />
+          ) : null}
         </DragOverlay>
       </DndContext>
 
@@ -266,11 +302,18 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 interface StatusLaneProps {
   status: SpeakerWorkflowState;
   speakers: SpeakerPoolEntry[];
+  sessions: SessionUI[];
   color: string;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
 
-const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color, onSpeakerClick }) => {
+const StatusLane: React.FC<StatusLaneProps> = ({
+  status,
+  speakers,
+  sessions,
+  color,
+  onSpeakerClick,
+}) => {
   const { t } = useTranslation(['organizer']);
   const { setNodeRef } = useDroppable({
     id: status,
@@ -281,7 +324,8 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color, onSpea
       ref={setNodeRef}
       sx={{
         p: 2,
-        minHeight: '300px',
+        height: '100%',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         backgroundColor: 'background.default',
@@ -299,10 +343,17 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color, onSpea
         />
       </Box>
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        {speakers.map((speaker) => (
-          <SpeakerCard key={speaker.id} speaker={speaker} onSpeakerClick={onSpeakerClick} />
-        ))}
+      <Box sx={{ flexGrow: 1, overflow: 'auto', minHeight: 0 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {speakers.map((speaker) => (
+            <SpeakerCard
+              key={speaker.id}
+              speaker={speaker}
+              sessions={sessions}
+              onSpeakerClick={onSpeakerClick}
+            />
+          ))}
+        </Box>
       </Box>
     </Paper>
   );
@@ -311,12 +362,14 @@ const StatusLane: React.FC<StatusLaneProps> = ({ status, speakers, color, onSpea
 // Speaker Card Component
 interface SpeakerCardProps {
   speaker: SpeakerPoolEntry;
+  sessions: SessionUI[];
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
 
 const SpeakerCard: React.FC<SpeakerCardProps> = ({
   speaker,
+  sessions,
   isDragging = false,
   onSpeakerClick,
 }) => {
@@ -338,6 +391,9 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     }
   };
 
+  // Find the session if speaker has sessionId (Story 5.6)
+  const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
+
   return (
     <Card
       ref={setNodeRef}
@@ -354,23 +410,49 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
         ...style,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-          {speaker.speakerName.charAt(0).toUpperCase()}
-        </Avatar>
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="subtitle2">{speaker.speakerName}</Typography>
-          {speaker.company && (
-            <Typography variant="caption" color="text.secondary">
-              {speaker.company}
+      {session && session.speakers && session.speakers.length > 0 ? (
+        // Display session details when speaker has sessionId
+        <Box>
+          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+            {session.title}
+          </Typography>
+          <Stack direction="column" spacing={0.5}>
+            {session.speakers.map((spk) => (
+              <UserAvatar
+                key={spk.username}
+                firstName={spk.firstName}
+                lastName={spk.lastName}
+                company={spk.company}
+                profilePictureUrl={spk.profilePictureUrl}
+                size={32}
+                showCompany={true}
+                horizontal={true}
+              />
+            ))}
+          </Stack>
+        </Box>
+      ) : (
+        // Display speaker pool info when no session
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+              {speaker.speakerName.charAt(0).toUpperCase()}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+              {speaker.company && (
+                <Typography variant="caption" color="text.secondary">
+                  {speaker.company}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+          {speaker.expertise && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {speaker.expertise}
             </Typography>
           )}
         </Box>
-      </Box>
-      {speaker.expertise && (
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          {speaker.expertise}
-        </Typography>
       )}
     </Card>
   );

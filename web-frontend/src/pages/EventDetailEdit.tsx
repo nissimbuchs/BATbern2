@@ -45,7 +45,7 @@ import type { SessionUI, SessionSpeaker, WorkflowStep } from '@/types/event.type
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
-import { isEarlyStage, isLateStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
+import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { sessionApiClient } from '@/services/sessionService';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
 import { useQueryClient } from '@tanstack/react-query';
@@ -154,10 +154,6 @@ const EventDetailEdit: React.FC = () => {
 
   const handleManageSpeakerAssignments = (eventCode: string) => {
     navigate(`/organizer/events/${eventCode}/speakers`);
-  };
-
-  const handleManageSpeakerOutreach = (eventCode: string) => {
-    navigate(`/organizer/events/${eventCode}/speakers/outreach`);
   };
 
   const handleSelectTopic = (eventCode: string) => {
@@ -496,11 +492,6 @@ const EventDetailEdit: React.FC = () => {
             onViewMaterials={handleViewMaterials}
             onViewFullAgenda={handleViewFullAgenda}
             onManageSpeakerAssignments={handleManageSpeakerAssignments}
-            onManageSpeakerOutreach={
-              !isLateStage(event.workflowState || 'CREATED')
-                ? handleManageSpeakerOutreach
-                : undefined
-            }
             onAutoAssignSpeakers={handleAutoAssignSpeakers}
             onSessionUpdate={handleSessionUpdate}
           />
