@@ -5,8 +5,7 @@
  * Wireframe: docs/wireframes/5.5-content-review-task-system-ux-flow.md
  *
  * Features:
- * - Displays critical tasks (overdue + due soon < 3 days)
- * - Groups tasks by urgency (overdue, due soon)
+ * - Displays all active tasks (pending, todo, in_progress)
  * - Shows task name, event, due date, assignee
  * - "View All Tasks" button navigates to /organizer/tasks page
  * - Auto-refreshes on task completion
@@ -35,7 +34,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { format, isPast, isWithinInterval, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { de, enUS, type Locale } from 'date-fns/locale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
 
@@ -79,26 +78,8 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
     navigate('/organizer/tasks');
   };
 
-  // Categorize tasks by urgency
-  const now = new Date();
-  const threeDaysFromNow = addDays(now, 3);
-
-  const overdueTasks = criticalTasks.filter((task) => {
-    if (!task.dueDate || task.status === 'completed') return false;
-    return isPast(new Date(task.dueDate));
-  });
-
-  const dueSoonTasks = criticalTasks.filter((task) => {
-    if (!task.dueDate || task.status === 'completed') return false;
-    const dueDate = new Date(task.dueDate);
-    return (
-      !isPast(dueDate) &&
-      isWithinInterval(dueDate, {
-        start: now,
-        end: threeDaysFromNow,
-      })
-    );
-  });
+  // Show all non-completed tasks (backend already filters)
+  const activeTasks = criticalTasks.filter((task) => task.status !== 'completed');
 
   // Loading state
   if (isLoading) {
@@ -133,7 +114,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   }
 
   // Empty state
-  if (overdueTasks.length === 0 && dueSoonTasks.length === 0) {
+  if (activeTasks.length === 0) {
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" gutterBottom>
@@ -164,51 +145,24 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">{t('tasks.criticalTasks', 'Critical Tasks')}</Typography>
         <Chip
-          label={overdueTasks.length + dueSoonTasks.length}
+          label={activeTasks.length}
           size="small"
-          color={overdueTasks.length > 0 ? 'error' : 'warning'}
-          aria-label={`${overdueTasks.length + dueSoonTasks.length} critical tasks`}
+          color="primary"
+          aria-label={`${activeTasks.length} active tasks`}
         />
       </Stack>
 
       <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-        {/* Overdue Tasks */}
-        {overdueTasks.length > 0 && (
-          <Box mb={2}>
-            <Typography variant="caption" color="error" fontWeight="bold" sx={{ pl: 2 }}>
-              🔴 {t('tasks.overdue', 'OVERDUE')} ({overdueTasks.length})
-            </Typography>
-            {overdueTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                isOverdue
-                locale={locale}
-                onComplete={handleCompleteTask}
-                t={t}
-              />
-            ))}
-          </Box>
-        )}
-
-        {/* Due Soon Tasks */}
-        {dueSoonTasks.length > 0 && (
-          <Box>
-            <Typography variant="caption" color="warning.main" fontWeight="bold" sx={{ pl: 2 }}>
-              🟡 {t('tasks.dueSoon', 'DUE SOON')} ({dueSoonTasks.length})
-            </Typography>
-            {dueSoonTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                isOverdue={false}
-                locale={locale}
-                onComplete={handleCompleteTask}
-                t={t}
-              />
-            ))}
-          </Box>
-        )}
+        {activeTasks.map((task) => (
+          <TaskItem
+            key={task.id}
+            task={task}
+            isOverdue={false}
+            locale={locale}
+            onComplete={handleCompleteTask}
+            t={t}
+          />
+        ))}
       </List>
 
       {/* View All Tasks Button */}
