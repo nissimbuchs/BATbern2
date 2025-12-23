@@ -51,6 +51,7 @@ import { EventVenueTab } from './EventVenueTab';
 import { EventTeamTab } from './EventTeamTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
+import { EventForm } from '@/components/organizer/EventManagement';
 
 // Tab configuration
 const TABS = [
@@ -75,7 +76,7 @@ export const EventPage: React.FC = () => {
   const { t } = useTranslation('events');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { openEditModal } = useEventStore();
+  const { openEditModal, isEditModalOpen, selectedEventCode, closeEditModal } = useEventStore();
 
   // Get current tab from URL, default to 'overview'
   const currentTab = isValidTab(searchParams.get('tab')) ? searchParams.get('tab')! : 'overview';
@@ -262,6 +263,19 @@ export const EventPage: React.FC = () => {
             ))}
           </BottomNavigation>
         </Paper>
+      )}
+
+      {/* Edit Event Modal */}
+      {isEditModalOpen && selectedEventCode && (
+        <EventForm
+          open={isEditModalOpen}
+          mode="edit"
+          event={event}
+          onClose={closeEditModal}
+          onSuccess={() => {
+            closeEditModal();
+          }}
+        />
       )}
     </Box>
   );
