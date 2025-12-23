@@ -69,7 +69,7 @@ import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
 import { useAuth } from '@/hooks/useAuth';
 
 const TaskBoardPage: React.FC = () => {
-  const { t, i18n } = useTranslation('events');
+  const { t, i18n } = useTranslation('organizer');
   const queryClient = useQueryClient();
   const locale = i18n.language === 'de' ? de : enUS;
   const { user } = useAuth();
@@ -98,7 +98,8 @@ const TaskBoardPage: React.FC = () => {
     isError,
   } = useQuery({
     queryKey: ['tasks', filter, organizerUsername],
-    queryFn: () => (filter === 'mine' ? taskService.getMyTasks(false) : taskService.getAllTasks(false)),
+    queryFn: () =>
+      filter === 'mine' ? taskService.getMyTasks(false) : taskService.getAllTasks(false),
   });
 
   // Complete task mutation
@@ -114,8 +115,13 @@ const TaskBoardPage: React.FC = () => {
 
   // Update task status mutation (drag-and-drop)
   const updateStatusMutation = useMutation({
-    mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: 'pending' | 'todo' | 'in_progress' | 'completed' }) =>
-      taskService.updateTaskStatus(taskId, newStatus),
+    mutationFn: ({
+      taskId,
+      newStatus,
+    }: {
+      taskId: string;
+      newStatus: 'pending' | 'todo' | 'in_progress' | 'completed';
+    }) => taskService.updateTaskStatus(taskId, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
