@@ -251,8 +251,22 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
     it('should_displayRegistrationDeadline_when_provided', () => {
       renderWithProviders(<EventOverviewTab event={mockEvent} eventCode="BAT54" />);
 
-      // Should display the formatted registration deadline
-      expect(screen.getByText(/10 Mar 2025|Mar 10, 2025/i)).toBeInTheDocument();
+      // Should display the registration deadline label
+      expect(screen.getByText(/registration.*deadline/i)).toBeInTheDocument();
+
+      // Should display a date that contains March 10, 2025 in some format
+      // Look specifically for formatted dates (dd MMM yyyy or similar)
+      expect(
+        screen.getByText((content, element) => {
+          if (!element || element.tagName.toLowerCase() !== 'p') return false;
+          const text = element.textContent || '';
+          // Must contain month abbreviation AND 10 AND 2025 (more restrictive)
+          const hasMonth = /m[aä]r[z]?/i.test(text);
+          const hasDay = /\b10\b/.test(text);
+          const hasYear = /\b2025\b/.test(text);
+          return hasMonth && hasDay && hasYear;
+        })
+      ).toBeInTheDocument();
     });
   });
 
@@ -273,9 +287,7 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
 
     it('should_handleMissingWorkflowState_withDefault', () => {
       const eventWithoutWorkflow = { ...mockEvent, workflowState: undefined };
-      renderWithProviders(
-        <EventOverviewTab event={eventWithoutWorkflow} eventCode="BAT54" />
-      );
+      renderWithProviders(<EventOverviewTab event={eventWithoutWorkflow} eventCode="BAT54" />);
 
       // Should use default CREATED state
       expect(screen.getByTestId('workflow-progress-bar')).toBeInTheDocument();

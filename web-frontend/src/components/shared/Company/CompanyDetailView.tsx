@@ -18,6 +18,7 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
@@ -158,6 +159,13 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
           { label: company.displayName || company.name },
         ]}
       />
+
+      {/* Back button */}
+      <Box sx={{ mb: 2 }}>
+        <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
+          {t('actions.back', 'Back')}
+        </Button>
+      </Box>
 
       {/* Action buttons */}
       {(canEdit || canDelete) && (

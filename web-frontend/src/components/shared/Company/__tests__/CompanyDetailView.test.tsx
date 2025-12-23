@@ -82,8 +82,8 @@ describe('CompanyDetailView Component', () => {
         <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
-      // Verify company name is displayed
-      expect(screen.getByText('Test Company AG')).toBeInTheDocument(); // displayName
+      // Verify company name is displayed in heading
+      expect(screen.getByRole('heading', { name: 'Test Company AG' })).toBeInTheDocument();
 
       // Verify company details are displayed
       expect(screen.getByText(/CHE-123.456.789/)).toBeInTheDocument();

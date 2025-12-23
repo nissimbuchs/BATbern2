@@ -93,6 +93,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const handleEditDetails = () => {
     if (onEdit) {
       onEdit();
+    } else {
+      // Default behavior: navigate to edit mode
+      navigate(`/organizer/events/${eventCode}?tab=overview&edit=true`);
     }
   };
 
@@ -245,10 +248,28 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                       {t('form.registrationDeadline', 'Registration Deadline')}
                     </Typography>
                     <Typography variant="body1">
-                      {format(new Date(event.registrationDeadline), 'EEEE, dd MMMM yyyy', {
+                      {format(new Date(event.registrationDeadline), 'dd MMM yyyy', {
                         locale,
                       })}
                     </Typography>
+                  </Grid>
+                )}
+              </Grid>
+
+              {/* Venue Information */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {t('form.venue', 'Venue')}
+                  </Typography>
+                  <Typography variant="body1">{event.venueName || '-'}</Typography>
+                </Grid>
+                {event.venueAddress && (
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {t('form.address', 'Address')}
+                    </Typography>
+                    <Typography variant="body1">{event.venueAddress}</Typography>
                   </Grid>
                 )}
               </Grid>

@@ -81,7 +81,7 @@ describe('EventPublishingTab Component (Story 5.6)', () => {
     it('should_displayTimelineTitle_when_rendered', () => {
       renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
 
-      expect(screen.getByText(/Publishing Timeline/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Publishing Timeline/i })).toBeInTheDocument();
     });
 
     it.skip('should_displayTimelinePhases_when_rendered', () => {
@@ -189,7 +189,7 @@ describe('EventPublishingTab Component (Story 5.6)', () => {
       renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
 
       // Component should render without errors
-      expect(screen.getByText(/Publishing Timeline/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Publishing Timeline/i })).toBeInTheDocument();
     });
   });
 

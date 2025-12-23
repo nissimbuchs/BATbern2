@@ -357,7 +357,7 @@ describe('Partner Detail Screen - Accessibility', () => {
     );
 
     // Material-UI components should render readable text
-    const companyName = screen.getByText('GoogleZH');
+    const companyName = screen.getByRole('heading', { name: 'GoogleZH' });
     expect(companyName).toBeInTheDocument();
     expect(companyName).toBeVisible();
   });

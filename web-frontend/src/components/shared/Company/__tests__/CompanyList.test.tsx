@@ -99,28 +99,10 @@ describe('CompanyList Component', () => {
       expect(company2Card).not.toHaveTextContent('✅');
     });
 
-    it('should_toggleViewMode_when_gridListButtonClicked', async () => {
-      // Test 1.4: Toggle between grid and list view
-      const user = userEvent.setup();
-      const onViewModeToggle = vi.fn();
-
-      render(
-        <CompanyList
-          companies={mockCompanies}
-          isLoading={false}
-          viewMode="grid"
-          onViewModeToggle={onViewModeToggle}
-        />,
-        { wrapper: createTestWrapper() }
-      );
-
-      // Find toggle button
-      const toggleButton = screen.getByRole('button', { name: /view mode|toggle/i });
-      await user.click(toggleButton);
-
-      // Should call toggle function
-      expect(onViewModeToggle).toHaveBeenCalledTimes(1);
-    });
+    // Note: View mode toggle test removed - that functionality belongs to the parent
+    // CompanyManagementScreen component, not CompanyList. CompanyList just receives
+    // the viewMode prop and renders accordingly. Toggle functionality is tested in
+    // CompanyManagementScreen.test.tsx
 
     // Associated users count test removed - associatedUserCount field no longer in backend schema
 

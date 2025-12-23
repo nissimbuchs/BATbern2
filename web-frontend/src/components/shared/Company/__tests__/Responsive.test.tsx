@@ -3,14 +3,68 @@
  * Tests for mobile/tablet/desktop breakpoints and touch-friendly elements
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import CompanyManagementScreen from '../CompanyManagementScreen';
 import CompanyFilters from '../CompanyFilters';
+
+// Mock the hooks
+vi.mock('@/hooks/useCompanies/useCompanies', () => ({
+  useCompanies: vi.fn(),
+}));
+
+vi.mock('@/hooks/useCompanyMutations/useCompanyMutations', () => ({
+  useCreateCompany: vi.fn(() => ({
+    mutate: vi.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useUpdateCompany: vi.fn(() => ({
+    mutate: vi.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useDeleteCompany: vi.fn(() => ({
+    mutate: vi.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useCompanyMutations: vi.fn(() => ({
+    createCompany: vi.fn(),
+    updateCompany: vi.fn(),
+    deleteCompany: vi.fn(),
+  })),
+}));
+
+import { useCompanies } from '@/hooks/useCompanies/useCompanies';
+import {
+  useCompanyMutations,
+  useCreateCompany,
+} from '@/hooks/useCompanyMutations/useCompanyMutations';
+
+// Mock company data
+const mockCompanies = [
+  {
+    id: '1',
+    companyName: 'TestCo AG',
+    legalName: 'TestCo AG',
+    industry: 'Technology',
+    website: 'https://testco.ch',
+    location: 'Zurich',
+  },
+  {
+    id: '2',
+    companyName: 'SecondCo GmbH',
+    legalName: 'SecondCo GmbH',
+    industry: 'Finance',
+    website: 'https://secondco.ch',
+    location: 'Bern',
+  },
+];
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -47,13 +101,48 @@ const renderWithProviders = (component: React.ReactElement, options: { width?: n
   return render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
-        <BrowserRouter>{component}</BrowserRouter>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/organizer/companies/*" element={component} />
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   );
 };
 
 describe('Responsive Design Tests (AC 11)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Setup default mock returns
+    (useCompanies as any).mockReturnValue({
+      data: mockCompanies,
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    (useCompanyMutations as any).mockReturnValue({
+      createCompany: vi.fn(),
+      updateCompany: vi.fn(),
+      deleteCompany: vi.fn(),
+    });
+
+    // Mock window.location for route checks
+    Object.defineProperty(window, 'location', {
+      value: {
+        pathname: '/organizer/companies',
+        origin: 'http://localhost:3000',
+        href: 'http://localhost:3000/organizer/companies',
+        search: '',
+        hash: '',
+      },
+      writable: true,
+      configurable: true,
+    });
+  });
+
   describe('AC11.1: Mobile Layout (< 600px)', () => {
     it('should_stackHeaderElements_when_mobileViewport', () => {
       renderWithProviders(<CompanyManagementScreen />, { width: 400 });

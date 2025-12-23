@@ -128,10 +128,10 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">{t('tasks.criticalTasks', 'Critical Tasks')}</Typography>
         <Chip
-          label={activeTasks.length}
+          label={`${activeTasks.length} ${activeTasks.length === 1 ? t('tasks.task', 'task') : t('tasks.tasks', 'tasks')}`}
           size="small"
           color="primary"
-          aria-label={`${activeTasks.length} active tasks`}
+          aria-label={`${activeTasks.length} active ${activeTasks.length === 1 ? 'task' : 'tasks'}`}
         />
       </Stack>
 

@@ -3,7 +3,26 @@
 // This file contains only service-specific dependencies and configuration
 
 plugins {
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    // Core plugins applied from root build.gradle configure block
+    // Declaring here to ensure proper evaluation order with pluginManagement
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'org.flywaydb.flyway'
+    id 'org.openapi.generator'
+    id 'jacoco'
+    id 'checkstyle'
+    // Service-specific plugin
+    id 'com.gorylenko.gradle-git-properties'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenCentral()
 }
 
 // Git properties generation

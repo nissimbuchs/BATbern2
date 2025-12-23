@@ -16,6 +16,7 @@ vi.mock('./apiClient', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    patch: vi.fn(),
     delete: vi.fn(),
   },
 }));
@@ -145,7 +146,8 @@ describe('companyApiClient', () => {
       });
 
       const call = vi.mocked(apiClient.get).mock.calls[0][0];
-      expect(call).toContain('include=logo,statistics');
+      // URLSearchParams encodes comma as %2C
+      expect(call).toContain('include=logo%2Cstatistics');
     });
   });
 
@@ -330,11 +332,11 @@ describe('companyApiClient', () => {
         ...updates,
       };
 
-      vi.mocked(apiClient.put).mockResolvedValue({ data: mockResponse });
+      vi.mocked(apiClient.patch).mockResolvedValue({ data: mockResponse });
 
       const result = await companyApiClient.updateCompany('TechCorp AG', updates);
 
-      expect(apiClient.put).toHaveBeenCalledWith('/companies/TechCorp AG', updates);
+      expect(apiClient.patch).toHaveBeenCalledWith('/companies/TechCorp AG', updates);
       expect(result).toEqual(mockResponse);
     });
 
@@ -347,7 +349,7 @@ describe('companyApiClient', () => {
         'Invalid Swiss UID format'
       );
 
-      expect(apiClient.put).not.toHaveBeenCalled();
+      expect(apiClient.patch).not.toHaveBeenCalled();
     });
 
     it('should update company without Swiss UID', async () => {
@@ -355,11 +357,11 @@ describe('companyApiClient', () => {
         industry: 'Healthcare',
       };
 
-      vi.mocked(apiClient.put).mockResolvedValue({ data: { id: 'company-1', ...updates } });
+      vi.mocked(apiClient.patch).mockResolvedValue({ data: { id: 'company-1', ...updates } });
 
       await companyApiClient.updateCompany('TechCorp AG', updates);
 
-      expect(apiClient.put).toHaveBeenCalledWith('/companies/TechCorp AG', updates);
+      expect(apiClient.patch).toHaveBeenCalledWith('/companies/TechCorp AG', updates);
     });
   });
 

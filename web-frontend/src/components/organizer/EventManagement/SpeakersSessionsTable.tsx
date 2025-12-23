@@ -49,6 +49,7 @@ import {
   Error as ErrorIcon,
   CalendarToday as CalendarIcon,
   AutoAwesome as AutoAssignIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -58,6 +59,7 @@ import type { SessionUI } from '@/types/event.types';
 interface SpeakersSessionsTableProps {
   sessions: SessionUI[];
   eventCode: string;
+  onViewDetails: (sessionId: string) => void;
   onEditSlot: (sessionId: string) => void;
   onViewMaterials: (sessionId: string) => void;
   onViewFullAgenda: (eventCode: string) => void;
@@ -71,6 +73,7 @@ interface SpeakersSessionsTableProps {
 export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   sessions,
   eventCode,
+  onViewDetails,
   onEditSlot,
   onViewMaterials,
   onViewFullAgenda,
@@ -323,6 +326,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
             <CardActions>
               <Button
                 size="small"
+                startIcon={<VisibilityIcon />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewDetails(session.sessionSlug);
+                }}
+              >
+                View Details
+              </Button>
+              <Button
+                size="small"
                 startIcon={<EditIcon />}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -492,6 +505,16 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
                 <TableCell align="right">
                   <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    <Button
+                      size="small"
+                      startIcon={<VisibilityIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails(session.sessionSlug);
+                      }}
+                    >
+                      View Details
+                    </Button>
                     <Button
                       size="small"
                       startIcon={<EditIcon />}
