@@ -4,6 +4,17 @@
     "speakerOutreach": "Speaker Outreach",
     "topicManagement": "Topic Management"
   },
+  "dashboard": {
+    "criticalTasks": "Critical Tasks",
+    "noCriticalTasks": "No critical tasks",
+    "greatJob": "Great job!",
+    "taskCount": "{{count}} task",
+    "taskCount_plural": "{{count}} tasks",
+    "dueDate": "Due Date",
+    "assignedTo": "Assigned to {{name}}",
+    "confirmAction": "Confirm Action",
+    "areYouSure": "Are you sure you want to perform this action?"
+  },
   "topicBacklog": {
     "pageTitle": "Topic Management",
     "pageDescription": "Manage backlog topics, select topics for events, and analyze usage patterns",

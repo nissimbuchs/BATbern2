@@ -4,6 +4,17 @@
     "speakerOutreach": "Sprecher-Kontaktierung",
     "topicManagement": "Themenverwaltung"
   },
+  "dashboard": {
+    "criticalTasks": "Kritische Aufgaben",
+    "noCriticalTasks": "Keine kritischen Aufgaben",
+    "greatJob": "Gute Arbeit!",
+    "taskCount": "{{count}} Aufgabe",
+    "taskCount_plural": "{{count}} Aufgaben",
+    "dueDate": "Fälligkeitsdatum",
+    "assignedTo": "Zugewiesen an {{name}}",
+    "confirmAction": "Aktion bestätigen",
+    "areYouSure": "Sind Sie sicher, dass Sie diese Aktion ausführen möchten?"
+  },
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
     "pageDescription": "Verwalten Sie Themen im Backlog, wählen Sie Themen für Veranstaltungen und analysieren Sie Nutzungsmuster",

@@ -75,6 +75,13 @@
       "failedToLoadEvents": "Failed to load events"
     }
   },
+  "tasks": {
+    "criticalTasks": "Critical Tasks",
+    "noCriticalTasks": "No critical tasks",
+    "greatJob": "Great job!",
+    "errorLoadingTasks": "Failed to load tasks",
+    "viewAllTasks": "View All Tasks"
+  },
   "form": {
     "createEvent": "Create New Event",
     "editEvent": "Edit Event",

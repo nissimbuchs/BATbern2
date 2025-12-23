@@ -7,7 +7,6 @@ export { EventManagementDashboard } from './EventManagementDashboard';
 export { EventList } from './EventList';
 export { EventCard } from './EventCard';
 export { EventSearch } from './EventSearch';
-export { CriticalTasksList } from './CriticalTasksList';
 export { TeamActivityFeed } from './TeamActivityFeed';
 export { WorkflowProgressBar } from './WorkflowProgressBar';
 export { EventForm } from './EventForm';

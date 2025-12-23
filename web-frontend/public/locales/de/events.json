@@ -75,6 +75,13 @@
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
     }
   },
+  "tasks": {
+    "criticalTasks": "Kritische Aufgaben",
+    "noCriticalTasks": "Keine kritischen Aufgaben",
+    "greatJob": "Gute Arbeit!",
+    "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
+    "viewAllTasks": "Alle Aufgaben anzeigen"
+  },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
     "editEvent": "Veranstaltung bearbeiten",

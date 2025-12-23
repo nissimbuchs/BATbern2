@@ -1,8 +1,6 @@
 # BATbern Project TODO
 
 ## Errors:
-- as ux epert to help with eventdetail and eventdetaildit pages and where to put all the session pages. use tabs?
-- update prd with new flow
 - ask ux expert to reorganize better the user-guide.
 - ask user expert to use playwright on localhost to get screenshots of all the major screens and pages
 - company logos on list does not show, but on detail shows. again the origin problem?

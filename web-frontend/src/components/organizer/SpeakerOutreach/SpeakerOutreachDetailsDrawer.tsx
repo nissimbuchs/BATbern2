@@ -301,7 +301,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
                   <Button size="small" onClick={() => setShowForm(false)}>
-                    {t('common.cancel')}
+                    {t('common:actions.cancel')}
                   </Button>
                   <Button
                     size="small"

@@ -382,11 +382,6 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
-                  {/* Story 5.6: Redirect deprecated speaker outreach route to unified page */}
-                  <Route
-                    path="/organizer/events/:eventCode/speakers/outreach"
-                    element={<Navigate to="../..?tab=speakers" replace />}
-                  />
 
                   <Route
                     path="/speakers"

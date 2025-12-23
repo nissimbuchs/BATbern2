@@ -154,9 +154,9 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   const handleSpeakerBrainstormComplete = () => {
-    // Navigate to speaker outreach if eventCode exists, otherwise to events dashboard
+    // Navigate to event page with speakers tab if eventCode exists, otherwise to events dashboard
     if (eventCode) {
-      navigate(`/organizer/events/${eventCode}/speakers/outreach`);
+      navigate(`/organizer/events/${eventCode}?tab=speakers`);
     } else {
       navigate('/organizer/events');
     }
