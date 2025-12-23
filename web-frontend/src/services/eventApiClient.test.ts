@@ -72,7 +72,9 @@ describe('Event API Client (RED Phase)', () => {
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          status: 'planning',
+          organizerUsername: 'test.organizer',
+          eventType: 'EVENING',
+          currentAttendeeCount: 0,
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -94,7 +96,9 @@ describe('Event API Client (RED Phase)', () => {
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          status: 'planning',
+          organizerUsername: 'test.organizer',
+          eventType: 'EVENING',
+          currentAttendeeCount: 0,
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -116,7 +120,9 @@ describe('Event API Client (RED Phase)', () => {
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: -100, // Negative capacity
-          status: 'planning',
+          organizerUsername: 'test.organizer',
+          eventType: 'EVENING',
+          currentAttendeeCount: 0,
         };
 
         await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
@@ -138,7 +144,9 @@ describe('Event API Client (RED Phase)', () => {
           venueName: 'Test Venue',
           venueAddress: 'Test Address',
           venueCapacity: 100,
-          status: 'planning',
+          organizerUsername: 'test.organizer',
+          eventType: 'EVENING',
+          currentAttendeeCount: 0,
         };
 
         // If validation passes, the function should attempt to make the API call
