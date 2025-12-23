@@ -141,7 +141,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         // Then: Verify the workflow transition occurred (event publishing happens in state machine)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
         assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
-        assertThat(updatedEvent.getTopicId()).isEqualTo(topic.getId());
+        assertThat(updatedEvent.getTopicCode()).isEqualTo(topic.getTopicCode());
     }
 
     // ==================== AC16 Tests: Event State Validation ====================
@@ -309,7 +309,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic newTopic = createTestTopic("Microservices Patterns");
 
         Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_BRAINSTORMING);
-        event.setTopicId(initialTopic.getId());
+        event.setTopicCode(initialTopic.getTopicCode());
         event = eventRepository.save(event);
 
         // When: Change topic to newTopic
@@ -326,12 +326,12 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event updatedEvent = eventRepository.findByEventCode("BATbern98")
                 .orElseThrow(() -> new AssertionError("Event not found"));
 
-        assertThat(updatedEvent.getTopicId())
+        assertThat(updatedEvent.getTopicCode())
                 .as("Topic should be updated to new topic in database")
-                .isEqualTo(newTopic.getId());
+                .isEqualTo(newTopic.getTopicCode());
 
-        assertThat(updatedEvent.getTopicId())
+        assertThat(updatedEvent.getTopicCode())
                 .as("Topic should not be the old topic")
-                .isNotEqualTo(initialTopic.getId());
+                .isNotEqualTo(initialTopic.getTopicCode());
     }
 }

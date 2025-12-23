@@ -1255,16 +1255,9 @@ export interface components {
        */
       themeImageUploadId?: string | null;
       /**
-       * Format: uuid
-       * @description UUID of the selected topic for this event (internal reference).
-       *     Story 5.2: Topic Selection & Speaker Brainstorming
-       * @example 123e4567-e89b-12d3-a456-426614174000
-       */
-      topicId?: string | null;
-      /**
        * @description Topic code (slug-format identifier) of the selected topic.
        *     Story 5.2: Topic Selection & Speaker Brainstorming
-       *     ADR-003: Meaningful Identifiers - exposed for frontend use
+       *     ADR-003: Meaningful Identifiers - use topicCode instead of UUID
        * @example cloud-native-security-2024
        */
       topicCode?: string | null;

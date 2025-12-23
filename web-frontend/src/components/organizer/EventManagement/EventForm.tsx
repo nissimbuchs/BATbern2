@@ -113,8 +113,6 @@ const createEventSchema = (t: (key: string) => string) =>
         'PARTNER_MEETING_COMPLETE',
         'ARCHIVED',
       ]),
-      // UI-only fields (will be stored in metadata)
-      theme: z.string().optional().or(z.literal('')),
       eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
     })
     .refine(
@@ -141,7 +139,6 @@ interface EventFormData {
   venueCapacity: number;
   registrationDeadline?: string;
   workflowState?: components['schemas']['EventWorkflowState'];
-  theme?: string;
   eventType?: components['schemas']['EventType'];
 }
 
@@ -271,7 +268,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
           workflowState: event.workflowState || 'CREATED',
-          theme: (event as EventUI).theme || '',
           eventType: normalizeEventType((event as EventUI).eventType),
         }
       : {
@@ -284,7 +280,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueAddress: '',
           venueCapacity: 200,
           workflowState: 'CREATED' as const,
-          theme: '',
           eventType: 'FULL_DAY',
         },
   });
@@ -311,7 +306,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueAddress: '',
         venueCapacity: 200,
         workflowState: 'CREATED',
-        theme: '',
         eventType: 'FULL_DAY',
       });
     }
@@ -330,7 +324,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
         workflowState: event.workflowState || 'CREATED',
-        theme: (event as EventUI).theme || '',
         eventType: normalizeEventType((event as EventUI).eventType),
       });
     }
@@ -451,7 +444,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
-        metadata: data.theme ? JSON.stringify({ theme: data.theme }) : undefined,
         themeImageUploadId: themeImageUploadId || undefined, // Story 2.5.3a
       };
 
@@ -908,14 +900,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     margin="normal"
                     placeholder="e.g., Kornhausplatz 18, 3011 Bern"
                   />
-                )}
-              />
-
-              <Controller
-                name="theme"
-                control={control}
-                render={({ field }) => (
-                  <TextField {...field} label={t('form.theme')} fullWidth margin="normal" />
                 )}
               />
 

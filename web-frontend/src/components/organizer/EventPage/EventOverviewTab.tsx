@@ -31,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { WorkflowProgressBar } from '@/components/organizer/EventManagement';
-import type { Event, EventDetailUI, EventUI, WorkflowStep } from '@/types/event.types';
+import type { Event, EventDetailUI, WorkflowStep } from '@/types/event.types';
 import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
@@ -252,16 +252,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   </Grid>
                 )}
               </Grid>
-
-              {/* Theme (if available) */}
-              {(event as EventUI).theme && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {t('form.theme', 'Theme')}
-                  </Typography>
-                  <Typography variant="body1">{(event as EventUI).theme}</Typography>
-                </Box>
-              )}
             </Stack>
           </Paper>
         </Grid>

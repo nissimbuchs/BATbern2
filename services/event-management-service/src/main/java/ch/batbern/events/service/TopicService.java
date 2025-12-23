@@ -562,14 +562,14 @@ public class TopicService {
      * @throws IllegalArgumentException if event or topic not found
      * @throws IllegalStateException if event is not in valid state for topic selection
      */
-    public Event selectTopicForEvent(String eventCode, UUID topicId, String organizerUsername) {
+    public Event selectTopicForEvent(String eventCode, String topicCode, String organizerUsername) {
         // Validate event exists
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
-        // Validate topic exists
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+        // Validate topic exists (ADR-003: use topicCode instead of UUID)
+        Topic topic = topicRepository.findByTopicCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
         // Validate event state (AC16)
         // Allow topic assignment/update for CREATED, TOPIC_SELECTION, SPEAKER_BRAINSTORMING, and ARCHIVED states
@@ -607,16 +607,16 @@ public class TopicService {
             );
         }
 
-        // NOW assign topic to the event returned by state machine
-        updatedEvent.setTopicId(topicId);
+        // NOW assign topic to the event returned by state machine (ADR-003: use topicCode)
+        updatedEvent.setTopicCode(topicCode);
         updatedEvent.setUpdatedBy(organizerUsername);
         Event savedEvent = eventRepository.save(updatedEvent);
 
         // Mark topic as used with event date (Story 5.2a - Fix #4)
-        markTopicAsUsed(topicId, savedEvent.getDate());
+        markTopicAsUsed(topic.getId(), savedEvent.getDate());
 
         // Create usage history record for heatmap visualization (GitHub Issue #379)
-        createUsageHistoryRecord(topicId, savedEvent.getId(), savedEvent.getDate());
+        createUsageHistoryRecord(topic.getId(), savedEvent.getId(), savedEvent.getDate());
 
         return savedEvent;
     }

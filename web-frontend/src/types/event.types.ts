@@ -64,7 +64,6 @@ export interface EventUI extends Event {
 
   // UI-only fields (Phase 2 features - not in backend API yet)
   venueCode?: string; // Venue identifier for dropdown selection
-  theme?: string; // Event theme/category
   version?: number; // Version number for optimistic concurrency control
   createdBy?: string; // Username who created the event
   // Note: eventType and workflowState are now in base Event type from API
@@ -188,7 +187,6 @@ export interface EventFormData {
   venueName: string;
   venueAddress: string;
   venueCapacity: number;
-  theme?: string;
 }
 
 // Filter State (UI-only)

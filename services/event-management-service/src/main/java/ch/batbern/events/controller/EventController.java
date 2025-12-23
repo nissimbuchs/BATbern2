@@ -4,7 +4,6 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
@@ -255,13 +254,9 @@ public class EventController {
         if (event.getThemeImageUploadId() != null) {
             response.put("themeImageUploadId", event.getThemeImageUploadId());
         }
-        // Story 5.2: Include topic (ADR-003: include both topicId and topicCode)
-        if (event.getTopicId() != null) {
-            response.put("topicId", event.getTopicId().toString());
-            // Look up topicCode from topicId for ADR-003 compliance (meaningful identifiers)
-            topicService.getTopicById(event.getTopicId()).ifPresent(topic ->
-                response.put("topicCode", topic.getTopicCode())
-            );
+        // Story 5.2: Include topic (ADR-003: use topicCode, not UUID)
+        if (event.getTopicCode() != null) {
+            response.put("topicCode", event.getTopicCode());
         }
         if (event.getWorkflowState() != null) {
             response.put("workflowState", event.getWorkflowState().name());
@@ -1499,25 +1494,21 @@ public class EventController {
             @RequestBody @Valid SelectTopicForEventRequest request) {
 
         try {
-            // Extract topicCode from request (ADR-003)
+            // Extract topicCode from request (ADR-003: use meaningful identifiers)
             // Validation handled by @Valid and DTO annotations (@NotNull, @Pattern)
             String topicCode = request.getTopicCode();
-
-            // Look up topic by topicCode to get UUID
-            Topic topic = topicService.getTopicByCode(topicCode)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found with code: " + topicCode));
-            UUID topicId = topic.getId();
 
             // Get current user from security context
             String organizerUsername = securityContextHelper.getCurrentUserId();
 
             // Select topic for event (calls workflow state machine)
-            Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicId, organizerUsername);
+            // ADR-003: Pass topicCode directly instead of UUID
+            Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicCode, organizerUsername);
 
             // Build response using generated DTO (ADR-006: contract-first)
             TopicSelectionResponse response = new TopicSelectionResponse(
                 updatedEvent.getEventCode(),
-                topic.getTopicCode(),
+                topicCode,
                 updatedEvent.getWorkflowState().name(),
                 "Topic selected successfully"
             );
