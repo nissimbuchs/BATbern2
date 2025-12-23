@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS event_tasks (
   trigger_state VARCHAR(50) NOT NULL,
   due_date TIMESTAMP WITH TIME ZONE,
   assigned_organizer_username VARCHAR(100),
-  status VARCHAR(20) DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'completed')),
+  status VARCHAR(20) DEFAULT 'todo' CHECK (status IN ('pending', 'todo', 'in_progress', 'completed')),
   notes TEXT,
   completed_date TIMESTAMP WITH TIME ZONE,
   completed_by_username VARCHAR(100),

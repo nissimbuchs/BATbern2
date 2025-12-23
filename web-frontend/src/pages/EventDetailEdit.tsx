@@ -46,11 +46,15 @@ import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
 import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
+import { sessionApiClient } from '@/services/sessionService';
+import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 const EventDetailEdit: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('events');
+  const queryClient = useQueryClient();
 
   // State for edit mode
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
@@ -123,9 +127,15 @@ const EventDetailEdit: React.FC = () => {
   };
 
   // Speakers & Sessions handlers
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleViewSessionDetails = (_sessionId: string) => {
-    // TODO: Implement session details modal
+  const handleSessionUpdate = async (sessionSlug: string, updates: SessionUpdateData) => {
+    if (!eventCode) {
+      throw new Error('Event code is required');
+    }
+
+    await sessionApiClient.updateSession(eventCode, sessionSlug, updates);
+
+    // Invalidate event query to refetch updated session data
+    queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -144,10 +154,6 @@ const EventDetailEdit: React.FC = () => {
 
   const handleManageSpeakerAssignments = (eventCode: string) => {
     navigate(`/organizer/events/${eventCode}/speakers`);
-  };
-
-  const handleManageSpeakerOutreach = (eventCode: string) => {
-    navigate(`/organizer/events/${eventCode}/speakers/outreach`);
   };
 
   const handleSelectTopic = (eventCode: string) => {
@@ -482,13 +488,12 @@ const EventDetailEdit: React.FC = () => {
           <SpeakersSessionsTable
             sessions={sessions}
             eventCode={eventCode!}
-            onViewDetails={handleViewSessionDetails}
             onEditSlot={handleEditSlot}
             onViewMaterials={handleViewMaterials}
             onViewFullAgenda={handleViewFullAgenda}
             onManageSpeakerAssignments={handleManageSpeakerAssignments}
-            onManageSpeakerOutreach={handleManageSpeakerOutreach}
             onAutoAssignSpeakers={handleAutoAssignSpeakers}
+            onSessionUpdate={handleSessionUpdate}
           />
         </Paper>
 

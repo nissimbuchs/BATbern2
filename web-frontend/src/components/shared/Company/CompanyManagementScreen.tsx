@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -19,12 +19,9 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
-  TextField,
-  InputAdornment,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
 import {
   Add as AddIcon,
   ViewModule as GridIcon,
@@ -80,33 +77,26 @@ const CompanyDetailWrapper: React.FC<{
 const CompanyManagementScreen: React.FC = () => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const createCompanyMutation = useCreateCompany();
   const updateCompanyMutation = useUpdateCompany();
 
+  // Check if we're on the detail route (any path that's not just /organizer/companies)
+  const isDetailView = location.pathname !== '/organizer/companies';
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<CompanyFiltersType>({});
-  const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [pagination] = useState({ page: 1, limit: 100 });
 
-  // Combine filters with search query
-  const combinedFilters: CompanyFiltersType = {
-    ...filters,
-    ...(searchQuery ? { searchQuery } : {}),
-  };
-
   // Fetch companies list with filters (including search) and logo expansion
-  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(
-    pagination,
-    combinedFilters,
-    {
-      expand: ['logo'],
-    }
-  );
+  const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(pagination, filters, {
+    expand: ['logo'],
+  });
 
   const handleViewModeChange = (
     _: React.MouseEvent<HTMLElement>,
@@ -115,10 +105,6 @@ const CompanyManagementScreen: React.FC = () => {
     if (newMode !== null) {
       setViewMode(newMode);
     }
-  };
-
-  const handleViewModeToggle = () => {
-    setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
   };
 
   const handleFilterChange = useCallback((newFilters: CompanyFiltersType) => {
@@ -168,83 +154,65 @@ const CompanyManagementScreen: React.FC = () => {
   return (
     <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl">
-        {/* Header Section */}
-        <Stack
-          direction={isMobile ? 'column' : 'row'}
-          justifyContent="space-between"
-          alignItems={isMobile ? 'flex-start' : 'center'}
-          spacing={2}
-          mb={4}
-        >
-          <Typography variant="h4" component="h1" gutterBottom={isMobile}>
-            {t('company.title')}
-          </Typography>
-
-          <Stack direction="row" spacing={2}>
-            {/* View Toggle */}
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
-              size="small"
+        {/* Header Section - Only show on list view */}
+        {!isDetailView && (
+          <>
+            <Stack
+              direction={isMobile ? 'column' : 'row'}
+              justifyContent="space-between"
+              alignItems={isMobile ? 'flex-start' : 'center'}
+              spacing={2}
+              mb={4}
             >
-              <ToggleButton value="grid" aria-label={t('company.viewMode.grid')}>
-                <GridIcon />
-              </ToggleButton>
-              <ToggleButton value="list" aria-label={t('company.viewMode.list')}>
-                <ListIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
+              <Typography variant="h4" component="h1" gutterBottom={isMobile}>
+                {t('company.title')}
+              </Typography>
 
-            {/* Batch Import Button */}
-            <Button
-              variant="outlined"
-              startIcon={<UploadFileIcon />}
-              onClick={() => setIsBatchImportOpen(true)}
-              aria-label={t('company.batchImport.button')}
-            >
-              {t('company.batchImport.button')}
-            </Button>
+              <Stack direction="row" spacing={2}>
+                {/* View Toggle */}
+                <ToggleButtonGroup
+                  value={viewMode}
+                  exclusive
+                  onChange={handleViewModeChange}
+                  aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
+                  size="small"
+                >
+                  <ToggleButton value="grid" aria-label={t('company.viewMode.grid')}>
+                    <GridIcon />
+                  </ToggleButton>
+                  <ToggleButton value="list" aria-label={t('company.viewMode.list')}>
+                    <ListIcon />
+                  </ToggleButton>
+                </ToggleButtonGroup>
 
-            {/* Create Button */}
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleCreateCompany}
-              aria-label={t('company.createCompany')}
-            >
-              {t('company.createCompany')}
-            </Button>
-          </Stack>
-        </Stack>
+                {/* Batch Import Button */}
+                <Button
+                  variant="outlined"
+                  startIcon={<UploadFileIcon />}
+                  onClick={() => setIsBatchImportOpen(true)}
+                  aria-label={t('company.batchImport.button')}
+                >
+                  {t('company.batchImport.button')}
+                </Button>
 
-        {/* Search and Filter Section */}
-        <Stack direction={isMobile ? 'column' : 'row'} spacing={2} mb={3}>
-          {/* Search Bar - Simple text field for filtering the list */}
-          <Box flex={1}>
-            <TextField
-              fullWidth
-              placeholder={t('company.search.placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-              size="small"
-              aria-label={t('company.search.placeholder')}
-            />
-          </Box>
-        </Stack>
+                {/* Create Button */}
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleCreateCompany}
+                  aria-label={t('company.createCompany')}
+                >
+                  {t('company.createCompany')}
+                </Button>
+              </Stack>
+            </Stack>
 
-        {/* Filters */}
-        <Box mb={3}>
-          <CompanyFilters onFilterChange={handleFilterChange} initialFilters={filters} />
-        </Box>
+            {/* Filters (including search) */}
+            <Box mb={3}>
+              <CompanyFilters onFilterChange={handleFilterChange} initialFilters={filters} />
+            </Box>
+          </>
+        )}
 
         {/* Content Area with Routing */}
         <Routes>
@@ -255,7 +223,6 @@ const CompanyManagementScreen: React.FC = () => {
                 companies={companiesData?.data || []}
                 isLoading={isLoadingCompanies}
                 viewMode={viewMode}
-                onViewModeToggle={handleViewModeToggle}
                 onCompanyClick={(id) => navigate(`${id}`)}
               />
             }

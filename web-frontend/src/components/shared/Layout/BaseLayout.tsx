@@ -85,9 +85,15 @@ export function BaseLayout({ children, maxWidth = false, user, notifications }: 
           },
         }}
       >
-        <Container maxWidth={maxWidth} sx={{ px: { xs: 2, sm: 3 } }}>
-          {children}
-        </Container>
+        {maxWidth === false ? (
+          // Full-width layout (no Container)
+          <Box sx={{ px: { xs: 2, sm: 3 } }}>{children}</Box>
+        ) : (
+          // Constrained layout with Container
+          <Container maxWidth={maxWidth} sx={{ px: { xs: 2, sm: 3 } }}>
+            {children}
+          </Container>
+        )}
       </Box>
     </Box>
   );

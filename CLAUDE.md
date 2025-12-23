@@ -54,11 +54,24 @@ make update-deps                # Update safe dependencies (patch/minor)
 
 ### Running Individual Services
 
+**IMPORTANT**: All Gradle commands must be run from the repository root directory.
+
 ```bash
-# Java services use Gradle wrapper at root
+# Build and run services (from root directory)
 ./gradlew :shared-kernel:build
 ./gradlew :api-gateway:bootRun
+./gradlew :services:event-management-service:bootRun
+./gradlew :services:company-user-management-service:bootRun
+./gradlew :services:speaker-coordination-service:bootRun
+./gradlew :services:partner-coordination-service:bootRun
+./gradlew :services:attendee-experience-service:bootRun
+
+# Run tests for specific service
 ./gradlew :services:event-management-service:test
+
+# Run Flyway migrations/repair (from root directory)
+./gradlew :services:event-management-service:flywayMigrate
+./gradlew :services:event-management-service:flywayRepair
 
 # Frontend development
 cd web-frontend && npm run dev

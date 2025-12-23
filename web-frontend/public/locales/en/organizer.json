@@ -1,4 +1,9 @@
 {
+  "navigation": {
+    "partners": "Partners",
+    "speakerOutreach": "Speaker Outreach",
+    "topicManagement": "Topic Management"
+  },
   "topicBacklog": {
     "pageTitle": "Topic Management",
     "pageDescription": "Manage backlog topics, select topics for events, and analyze usage patterns",
@@ -242,10 +247,10 @@
     "CONTACTED": "Contacted",
     "READY": "Ready",
     "ACCEPTED": "Accepted",
-    "DECLINED": "Declined",
-    "SLOT_ASSIGNED": "Slot Assigned",
+    "CONTENT_SUBMITTED": "Content Submitted",
     "QUALITY_REVIEWED": "Quality Reviewed",
-    "FINAL_AGENDA": "Final Agenda",
+    "CONFIRMED": "Confirmed",
+    "DECLINED": "Declined",
     "changeStatus": "Change Status",
     "changeReason": "Reason for status change (optional)",
     "confirmChange": "Change Status",
@@ -265,5 +270,84 @@
     "reasonHelperText": "Optional (max {{max}} characters)",
     "reasonPlaceholder": "e.g., Speaker confirmed via email",
     "reasonTooLong": "Reason is too long ({{current}}/{{max}} characters)"
+  },
+  "speakerContent": {
+    "submitContent": "Submit Speaker Content",
+    "presentationDetails": "Presentation Details",
+    "speakerInformation": "Speaker Information",
+    "submitting": "Submitting...",
+    "editSpeakerProfile": "Edit Speaker Profile",
+    "createNewSpeaker": "Create New Speaker",
+    "form": {
+      "username": "Search Speaker",
+      "usernameHelp": "Enter the username of the speaker",
+      "presentationTitle": "Presentation Title",
+      "presentationAbstract": "Presentation Abstract",
+      "charactersRemaining": "characters remaining"
+    },
+    "errors": {
+      "usernameRequired": "Speaker is required",
+      "titleRequired": "Presentation title is required",
+      "abstractRequired": "Presentation abstract is required",
+      "abstractTooLong": "Abstract must be {{max}} characters or less",
+      "submitFailed": "Failed to submit content. Please try again."
+    }
+  },
+  "qualityReview": {
+    "title": "Quality Review",
+    "speaker": "Speaker",
+    "presentationTitle": "Presentation Title",
+    "abstract": "Abstract",
+    "qualityCriteria": "Quality Criteria",
+    "characters": "characters",
+    "detected": "Detected",
+    "notDetected": "Not detected",
+    "passed": "Passed",
+    "promotionDetected": "Promotion detected",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approving": "Approving...",
+    "submitting": "Submitting...",
+    "confirmReject": "Confirm Rejection",
+    "rejectInstructions": "Please provide feedback on why the content is being rejected.",
+    "feedbackLabel": "Feedback",
+    "feedbackPlaceholder": "Explain what needs to be improved...",
+    "noContent": "No content available",
+    "criteria": {
+      "abstractLength": "Abstract Length",
+      "lessonsLearned": "Contains \"Lessons Learned\"",
+      "noPromotion": "No Product Promotion"
+    },
+    "errors": {
+      "feedbackRequired": "Feedback is required",
+      "unknown": "An unknown error occurred"
+    }
+  },
+  "tasks": {
+    "taskBoard": "Task Board",
+    "filter": "Filter",
+    "myTasks": "My Tasks",
+    "allTasks": "All Tasks",
+    "sortBy": "Sort By",
+    "dueDate": "Due Date",
+    "createdDate": "Created Date",
+    "addCustomTask": "Add Custom Task",
+    "errorLoadingTasks": "Failed to load tasks",
+    "pending": "Pending",
+    "pendingDescription": "Waiting for trigger state",
+    "toDo": "To Do",
+    "todoDescription": "Ready to work on",
+    "inProgress": "In Progress",
+    "inProgressDescription": "Currently being worked on",
+    "completed": "Completed",
+    "completedDescription": "Finished tasks",
+    "completeTask": "Complete Task",
+    "completionNotes": "Completion Notes (Optional)",
+    "markComplete": "Mark Complete",
+    "due": "Due",
+    "assignedTo": "Assigned to",
+    "completedOn": "Completed on",
+    "completedBy": "Completed by",
+    "noTasks": "No tasks"
   }
 }

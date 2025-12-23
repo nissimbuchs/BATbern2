@@ -103,7 +103,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                     "AI/ML Fundamentals")))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(50))
-                .andExpect(jsonPath("$.pagination.total").value(3));
+                .andExpect(jsonPath("$.pagination.totalItems").value(3));
     }
 
     /**
@@ -167,11 +167,11 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         // Given: Topic exists
         Topic topic = createTestTopic("Cloud Native", "technical", 85);
 
-        // When & Then: GET /api/v1/topics/{id} returns topic details
-        mockMvc.perform(get("/api/v1/topics/{id}", topic.getId())
+        // When & Then: GET /api/v1/topics/{topicCode} returns topic details
+        mockMvc.perform(get("/api/v1/topics/{topicCode}", topic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(topic.getId().toString()))
+                .andExpect(jsonPath("$.topicCode").value(topic.getTopicCode()))
                 .andExpect(jsonPath("$.title").value("Cloud Native"))
                 .andExpect(jsonPath("$.category").value("technical"))
                 .andExpect(jsonPath("$.stalenessScore").value(85))
@@ -201,7 +201,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         );
 
         // When: Get topic with similarity scores
-        mockMvc.perform(get("/api/v1/topics/{id}", topic1.getId())
+        mockMvc.perform(get("/api/v1/topics/{topicCode}", topic1.getTopicCode())
                 .param("include", "similarity")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -210,7 +210,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.similarityScores", hasSize(greaterThan(0))))
                 // Verify high similarity due to overlapping terms (cloud, native)
                 .andExpect(jsonPath("$.similarityScores[0].score").isNumber())
-                .andExpect(jsonPath("$.similarityScores[0].topicId").value(topic2.getId().toString()));
+                .andExpect(jsonPath("$.similarityScores[0].topicCode").value(topic2.getTopicCode()));
     }
 
     // ==================== AC6 Tests: Staleness Score Calculation ====================
@@ -229,14 +229,14 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic staleTopic = createTestTopic("Stale", "technical", 100);
 
         // When & Then: Verify staleness scores are in valid range
-        mockMvc.perform(get("/api/v1/topics/{id}", recentTopic.getId())
+        mockMvc.perform(get("/api/v1/topics/{topicCode}", recentTopic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stalenessScore").value(10))
                 .andExpect(jsonPath("$.stalenessScore", greaterThanOrEqualTo(0)))
                 .andExpect(jsonPath("$.stalenessScore", lessThanOrEqualTo(100)));
 
-        mockMvc.perform(get("/api/v1/topics/{id}", staleTopic.getId())
+        mockMvc.perform(get("/api/v1/topics/{topicCode}", staleTopic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stalenessScore").value(100));
@@ -292,7 +292,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
                 // Then: Topic is created with 201 status
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.topicCode").exists())
                 .andExpect(jsonPath("$.title").value("AI-Powered DevOps"))
                 .andExpect(jsonPath("$.category").value("technical"))
                 // AC8: New topics have max staleness score (100 = safe to use)
@@ -343,9 +343,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Verify topic is persisted in database
         Map<String, Object> createdTopic = objectMapper.readValue(response, Map.class);
-        String topicId = (String) createdTopic.get("id");
+        String topicCode = (String) createdTopic.get("topicCode");
 
-        mockMvc.perform(get("/api/v1/topics/{id}", topicId)
+        mockMvc.perform(get("/api/v1/topics/{topicCode}", topicCode)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Kubernetes Best Practices"))
@@ -385,7 +385,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         );
 
         // When: GET usage history
-        mockMvc.perform(get("/api/v1/topics/{id}/usage-history", topic.getId())
+        mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
                 // Then: Returns usage history with eventNumber (no UUIDs in API)
                 .andExpect(status().isOk())
@@ -413,7 +413,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("New Topic", "technical", 100);
 
         // When: GET usage history
-        mockMvc.perform(get("/api/v1/topics/{id}/usage-history", topic.getId())
+        mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
                 // Then: Returns empty array
                 .andExpect(status().isOk())

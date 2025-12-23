@@ -12,6 +12,7 @@
     "companies": "Unternehmen",
     "users": "Benutzer",
     "myCompany": "Mein Unternehmen",
+    "myAccount": "Mein Konto",
     "analytics": "Analytik",
     "content": "Inhaltssuche",
     "profile": "Profil",
@@ -40,6 +41,7 @@
   },
   "actions": {
     "save": "Speichern",
+    "saving": "Wird gespeichert...",
     "cancel": "Abbrechen",
     "delete": "Löschen",
     "edit": "Bearbeiten",
@@ -337,5 +339,10 @@
         "parseError": "Fehler beim Parsen: {{error}}"
       }
     }
+  },
+  "organizer": {
+    "select": "Organisator auswählen",
+    "all": "Alle Organisatoren",
+    "unassigned": "Nicht zugewiesen"
   }
 }

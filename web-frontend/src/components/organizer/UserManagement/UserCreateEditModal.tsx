@@ -45,7 +45,7 @@ type Company = components['schemas']['CompanyResponse'];
 interface UserCreateEditModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user?: User) => void;
   user?: User | null; // If provided, edit mode; otherwise create mode
 }
 
@@ -252,9 +252,11 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
     }
 
     try {
+      let createdOrUpdatedUser: User | undefined;
+
       if (isEditMode && user) {
         // Edit mode - update user
-        await updateUserMutation.mutateAsync({
+        createdOrUpdatedUser = await updateUserMutation.mutateAsync({
           username: user.id,
           data: {
             firstName: formData.firstName,
@@ -265,7 +267,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
         });
       } else {
         // Create mode - create new user
-        await createUserMutation.mutateAsync({
+        createdOrUpdatedUser = await createUserMutation.mutateAsync({
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
@@ -275,7 +277,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
         });
       }
 
-      onSuccess?.();
+      onSuccess?.(createdOrUpdatedUser);
       onClose();
     } catch (error) {
       // Error handling is done by React Query

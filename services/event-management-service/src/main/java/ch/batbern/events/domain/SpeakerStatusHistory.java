@@ -46,8 +46,11 @@ public class SpeakerStatusHistory {
     @Column(name = "speaker_pool_id", nullable = false)
     private UUID speakerPoolId;
 
-    @NotNull
-    @Column(name = "session_id", nullable = false)
+    /**
+     * Session ID - null until speaker submits content (CONTENT_SUBMITTED status)
+     * Story 5.5: Sessions are only created when presentation content is submitted
+     */
+    @Column(name = "session_id")
     private UUID sessionId;
 
     @NotNull

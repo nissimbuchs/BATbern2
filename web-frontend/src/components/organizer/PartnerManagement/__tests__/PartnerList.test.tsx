@@ -14,32 +14,32 @@ vi.mock('@/stores/partnerStore');
 // Mock PartnerCard component
 vi.mock('../PartnerCard', () => ({
   PartnerCard: ({ partner }: any) => (
-    <div data-testid={`partner-card-${partner.id}`}>{partner.companyName}</div>
+    <div data-testid={`partner-card-${partner.companyName}`}>{partner.companyName}</div>
   ),
 }));
 
 const mockPartners = [
   {
-    id: '1',
-    companyName: 'Tech Solutions AG',
+    companyName: 'Tech Solutions AG', // ADR-003: companyName is the meaningful ID
     partnershipLevel: 'GOLD',
     isActive: true,
     lastEventName: 'BATbern 2024',
     votesCount: 5,
     nextMeetingDate: '2025-02-15',
+    partnershipStartDate: '2023-01-15',
     company: { industry: 'Technology', logoUrl: 'https://cdn.example.com/logo1.png' },
     contacts: [
-      { id: 'c1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', isPrimary: true },
+      { username: 'john.doe', firstName: 'John', lastName: 'Doe', email: 'john@example.com', isPrimary: true },
     ],
   },
   {
-    id: '2',
-    companyName: 'Design Studio GmbH',
+    companyName: 'Design Studio GmbH', // ADR-003: companyName is the meaningful ID
     partnershipLevel: 'SILVER',
     isActive: true,
     lastEventName: 'BATbern 2023',
     votesCount: 3,
     nextMeetingDate: null,
+    partnershipStartDate: '2022-06-01',
     company: { industry: 'Design', logoUrl: null },
     contacts: [],
   },
@@ -95,8 +95,8 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByTestId('partner-card-1')).toBeInTheDocument();
-        expect(screen.getByTestId('partner-card-2')).toBeInTheDocument();
+        expect(screen.getByTestId('partner-card-Tech Solutions AG')).toBeInTheDocument();
+        expect(screen.getByTestId('partner-card-Design Studio GmbH')).toBeInTheDocument();
         expect(screen.getByText('Tech Solutions AG')).toBeInTheDocument();
         expect(screen.getByText('Design Studio GmbH')).toBeInTheDocument();
       });
@@ -467,7 +467,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
       // This test verifies the component renders successfully
       // Actual lazy loading is tested at integration level with Intersection Observer
       await waitFor(() => {
-        expect(screen.getByTestId('partner-card-1')).toBeInTheDocument();
+        expect(screen.getByTestId('partner-card-Tech Solutions AG')).toBeInTheDocument();
       });
     });
   });

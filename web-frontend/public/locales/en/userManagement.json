@@ -7,6 +7,11 @@
     "noResults": "No users found",
     "clearFilters": "Clear filters"
   },
+  "viewMode": {
+    "toggle": "Toggle view mode",
+    "grid": "Grid view",
+    "list": "List view"
+  },
   "filters": {
     "title": "Filters",
     "clearAll": "Clear all filters",
@@ -31,6 +36,7 @@
     }
   },
   "table": {
+    "viewUser": "View user {{name}}",
     "headers": {
       "name": "Name",
       "email": "Email",

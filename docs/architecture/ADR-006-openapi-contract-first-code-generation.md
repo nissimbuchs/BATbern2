@@ -101,6 +101,7 @@ openApiGenerate {
         useBeanValidation: "true",          // @Valid, @NotNull
         useJakartaEe: "true",               // Jakarta EE (Spring Boot 3)
         dateLibrary: "java8",               // java.time.* types
+        generateBuilders: "true",           // Generate builder pattern for DTOs
         skipDefaultInterface: "true"        // No default methods
     ]
 }
@@ -139,7 +140,7 @@ public class UserController implements UsersApi {  // Generated interface
 }
 ```
 
-**Service Layer Uses Generated DTOs**:
+**Service Layer Returns Generated DTOs**:
 
 ```java
 @Service
@@ -148,8 +149,10 @@ public class UserController implements UsersApi {  // Generated interface
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserResponseMapper responseMapper;     // Pure mapper component
     private final DomainEventPublisher eventPublisher;  // From shared-kernel
 
+    // Service returns generated DTOs (not entities)
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
         // UpdateUserRequest is generated from OpenAPI spec
         User user = getCurrentUserEntity();
@@ -167,18 +170,159 @@ public class UserService {
         // Publish event using shared-kernel
         eventPublisher.publishEvent(new UserUpdatedEvent(saved.getId(), saved.getEmail()));
 
-        return mapToResponse(saved);  // Returns generated UserResponse DTO
+        return responseMapper.mapToResponse(saved);  // Returns generated UserResponse DTO
     }
+}
+```
 
-    private UserResponse mapToResponse(User user) {
+**Pure Mapper Pattern** (Extracted Component for Entity→DTO Conversion):
+
+```java
+/**
+ * Pure mapper for converting between User entities and generated DTOs.
+ *
+ * Pattern: Pure Mapper
+ * - Field mapping only
+ * - Type conversions (LocalDateTime → OffsetDateTime)
+ * - NO business logic
+ * - NO repository dependencies
+ * - NO complex data enrichment
+ *
+ * Business logic belongs in Service layer or dedicated business logic services.
+ */
+@Component
+public class UserResponseMapper {
+
+    public UserResponse mapToResponse(User user) {
         // Map JPA entity to generated DTO
         UserResponse response = new UserResponse();
         response.setId(user.getId());
         response.setEmail(user.getEmail());
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());
-        // ... more mappings
+        response.setCreatedAt(toOffsetDateTime(user.getCreatedAt()));  // Type conversion
+        response.setUpdatedAt(toOffsetDateTime(user.getUpdatedAt()));
+        // ... more field mappings
         return response;
+    }
+
+    private OffsetDateTime toOffsetDateTime(LocalDateTime localDateTime) {
+        return localDateTime != null
+            ? localDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime()
+            : null;
+    }
+}
+```
+
+**Layered Architecture & Data Flow**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 1: CONTROLLER (API Boundary)                             │
+│  - Accepts: Generated DTOs (from OpenAPI)                       │
+│  - Returns: Generated DTOs (for OpenAPI compliance)             │
+│  - Uses: Service methods (which return generated DTOs)          │
+│  - Uses: Mapper (only if direct entity conversion needed)       │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 2: MAPPER (Pure Conversion Logic)                       │
+│  - toDto(Entity) → Generated DTO                                │
+│  - toEntity(Generated DTO) → Entity                             │
+│  - Type conversions: LocalDateTime → OffsetDateTime             │
+│  - NO business logic                                            │
+│  - NO repository dependencies (pure mapper pattern)             │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 3: SERVICE (Business Logic & Data Enrichment)           │
+│  - Works with: Entities internally                              │
+│  - Returns: Generated DTOs to controller                        │
+│  - Uses: Mapper to convert entities → DTOs before returning     │
+│  - Uses: Repository for data access                             │
+│  - Contains: Business logic (calculations, enrichment)          │
+│  - Handles: UUID → topicCode conversions (batch queries)        │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 4: REPOSITORY (Data Access)                             │
+│  - Works with: Entities                                         │
+│  - Returns: Entities                                            │
+│  - JPA/Hibernate database interaction                           │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 5: ENTITY (Domain Model)                                │
+│  - JPA annotations                                              │
+│  - Internal UUID + External meaningful ID (ADR-003)             │
+│  - Never exposed directly to API                                │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  LAYER 6: DATABASE (PostgreSQL)                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Business Logic Separation**:
+
+- **Business Logic** (colorZone, status calculation, enrichment) → Service layer (Layer 3)
+- **Mapper** (Layer 2) → Pure mapping only (entity ↔ DTO conversions, type transformations)
+- **Service** (Layer 3) → Returns generated DTOs (not entities), uses mapper for conversion
+
+Example with business logic in service:
+
+```java
+@Service
+public class TopicService {
+
+    private final TopicRepository topicRepository;
+    private final TopicMapper topicMapper;  // Pure mapper
+
+    public ch.batbern.events.dto.generated.topics.Topic getTopicByCode(String topicCode) {
+        Topic entity = topicRepository.findByTopicCode(topicCode)
+            .orElseThrow(() -> new TopicNotFoundException(topicCode));
+
+        // Service handles business logic and data enrichment
+        var similarityScores = convertSimilarityScoresToDtos(entity.getSimilarityScores());
+
+        // Mapper does pure entity→DTO conversion
+        return topicMapper.toDtoWithSimilarityScores(entity, similarityScores);
+    }
+
+    // Business logic method in service
+    public List<SimilarityScore> convertSimilarityScoresToDtos(List<Topic.SimilarityScore> entityScores) {
+        // Batch fetch topics to avoid N+1 queries
+        List<UUID> topicIds = entityScores.stream()
+            .map(Topic.SimilarityScore::getTopicId)
+            .collect(Collectors.toList());
+
+        List<Topic> topics = topicRepository.findAllById(topicIds);
+        Map<UUID, String> uuidToCodeMap = topics.stream()
+            .collect(Collectors.toMap(Topic::getId, Topic::getTopicCode));
+
+        // Convert UUID to topicCode (data enrichment)
+        return entityScores.stream()
+            .map(score -> {
+                SimilarityScore dto = new SimilarityScore();
+                dto.setTopicCode(uuidToCodeMap.get(score.getTopicId()));
+                dto.setScore(score.getScore().floatValue());
+                return dto;
+            })
+            .filter(dto -> dto.getTopicCode() != null)
+            .collect(Collectors.toList());
+    }
+
+    // Pure business logic (can be static utility)
+    public static TopicColorZone calculateColorZone(Integer staleness) {
+        if (staleness == null) return TopicColorZone.GRAY;
+        if (staleness < 50) return TopicColorZone.RED;
+        else if (staleness <= 83) return TopicColorZone.YELLOW;
+        else return TopicColorZone.GREEN;
     }
 }
 ```
@@ -583,8 +727,32 @@ Each service maintains an `OPENAPI-CODEGEN.md` file documenting:
 - **ADR-003**: Meaningful Identifiers in Public APIs - Dual-identifier strategy complements OpenAPI contracts
 - **ADR-004**: Factor User Fields from Domain Entities - HTTP enrichment pattern used in generated controllers
 
+## Builder Pattern for Generated DTOs
+
+All OpenAPI generators are configured with `generateBuilders: 'true'` to enable fluent builder pattern for DTOs:
+
+```java
+// Generated DTO with builder
+TopicListResponse response = TopicListResponse.builder()
+    .data(topicDtos)
+    .pagination(paginationMetadata)
+    .build();
+
+// Instead of manual setters
+TopicListResponse response = new TopicListResponse();
+response.setData(topicDtos);
+response.setPagination(paginationMetadata);
+```
+
+**Benefits**:
+- ✅ Immutable object construction
+- ✅ Null safety (missing required fields caught at build time)
+- ✅ Better IDE autocomplete
+- ✅ More readable code (fluent API)
+
 ## Revision History
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
 | 1.0 | 2025-01-08 | Initial ADR for OpenAPI contract-first code generation | Development Team |
+| 1.1 | 2025-12-22 | Added Pure Mapper pattern, business logic separation, builder pattern configuration | Development Team |

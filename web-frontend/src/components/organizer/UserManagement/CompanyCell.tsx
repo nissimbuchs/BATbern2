@@ -67,6 +67,7 @@ const CompanyCell: React.FC<CompanyCellProps> = ({ companyId }) => {
         src={logoUrl}
         sx={{ width: 24, height: 24, bgcolor: 'grey.100' }}
         alt={`${displayName} logo`}
+        imgProps={{ loading: 'lazy' }}
       >
         <BusinessIcon sx={{ fontSize: 16, color: 'grey.500' }} />
       </Avatar>

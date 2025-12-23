@@ -15,8 +15,7 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { ArrowBack, Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
@@ -58,12 +57,7 @@ const getInitials = (name: string): string => {
 
 export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner }) => {
   const { t } = useTranslation('partners');
-  const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
-
-  const handleBack = () => {
-    navigate('/organizer/partners');
-  };
 
   const handleEdit = () => {
     openEditModal(partner);
@@ -77,13 +71,6 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
       <Stack spacing={3}>
-        {/* Back Button */}
-        <Box>
-          <Button startIcon={<ArrowBack />} onClick={handleBack} variant="text" size="small">
-            Back to Partner Directory
-          </Button>
-        </Box>
-
         {/* Header Content */}
         <Stack direction="row" spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}

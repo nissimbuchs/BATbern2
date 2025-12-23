@@ -531,7 +531,7 @@ interface Event {
 }
 
 // EventStatus enum removed in V17 migration (2025-12-15)
-// Replaced by EventWorkflowState (16-step Epic 5 workflow)
+// Replaced by EventWorkflowState (9-state workflow, see 06a-workflow-state-machines.md)
 
 enum EventType {
   FULL_DAY = 'full_day',        // 6-8 slots
@@ -539,8 +539,9 @@ enum EventType {
   EVENING = 'evening'           // 3-4 slots
 }
 
-// Epic 5: 16-step Enhanced Organizer Workflow (Story 5.1a)
+// Epic 5: 9-state Event Workflow (Story 5.1a)
 // Introduced in V12 migration, became the sole state field in V17 migration
+// See 06a-workflow-state-machines.md for complete workflow documentation
 enum EventWorkflowState {
   CREATED = 'CREATED',
   TOPIC_SELECTION = 'TOPIC_SELECTION',
@@ -1255,7 +1256,7 @@ interface GDPRConsent {
 
 ### Anonymous Registration Account Linking
 
-**Pattern**: Email-based automatic linking (ADR-005)
+**Pattern**: Unified user_profiles with nullable cognito_user_id (ADR-007)
 
 **Use Case**: A user registers anonymously for an event, then later creates a Cognito account with the same email address.
 
@@ -1265,23 +1266,34 @@ interface GDPRConsent {
 
 User visits `/register/BAT-025` and completes registration wizard without login.
 
-Backend creates:
+Backend creates user_profile (in Company User Management Service):
 ```sql
-INSERT INTO event_registrations (
-    id, event_id, anonymous_email, anonymous_first_name, anonymous_last_name,
-    anonymous_company, anonymous_role, confirmation_code, status
+-- user_profiles table (cognito_user_id is NULL for anonymous users)
+INSERT INTO user_profiles (
+    id, username, email, first_name, last_name, company_id, cognito_user_id
 ) VALUES (
-    '550e8400-e29b-41d4-a716-446655440000',  -- internal UUID (not exposed in API)
-    'BATbern25',  -- eventCode per ADR-003 (meaningful ID, not UUID)
+    gen_random_uuid(),
+    'john.doe',              -- Generated username
     'john@example.com',
     'John',
     'Doe',
-    'Acme Corp',
-    'Architect',
+    'AcmeCorp',              -- FK to companies
+    NULL                     -- NULL = anonymous user (ADR-007)
+);
+```
+
+Backend creates registration (in Event Management Service):
+```sql
+-- registrations reference user by username (ADR-004: no duplicated user fields)
+INSERT INTO registrations (
+    id, event_code, attendee_username, registration_code, status
+) VALUES (
+    gen_random_uuid(),
+    'BATbern25',             -- eventCode per ADR-003
+    'john.doe',              -- References user_profiles.username (cross-service)
     'BAT-2025-000123',
     'confirmed'
 );
--- attendee_id is NULL (anonymous registration)
 ```
 
 User receives confirmation email with QR code and can access registration via confirmation code.
@@ -1292,98 +1304,61 @@ User decides to create a Cognito account with email `john@example.com`.
 
 Backend (on account creation via `UserCreatedEvent` handler):
 ```sql
--- Step 1: Find anonymous registrations with matching email
-SELECT * FROM event_registrations
-WHERE anonymous_email = 'john@example.com'
-  AND attendee_id IS NULL;
+-- Simply update the existing user_profile with the Cognito ID
+UPDATE user_profiles SET
+    cognito_user_id = 'cognito-sub-12345',
+    claimed_at = NOW()
+WHERE email = 'john@example.com'
+  AND cognito_user_id IS NULL;
 
--- Step 2: Create Attendee record for user (if doesn't exist)
-INSERT INTO attendees (id, user_id, newsletter_subscription, ...)
-VALUES (gen_random_uuid(), '<new_user_id>', false, ...);
-
--- Step 3: Link registrations to new Attendee
-UPDATE event_registrations SET
-    attendee_id = '<new_attendee_id>',
-    claimed_by_user_id = '<user_id>',
-    claimed_at = NOW(),
-    anonymous_email = NULL,           -- Clear for privacy
-    anonymous_first_name = NULL,
-    anonymous_last_name = NULL,
-    anonymous_company = NULL,
-    anonymous_role = NULL
-WHERE anonymous_email = 'john@example.com'
-  AND attendee_id IS NULL;
-
--- Step 4: Send notification email
--- "Your past registrations have been linked to your account"
+-- All registrations are ALREADY linked via attendee_username!
+-- No migration, no copying, no clearing required.
 ```
 
 **3. Result**
 
 User can now:
-- View all past registrations in authenticated dashboard
+- View all past registrations in authenticated dashboard (linked via username)
 - Register for future events as authenticated user
 - Access all registrations via account (not just confirmation codes)
 
 #### Duplicate Prevention
 
-**Anonymous Registrations:**
 ```sql
--- Unique index prevents duplicate anonymous registrations per event
-CREATE UNIQUE INDEX idx_event_registrations_anonymous_unique
-    ON event_registrations(event_id, anonymous_email)
-    WHERE attendee_id IS NULL;
+-- Unique email prevents duplicate anonymous users
+CREATE UNIQUE INDEX idx_user_profiles_email ON user_profiles(email);
 
--- Attempting to register twice with same email for same event: FAILS
-```
-
-**Authenticated Registrations:**
-```sql
--- Existing unique constraint prevents duplicate authenticated registrations
-UNIQUE(event_id, attendee_id)
+-- Unique (event, attendee) prevents duplicate registrations
+CREATE UNIQUE INDEX idx_registrations_event_attendee
+    ON registrations(event_code, attendee_username);
 ```
 
 #### Edge Cases
 
 **User already has account, registers anonymously by mistake:**
-- Registration is allowed (user might not be logged in)
-- On next login, system can prompt: "We found registrations with your email. Link to account?"
-- Linking follows same workflow above
-
-**Multiple emails for same person:**
-- No automatic linking across different emails
-- User must contact support to merge accounts
+- Lookup finds existing user_profile by email
+- Use existing username for registration (no new profile created)
 
 **Email typo in anonymous registration:**
-- Confirmation email won't reach user
 - User contacts support with confirmation code
-- Support can update email in database
-
-**Account deleted after claiming:**
-- Cascade policy options:
-  - Keep registration but clear `attendee_id` and `claimed_by_user_id` (registration becomes "orphaned" but still valid)
-  - Delete registration (cascade DELETE via FK)
-- Recommended: Keep registration for event attendance records
+- Support can update email in user_profiles
 
 #### Implementation Notes
 
 **Auto-linking trigger point:**
 - Execute in `UserService.createUser()` after Cognito account created
-- OR subscribe to domain event `UserCreatedEvent` in Event Management Service
-- Query for anonymous registrations with matching email
-- Create Attendee record if needed
-- Update registrations to link to new Attendee
+- Find existing anonymous user_profile with matching email
+- Set `cognito_user_id` and `claimed_at` (3 lines of code)
+- All registrations automatically linked via `attendee_username`
 
 **Security considerations:**
-- Email verification happens via confirmation email (sent to anonymous_email)
-- Only person with access to email can confirm registration
+- Email verification via confirmation email
 - Confirmation code acts as secret token for viewing registration
-- Rate limiting on registration endpoint to prevent abuse
+- Rate limiting on registration endpoint
 
 **Privacy considerations:**
-- Clear `anonymous_*` fields after claiming for GDPR compliance
-- Keep audit trail via `claimed_by_user_id` and `claimed_at`
-- User can request deletion of claimed registrations
+- User data in single location (user_profiles) - simple GDPR deletion
+- No duplicate data to synchronize or clear
 
 ### Notification Domain Models
 
@@ -1953,29 +1928,19 @@ CREATE TABLE attendees (
 CREATE UNIQUE INDEX idx_attendees_user_id ON attendees(user_id);
 CREATE INDEX idx_attendees_newsletter ON attendees(newsletter_subscription) WHERE newsletter_subscription = true;
 
--- Event registrations (many-to-many)
--- Supports both authenticated (attendee_id) and anonymous (anonymous_email) registrations
--- See ADR-005 for anonymous registration pattern and account linking workflow
-CREATE TABLE event_registrations (
+-- Event registrations
+-- ADR-004: References user by attendee_username (no duplicated user fields)
+-- ADR-007: Unified user_profiles handles both anonymous and authenticated users
+CREATE TABLE registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id UUID NOT NULL, -- References event service
+    event_code VARCHAR(20) NOT NULL,  -- References event (ADR-003 meaningful ID)
 
-    -- Authenticated registration (existing pattern)
-    attendee_id UUID REFERENCES attendees(id) ON DELETE CASCADE, -- Nullable for anonymous registrations
-
-    -- Anonymous registration (new pattern - ADR-010)
-    anonymous_email VARCHAR(255),           -- Email for anonymous registration
-    anonymous_first_name VARCHAR(255),      -- First name for anonymous registration
-    anonymous_last_name VARCHAR(255),       -- Last name for anonymous registration
-    anonymous_company VARCHAR(255),         -- Company for anonymous registration
-    anonymous_role VARCHAR(255),            -- Job title/role for anonymous registration
-
-    -- Account linking (when anonymous user creates account)
-    claimed_by_user_id UUID REFERENCES users(id), -- User who claimed this registration
-    claimed_at TIMESTAMP WITH TIME ZONE,          -- When registration was claimed
+    -- Cross-service reference to user_profiles.username (ADR-004)
+    -- User details (email, name, company) fetched via UserManagementClient API
+    attendee_username VARCHAR(100) NOT NULL,
 
     -- Registration metadata
-    confirmation_code VARCHAR(20) NOT NULL UNIQUE, -- Format: BAT-YYYY-NNNNNN (e.g., BAT-2025-000123)
+    registration_code VARCHAR(20) NOT NULL UNIQUE, -- Format: BAT-YYYY-NNNNNN
     registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     status VARCHAR(50) NOT NULL CHECK (status IN (
         'registered', 'waitlisted', 'confirmed', 'cancelled', 'attended'
@@ -1983,24 +1948,22 @@ CREATE TABLE event_registrations (
     special_requests TEXT,
     attendance_confirmed BOOLEAN DEFAULT FALSE,
     actual_attendance BOOLEAN DEFAULT FALSE,
-    session_preferences TEXT[] DEFAULT '{}', -- Event-level registration, sessions are preferences only
 
     -- Communication preferences
     newsletter_subscribed BOOLEAN DEFAULT FALSE,
     event_reminders BOOLEAN DEFAULT TRUE,
 
-    -- Constraints
-    UNIQUE(event_id, attendee_id),                 -- Prevent duplicate authenticated registrations
-    CHECK (                                        -- Must be either authenticated OR anonymous, not both
-        (attendee_id IS NOT NULL AND anonymous_email IS NULL) OR
-        (attendee_id IS NULL AND anonymous_email IS NOT NULL)
-    )
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    -- Prevent duplicate registrations
+    UNIQUE(event_code, attendee_username)
 );
 
 -- Content engagement tracking
 CREATE TABLE content_engagement (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    attendee_id UUID NOT NULL REFERENCES attendees(id) ON DELETE CASCADE,
+    attendee_username VARCHAR(100) NOT NULL, -- Cross-service reference
     content_type VARCHAR(50) NOT NULL, -- 'session', 'document', 'video', etc.
     content_id UUID NOT NULL,
     engagement_type VARCHAR(50) NOT NULL, -- 'view', 'download', 'rating', etc.
@@ -2009,31 +1972,19 @@ CREATE TABLE content_engagement (
 );
 
 -- Indexes
-CREATE INDEX idx_event_registrations_event_id ON event_registrations(event_id);
-CREATE INDEX idx_event_registrations_attendee_id ON event_registrations(attendee_id);
-CREATE INDEX idx_event_registrations_status ON event_registrations(status);
-CREATE INDEX idx_event_registrations_confirmation_code ON event_registrations(confirmation_code); -- For public lookup
+CREATE INDEX idx_registrations_event_code ON registrations(event_code);
+CREATE INDEX idx_registrations_attendee_username ON registrations(attendee_username);
+CREATE INDEX idx_registrations_status ON registrations(status);
+CREATE INDEX idx_registrations_registration_code ON registrations(registration_code); -- For public lookup
 
--- Anonymous registration indexes
-CREATE INDEX idx_event_registrations_anonymous_email ON event_registrations(anonymous_email)
-    WHERE anonymous_email IS NOT NULL; -- For account linking lookup
-CREATE UNIQUE INDEX idx_event_registrations_anonymous_unique ON event_registrations(event_id, anonymous_email)
-    WHERE attendee_id IS NULL; -- Prevent duplicate anonymous registrations
-CREATE INDEX idx_event_registrations_claimed_by ON event_registrations(claimed_by_user_id)
-    WHERE claimed_by_user_id IS NOT NULL; -- For finding claimed registrations
-
-CREATE INDEX idx_content_engagement_attendee_id ON content_engagement(attendee_id);
+CREATE INDEX idx_content_engagement_attendee ON content_engagement(attendee_username);
 CREATE INDEX idx_content_engagement_content ON content_engagement(content_type, content_id);
 
--- Example query: Get attendee with user data (JPQL constructor projection)
--- SELECT new AttendeeResponse(
---     u.username, u.email, u.firstName, u.lastName, c.name,
---     a.newsletterSubscription, a.contentPreferences, a.gdprConsent
--- )
--- FROM Attendee a
--- INNER JOIN User u ON a.userId = u.id
--- LEFT JOIN Company c ON u.companyId = c.id
--- WHERE u.username = :username
+-- Example query: Get registration with user data (cross-service enrichment)
+-- 1. Query registrations table for event registrations
+-- 2. Call UserManagementClient.getUsersByUsernames(attendeeUsernames)
+-- 3. Join/merge results in application layer
+-- See docs/guides/microservices-http-clients.md for HTTP client patterns
 ```
 
 ## User Role Management Tables

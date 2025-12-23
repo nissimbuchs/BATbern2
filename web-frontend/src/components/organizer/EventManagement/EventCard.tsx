@@ -9,7 +9,7 @@
  * - Progress bar (workflow completion %)
  * - Workflow step indicator (Step X/16)
  * - Event details (title, date, type)
- * - Quick actions (Edit, View Details)
+ * - Quick actions (Edit, Topic Selection)
  * - Status badge
  * - Attendee information
  */

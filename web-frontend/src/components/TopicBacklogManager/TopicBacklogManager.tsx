@@ -269,7 +269,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
               {viewMode === 'heatMap' && (
                 <MultiTopicHeatMap
                   topics={data.data}
-                  selectedTopicId={selectedTopic?.id}
+                  selectedTopicId={selectedTopic?.topicCode}
                   onTopicSelect={handleTopicSelect}
                   eventLookup={eventLookup}
                 />
@@ -280,7 +280,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                 <Paper sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
                   <TopicList
                     topics={data.data}
-                    selectedTopicId={selectedTopic?.id}
+                    selectedTopicId={selectedTopic?.topicCode}
                     onTopicSelect={handleTopicSelect}
                     pagination={data.pagination}
                     onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
