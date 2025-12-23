@@ -56,9 +56,8 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   // Fetch topic details if topicCode is available
   useEffect(() => {
     const fetchTopic = async () => {
-      // Type assertion to access topicCode (available in EventDetailUI)
-      const eventWithTopic = event as EventDetailUI & { topicCode?: string };
-      const topicCode = eventWithTopic.topicCode;
+      // ADR-003: Event now includes topicCode (meaningful identifier) for frontend use
+      const topicCode = event.topicCode;
       if (topicCode) {
         try {
           const topicData = await topicService.getTopicById(topicCode);
@@ -70,7 +69,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
     };
 
     fetchTopic();
-  }, [(event as EventDetailUI & { topicCode?: string }).topicCode]);
+  }, [event.topicCode]);
 
   // Format dates
   const eventDate = eventUI.eventDate || event.date;

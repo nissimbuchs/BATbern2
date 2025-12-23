@@ -3019,9 +3019,18 @@ components:
           format: uuid
           nullable: true
           description: |
-            UUID of the selected topic for this event.
+            UUID of the selected topic for this event (internal reference).
             Story 5.2: Topic Selection & Speaker Brainstorming
           example: "123e4567-e89b-12d3-a456-426614174000"
+        topicCode:
+          type: string
+          nullable: true
+          pattern: '^[a-z0-9-]+$'
+          description: |
+            Topic code (slug-format identifier) of the selected topic.
+            Story 5.2: Topic Selection & Speaker Brainstorming
+            ADR-003: Meaningful Identifiers - exposed for frontend use
+          example: 'cloud-native-security-2024'
         eventType:
           $ref: '#/components/schemas/EventType'
           description: |

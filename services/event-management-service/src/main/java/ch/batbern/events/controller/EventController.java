@@ -255,9 +255,10 @@ public class EventController {
         if (event.getThemeImageUploadId() != null) {
             response.put("themeImageUploadId", event.getThemeImageUploadId());
         }
-        // Story 5.2: Include topic (ADR-003: return topicCode instead of topicId) and workflow state
+        // Story 5.2: Include topic (ADR-003: include both topicId and topicCode)
         if (event.getTopicId() != null) {
-            // Look up topicCode from topicId for ADR-003 compliance
+            response.put("topicId", event.getTopicId().toString());
+            // Look up topicCode from topicId for ADR-003 compliance (meaningful identifiers)
             topicService.getTopicById(event.getTopicId()).ifPresent(topic ->
                 response.put("topicCode", topic.getTopicCode())
             );

@@ -75,8 +75,9 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   // Fetch event details if eventCode is provided
   const { data: eventData } = useEvent(eventCode);
 
-  // Fetch pre-assigned topic if event has topicId (Story 5.2 - Topic preselection)
-  const { data: preassignedTopic } = useTopic(eventData?.topicId || '', 'history');
+  // Fetch pre-assigned topic if event has topicCode (Story 5.2 - Topic preselection)
+  // ADR-003: Event now includes topicCode (meaningful identifier) for frontend use
+  const { data: preassignedTopic } = useTopic(eventData?.topicCode || '', 'history');
 
   // Fetch organizer users for speaker assignment (Story 5.2)
   const { data: organizersData } = useUserList({
