@@ -5,6 +5,37 @@
     "eventTimeline": "Zeitachse",
     "events": "Veranstaltungen"
   },
+  "eventPage": {
+    "tabs": {
+      "overview": "Übersicht",
+      "speakers": "Referenten",
+      "venue": "Veranstaltungsort",
+      "team": "Team",
+      "publishing": "Veröffentlichung",
+      "settings": "Einstellungen"
+    },
+    "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
+    "overview": {
+      "step": "Schritt",
+      "eventDetails": "Veranstaltungsdetails",
+      "keyMetrics": "Kennzahlen",
+      "registered": "angemeldet",
+      "filled": "belegt",
+      "speakers": "Referenten",
+      "confirmed": "bestätigt",
+      "materials": "Materialien",
+      "pending": "ausstehend",
+      "budget": "Budget",
+      "selectedTopic": "Ausgewähltes Thema",
+      "noTopicSelected": "Noch kein Thema ausgewählt",
+      "changeTopic": "Thema ändern",
+      "quickActions": "Schnellzugriff",
+      "selectTopic": "Thema auswählen",
+      "sendNotification": "Benachrichtigung senden",
+      "previewPublic": "Öffentliche Seite vorschauen",
+      "viewTimeline": "Zeitachse anzeigen"
+    }
+  },
   "dashboard": {
     "title": "Veranstaltungsverwaltung",
     "activeEvents": "Aktive Veranstaltungen",

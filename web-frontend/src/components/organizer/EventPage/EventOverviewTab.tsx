@@ -5,7 +5,7 @@
  * Consolidates content from EventDetail.tsx
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -20,12 +20,12 @@ import {
 import Grid from '@mui/material/Grid';
 import {
   Event as EventIcon,
-  LocationOn as LocationIcon,
   People as PeopleIcon,
   Edit as EditIcon,
   Visibility as PreviewIcon,
   Email as EmailIcon,
   CalendarMonth as TimelineIcon,
+  Topic as TopicIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -33,6 +33,8 @@ import { de, enUS } from 'date-fns/locale';
 import { WorkflowProgressBar } from '@/components/organizer/EventManagement';
 import type { Event, EventDetailUI, EventUI, WorkflowStep } from '@/types/event.types';
 import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
+import { topicService } from '@/services/topicService';
+import type { Topic } from '@/types/topic.types';
 
 interface EventOverviewTabProps {
   event: Event | EventDetailUI;
@@ -47,6 +49,28 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
 
   // Type assertion for extended properties
   const eventUI = event as EventDetailUI;
+
+  // State for topic details
+  const [topic, setTopic] = useState<Topic | null>(null);
+
+  // Fetch topic details if topicCode is available
+  useEffect(() => {
+    const fetchTopic = async () => {
+      // Type assertion to access topicCode (available in EventDetailUI)
+      const eventWithTopic = event as EventDetailUI & { topicCode?: string };
+      const topicCode = eventWithTopic.topicCode;
+      if (topicCode) {
+        try {
+          const topicData = await topicService.getTopicById(topicCode);
+          setTopic(topicData);
+        } catch (error) {
+          console.error('Failed to fetch topic:', error);
+        }
+      }
+    };
+
+    fetchTopic();
+  }, [(event as EventDetailUI & { topicCode?: string }).topicCode]);
 
   // Format dates
   const eventDate = eventUI.eventDate || event.date;
@@ -85,6 +109,10 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const handleSendNotification = () => {
     // TODO: Open notification modal
     console.log('Send notification for:', eventCode);
+  };
+
+  const handleSelectTopic = () => {
+    navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
 
   return (
@@ -161,13 +189,26 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
             <Divider sx={{ mb: 2 }} />
 
             <Stack spacing={2}>
-              {/* Title */}
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">
-                  {t('form.title', 'Title')}
-                </Typography>
-                <Typography variant="body1">{event.title}</Typography>
-              </Box>
+              {/* Title and Topic (side by side) */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: topic ? 6 : 12 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {t('form.title', 'Title')}
+                  </Typography>
+                  <Typography variant="body1">{event.title}</Typography>
+                </Grid>
+                {topic && (
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TopicIcon color="action" fontSize="small" />
+                      <Typography variant="subtitle2" color="text.secondary">
+                        {t('eventPage.overview.selectedTopic', 'Selected Topic')}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body1">{topic.title}</Typography>
+                  </Grid>
+                )}
+              </Grid>
 
               {/* Description */}
               {event.description && (
@@ -181,13 +222,15 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 </Box>
               )}
 
-              {/* Date & Time */}
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <EventIcon color="action" sx={{ mt: 0.5 }} />
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {t('form.eventDate', 'Event Date')}
-                  </Typography>
+              {/* Date & Registration Deadline (side by side) */}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                    <EventIcon color="action" fontSize="small" />
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {t('form.eventDate', 'Event Date')}
+                    </Typography>
+                  </Stack>
                   <Typography variant="body1">
                     {formattedDate} • {formattedTime}
                   </Typography>
@@ -196,24 +239,20 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                       {t(`dashboard.eventType.${eventUI.eventType}`, eventUI.eventType)}
                     </Typography>
                   )}
-                </Box>
-              </Stack>
-
-              {/* Venue */}
-              <Stack direction="row" spacing={2} alignItems="flex-start">
-                <LocationIcon color="action" sx={{ mt: 0.5 }} />
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {t('venue.title', 'Venue')}
-                  </Typography>
-                  <Typography variant="body1">{event.venueName || '-'}</Typography>
-                  {event.venueAddress && (
-                    <Typography variant="body2" color="text.secondary">
-                      {event.venueAddress}
+                </Grid>
+                {event.registrationDeadline && (
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      {t('form.registrationDeadline', 'Registration Deadline')}
                     </Typography>
-                  )}
-                </Box>
-              </Stack>
+                    <Typography variant="body1">
+                      {format(new Date(event.registrationDeadline), 'EEEE, dd MMMM yyyy', {
+                        locale,
+                      })}
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
 
               {/* Theme (if available) */}
               {(event as EventUI).theme && (
@@ -295,20 +334,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                   </Typography>
                 </Box>
               )}
-
-              {/* Registration Deadline */}
-              {event.registrationDeadline && (
-                <Box>
-                  <Typography variant="subtitle2">
-                    📅 {t('form.registrationDeadline', 'Registration Deadline')}
-                  </Typography>
-                  <Typography variant="body1">
-                    {format(new Date(event.registrationDeadline), 'dd MMM yyyy', {
-                      locale,
-                    })}
-                  </Typography>
-                </Box>
-              )}
             </Stack>
           </Paper>
         </Grid>
@@ -320,6 +345,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           {t('eventPage.overview.quickActions', 'Quick Actions')}
         </Typography>
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+          <Button variant="outlined" startIcon={<TopicIcon />} onClick={handleSelectTopic}>
+            {t('eventPage.overview.selectTopic', 'Select Topic')}
+          </Button>
           <Button variant="outlined" startIcon={<EmailIcon />} onClick={handleSendNotification}>
             {t('eventPage.overview.sendNotification', 'Send Notification')}
           </Button>

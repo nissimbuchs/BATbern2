@@ -5,6 +5,37 @@
     "eventTimeline": "Timeline",
     "events": "Events"
   },
+  "eventPage": {
+    "tabs": {
+      "overview": "Overview",
+      "speakers": "Speakers",
+      "venue": "Venue",
+      "team": "Team",
+      "publishing": "Publishing",
+      "settings": "Settings"
+    },
+    "tabsAriaLabel": "Event page navigation",
+    "overview": {
+      "step": "Step",
+      "eventDetails": "Event Details",
+      "keyMetrics": "Key Metrics",
+      "registered": "registered",
+      "filled": "filled",
+      "speakers": "Speakers",
+      "confirmed": "confirmed",
+      "materials": "Materials",
+      "pending": "pending",
+      "budget": "Budget",
+      "selectedTopic": "Selected Topic",
+      "noTopicSelected": "No topic selected yet",
+      "changeTopic": "Change Topic",
+      "quickActions": "Quick Actions",
+      "selectTopic": "Select Topic",
+      "sendNotification": "Send Notification",
+      "previewPublic": "Preview Public Page",
+      "viewTimeline": "View Timeline"
+    }
+  },
   "dashboard": {
     "title": "Event Management",
     "activeEvents": "Active Events",

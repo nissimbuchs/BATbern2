@@ -437,6 +437,10 @@ paths:
       responses:
         '200':
           description: Topic selected for event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSelectionResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -682,6 +686,33 @@ components:
         justification:
           type: string
           description: Optional justification for selection
+
+    TopicSelectionResponse:
+      type: object
+      description: Response after selecting a topic for an event
+      required:
+        - eventCode
+        - topicCode
+        - workflowState
+        - message
+      properties:
+        eventCode:
+          type: string
+          description: Event code
+          example: 'BATbern56'
+        topicCode:
+          type: string
+          description: Selected topic code
+          pattern: '^[a-z0-9-]+$'
+          example: 'cloud-native-security-2024'
+        workflowState:
+          type: string
+          description: Event workflow state after topic selection
+          example: 'SPEAKER_BRAINSTORMING'
+        message:
+          type: string
+          description: Success message
+          example: 'Topic selected successfully'
 
     ErrorResponse:
       type: object

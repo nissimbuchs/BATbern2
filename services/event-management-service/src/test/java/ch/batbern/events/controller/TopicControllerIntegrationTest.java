@@ -4,6 +4,7 @@ import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.domain.TopicUsageHistory;
+import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
@@ -257,9 +258,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic similarTopic = createTestTopic("Cloud Native Advanced", "technical", 40);
 
         // When: Select topic with justification override
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", similarTopic.getId().toString());
-        request.put("justification", "Partner explicitly requested this specific topic");
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest()
+            .topicCode(similarTopic.getTopicCode())
+            .justification("Partner explicitly requested this specific topic");
 
         // Then: Override is accepted with justification
         // Note: This test will be fully validated in Task 3a (Workflow Integration)

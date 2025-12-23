@@ -4,10 +4,13 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.domain.Topic;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
+import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
 import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -48,6 +51,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -251,9 +255,12 @@ public class EventController {
         if (event.getThemeImageUploadId() != null) {
             response.put("themeImageUploadId", event.getThemeImageUploadId());
         }
-        // Story 5.2: Include topic and workflow state
+        // Story 5.2: Include topic (ADR-003: return topicCode instead of topicId) and workflow state
         if (event.getTopicId() != null) {
-            response.put("topicId", event.getTopicId());
+            // Look up topicCode from topicId for ADR-003 compliance
+            topicService.getTopicById(event.getTopicId()).ifPresent(topic ->
+                response.put("topicCode", topic.getTopicCode())
+            );
         }
         if (event.getWorkflowState() != null) {
             response.put("workflowState", event.getWorkflowState().name());
@@ -1479,27 +1486,26 @@ public class EventController {
      * - Publishes EventWorkflowTransitionEvent domain event
      *
      * @param eventCode Event code (e.g., "BATbern56")
-     * @param request Request body with topicId
-     * @return Event with selected topic
+     * @param request Request body with topicCode (ADR-003 compliant, generated DTO)
+     * @return TopicSelectionResponse with event and topic details
      */
     @PostMapping("/{eventCode}/topics")
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> selectTopicForEvent(
+    public ResponseEntity<TopicSelectionResponse> selectTopicForEvent(
             @PathVariable String eventCode,
-            @RequestBody Map<String, String> request) {
+            @RequestBody @Valid SelectTopicForEventRequest request) {
 
         try {
-            // Extract topicId from request
-            String topicIdStr = request.get("topicId");
-            if (topicIdStr == null || topicIdStr.isBlank()) {
-                return ResponseEntity.badRequest().body(
-                    Map.of("message", "topicId is required")
-                );
-            }
+            // Extract topicCode from request (ADR-003)
+            // Validation handled by @Valid and DTO annotations (@NotNull, @Pattern)
+            String topicCode = request.getTopicCode();
 
-            UUID topicId = UUID.fromString(topicIdStr);
+            // Look up topic by topicCode to get UUID
+            Topic topic = topicService.getTopicByCode(topicCode)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found with code: " + topicCode));
+            UUID topicId = topic.getId();
 
             // Get current user from security context
             String organizerUsername = securityContextHelper.getCurrentUserId();
@@ -1507,28 +1513,24 @@ public class EventController {
             // Select topic for event (calls workflow state machine)
             Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicId, organizerUsername);
 
-            // Build response
-            Map<String, Object> response = Map.of(
-                "eventCode", updatedEvent.getEventCode(),
-                "topicId", updatedEvent.getTopicId().toString(),
-                "workflowState", updatedEvent.getWorkflowState().name(),
-                "message", "Topic selected successfully"
+            // Build response using generated DTO (ADR-006: contract-first)
+            TopicSelectionResponse response = new TopicSelectionResponse(
+                updatedEvent.getEventCode(),
+                topic.getTopicCode(),
+                updatedEvent.getWorkflowState().name(),
+                "Topic selected successfully"
             );
 
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
-            // Event or topic not found
+            // Event or topic not found - return 404
             log.warn("Topic selection failed for event {}: {}", eventCode, e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                Map.of("message", e.getMessage())
-            );
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (IllegalStateException e) {
-            // Invalid state transition
+            // Invalid state transition - return 400
             log.warn("Topic selection rejected for event {}: {}", eventCode, e.getMessage());
-            return ResponseEntity.badRequest().body(
-                Map.of("message", "Invalid state transition")
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid state transition");
         } catch (Exception e) {
             // Unexpected error
             System.out.println("=== ERROR IN selectTopicForEvent ===");
@@ -1539,11 +1541,8 @@ public class EventController {
             System.out.println("====================================");
             log.error("Unexpected error selecting topic for event {}: {}",
                     eventCode, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    Map.of("message", "Internal server error",
-                            "error", e.getMessage(),
-                            "type", e.getClass().getSimpleName())
-            );
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Internal server error: " + e.getMessage());
         }
     }
 

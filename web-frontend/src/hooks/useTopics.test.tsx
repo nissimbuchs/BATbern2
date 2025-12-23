@@ -227,7 +227,7 @@ describe('useTopics hooks', () => {
     it('should fetch topic with includes parameter', async () => {
       const topicWithSimilarity: Topic = {
         ...mockTopic,
-        similarityScores: [{ topicId: 'topic-456', score: 0.75 }],
+        similarityScores: [{ topicCode: 'cloud-security', score: 0.75 }],
       };
 
       vi.mocked(topicService.getTopicById).mockResolvedValue(topicWithSimilarity);
@@ -497,7 +497,7 @@ describe('useTopics hooks', () => {
       });
 
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       result.current.mutate({ eventCode: 'BATbern56', request });
@@ -515,7 +515,7 @@ describe('useTopics hooks', () => {
       });
 
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
         justification: 'Partner explicitly requested despite high similarity',
       };
 
@@ -535,7 +535,7 @@ describe('useTopics hooks', () => {
       const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       result.current.mutate({ eventCode: 'BATbern56', request });
@@ -544,7 +544,7 @@ describe('useTopics hooks', () => {
 
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern56'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['events'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.detail('topic-123') });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.detail('mobile-iot') });
     });
 
     it('should handle invalid workflow state errors', async () => {
@@ -556,7 +556,7 @@ describe('useTopics hooks', () => {
       });
 
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       result.current.mutate({ eventCode: 'BATbern56', request });
@@ -575,7 +575,7 @@ describe('useTopics hooks', () => {
       });
 
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       result.current.mutate({ eventCode: 'BATbern999', request });

@@ -29,7 +29,7 @@ const mockActivities = [
     timestamp: '2025-01-09T10:30:00Z',
     username: 'john.doe',
     description: 'Voted on "Sustainable Architecture" topic',
-    details: { topicId: 'topic-123', voteValue: 5 },
+    details: { topicCode: 'sustainable-architecture', voteValue: 5 },
   },
   {
     id: 'activity-2',

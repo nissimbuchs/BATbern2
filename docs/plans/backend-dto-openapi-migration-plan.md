@@ -36,6 +36,50 @@
 - ✅ Updated ADR-006 with Pure Mapper pattern documentation
 - ✅ Added layered architecture diagram to ADR-006
 
+**Phase 3: Cross-API Topic Selection Endpoint** ✅ COMPLETE (2025-12-23)
+
+**OpenAPI Spec Updates:**
+- ✅ Added `TopicSelectionResponse` schema to topics-api.openapi.yml
+- ✅ Updated `/events/{eventCode}/topics` endpoint to reference response schema
+- ✅ Regenerated backend DTOs (SelectTopicForEventRequest, TopicSelectionResponse)
+
+**Backend Updates (ADR-006: Contract-First):**
+- ✅ Updated EventController `POST /events/{eventCode}/topics` endpoint
+  - Changed request: `Map<String, String>` → `SelectTopicForEventRequest` (generated DTO)
+  - Changed response: `Map<String, Object>` → `TopicSelectionResponse` (generated DTO)
+  - Added `@Valid` annotation for automatic validation
+  - Removed manual validation (handled by DTO annotations)
+  - Replaced manual error responses with `ResponseStatusException`
+  - Changed request payload: `topicId` (UUID) → `topicCode` (string, ADR-003)
+  - Changed response payload: `topicId` → `topicCode` (ADR-003 compliant)
+  - Added Topic entity lookup by topicCode before service call
+  - Updated buildBasicEventResponse() to return topicCode instead of topicId
+
+**Backend Integration Test Updates:**
+- ✅ Updated TopicSelectionWorkflowIntegrationTest (9 test methods)
+  - Replaced all `Map<String, Object>` → `SelectTopicForEventRequest` (generated DTO)
+  - All request/response assertions updated to use topicCode
+  - Removed unused HashMap and Map imports
+- ✅ Updated TopicControllerIntegrationTest (1 test method)
+  - Override staleness test uses generated DTO with builder pattern
+
+**Frontend Updates:**
+- ✅ Regenerated TypeScript types from updated OpenAPI spec
+- ✅ Added `TopicSelectionResponse` export to topic.types.ts
+- ✅ Updated topicService.selectTopicForEvent()
+  - Changed return type: `Promise<void>` → `Promise<TopicSelectionResponse>`
+  - Added typed response extraction and return
+- ✅ Updated frontend test files (4 files)
+  - topicService.test.ts: Updated all SelectTopicForEventRequest payloads
+  - useTopics.test.tsx: Updated all hook tests (6 occurrences)
+  - TopicDetailsPanel.test.tsx: Updated similarity scores test
+  - PartnerActivityTab.test.tsx: Updated mock activity data
+
+**Other:**
+- ✅ Added missing translation keys (eventPage.* for tab navigation)
+
+**Result:** Zero Map usage, all types are generated and contract-first compliant
+
 **Ready for Story 2** (Speakers API migration can begin following the refined pattern)
 
 ## Standard Migration Sequence (Per Story)
@@ -230,6 +274,12 @@ Rationale:
 **Commits**:
 - `4141fe8` - feat(api): migrate Topics API from UUID to topicCode (ADR-003)
 - `216a966` - feat(topics): migrate backend to topicCode identifier (ADR-003)
+- [Pending] - feat(topics): complete ADR-006 migration with generated DTOs for topic selection endpoint
+  - Add TopicSelectionResponse schema to OpenAPI spec
+  - Replace Map usage with generated DTOs in EventController
+  - Update backend integration tests to use generated DTOs
+  - Regenerate frontend types and update service layer
+  - Full contract-first compliance (ADR-006)
 
 **Progress by Step**:
 | Step | Description | Status |
@@ -565,14 +615,37 @@ These should be verified against the OpenAPI spec and migrated.
 
 ## Definition of Done (Per Story)
 
+### OpenAPI & Code Generation
 - [ ] OpenAPI spec updated (ADR-003 compliant, meaningful IDs)
+- [ ] All request/response schemas defined in OpenAPI spec (no undefined responses)
+- [ ] Backend DTOs regenerated from OpenAPI spec
+- [ ] Frontend types regenerated from OpenAPI spec
+
+### Backend Implementation
 - [ ] Backend uses generated DTOs only (no manual DTOs for that API)
-- [ ] Frontend types regenerated and code updated
+- [ ] **CRITICAL:** No `Map<String, Object>` or `Map<String, String>` for request/response types
+  - Controllers must use generated request/response DTOs
+  - Service methods must return generated DTOs or entities (not Maps)
+  - Test methods must use generated DTOs for request bodies
+- [ ] All manual DTOs deleted for migrated API domain
+- [ ] Controllers use `@Valid` annotation for automatic validation
+- [ ] Mapper classes follow Pure Mapper pattern (no business logic, no repository dependencies)
+
+### Frontend Implementation
+- [ ] Frontend types regenerated and exported in type definition files
+- [ ] Service layer uses typed responses (not `void` or `any`)
+- [ ] All API calls properly typed with generated request/response types
+
+### Testing & Quality
 - [ ] All unit tests pass
 - [ ] All integration tests pass
+- [ ] Integration tests use generated DTOs (not Maps)
 - [ ] Bruno API contract tests updated and pass
 - [ ] No UUID fields exposed in API responses (except documented exceptions)
-- [ ] OPENAPI-CODEGEN.md updated for the service
+
+### Documentation
+- [ ] OPENAPI-CODEGEN.md updated for the service (if applicable)
+- [ ] Migration plan updated with completion status
 
 ## Appendix A: UUID Exceptions (ADR-003)
 

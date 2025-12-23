@@ -24,6 +24,7 @@ export type PaginationMetadata = components['schemas']['PaginationMetadata'];
 export type CreateTopicRequest = components['schemas']['CreateTopicRequest'];
 export type OverrideStalenessRequest = components['schemas']['OverrideStalenessRequest'];
 export type SelectTopicForEventRequest = components['schemas']['SelectTopicForEventRequest'];
+export type TopicSelectionResponse = components['schemas']['TopicSelectionResponse'];
 
 // Backward compatibility alias (fix typo in old code)
 export type OverrideStalenesRequest = OverrideStalenessRequest;

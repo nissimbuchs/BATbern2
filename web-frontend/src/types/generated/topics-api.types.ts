@@ -393,6 +393,29 @@ export interface components {
       /** @description Optional justification for selection */
       justification?: string;
     };
+    /** @description Response after selecting a topic for an event */
+    TopicSelectionResponse: {
+      /**
+       * @description Event code
+       * @example BATbern56
+       */
+      eventCode: string;
+      /**
+       * @description Selected topic code
+       * @example cloud-native-security-2024
+       */
+      topicCode: string;
+      /**
+       * @description Event workflow state after topic selection
+       * @example SPEAKER_BRAINSTORMING
+       */
+      workflowState: string;
+      /**
+       * @description Success message
+       * @example Topic selected successfully
+       */
+      message: string;
+    };
     ErrorResponse: {
       /** @example VALIDATION_ERROR */
       error: string;
@@ -763,7 +786,9 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          'application/json': components['schemas']['TopicSelectionResponse'];
+        };
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];

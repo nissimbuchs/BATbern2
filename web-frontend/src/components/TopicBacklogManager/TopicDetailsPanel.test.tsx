@@ -116,7 +116,7 @@ describe('TopicDetailsPanel', () => {
   it('should display similar topics warning when similarity is high', () => {
     const topicWithSimilarity: Topic = {
       ...mockTopic,
-      similarityScores: [{ topicId: 'topic-456', score: 0.75 }],
+      similarityScores: [{ topicCode: 'cloud-security', score: 0.75 }],
     };
 
     // Mock the similar topics hook to return a similar topic
