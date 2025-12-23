@@ -271,14 +271,15 @@ public class EventTaskService {
     public List<EventTask> getCriticalTasksForOrganizer(String username) {
         log.debug("Fetching critical tasks for organizer: {}", username);
 
-        // Get all active tasks for organizer
-        List<EventTask> allTasks = eventTaskRepository.findByAssignedOrganizerUsernameAndStatus(username, "todo");
+        // Get all tasks for organizer (all statuses)
+        List<EventTask> allTasks = eventTaskRepository.findByAssignedOrganizerUsername(username);
 
-        // Filter for overdue or due soon (< 3 days)
+        // Filter for non-completed tasks with overdue or due soon (< 3 days)
         Instant now = Instant.now();
         Instant dueSoonThreshold = now.plus(3, ChronoUnit.DAYS);
 
         return allTasks.stream()
+                .filter(task -> !"completed".equals(task.getStatus()))
                 .filter(task -> task.getDueDate() != null)
                 .filter(task -> task.getDueDate().isBefore(dueSoonThreshold))
                 .collect(Collectors.toList());
