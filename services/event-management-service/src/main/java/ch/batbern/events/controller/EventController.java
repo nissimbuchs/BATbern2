@@ -50,7 +50,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1493,49 +1492,28 @@ public class EventController {
             @PathVariable String eventCode,
             @RequestBody @Valid SelectTopicForEventRequest request) {
 
-        try {
-            // Extract topicCode from request (ADR-003: use meaningful identifiers)
-            // Validation handled by @Valid and DTO annotations (@NotNull, @Pattern)
-            String topicCode = request.getTopicCode();
+        // Extract topicCode from request (ADR-003: use meaningful identifiers)
+        // Validation handled by @Valid and DTO annotations (@NotNull, @Pattern)
+        String topicCode = request.getTopicCode();
 
-            // Get current user from security context
-            String organizerUsername = securityContextHelper.getCurrentUserId();
+        // Get current user from security context
+        String organizerUsername = securityContextHelper.getCurrentUserId();
 
-            // Select topic for event (calls workflow state machine)
-            // ADR-003: Pass topicCode directly instead of UUID
-            Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicCode, organizerUsername);
+        // Select topic for event (calls workflow state machine)
+        // ADR-003: Pass topicCode directly instead of UUID
+        // Exceptions (EventNotFoundException, TopicNotFoundException, ValidationException)
+        // are handled by GlobalExceptionHandler
+        Event updatedEvent = topicService.selectTopicForEvent(eventCode, topicCode, organizerUsername);
 
-            // Build response using generated DTO (ADR-006: contract-first)
-            TopicSelectionResponse response = new TopicSelectionResponse(
-                updatedEvent.getEventCode(),
-                topicCode,
-                updatedEvent.getWorkflowState().name(),
-                "Topic selected successfully"
-            );
+        // Build response using generated DTO (ADR-006: contract-first)
+        TopicSelectionResponse response = new TopicSelectionResponse(
+            updatedEvent.getEventCode(),
+            topicCode,
+            updatedEvent.getWorkflowState().name(),
+            "Topic selected successfully"
+        );
 
-            return ResponseEntity.ok(response);
-
-        } catch (IllegalArgumentException e) {
-            // Event or topic not found - return 404
-            log.warn("Topic selection failed for event {}: {}", eventCode, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        } catch (IllegalStateException e) {
-            // Invalid state transition - return 400
-            log.warn("Topic selection rejected for event {}: {}", eventCode, e.getMessage());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid state transition");
-        } catch (Exception e) {
-            // Unexpected error
-            System.out.println("=== ERROR IN selectTopicForEvent ===");
-            System.out.println("Event: " + eventCode);
-            System.out.println("Exception: " + e.getClass().getName());
-            System.out.println("Message: " + e.getMessage());
-            e.printStackTrace(System.out);
-            System.out.println("====================================");
-            log.error("Unexpected error selecting topic for event {}: {}",
-                    eventCode, e.getMessage(), e);
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Internal server error: " + e.getMessage());
-        }
+        return ResponseEntity.ok(response);
     }
 
     /**

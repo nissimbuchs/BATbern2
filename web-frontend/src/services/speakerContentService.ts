@@ -10,6 +10,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 
 // API base path
 const EVENTS_API_PATH = '/events';
@@ -102,8 +103,8 @@ class SpeakerContentService {
    * @returns List of speakers pending review
    * @throws Error if unauthorized (401, 403)
    */
-  async getReviewQueue(eventCode: string): Promise<any[]> {
-    const response = await apiClient.get<any[]>(
+  async getReviewQueue(eventCode: string): Promise<SpeakerPoolEntry[]> {
+    const response = await apiClient.get<SpeakerPoolEntry[]>(
       `${EVENTS_API_PATH}/${eventCode}/speakers/review-queue`
     );
 

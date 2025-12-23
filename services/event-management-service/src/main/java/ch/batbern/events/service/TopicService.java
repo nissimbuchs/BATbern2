@@ -556,20 +556,26 @@ public class TopicService {
      * 5. Publishes EventWorkflowTransitionEvent
      *
      * @param eventCode Event code (e.g., "BATbern56")
-     * @param topicId Topic ID to select
+     * @param topicCode Topic code to select
      * @param organizerUsername Username of organizer selecting the topic
      * @return Updated event with selected topic
-     * @throws IllegalArgumentException if event or topic not found
-     * @throws IllegalStateException if event is not in valid state for topic selection
+     * @throws ch.batbern.events.exception.EventNotFoundException
+     *         if event not found (returns HTTP 404)
+     * @throws ch.batbern.events.exception.TopicNotFoundException
+     *         if topic not found (returns HTTP 404)
+     * @throws ch.batbern.shared.exception.ValidationException
+     *         if event is not in valid state for topic selection (returns HTTP 400)
      */
     public Event selectTopicForEvent(String eventCode, String topicCode, String organizerUsername) {
         // Validate event exists
         Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
+                .orElseThrow(() -> new ch.batbern.events.exception.EventNotFoundException(
+                    "Event not found: " + eventCode));
 
         // Validate topic exists (ADR-003: use topicCode instead of UUID)
         Topic topic = topicRepository.findByTopicCode(topicCode)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
+                .orElseThrow(() -> new ch.batbern.events.exception.TopicNotFoundException(
+                    "Topic not found: " + topicCode));
 
         // Validate event state (AC16)
         // Allow topic assignment/update for CREATED, TOPIC_SELECTION, SPEAKER_BRAINSTORMING, and ARCHIVED states
@@ -580,8 +586,12 @@ public class TopicService {
                 && currentState != EventWorkflowState.TOPIC_SELECTION
                 && currentState != EventWorkflowState.SPEAKER_BRAINSTORMING
                 && currentState != EventWorkflowState.ARCHIVED) {
-            throw new IllegalStateException(
-                "Invalid state transition: Cannot select topic when event is in " + currentState + " state"
+            throw new ch.batbern.shared.exception.ValidationException(
+                "Invalid state transition",
+                java.util.Map.of(
+                    "currentState", currentState.toString(),
+                    "message", "Cannot select topic when event is in " + currentState + " state"
+                )
             );
         }
 

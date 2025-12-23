@@ -132,6 +132,10 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   };
 
   // Session handlers
+  const handleViewDetails = (sessionId: string) => {
+    console.log('View details:', sessionId);
+  };
+
   const handleEditSlot = (sessionId: string) => {
     console.log('Edit slot:', sessionId);
   };
@@ -140,19 +144,20 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     console.log('View materials:', sessionId);
   };
 
-  const handleViewFullAgenda = () => {
-    navigate(`/organizer/events/${eventCode}/agenda`);
+  const handleViewFullAgenda = (code: string) => {
+    navigate(`/organizer/events/${code}/agenda`);
   };
 
-  const handleManageSpeakerAssignments = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleManageSpeakerAssignments = (_code: string) => {
     // Switch to kanban view
     const newParams = new URLSearchParams(searchParams);
     newParams.set('view', 'kanban');
     setSearchParams(newParams, { replace: true });
   };
 
-  const handleAutoAssignSpeakers = () => {
-    console.log('Auto-assign speakers for:', eventCode);
+  const handleAutoAssignSpeakers = (code: string) => {
+    console.log('Auto-assign speakers for:', code);
   };
 
   // Loading state
@@ -279,7 +284,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             <Button
               variant="outlined"
               startIcon={<AutoAssignIcon />}
-              onClick={handleAutoAssignSpeakers}
+              onClick={() => handleAutoAssignSpeakers(eventCode)}
             >
               {t('events:speakers.autoAssignSpeakers', 'Auto-Assign')}
             </Button>
@@ -305,6 +310,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             <SpeakersSessionsTable
               sessions={sessions}
               eventCode={eventCode}
+              onViewDetails={handleViewDetails}
               onEditSlot={handleEditSlot}
               onViewMaterials={handleViewMaterials}
               onViewFullAgenda={handleViewFullAgenda}
