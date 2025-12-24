@@ -7,6 +7,11 @@
     "noResults": "Keine Benutzer gefunden",
     "clearFilters": "Filter löschen"
   },
+  "viewMode": {
+    "toggle": "Ansichtsmodus umschalten",
+    "grid": "Rasteransicht",
+    "list": "Listenansicht"
+  },
   "filters": {
     "title": "Filter",
     "clearAll": "Alle Filter löschen",
@@ -31,6 +36,7 @@
     }
   },
   "table": {
+    "viewUser": "Benutzer {{name}} anzeigen",
     "headers": {
       "name": "Name",
       "email": "E-Mail",

@@ -25,8 +25,7 @@ interface User {
 }
 
 interface PartnerDetail {
-  id: string;
-  companyName: string;
+  companyName: string; // ADR-003: companyName is the meaningful ID
   partnershipLevel: 'STRATEGIC' | 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE';
   partnershipStartDate: string;
   isActive: boolean;

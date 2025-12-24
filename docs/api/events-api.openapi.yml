@@ -3014,14 +3014,15 @@ components:
             Upload ID from three-phase upload pattern (internal reference).
             Story 2.5.3a: Event Theme Image Upload
             This is returned so the frontend can track what was uploaded.
-        topicId:
+        topicCode:
           type: string
-          format: uuid
           nullable: true
+          pattern: '^[a-z0-9-]+$'
           description: |
-            UUID of the selected topic for this event.
+            Topic code (slug-format identifier) of the selected topic.
             Story 5.2: Topic Selection & Speaker Brainstorming
-          example: "123e4567-e89b-12d3-a456-426614174000"
+            ADR-003: Meaningful Identifiers - use topicCode instead of UUID
+          example: 'cloud-native-security-2024'
         eventType:
           $ref: '#/components/schemas/EventType'
           description: |
@@ -3450,7 +3451,7 @@ components:
         title:
           type: string
           minLength: 1
-          maxLength: 255
+          maxLength: 200
         eventNumber:
           type: integer
         date:
@@ -3513,7 +3514,7 @@ components:
       properties:
         title:
           type: string
-          maxLength: 255
+          maxLength: 200
         eventNumber:
           type: integer
         date:

@@ -26,11 +26,14 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "security:scan": "trivy fs --scanners vuln,secret,misconfig --format sarif --output ../security-reports/web-frontend-trivy.sarif --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL .",
-    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:speakers",
+    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:speakers && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:attendees",
     "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",
     "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts && prettier --write src/types/generated/user-api.types.ts",
     "generate:api-types:events": "openapi-typescript ../docs/api/events-api.openapi.yml -o src/types/generated/events-api.types.ts && prettier --write src/types/generated/events-api.types.ts",
-    "generate:api-types:speakers": "openapi-typescript ../docs/api/speakers-api.openapi.yml -o src/types/generated/speakers-api.types.ts && prettier --write src/types/generated/speakers-api.types.ts"
+    "generate:api-types:speakers": "openapi-typescript ../docs/api/speakers-api.openapi.yml -o src/types/generated/speakers-api.types.ts && prettier --write src/types/generated/speakers-api.types.ts",
+    "generate:api-types:topics": "openapi-typescript ../docs/api/topics-api.openapi.yml -o src/types/generated/topics-api.types.ts && prettier --write src/types/generated/topics-api.types.ts",
+    "generate:api-types:partners": "openapi-typescript ../docs/api/partners-api.openapi.yml -o src/types/generated/partner-api.types.ts && prettier --write src/types/generated/partner-api.types.ts",
+    "generate:api-types:attendees": "openapi-typescript ../docs/api/attendees-api.openapi.yml -o src/types/generated/attendees-api.types.ts && prettier --write src/types/generated/attendees-api.types.ts"
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.13.1",

@@ -56,7 +56,7 @@ describe('Event Management React Query Hooks', () => {
       defaultOptions: {
         queries: {
           retry: false, // Disable retries for tests
-          gcTime: 0, // Disable cache for tests
+          gcTime: Infinity, // Keep cache for test duration (needed for invalidateQueries)
         },
         mutations: {
           retry: false,

@@ -191,8 +191,6 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     PartnerResponse: {
-      /** Format: uuid */
-      id: string;
       /** @description Meaningful ID per ADR-003 */
       companyName: string;
       partnershipLevel: components['schemas']['PartnershipLevel'];
@@ -225,8 +223,6 @@ export interface components {
       metadata: components['schemas']['PaginationMetadata'];
     };
     PartnerContactResponse: {
-      /** Format: uuid */
-      id: string;
       /** @description Meaningful ID per ADR-003 */
       username: string;
       contactRole: components['schemas']['ContactRole'];
@@ -267,15 +263,18 @@ export interface components {
     };
     CastVoteRequest: {
       /**
-       * Format: uuid
-       * @description Topic ID from Event Management Service
+       * @description Topic slug identifier from Event Management Service (meaningful ID per ADR-003)
+       * @example cloud-native-architecture
        */
       topicId: string;
       /** @description Vote value (1=low interest, 5=high interest) */
       voteValue: number;
     };
     TopicVoteResponse: {
-      /** Format: uuid */
+      /**
+       * @description Topic slug identifier (meaningful ID per ADR-003)
+       * @example cloud-native-architecture
+       */
       topicId: string;
       /** @description Vote value (1-5) */
       voteValue: number;
@@ -301,7 +300,10 @@ export interface components {
       suggestedAt: string;
       /** Format: date-time */
       reviewedAt?: string;
-      /** Format: uuid */
+      /**
+       * @description Username of the reviewer (meaningful ID per ADR-003)
+       * @example john.doe
+       */
       reviewedBy?: string;
     };
     /** @enum {string} */
@@ -350,7 +352,7 @@ export interface operations {
   listPartners: {
     parameters: {
       query?: {
-        /** @description Filter expression (e.g., "partnershipLevel=gold,isActive=true") */
+        /** @description Filter expression (e.g., "partnershipLevel=GOLD,isActive=true") */
         filter?: string;
         /** @description Related resources to include (e.g., "company,contacts") */
         include?: string;

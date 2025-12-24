@@ -66,8 +66,8 @@ export async function getOrCreateTopicByCategory(topicTitle: string): Promise<st
   );
 
   if (matchingTopic) {
-    topicCache.set(topicTitle, matchingTopic.id);
-    return matchingTopic.id;
+    topicCache.set(topicTitle, matchingTopic.topicCode);
+    return matchingTopic.topicCode;
   }
 
   // Topic doesn't exist - create it
@@ -81,9 +81,9 @@ export async function getOrCreateTopicByCategory(topicTitle: string): Promise<st
   const newTopic = await topicService.createTopic(createRequest);
 
   // Cache newly created topic
-  topicCache.set(topicTitle, newTopic.id);
+  topicCache.set(topicTitle, newTopic.topicCode);
 
-  return newTopic.id;
+  return newTopic.topicCode;
 }
 
 /**

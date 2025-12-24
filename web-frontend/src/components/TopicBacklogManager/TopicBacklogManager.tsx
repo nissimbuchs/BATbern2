@@ -75,8 +75,9 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   // Fetch event details if eventCode is provided
   const { data: eventData } = useEvent(eventCode);
 
-  // Fetch pre-assigned topic if event has topicId (Story 5.2 - Topic preselection)
-  const { data: preassignedTopic } = useTopic(eventData?.topicId || '', 'history');
+  // Fetch pre-assigned topic if event has topicCode (Story 5.2 - Topic preselection)
+  // ADR-003: Event now includes topicCode (meaningful identifier) for frontend use
+  const { data: preassignedTopic } = useTopic(eventData?.topicCode || '', 'history');
 
   // Fetch organizer users for speaker assignment (Story 5.2)
   const { data: organizersData } = useUserList({
@@ -154,9 +155,9 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   const handleSpeakerBrainstormComplete = () => {
-    // Navigate to speaker outreach if eventCode exists, otherwise to events dashboard
+    // Navigate to event page with speakers tab if eventCode exists, otherwise to events dashboard
     if (eventCode) {
-      navigate(`/organizer/events/${eventCode}/speakers/outreach`);
+      navigate(`/organizer/events/${eventCode}?tab=speakers`);
     } else {
       navigate('/organizer/events');
     }
@@ -269,7 +270,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
               {viewMode === 'heatMap' && (
                 <MultiTopicHeatMap
                   topics={data.data}
-                  selectedTopicId={selectedTopic?.id}
+                  selectedTopicId={selectedTopic?.topicCode}
                   onTopicSelect={handleTopicSelect}
                   eventLookup={eventLookup}
                 />
@@ -280,7 +281,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                 <Paper sx={{ p: 2, height: '70vh', overflow: 'auto' }}>
                   <TopicList
                     topics={data.data}
-                    selectedTopicId={selectedTopic?.id}
+                    selectedTopicId={selectedTopic?.topicCode}
                     onTopicSelect={handleTopicSelect}
                     pagination={data.pagination}
                     onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}

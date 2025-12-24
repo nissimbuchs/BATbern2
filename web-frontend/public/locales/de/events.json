@@ -5,6 +5,37 @@
     "eventTimeline": "Zeitachse",
     "events": "Veranstaltungen"
   },
+  "eventPage": {
+    "tabs": {
+      "overview": "Übersicht",
+      "speakers": "Referenten",
+      "venue": "Veranstaltungsort",
+      "team": "Team",
+      "publishing": "Veröffentlichung",
+      "settings": "Einstellungen"
+    },
+    "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
+    "overview": {
+      "step": "Schritt",
+      "eventDetails": "Veranstaltungsdetails",
+      "keyMetrics": "Kennzahlen",
+      "registered": "angemeldet",
+      "filled": "belegt",
+      "speakers": "Referenten",
+      "confirmed": "bestätigt",
+      "materials": "Materialien",
+      "pending": "ausstehend",
+      "budget": "Budget",
+      "selectedTopic": "Ausgewähltes Thema",
+      "noTopicSelected": "Noch kein Thema ausgewählt",
+      "changeTopic": "Thema ändern",
+      "quickActions": "Schnellzugriff",
+      "selectTopic": "Thema auswählen",
+      "sendNotification": "Benachrichtigung senden",
+      "previewPublic": "Öffentliche Seite vorschauen",
+      "viewTimeline": "Zeitachse anzeigen"
+    }
+  },
   "dashboard": {
     "title": "Veranstaltungsverwaltung",
     "activeEvents": "Aktive Veranstaltungen",
@@ -74,6 +105,13 @@
     "errors": {
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
     }
+  },
+  "tasks": {
+    "criticalTasks": "Kritische Aufgaben",
+    "noCriticalTasks": "Keine kritischen Aufgaben",
+    "greatJob": "Gute Arbeit!",
+    "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
+    "viewAllTasks": "Alle Aufgaben anzeigen"
   },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
@@ -493,6 +531,19 @@
       "networking": "Networking",
       "break": "Pause",
       "lunch": "Mittagessen"
+    },
+    "sessionEdit": {
+      "title": "Session bearbeiten",
+      "titleLabel": "Session-Titel",
+      "abstractLabel": "Session-Zusammenfassung",
+      "charactersRemaining": "{{count}} Zeichen verbleibend",
+      "durationLabel": "Dauer (Minuten)",
+      "errors": {
+        "titleRequired": "Titel ist erforderlich",
+        "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
+        "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
+        "saveFailed": "Session konnte nicht gespeichert werden"
+      }
     }
   }
 }

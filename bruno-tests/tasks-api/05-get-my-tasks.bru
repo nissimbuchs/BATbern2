@@ -1,0 +1,46 @@
+meta {
+  name: Get My Tasks
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/tasks/my-tasks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  critical: false
+}
+
+assert {
+  res.status: eq 200
+  res.body: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC24", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return tasks assigned to current user - Story 5.5 AC24", function() {
+    const response = res.getBody();
+    expect(response).to.be.an('array');
+  });
+
+  test("should return tasks with required fields - Story 5.5 AC24, AC27", function() {
+    const response = res.getBody();
+    if (response.length > 0) {
+      const task = response[0];
+      expect(task.id).to.be.a('string');
+      expect(task.taskName).to.be.a('string');
+      expect(task.assignedOrganizerUsername).to.be.a('string');
+      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed']);
+    }
+  });
+}

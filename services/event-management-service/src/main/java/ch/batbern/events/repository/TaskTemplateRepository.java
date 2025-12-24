@@ -31,6 +31,14 @@ public interface TaskTemplateRepository extends JpaRepository<TaskTemplate, UUID
     List<TaskTemplate> findByIsDefaultFalse();
 
     /**
+     * Find task templates by is_default flag.
+     *
+     * @param isDefault true for default templates, false for custom templates
+     * @return list of templates matching the flag
+     */
+    List<TaskTemplate> findByIsDefault(Boolean isDefault);
+
+    /**
      * Find task templates by trigger state.
      * Used when event transitions to a workflow state to find matching tasks to create.
      *

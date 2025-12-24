@@ -5,8 +5,8 @@
 FROM gradle:8.5-jdk21 AS build
 WORKDIR /workspace
 
-# Copy root settings.gradle for multi-project build
-COPY settings.gradle ./
+# Copy root build configuration for multi-project build
+COPY settings.gradle build.gradle ./
 
 # Copy checkstyle configuration
 COPY config ./config
@@ -14,10 +14,10 @@ COPY config ./config
 # Copy gradle scripts for security scanning
 COPY gradle ./gradle
 
-# Copy shared-kernel build file ONLY (for dependency resolution)
+# Copy shared-kernel build file (for dependency resolution)
 COPY shared-kernel/build.gradle ./shared-kernel/
 
-# Copy event-management-service build files ONLY (for dependency resolution)
+# Copy event-management-service build files (for dependency resolution)
 COPY services/event-management-service/build.gradle services/event-management-service/gradlew* ./services/event-management-service/
 COPY services/event-management-service/gradle ./services/event-management-service/gradle
 
@@ -31,10 +31,9 @@ COPY shared-kernel/src ./shared-kernel/src
 COPY docs/api ./docs/api
 COPY services/event-management-service/src ./services/event-management-service/src
 
-# Build event-management-service subproject (compile tests but don't run them)
-# Use BuildKit cache mount for Gradle cache
+# Build shared-kernel and event-management-service (in single command for proper dependency resolution)
 RUN --mount=type=cache,target=/root/.gradle \
-    gradle :services:event-management-service:build :services:event-management-service:compileTestJava --no-daemon -x test
+    gradle :shared-kernel:build :services:event-management-service:build :services:event-management-service:compileTestJava --no-daemon -x test --stacktrace
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

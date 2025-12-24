@@ -1,0 +1,51 @@
+meta {
+  name: Complete Task
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{baseUrl}}/tasks/{{testTaskId}}/complete
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "notes": "Task completed successfully"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.id: isDefined
+  res.body.status: eq completed
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC25", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update task status to completed - Story 5.5 AC25", function() {
+    const response = res.getBody();
+    expect(response.status).to.equal('completed');
+    expect(response.notes).to.equal('Task completed successfully');
+    expect(response.completedDate).to.be.a('string');
+    expect(response.completedByUsername).to.be.a('string');
+  });
+
+  test("should set completion details - Story 5.5 AC25", function() {
+    const response = res.getBody();
+    const completedDate = new Date(response.completedDate);
+    const now = new Date();
+
+    // Completed date should be within last minute
+    const diffMs = now.getTime() - completedDate.getTime();
+    expect(diffMs).to.be.at.most(60000); // 1 minute tolerance
+  });
+}

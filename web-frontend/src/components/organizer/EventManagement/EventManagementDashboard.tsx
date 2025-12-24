@@ -17,12 +17,12 @@ import { Paper, Typography, Box, Stack, CircularProgress, Alert, Container } fro
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useEvents, useCriticalTasks, useTeamActivity } from '@/hooks/useEvents';
+import { useEvents, useTeamActivity } from '@/hooks/useEvents';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/stores/eventStore';
 import { EventList } from './EventList';
 import { EventSearch } from './EventSearch';
-import { CriticalTasksList } from './CriticalTasksList';
+import { TaskWidget } from '../Tasks/TaskWidget';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
 import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
@@ -46,6 +46,7 @@ export const EventManagementDashboard: React.FC = () => {
     closeCreateModal,
     isEditModalOpen,
     selectedEventCode,
+    openEditModal,
     closeEditModal,
   } = useEventStore();
 
@@ -60,8 +61,6 @@ export const EventManagementDashboard: React.FC = () => {
     error: eventsError,
   } = useEvents(pagination, filters);
 
-  const { data: criticalTasksData, isLoading: isLoadingTasks } = useCriticalTasks(user?.username);
-
   const {
     data: teamActivityData,
     isLoading: isLoadingActivity,
@@ -73,7 +72,7 @@ export const EventManagementDashboard: React.FC = () => {
   };
 
   const handleEventEdit = (eventCode: string) => {
-    navigate(`/organizer/events/${eventCode}/edit`);
+    openEditModal(eventCode);
   };
 
   const handleEventClick = (eventCode: string) => {
@@ -84,13 +83,8 @@ export const EventManagementDashboard: React.FC = () => {
     openCreateModal();
   };
 
-  const handleTaskAction = (taskId: string, actionId: string) => {
-    console.log('Task action:', taskId, actionId);
-    // TODO: Implement task action handling
-  };
-
   // Loading state
-  if (isLoadingEvents && isLoadingTasks && isLoadingActivity) {
+  if (isLoadingEvents && isLoadingActivity) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -168,13 +162,9 @@ export const EventManagementDashboard: React.FC = () => {
                 onBatchImportSessions={() => setIsSessionBatchImportOpen(true)}
               />
 
-              {/* Critical Tasks */}
+              {/* Critical Tasks - Story 5.5 Phase 6 */}
               <Paper sx={{ p: 3 }}>
-                <CriticalTasksList
-                  tasks={criticalTasksData?.data || []}
-                  isLoading={isLoadingTasks}
-                  onAction={handleTaskAction}
-                />
+                <TaskWidget organizerUsername={user?.username || ''} />
               </Paper>
 
               {/* Team Activity Feed */}

@@ -15,7 +15,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, type UseQueryResult } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { EventManagementDashboard } from '../EventManagementDashboard';
@@ -29,6 +29,7 @@ import {
   useUpdateEvent,
   useDeleteEvent,
 } from '@/hooks/useEvents';
+import { taskService } from '@/services/taskService';
 import type { EventListResponse } from '@/types/event.types';
 
 // Mock the hooks
@@ -41,6 +42,14 @@ vi.mock('@/hooks/useEvents', () => ({
   useCreateEvent: vi.fn(),
   useUpdateEvent: vi.fn(),
   useDeleteEvent: vi.fn(),
+}));
+
+// Mock taskService for TaskWidget
+vi.mock('@/services/taskService', () => ({
+  taskService: {
+    getMyTasks: vi.fn(),
+    completeTask: vi.fn(),
+  },
 }));
 
 // Mock EventForm to prevent act() warnings
@@ -112,23 +121,24 @@ describe('EventManagementDashboard Component', () => {
     },
   };
 
-  const mockCriticalTasksData = {
-    data: [
-      {
-        id: 'task-1',
-        eventCode: 'BATbern56',
-        type: 'overdue_materials',
-        priority: 'critical',
-        title: 'Overdue speaker materials',
-        description: '3 speakers have not submitted materials',
-        dueDate: '2025-03-01T23:59:59Z',
-        assignedTo: 'john.doe',
-        actions: [],
-        createdAt: '2025-01-15T10:00:00Z',
-      },
-    ],
-    total: 1,
-  };
+  const mockCriticalTasksData = [
+    {
+      id: 'task-1',
+      eventId: 'event-1',
+      eventCode: 'BATbern56',
+      templateId: null,
+      taskName: 'Overdue speaker materials',
+      triggerState: 'overdue_materials',
+      dueDate: '2025-03-01T23:59:59Z',
+      assignedOrganizerUsername: 'john.doe',
+      status: 'todo' as const,
+      notes: '3 speakers have not submitted materials',
+      completedDate: null,
+      completedByUsername: null,
+      createdAt: '2025-01-15T10:00:00Z',
+      updatedAt: '2025-01-15T10:00:00Z',
+    },
+  ];
 
   const mockTeamActivityData = {
     data: [
@@ -350,6 +360,8 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
+      // Mock taskService for TaskWidget
+      vi.mocked(taskService.getMyTasks).mockResolvedValue(mockCriticalTasksData);
     });
 
     it('should_displayCriticalTasksSection_when_tasksExist', () => {
@@ -358,16 +370,20 @@ describe('EventManagementDashboard Component', () => {
       expect(screen.getByText(/critical tasks/i)).toBeInTheDocument();
     });
 
-    it('should_displayTaskCount_when_tasksLoaded', () => {
+    it('should_displayTaskCount_when_tasksLoaded', async () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/1.*task/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/1.*task/i)).toBeInTheDocument();
+      });
     });
 
-    it('should_displayTaskPriority_when_criticalTask', () => {
+    it('should_displayTaskPriority_when_criticalTask', async () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Overdue speaker materials')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Overdue speaker materials')).toBeInTheDocument();
+      });
     });
   });
 

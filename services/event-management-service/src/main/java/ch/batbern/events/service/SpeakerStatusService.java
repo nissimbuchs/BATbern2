@@ -51,7 +51,6 @@ public class SpeakerStatusService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
-    private final ch.batbern.events.repository.SessionRepository sessionRepository;
 
     /**
      * Update speaker status with validation
@@ -86,36 +85,8 @@ public class SpeakerStatusService {
         // Validate state transition - Story 5.4 AC12
         validator.validateTransition(currentStatus, request.getNewStatus());
 
-        // BUG FIX: Update speaker_pool status column
+        // Update speaker_pool status column
         speaker.setStatus(request.getNewStatus());
-
-        // BUG FIX: Create session when speaker accepts (if no session exists)
-        UUID sessionId = speaker.getSessionId();
-        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED && sessionId == null) {
-            Event event = eventRepository.findByEventCode(eventCode)
-                    .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
-
-            // Create session for accepted speaker
-            ch.batbern.events.domain.Session session = new ch.batbern.events.domain.Session();
-            session.setEventId(event.getId());
-            session.setSessionSlug(generateSessionSlug(eventCode, speaker.getSpeakerName()));
-
-            // Set title to "SpeakerName - Company" format
-            String sessionTitle = speaker.getSpeakerName();
-            if (speaker.getCompany() != null && !speaker.getCompany().isBlank()) {
-                sessionTitle += " - " + speaker.getCompany();
-            }
-            session.setTitle(sessionTitle);
-
-            ch.batbern.events.domain.Session savedSession = sessionRepository.save(session);
-            sessionId = savedSession.getId();
-            speaker.setSessionId(sessionId);
-            log.info("Created session {} for accepted speaker {}",
-                    savedSession.getSessionSlug(), speaker.getSpeakerName());
-        } else if (sessionId == null) {
-            // No session yet (speaker not accepted)
-            sessionId = UUID.randomUUID();  // Fallback for history record
-        }
 
         // Save updated speaker pool entry
         speakerPoolRepository.save(speaker);
@@ -123,7 +94,8 @@ public class SpeakerStatusService {
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
         historyRecord.setSpeakerPoolId(speakerId);
-        historyRecord.setSessionId(sessionId);  // Actual session ID from speaker pool
+        // Session ID from speaker pool (null until content submitted)
+        historyRecord.setSessionId(speaker.getSessionId());
         historyRecord.setEventCode(eventCode);
         historyRecord.setPreviousStatus(currentStatus);
         historyRecord.setNewStatus(request.getNewStatus());
@@ -204,7 +176,11 @@ public class SpeakerStatusService {
             .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
 
         long totalSpeakers = speakerStatuses.size();
-        long acceptedCount = statusCounts.getOrDefault(SpeakerWorkflowState.ACCEPTED, 0L);
+        // Count speakers in ACCEPTED and all subsequent states (Story 5.5)
+        long acceptedCount = statusCounts.getOrDefault(SpeakerWorkflowState.ACCEPTED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.CONTENT_SUBMITTED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.QUALITY_REVIEWED, 0L)
+            + statusCounts.getOrDefault(SpeakerWorkflowState.CONFIRMED, 0L);
         long declinedCount = statusCounts.getOrDefault(SpeakerWorkflowState.DECLINED, 0L);
         long pendingCount = totalSpeakers - acceptedCount - declinedCount;
 
@@ -264,16 +240,5 @@ public class SpeakerStatusService {
         item.setChangeReason(history.getChangeReason());
         item.setChangedAt(history.getChangedAt());
         return item;
-    }
-
-    /**
-     * Generate unique session slug for accepted speaker
-     */
-    private String generateSessionSlug(String eventCode, String speakerName) {
-        String cleanName = speakerName.toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
-        String timestamp = String.valueOf(System.currentTimeMillis()).substring(8);
-        return String.format("%s-speaker-%s-%s", eventCode.toLowerCase(), cleanName, timestamp);
     }
 }

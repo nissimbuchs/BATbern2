@@ -14,16 +14,17 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
-  ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
 import { AssociatedUsersPanel } from '@/components/shared/Company/AssociatedUsersPanel';
 import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
 
 type CompanyDetail = components['schemas']['CompanyResponse'];
 import { CompanyStatistics } from '@/components/shared/Company/CompanyStatistics';
@@ -151,13 +152,25 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       className={isMobile ? 'mobile-layout' : ''}
       sx={{ p: 3 }}
     >
-      {/* Header with Back button */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: t('company.title'), path: '/organizer/companies' },
+          { label: company.displayName || company.name },
+        ]}
+      />
+
+      {/* Back button */}
+      <Box sx={{ mb: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={onBack}>
-          {t('company.backToList')}
+          {t('actions.back', 'Back')}
         </Button>
-        {(canEdit || canDelete) && (
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ ml: 'auto' }}>
+      </Box>
+
+      {/* Action buttons */}
+      {(canEdit || canDelete) && (
+        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             {canDelete && (
               <Button
                 variant="outlined"
@@ -174,8 +187,8 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
               </Button>
             )}
           </Stack>
-        )}
-      </Box>
+        </Box>
+      )}
 
       {/* Company Profile Card */}
       <Card sx={{ mb: 3 }}>

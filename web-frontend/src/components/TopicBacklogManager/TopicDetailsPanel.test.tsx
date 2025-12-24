@@ -28,16 +28,18 @@ vi.mock('@/hooks/useTopics', () => ({
 }));
 
 const mockTopic: Topic = {
-  id: 'topic-123',
+  topicCode: 'topic-123',
   title: 'Cloud Native Architecture',
   description: 'Modern cloud patterns',
   category: 'technical',
   stalenessScore: 85,
   usageCount: 3,
   lastUsedDate: '2024-01-15',
-  isActive: true,
+  active: true,
   createdDate: '2023-01-01',
   similarityScores: [],
+  colorZone: 'green',
+  status: 'available',
 };
 
 describe('TopicDetailsPanel', () => {
@@ -116,22 +118,24 @@ describe('TopicDetailsPanel', () => {
   it('should display similar topics warning when similarity is high', () => {
     const topicWithSimilarity: Topic = {
       ...mockTopic,
-      similarityScores: [{ topicId: 'topic-456', score: 0.75 }],
+      similarityScores: [{ topicCode: 'cloud-security', score: 0.75 }],
     };
 
     // Mock the similar topics hook to return a similar topic
     vi.mocked(useTopicsHook.useSimilarTopics).mockReturnValue({
       data: [
         {
-          id: 'topic-456',
+          topicCode: 'cloud-security',
           title: 'Similar Topic',
           category: 'technical',
           stalenessScore: 80,
           usageCount: 2,
           lastUsedDate: '2024-02-01',
-          isActive: true,
+          active: true,
           createdDate: '2023-01-01',
           description: 'Similar',
+          colorZone: 'green',
+          status: 'available',
         },
       ],
       isLoading: false,

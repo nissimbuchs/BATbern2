@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -10,6 +10,7 @@ import {
   Skeleton,
   Stack,
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import { PartnerDetailHeader } from './PartnerDetailHeader';
@@ -21,6 +22,8 @@ import PartnerActivityTab from './PartnerActivityTab';
 import PartnerNotesTab from './PartnerNotesTab';
 import { PartnerSettingsTab } from './PartnerSettingsTab';
 import { PartnerCreateEditModal } from './PartnerCreateEditModal';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 /**
  * PartnerDetailScreen Component
@@ -29,6 +32,7 @@ import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 export const PartnerDetailScreen: React.FC = () => {
   const { companyName } = useParams<{ companyName: string }>();
   // const navigate = useNavigate(); // Removed: handleBack was removed
+  const { t } = useTranslation('organizer');
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
   const setActiveTab = usePartnerDetailStore((state) => state.setActiveTab);
 
@@ -39,6 +43,15 @@ export const PartnerDetailScreen: React.FC = () => {
     isError,
     error,
   } = usePartnerDetail(companyName || '', 'company,contacts,votes,meetings,activity');
+
+  // Build breadcrumb items (memoized to prevent re-renders)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [
+      { label: t('navigation.partners', 'Partners'), path: '/organizer/partners' },
+      { label: partner?.companyName || companyName || t('common.loading', 'Loading...') },
+    ],
+    [partner?.companyName, companyName, t]
+  );
 
   // Handle tab change
   const handleTabChange = (newTab: number) => {
@@ -116,6 +129,9 @@ export const PartnerDetailScreen: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+
       {/* Header */}
       <PartnerDetailHeader partner={partner} />
 

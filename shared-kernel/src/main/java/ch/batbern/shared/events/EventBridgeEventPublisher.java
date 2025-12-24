@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.CreateEventBusRequest;
@@ -29,6 +30,7 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
 
     private final EventBridgeAsyncClient eventBridgeClient;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher springEventPublisher;
 
     @Value("${aws.eventbridge.bus-name:batbern-events}")
     private String eventBusName;
@@ -43,15 +45,28 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
     private long retryDelayMs;
 
     public EventBridgeEventPublisher(EventBridgeAsyncClient eventBridgeClient,
-                                    @Qualifier("eventBridgeObjectMapper") ObjectMapper objectMapper) {
+                                    @Qualifier("eventBridgeObjectMapper") ObjectMapper objectMapper,
+                                    ApplicationEventPublisher springEventPublisher) {
         this.eventBridgeClient = eventBridgeClient;
         this.objectMapper = objectMapper;
+        this.springEventPublisher = springEventPublisher;
     }
 
     @Override
     public void publish(DomainEvent<?> event) {
         validateEvent(event);
 
+        // First, publish to Spring's local event system for same-service listeners
+        try {
+            springEventPublisher.publishEvent(event);
+            LOGGER.debug("Published event {} to local Spring event system", event.getEventType());
+        } catch (Exception e) {
+            LOGGER.warn("Failed to publish event {} to local Spring event system: {}",
+                    event.getEventType(), e.getMessage());
+            // Continue with EventBridge publishing even if local publishing fails
+        }
+
+        // Then, publish to EventBridge for cross-service communication
         try {
             PutEventsRequestEntry entry = createEventBridgeEntry(event);
             PutEventsRequest request = PutEventsRequest.builder()

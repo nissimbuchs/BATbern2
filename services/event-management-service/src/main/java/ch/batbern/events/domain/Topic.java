@@ -35,6 +35,13 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    /**
+     * Slug-format identifier for external API (ADR-003).
+     * Generated from title. Example: "cloud-native-security-2024"
+     */
+    @Column(name = "topic_code", nullable = false, unique = true, length = 255)
+    private String topicCode;
+
     @Column(name = "title", nullable = false, length = 500)
     private String title;
 
@@ -96,6 +103,25 @@ public class Topic {
         if (createdDate == null) {
             createdDate = LocalDateTime.now();
         }
+        // Auto-generate topicCode from title if not set (ADR-003)
+        if (topicCode == null && title != null) {
+            topicCode = generateTopicCode(title);
+        }
+    }
+
+    /**
+     * Generate slug-format topicCode from title (ADR-003).
+     * Example: "Cloud Native Security" → "cloud-native-security"
+     */
+    public static String generateTopicCode(String title) {
+        if (title == null || title.isBlank()) {
+            return null;
+        }
+        return title.toLowerCase()
+            .replaceAll("[^a-z0-9\\s-]", "")  // Remove special chars
+            .replaceAll("\\s+", "-")          // Replace spaces with hyphens
+            .replaceAll("-+", "-")            // Collapse multiple hyphens
+            .replaceAll("^-|-$", "");         // Trim leading/trailing hyphens
     }
 
     @PreUpdate
@@ -111,6 +137,14 @@ public class Topic {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getTopicCode() {
+        return topicCode;
+    }
+
+    public void setTopicCode(String topicCode) {
+        this.topicCode = topicCode;
     }
 
     public String getTitle() {

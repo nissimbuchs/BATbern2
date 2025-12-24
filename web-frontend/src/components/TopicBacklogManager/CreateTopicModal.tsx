@@ -79,7 +79,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   const createTopicMutation = useMutation({
     mutationFn: (request: CreateTopicRequest) => {
       if (isEditMode && topic) {
-        return topicService.updateTopic(topic.id, request);
+        return topicService.updateTopic(topic.topicCode, request);
       }
       return topicService.createTopic(request);
     },

@@ -175,7 +175,7 @@ export const TestimonialSection = () => {
           <InfiniteMarquee direction="right" speed="slow">
             {partners.map((partner) => (
               <PartnerShowcaseCard
-                key={partner.id}
+                key={partner.companyName}
                 companyName={partner.company?.displayName || partner.companyName}
                 logoUrl={partner.company?.logoUrl}
                 partnershipLevel={

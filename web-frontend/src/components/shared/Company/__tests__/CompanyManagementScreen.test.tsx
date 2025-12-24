@@ -7,15 +7,26 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '@/components/shared/Company/CompanyManagementScreen';
 
-// Mock child components to isolate testing
-vi.mock('@/components/shared/Company/CompanyFilters', () => ({
-  default: () => <div data-testid="company-filters">Filters Mock</div>,
+// Mock hooks
+vi.mock('@/hooks/useCompanies/useCompanies', () => ({
+  useCompanies: vi.fn(() => ({
+    data: { data: [], pagination: { page: 1, limit: 100, totalItems: 0, totalPages: 0 } },
+    isLoading: false,
+    isError: false,
+  })),
 }));
 
+vi.mock('@/hooks/useCompanyMutations/useCompanyMutations', () => ({
+  useCreateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useUpdateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
+}));
+
+// Mock child components to isolate testing
+// Note: CompanyFilters is NOT mocked so the search bar can be tested
 vi.mock('@/components/shared/Company/CompanyList', () => ({
   CompanyList: () => <div data-testid="company-list">Company List Mock</div>,
 }));
@@ -28,13 +39,17 @@ const createTestQueryClient = () =>
     },
   });
 
-const renderWithProviders = (ui: React.ReactElement, { route = '/companies' } = {}) => {
+const renderWithProviders = (ui: React.ReactElement, { route = '/organizer/companies' } = {}) => {
   const queryClient = createTestQueryClient();
   window.history.pushState({}, 'Test page', route);
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{ui}</BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/organizer/companies/*" element={ui} />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };

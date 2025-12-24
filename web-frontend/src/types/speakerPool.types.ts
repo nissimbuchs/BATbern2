@@ -21,6 +21,7 @@ export interface SpeakerPoolEntry {
   expertise?: string;
   assignedOrganizerId?: string | null;
   status: SpeakerWorkflowState;
+  sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
   notes?: string;
   createdAt: string;
 }
