@@ -1,8 +1,8 @@
 # Integration Test Pattern
 
 **Category**: Backend - Testing
-**Used in Stories**: 2.7 (Partner Coordination), 2.8.1 (Partner Directory Backend), All API development stories
-**Last Updated**: 2025-01-20
+**Used in Stories**: 2.7 (Partner Coordination), 2.8.1 (Partner Directory Backend), 5.5 (Speaker Content & Task System), All API development stories
+**Last Updated**: 2025-12-24
 **Source**: Extracted from `docs/architecture/coding-standards.md`
 
 ## Overview
@@ -600,6 +600,200 @@ class SecurityIntegrationTest extends AbstractIntegrationTest {
     void should_return401_when_noAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/entities"))
             .andExpect(status().isUnauthorized());
+    }
+}
+```
+
+### Testing Event-Driven Task Creation with Idempotency (Story 5.5)
+```java
+@Transactional
+class EventTaskIdempotencyIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private EventWorkflowStateMachine eventWorkflowStateMachine;
+
+    @Autowired
+    private EventTaskRepository eventTaskRepository;
+
+    @Autowired
+    private TaskTemplateRepository taskTemplateRepository;
+
+    @Test
+    void should_createTasksOnlyOnce_when_eventPublishedMultipleTimes() {
+        // Given: Event with task templates configured
+        Event event = createEventWithTaskTemplates();
+        String eventId = event.getId().toString();
+
+        // When: Event transitions to TOPIC_SELECTION (triggers task creation)
+        eventWorkflowStateMachine.transitionToState(
+            eventId,
+            EventWorkflowState.TOPIC_SELECTION,
+            "organizer"
+        );
+
+        // Then: 4 tasks created (venue, partner meeting, moderator, newsletter)
+        List<EventTask> tasksAfterFirst = eventTaskRepository.findByEventId(event.getId());
+        assertThat(tasksAfterFirst).hasSize(4);
+
+        // When: Event replayed (simulating retry or duplicate event)
+        eventWorkflowStateMachine.transitionToState(
+            eventId,
+            EventWorkflowState.TOPIC_SELECTION,
+            "organizer"
+        );
+
+        // Then: NO duplicate tasks created (idempotency check prevents)
+        List<EventTask> tasksAfterSecond = eventTaskRepository.findByEventId(event.getId());
+        assertThat(tasksAfterSecond).hasSize(4); // Still 4, not 8
+
+        // Verify exact same task IDs (not new records)
+        assertThat(tasksAfterFirst)
+            .extracting(EventTask::getId)
+            .containsExactlyInAnyOrder(
+                tasksAfterSecond.stream()
+                    .map(EventTask::getId)
+                    .toArray(UUID[]::new)
+            );
+    }
+
+    @Test
+    void should_autoCreateTasks_when_eventTransitionsToTopicSelection() {
+        // Given: Event in CREATED state
+        Event event = createEvent();
+
+        // When: Event transitions to TOPIC_SELECTION
+        eventWorkflowStateMachine.transitionToState(
+            event.getId(),
+            EventWorkflowState.TOPIC_SELECTION,
+            "organizer"
+        );
+
+        // Then: Tasks created for all matching templates
+        List<EventTask> tasks = eventTaskRepository.findByEventId(event.getId());
+        assertThat(tasks).hasSize(4);
+        assertThat(tasks).extracting("taskName").containsExactlyInAnyOrder(
+            "Venue Booking",
+            "Partner Meeting Coordination",
+            "Moderator Assignment",
+            "Newsletter: Topic Announcement"
+        );
+
+        // And: Due dates calculated correctly
+        EventTask venueTask = tasks.stream()
+            .filter(t -> t.getTaskName().equals("Venue Booking"))
+            .findFirst().orElseThrow();
+        assertThat(venueTask.getDueDate())
+            .isEqualTo(event.getEventDate().minusDays(90));
+    }
+}
+```
+
+### Testing Transaction Rollback with Multi-Step Operations (Story 5.5)
+```java
+@Transactional
+class ContentSubmissionTransactionIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private SpeakerContentSubmissionService contentService;
+
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
+
+    @Autowired
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private SessionUserRepository sessionUserRepository;
+
+    @Test
+    void should_rollbackAllChanges_when_exceptionThrown() {
+        // Given: Speaker in accepted state
+        SpeakerPool speaker = createAcceptedSpeaker();
+        String initialStatus = speaker.getStatus();
+
+        // When: Content submission fails validation
+        assertThrows(ContentSubmissionException.class, () ->
+            contentService.submitContent(
+                eventId,
+                speaker.getId(),
+                invalidRequest() // Missing required field
+            )
+        );
+
+        // Then: All database changes rolled back
+        SpeakerPool unchanged = speakerPoolRepository.findById(speaker.getId())
+            .orElseThrow();
+        assertThat(unchanged.getStatus()).isEqualTo(initialStatus);
+        assertThat(unchanged.getSessionId()).isNull();
+
+        // And: No orphaned session records
+        assertThat(sessionRepository.count()).isZero();
+
+        // And: No orphaned session_users records
+        assertThat(sessionUserRepository.count()).isZero();
+    }
+
+    @Test
+    void should_submitContentAndCreateSessionLink_when_validDataProvided() {
+        // Given: Accepted speaker in pool
+        SpeakerPool speaker = createAcceptedSpeaker();
+
+        // When: Content submitted
+        SubmitContentRequest request = SubmitContentRequest.builder()
+            .username("john.doe")
+            .presentationTitle("Test Presentation")
+            .presentationAbstract("This is a test abstract with lessons learned.")
+            .build();
+
+        SpeakerContentDto result = contentService.submitContent(
+            eventId, speaker.getId(), request
+        );
+
+        // Then: Session created
+        assertThat(result.getSessionId()).isNotNull();
+        Session session = sessionRepository.findById(result.getSessionId())
+            .orElseThrow();
+        assertThat(session.getTitle()).isEqualTo("Test Presentation");
+
+        // And: session_users link created
+        List<SessionUser> sessionUsers = sessionUserRepository
+            .findBySessionId(session.getId());
+        assertThat(sessionUsers).hasSize(1);
+        assertThat(sessionUsers.get(0).getUsername()).isEqualTo("john.doe");
+
+        // And: speaker_pool updated atomically
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId())
+            .orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo("content_submitted");
+        assertThat(updated.getSessionId()).isEqualTo(session.getId());
+    }
+
+    @Test
+    void should_updateToConfirmed_when_bothQualityReviewedAndSlotAssigned() {
+        // Given: Speaker with content submitted
+        SpeakerPool speaker = createSpeakerWithContent();
+
+        // When: Content approved (quality_reviewed)
+        reviewService.approveContent(speaker.getId(), "moderator");
+
+        // And: Slot assigned (start_time set)
+        Session session = sessionRepository.findById(speaker.getSessionId())
+            .orElseThrow();
+        session.setStartTime(LocalDateTime.now().plusDays(30));
+        sessionRepository.save(session);
+
+        // Trigger confirmation check
+        workflowService.checkAndUpdateToConfirmed(speaker);
+
+        // Then: Speaker status updated to confirmed
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId())
+            .orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo("confirmed");
+
+        // And: session_users.is_confirmed updated
+        SessionUser sessionUser = sessionUserRepository
+            .findBySessionId(session.getId()).get(0);
+        assertThat(sessionUser.isConfirmed()).isTrue();
     }
 }
 ```

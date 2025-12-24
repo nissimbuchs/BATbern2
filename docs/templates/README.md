@@ -70,10 +70,12 @@ public EngagementScore calculateEngagement(Partner partner) {
 
 | Template | Description | Lines | Used in Stories | Status |
 |----------|-------------|-------|-----------------|--------|
-| [spring-boot-service-foundation.md](backend/spring-boot-service-foundation.md) | Package structure, JPA entities, repositories, service layer | 400 | 2.2, 2.7, 2.8 | ✅ Available |
+| [spring-boot-service-foundation.md](backend/spring-boot-service-foundation.md) | Package structure, JPA entities, repositories, service layer | 400 | 2.2, 2.7, 2.8, 5.5 | ✅ Available |
 | [jwt-propagation-pattern.md](backend/jwt-propagation-pattern.md) | RestTemplate with JWT interceptors for cross-service calls | 220 | 2.7, 2.8.1 | ✅ Available |
-| [integration-test-pattern.md](backend/integration-test-pattern.md) | Testcontainers PostgreSQL setup, MockMvc, test structure | 320 | 2.8.1, all API stories | ✅ Available |
-| [flyway-migration-pattern.md](backend/flyway-migration-pattern.md) | PostgreSQL migration patterns (ADR-003 compliance) | 200 | 2.2, 2.7 | 📋 Planned |
+| [integration-test-pattern.md](backend/integration-test-pattern.md) | Testcontainers PostgreSQL setup, MockMvc, test structure | 800 | 2.8.1, 5.5, all API stories | ✅ Available |
+| [flyway-migration-pattern.md](backend/flyway-migration-pattern.md) | PostgreSQL migration patterns (ADR-003 compliance) | 600 | 5.5 | ✅ Available |
+| [spring-transaction-pattern.md](backend/spring-transaction-pattern.md) | Transaction management, isolation levels, rollback strategies | 550 | 5.5 | ✅ Available |
+| [event-driven-idempotency-pattern.md](backend/event-driven-idempotency-pattern.md) | Idempotent event listeners for domain events | 450 | 5.5 | ✅ Available |
 | [exception-handling-pattern.md](backend/exception-handling-pattern.md) | Global exception handler, standard error responses | 150 | 2.7, 2.8.1 | 📋 Planned |
 | [openapi-code-generation-pattern.md](backend/openapi-code-generation-pattern.md) | Hybrid contract-first API approach with OpenAPI Generator | 250 | 2.7, 2.8 | 📋 Planned |
 
@@ -169,6 +171,15 @@ Update a template when:
 ### Version History
 
 Track major template changes in this section:
+
+- **2025-12-24**: Story 5.5 template extraction completed (11 templates total, 3 new)
+  - ✅ **Backend**: flyway-migration-pattern.md (NEW - extracted from Story 5.5, V22 migration)
+  - ✅ **Backend**: spring-transaction-pattern.md (NEW - extracted from Story 5.5, transaction handling patterns)
+  - ✅ **Backend**: event-driven-idempotency-pattern.md (NEW - extracted from Story 5.5, event listeners with idempotency)
+  - ✅ **Backend**: integration-test-pattern.md (UPDATED - added Story 5.5 test examples for task creation and transactions)
+  - ✅ **Backend**: spring-boot-service-foundation.md (UPDATED - now used by Story 5.5)
+  - **Token Savings**: Story 5.5 reduced by ~399 lines (72+60+59+70+54+84 from patterns) = 71% reduction
+  - **Story 5.5**: 1,624 lines → ~470 lines (estimated)
 
 - **2025-12-20**: Phase 4 template extraction completed (8 templates available)
   - ✅ **Frontend**: api-service-pattern.md (extracted from Story 2.5.3, lines 1396-1493)
