@@ -41,8 +41,6 @@ tags:
     description: Slot preferences and technical requirements
   - name: Quality Review
     description: Content quality review workflow
-  - name: Speaker Outreach
-    description: Speaker outreach tracking and contact history (Story 5.3)
 
 paths:
   /speakers:
@@ -422,108 +420,6 @@ paths:
         '403':
           description: Forbidden - requires ORGANIZER role
 
-  # Speaker Outreach Tracking (Story 5.3)
-  /events/{eventCode}/speakers/{speakerId}/outreach:
-    get:
-      tags:
-        - Speaker Outreach
-      summary: Get outreach history for speaker
-      description: |
-        Get the complete outreach/contact history for a speaker.
-        Story 5.3: Speaker Outreach Tracking
-      operationId: getOutreachHistory
-      security:
-        - CognitoAuth: [ORGANIZER]
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          description: Event code (ADR-003)
-          schema:
-            type: string
-            example: BATbern56
-        - name: speakerId
-          in: path
-          required: true
-          description: Speaker pool ID (UUID)
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Outreach history retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OutreachHistory'
-        '404':
-          description: Speaker not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - requires ORGANIZER role
-
-    post:
-      tags:
-        - Speaker Outreach
-      summary: Record outreach attempt
-      description: |
-        Record a new outreach/contact attempt with a speaker.
-        Story 5.3: Speaker Outreach Tracking
-      operationId: recordOutreach
-      security:
-        - CognitoAuth: [ORGANIZER]
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          description: Event code (ADR-003)
-          schema:
-            type: string
-            example: BATbern56
-        - name: speakerId
-          in: path
-          required: true
-          description: Speaker pool ID (UUID)
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RecordOutreachRequest'
-      responses:
-        '201':
-          description: Outreach recorded successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OutreachHistory'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Speaker not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - requires ORGANIZER role
-
 components:
   schemas:
     SpeakerResponse:
@@ -656,9 +552,9 @@ components:
         - READY
         - DECLINED
         - ACCEPTED
-        - CONTENT_SUBMITTED
+        - SLOT_ASSIGNED
         - QUALITY_REVIEWED
-        - CONFIRMED
+        - FINAL_AGENDA
       description: |
         Speaker coordination workflow state (UPPER_CASE as per coding-standards.md):
         - IDENTIFIED: Initial state, speaker identified but not yet contacted
@@ -666,9 +562,9 @@ components:
         - READY: Speaker confirmed availability and interest
         - DECLINED: Speaker declined invitation
         - ACCEPTED: Speaker accepted invitation and confirmed participation
-        - CONTENT_SUBMITTED: Speaker submitted presentation content (title, abstract) [Story 5.5]
-        - QUALITY_REVIEWED: Speaker's content passed quality review [Story 5.5]
-        - CONFIRMED: Speaker has both quality-reviewed content and assigned slot [Story 5.5]
+        - SLOT_ASSIGNED: Speaker assigned to specific time slot
+        - QUALITY_REVIEWED: Speaker's content passed quality review
+        - FINAL_AGENDA: Speaker finalized in published agenda
 
     SpeakerSlotPreferences:
       type: object
@@ -934,68 +830,3 @@ components:
           type: object
           description: Additional error details
           additionalProperties: true
-
-    # Speaker Outreach Schemas (Story 5.3)
-    OutreachHistory:
-      type: object
-      description: Record of outreach/contact attempt with a speaker
-      required:
-        - id
-        - speakerPoolId
-        - contactDate
-        - contactMethod
-        - organizerUsername
-        - createdAt
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Outreach record ID
-        speakerPoolId:
-          type: string
-          format: uuid
-          description: Speaker pool entry ID
-        contactDate:
-          type: string
-          format: date-time
-          description: When the contact was made
-        contactMethod:
-          $ref: '#/components/schemas/ContactMethod'
-        notes:
-          type: string
-          maxLength: 2000
-          description: Notes about the outreach attempt
-        organizerUsername:
-          type: string
-          description: Username of organizer who made contact
-          example: john.doe
-        createdAt:
-          type: string
-          format: date-time
-          description: When the record was created
-
-    ContactMethod:
-      type: string
-      enum:
-        - email
-        - phone
-        - in_person
-      description: Method of contact used
-
-    RecordOutreachRequest:
-      type: object
-      description: Request to record an outreach attempt
-      required:
-        - contactMethod
-        - contactDate
-      properties:
-        contactMethod:
-          $ref: '#/components/schemas/ContactMethod'
-        contactDate:
-          type: string
-          format: date-time
-          description: When the contact was made
-        notes:
-          type: string
-          maxLength: 2000
-          description: Optional notes about the outreach

@@ -135,6 +135,120 @@ waiver:
 
 3. Keep status_reason to 1-2 sentences maximum
 4. Use severity values exactly: `low`, `medium`, or `high`
+5. **NEW - Linear Integration**: If Linear is enabled (`linear.enabled: true` and `linear.postQaToLinear: true` in core-config.yaml):
+   - Post QA results to Linear issue as comment
+   - Update Linear issue status based on gate decision
+   - Add QA label to Linear issue (`qa-pass`, `qa-concerns`, or `qa-fail`)
+   - Replace story QA Results section with Linear reference
+
+## Linear Integration Workflow (Optional)
+
+If Linear is enabled in core-config.yaml, perform these additional steps after creating the gate file:
+
+### Step 1: Load Linear Configuration
+
+- Check `linear.enabled: true`
+- Check `linear.postQaToLinear: true`
+- If both true, proceed with Linear integration
+- Extract story's Linear issue ID from story header `**Linear Issue**: [BAT-{N}](url)`
+
+### Step 2: Format QA Results for Linear Comment
+
+Create Linear-formatted markdown comment using this template:
+
+```markdown
+## QA Results - {Date}
+
+**Gate Decision**: {PASS|CONCERNS|FAIL}
+**Quality Score**: {calculated_score}/100
+**Reviewer**: {reviewer_name}
+
+### Executive Summary
+{Brief 1-2 sentence summary of gate decision}
+
+### Code Quality Assessment
+
+**Strengths**:
+- ✅ {Strength 1}
+- ✅ {Strength 2}
+
+**Areas for Improvement**:
+{If CONCERNS or FAIL, list issues from top_issues array}
+- ⚠️ {Issue 1} (Severity: {severity})
+- ⚠️ {Issue 2} (Severity: {severity})
+
+### Test Coverage
+- Unit Tests: {count} passing
+- Integration Tests: {count} configured
+- Coverage: {percent}%
+
+### Requirements Traceability
+| AC | Status | Test Count |
+|----|--------|------------|
+{For each AC from Linear issue description}
+| AC{n} | ✅/⚠️/❌ | {count} |
+
+### NFR Validation
+- Security: {PASS|FAIL}
+- Performance: {PASS|FAIL}
+
+### Recommended Actions
+{If issues exist, list suggested_action from top_issues}
+1. {Action 1}
+2. {Action 2}
+
+---
+📊 Gate File: `{qa.qaLocation}/gates/{epic}.{story}-{slug}.yml`
+*QA Agent | Powered by BMAD™ Core*
+```
+
+### Step 3: Post QA Comment to Linear
+
+- Call `mcp__linear-server__create_comment`:
+  - `issueId`: Linear issue ID from story header
+  - `body`: Formatted QA results from Step 2
+- Capture comment ID for reference
+
+### Step 4: Update Linear Issue Labels
+
+Determine QA label based on gate decision:
+- `PASS` → Apply `qa-pass` label
+- `CONCERNS` → Apply `qa-concerns` label
+- `FAIL` → Apply `qa-fail` label
+- `WAIVED` → Apply `qa-concerns` label + custom field
+
+Remove any existing QA labels before applying new one:
+- Call `mcp__linear-server__update_issue`:
+  - `id`: Linear issue ID
+  - `labels`: Updated label array (remove old qa-* labels, add new one)
+
+### Step 5: Update Linear Issue Status
+
+Map gate decision to Linear status update:
+- `PASS` → Update status to "Done" (if not already)
+- `FAIL` → Update status to "In Progress"
+- `CONCERNS` → Keep current status (advisory only)
+- `WAIVED` → Update status to "Done"
+
+Call `mcp__linear-server__update_issue`:
+- `id`: Linear issue ID
+- `state`: Mapped status
+
+### Step 6: Update Story QA Results Section
+
+If Linear integration successful, replace verbose QA Results section with:
+
+```markdown
+## QA Results
+
+**Gate**: {PASS|CONCERNS|FAIL|WAIVED}
+
+See Linear Issue: [BAT-{N}]({linear_url}) for detailed QA results and traceability.
+
+Gate File: `{qa.qaLocation}/gates/{epic}.{story}-{slug}.yml`
+```
+
+This keeps the story file lean while maintaining full QA traceability in Linear.
 
 ## Example Story Update
 

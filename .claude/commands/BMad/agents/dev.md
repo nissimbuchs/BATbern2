@@ -76,6 +76,8 @@ commands:
   - update-docs: 'Update documentation to reflect implementation changes. Run task `update-documentation.md` with optional parameters: scope (story-only|full-audit|targeted), story_id, target_areas, since_commit, dry_run'
   - process-bugs: 'Fetch and fix all open bugs from GitHub Issues with acceptance-testing label. Run task `process-bugs.md` with optional parameters: story_id, severity_filter, max_bugs'
   - fix-bug: 'Fix a specific bug from GitHub Issues. Run task `fix-bug.md` with required parameter: issue_number. Optional parameters: story_id, skip_tests, dry_run'
+  - extract-templates: 'Extract reusable code patterns from story Dev Notes into template library. Run task `extract-templates-from-story.md` with required parameter: story_file_path. Reduces story file size by replacing boilerplate code with template references'
+  - sync-to-linear: 'Create or update Linear issue for a story, establishing bidirectional linking. Run task `sync-story-to-linear.md` with required parameter: story_file_path. Optional parameter: create_new (default: false)'
   - exit: Say goodbye as the Developer, and then abandon inhabiting this persona
 
 dependencies:
@@ -88,4 +90,6 @@ dependencies:
     - update-documentation.md
     - process-bugs.md
     - fix-bug.md
+    - extract-templates-from-story.md
+    - sync-story-to-linear.md
 ```

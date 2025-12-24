@@ -1,8 +1,8 @@
 # Epic 5: Complete Event Management Workflow
 
-**Status:** 🔄 **IN PROGRESS** - Phase B Complete (4/8 stories, 50%)
+**Status:** 🔄 **IN PROGRESS** - Phase B Complete (5/8 stories, 63%)
 
-**Last Updated:** 2025-12-20 (Workflow Consolidation Complete)
+**Last Updated:** 2025-12-19
 
 **Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 9 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
 
@@ -13,20 +13,20 @@
 - **Organizer-Driven:** Manual speaker coordination without requiring speaker self-service portal
 
 **Progress Summary:**
-- ✅ **Phase A: Event Setup** - COMPLETE (2 stories + 2 sub-stories)
+- ✅ Phase A: Event Setup - COMPLETE (4 stories)
   - ✅ 5.1 - Event Type Definition (COMPLETE)
   - ✅ 5.1a - Workflow State Machine Foundation (COMPLETE - CRITICAL DEPENDENCY)
   - ✅ 5.2 - Topic Selection & Speaker Brainstorming (COMPLETE)
-  - ✅ 5.2b - Multi-Topic Heat Map Visualization (COMPLETE)
-- ✅ **Phase B: Speaker Coordination** - COMPLETE (2 stories)
+  - ✅ 5.2b - Multi-Topic Heat Map Visualization (Frontend COMPLETE)
+- ✅ Phase B: Speaker Coordination - COMPLETE (2 stories)
   - ✅ 5.3 - Speaker Outreach Tracking (COMPLETE)
   - ✅ 5.4 - Speaker Status Management (COMPLETE - QA PASS 95/100)
-- 🔄 **Phase C: Overflow & Slot Management** - PENDING (3 stories)
-  - 🔄 5.5 - Content Submission, Quality Review & Task System (IN PROGRESS)
-  - ⏳ 5.6 - Overflow Management & Voting (PENDING - Documented)
-  - ⏳ 5.7 - Slot Assignment & Progressive Publishing (PENDING - Documented)
-- ⏳ **Phase D: Event Lifecycle** - PENDING (1 story)
-  - ⏳ 5.8 - Agenda Finalization & Event Lifecycle (PENDING - Documented)
+- 🔄 Phase C: Content & Slot Management - IN PROGRESS (1/2 stories)
+  - 🔄 5.5 - Speaker Content, Quality Review & Task System (IN PROGRESS)
+  - ⏳ 5.6 - Overflow Management & Voting (PENDING)
+- ⏳ Phase D: Publishing & Finalization - PENDING (2 stories)
+  - ⏳ 5.7 - Slot Assignment & Progressive Publishing (PENDING)
+  - ⏳ 5.8 - Agenda Finalization & Event Lifecycle (PENDING)
 
 ---
 
@@ -94,30 +94,27 @@ Each speaker progresses through their own workflow:
 ```
 identified → contacted → ready → accepted/declined
                                     ↓ (if accepted)
-                            content_submitted
-                                    ↓
-                            quality_reviewed
+                ┌───────────────────┴───────────────────┐
+                ↓                                       ↓
+        content_submitted                       slot_assigned
+                ↓                                       ↓
+        quality_reviewed                                │
+                └───────────────────┬───────────────────┘
                                     ↓
                                confirmed
 ```
 
-**Slot Assignment (Orthogonal Action):**
-- Sets `sessions.start_time` (NOT a workflow state)
-- Can happen at any point after ACCEPTED
-- Auto-confirmation triggers when: speaker reaches QUALITY_REVIEWED state AND session.start_time != null
-
-**Key States (10 total):**
+**Key States:**
 - `identified`: Added to speaker pool
 - `contacted`: Organizer recorded outreach
 - `ready`: Speaker is ready to accept/decline
 - `accepted`/`declined`: Speaker decision
 - `content_submitted`: Presentation title/abstract submitted
 - `quality_reviewed`: Content approved by moderator
-- `confirmed`: Auto-updated when quality_reviewed AND session.start_time != null (slot assigned)
+- `slot_assigned`: Assigned to time slot
+- `confirmed`: Both quality_reviewed AND slot_assigned (order doesn't matter)
 - `overflow`: Backup speaker (accepted but no slot available)
 - `withdrew`: Speaker drops out after accepting
-
-**Note:** `slot_assigned` is NOT a state - it's an orthogonal action that sets `sessions.start_time`
 
 **Stored in:** `speaker_pool.status` column
 
@@ -149,16 +146,14 @@ Tasks are assignable work items with due dates, NOT workflow states:
 | Story | Covers | Event States | Speaker States | Tasks |
 |-------|--------|--------------|----------------|-------|
 | **5.1** | Event Type Definition | CREATED | - | - |
-| **5.1a** | Workflow State Machine | All 9 states | All 10 states | - |
+| **5.1a** | Workflow State Machine | All 9 states | All 11 states | - |
 | **5.2** | Topic Selection & Brainstorming | TOPIC_SELECTION | identified | - |
 | **5.3** | Speaker Outreach | - | contacted | - |
 | **5.4** | Speaker Status Management | - | ready, accepted, declined | - |
-| **5.5** | Content, Quality Review & Tasks | - | content_submitted, quality_reviewed, confirmed | Task templates + event tasks (separate from workflow states) |
+| **5.5** | Content, Quality Review & Tasks | - | content_submitted, quality_reviewed, confirmed | Task system foundation |
 | **5.6** | Overflow & Voting | - | overflow | - |
-| **5.7** | Slot Assignment & Publishing | SLOT_ASSIGNMENT, AGENDA_PUBLISHED | [Orthogonal slot assignment action] | Newsletter tasks |
+| **5.7** | Slot Assignment & Publishing | SLOT_ASSIGNMENT, AGENDA_PUBLISHED | slot_assigned | Newsletter tasks |
 | **5.8** | Finalization & Lifecycle | AGENDA_FINALIZED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED | withdrew | Catering task |
-
-**Note on Tasks:** Tasks (newsletters, catering, partner meetings, etc.) are NOT workflow states. They are assignable work items with due dates, stored in separate tables (task_templates, event_tasks), and auto-created when events reach trigger states. They exist independently from the event and speaker workflow state machines.
 
 **Old Mapping (16 Stories) → New Mapping (8 Stories):**
 - Stories 5.1-5.4: ✅ Already implemented (no changes)
@@ -237,14 +232,14 @@ As a **platform architect**, I want to implement the workflow state machine infr
 **Acceptance Criteria:**
 
 **Phase 1: State Enums (Day 1)**
-1. **EventWorkflowState Enum**: 9 states for high-level event lifecycle (CREATED → ARCHIVED)
-2. **SpeakerWorkflowState Enum**: 10 states for speaker workflow (IDENTIFIED, CONTACTED, READY, ACCEPTED, DECLINED, CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED, OVERFLOW, WITHDREW)
+1. **EventWorkflowState Enum**: 16 states for complete event lifecycle (CREATED → ARCHIVED)
+2. **SpeakerWorkflowState Enum**: 11 states for speaker workflow (OPEN → OVERFLOW)
 3. **Domain Events**: EventWorkflowTransitionEvent, SpeakerWorkflowStateChangeEvent
 4. **Unit Tests**: Verify enum values and event serialization
 
 **Phase 2: Event Workflow State Machine (Days 2-3)**
 5. **EventWorkflowStateMachine Service**: Core orchestrator with transitionToState() method
-6. **Validation Logic**: validateMinimumSpeakersInPool(), validateAllSlotsHaveSpeakers(), validateAllSpeakersConfirmed(), validateAgendaPublished(), validateEventDateInFuture(), validateEventDateInPast()
+6. **Validation Logic**: validateMinimumSpeakersIdentified(), validateAllContentSubmitted(), validateMinimumThresholdMet(), validateAllSlotsAssigned(), validateQualityReviewComplete()
 7. **WorkflowTransitionValidator**: State transition matrix and business rule enforcement
 8. **Database Migration**: Add workflow_state column to events table with index
 9. **JPA Converter**: EventWorkflowStateConverter for enum ↔ VARCHAR conversion
@@ -254,8 +249,7 @@ As a **platform architect**, I want to implement the workflow state machine infr
 
 **Phase 3: Speaker Workflow Service (Days 4-5)**
 13. **SpeakerWorkflowService**: Speaker state management with updateSpeakerWorkflowState() method
-14. **State-Specific Logic**: CONTACTED (set timestamp, send notification), ACCEPTED (check overflow), DECLINED (handle decline)
-    - **Note:** Slot assignment is handled separately by SlotAssignmentService (orthogonal action, not a state transition)
+14. **State-Specific Logic**: CONTACTED (set timestamp, send notification), ACCEPTED (check overflow), DECLINED (handle decline), SLOT_ASSIGNED (validate assignment)
 15. **Database Migration**: Add workflow_state column to session_users table with index
 16. **SessionUser Update**: Add workflowState field, keep existing fields for backwards compatibility
 17. **Overflow Detection**: checkForOverflow() detects when speakers exceed max slots
@@ -280,7 +274,7 @@ As a **platform architect**, I want to implement the workflow state machine infr
 30. **Performance Testing**: State transitions <200ms P95, workflow status <100ms P95
 
 **Implementation Evidence:**
-- `EventWorkflowState.java` - Event workflow state enum with 9 states
+- `EventWorkflowState.java` - Event workflow state enum with 16 states
 - `TransitionStateRequest.java` - State transition API request DTO
 - `WorkflowStatusDto.java` - Workflow status response DTO
 - Event Management Service implements EventWorkflowStateMachine
@@ -542,10 +536,10 @@ As an **organizer**, I want to submit speaker materials, have them quality-revie
 14. **Workflow State**: Update `speaker_pool.status` = 'quality_reviewed' when approved
 15. **Re-review**: If rejected, speaker remains in 'content_submitted' until resubmitted
 
-**D. Auto-Confirmation Logic (AC16-18):**
-16. **Orthogonal Slot Assignment**: Slot assignment (setting sessions.start_time) can happen at any point after ACCEPTED state
-17. **Auto-Confirmation Trigger**: When speaker reaches QUALITY_REVIEWED state, system checks if session.start_time != null (slot assigned). If so, auto-update speaker_pool.status = 'confirmed'. Order doesn't matter: slot can be assigned before, during, or after quality review.
-18. **Visual Indicators**: Dashboard shows which speakers have quality reviewed, slot assigned, or both (confirmed when both conditions met)
+**D. Parallel Workflow Support (AC16-18):**
+16. **Flexible Order**: quality_reviewed and slot_assigned can happen in any order
+17. **Confirmed State**: Auto-update `speaker_pool.status` = 'confirmed' when BOTH quality_reviewed AND slot_assigned
+18. **Visual Indicators**: Dashboard shows which speakers have quality reviewed, slot assigned, or both
 
 **E. Task System Foundation (AC19-27):**
 19. **Task Templates Table**: Create `task_templates` table with 7 default templates
@@ -616,56 +610,151 @@ As an **organizer**, I want to submit speaker materials, have them quality-revie
 
 ---
 
-## Phase C: Overflow & Slot Management (Stories 5.6-5.7)
+## Phase C: Quality & Threshold (Stories 5.6-5.7)
 
-### Story 5.6: Overflow Management & Voting
+### Story 5.6: Content Quality Review (Workflow Step 7)
 
-**Status:** ⏳ **PENDING**
+**User Story:**
+As a **moderator**, I want to review speaker abstracts and materials for quality standards, so that we maintain high-quality event content.
+
+**Architecture Integration:**
+- **Service**: Event Management Service
+- **Database**: content_reviews table
+- **Frontend**: React moderator review queue
+
+**Acceptance Criteria:**
+
+**Review Queue:**
+1. **Review Dashboard**: List of all submitted speaker materials pending review
+2. **Review Status**: PENDING, APPROVED, REQUIRES_CHANGES
+3. **Abstract Standards Check**: Flag abstracts missing lessons learned or containing product promotion
+4. **Material Completeness**: Check all required materials submitted (title, abstract, CV, photo)
+5. **Approve/Reject Actions**: Moderator can approve or request changes
+6. **Feedback Field**: Free-text feedback to speaker/organizer on required changes
+
+**Quality Criteria:**
+7. **Abstract Length**: Enforce 1000 character maximum
+8. **Lessons Learned Indicator**: Flag if abstract lacks lessons learned
+9. **Product Promotion Detection**: Warn if abstract appears promotional
+10. **Photo Quality Check**: Manual check for appropriate photo (headshot, professional)
+11. **CV Validation**: Ensure CV uploaded and readable
+
+**Workflow Engine Integration:**
+12. **Review Approved**: When content approved, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.QUALITY_REVIEWED, moderatorId)`
+13. **Event State Update**: When all content reviews approved, enable event transition to QUALITY_REVIEW complete state
+14. **Validation**: Use QualityReviewService from EventWorkflowStateMachine to enforce review completion before publishing
+
+**Technical Implementation:**
+15. **Content Review Entity**: Track reviewer, status, feedback, review_date
+16. **REST API**: GET /api/events/{id}/materials/pending, POST /api/materials/{id}/review
+17. **React Component**: ModeratorReviewQueue with approve/reject actions
+18. **Domain Event**: MaterialsReviewedEvent
+
+**Definition of Done:**
+- [ ] Moderator review queue displays all pending materials
+- [ ] Moderator can approve or request changes with feedback
+- [ ] Abstract standards automatically flagged
+- [ ] Review status tracked in database
+- [ ] Organizers notified when changes required
+- [ ] Integration test verifies review workflow
+
+**Estimated Duration:** 1.5 weeks
+
+---
+
+### Story 5.7: Minimum Threshold Check (Workflow Step 8)
+
+**User Story:**
+As an **organizer**, I want automatic threshold checks to prevent proceeding without minimum speakers, so that I don't publish incomplete events.
+
+**Architecture Integration:**
+- **Service**: Event Management Service
+- **Database**: Event workflow state in events table
+- **Frontend**: React threshold indicator and warnings
+
+**Acceptance Criteria:**
+
+**Threshold Validation:**
+1. **Minimum Speaker Count**: Based on event type (full-day: 6, afternoon: 6, evening: 3)
+2. **Threshold Indicator**: Dashboard widget showing "4/6 speakers confirmed" status
+3. **Blocking Validation**: Cannot proceed to slot assignment until minimum met
+4. **Warning Messages**: Clear messaging when threshold not met
+5. **Progress Tracking**: Visual progress bar to minimum threshold
+
+**Automatic Checks:**
+6. **Real-time Updates**: Threshold status updates when speaker status changes
+7. **Workflow Gate**: Slot assignment step disabled until threshold met
+8. **Email Reminder**: Automatic reminder to organizers if threshold not met 2 weeks before event
+9. **Override Capability**: Admin can override threshold requirement with justification
+
+**Workflow Engine Integration:**
+10. **Threshold Validation**: Use `EventWorkflowStateMachine.validateMinimumThresholdMet(event)` before allowing progression to SLOT_ASSIGNMENT state
+11. **State Transition**: When threshold met, enable transition to SLOT_ASSIGNMENT state via `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.SLOT_ASSIGNMENT, organizerId)`
+12. **Blocking Validation**: State machine enforces threshold check - cannot proceed without minimum speakers
+
+**Technical Implementation:**
+13. **Threshold Validation Service**: Check accepted speaker count vs minimum for event type
+14. **REST API**: GET /api/events/{id}/threshold-status
+15. **React Component**: ThresholdIndicator widget on event dashboard
+16. **Domain Event**: ThresholdMetEvent, ThresholdNotMetWarningEvent
+
+**Definition of Done:**
+- [ ] Threshold indicator shows current vs minimum speaker count
+- [ ] Cannot proceed to slot assignment if threshold not met
+- [ ] Real-time threshold updates when speaker status changes
+- [ ] Warning messages clear and actionable
+- [ ] Email reminder sent 2 weeks before event if threshold not met
+- [ ] Admin override capability working
+- [ ] Integration test verifies threshold validation
+
+**Estimated Duration:** 1 week
+
+---
+
+## Phase D: Selection & Assignment (Stories 5.8-5.9)
+
+### Story 5.8: Speaker Selection & Overflow Management (Workflow Step 9)
 
 **User Story:**
 As an **organizer**, I want to vote on speaker selection when we have more speakers than slots, so that we can democratically choose the best speaker lineup.
 
 **Architecture Integration:**
 - **Service**: Event Management Service
-- **Database**: speaker_pool with overflow status
-- **Data Model**: Uses OverflowManagementService and SpeakerSelectionVoteRepository from workflow state machines
+- **Database**: overflow_speakers, speaker_votes tables
 - **Frontend**: React voting interface and overflow management dashboard
 
 **Acceptance Criteria:**
 
-**Overflow Detection (AC1-4):**
+**Overflow Detection:**
 1. **Automatic Detection**: System detects when accepted speakers > maximum slots for event type
-2. **Overflow Pool Creation**: Speakers marked with status='overflow' in speaker_pool when slots full
-3. **Overflow Dashboard**: Show all speakers with status='overflow' requiring voting decision
+2. **Overflow Pool Creation**: Automatically create overflow pool with excess speakers
+3. **Overflow Dashboard**: Show all speakers requiring voting decision
 4. **Speaker Comparison View**: Side-by-side comparison of speaker abstracts, expertise, past performance
 
-**Voting Workflow (AC5-9):**
+**Voting Workflow:**
 5. **Organizer Voting**: Each organizer votes APPROVE or REJECT for each overflow speaker
-6. **Vote Tracking**: Show who has voted and who hasn't (voting progress indicator)
-7. **Vote Results**: Display vote counts per speaker in real-time
-8. **Selection Algorithm**: Top N speakers by vote count selected for available slots
-9. **Overflow List**: Remaining speakers kept with status='overflow' as backup
+6. **Vote Tracking**: Show who has voted and who hasn't
+7. **Vote Results**: Display vote counts per speaker
+8. **Selection Algorithm**: Top N speakers by vote count selected for slots
+9. **Overflow List**: Remaining speakers kept in overflow list as backup
 
-**Overflow Management (AC10-12):**
-10. **Promote on Dropout**: If speaker with status='withdrew', suggest top overflow speaker for promotion
-11. **Manual Override**: Organizers can manually select from overflow pool (bypass voting)
+**Overflow Management:**
+10. **Promote on Dropout**: If selected speaker drops out, automatically suggest top overflow speaker
+11. **Manual Override**: Organizers can manually select from overflow pool
 12. **Notification**: Notify speakers of selection/overflow status after voting complete
 
 **Workflow Engine Integration:**
 13. **Overflow Detection**: Use `OverflowManagementService.checkForOverflow(eventId)` when accepted speakers > max_slots
-14. **Voting Complete**: Call `OverflowManagementService.selectFinalSpeakers(overflowId)` to finalize selection
-15. **State Update**: Selected speakers transition to ACCEPTED, unselected remain in OVERFLOW state
+14. **Voting Complete**: When voting done, call `OverflowManagementService.selectFinalSpeakers(overflowId)` to finalize selection
+15. **State Update**: Selected speakers transition to ACCEPTED state, unselected speakers transition to OVERFLOW state via `speakerWorkflowService.updateSpeakerWorkflowState()`
 16. **Domain Event**: Listen for SpeakerOverflowDetectedEvent to trigger voting workflow
 
 **Technical Implementation:**
-- **OverflowManagementService**: From workflow state machines (06a lines 661-768)
-- **SpeakerSelectionVote Entity**: Track organizer_id, speaker_id, vote (approve/reject), reason
-- **REST API**:
-  - POST /api/events/{eventId}/overflow/vote
-  - GET /api/events/{eventId}/overflow/status
-  - POST /api/events/{eventId}/overflow/promote/{speakerId}
-- **React Components**: OverflowVotingInterface, SpeakerComparisonView, OverflowDashboard
-- **Domain Events**: OverflowDetectedEvent, VotingCompleteEvent, SpeakerSelectedEvent, SpeakerPromotedFromOverflowEvent
+17. **Overflow Entity**: Track overflow speakers with vote counts, priority ranking (uses OverflowManagementService from Story 5.1a)
+18. **Speaker Vote Entity**: Track organizer_id, speaker_id, vote (approve/reject), reason
+19. **REST API**: POST /api/events/{id}/speakers/overflow/vote, GET /api/events/{id}/overflow
+20. **React Component**: OverflowVotingInterface with speaker cards and voting buttons
+21. **Domain Events**: OverflowDetectedEvent, VotingCompleteEvent, SpeakerSelectedEvent
 
 **Definition of Done:**
 - [ ] System automatically detects overflow when speakers > max slots
@@ -675,94 +764,54 @@ As an **organizer**, I want to vote on speaker selection when we have more speak
 - [ ] Overflow pool maintained with ranking for backup
 - [ ] Promote overflow speaker on dropout working
 - [ ] Integration test verifies overflow voting workflow
-- [ ] Unit tests >90%, integration tests >80%
-- [ ] Bruno API tests cover all overflow endpoints
 
 **Estimated Duration:** 2 weeks
 
 ---
 
-### Story 5.7: Slot Assignment & Progressive Publishing
-
-**Status:** ⏳ **PENDING**
+### Story 5.9: Speaker-to-Slot Assignment (Workflow Step 10)
 
 **User Story:**
-As an **organizer**, I want to assign speakers to time slots and progressively publish the event agenda, so that I can create an optimized schedule and share information with attendees at the right time.
+As an **organizer**, I want to assign speakers to specific time slots considering preferences and technical needs, so that I can create an optimized event schedule.
 
 **Architecture Integration:**
 - **Service**: Event Management Service
-- **Database**: sessions table with start_time (slot assignment), events table with workflow_state
-- **Data Model**: Uses SlotAssignmentService from workflow state machines (06a lines 517-576)
-- **CDN**: CloudFront for public content delivery
-- **Frontend**: React drag-and-drop slot assignment + publishing controls
-- **Cache**: Caffeine cache with CDN invalidation
-
-**Wireframe Reference:**
-- `docs/wireframes/story-2.3-basic-publishing-engine.md` ✅
+- **Database**: event_slots, slot_assignments tables
+- **Frontend**: React drag-and-drop slot assignment interface
 
 **Acceptance Criteria:**
 
-**A. Slot Assignment (AC1-13):**
+**Slot Creation:**
 1. **Automatic Slot Generation**: Generate slots based on event type timing template
-2. **Slot Customization**: Organizer can adjust session start_time/end_time
+2. **Slot Customization**: Organizer can adjust slot start/end times
 3. **Slot Types**: Support keynote, session, panel, workshop, networking slots
 4. **Break Slots**: Include break, lunch, networking slots in schedule
+
+**Assignment Interface:**
 5. **Drag-and-Drop UI**: Drag speaker cards to time slots
 6. **Visual Schedule**: Timeline view showing all slots and assignments
 7. **Speaker Preferences**: Show speaker's time preferences (morning/afternoon, conflicts)
-8. **Technical Requirements**: Track A/V needs, room setup requirements per session
+8. **Technical Requirements**: Track A/V needs, room setup requirements per speaker
 9. **Conflict Detection**: Warn if speaker has conflicting commitment at same time
+
+**Assignment Optimization:**
 10. **Flow Optimization**: Suggest optimal speaker order based on topic flow
 11. **Preference Matching**: Highlight when slot matches speaker preference
 12. **Unassigned Speakers**: Show list of speakers not yet assigned to slots
 13. **Bulk Assignment**: Auto-suggest assignments based on preferences and flow
 
-**B. Workflow Engine Integration (AC14-18):**
-14. **Slot Assignment Action**: Call `slotAssignmentService.assignSpeakerToSlot(eventCode, speakerId, sessionId, organizerId)` (sets sessions.start_time, does NOT change speaker workflow state)
-15. **Auto-Confirmation**: If speaker is QUALITY_REVIEWED, system auto-confirms to CONFIRMED when slot assigned
-16. **Event State Transition**: When all slots assigned, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.SLOT_ASSIGNMENT, organizerId)`
-17. **Use SlotAssignmentService**: Use `SlotAssignmentService.assignSpeakersToSlots(eventId, useAutomaticAssignment)` for automatic assignment
-18. **Validation**: State machine validates all quality reviews complete before allowing slot assignment
-
-**C. Progressive Publishing (AC19-26):**
-19. **Topic Publishing**: Publish event topic, date, venue when event reaches TOPIC_SELECTION state
-20. **Speaker Lineup Publishing**: Transition to AGENDA_PUBLISHED state, publish speaker names/companies 1 month before event
-21. **Final Agenda Publishing**: Publish complete agenda with time slots when all slots assigned
-22. **Manual Publish Controls**: Publish/unpublish buttons per phase
-23. **Auto-Publish Scheduling**: Cron jobs auto-publish at 1 month and 2 weeks before event
-24. **Preview Mode**: Preview how event will appear publicly before publishing
-25. **Publishing Validation**: Validate all slots assigned and speakers confirmed before AGENDA_PUBLISHED
-26. **CDN Cache Management**: Invalidate CloudFront cache on publish/update
-
-**D. Content Visibility (AC27-30):**
-27. **Phase-Based Display**: Public site shows only published content based on workflow_state
-28. **Progressive Disclosure**: More content appears as workflow_state advances
-29. **Update Notifications**: Notify subscribers when new phase publishes (via newsletter task)
-30. **Continuous Updates**: Allow organizers to update published content anytime (re-invalidate CDN)
+**Workflow Engine Integration:**
+14. **Assignment State**: When slot assigned to speaker, call `speakerWorkflowService.updateSpeakerWorkflowState(sessionId, speakerId, SpeakerWorkflowState.SLOT_ASSIGNED, organizerId)`
+15. **Event State**: When all slots assigned, transition event via `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_PUBLISHED, organizerId)`
+16. **Use SlotAssignmentService**: Use `SlotAssignmentService.assignSpeakersToSlots(eventId, useAutomaticAssignment)` from Story 5.1a for automatic assignment
+17. **Validation**: State machine enforces that all quality reviews must be complete before slot assignment
 
 **Technical Implementation:**
-- **SlotAssignmentService**: From workflow state machines (06a lines 517-576)
-- **sessions table**: start_time column for slot assignment (orthogonal to speaker workflow state)
-- **EventWorkflowStateMachine**: SLOT_ASSIGNMENT → AGENDA_PUBLISHED state transitions
-- **REST API**:
-  - POST /api/events/{eventId}/sessions (create time slots)
-  - PUT /api/events/{eventId}/sessions/{sessionId}/assign (assign speaker to slot)
-  - POST /api/events/{eventId}/publish/{phase} (publish phase)
-  - DELETE /api/events/{eventId}/publish/{phase} (unpublish)
-  - GET /api/events/{eventId}/preview (preview mode)
-- **Scheduled Tasks**: Cron jobs for auto-publish (1 month, 2 weeks before)
-- **React Components**:
-  - DragDropSlotAssignment (timeline visualization)
-  - PublishingControls (publish/unpublish buttons)
-  - EventPreview (preview mode)
-  - PublicEventPage (public-facing event display)
-- **CDN Integration**: CloudFront invalidation API calls
-- **Domain Events**:
-  - SlotAssignedEvent
-  - SpeakerConfirmedEvent (auto-triggered by slot assignment)
-  - EventWorkflowTransitionEvent (SLOT_ASSIGNMENT, AGENDA_PUBLISHED)
-  - PhasePublishedEvent
-  - EventUpdatedEvent
+18. **Event Slot Entity**: slot_number, start_time, end_time, slot_type, assigned_speaker_id
+19. **Slot Assignment Entity**: slot_id, speaker_id, assignment_date, assigned_by, match_score
+20. **REST API**: POST /api/events/{id}/slots, PUT /api/events/{id}/slots/{slotId}/assign
+21. **React Component**: DragDropSlotAssignment with timeline visualization
+22. **Domain Events**: SlotCreatedEvent, SpeakerAssignedToSlotEvent
 
 **Definition of Done:**
 - [ ] Slots automatically generated based on event type
@@ -771,143 +820,395 @@ As an **organizer**, I want to assign speakers to time slots and progressively p
 - [ ] Speaker preferences displayed during assignment
 - [ ] Conflict detection warns of scheduling issues
 - [ ] Unassigned speakers list updates in real-time
-- [ ] Auto-confirmation triggers when QUALITY_REVIEWED + slot assigned
-- [ ] Event transitions to AGENDA_PUBLISHED when all slots assigned
+- [ ] Integration test verifies slot assignment workflow
+
+**Estimated Duration:** 2.5 weeks
+
+---
+
+## Phase E: Publishing & Finalization (Stories 5.10-5.11)
+
+### Story 5.10: Progressive Publishing Engine (Workflow Step 11)
+
+**User Story:**
+As an **organizer**, I want to progressively publish event information (topic immediately, speakers 1 month before, final agenda 2 weeks before), so that attendees receive timely information as it becomes available.
+
+**Architecture Integration:**
+- **Service**: Event Management Service
+- **CDN**: CloudFront for public content delivery
+- **Frontend**: React publishing controls and public event pages
+- **Cache**: Caffeine cache with CDN invalidation
+
+**Wireframe Reference:**
+- `docs/wireframes/story-2.3-basic-publishing-engine.md` ✅
+
+**Acceptance Criteria:**
+
+**Publishing Phases:**
+1. **Phase 1 - Topic**: Publish event topic, date, venue immediately upon creation
+2. **Phase 2 - Speakers**: Publish speaker lineup 1 month before event (auto-triggered)
+3. **Phase 3 - Final Agenda**: Publish complete agenda with time slots 2 weeks before event
+4. **Continuous Updates**: Allow organizers to update published content anytime
+
+**Publishing Controls:**
+5. **Publish/Unpublish**: Manual publish/unpublish buttons per phase
+6. **Auto-Publish Scheduling**: Automatically publish Phase 2 at 1 month before, Phase 3 at 2 weeks before
+7. **Preview Mode**: Preview how event will appear publicly before publishing
+8. **Publishing Validation**: Validate required content before allowing publish per phase
+
+**Content Visibility:**
+9. **Phase-Based Display**: Public site shows only published phases
+10. **Progressive Disclosure**: As more phases publish, more content appears
+11. **Update Notifications**: Notify subscribers when new phase publishes
+12. **CDN Cache Management**: Invalidate CloudFront cache on publish/update
+
+**Workflow Engine Integration:**
+13. **Publishing States**: Call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_PUBLISHED, organizerId)` per publishing phase
+14. **Scheduled Jobs**: Cron jobs call state machine for auto-publish at 1 month and 2 weeks before event
+15. **Validation**: State machine validates all slots assigned and quality reviews complete before allowing AGENDA_PUBLISHED transition
+16. **Event Listener**: Listen for EventWorkflowTransitionEvent to trigger CDN cache invalidation
+
+**Technical Implementation:**
+17. **Publishing Phase Enum**: TOPIC_PUBLISHED, SPEAKERS_PUBLISHED, AGENDA_PUBLISHED (integrated with EventWorkflowState from Story 5.1a)
+18. **Scheduled Tasks**: Cron jobs to auto-publish at 1 month and 2 weeks before
+19. **REST API**: POST /api/events/{id}/publish/{phase}, DELETE /api/events/{id}/publish/{phase}
+20. **React Components**: PublishingControls, EventPreview, PublicEventPage
+21. **CDN Integration**: CloudFront invalidation API calls
+22. **Domain Events**: PhasePublishedEvent, EventUpdatedEvent
+
+**Definition of Done:**
 - [ ] Topic published immediately when event created
 - [ ] Speaker lineup auto-publishes 1 month before event
-- [ ] Final agenda auto-publishes 2 weeks before (or when manually triggered)
+- [ ] Final agenda auto-publishes 2 weeks before event
 - [ ] Manual publish/unpublish controls working per phase
 - [ ] Preview mode shows public view before publishing
 - [ ] CDN cache invalidated on publish/update
 - [ ] Public site displays content based on published phases
-- [ ] Integration test verifies slot assignment + publishing workflow
-- [ ] Unit tests >90%, integration tests >80%
-- [ ] Bruno API tests cover all endpoints
-
-**Estimated Duration:** 3 weeks
-
----
-
-## Phase D: Event Lifecycle (Story 5.8)
-
-### Story 5.8: Agenda Finalization & Event Lifecycle
-
-**Status:** ⏳ **PENDING**
-
-**User Story:**
-As an **organizer**, I want to finalize the event agenda and manage the event lifecycle from finalization through archival, so that I can lock the agenda for printing and track the event through completion.
-
-**Architecture Integration:**
-- **Service**: Event Management Service
-- **Database**: events table with workflow_state, speaker_pool with withdrew status
-- **Data Model**: Uses EventWorkflowStateMachine (06a lines 49-172)
-- **Frontend**: React agenda finalization interface and event lifecycle dashboard
-
-**Acceptance Criteria:**
-
-**A. Agenda Finalization (AC1-8):**
-1. **Finalize Action**: Button to transition event to AGENDA_FINALIZED state (2 weeks before event)
-2. **Finalization Validation**: Validate all slots assigned, all speakers confirmed before finalizing
-3. **Lock Editing**: After finalization, major changes require manual unlock (minor edits allowed)
-4. **Print View**: Generate printable PDF agenda for event day materials
-5. **Final Review Checklist**: Verify all slots assigned, materials collected, quality reviewed
-6. **Finalization Date**: Track when agenda was finalized (events.finalized_at timestamp)
-7. **Unlock Workflow**: Admin can unlock agenda with justification
-8. **Change Log**: Track all changes after finalization with timestamp and reason
-
-**B. Dropout Handling (AC9-12):**
-9. **Dropout Detection**: Organizer can mark speaker as 'withdrew' status
-10. **Overflow Promotion**: Suggest top overflow speaker to fill dropout slot (from Story 5.6)
-11. **Quick Reassignment**: Fast workflow to promote overflow speaker to open slot
-12. **Notification**: Notify replacement speaker and update published agenda (invalidate CDN)
-
-**C. Event Lifecycle States (AC13-18):**
-13. **AGENDA_FINALIZED**: Manual transition 2 weeks before event (locks agenda)
-14. **EVENT_LIVE**: Auto-transition on event day (scheduled job)
-15. **EVENT_COMPLETED**: Manual transition after event (trigger post-processing)
-16. **ARCHIVED**: Manual transition when event fully processed
-17. **Workflow Validation**: Each transition validates required conditions via EventWorkflowStateMachine
-18. **State History**: Track all state transitions with timestamp and organizer
-
-**D. Post-Event Processing (AC19-22):**
-19. **Event Day Dashboard**: Live dashboard showing current session, next session, timing
-20. **Session Check-In**: Mark sessions as started/completed during event
-21. **Post-Event Notes**: Capture organizer notes, attendance, feedback after event
-22. **Archival**: Archive event when all post-processing complete
-
-**Technical Implementation:**
-- **EventWorkflowStateMachine**: Handles all state transitions (06a lines 49-172)
-- **Validation Methods**:
-  - validateAgendaPublished() (before AGENDA_FINALIZED)
-  - validateEventDateInFuture() (14 days minimum before finalize)
-  - validateEventDateInPast() (before EVENT_COMPLETED)
-- **REST API**:
-  - PUT /api/events/{eventId}/finalize (transition to AGENDA_FINALIZED)
-  - PUT /api/events/{eventId}/unlock (unlock finalized agenda)
-  - PUT /api/events/{eventId}/speakers/{speakerId}/withdraw (mark speaker as withdrew)
-  - POST /api/events/{eventId}/overflow/promote/{speakerId} (promote from overflow)
-  - PUT /api/events/{eventId}/lifecycle/{state} (transition to EVENT_LIVE, EVENT_COMPLETED, ARCHIVED)
-  - GET /api/events/{eventId}/pdf (generate printable PDF agenda)
-- **Scheduled Tasks**:
-  - Daily cron job to auto-transition to EVENT_LIVE on event day
-- **React Components**:
-  - AgendaFinalizationPanel (finalize/unlock controls)
-  - DropoutHandlingModal (withdraw speaker, promote overflow)
-  - EventLifecycleDashboard (live event dashboard)
-  - PrintableAgendaGenerator (PDF generation)
-- **PDF Generation**: Generate printable agenda using PDF library
-- **Domain Events**:
-  - EventWorkflowTransitionEvent (AGENDA_FINALIZED, EVENT_LIVE, EVENT_COMPLETED, ARCHIVED)
-  - SpeakerWithdrewEvent
-  - SpeakerPromotedFromOverflowEvent
-  - AgendaUnlockedEvent
-
-**Definition of Done:**
-- [ ] Finalize button transitions event to AGENDA_FINALIZED with lock
-- [ ] Validation enforces all slots assigned and speakers confirmed before finalize
-- [ ] Final review checklist validates all requirements met
-- [ ] Printable PDF agenda generation working
-- [ ] Dropout detection and overflow promotion working
-- [ ] Change log tracks all post-finalization changes
-- [ ] Unlock workflow requires justification
-- [ ] Auto-transition to EVENT_LIVE on event day
-- [ ] Manual transitions to EVENT_COMPLETED and ARCHIVED working
-- [ ] Event lifecycle dashboard shows current state
-- [ ] Integration test verifies finalization + lifecycle workflow
-- [ ] Unit tests >90%, integration tests >80%
-- [ ] Bruno API tests cover all lifecycle endpoints
+- [ ] Integration test verifies progressive publishing workflow
 
 **Estimated Duration:** 2 weeks
 
 ---
 
+### Story 5.11: Agenda Finalization (Workflow Step 12)
 
-## **WORKFLOW CONSOLIDATION COMPLETE**
+**User Story:**
+As an **organizer**, I want to finalize the event agenda 2 weeks before the event with dropout handling, so that I can lock the agenda for printing and handle last-minute changes.
 
-**The old 16-story structure has been successfully consolidated into the new 8-story structure.**
+**Architecture Integration:**
+- **Service**: Event Management Service
+- **Database**: Event workflow state tracking
+- **Frontend**: React agenda finalization interface
 
-All NEW Stories (5.1-5.8) are now documented above with alignment to the redesigned workflow state machines.
+**Acceptance Criteria:**
 
-**Consolidation Summary:**
-- ✅ **Stories 5.1-5.4**: Already implemented (no changes needed)
-- ✅ **Story 5.5**: Content Submission, Quality Review & Task System (consolidates old 5.5-5.7)
-- ✅ **Story 5.6**: Overflow Management & Voting (consolidates old 5.8-5.9)
-- ✅ **Story 5.7**: Slot Assignment & Progressive Publishing (consolidates old 5.9-5.11)
-- ✅ **Story 5.8**: Agenda Finalization & Event Lifecycle (extracted from old 5.11)
-- ✅ **Old Stories 5.12-5.15**: Integrated into Story 5.5 task system
+**Finalization Workflow:**
+1. **Finalize Action**: Button to mark agenda as "FINALIZED" status
+2. **Finalization Date**: Track when agenda was finalized
+3. **Lock Editing**: After finalization, major changes require approval workflow
+4. **Print View**: Generate printable PDF agenda for event day materials
+5. **Final Review Checklist**: All slots assigned, materials collected, quality reviewed
 
-The old Phase C-F sections (Stories 5.6-5.15 from 16-story structure) have been removed.
+**Dropout Handling:**
+6. **Dropout Detection**: Organizer can mark speaker as "DROPPED_OUT"
+7. **Overflow Promotion**: System suggests top overflow speaker to fill dropout slot
+8. **Quick Reassignment**: Fast workflow to promote overflow speaker to open slot
+9. **Notification**: Notify replacement speaker and update published agenda
+10. **Dropout History**: Track all dropouts and replacements for reporting
+
+**Lock Controls:**
+11. **Minor Changes Allowed**: After finalization, minor edits (typos) allowed without unlocking
+12. **Major Change Approval**: Major changes (speaker swap, slot change) require unlock approval
+13. **Unlock Workflow**: Admin can unlock agenda with justification
+14. **Change Log**: Track all changes after finalization with timestamp and reason
+
+**Workflow Engine Integration:**
+15. **Finalization State**: When agenda finalized, call `eventWorkflowStateMachine.transitionToState(eventId, EventWorkflowState.AGENDA_FINALIZED, organizerId)`
+16. **Lock Validation**: State machine enforces lock after finalization - major changes require unlock workflow
+17. **Dropout Handling**: Promote overflow speaker via `OverflowManagementService.promoteFromOverflow(eventId, droppedSpeakerId, replacementSpeakerId)`
+18. **Validation**: State machine validates all slots assigned before allowing AGENDA_FINALIZED transition
+
+**Technical Implementation:**
+19. **Agenda Status Enum**: DRAFT, FINALIZED, LOCKED_PRINT (integrated with EventWorkflowState from Story 5.1a)
+20. **Dropout Entity**: Track speaker_id, dropout_date, reason, replacement_speaker_id
+21. **REST API**: POST /api/events/{id}/finalize, POST /api/events/{id}/unlock
+22. **React Component**: AgendaFinalizationPanel with dropout handling
+23. **PDF Generation**: Generate printable agenda using PDF library
+24. **Domain Events**: AgendaFinalizedEvent, SpeakerDroppedOutEvent, AgendaUnlockedEvent
+
+**Definition of Done:**
+- [ ] Finalize button marks agenda as finalized with lock
+- [ ] Final review checklist validates all requirements met
+- [ ] Printable PDF agenda generation working
+- [ ] Dropout detection and overflow promotion working
+- [ ] Change log tracks all post-finalization changes
+- [ ] Unlock workflow requires justification
+- [ ] Integration test verifies finalization workflow
+
+**Estimated Duration:** 1.5 weeks
+
+---
+
+## Phase F: Communication & Logistics (Stories 5.12-5.15)
+
+### Story 5.12: Newsletter Distribution (Workflow Step 13)
+
+**User Story:**
+As an **organizer**, I want to send progressive newsletters to our mailing list, so that subscribers stay informed about upcoming events from topic announcement through final agenda.
+
+**Architecture Integration:**
+- **Service**: Event Management Service with email integration
+- **Email**: AWS SES (already provisioned per EIR1)
+- **Database**: newsletters, newsletter_recipients, newsletter_sends tables
+- **Frontend**: React newsletter management interface
+
+**Acceptance Criteria:**
+
+**Newsletter Templates:**
+1. **Template 1 - Topic Announcement**: Sent immediately when topic published
+   - Event topic, date, venue
+   - Call for speaker suggestions
+   - Save the date message
+2. **Template 2 - Speaker Lineup**: Sent 1 month before when speakers published
+   - Speaker names, companies, titles
+   - Presentation abstracts
+   - Registration link
+3. **Template 3 - Final Agenda**: Sent 2 weeks before when agenda finalized
+   - Complete schedule with time slots
+   - Venue details and logistics
+   - Last chance to register
+
+**Newsletter Management:**
+4. **Manual Send**: Organizer can manually trigger any newsletter
+5. **Auto-Send Option**: Optionally auto-send when phase publishes
+6. **Preview Newsletter**: Preview email before sending
+7. **Recipient List**: Pull from event registrations + newsletter subscribers table
+8. **Variable Substitution**: Replace {{eventName}}, {{date}}, {{speakers}} with actual values
+
+**Send Tracking:**
+9. **Send Status**: Track sent, failed, bounced emails per recipient
+10. **Send History**: Log all newsletter sends with timestamp, recipient count
+11. **Delivery Confirmation**: AWS SES delivery notifications tracked
+12. **Unsubscribe Handling**: Honor unsubscribe requests from previous newsletters
+
+**Technical Implementation:**
+13. **Newsletter Entity**: newsletter_type, event_id, sent_date, recipient_count, template_html
+14. **AWS SES Integration**: Send emails via SES with bounce/complaint handling
+15. **REST API**: POST /api/events/{id}/newsletters/{type}/send, GET /api/newsletters/history
+16. **React Component**: NewsletterManager with preview and send controls
+17. **Domain Events**: NewsletterSentEvent
+
+**MVP Scope:**
+- ✅ 3 pre-defined templates (no editor)
+- ✅ AWS SES integration
+- ✅ Pull recipients from registrations + subscribers
+- ✅ Track "sent" status only (no open/click tracking)
+- ❌ Template editor (Phase 2)
+- ❌ Open/click tracking (Phase 2)
+
+**Definition of Done:**
+- [ ] 3 pre-defined newsletter templates implemented
+- [ ] Organizer can preview newsletter before sending
+- [ ] Manual send working via AWS SES
+- [ ] Variable substitution replaces placeholders correctly
+- [ ] Recipient list pulls from registrations + subscribers
+- [ ] Send status tracked in database
+- [ ] Unsubscribe handling functional
+- [ ] Integration test verifies newsletter sending
+
+**Estimated Duration:** 1.5 weeks
+
+---
+
+### Story 5.13: Moderation Assignment (Workflow Step 14)
+
+**User Story:**
+As an **organizer**, I want to assign a moderator to the event, so that someone is responsible for day-of-event coordination and timing.
+
+**Architecture Integration:**
+- **Service**: Event Management Service
+- **Database**: Events table (moderator_id field)
+- **Frontend**: React moderator assignment dropdown
+
+**Acceptance Criteria:**
+
+**Moderator Assignment:**
+1. **Moderator Dropdown**: Select moderator from list of organizers
+2. **Assignment Notification**: Notify assigned moderator via email
+3. **Moderator Dashboard Access**: Moderator sees assigned events in their dashboard
+4. **Event View**: Moderator can view event details, agenda, speaker contacts
+5. **Unassign Moderator**: Organizer can change or remove moderator assignment
+
+**Moderator Information:**
+6. **Briefing Access**: Moderator has read access to all event information
+7. **Speaker Contact List**: Moderator sees speaker phone numbers and emails for day-of contact
+8. **Timeline View**: Moderator sees event timeline with slot timing
+9. **Logistics Notes**: Moderator sees venue details, catering notes, special requirements
+
+**Technical Implementation:**
+10. **Events Table Update**: Add moderator_id field (foreign key to users)
+11. **REST API**: PUT /api/events/{id}/moderator
+12. **React Component**: ModeratorAssignmentDropdown in event settings
+13. **Email Notification**: Send "You've been assigned as moderator" email
+14. **Domain Event**: ModeratorAssignedEvent
+
+**MVP Scope:**
+- ✅ Simple dropdown field (select from organizers)
+- ✅ Notification to assigned moderator
+- ✅ Moderator sees event dashboard
+- ❌ No special briefing materials (Phase 2)
+- ❌ No day-of tools (Phase 2)
+
+**Definition of Done:**
+- [ ] Moderator dropdown shows all organizers
+- [ ] Assignment saves to database
+- [ ] Notification email sent to moderator
+- [ ] Moderator sees assigned events in dashboard
+- [ ] Moderator has read access to all event details
+- [ ] Integration test verifies moderator assignment
+
+**Estimated Duration:** 0.5 weeks
+
+---
+
+### Story 5.14: Catering Coordination (Workflow Step 15)
+
+**User Story:**
+As an **organizer**, I want a reminder to contact the caterer 1 month before the event, so that I can arrange menu and headcount for event day catering.
+
+**Architecture Integration:**
+- **Service**: Event Management Service with task management
+- **Database**: event_tasks table
+- **Frontend**: React task management interface
+
+**Acceptance Criteria:**
+
+**Task Creation:**
+1. **Automatic Task**: Create "Contact caterer" task automatically 1 month before event
+2. **Task Dashboard**: Show catering task in organizer task list
+3. **Task Notification**: Email reminder sent to organizers when task created
+4. **Due Date**: Task due date = event date minus 1 month
+5. **Task Assignment**: Task assigned to event creator or all organizers
+
+**Menu Coordination:**
+6. **Menu Notes Field**: Free-text field to record menu details from caterer
+7. **Headcount Tracking**: Show current registration count for caterer headcount estimate
+8. **Menu Confirmation**: Checkbox to mark menu confirmed
+9. **Task Completion**: Mark task complete when catering arranged
+
+**Task Management:**
+10. **Overdue Indicator**: Highlight task if overdue (event <1 month away and not complete)
+11. **Reminder Escalation**: Send reminder 2 weeks before event if task incomplete
+12. **Task Notes**: Add notes/comments to task for coordination between organizers
+13. **Task History**: Track task completion date and who completed it
+
+**Technical Implementation:**
+14. **Event Task Entity**: task_type, event_id, due_date, status, notes, assigned_to, completed_by, completed_date
+15. **Scheduled Job**: Daily cron job creates catering tasks for events 1 month out
+16. **REST API**: GET /api/events/{id}/tasks, PUT /api/events/tasks/{taskId}/complete
+17. **React Component**: EventTaskList with catering task detail panel
+18. **Domain Events**: CateringTaskCreatedEvent, CateringTaskCompletedEvent
+
+**MVP Scope:**
+- ✅ Task reminder: "Contact caterer 1 month before"
+- ✅ Free-text notes field for menu details
+- ✅ Mark task complete when done
+- ✅ Show registration count for headcount estimate
+- ❌ No dietary preferences collection (not needed per user)
+- ❌ No menu selection UI (Phase 2)
+- ❌ No caterer email integration (Phase 2)
+
+**Definition of Done:**
+- [ ] Catering task automatically created 1 month before event
+- [ ] Task appears in organizer task dashboard
+- [ ] Email notification sent when task created
+- [ ] Menu notes field allows recording caterer details
+- [ ] Registration count displayed for headcount planning
+- [ ] Task can be marked complete
+- [ ] Overdue indicator shows if task incomplete <1 month before event
+- [ ] Integration test verifies catering task workflow
+
+**Estimated Duration:** 1 week
+
+---
+
+### Story 5.15: Partner Meeting Coordination (Workflow Step 16)
+
+**User Story:**
+As an **organizer**, I want to coordinate partner meetings scheduled on same day as BATbern events, so that we can discuss budgets, review statistics, and brainstorm topics for upcoming events.
+
+**Architecture Integration:**
+- **Service**: Partner Coordination Service (Story 2.7)
+- **Database**: partner_meetings table (from Story 2.7)
+- **Frontend**: React partner meeting coordination interface
+
+**Acceptance Criteria:**
+
+**Meeting Scheduling:**
+1. **Meeting Date Field**: Date/time field for partner meeting (defaults to lunchtime on event day)
+2. **Same-Day Indicator**: Visual indicator if meeting same day as BATbern event
+3. **Meeting Type**: Spring or Autumn partner meeting designation
+4. **Attendee List**: Select which partners invited to meeting
+5. **Location Field**: Meeting venue (often same as event venue)
+
+**Meeting Agenda:**
+6. **Agenda Template**: Pre-filled template with sections:
+   - Budget Review (current year spending, next year forecast)
+   - Event Statistics (attendance, engagement metrics from last events)
+   - Topic Brainstorming (new topic ideas for backlog)
+7. **Agenda Customization**: Organizer can edit template for specific meeting
+8. **Agenda Sharing**: Send agenda to partner attendees before meeting
+
+**Topic Brainstorming:**
+9. **Brainstorming Capture**: During/after meeting, organizer can add topics to backlog directly
+10. **Topic Source Tag**: Topics tagged as "From Partner Meeting {date}"
+11. **Partner Attribution**: Track which partner suggested which topic
+12. **Backlog Integration**: Topics added directly to topic backlog (Story 5.2 integration)
+
+**Meeting Notes:**
+13. **Meeting Notes Field**: Free-text notes from meeting discussion
+14. **Budget Discussion Notes**: Record budget decisions and allocations
+15. **Action Items**: Track follow-up action items from meeting
+16. **Meeting History**: View all past partner meetings with notes
+
+**Technical Implementation:**
+17. **Partner Meeting Entity**: meeting_date, meeting_type (spring/autumn), location, agenda, notes, attendee_ids
+18. **REST API**: POST /api/partner-meetings, GET /api/partner-meetings/history
+19. **React Component**: PartnerMeetingCoordinator with agenda template
+20. **Topic Backlog Integration**: Call POST /api/topics/backlog from meeting interface
+21. **Domain Events**: PartnerMeetingScheduledEvent, TopicAddedFromMeetingEvent
+
+**MVP Scope:**
+- ✅ Date/time field (lunchtime same day as event)
+- ✅ Agenda template (Budget Review, Event Statistics, Topic Brainstorming)
+- ✅ Meeting notes field (free text)
+- ✅ Add topics to backlog from meeting (use existing Story 5.2 topic backlog)
+- ✅ Use Story 2.7 Partner Service for tracking
+- ❌ No calendar integration (Phase 2)
+- ❌ No structured budget tracking (Epic 8 - Partner Analytics)
+
+**Definition of Done:**
+- [ ] Partner meeting can be scheduled with date/time
+- [ ] Meeting type (Spring/Autumn) selectable
+- [ ] Agenda template pre-fills with 3 sections
+- [ ] Organizer can customize agenda
+- [ ] Meeting notes field allows recording discussion
+- [ ] Topics can be added to backlog from meeting interface
+- [ ] Topics tagged with meeting source
+- [ ] Meeting history shows all past partner meetings
+- [ ] Integration test verifies partner meeting workflow
+
+**Estimated Duration:** 1.5 weeks
 
 ---
 
 ## Epic 5 Success Metrics
 
 **Functional Success (End-to-End Workflow):**
-- ✅ Organizers can complete full event workflow (9 event states + 10 speaker states) from topic selection through archival
+- ✅ Organizers can complete full 16-step workflow from topic selection through partner meeting
 - ✅ Event creation to publication achievable in timeline with manual speaker coordination
-- ✅ All 8 stories functional and tested (Stories 5.1-5.4 complete, 5.5-5.8 pending)
+- ✅ All 16 workflow steps functional and tested
 - ✅ Organizers can manage events without requiring speaker self-service portal
-- ✅ Task system separates configurable tasks from workflow states
 
 **Technical Performance:**
 - **Response Times**: API responses <200ms P95 for all workflow operations
