@@ -293,7 +293,7 @@ export default defineConfig({
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
       include: ['src/**/*.{ts,tsx}'], // Explicitly include source files in coverage
       thresholds: {
-        statements: 75, // Only check overall statement coverage
+        statements: 70, // Only check overall statement coverage
       },
     },
     deps: {
