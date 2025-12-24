@@ -100,7 +100,7 @@ export const PartnerList: React.FC = () => {
       <Box>
         <Grid container spacing={2} data-testid="partner-grid" data-columns="3" data-spacing="3">
           {partners.map((partner) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={partner.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={partner.companyName}>
               <PartnerCard partner={partner} />
             </Grid>
           ))}
@@ -151,7 +151,7 @@ export const PartnerList: React.FC = () => {
     <Box>
       <Stack spacing={2} data-testid="partner-list-list">
         {partners.map((partner) => (
-          <PartnerCard key={partner.id} partner={partner} />
+          <PartnerCard key={partner.companyName} partner={partner} />
         ))}
       </Stack>
 

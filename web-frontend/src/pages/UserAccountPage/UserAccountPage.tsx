@@ -4,12 +4,15 @@
  * Main page container with Profile and Settings tabs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Box, Tabs, Tab, CircularProgress, Alert } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserAccount/useUserAccount';
 import UserProfileTab from '@components/user/UserProfileTab/UserProfileTab';
 import UserSettingsTab from '@components/user/UserSettingsTab/UserSettingsTab';
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -44,11 +47,18 @@ const UserAccountPage: React.FC = () => {
   console.log('[UserAccountPage] Component mounting');
   const { user } = useAuth();
   console.log('[UserAccountPage] User:', user);
+  const { t } = useTranslation('common');
   const [activeTab, setActiveTab] = useState(0);
 
   const { data: profileData, isLoading, isError, error } = useUserProfile(user?.userId || '');
   console.log('[UserAccountPage] Profile data:', { profileData, isLoading, isError, error });
   console.log('[UserAccountPage] profileData structure:', JSON.stringify(profileData, null, 2));
+
+  // Build breadcrumb items (memoized to prevent re-renders)
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(
+    () => [{ label: t('navigation.myAccount', 'My Account') }],
+    [t]
+  );
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -94,6 +104,9 @@ const UserAccountPage: React.FC = () => {
   console.log('[UserAccountPage] Rendering main content');
   return (
     <Box sx={{ width: '100%', p: { xs: 2, md: 3 } }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={activeTab}

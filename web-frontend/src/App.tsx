@@ -56,8 +56,7 @@ const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAcco
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
 const EventCreate = React.lazy(() => import('@pages/EventCreate'));
 const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
-const EventDetail = React.lazy(() => import('@pages/EventDetail')); // View page with Speaker Status Dashboard (Story 5.4)
-const EventDetailEdit = React.lazy(() => import('@pages/EventDetailEdit')); // Comprehensive edit page with Tasks 9-13
+const EventPage = React.lazy(() => import('@pages/organizer/EventPage')); // Story 5.6: Unified event page
 const EventTypeConfigurationAdmin = React.lazy(
   () => import('@pages/organizer/EventTypeConfigurationAdmin')
 ); // Story 5.1
@@ -65,8 +64,8 @@ const EventTypeConfigurationAdmin = React.lazy(
 // Topic Management Page - Story 5.2
 const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManagementPage'));
 
-// Speaker Outreach Page - Story 5.3
-const SpeakerOutreachPage = React.lazy(() => import('@pages/organizer/SpeakerOutreachPage'));
+// Task Management Page - Story 5.5
+const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'));
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
@@ -336,25 +335,21 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  {/* Story 5.6: Unified Event Page */}
                   <Route
                     path="/organizer/events/:eventCode"
                     element={
                       <ProtectedRoute>
                         <AuthLayout>
-                          <EventDetail />
+                          <EventPage />
                         </AuthLayout>
                       </ProtectedRoute>
                     }
                   />
+                  {/* Story 5.6: Redirect deprecated /edit route to unified page */}
                   <Route
                     path="/organizer/events/:eventCode/edit"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventDetailEdit />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
+                    element={<Navigate to=".." replace />}
                   />
                   <Route
                     path="/organizer/event-types"
@@ -376,12 +371,13 @@ function App() {
                       </ProtectedRoute>
                     }
                   />
+                  {/* Story 5.5: Task Management Page */}
                   <Route
-                    path="/organizer/events/:eventCode/speakers/outreach"
+                    path="/organizer/tasks"
                     element={
                       <ProtectedRoute>
                         <AuthLayout>
-                          <SpeakerOutreachPage />
+                          <TaskBoardPage />
                         </AuthLayout>
                       </ProtectedRoute>
                     }

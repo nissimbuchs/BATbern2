@@ -121,7 +121,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
           {/* Company Name (display name preferred) */}
           <Typography
             variant="h6"
-            component="h3"
+            component="h2"
             gutterBottom
             sx={{
               fontSize: '1rem',

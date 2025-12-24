@@ -1,0 +1,64 @@
+meta {
+  name: List Task Templates
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/tasks/templates
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC19", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return task templates array - Story 5.5 AC19, AC26", function() {
+    const response = res.getBody();
+    expect(response).to.be.an('array');
+    expect(response.length).to.be.at.least(7); // 7 default templates
+  });
+
+  test("should return templates with required fields - Story 5.5 AC19", function() {
+    const response = res.getBody();
+    if (response.length > 0) {
+      const template = response[0];
+      expect(template.id).to.be.a('string');
+      expect(template.name).to.be.a('string');
+      expect(template.triggerState).to.be.a('string');
+      expect(template.dueDateType).to.be.oneOf(['immediate', 'relative_to_event', 'absolute']);
+      expect(template.isDefault).to.be.a('boolean');
+    }
+  });
+
+  test("should include 7 default templates - Story 5.5 AC19", function() {
+    const response = res.getBody();
+    const defaultTemplates = response.filter(t => t.isDefault === true);
+    expect(defaultTemplates.length).to.equal(7);
+
+    const expectedNames = [
+      'Venue Booking',
+      'Partner Meeting Coordination',
+      'Moderator Assignment',
+      'Newsletter: Topic Announcement',
+      'Newsletter: Speaker Lineup',
+      'Newsletter: Final Agenda',
+      'Catering Coordination'
+    ];
+
+    defaultTemplates.forEach(template => {
+      expect(expectedNames).to.include(template.name);
+    });
+  });
+}

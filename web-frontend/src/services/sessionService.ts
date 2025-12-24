@@ -49,6 +49,32 @@ class SessionApiClient {
   }
 
   /**
+   * Update session details (title, description, duration)
+   *
+   * PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param updates - Session update data (title, description, durationMinutes)
+   * @returns Updated session data
+   */
+  async updateSession(
+    eventCode: string,
+    sessionSlug: string,
+    updates: {
+      title?: string;
+      description?: string;
+      durationMinutes?: number;
+    }
+  ): Promise<void> {
+    try {
+      await apiClient.patch(`${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}`, updates);
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {

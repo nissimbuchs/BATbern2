@@ -16,12 +16,29 @@
  */
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Container } from '@mui/material';
-import { Add as AddIcon, Upload as UploadIcon } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+  Container,
+  ToggleButtonGroup,
+  ToggleButton,
+  Stack,
+} from '@mui/material';
+import Grid from '@mui/material/Grid';
+import {
+  Add as AddIcon,
+  Upload as UploadIcon,
+  ViewModule as GridIcon,
+  ViewList as ListIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from './UserTable';
+import UserCard from './UserCard';
 import UserFilters from './UserFilters';
 import UserDetailModal from './UserDetailModal';
 import UserCreateEditModal from './UserCreateEditModal';
@@ -36,6 +53,7 @@ const UserList: React.FC = () => {
   const { t } = useTranslation('userManagement');
   const { filters, pagination, selectedUser, setSelectedUser, setPage, setLimit } =
     useUserManagementStore();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [roleManagerUser, setRoleManagerUser] = useState<User | null>(null);
@@ -64,6 +82,15 @@ const UserList: React.FC = () => {
 
   const handleOpenCreateModal = () => {
     setCreateModalOpen(true);
+  };
+
+  const handleViewModeChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newMode: 'grid' | 'list' | null
+  ) => {
+    if (newMode !== null) {
+      setViewMode(newMode);
+    }
   };
 
   // Loading state
@@ -109,11 +136,34 @@ const UserList: React.FC = () => {
     <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl">
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          spacing={2}
+          mb={3}
+        >
           <Typography variant="h4" component="h1">
             {t('title')}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+
+          <Stack direction="row" spacing={2}>
+            {/* View Toggle */}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={handleViewModeChange}
+              aria-label={t('viewMode.toggle')}
+              size="small"
+            >
+              <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
+                <GridIcon />
+              </ToggleButton>
+              <ToggleButton value="list" aria-label={t('viewMode.list')}>
+                <ListIcon />
+              </ToggleButton>
+            </ToggleButtonGroup>
+
             <Button
               variant="outlined"
               color="primary"
@@ -130,8 +180,8 @@ const UserList: React.FC = () => {
             >
               {t('addUser')}
             </Button>
-          </Box>
-        </Box>
+          </Stack>
+        </Stack>
 
         {/* User Sync Panel - Story 1.2.5 */}
         {/* TODO: Re-enable when AWS credentials configured - requires STS SDK for role assumption */}
@@ -140,20 +190,30 @@ const UserList: React.FC = () => {
         {/* Filters Panel */}
         <UserFilters />
 
-        {/* User Table */}
-        <UserTable
-          users={users}
-          onRowClick={handleRowClick}
-          onAction={(action, user) => {
-            if (action === 'view') {
-              handleRowClick(user);
-            } else if (action === 'editRoles') {
-              setRoleManagerUser(user);
-            } else if (action === 'delete') {
-              setDeleteDialogUser(user);
-            }
-          }}
-        />
+        {/* User List - Grid or Table View */}
+        {viewMode === 'list' ? (
+          <UserTable
+            users={users}
+            onRowClick={handleRowClick}
+            onAction={(action, user) => {
+              if (action === 'view') {
+                handleRowClick(user);
+              } else if (action === 'editRoles') {
+                setRoleManagerUser(user);
+              } else if (action === 'delete') {
+                setDeleteDialogUser(user);
+              }
+            }}
+          />
+        ) : (
+          <Grid container spacing={2}>
+            {users.map((user) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={user.id}>
+                <UserCard user={user} onClick={handleRowClick} />
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
         {/* Pagination */}
         {paginationData && (

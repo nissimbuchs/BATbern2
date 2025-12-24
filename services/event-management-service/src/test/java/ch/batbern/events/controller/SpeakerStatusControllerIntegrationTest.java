@@ -394,4 +394,202 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 // Then: Should return 403 Forbidden
                 .andExpect(status().isForbidden());
     }
+
+    /**
+     * Story 5.5 AC6-10: Submit speaker content (presentation title and abstract)
+     * Creates session and links speaker via session_users
+     */
+    @Test
+    @DisplayName("Should submit speaker content and return 201")
+    void should_submitContent_when_speakerAccepted() throws Exception {
+        // Given: Speaker in ACCEPTED state
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        speakerPoolRepository.save(testSpeaker);
+
+        String contentRequest = """
+                {
+                    "presentationTitle": "Building Scalable Microservices",
+                    "presentationAbstract": "In this presentation, I'll share lessons learned from building scalable microservices architectures in production.",
+                    "username": "john.doe"
+                }
+                """;
+
+        // When: POST /api/v1/events/{code}/speakers/{speakerId}/content
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/content",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentRequest))
+                .andDo(print())
+                // Then: Should return 201 Created
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.speakerPoolId", is(testSpeaker.getId().toString())))
+                .andExpect(jsonPath("$.sessionId", notNullValue()))
+                .andExpect(jsonPath("$.presentationTitle", is("Building Scalable Microservices")))
+                .andExpect(jsonPath("$.presentationAbstract", containsString("lessons learned")))
+                .andExpect(jsonPath("$.status", is("CONTENT_SUBMITTED")))
+                .andExpect(jsonPath("$.hasContent", is(true)))
+                .andExpect(jsonPath("$.username", is("john.doe")));
+    }
+
+    /**
+     * Story 5.5 AC34: Get speaker content (handles orphaned session references)
+     */
+    @Test
+    @DisplayName("Should get speaker content and return 200")
+    void should_getContent_when_contentExists() throws Exception {
+        // Given: Speaker with submitted content
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        testSpeaker.setSessionId(testSession.getId());
+        speakerPoolRepository.save(testSpeaker);
+
+        // Update session with presentation details
+        testSession.setTitle("Test Presentation");
+        testSession.setDescription("Test abstract");
+        sessionRepository.save(testSession);
+
+        // When: GET /api/v1/events/{code}/speakers/{speakerId}/content
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/{speakerId}/content",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andDo(print())
+                // Then: Should return 200 OK
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakerPoolId", is(testSpeaker.getId().toString())))
+                .andExpect(jsonPath("$.sessionId", is(testSession.getId().toString())))
+                .andExpect(jsonPath("$.presentationTitle", is("Test Presentation")))
+                .andExpect(jsonPath("$.presentationAbstract", is("Test abstract")))
+                .andExpect(jsonPath("$.status", is("CONTENT_SUBMITTED")))
+                .andExpect(jsonPath("$.hasContent", is(true)));
+    }
+
+    /**
+     * Story 5.5 AC37: Content submission state validation
+     * Speaker must be in ACCEPTED state before content submission
+     */
+    @Test
+    @DisplayName("Should return 400 when speaker not in ACCEPTED state")
+    void should_return400_when_speakerNotAccepted() throws Exception {
+        // Given: Speaker in IDENTIFIED state (not ACCEPTED)
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
+        speakerPoolRepository.save(testSpeaker);
+
+        String contentRequest = """
+                {
+                    "presentationTitle": "Test Title",
+                    "presentationAbstract": "Test abstract with lessons learned.",
+                    "username": "john.doe"
+                }
+                """;
+
+        // When: POST /api/v1/events/{code}/speakers/{speakerId}/content
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/content",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(contentRequest))
+                .andDo(print())
+                // Then: Should return 400 Bad Request
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Story 5.5 AC11: Quality review queue endpoint
+     * GET /api/v1/events/{code}/speakers/review-queue
+     */
+    @Test
+    @DisplayName("Should return review queue with speakers pending quality review")
+    void should_returnReviewQueue_when_requested() throws Exception {
+        // Given: Speaker with content_submitted status
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        testSpeaker.setSessionId(testSession.getId());
+        speakerPoolRepository.save(testSpeaker);
+
+        // When: GET /api/v1/events/{code}/speakers/review-queue
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/review-queue", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andDo(print())
+                // Then: Should return 200 OK with review queue
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id", is(testSpeaker.getId().toString())))
+                .andExpect(jsonPath("$[0].status", is("CONTENT_SUBMITTED")));
+    }
+
+    /**
+     * Story 5.5 AC13: Approve content quality review
+     * POST /api/v1/events/{code}/speakers/{speakerId}/review with action=APPROVE
+     */
+    @Test
+    @DisplayName("Should approve content and update status to quality_reviewed")
+    void should_approveContent_when_approved() throws Exception {
+        // Given: Speaker with content_submitted status
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        testSpeaker.setSessionId(testSession.getId());
+        speakerPoolRepository.save(testSpeaker);
+
+        String reviewRequest = """
+                {
+                    "action": "APPROVE"
+                }
+                """;
+
+        // When: POST /api/v1/events/{code}/speakers/{speakerId}/review
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/review",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewRequest))
+                .andDo(print())
+                // Then: Should return 204 No Content
+                .andExpect(status().isNoContent());
+
+        // Verify status updated to quality_reviewed
+        ch.batbern.events.domain.SpeakerPool updatedSpeaker =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(updatedSpeaker.getStatus())
+                .isEqualTo(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+    }
+
+    /**
+     * Story 5.5 AC14: Reject content quality review
+     * POST /api/v1/events/{code}/speakers/{speakerId}/review with action=REJECT
+     */
+    @Test
+    @DisplayName("Should reject content with feedback and keep status as content_submitted")
+    void should_rejectContent_when_rejected() throws Exception {
+        // Given: Speaker with content_submitted status
+        testSpeaker.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        testSpeaker.setSessionId(testSession.getId());
+        speakerPoolRepository.save(testSpeaker);
+
+        String reviewRequest = """
+                {
+                    "action": "REJECT",
+                    "feedback": "Abstract needs more focus on lessons learned."
+                }
+                """;
+
+        // When: POST /api/v1/events/{code}/speakers/{speakerId}/review
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/v1/events/{code}/speakers/{speakerId}/review",
+                                TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewRequest))
+                .andDo(print())
+                // Then: Should return 204 No Content
+                .andExpect(status().isNoContent());
+
+        // Verify status remains content_submitted with feedback in notes
+        ch.batbern.events.domain.SpeakerPool updatedSpeaker =
+                speakerPoolRepository.findById(testSpeaker.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(updatedSpeaker.getStatus())
+                .isEqualTo(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        org.assertj.core.api.Assertions.assertThat(updatedSpeaker.getNotes())
+                .contains("Abstract needs more focus on lessons learned.");
+    }
 }

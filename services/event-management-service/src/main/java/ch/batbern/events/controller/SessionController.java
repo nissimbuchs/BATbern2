@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.BatchImportSessionRequest;
 import ch.batbern.events.dto.BatchImportSessionResult;
@@ -21,6 +22,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.service.SlugGenerationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -166,6 +169,7 @@ public class SessionController {
      * POST /api/v1/events/{eventCode}/sessions
      */
     @PostMapping
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> createSession(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateSessionRequest request) {
@@ -210,6 +214,7 @@ public class SessionController {
      * PUT /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
     @PutMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<SessionResponse> updateSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
@@ -248,11 +253,81 @@ public class SessionController {
     }
 
     /**
+     * Partially update a session (PATCH)
+     * PATCH /api/v1/events/{eventCode}/sessions/{sessionSlug}
+     *
+     * Allows updating individual fields without requiring all fields.
+     * Supported fields: title, description, durationMinutes
+     *
+     * @param eventCode Event code
+     * @param sessionSlug Session slug identifier
+     * @param updates Map of field updates (only provided fields will be updated)
+     * @return Updated session response
+     */
+    @PatchMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<SessionResponse> patchSession(
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug,
+            @RequestBody Map<String, Object> updates) {
+
+        // Find event by eventCode
+        UUID eventId = eventRepository.findByEventCode(eventCode)
+                .map(event -> event.getId())
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+
+        // Find existing session by sessionSlug
+        Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                .orElseThrow(() -> new ValidationException("Session not found: " + sessionSlug));
+
+        // Verify session belongs to the event
+        if (!session.getEventId().equals(eventId)) {
+            throw new ValidationException("Session does not belong to this event");
+        }
+
+        // Apply partial updates
+        if (updates.containsKey("title")) {
+            session.setTitle((String) updates.get("title"));
+        }
+
+        if (updates.containsKey("description")) {
+            session.setDescription((String) updates.get("description"));
+        }
+
+        if (updates.containsKey("durationMinutes")) {
+            Integer durationMinutes = null;
+            Object durationValue = updates.get("durationMinutes");
+            if (durationValue instanceof Integer) {
+                durationMinutes = (Integer) durationValue;
+            } else if (durationValue instanceof Number) {
+                durationMinutes = ((Number) durationValue).intValue();
+            }
+
+            if (durationMinutes != null && durationMinutes > 0) {
+                // Update endTime based on startTime + duration
+                Instant startTime = session.getStartTime();
+                if (startTime != null) {
+                    Instant newEndTime = startTime.plusSeconds(durationMinutes * 60L);
+                    session.setEndTime(newEndTime);
+                }
+            }
+        }
+
+        Session updatedSession = sessionRepository.save(session);
+
+        // Convert to SessionResponse with speakers
+        SessionResponse response = sessionService.toSessionResponse(updatedSession, eventCode);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * AC10: Delete a session
      * Story 1.16.2: Uses sessionSlug as path parameter
      * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
      */
     @DeleteMapping("/{sessionSlug}")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> deleteSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug) {
@@ -292,6 +367,7 @@ public class SessionController {
      * @return BatchImportSessionResult with statistics and details
      */
     @PostMapping("/batch-import")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<BatchImportSessionResult> batchImportSessions(
             @PathVariable String eventCode,
             @Valid @RequestBody List<BatchImportSessionRequest> requests) {

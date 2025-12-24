@@ -39,15 +39,17 @@ describe('topicLookup', () => {
       const mockResponse: TopicListResponse = {
         data: [
           {
-            id: 'topic-cached-123',
+            topicCode: 'topic-cached-123',
             title: 'Frontend & UI',
             category: 'Frontend & UI',
             description: 'Frontend technologies',
             stalenessScore: 85,
             usageCount: 5,
-            isActive: true,
+            active: true,
             createdDate: '2023-01-01',
             lastUsedDate: '2024-06-15',
+            colorZone: 'green',
+            status: 'available',
           },
         ],
         pagination: { page: 1, limit: 20, total: 1 },
@@ -76,15 +78,17 @@ describe('topicLookup', () => {
       const mockResponse: TopicListResponse = {
         data: [
           {
-            id: 'topic-api-456',
+            topicCode: 'topic-api-456',
             title: 'Cloud & Infrastructure',
             category: 'Cloud & Infrastructure',
             description: 'Cloud technologies',
             stalenessScore: 90,
             usageCount: 3,
-            isActive: true,
+            active: true,
             createdDate: '2023-03-01',
             lastUsedDate: '2024-05-20',
+            colorZone: 'green',
+            status: 'available',
           },
         ],
         pagination: { page: 1, limit: 20, total: 1 },
@@ -107,15 +111,17 @@ describe('topicLookup', () => {
       };
 
       const mockCreatedTopic: Topic = {
-        id: 'topic-new-789',
+        topicCode: 'topic-new-789',
         title: 'Security',
         category: 'Security',
         description: 'Topic category: Security',
         stalenessScore: 100,
         usageCount: 0,
-        isActive: true,
+        active: true,
         createdDate: '2025-12-15',
         lastUsedDate: null,
+        colorZone: 'green',
+        status: 'available',
       };
 
       vi.mocked(topicService.getTopics).mockResolvedValue(mockEmptyResponse);
@@ -141,15 +147,17 @@ describe('topicLookup', () => {
       };
 
       const mockCreatedTopic: Topic = {
-        id: 'topic-created-999',
+        topicCode: 'topic-created-999',
         title: 'Data & Analytics',
         category: 'Data & Analytics',
         description: 'Topic category: Data & Analytics',
         stalenessScore: 100,
         usageCount: 0,
-        isActive: true,
+        active: true,
         createdDate: '2025-12-15',
         lastUsedDate: null,
+        colorZone: 'green',
+        status: 'available',
       };
 
       vi.mocked(topicService.getTopics).mockResolvedValue(mockEmptyResponse);
@@ -171,12 +179,32 @@ describe('topicLookup', () => {
 
     it('should handle multiple different categories', async () => {
       const mockResponse1: TopicListResponse = {
-        data: [{ id: 'topic-1', title: 'Cat1', category: 'Cat1' } as Topic],
+        data: [
+          {
+            topicCode: 'topic-1',
+            title: 'Cat1',
+            category: 'Cat1',
+            stalenessScore: 80,
+            active: true,
+            colorZone: 'green',
+            status: 'available',
+          } as Topic,
+        ],
         pagination: { page: 1, limit: 20, total: 1 },
       };
 
       const mockResponse2: TopicListResponse = {
-        data: [{ id: 'topic-2', title: 'Cat2', category: 'Cat2' } as Topic],
+        data: [
+          {
+            topicCode: 'topic-2',
+            title: 'Cat2',
+            category: 'Cat2',
+            stalenessScore: 80,
+            active: true,
+            colorZone: 'green',
+            status: 'available',
+          } as Topic,
+        ],
         pagination: { page: 1, limit: 20, total: 1 },
       };
 
@@ -216,7 +244,17 @@ describe('topicLookup', () => {
   describe('clearTopicCache', () => {
     it('should clear all cached topics', async () => {
       const mockResponse: TopicListResponse = {
-        data: [{ id: 'topic-clear-test', title: 'Test', category: 'Test' } as Topic],
+        data: [
+          {
+            topicCode: 'topic-clear-test',
+            title: 'Test',
+            category: 'Test',
+            stalenessScore: 80,
+            active: true,
+            colorZone: 'green',
+            status: 'available',
+          } as Topic,
+        ],
         pagination: { page: 1, limit: 20, total: 1 },
       };
 
@@ -241,12 +279,32 @@ describe('topicLookup', () => {
 
     it('should return correct cache size', async () => {
       const mockResponse1: TopicListResponse = {
-        data: [{ id: 'topic-1', title: 'Cat1', category: 'Cat1' } as Topic],
+        data: [
+          {
+            topicCode: 'topic-1',
+            title: 'Cat1',
+            category: 'Cat1',
+            stalenessScore: 80,
+            active: true,
+            colorZone: 'green',
+            status: 'available',
+          } as Topic,
+        ],
         pagination: { page: 1, limit: 20, total: 1 },
       };
 
       const mockResponse2: TopicListResponse = {
-        data: [{ id: 'topic-2', title: 'Cat2', category: 'Cat2' } as Topic],
+        data: [
+          {
+            topicCode: 'topic-2',
+            title: 'Cat2',
+            category: 'Cat2',
+            stalenessScore: 80,
+            active: true,
+            colorZone: 'green',
+            status: 'available',
+          } as Topic,
+        ],
         pagination: { page: 1, limit: 20, total: 1 },
       };
 

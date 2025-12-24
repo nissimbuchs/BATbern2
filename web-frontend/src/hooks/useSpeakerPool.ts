@@ -61,6 +61,10 @@ export function useAddSpeakerToPool() {
       queryClient.invalidateQueries({
         queryKey: speakerPoolKeys.list(variables.eventCode),
       });
+      // Also invalidate status summary since counts have changed
+      queryClient.invalidateQueries({
+        queryKey: ['speakerStatusSummary', variables.eventCode],
+      });
     },
   });
 }

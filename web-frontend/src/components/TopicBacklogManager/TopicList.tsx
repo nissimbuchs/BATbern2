@@ -79,9 +79,9 @@ export const TopicList: React.FC<TopicListProps> = ({
     <>
       <List>
         {topics.map((topic) => (
-          <ListItem key={topic.id} disablePadding>
+          <ListItem key={topic.topicCode} disablePadding>
             <ListItemButton
-              selected={topic.id === selectedTopicId}
+              selected={topic.topicCode === selectedTopicId}
               onClick={() => onTopicSelect(topic)}
               sx={{
                 borderLeft: 4,

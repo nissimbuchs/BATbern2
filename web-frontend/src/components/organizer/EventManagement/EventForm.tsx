@@ -37,6 +37,8 @@ import {
   Chip,
   Checkbox,
   FormControlLabel,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,6 +50,9 @@ import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/Even
 import type { components } from '@/types/generated/events-api.types';
 import { workflowService } from '@/services/workflowService';
 import { useQueryClient } from '@tanstack/react-query';
+import { EventTasksTab } from '../Tasks/EventTasksTab';
+import type { EventTaskResponse } from '@/services/taskService';
+import { taskService } from '@/services/taskService';
 
 // mapWorkflowStateToStatus function removed - no longer needed
 // Backend now uses workflowState directly (Phase 1-2 migration complete)
@@ -108,8 +113,6 @@ const createEventSchema = (t: (key: string) => string) =>
         'PARTNER_MEETING_COMPLETE',
         'ARCHIVED',
       ]),
-      // UI-only fields (will be stored in metadata)
-      theme: z.string().optional().or(z.literal('')),
       eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
     })
     .refine(
@@ -136,7 +139,6 @@ interface EventFormData {
   venueCapacity: number;
   registrationDeadline?: string;
   workflowState?: components['schemas']['EventWorkflowState'];
-  theme?: string;
   eventType?: components['schemas']['EventType'];
 }
 
@@ -155,7 +157,7 @@ interface EventFormProps {
 
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
@@ -172,6 +174,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
   const [themeImageUploadId, setThemeImageUploadId] = useState<string | undefined>(undefined);
   const [overrideValidation, setOverrideValidation] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
+  const [currentTab, setCurrentTab] = useState(0);
+  const [selectedTemplates, setSelectedTemplates] = useState<string[]>([]);
+  const [disabledTemplates, setDisabledTemplates] = useState<string[]>([]); // Templates with task instances
+  const [templateAssignees, setTemplateAssignees] = useState<Record<string, string>>({});
+  const [customTasks, setCustomTasks] = useState<EventTaskResponse[]>([]);
 
   // Check role-based access control
   const hasEditPermission = user?.role === 'organizer';
@@ -187,6 +194,55 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       setThemeImageUploadId(event.themeImageUploadId ?? undefined);
     }
   }, [event, open, mode]);
+
+  // Fetch existing event tasks when opening in edit mode (Story 5.5 AC21)
+  // Pre-select all default templates if no tasks exist yet
+  useEffect(() => {
+    if (open && mode === 'edit' && event) {
+      const loadExistingTasksAndTemplates = async () => {
+        try {
+          // Fetch existing tasks
+          const existingTasks = await taskService.listEventTasks(event.eventCode);
+
+          // Find which templates already have task instances
+          const templatesWithInstances = existingTasks
+            .filter((task) => task.templateId !== null)
+            .map((task) => task.templateId as string);
+
+          if (templatesWithInstances.length > 0) {
+            // Tasks exist - mark these templates as selected AND disabled
+            setSelectedTemplates(templatesWithInstances);
+            setDisabledTemplates(templatesWithInstances); // Disable templates with task instances
+
+            // Map assignees from existing tasks
+            const assigneesMap: Record<string, string> = {};
+            existingTasks.forEach((task) => {
+              if (task.templateId && task.assignedOrganizerUsername) {
+                assigneesMap[task.templateId] = task.assignedOrganizerUsername;
+              }
+            });
+            setTemplateAssignees(assigneesMap);
+          } else {
+            // No tasks exist yet - pre-select all default templates (but don't disable them)
+            // Fetch all templates to get default ones
+            const allTemplates = await taskService.listAllTemplates();
+            const defaultTemplateIds = allTemplates
+              .filter((template) => template.isDefault)
+              .map((template) => template.id);
+
+            setSelectedTemplates(defaultTemplateIds);
+            setDisabledTemplates([]); // No templates are disabled yet
+            setTemplateAssignees({});
+          }
+        } catch (error) {
+          console.error('Failed to load existing tasks:', error);
+          // Don't fail the entire dialog if task loading fails
+        }
+      };
+
+      loadExistingTasksAndTemplates();
+    }
+  }, [open, mode, event]);
 
   // Create validation schema with translations
   const eventSchema = createEventSchema(t);
@@ -212,7 +268,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueAddress: event.venueAddress || '',
           venueCapacity: event.venueCapacity || 200,
           workflowState: event.workflowState || 'CREATED',
-          theme: (event as EventUI).theme || '',
           eventType: normalizeEventType((event as EventUI).eventType),
         }
       : {
@@ -225,7 +280,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           venueAddress: '',
           venueCapacity: 200,
           workflowState: 'CREATED' as const,
-          theme: '',
           eventType: 'FULL_DAY',
         },
   });
@@ -252,7 +306,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueAddress: '',
         venueCapacity: 200,
         workflowState: 'CREATED',
-        theme: '',
         eventType: 'FULL_DAY',
       });
     }
@@ -271,7 +324,6 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         venueAddress: event.venueAddress || '',
         venueCapacity: event.venueCapacity || 200,
         workflowState: event.workflowState || 'CREATED',
-        theme: (event as EventUI).theme || '',
         eventType: normalizeEventType((event as EventUI).eventType),
       });
     }
@@ -392,12 +444,30 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
-        metadata: data.theme ? JSON.stringify({ theme: data.theme }) : undefined,
         themeImageUploadId: themeImageUploadId || undefined, // Story 2.5.3a
       };
 
       // Use mutation hook for proper cache management (MVC pattern)
-      await createEventMutation.mutateAsync(createData);
+      const createdEvent = await createEventMutation.mutateAsync(createData);
+
+      // Create tasks from selected templates (Story 5.5 AC21)
+      if (selectedTemplates.length > 0) {
+        const templateConfigs = selectedTemplates.map((templateId) => ({
+          templateId,
+          assignedOrganizerUsername: templateAssignees[templateId] || undefined,
+        }));
+
+        try {
+          await taskService.createTasksFromTemplates(createdEvent.eventCode, {
+            templates: templateConfigs,
+          });
+        } catch (taskError) {
+          console.error('Failed to create tasks from templates:', taskError);
+          // Don't fail the entire operation if task creation fails
+          // Event is already created, tasks can be added later
+        }
+      }
+
       onSuccess?.();
       onClose();
     } catch (error: unknown) {
@@ -420,7 +490,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         (changedFields as Record<string, unknown>).themeImageUploadId = themeImageUploadId;
       }
 
-      if (Object.keys(changedFields).length === 0) {
+      // Only skip update if no event fields changed AND no templates selected
+      if (Object.keys(changedFields).length === 0 && selectedTemplates.length === 0) {
         onClose();
         return;
       }
@@ -458,6 +529,39 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] }); // Detail caches
         queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] }); // Workflow cache
         queryClient.invalidateQueries({ queryKey: ['events', 'current'] }); // Current event cache
+      }
+
+      // Create tasks from selected templates (Story 5.5 AC21)
+      // Backend is idempotent - only creates tasks that don't already exist
+      console.log('=== Task Creation Debug ===');
+      console.log('selectedTemplates:', selectedTemplates);
+      console.log('templateAssignees:', templateAssignees);
+      console.log('selectedTemplates.length:', selectedTemplates.length);
+
+      if (selectedTemplates.length > 0) {
+        const templateConfigs = selectedTemplates.map((templateId) => ({
+          templateId,
+          assignedOrganizerUsername: templateAssignees[templateId] || undefined,
+        }));
+
+        console.log('Creating tasks with configs:', templateConfigs);
+
+        try {
+          const createdTasks = await taskService.createTasksFromTemplates(event.eventCode, {
+            templates: templateConfigs,
+          });
+
+          console.log('✓ Successfully created tasks:', createdTasks);
+
+          // Invalidate tasks cache to show newly created tasks
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        } catch (taskError) {
+          console.error('❌ Failed to create tasks from templates:', taskError);
+          // Don't fail the entire operation if task creation fails
+          // Event is already updated, tasks can be added later
+        }
+      } else {
+        console.log('⚠️ No templates selected, skipping task creation');
       }
 
       onSuccess?.();
@@ -498,7 +602,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     setShowUnsavedWarning(false);
   };
 
-  if (!hasEditPermission) {
+  // Don't show permission error while auth is still loading
+  if (!isAuthLoading && !hasEditPermission) {
     return (
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogContent>
@@ -515,308 +620,346 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     <>
       <Dialog open={open} onClose={handleCloseClick} maxWidth="md" fullWidth>
         <DialogTitle>{mode === 'create' ? t('form.createEvent') : t('form.editEvent')}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            {apiError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {apiError}
-              </Alert>
-            )}
 
-            {mode === 'edit' && (
-              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {t('autoSave.enabled')}
-                </Typography>
-                {autoSaveStatus === 'saving' && (
-                  <Chip label={t('autoSave.saving')} size="small" color="info" />
-                )}
-                {autoSaveStatus === 'saved' && lastSavedAt && (
-                  <Chip
-                    label={t('autoSave.saved', {
-                      time: lastSavedAt.toLocaleTimeString(),
-                    })}
-                    size="small"
-                    color="success"
+        {/* Tabs - Story 5.5 Phase 6 */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
+            <Tab label={t('tabs.info', 'Info')} />
+            <Tab label={t('tabs.tasks', 'Tasks')} disabled={mode === 'create'} />
+          </Tabs>
+        </Box>
+
+        <DialogContent>
+          {/* Tab Panel 0: Info (Event Form) */}
+          {currentTab === 0 && (
+            <Box sx={{ pt: 2 }}>
+              {apiError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {apiError}
+                </Alert>
+              )}
+
+              {mode === 'edit' && (
+                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('autoSave.enabled')}
+                  </Typography>
+                  {autoSaveStatus === 'saving' && (
+                    <Chip label={t('autoSave.saving')} size="small" color="info" />
+                  )}
+                  {autoSaveStatus === 'saved' && lastSavedAt && (
+                    <Chip
+                      label={t('autoSave.saved', {
+                        time: lastSavedAt.toLocaleTimeString(),
+                      })}
+                      size="small"
+                      color="success"
+                    />
+                  )}
+                  {autoSaveStatus === 'error' && (
+                    <Chip label={t('autoSave.failed')} size="small" color="error" />
+                  )}
+                </Box>
+              )}
+
+              {/* Event Number and Title side-by-side */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="eventNumber"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('form.eventNumber')}
+                      type="number"
+                      error={!!errors.eventNumber}
+                      helperText={errors.eventNumber?.message}
+                      margin="normal"
+                      sx={{ width: '150px' }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="title"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('form.title')}
+                      fullWidth
+                      error={!!errors.title}
+                      helperText={errors.title?.message}
+                      margin="normal"
+                    />
+                  )}
+                />
+              </Box>
+
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label={t('form.description')}
+                    fullWidth
+                    multiline
+                    rows={4}
+                    error={!!errors.description}
+                    helperText={errors.description?.message}
+                    margin="normal"
                   />
                 )}
-                {autoSaveStatus === 'error' && (
-                  <Chip label={t('autoSave.failed')} size="small" color="error" />
+              />
+
+              {/* Event Date and Registration Deadline side-by-side */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('form.eventDate')}
+                      type="date"
+                      fullWidth
+                      error={!!errors.date}
+                      helperText={errors.date?.message}
+                      margin="normal"
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="registrationDeadline"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('form.registrationDeadline')}
+                      type="date"
+                      fullWidth
+                      error={!!errors.registrationDeadline}
+                      helperText={errors.registrationDeadline?.message}
+                      margin="normal"
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                  )}
+                />
+              </Box>
+
+              {/* Event Type and Venue Capacity side-by-side */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Controller
+                  name="eventType"
+                  control={control}
+                  render={({ field }) => (
+                    <Box sx={{ flex: 1, mt: 2 }}>
+                      <EventTypeSelector
+                        value={field.value || 'FULL_DAY'}
+                        onChange={field.onChange}
+                        disabled={!hasEditPermission}
+                        error={!!errors.eventType}
+                        helperText={errors.eventType?.message}
+                      />
+                    </Box>
+                  )}
+                />
+                <Controller
+                  name="venueCapacity"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={t('form.capacity')}
+                      type="number"
+                      fullWidth
+                      error={!!errors.venueCapacity}
+                      helperText={errors.venueCapacity?.message}
+                      margin="normal"
+                    />
+                  )}
+                />
+              </Box>
+
+              <Controller
+                name="workflowState"
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
+                    <InputLabel>{t('form.status')}</InputLabel>
+                    <Select {...field} label={t('form.status')}>
+                      <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
+                      <MenuItem value="TOPIC_SELECTION">
+                        {t('workflow.states.topic_selection')}
+                      </MenuItem>
+                      <MenuItem value="SPEAKER_BRAINSTORMING">
+                        {t('workflow.states.speaker_brainstorming')}
+                      </MenuItem>
+                      <MenuItem value="SPEAKER_OUTREACH">
+                        {t('workflow.states.speaker_outreach')}
+                      </MenuItem>
+                      <MenuItem value="SPEAKER_CONFIRMATION">
+                        {t('workflow.states.speaker_confirmation')}
+                      </MenuItem>
+                      <MenuItem value="CONTENT_COLLECTION">
+                        {t('workflow.states.content_collection')}
+                      </MenuItem>
+                      <MenuItem value="QUALITY_REVIEW">
+                        {t('workflow.states.quality_review')}
+                      </MenuItem>
+                      <MenuItem value="THRESHOLD_CHECK">
+                        {t('workflow.states.threshold_check')}
+                      </MenuItem>
+                      <MenuItem value="OVERFLOW_MANAGEMENT">
+                        {t('workflow.states.overflow_management')}
+                      </MenuItem>
+                      <MenuItem value="SLOT_ASSIGNMENT">
+                        {t('workflow.states.slot_assignment')}
+                      </MenuItem>
+                      <MenuItem value="AGENDA_PUBLISHED">
+                        {t('workflow.states.agenda_published')}
+                      </MenuItem>
+                      <MenuItem value="AGENDA_FINALIZED">
+                        {t('workflow.states.agenda_finalized')}
+                      </MenuItem>
+                      <MenuItem value="NEWSLETTER_SENT">
+                        {t('workflow.states.newsletter_sent')}
+                      </MenuItem>
+                      <MenuItem value="EVENT_READY">{t('workflow.states.event_ready')}</MenuItem>
+                      <MenuItem value="PARTNER_MEETING_COMPLETE">
+                        {t('workflow.states.partner_meeting_complete')}
+                      </MenuItem>
+                      <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
+                    </Select>
+                    {errors.workflowState && (
+                      <FormHelperText>{errors.workflowState.message}</FormHelperText>
+                    )}
+                  </FormControl>
+                )}
+              />
+
+              {/* Override Workflow Validation Checkbox */}
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  bgcolor: 'warning.light',
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'warning.main',
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={overrideValidation}
+                      onChange={(e) => setOverrideValidation(e.target.checked)}
+                    />
+                  }
+                  label="Override workflow validation (allows any state transition)"
+                />
+
+                {overrideValidation && (
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={2}
+                    label="Override Reason (Optional)"
+                    value={overrideReason}
+                    onChange={(e) => setOverrideReason(e.target.value)}
+                    placeholder="Why are you overriding workflow validation?"
+                    sx={{ mt: 1 }}
+                    helperText="This will be logged for audit purposes"
+                  />
                 )}
               </Box>
-            )}
 
-            {/* Event Number and Title side-by-side */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
               <Controller
-                name="eventNumber"
+                name="venueName"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={t('form.eventNumber')}
-                    type="number"
-                    error={!!errors.eventNumber}
-                    helperText={errors.eventNumber?.message}
-                    margin="normal"
-                    sx={{ width: '150px' }}
-                  />
-                )}
-              />
-              <Controller
-                name="title"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={t('form.title')}
+                    label={t('form.venue')}
                     fullWidth
-                    error={!!errors.title}
-                    helperText={errors.title?.message}
                     margin="normal"
+                    placeholder="e.g., Kornhausforum Bern"
                   />
                 )}
               />
-            </Box>
 
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.description')}
-                  fullWidth
-                  multiline
-                  rows={4}
-                  error={!!errors.description}
-                  helperText={errors.description?.message}
-                  margin="normal"
-                />
-              )}
-            />
-
-            {/* Event Date and Registration Deadline side-by-side */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
               <Controller
-                name="date"
+                name="venueAddress"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={t('form.eventDate')}
-                    type="date"
+                    label={t('form.venueAddress')}
                     fullWidth
-                    error={!!errors.date}
-                    helperText={errors.date?.message}
                     margin="normal"
-                    slotProps={{ inputLabel: { shrink: true } }}
+                    placeholder="e.g., Kornhausplatz 18, 3011 Bern"
                   />
                 )}
               />
-              <Controller
-                name="registrationDeadline"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={t('form.registrationDeadline')}
-                    type="date"
-                    fullWidth
-                    error={!!errors.registrationDeadline}
-                    helperText={errors.registrationDeadline?.message}
-                    margin="normal"
-                    slotProps={{ inputLabel: { shrink: true } }}
-                  />
-                )}
-              />
-            </Box>
 
-            {/* Event Type and Venue Capacity side-by-side */}
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Controller
-                name="eventType"
-                control={control}
-                render={({ field }) => (
-                  <Box sx={{ flex: 1, mt: 2 }}>
-                    <EventTypeSelector
-                      value={field.value || 'FULL_DAY'}
-                      onChange={field.onChange}
-                      disabled={!hasEditPermission}
-                      error={!!errors.eventType}
-                      helperText={errors.eventType?.message}
-                    />
-                  </Box>
-                )}
-              />
-              <Controller
-                name="venueCapacity"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label={t('form.capacity')}
-                    type="number"
-                    fullWidth
-                    error={!!errors.venueCapacity}
-                    helperText={errors.venueCapacity?.message}
-                    margin="normal"
-                  />
-                )}
-              />
-            </Box>
-
-            <Controller
-              name="workflowState"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
-                  <InputLabel>{t('form.status')}</InputLabel>
-                  <Select {...field} label={t('form.status')}>
-                    <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
-                    <MenuItem value="TOPIC_SELECTION">
-                      {t('workflow.states.topic_selection')}
-                    </MenuItem>
-                    <MenuItem value="SPEAKER_BRAINSTORMING">
-                      {t('workflow.states.speaker_brainstorming')}
-                    </MenuItem>
-                    <MenuItem value="SPEAKER_OUTREACH">
-                      {t('workflow.states.speaker_outreach')}
-                    </MenuItem>
-                    <MenuItem value="SPEAKER_CONFIRMATION">
-                      {t('workflow.states.speaker_confirmation')}
-                    </MenuItem>
-                    <MenuItem value="CONTENT_COLLECTION">
-                      {t('workflow.states.content_collection')}
-                    </MenuItem>
-                    <MenuItem value="QUALITY_REVIEW">
-                      {t('workflow.states.quality_review')}
-                    </MenuItem>
-                    <MenuItem value="THRESHOLD_CHECK">
-                      {t('workflow.states.threshold_check')}
-                    </MenuItem>
-                    <MenuItem value="OVERFLOW_MANAGEMENT">
-                      {t('workflow.states.overflow_management')}
-                    </MenuItem>
-                    <MenuItem value="SLOT_ASSIGNMENT">
-                      {t('workflow.states.slot_assignment')}
-                    </MenuItem>
-                    <MenuItem value="AGENDA_PUBLISHED">
-                      {t('workflow.states.agenda_published')}
-                    </MenuItem>
-                    <MenuItem value="AGENDA_FINALIZED">
-                      {t('workflow.states.agenda_finalized')}
-                    </MenuItem>
-                    <MenuItem value="NEWSLETTER_SENT">
-                      {t('workflow.states.newsletter_sent')}
-                    </MenuItem>
-                    <MenuItem value="EVENT_READY">{t('workflow.states.event_ready')}</MenuItem>
-                    <MenuItem value="PARTNER_MEETING_COMPLETE">
-                      {t('workflow.states.partner_meeting_complete')}
-                    </MenuItem>
-                    <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
-                  </Select>
-                  {errors.workflowState && (
-                    <FormHelperText>{errors.workflowState.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
-
-            {/* Override Workflow Validation Checkbox */}
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: 'warning.light',
-                borderRadius: 1,
-                border: '1px solid',
-                borderColor: 'warning.main',
-              }}
-            >
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={overrideValidation}
-                    onChange={(e) => setOverrideValidation(e.target.checked)}
-                  />
-                }
-                label="Override workflow validation (allows any state transition)"
-              />
-
-              {overrideValidation && (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={2}
-                  label="Override Reason (Optional)"
-                  value={overrideReason}
-                  onChange={(e) => setOverrideReason(e.target.value)}
-                  placeholder="Why are you overriding workflow validation?"
-                  sx={{ mt: 1 }}
-                  helperText="This will be logged for audit purposes"
+              {/* Theme Image Upload - Story 2.5.3a */}
+              <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t('form.themeImage')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  {t('form.themeImageHelp')}
+                </Typography>
+                <FileUpload
+                  currentFileUrl={event?.themeImageUrl ?? undefined}
+                  onUploadSuccess={(data) => setThemeImageUploadId(data.uploadId)}
+                  onUploadError={(error) => {
+                    setApiError(t(`errors.${error.type}`, { defaultValue: error.message }));
+                  }}
+                  onFileRemove={() => setThemeImageUploadId('')}
+                  maxFileSize={5 * 1024 * 1024}
+                  allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
+                  altText={t('form.themeImageAlt')}
+                  removeButtonLabel={t('form.removeThemeImage')}
                 />
-              )}
+              </Box>
             </Box>
+          )}
 
-            <Controller
-              name="venueName"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.venue')}
-                  fullWidth
-                  margin="normal"
-                  placeholder="e.g., Kornhausforum Bern"
-                />
-              )}
-            />
-
-            <Controller
-              name="venueAddress"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label={t('form.venueAddress')}
-                  fullWidth
-                  margin="normal"
-                  placeholder="e.g., Kornhausplatz 18, 3011 Bern"
-                />
-              )}
-            />
-
-            <Controller
-              name="theme"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} label={t('form.theme')} fullWidth margin="normal" />
-              )}
-            />
-
-            {/* Theme Image Upload - Story 2.5.3a */}
-            <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-              <Typography variant="subtitle2" gutterBottom>
-                {t('form.themeImage')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t('form.themeImageHelp')}
-              </Typography>
-              <FileUpload
-                currentFileUrl={event?.themeImageUrl ?? undefined}
-                onUploadSuccess={(data) => setThemeImageUploadId(data.uploadId)}
-                onUploadError={(error) => {
-                  setApiError(t(`errors.${error.type}`, { defaultValue: error.message }));
+          {/* Tab Panel 1: Tasks (EventTasksTab) - Story 5.5 Phase 6 */}
+          {currentTab === 1 && mode === 'edit' && (
+            <Box sx={{ pt: 2 }}>
+              <EventTasksTab
+                eventId={event?.eventCode || null}
+                organizerUsername={user?.username || ''}
+                selectedTemplates={selectedTemplates}
+                templateAssignees={templateAssignees}
+                customTasks={customTasks}
+                disabledTemplates={disabledTemplates} // Templates with task instances are disabled
+                onTemplateToggle={(templateId, checked) => {
+                  if (checked) {
+                    setSelectedTemplates([...selectedTemplates, templateId]);
+                  } else {
+                    setSelectedTemplates(selectedTemplates.filter((id) => id !== templateId));
+                  }
                 }}
-                onFileRemove={() => setThemeImageUploadId('')}
-                maxFileSize={5 * 1024 * 1024}
-                allowedTypes={['image/png', 'image/jpeg', 'image/svg+xml']}
-                altText={t('form.themeImageAlt')}
-                removeButtonLabel={t('form.removeThemeImage')}
+                onAssigneeChange={(templateId, assignee) => {
+                  setTemplateAssignees({ ...templateAssignees, [templateId]: assignee });
+                }}
+                onAddCustomTask={() => {
+                  // Custom task modal handled internally by EventTasksTab
+                }}
+                onEditCustomTask={(task) => {
+                  // Edit modal handled internally by EventTasksTab
+                  console.log('Edit task:', task);
+                }}
+                onDeleteCustomTask={(taskId) => {
+                  setCustomTasks(customTasks.filter((t) => t.id !== taskId));
+                }}
               />
             </Box>
-          </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseClick}>{t('form.cancel')}</Button>

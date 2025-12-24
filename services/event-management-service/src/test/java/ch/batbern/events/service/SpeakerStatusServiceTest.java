@@ -60,14 +60,11 @@ public class SpeakerStatusServiceTest {
     @Mock
     private EventTypeService eventTypeService;
 
-    @Mock
-    private ch.batbern.events.repository.SessionRepository sessionRepository;
-
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, sessionRepository);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService);
     }
 
     /**

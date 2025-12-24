@@ -3,6 +3,7 @@ package ch.batbern.events.controller;
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -17,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -74,9 +73,8 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
         Topic topic = createTestTopic("Cloud Native Architecture");
 
-        // When: Select topic for event
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        // When: Select topic for event using generated DTO (ADR-006)
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -104,9 +102,8 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
         Topic topic = createTestTopic("Kubernetes Best Practices");
 
-        // When: Select topic for event
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        // When: Select topic for event using generated DTO (ADR-006)
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -133,9 +130,8 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
         Topic topic = createTestTopic("AI/ML Fundamentals");
 
-        // When: Select topic for event
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        // When: Select topic for event using generated DTO (ADR-006)
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +141,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         // Then: Verify the workflow transition occurred (event publishing happens in state machine)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
         assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
-        assertThat(updatedEvent.getTopicId()).isEqualTo(topic.getId());
+        assertThat(updatedEvent.getTopicCode()).isEqualTo(topic.getTopicCode());
     }
 
     // ==================== AC16 Tests: Event State Validation ====================
@@ -163,8 +159,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("DevOps Best Practices");
 
         // When: Attempt to select topic for event in invalid state
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         // Then: Returns 400 Bad Request (invalid state transition)
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
@@ -186,8 +181,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("Cloud Architecture");
 
         // When: Attempt to select topic for non-existent event
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         // Then: Returns 404 Not Found
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", "INVALID999")
@@ -208,8 +202,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
 
         // When: Attempt to select non-existent topic
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", "00000000-0000-0000-0000-000000000000");
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest("non-existent-topic-code");
 
         // Then: Returns 404 Not Found
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
@@ -231,8 +224,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic newTopic = createTestTopic("Updated Topic");
 
         // When: Select different topic
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", newTopic.getId().toString());
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(newTopic.getTopicCode());
 
         // Then: Request is successful (re-selection allowed)
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
@@ -243,10 +235,8 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     /**
      * Test 3a.8: should_persistTopicIdOnEvent_when_topicSelected
-     * Verifies that topicId is stored on the Event entity after selection.
+     * Verifies that topicCode is returned in the response after selection (ADR-003).
      * Story 5.2 AC14: Store topic assignment
-     *
-     * NOTE: This test will fail until topicId field is added to Event entity in Task 3b.
      */
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
@@ -255,16 +245,15 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Event event = createTestEvent("BATbern56", EventWorkflowState.CREATED);
         Topic topic = createTestTopic("Microservices Architecture");
 
-        // When: Select topic for event
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", topic.getId().toString());
+        // When: Select topic for event using generated DTO (ADR-006)
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(topic.getTopicCode());
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                // Then: Response includes topicId
-                .andExpect(jsonPath("$.topicId").value(topic.getId().toString()));
+                // Then: Response includes topicCode (ADR-003 compliant)
+                .andExpect(jsonPath("$.topicCode").value(topic.getTopicCode()));
     }
 
     // ==================== Helper Methods ====================
@@ -320,30 +309,29 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic newTopic = createTestTopic("Microservices Patterns");
 
         Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_BRAINSTORMING);
-        event.setTopicId(initialTopic.getId());
+        event.setTopicCode(initialTopic.getTopicCode());
         event = eventRepository.save(event);
 
         // When: Change topic to newTopic
-        Map<String, Object> request = new HashMap<>();
-        request.put("topicId", newTopic.getId().toString());
+        SelectTopicForEventRequest request = new SelectTopicForEventRequest(newTopic.getTopicCode());
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/topics", event.getEventCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.topicId").value(newTopic.getId().toString()))
+                .andExpect(jsonPath("$.topicCode").value(newTopic.getTopicCode()))
                 .andExpect(jsonPath("$.workflowState").value("SPEAKER_BRAINSTORMING"));
 
         // Then: Verify topic was actually updated in database
         Event updatedEvent = eventRepository.findByEventCode("BATbern98")
                 .orElseThrow(() -> new AssertionError("Event not found"));
 
-        assertThat(updatedEvent.getTopicId())
+        assertThat(updatedEvent.getTopicCode())
                 .as("Topic should be updated to new topic in database")
-                .isEqualTo(newTopic.getId());
+                .isEqualTo(newTopic.getTopicCode());
 
-        assertThat(updatedEvent.getTopicId())
+        assertThat(updatedEvent.getTopicCode())
                 .as("Topic should not be the old topic")
-                .isNotEqualTo(initialTopic.getId());
+                .isNotEqualTo(initialTopic.getTopicCode());
     }
 }

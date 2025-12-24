@@ -22,4 +22,5 @@ public class CompanySearchResponse {
     private String swissUID;
     private String industry;
     private boolean isVerified;
+    private CompanyLogo logo; // Optional field, included when ?include=logo
 }

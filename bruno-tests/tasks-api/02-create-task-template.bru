@@ -1,0 +1,52 @@
+meta {
+  name: Create Task Template
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/tasks/templates
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "name": "Test Custom Template",
+    "triggerState": "topic_selection",
+    "dueDateType": "relative_to_event",
+    "dueDateOffsetDays": -14,
+    "saveAsTemplate": true
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.name: eq Test Custom Template
+}
+
+tests {
+  test("should return 201 status - Story 5.5 AC22, AC26", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created template with ID - Story 5.5 AC22", function() {
+    const response = res.getBody();
+    expect(response.id).to.be.a('string');
+    expect(response.name).to.equal('Test Custom Template');
+    expect(response.triggerState).to.equal('topic_selection');
+    expect(response.dueDateType).to.equal('relative_to_event');
+    expect(response.dueDateOffsetDays).to.equal(-14);
+    expect(response.isDefault).to.be.false;
+  });
+
+  test("should set createdByUsername - Story 5.5 AC26", function() {
+    const response = res.getBody();
+    expect(response.createdByUsername).to.be.a('string');
+  });
+}

@@ -12,8 +12,8 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 ✅ **Revolutionary Impact** (complete architectural transformation)
 
 ### Goals
-- Automate the complex 16-step event planning workflow
-- Eliminate manual speaker coordination and material collection
+- Automate event planning through a 9-state event workflow with parallel speaker coordination and configurable task management
+- Eliminate manual speaker coordination and material collection via self-service workflows
 - Provide real-time ROI analytics for partners
 - Provide searchable content archive across 20+ years of conference content
 - Transform static website into dynamic event management platform
@@ -30,25 +30,45 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR1**: The platform shall provide role-based authentication with distinct interfaces for organizers, speakers, partners, and attendees
 
-**FR2**: Event organizers shall manage the complete 16-step event workflow through intelligent task sequencing, automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
+**FR2**: Event organizers shall manage events through a 9-state workflow with parallel speaker coordination and configurable task management, including automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
 
-**16-Step Detailed Event Workflow:**
-1. **Topic Selection & Event Type Definition** - Select topic from backlog, define event type (Full-day: 6-8 slots, Afternoon: 6-8 slots, Evening: 3-4 slots)
-2. **Speaker Brainstorming & Research** - Identify potential speakers for topic
-3. **Speaker Assignment & Contact Strategy** - Define organizer-to-speaker contact distribution
-4. **Speaker Outreach & Initial Contact** - Send invitations with context, deadlines, requirements
-5. **Speaker Status Tracking** - Track: open → contacted → ready → declined/accepted → slot-assigned → final agenda
-6. **Speaker Content Collection** - Collect title, abstract (max 1000 chars), CV, photo (1 month before)
-7. **Content Quality Review** - Moderator reviews abstracts/materials for standards compliance
-8. **Minimum Threshold Check** - Wait until minimum slots filled before assignment
-9. **Speaker Selection & Overflow Management** - Organizer voting on topic fit when more speakers than slots
-10. **Speaker-to-Slot Assignment** - Assign speakers considering preferences, technical needs, topic flow optimization
-11. **Progressive Publishing Engine** - Topic immediate, speakers 1 month before with continuous updates
-12. **Agenda Finalization** - 2 weeks before: finalize agenda, handle dropouts via overflow speaker list
-13. **Newsletter Distribution** - Send progressive then final agenda to mailing list
-14. **Moderation Assignment** - Assign event moderator to the event
-15. **Catering Coordination** - Adds a task to contact Caterer for a menue 1 month before
-16. **Partner Meeting Coordination** - Organizers organize Spring and Autumn partner meetings at lunchtime on same day as BATbern event to discuss BATbern budgets, event statistics and brainstorm on topics for upcoming events, that are then stored on a backlog for voting and topic selection by the organizers.
+**Event Workflow (9-State State Machine):**
+The event progresses through high-level states while speakers progress individually in parallel:
+
+| State | Description | Entry Condition | Exit Condition |
+|-------|-------------|-----------------|----------------|
+| **CREATED** | Event created, no topic selected | Event created | Topic selected |
+| **TOPIC_SELECTION** | Topic selected, brainstorming speakers | Topic selected | Minimum speakers in pool |
+| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach in progress | Min speakers in pool | All slots filled |
+| **SLOT_ASSIGNMENT** | Speakers assigned to time slots | All slots filled | Agenda published |
+| **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Manually finalized (2 weeks before) |
+| **AGENDA_FINALIZED** | Agenda locked for printing | Manually finalized | Event day |
+| **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
+| **EVENT_COMPLETED** | Event finished, post-processing | After event | Manual trigger |
+| **ARCHIVED** | Event archived | Archival trigger | Terminal state |
+
+**Speaker Workflow (Parallel Per-Speaker Progression):**
+Quality review and slot assignment are independent and can happen in any order:
+- **identified** → **contacted** → **ready** → **accepted/declined**
+- If accepted: **content_submitted** → (**quality_reviewed** ∥ **slot_assigned**) → **confirmed**
+- Additional states: **overflow** (backup speaker), **withdrew** (speaker drops out)
+
+**Task Management System (Configurable Work Items):**
+Tasks are NOT workflow states - they are assignable work items with due dates triggered by workflow transitions:
+
+| Default Task | Trigger State | Due Date |
+|--------------|---------------|----------|
+| Venue Booking | TOPIC_SELECTION | 90 days before event |
+| Partner Meeting | TOPIC_SELECTION | Same day as event |
+| Moderator Assignment | TOPIC_SELECTION | 14 days before event |
+| Newsletter: Topic | TOPIC_SELECTION | Immediate |
+| Newsletter: Speakers | AGENDA_PUBLISHED | 30 days before event |
+| Newsletter: Final | AGENDA_FINALIZED | 14 days before event |
+| Catering | AGENDA_FINALIZED | 30 days before event |
+
+Custom tasks can be created with configurable trigger states, due dates, and assigned organizers.
+
+See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for detailed implementation.
 
 **FR3**: The system shall provide automated speaker invitation, submission, and material collection workflows with real-time status updates
 
@@ -76,7 +96,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
-**FR17**: The system shall provide intelligent speaker matching and assignment tracking with automated workflow states (open → contacted → ready → declined/accepted → slot-assigned → final agenda) and real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms and separate overflow speaker tracking
+**FR17**: The system shall provide intelligent speaker matching and assignment tracking with parallel workflow states (identified → contacted → ready → accepted/declined; then content_submitted → quality_reviewed ∥ slot_assigned → confirmed) supporting independent quality review and slot assignment paths, real-time organizer collaboration including slot preference collection, technical requirement tracking, and overflow management with organizer voting mechanisms and automatic promotion from overflow when slots become available
 
 **FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
 
@@ -152,6 +172,7 @@ For comprehensive technical implementation details, refer to the following archi
 - **[API Design](./architecture/04-api-design.md)** - REST API specifications and workflows
 - **[Frontend Architecture](./architecture/05-frontend-architecture.md)** - React component patterns and PWA
 - **[Backend Architecture](./architecture/06-backend-architecture.md)** - Service patterns and security
+- **[Workflow State Machines](./architecture/06a-workflow-state-machines.md)** - Event workflow, speaker workflow, and task management
 - **[Development Standards](./architecture/07-development-standards.md)** - Coding standards and setup
 - **[Operations & Security](./architecture/08-operations-security.md)** - Security and performance requirements
 
@@ -307,7 +328,7 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 - **[Epic 4: Public Website & Content Discovery](./prd/epic-4-public-website-content-discovery.md)** - Public event pages, registration, historical archive browsing (5 weeks)
 
 **Phase 2: Enhanced Workflows & Advanced Features (Weeks 26+, DEFERRED)**
-- **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - 16-step event planning automation with intelligent features (18 weeks, DEFERRED)
+- **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - 9-state event workflow with parallel speaker coordination and task management (18 weeks, DEFERRED)
 - **[Epic 6: Speaker Portal & Support](./prd/epic-6-speaker-portal-support.md)** - Self-service speaker portal with advanced material management (8 weeks, DEFERRED)
 - **[Epic 7: Attendee Experience Enhancements](./prd/epic-7-attendee-experience-enhancements.md)** - Personal engagement, mobile PWA, offline access (6 weeks, DEFERRED)
 - **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Analytics dashboards, topic voting, meeting coordination (4 weeks, DEFERRED)
@@ -365,10 +386,10 @@ Each epic document contains:
 
 **Epic 5 Success (Enhanced Organizer Workflows)**
 - Event creation to publication in <30 minutes
-- 16-step workflow automation operational with intelligent task sequencing
+- 9-state event workflow operational with parallel speaker coordination and configurable task management
 - Progressive publishing engine with automated content updates
 - Topic selection with ML-powered duplicate detection
-- Automated deadline tracking and escalation
+- Automated deadline tracking and escalation via task management system
 
 **Epic 6 Success (Speaker Portal & Support)**
 - 90% speaker invitation acceptance rate

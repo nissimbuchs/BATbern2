@@ -98,17 +98,4 @@ public class TopicUsageHistoryWithEventDetails {
         this.engagementScore = engagementScore;
     }
 
-    /**
-     * Convert to TopicUsageHistoryResponse.
-     */
-    public TopicUsageHistoryResponse toResponse() {
-        TopicUsageHistoryResponse response = new TopicUsageHistoryResponse();
-        response.setEventNumber(this.eventNumber);
-        response.setEventCode(this.eventCode);
-        response.setEventDate(this.eventDate);
-        response.setUsedDate(this.usedDate);
-        response.setAttendance(this.attendeeCount);
-        response.setEngagementScore(this.engagementScore);
-        return response;
-    }
 }

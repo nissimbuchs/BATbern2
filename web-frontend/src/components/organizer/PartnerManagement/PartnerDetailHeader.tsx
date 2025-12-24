@@ -15,9 +15,9 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { ArrowBack, Edit, NoteAdd, Email, CalendarMonth, Analytics } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Edit, NoteAdd, Email, CalendarMonth, Analytics, ArrowBack } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
@@ -61,12 +61,12 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
 
-  const handleBack = () => {
-    navigate('/organizer/partners');
-  };
-
   const handleEdit = () => {
     openEditModal(partner);
+  };
+
+  const handleBack = () => {
+    navigate('/organizer/partners');
   };
 
   const companyName = partner.company?.name || partner.companyName;
@@ -79,8 +79,8 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
       <Stack spacing={3}>
         {/* Back Button */}
         <Box>
-          <Button startIcon={<ArrowBack />} onClick={handleBack} variant="text" size="small">
-            Back to Partner Directory
+          <Button startIcon={<ArrowBack />} onClick={handleBack}>
+            {t('detail.header.backButton', 'Back to Partner Directory')}
           </Button>
         </Box>
 

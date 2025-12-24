@@ -163,7 +163,7 @@ describe('topicService', () => {
         lastUsedDate: '2024-01-15',
         isActive: true,
         createdDate: '2023-01-01',
-        similarityScores: [{ topicId: 'topic-456', score: 0.75 }],
+        similarityScores: [{ topicCode: 'cloud-security', score: 0.75 }],
       };
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockTopic });
@@ -304,7 +304,7 @@ describe('topicService', () => {
   describe('selectTopicForEvent', () => {
     it('should select topic for event and transition workflow state', async () => {
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       vi.mocked(apiClient.post).mockResolvedValue({ data: undefined });
@@ -316,7 +316,7 @@ describe('topicService', () => {
 
     it('should select topic with justification override', async () => {
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
         justification: 'Partner explicitly requested despite high similarity',
       };
 
@@ -329,7 +329,7 @@ describe('topicService', () => {
 
     it('should propagate invalid state errors', async () => {
       const request: SelectTopicForEventRequest = {
-        topicId: 'topic-123',
+        topicCode: 'mobile-iot',
       };
 
       const error = new Error('Invalid workflow state: Event must be in CREATED state');

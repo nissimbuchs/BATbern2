@@ -3,6 +3,8 @@ package ch.batbern.events.repository;
 import ch.batbern.events.domain.Session;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,6 +35,13 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      * Find all sessions for a specific event
      */
     List<Session> findByEventId(UUID eventId);
+
+    /**
+     * Find all sessions for a specific event with session users eagerly loaded
+     * Story 5.5: Fix lazy loading issue when expanding sessions in API responses
+     */
+    @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers WHERE s.eventId = :eventId")
+    List<Session> findByEventIdWithSpeakers(@Param("eventId") UUID eventId);
 
     /**
      * Find all sessions for a specific event and session type

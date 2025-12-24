@@ -21,6 +21,7 @@ import type {
   OverrideStalenesRequest,
   TopicFilters,
   SelectTopicForEventRequest,
+  TopicSelectionResponse,
   TopicUsageHistory,
 } from '@/types/topic.types';
 
@@ -183,12 +184,19 @@ class TopicService {
    * Select topic for event and transition workflow state (AC14)
    *
    * @param eventCode Event code (e.g., "BATbern56")
-   * @param request Request with topicId and optional justification
-   * @returns Success response
+   * @param request Request with topicCode and optional justification (generated DTO)
+   * @returns TopicSelectionResponse with event and topic details (generated DTO)
    * @throws Error if event/topic not found, invalid state, or unauthorized
    */
-  async selectTopicForEvent(eventCode: string, request: SelectTopicForEventRequest): Promise<void> {
-    await apiClient.post(`${EVENTS_API_PATH}/${eventCode}/topics`, request);
+  async selectTopicForEvent(
+    eventCode: string,
+    request: SelectTopicForEventRequest
+  ): Promise<TopicSelectionResponse> {
+    const response = await apiClient.post<TopicSelectionResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/topics`,
+      request
+    );
+    return response.data;
   }
 
   /**

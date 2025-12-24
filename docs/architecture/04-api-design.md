@@ -25,11 +25,11 @@ Foundational API patterns, external integrations, and common components shared a
 
 ### 2. [Event Management API](04-api-event-management.md)
 
-Core event lifecycle management, organizer workflows, and comprehensive 16-step workflow automation.
+Core event lifecycle management, organizer workflows, and comprehensive 9-state workflow automation.
 
 **Key Endpoints:**
 - `/api/v1/events` - Event CRUD operations
-- `/api/v1/events/{id}/workflow` - 16-step workflow state management
+- `/api/v1/events/{id}/workflow` - 9-state workflow state management
 - `/api/v1/events/{id}/slots` - Slot configuration and assignment
 - `/api/v1/events/{id}/overflow` - Speaker overflow voting and waitlist
 - `/api/v1/topics/backlog` - Topic backlog with ML similarity and staleness detection
