@@ -2,8 +2,8 @@
 FROM gradle:8.5-jdk21 AS build
 WORKDIR /workspace
 
-# Copy root settings.gradle for multi-project build
-COPY settings.gradle ./
+# Copy root build configuration for multi-project build
+COPY settings.gradle build.gradle ./
 
 # Copy checkstyle configuration
 COPY config ./config
@@ -22,6 +22,9 @@ COPY docs/api ./docs/api
 COPY services/partner-coordination-service/build.gradle services/partner-coordination-service/gradlew* ./services/partner-coordination-service/
 COPY services/partner-coordination-service/gradle ./services/partner-coordination-service/gradle
 COPY services/partner-coordination-service/src ./services/partner-coordination-service/src
+
+# Build shared-kernel first (separate step to ensure it's fully available)
+RUN gradle :shared-kernel:build --no-daemon -x test
 
 # Build partner-coordination-service subproject (compile tests but don't run them)
 RUN gradle :services:partner-coordination-service:build :services:partner-coordination-service:compileTestJava --no-daemon -x test

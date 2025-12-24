@@ -14,26 +14,30 @@ vi.mock('react-i18next', () => ({
 
 const mockTopics: Topic[] = [
   {
-    id: '1',
+    topicCode: 'cloud-native',
     title: 'Cloud Native',
     category: 'technical',
     stalenessScore: 85,
     usageCount: 3,
     lastUsedDate: '2024-01-15',
-    isActive: true,
+    active: true,
     createdDate: '2023-01-01',
     description: 'Test',
+    colorZone: 'green',
+    status: 'available',
   },
   {
-    id: '2',
+    topicCode: 'leadership',
     title: 'Leadership',
     category: 'management',
     stalenessScore: 50,
     usageCount: 5,
     lastUsedDate: '2024-06-01',
-    isActive: true,
+    active: true,
     createdDate: '2023-02-01',
     description: 'Test',
+    colorZone: 'yellow',
+    status: 'caution',
   },
 ];
 
@@ -71,7 +75,7 @@ describe('TopicList', () => {
     render(
       <TopicList
         topics={mockTopics}
-        selectedTopicId="1"
+        selectedTopicId="cloud-native"
         onTopicSelect={vi.fn()}
         pagination={{ page: 1, limit: 20, total: 2 }}
         onPageChange={vi.fn()}

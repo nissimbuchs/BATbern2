@@ -1,0 +1,43 @@
+meta {
+  name: List Event Tasks
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/events/{{testEventCode}}/tasks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 5.5 AC24", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return event tasks array - Story 5.5 AC24", function() {
+    const response = res.getBody();
+    expect(response).to.be.an('array');
+  });
+
+  test("should return tasks with required fields - Story 5.5 AC24", function() {
+    const response = res.getBody();
+    if (response.length > 0) {
+      const task = response[0];
+      expect(task.id).to.be.a('string');
+      expect(task.eventId).to.be.a('string');
+      expect(task.taskName).to.be.a('string');
+      expect(task.triggerState).to.be.a('string');
+      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed']);
+    }
+  });
+}

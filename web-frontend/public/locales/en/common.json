@@ -12,6 +12,7 @@
     "companies": "Companies",
     "users": "Users",
     "myCompany": "My Company",
+    "myAccount": "My Account",
     "analytics": "Analytics",
     "content": "Content Search",
     "profile": "Profile",
@@ -40,6 +41,7 @@
   },
   "actions": {
     "save": "Save",
+    "saving": "Saving...",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -337,5 +339,10 @@
         "parseError": "Parse error: {{error}}"
       }
     }
+  },
+  "organizer": {
+    "select": "Select Organizer",
+    "all": "All Organizers",
+    "unassigned": "Unassigned"
   }
 }

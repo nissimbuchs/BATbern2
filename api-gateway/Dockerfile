@@ -2,8 +2,8 @@
 FROM gradle:8.5-jdk21 AS build
 WORKDIR /workspace
 
-# Copy root settings.gradle for multi-project build
-COPY settings.gradle ./
+# Copy root build configuration for multi-project build
+COPY settings.gradle build.gradle ./
 
 # Copy checkstyle configuration
 COPY config ./config
@@ -19,6 +19,9 @@ COPY shared-kernel/src ./shared-kernel/src
 COPY api-gateway/build.gradle api-gateway/gradlew* ./api-gateway/
 COPY api-gateway/gradle ./api-gateway/gradle
 COPY api-gateway/src ./api-gateway/src
+
+# Build shared-kernel first (separate step to ensure it's fully available)
+RUN gradle :shared-kernel:build --no-daemon -x test
 
 # Build api-gateway subproject (compile tests but don't run them)
 RUN gradle :api-gateway:build :api-gateway:compileTestJava --no-daemon -x test

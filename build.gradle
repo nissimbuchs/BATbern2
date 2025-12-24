@@ -1,0 +1,180 @@
+// Root build.gradle for BATbern Platform
+// Configures all services with shared dependencies and configuration
+
+buildscript {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    dependencies {
+        // Spring Boot Gradle Plugin
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.7'
+        classpath 'io.spring.gradle:dependency-management-plugin:1.1.7'
+
+        // Flyway
+        classpath 'org.flywaydb:flyway-gradle-plugin:11.17.0'
+        classpath 'org.postgresql:postgresql:42.7.7'
+        classpath 'org.flywaydb:flyway-database-postgresql:11.17.0'
+
+        // OpenAPI Generator
+        classpath 'org.openapitools:openapi-generator-gradle-plugin:7.2.0'
+    }
+}
+
+// Common configuration for all projects
+allprojects {
+    group = 'ch.batbern'
+    version = '1.0.0'
+    
+    repositories {
+        mavenCentral()
+    }
+}
+
+// Configuration for all service subprojects ONLY
+configure(subprojects.findAll { it.path.startsWith(':services:') }) {
+        apply plugin: 'java'
+        apply plugin: 'org.springframework.boot'
+        apply plugin: 'io.spring.dependency-management'
+        apply plugin: 'jacoco'
+        apply plugin: 'checkstyle'
+        apply plugin: 'org.flywaydb.flyway'
+        apply plugin: 'org.openapi.generator'
+        // Note: git-properties plugin applied in service build.gradle using plugins {} DSL
+        
+        java {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
+        
+        dependencies {
+            // Shared Kernel - Common types and utilities
+            implementation project(':shared-kernel')
+            testImplementation testFixtures(project(':shared-kernel'))
+            
+            // Spring Boot Core
+            implementation 'org.springframework.boot:spring-boot-starter-web'
+            implementation 'org.springframework.boot:spring-boot-starter-actuator'
+            implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+            implementation 'org.springframework.boot:spring-boot-starter-validation'
+            implementation 'org.springframework.boot:spring-boot-starter-security'
+            implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+            
+            // Database - PostgreSQL + Flyway
+            runtimeOnly 'org.postgresql:postgresql:42.7.7'
+            implementation 'org.flywaydb:flyway-core'
+            implementation 'org.flywaydb:flyway-database-postgresql'
+            
+            // OpenAPI/Swagger
+            implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
+            implementation 'io.swagger.core.v3:swagger-annotations:2.2.20'
+            implementation 'jakarta.validation:jakarta.validation-api'
+            implementation 'jakarta.annotation:jakarta.annotation-api'
+            
+            // Lombok - reduce boilerplate
+            compileOnly 'org.projectlombok:lombok:1.18.36'
+            annotationProcessor 'org.projectlombok:lombok:1.18.36'
+            testCompileOnly 'org.projectlombok:lombok:1.18.36'
+            testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
+            
+            // Testing
+            testImplementation 'org.springframework.boot:spring-boot-starter-test'
+            testImplementation 'org.springframework.security:spring-security-test'
+            testImplementation 'org.testcontainers:testcontainers:1.21.3'
+            testImplementation 'org.testcontainers:postgresql:1.21.3'
+            testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
+        }
+        
+        // Test configuration
+        test {
+            useJUnitPlatform()
+            testLogging {
+                events "passed", "skipped", "failed"
+                exceptionFormat = 'full'
+            }
+            timeout = java.time.Duration.ofMinutes(10)
+            systemProperty 'junit.jupiter.execution.timeout.default', '5m'
+            systemProperty 'junit.jupiter.execution.timeout.testable.method.default', '5m'
+        }
+        
+        // Jacoco configuration
+        jacoco {
+            toolVersion = "0.8.10"
+        }
+        
+        jacocoTestReport {
+            dependsOn test, classes
+            reports {
+                xml.required = true
+                html.required = true
+                csv.required = false
+            }
+            afterEvaluate {
+                classDirectories.setFrom(files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: [
+                        '**/generated/**',
+                        '**/dto/generated/**',
+                        '**/api/generated/**',
+                        '**/client/**/dto/**',
+                        '**/*Application.class',
+                        '**/*Config.class',
+                        '**/*Configuration.class'
+                    ])
+                }))
+            }
+        }
+        
+        test.finalizedBy jacocoTestReport
+        
+        jacocoTestCoverageVerification {
+            dependsOn jacocoTestReport
+            violationRules {
+                rule {
+                    limit {
+                        minimum = 0.60
+                    }
+                }
+            }
+            afterEvaluate {
+                classDirectories.setFrom(files(classDirectories.files.collect {
+                    fileTree(dir: it, exclude: [
+                        '**/generated/**',
+                        '**/dto/generated/**',
+                        '**/api/generated/**',
+                        '**/client/**/dto/**',
+                        '**/*Application.class',
+                        '**/*Config.class',
+                        '**/*Configuration.class'
+                    ])
+                }))
+            }
+        }
+        
+        // Checkstyle configuration
+        checkstyle {
+            toolVersion = '10.12.5'
+            configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+            ignoreFailures = true
+            maxWarnings = 0
+        }
+        
+        // Apply Trivy security scanning
+        apply from: "${rootProject.projectDir}/gradle/trivy-security.gradle"
+        
+        // Spring Boot Actuator build info
+        springBoot {
+            buildInfo()
+        }
+
+        // Note: Git properties plugin configured in individual service build.gradle files
+
+        // Flyway configuration for database migrations
+        flyway {
+            url = System.getProperty('flyway.url', 'jdbc:postgresql://localhost:5432/batbern_development')
+            user = System.getProperty('flyway.user', 'postgres')
+            password = System.getProperty('flyway.password', 'devpass123')
+            locations = ['classpath:db/migration']
+            baselineOnMigrate = true
+            baselineVersion = '0'
+        }
+}

@@ -5,7 +5,7 @@
  * Story 2.5.2: User Management Frontend
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { UserFilters, UserPagination } from '@/types/user.types';
 import { listUsers } from '@/services/api/userManagementApi';
 
@@ -26,6 +26,7 @@ export const useUserList = ({ filters, pagination, enabled = true }: UseUserList
     queryFn: () => listUsers(filters, pagination),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
+    placeholderData: keepPreviousData, // Keep previous data during refetch (prevents "page reload" effect)
     enabled,
   });
 

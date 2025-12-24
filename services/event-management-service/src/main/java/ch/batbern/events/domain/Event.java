@@ -126,8 +126,8 @@ public class Event {
     @Column(name = "workflow_state", nullable = false, length = 50)
     private EventWorkflowState workflowState;
 
-    @Column(name = "topic_id", columnDefinition = "UUID")
-    private UUID topicId;
+    @Column(name = "topic_code", length = 100)
+    private String topicCode;
 
     @Version
     @Column(name = "version")

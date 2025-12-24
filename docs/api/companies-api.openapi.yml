@@ -467,7 +467,7 @@ paths:
 
         **Caching**:
         - Caffeine in-memory cache with 15-minute TTL
-        - Cache key includes both query and limit
+        - Cache key includes query, limit, and include parameters
         - Automatic cache invalidation on company updates
 
         **Performance**:
@@ -475,6 +475,9 @@ paths:
         - Cache miss: <100ms (P95)
 
         **Default Results**: 20 companies (configurable via limit parameter)
+
+        **Resource Expansion**:
+        - Logo: `?include=logo` (logoUrl field included in response)
 
       operationId: searchCompanies
       parameters:
@@ -495,6 +498,13 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include (e.g., logo)
+          required: false
+          schema:
+            type: string
+            example: 'logo'
       responses:
         '200':
           description: Search results returned successfully
@@ -683,7 +693,7 @@ components:
           example: Technology
         description:
           type: string
-          maxLength: 5000
+          maxLength: 2000
           example: Leading Swiss IT consulting firm specializing in cloud-native architectures
         isVerified:
           type: boolean
@@ -770,6 +780,8 @@ components:
         isVerified:
           type: boolean
           example: true
+        logo:
+          $ref: '#/components/schemas/CompanyLogo'
 
     CreateCompanyRequest:
       type: object
@@ -802,8 +814,12 @@ components:
           example: Technology
         description:
           type: string
-          maxLength: 5000
+          maxLength: 2000
           example: Leading Swiss IT consulting firm
+        logoUploadId:
+          type: string
+          description: Upload ID from three-phase upload via /api/v1/logos/presigned-url (optional)
+          example: abc123-def456
 
     UpdateCompanyRequest:
       type: object
@@ -833,8 +849,12 @@ components:
           example: Technology
         description:
           type: string
-          maxLength: 5000
+          maxLength: 2000
           example: Leading Swiss IT consulting firm
+        logoUploadId:
+          type: string
+          description: Upload ID from three-phase upload (set to empty string to remove logo)
+          example: abc123-def456
 
     UIDValidationResponse:
       type: object

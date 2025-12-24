@@ -1,39 +1,31 @@
 /**
  * Speaker Outreach UI Types (Story 5.3)
  *
- * Types for Speaker Outreach Tracking and Contact History.
+ * UI-specific types for Speaker Outreach Tracking and Contact History.
+ * Core API types are imported from generated OpenAPI types.
+ *
+ * IMPORTANT: For backend API types, import directly from './generated/speakers-api.types'
+ * This file contains ONLY frontend-specific types and extensions.
  */
 
-// ============================================================================
-// Outreach History Types
-// ============================================================================
-
-export interface OutreachHistory {
-  id: string;
-  speakerPoolId: string;
-  contactDate: string;
-  contactMethod: ContactMethod;
-  notes?: string;
-  organizerUsername: string;
-  createdAt: string;
-}
-
-export type ContactMethod = 'email' | 'phone' | 'in_person';
+import type { components } from './generated/speakers-api.types';
 
 // ============================================================================
-// Request/Response DTOs
+// Re-export Generated API Types
 // ============================================================================
 
-export interface RecordOutreachRequest {
-  contactMethod: ContactMethod;
-  contactDate: string;
-  notes?: string;
-}
+export type OutreachHistory = components['schemas']['OutreachHistory'];
+export type ContactMethod = components['schemas']['ContactMethod'];
+export type RecordOutreachRequest = components['schemas']['RecordOutreachRequest'];
 
+// Backward compatibility alias
 export type OutreachHistoryResponse = OutreachHistory;
 
+// Re-export components for direct access
+export type { components } from './generated/speakers-api.types';
+
 // ============================================================================
-// UI State Types
+// UI State Types (not in API)
 // ============================================================================
 
 export interface SpeakerWithOutreach {

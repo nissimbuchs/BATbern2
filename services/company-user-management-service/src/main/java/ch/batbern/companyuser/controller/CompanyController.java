@@ -200,7 +200,8 @@ public class CompanyController {
             summary = "Search companies with autocomplete",
             description = "Search companies by name with autocomplete functionality. "
                     + "Results are cached using Caffeine for 15 minutes. P95 latency < 100ms with cache. "
-                    + "Public endpoint for registration autocomplete."
+                    + "Public endpoint for registration autocomplete. "
+                    + "Supports resource expansion via include parameter (e.g., ?include=logo)."
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -216,9 +217,16 @@ public class CompanyController {
             @Parameter(description = "Search query (minimum 1 character)", required = true)
             @RequestParam String query,
             @Parameter(description = "Maximum number of results (default: 20)")
-            @RequestParam(required = false, defaultValue = "20") int limit) {
-        log.debug("Searching companies with query: {} and limit: {}", query, limit);
-        List<CompanySearchResponse> results = searchService.searchCompanies(query, limit);
+            @RequestParam(required = false, defaultValue = "20") int limit,
+            @Parameter(description = "Comma-separated list of resources to include (e.g., logo)", example = "logo")
+            @RequestParam(required = false) String include) {
+        log.debug("Searching companies with query: {}, limit: {}, include: {}", query, limit, include);
+
+        // Use overloaded method with include parameter if provided
+        List<CompanySearchResponse> results = (include != null && !include.isEmpty())
+                ? searchService.searchCompanies(query, limit, include)
+                : searchService.searchCompanies(query, limit);
+
         return ResponseEntity.ok(results);
     }
 

@@ -161,12 +161,12 @@ export function useSelectTopicForEvent() {
       request: SelectTopicForEventRequest;
     }) => topicService.selectTopicForEvent(eventCode, request),
     onSuccess: (_data, variables) => {
-      // Invalidate event detail query to refetch updated event with new topicId
+      // Invalidate event detail query to refetch updated event with new topicCode
       queryClient.invalidateQueries({ queryKey: ['event', variables.eventCode] });
       // Invalidate events list query to update list view
       queryClient.invalidateQueries({ queryKey: ['events'] });
       // Update topic status if applicable
-      queryClient.invalidateQueries({ queryKey: topicKeys.detail(variables.request.topicId) });
+      queryClient.invalidateQueries({ queryKey: topicKeys.detail(variables.request.topicCode) });
     },
   });
 }

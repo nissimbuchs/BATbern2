@@ -301,10 +301,10 @@ graph TB
 
 ### Event Management Service
 
-**Responsibility:** Core event lifecycle management, organizer workflows, and automated event planning processes including the comprehensive **16-step workflow automation** with slot management, quality control, overflow handling, and real-time collaboration.
+**Responsibility:** Core event lifecycle management, organizer workflows, and automated event planning processes including the comprehensive **9-state workflow** with slot management, quality control, overflow handling, and real-time collaboration.
 
 **Enhanced Workflow Components:**
-- **Event Workflow State Machine** - Manages 16-step progression from topic selection to publication
+- **Event Workflow State Machine** - Manages 9-state progression from creation to archival (see 06a-workflow-state-machines.md)
 - **Slot Assignment Algorithm Service** - Intelligent speaker-to-slot matching with preferences
 - **Quality Review Workflow Engine** - Automated content validation and moderator review
 - **Overflow Management & Voting System** - Organizer voting for speaker selection when capacity exceeded
@@ -312,7 +312,7 @@ graph TB
 
 **Key Interfaces:**
 - `/api/v1/events` - Event CRUD operations and status management
-- `/api/v1/events/{id}/workflow` - Enhanced 16-step workflow state management
+- `/api/v1/events/{id}/workflow` - Enhanced 9-state workflow state management
 - `/api/v1/events/{id}/slots` - Slot configuration and assignment management
 - `/api/v1/events/{id}/overflow` - Speaker overflow voting and waitlist management
 - `/api/v1/events/{id}/timeline` - Event timeline and milestone tracking

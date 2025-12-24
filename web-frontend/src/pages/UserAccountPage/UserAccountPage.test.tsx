@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import UserAccountPage from './UserAccountPage';
 
 // Mock the child components
@@ -79,7 +80,11 @@ const createWrapper = () => {
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </BrowserRouter>
+    );
   };
 };
 

@@ -28,8 +28,14 @@ import {
   Collapse,
   IconButton,
   Typography,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
-import { FilterList as FilterIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import {
+  FilterList as FilterIcon,
+  ExpandMore as ExpandMoreIcon,
+  Search as SearchIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { CompanyFilters as CompanyFiltersType } from '@/types/company.types';
 import type { IndustriesData } from '@/types/industry.types';
@@ -52,15 +58,18 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [searchQuery, setSearchQuery] = useState(initialFilters?.searchQuery || '');
   const [isVerified, setIsVerified] = useState(initialFilters?.isVerified || false);
   const [industry, setIndustry] = useState(initialFilters?.industry || '');
   const [isExpanded, setIsExpanded] = useState(!isMobile);
 
   // Load filters from URL on mount
   useEffect(() => {
+    const searchParam = searchParams.get('search');
     const verifiedParam = searchParams.get('isVerified');
     const industryParam = searchParams.get('industry');
 
+    if (searchParam) setSearchQuery(searchParam);
     if (verifiedParam) setIsVerified(verifiedParam === 'true');
     if (industryParam) setIndustry(industryParam);
   }, [searchParams]);
@@ -69,80 +78,108 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
   useEffect(() => {
     const filters: CompanyFiltersType = {};
 
+    if (searchQuery) filters.searchQuery = searchQuery;
     if (isVerified) filters.isVerified = true;
     if (industry) filters.industry = industry;
 
     // Update URL
     const newParams = new URLSearchParams();
+    if (searchQuery) newParams.set('search', searchQuery);
     if (isVerified) newParams.set('isVerified', 'true');
     if (industry) newParams.set('industry', industry);
     setSearchParams(newParams);
 
     // Notify parent
     onFilterChange(filters);
-  }, [isVerified, industry, onFilterChange, setSearchParams]);
+  }, [searchQuery, isVerified, industry, onFilterChange, setSearchParams]);
 
   const handleClearFilters = () => {
+    setSearchQuery('');
     setIsVerified(false);
     setIndustry('');
     setSearchParams(new URLSearchParams());
     onFilterChange({});
   };
 
-  const activeFilterCount = [isVerified, industry].filter(Boolean).length;
+  const activeFilterCount = [searchQuery, isVerified, industry].filter(Boolean).length;
   const hasActiveFilters = activeFilterCount > 0;
 
   const filterContent = (
-    <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-      {/* Verification Filter */}
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isVerified}
-            onChange={(e) => setIsVerified(e.target.checked)}
-            aria-label={t('company.filters.verifiedOnly')}
-          />
-        }
-        label={t('company.filters.verifiedOnly')}
+    <Stack spacing={2}>
+      {/* Search Field */}
+      <TextField
+        fullWidth
+        placeholder={t('company.search.placeholder')}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon color="action" />
+            </InputAdornment>
+          ),
+        }}
+        size="small"
+        aria-label={t('company.search.placeholder')}
       />
 
-      {/* Industry Filter */}
-      <FormControl sx={{ minWidth: 200 }} size="small">
-        <InputLabel id="industry-filter-label">{t('company.filters.industry')}</InputLabel>
-        <Select
-          labelId="industry-filter-label"
-          id="industry-filter"
-          value={industry}
-          label={t('company.filters.industry')}
-          onChange={(e) => setIndustry(e.target.value)}
-          aria-label={t('company.filters.industry')}
-        >
-          <MenuItem value="">
-            <em>{t('company.filters.allIndustries')}</em>
-          </MenuItem>
-          {INDUSTRIES.map((ind) => (
-            <MenuItem key={ind} value={ind}>
-              {ind}
+      {/* Filter Controls Row */}
+      <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+        {/* Verification Filter */}
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={isVerified}
+              onChange={(e) => setIsVerified(e.target.checked)}
+              aria-label={t('company.filters.verifiedOnly')}
+            />
+          }
+          label={t('company.filters.verifiedOnly')}
+        />
+
+        {/* Industry Filter */}
+        <FormControl sx={{ minWidth: 200 }} size="small">
+          <InputLabel id="industry-filter-label">{t('company.filters.industry')}</InputLabel>
+          <Select
+            labelId="industry-filter-label"
+            id="industry-filter"
+            value={industry}
+            label={t('company.filters.industry')}
+            onChange={(e) => setIndustry(e.target.value)}
+            aria-label={t('company.filters.industry')}
+          >
+            <MenuItem value="">
+              <em>{t('company.filters.allIndustries')}</em>
             </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+            {INDUSTRIES.map((ind) => (
+              <MenuItem key={ind} value={ind}>
+                {ind}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      {/* Clear Filters Button */}
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={handleClearFilters}
-        disabled={!hasActiveFilters}
-        aria-label={t('company.filters.clearAll')}
-      >
-        {t('company.filters.clearAll')}
-      </Button>
+        {/* Clear Filters Button */}
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleClearFilters}
+          disabled={!hasActiveFilters}
+          aria-label={t('company.filters.clearAll')}
+        >
+          {t('company.filters.clearAll')}
+        </Button>
 
-      {/* Active Filter Count Badge */}
-      {hasActiveFilters && (
-        <Chip label={activeFilterCount} color="primary" size="small" sx={{ fontWeight: 'bold' }} />
-      )}
+        {/* Active Filter Count Badge */}
+        {hasActiveFilters && (
+          <Chip
+            label={activeFilterCount}
+            color="primary"
+            size="small"
+            sx={{ fontWeight: 'bold' }}
+          />
+        )}
+      </Stack>
     </Stack>
   );
 

@@ -422,7 +422,7 @@ public class EventBusinessRules {
 
 ## Workflow State Management
 
-The BATbern platform implements sophisticated state machines to manage the complex 16-step event workflow. These include:
+The BATbern platform implements sophisticated state machines to manage the complex 9-state event workflow. These include:
 
 - **Event Workflow State Machine** - Manages event lifecycle from draft to published
 - **Speaker Workflow Management** - Tracks speaker states from invitation to final agenda
@@ -611,7 +611,7 @@ This backend architecture provides:
 
 ✅ **Role-based security** with JWT authentication via AWS Cognito
 ✅ **Comprehensive error handling** with circuit breakers and retry logic
-✅ **Sophisticated workflow state machines** for the 16-step event process
+✅ **Sophisticated workflow state machines** for the 9-state event process
 ✅ **Robust user synchronization** across Cognito and PostgreSQL
 ✅ **Real-time notifications** with intelligent escalation
 ✅ **Production-parity testing** with Testcontainers PostgreSQL

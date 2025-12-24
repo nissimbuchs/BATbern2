@@ -5,6 +5,37 @@
     "eventTimeline": "Timeline",
     "events": "Events"
   },
+  "eventPage": {
+    "tabs": {
+      "overview": "Overview",
+      "speakers": "Speakers",
+      "venue": "Venue",
+      "team": "Team",
+      "publishing": "Publishing",
+      "settings": "Settings"
+    },
+    "tabsAriaLabel": "Event page navigation",
+    "overview": {
+      "step": "Step",
+      "eventDetails": "Event Details",
+      "keyMetrics": "Key Metrics",
+      "registered": "registered",
+      "filled": "filled",
+      "speakers": "Speakers",
+      "confirmed": "confirmed",
+      "materials": "Materials",
+      "pending": "pending",
+      "budget": "Budget",
+      "selectedTopic": "Selected Topic",
+      "noTopicSelected": "No topic selected yet",
+      "changeTopic": "Change Topic",
+      "quickActions": "Quick Actions",
+      "selectTopic": "Select Topic",
+      "sendNotification": "Send Notification",
+      "previewPublic": "Preview Public Page",
+      "viewTimeline": "View Timeline"
+    }
+  },
   "dashboard": {
     "title": "Event Management",
     "activeEvents": "Active Events",
@@ -74,6 +105,13 @@
     "errors": {
       "failedToLoadEvents": "Failed to load events"
     }
+  },
+  "tasks": {
+    "criticalTasks": "Critical Tasks",
+    "noCriticalTasks": "No critical tasks",
+    "greatJob": "Great job!",
+    "errorLoadingTasks": "Failed to load tasks",
+    "viewAllTasks": "View All Tasks"
   },
   "form": {
     "createEvent": "Create New Event",
@@ -503,6 +541,19 @@
       "networking": "networking",
       "break": "break",
       "lunch": "lunch"
+    },
+    "sessionEdit": {
+      "title": "Edit Session",
+      "titleLabel": "Session Title",
+      "abstractLabel": "Session Abstract",
+      "charactersRemaining": "{{count}} characters remaining",
+      "durationLabel": "Duration (minutes)",
+      "errors": {
+        "titleRequired": "Title is required",
+        "abstractTooLong": "Abstract must be {{max}} characters or less",
+        "invalidDuration": "Duration must be between 1 and 480 minutes",
+        "saveFailed": "Failed to save session"
+      }
     }
   }
 }

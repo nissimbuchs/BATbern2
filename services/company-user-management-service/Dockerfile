@@ -2,8 +2,8 @@
 FROM gradle:8.5-jdk21 AS build
 WORKDIR /workspace
 
-# Copy root settings.gradle for multi-project build
-COPY settings.gradle ./
+# Copy root build configuration for multi-project build
+COPY settings.gradle build.gradle ./
 
 # Copy checkstyle configuration
 COPY config ./config
@@ -22,6 +22,9 @@ COPY docs/api ./docs/api
 COPY services/company-user-management-service/build.gradle services/company-user-management-service/gradlew* ./services/company-user-management-service/
 COPY services/company-user-management-service/gradle ./services/company-user-management-service/gradle
 COPY services/company-user-management-service/src ./services/company-user-management-service/src
+
+# Build shared-kernel first (separate step to ensure it's fully available)
+RUN gradle :shared-kernel:build --no-daemon -x test
 
 # Build company-user-management-service subproject (compile tests but don't run them)
 RUN gradle :services:company-user-management-service:build :services:company-user-management-service:compileTestJava --no-daemon -x test

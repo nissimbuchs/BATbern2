@@ -51,7 +51,7 @@ class CompanyApiClient {
       // If there's a search query, use the search endpoint instead
       if (filters?.searchQuery) {
         // Use the dedicated search endpoint which is optimized for text search
-        return this.searchCompaniesWithPagination(filters.searchQuery, pagination);
+        return this.searchCompaniesWithPagination(filters.searchQuery, pagination, options);
       }
 
       // Build MongoDB-style JSON filter object for non-search filters
@@ -109,11 +109,20 @@ class CompanyApiClient {
   /**
    * Search companies by query string (returns simple array, not paginated)
    */
-  async searchCompanies(query: string, limit: number = 20): Promise<Company[]> {
+  async searchCompanies(
+    query: string,
+    limit: number = 20,
+    options?: { expand?: string[] }
+  ): Promise<Company[]> {
     try {
       const params = new URLSearchParams();
       params.append('query', query);
       params.append('limit', limit.toString());
+
+      // Add include parameter for resource expansion (e.g., ?include=logo)
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
+      }
 
       const response = await apiClient.get<Company[]>(
         `${COMPANY_API_PATH}/search?${params.toString()}`
@@ -131,12 +140,18 @@ class CompanyApiClient {
    */
   async searchCompaniesWithPagination(
     query: string,
-    pagination: PaginationParams = { page: 1, limit: 20 }
+    pagination: PaginationParams = { page: 1, limit: 20 },
+    options?: { expand?: string[] }
   ): Promise<CompanyListResponse> {
     try {
       const params = new URLSearchParams();
       params.append('query', query);
       params.append('limit', pagination.limit.toString());
+
+      // Add include parameter for resource expansion (e.g., ?include=logo)
+      if (options?.expand && options.expand.length > 0) {
+        params.append('include', options.expand.join(','));
+      }
 
       const response = await apiClient.get<Company[]>(
         `${COMPANY_API_PATH}/search?${params.toString()}`

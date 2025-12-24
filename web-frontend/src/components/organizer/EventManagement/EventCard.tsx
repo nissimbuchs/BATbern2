@@ -9,7 +9,7 @@
  * - Progress bar (workflow completion %)
  * - Workflow step indicator (Step X/16)
  * - Event details (title, date, type)
- * - Quick actions (Edit, View Details)
+ * - Quick actions (Edit, Topic Selection)
  * - Status badge
  * - Attendee information
  */
@@ -41,7 +41,6 @@ import {
   getProgressColor,
   getWorkflowStateLabel,
   getWorkflowStepNumber,
-  isEarlyStage,
 } from '@/utils/workflow/workflowState';
 
 interface EventCardProps {
@@ -193,16 +192,14 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
       <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
         {isHovered && (
           <>
-            {isEarlyStage(workflowState) && (
-              <IconButton
-                size="small"
-                onClick={handleSelectTopic}
-                aria-label={`Select topic for ${event.title}`}
-                color="primary"
-              >
-                <TopicIcon />
-              </IconButton>
-            )}
+            <IconButton
+              size="small"
+              onClick={handleSelectTopic}
+              aria-label={`Select topic for ${event.title}`}
+              color="primary"
+            >
+              <TopicIcon />
+            </IconButton>
             <IconButton
               size="small"
               onClick={handleEdit}

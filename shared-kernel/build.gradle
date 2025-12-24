@@ -8,12 +8,12 @@ buildscript {
 plugins {
     id 'java-library'
     id 'java-test-fixtures'
-    id 'org.springframework.boot' version '3.5.7'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' // Version from root buildscript (needs bootJar task)
+    id 'io.spring.dependency-management' // Version from root buildscript
     id 'maven-publish'
     id 'jacoco'
     id 'checkstyle'
-    id 'org.flywaydb.flyway' version '11.18.0'
+    id 'org.flywaydb.flyway' // Version from root buildscript
 }
 
 group = 'ch.batbern'

@@ -329,13 +329,13 @@ class EventApiClient {
    * Assigns a topic to an event by calling POST /events/{eventCode}/topics
    *
    * @param eventCode Event code identifier (e.g., "BATbern56")
-   * @param topicId Topic UUID to assign
+   * @param topicCode Topic code (slug-format) to assign (ADR-003: meaningful identifiers)
    * @returns Success response
    * @throws Error if event/topic not found or unauthorized
    */
-  async assignTopicToEvent(eventCode: string, topicId: string): Promise<void> {
+  async assignTopicToEvent(eventCode: string, topicCode: string): Promise<void> {
     try {
-      await apiClient.post(`${EVENT_API_PATH}/${eventCode}/topics`, { topicId });
+      await apiClient.post(`${EVENT_API_PATH}/${eventCode}/topics`, { topicCode });
     } catch (error) {
       throw this.transformError(error);
     }
