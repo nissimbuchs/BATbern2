@@ -85,12 +85,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     pagination: { page: 1, limit: 100 },
   });
 
-  // Fetch organizer users for speaker assignment (Story 5.2)
-  const { data: organizersData } = useUserList({
-    filters: { role: ['ORGANIZER'] },
-    pagination: { page: 1, limit: 100 },
-  });
-
   // Preselect topic when event loads with topicId
   useEffect(() => {
     if (preassignedTopic && !selectedTopic) {
