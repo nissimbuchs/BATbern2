@@ -25,21 +25,78 @@ This file contains **ONLY** dev implementation notes. For story content, see Lin
 
 ### Wireframe References
 
-**Slot Assignment UI**:
-- `docs/wireframes/story-3.1-speaker-matching-interface.md` - Drag-and-drop slot assignment interface
-  - Shows accepted speakers list (left panel)
-  - Shows slot assignment panel (right panel) with morning/afternoon sections
-  - Demonstrates drag-and-drop interaction pattern
-  - Visual feedback during drag operations
-  - Empty slot drop zones
+**Architecture Decision**: Slot assignment is a **dedicated separate page** at `/organizer/events/:eventCode/slot-assignment`, NOT integrated into Story 5.8 tabs. Rationale: Workflow complexity requires full screen, focused attention, and strategic decision-making environment.
 
-**Progressive Publishing UI**:
-- `docs/wireframes/story-2.3-basic-publishing-engine.md` - Publishing controls and validation
-  - Publishing timeline visualization
-  - Content validation dashboard
-  - Live preview (desktop/mobile/print)
-  - Publishing mode controls (draft/progressive/complete)
-  - Version control with rollback
+**Phase 1: CRITICAL Wireframes (Blocks Implementation)**
+
+1. **`docs/wireframes/story-5.7-slot-assignment-page.md`** - Main slot assignment page
+   - Dedicated full-page workflow for session timing assignment
+   - Three-column layout: Speaker pool | Session timeline grid | Quick actions
+   - Drag-and-drop interface with preference match highlighting
+   - Progress tracking and success states
+   - Route: `/organizer/events/:eventCode/slot-assignment`
+
+2. **`docs/wireframes/story-5.7-navigation-integration.md`** - Navigation flows
+   - Entry points: Speakers tab, Overview tab, Publishing tab
+   - Call-to-action banners with progress indicators
+   - Return navigation: Breadcrumbs, [Back to Event] button
+   - Success banner linking to Publishing tab
+
+3. **`docs/wireframes/story-5.7-conflict-resolution-modal.md`** - Conflict detection & resolution
+   - Triggered on timing conflicts during drag-drop
+   - Conflict types: room_overlap, speaker_double_booked, speaker_unavailable
+   - Resolution options with visual timeline of conflicts
+   - Severity indicators (error vs warning)
+
+4. **`docs/wireframes/story-5.7-speaker-preference-panel.md`** - Preference display
+   - Right drawer panel showing speaker preferences
+   - Time-of-day preferences (morning/afternoon/evening)
+   - A/V requirements and room setup needs
+   - Dynamic match scoring during drag operations
+   - Color-coded highlights: Green (80-100%), Yellow (50-79%), Red (<50%)
+
+5. **`docs/wireframes/story-2.3-basic-publishing-engine.md`** (UPDATED) - Publishing controls & validation
+   - Publishing timeline visualization
+   - Content validation dashboard **with session timing validation**
+   - **NEW**: Session Timings validation item (blocks Phase 3 Agenda publish)
+   - **NEW**: [Assign Timings] button linking to slot assignment page
+   - Live preview (desktop/mobile/print)
+   - Publishing mode controls (draft/progressive/complete)
+   - Version control with rollback
+   - Newsletter notification controls
+   - CDN invalidation status display
+
+**Phase 2: Enhanced UX Wireframes**
+
+6. **`docs/wireframes/story-5.7-bulk-auto-assignment.md`** - Auto-assignment feature
+   - Algorithm selection modal (optimize for preferences vs expertise vs balanced)
+   - Preview assignments with match scores
+   - Side-by-side comparison of current vs proposed
+   - Conflict detection in bulk operations
+
+**Phase 3: Polish Wireframes**
+
+7. **`docs/wireframes/story-5.7-accessibility-features.md`** - Keyboard navigation & ARIA
+   - Keyboard shortcuts for drag-drop (arrow keys + Enter)
+   - ARIA labels and announcements
+   - Focus management and screen reader support
+   - High-contrast mode and reduced motion support
+
+8. **`docs/wireframes/story-5.7-responsive-design.md`** - Mobile/tablet adaptations
+   - Desktop: Full three-column layout
+   - Tablet: Collapsible sidebar, two-column main
+   - Mobile: Single column, bottom sheet for speaker pool
+
+9. **`docs/wireframes/story-5.7-celebration-animations.md`** - Success animations
+   - Confetti animation on completing all assignments
+   - Progress bar fill animations
+   - Success badge pulse effects
+
+**Legacy Reference** (for comparison):
+- `docs/wireframes/story-3.1-speaker-matching-interface.md` - Original speaker matching concept
+  - Shows early drag-drop pattern (now superseded by story-5.7-slot-assignment-page.md)
+  - Demonstrates initial UI thinking for slot assignment
+  - Use as reference for drag interaction patterns only
 
 ### Template References
 
@@ -942,44 +999,369 @@ CREATE TRIGGER update_publishing_config_updated_at BEFORE UPDATE ON publishing_c
 ```
 
 ### Implementation Approach
-{To be filled by dev agent during implementation}
 
-**Phase 1: Database & Backend Foundation (Days 1-2)**
-- Create Flyway migration V28 (session timing history, preferences, publishing tables)
-- Create JPA entities for SessionTimingHistory, SpeakerSlotPreference, PublishingVersion, PublishingConfig
-- Set up repositories with custom queries (note: Session entity already exists)
+**Total Estimated Effort**: 16-18 development days (~3.5 weeks)
 
-**Phase 2: Slot Assignment Backend (Days 3-5)**
-- Implement SessionTimingService (assigns start/end times to sessions)
-- Implement SlotAssignmentService with drag-drop support (updates session timing)
-- Implement ConflictDetectionService (detects session timing conflicts)
-- Implement PreferenceMatchingAlgorithm (matches speakers to time slots)
-- Create REST controllers and integration tests
+**Phase 1: Database & Backend Foundation (Days 1-2) - CRITICAL PATH**
+
+*Dependencies: None*
+*Deliverables: Migration V28, JPA entities, repositories*
+
+Day 1:
+- [ ] Create Flyway migration V28 for slot assignment and publishing tables
+  - `session_timing_history` table (audit trail for timing changes)
+  - `speaker_slot_preferences` table (time-of-day preferences, A/V requirements)
+  - `publishing_versions` table (version snapshots for rollback)
+  - `publishing_config` table (auto-publish configuration)
+  - Add `current_published_phase` to events table if not exists
+- [ ] Create JPA entities with proper relationships
+  - SessionTimingHistoryEntity
+  - SpeakerSlotPreferenceEntity
+  - PublishingVersionEntity
+  - PublishingConfigEntity
+  - Update SessionEntity to support nullable timing (already done in V21)
+- [ ] Create repositories with custom queries
+  - SessionTimingHistoryRepository (findBySessionId, findRecentChanges)
+  - SpeakerSlotPreferenceRepository (findBySpeakerAndEvent)
+  - PublishingVersionRepository (findByEventIdOrderByVersionDesc, findCurrentVersion)
+  - SessionRepository custom query: findUnassignedSessions (startTime IS NULL)
+
+Day 2:
+- [ ] Write unit tests for entities and repositories (Testcontainers PostgreSQL)
+- [ ] Test migration rollback and data integrity
+- [ ] Verify JSONB columns work correctly (avoid_times, av_requirements, content_snapshot)
+
+**Phase 2: Slot Assignment Backend (Days 3-5) - CRITICAL PATH**
+
+*Dependencies: Phase 1 complete*
+*Deliverables: Session timing APIs, conflict detection, preference matching*
+
+Day 3:
+- [ ] Implement SessionTimingService
+  - `assignTiming(sessionSlug, startTime, endTime, room)` - updates session, creates history record
+  - `unassignTiming(sessionSlug)` - sets timing to null
+  - `getUnassignedSessions(eventCode)` - returns placeholder sessions
+  - `getTimingHistory(sessionSlug)` - returns audit trail
+- [ ] Implement ConflictDetectionService
+  - `detectRoomOverlap(eventCode, startTime, endTime, room)` - checks room availability
+  - `detectSpeakerDoubleBooking(speakerId, startTime, endTime)` - checks speaker availability
+  - `detectSpeakerPreferenceConflicts(speakerId, startTime)` - checks against preferences
+  - `analyzeAllConflicts(eventCode)` - comprehensive conflict analysis
+- [ ] Write unit tests with mocked repositories
+
+Day 4:
+- [ ] Implement PreferenceMatchingAlgorithm
+  - `calculateMatchScore(speaker, session)` - percentage match based on preferences
+  - `findBestSlots(speakerId, availableSlots)` - ranked list of suitable slots
+  - `autoAssignSpeakers(eventCode, strategy)` - bulk assignment algorithm
+    - Strategies: PREFERENCE_OPTIMIZED, EXPERTISE_OPTIMIZED, BALANCED
+- [ ] Implement BulkTimingAssignmentService
+  - `bulkAssignTiming(assignments)` - atomic bulk operation
+  - Validates all assignments before applying (no partial failures)
+- [ ] Write unit tests for algorithm logic
+
+Day 5:
+- [ ] Implement REST controllers
+  - GET `/api/v1/events/{eventCode}/sessions/unassigned`
+  - PATCH `/api/v1/events/{eventCode}/sessions/{sessionSlug}/timing`
+  - POST `/api/v1/events/{eventCode}/sessions/bulk-timing`
+  - GET `/api/v1/events/{eventCode}/sessions/conflicts`
+- [ ] Write integration tests (Testcontainers, MockMvc)
+  - Test timing assignment happy path
+  - Test conflict detection (room overlap, speaker double-booking)
+  - Test bulk assignment with rollback on conflicts
+  - Test preference matching calculations
+- [ ] Test API contracts match OpenAPI spec (lines 186-793)
 
 **Phase 3: Publishing Engine Backend (Days 6-8)**
-- Implement PublishingPhaseService
-- Implement CDNInvalidationService for CloudFront
-- Implement VersionTrackingService
-- Set up scheduled jobs (EventBridge rules)
-- Create REST controllers and integration tests
 
-**Phase 4: Slot Assignment Frontend (Days 9-11)**
-- Set up React DnD library
-- Implement DragDropSlotAssignment component
-- Implement speaker preference and conflict detection UIs
-- Wire to backend APIs
+*Dependencies: Phase 2 complete (session timing APIs needed for validation)*
+*Deliverables: Publishing APIs, CDN invalidation, version control, auto-publish*
 
-**Phase 5: Publishing Frontend (Days 12-14)**
-- Implement PublishingTimeline component
-- Implement ValidationDashboard
-- Implement LivePreview with responsive modes
-- Implement VersionControl with rollback
+Day 6:
+- [ ] Implement PublishingPhaseService
+  - `publishPhase(eventCode, phase, mode)` - validates and publishes content
+    - Validation rules:
+      - Phase 1 (Topic): Event has topic, date, venue
+      - Phase 2 (Speakers): ≥1 speaker accepted
+      - Phase 3 (Agenda): ALL sessions have timing (blocks if any null)
+  - `unpublishPhase(eventCode, phase)` - removes from public view
+  - `getPublishingStatus(eventCode)` - current published phase and validation state
+- [ ] Implement ContentSnapshotService
+  - `createSnapshot(eventCode, phase)` - captures event data as JSON for version
+  - `restoreFromSnapshot(snapshotJson)` - rollback to previous version
+- [ ] Write unit tests for validation logic
 
-**Phase 6: Integration & Testing (Days 15-16)**
-- E2E workflow tests
-- Performance testing
-- CDN cache invalidation testing
-- Scheduled job testing
+Day 7:
+- [ ] Implement CDNInvalidationService
+  - `invalidateCache(distributionId, paths)` - calls CloudFront API
+  - `getInvalidationStatus(invalidationId)` - polls for completion
+  - `waitForCompletion(invalidationId, timeout)` - async wait
+- [ ] Implement NewsletterService (if not exists from Story 5.5)
+  - `sendPublishNotification(eventCode, phase, recipientList)` - SES integration
+  - Uses existing newsletter templates from Story 5.5
+- [ ] Implement VersionTrackingService
+  - `createVersion(eventCode, phase, contentSnapshot)` - saves version record
+  - `getVersionHistory(eventCode)` - returns all versions
+  - `rollbackToVersion(eventCode, versionNumber, reason)` - restores previous version
+- [ ] Set up LocalStack for AWS service mocks (CloudFront, SES)
+- [ ] Write integration tests with LocalStack
+
+Day 8:
+- [ ] Implement AutoPublishSchedulingService
+  - `scheduleAutoPublish(eventCode, phase, targetDate)` - creates EventBridge rule
+  - `cancelAutoPublish(eventCode, phase)` - removes rule
+  - Event handler: `handleAutoPublishTrigger(eventCode, phase)` - executes publish
+- [ ] Implement REST controllers
+  - POST `/api/v1/events/{eventCode}/publish/{phase}`
+  - GET `/api/v1/events/{eventCode}/publishing/versions`
+  - POST `/api/v1/events/{eventCode}/publishing/versions/{versionNumber}/rollback`
+- [ ] Write integration tests for publishing workflow
+  - Test phase progression (topic → speakers → agenda)
+  - Test validation blocking (agenda blocked without timings)
+  - Test version creation and rollback
+  - Test CDN invalidation (mocked)
+  - Test scheduled auto-publish (mocked EventBridge)
+- [ ] Test API contracts match OpenAPI spec
+
+**Phase 4: Slot Assignment Frontend (Days 9-11) - PARALLEL WITH PHASE 3**
+
+*Dependencies: Phase 2 backend APIs available*
+*Deliverables: Slot assignment page, drag-drop, preferences, conflicts*
+
+Day 9:
+- [ ] Set up React DnD library (@dnd-kit/core, @dnd-kit/sortable)
+- [ ] Create page structure: `SlotAssignmentPage.tsx`
+  - Three-column layout (wireframe: story-5.7-slot-assignment-page.md lines 19-78)
+  - Left: SpeakerPoolSidebar (300px)
+  - Center: SessionTimelineGrid (flexible width)
+  - Right: QuickActionsPanel (collapsible)
+- [ ] Implement SpeakerPoolSidebar component
+  - Progress indicator: "X of Y assigned (Z%)"
+  - Filters: [All] [Assigned] [Unassigned]
+  - Draggable speaker cards with grab handle
+  - Unassigned badge: "🔶 N Remaining"
+  - [View Preferences] button per speaker
+- [ ] Create API service: `slotAssignmentService.ts`
+  - `getUnassignedSessions(eventCode)`
+  - `assignSessionTiming(eventCode, sessionSlug, timing)`
+  - `bulkAssignTiming(eventCode, assignments)`
+  - `detectConflicts(eventCode)`
+- [ ] Wire SpeakerPoolSidebar to API, display speaker list
+
+Day 10:
+- [ ] Implement SessionTimelineGrid component
+  - Multi-day timeline view (wireframe lines 79-166)
+  - Time slots: 08:00-20:00 hourly rows
+  - Room columns: dynamic based on event venue
+  - Droppable zones for each slot
+  - Placeholder sessions (gray, dashed border)
+  - Assigned sessions (colored, speaker name visible)
+- [ ] Implement drag-and-drop logic
+  - `useDragAndDrop` hook:
+    - `handleDragStart` - shows preference match highlights
+    - `handleDragOver` - updates drop zone visuals
+    - `handleDrop` - calls API, updates state optimistically
+    - `handleDragEnd` - clears highlights
+  - Preference match highlighting during drag (green/yellow/red)
+  - Optimistic updates with rollback on error
+- [ ] Implement ConflictDetectionAlert modal (wireframe: story-5.7-conflict-resolution-modal.md)
+  - Triggered on API 409 Conflict error response
+  - Show conflict type (room_overlap, speaker_double_booked, speaker_unavailable)
+  - Visual timeline showing overlap (lines 426-470)
+  - Resolution options:
+    - [Find Alternative Slot] - suggests available slots
+    - [Change Room] - assigns to different room
+    - [Reassign Other Session] - moves conflicting session
+    - [Override Warning] - force assignment (warnings only, not errors)
+    - [Cancel] - abort assignment
+- [ ] Write component tests (Vitest, React Testing Library)
+
+Day 11:
+- [ ] Implement SpeakerPreferencePanel drawer (wireframe: story-5.7-speaker-preference-panel.md)
+  - Right drawer (400px) sliding on [View Preferences] click
+  - Sections:
+    - Time preferences: Morning/Afternoon/Evening (preferred/neutral/avoid icons)
+    - Specific avoid times: List of date-time ranges
+    - A/V requirements: Checkboxes for microphone, projector, recording, etc.
+    - Room setup: Standing desk, natural light, flip chart, notes field
+    - Dynamic match score: Shows % match when hovering over session slot
+  - Color-coded match indicators (lines 601-613)
+  - [Assign to Current Slot] [Find Best Match] buttons
+- [ ] Implement QuickActionsPanel
+  - Session summary: "X total, Y assigned, Z pending"
+  - [Auto-Assign All] button → opens BulkAutoAssignmentModal
+  - [Clear All Assignments] button (with confirmation)
+  - [Export Schedule PDF] button (generates PDF)
+- [ ] Implement BulkAutoAssignmentModal (wireframe: story-5.7-bulk-auto-assignment.md)
+  - Step 1: Algorithm selection (preferences/expertise/balanced)
+  - Step 2: Preview assignments with match scores
+  - Step 3: Confirmation and apply
+- [ ] Implement navigation integration (wireframe: story-5.7-navigation-integration.md)
+  - Entry points from Speakers tab, Overview tab, Publishing tab
+  - Breadcrumb: "Event Management > BATbern 2025 > Slot Assignment"
+  - [Back to Event] button
+  - Success banner: "✓ All timings assigned! [Go to Publishing Tab →]"
+- [ ] Write integration tests for full workflow
+
+**Phase 5: Publishing Frontend (Days 12-14) - PARALLEL WITH PHASE 4**
+
+*Dependencies: Phase 3 backend APIs available*
+*Deliverables: Publishing tab enhancements, validation, preview, version control*
+
+Day 12:
+- [ ] Update EventPublishingTab component (existing from Story 5.8)
+- [ ] Enhance ValidationDashboard with session timing validation
+  - Add new validation item: "Session Timings"
+    - Status: "Ready (X/Y sessions assigned)" or "Incomplete (X/Y sessions)"
+    - Expandable sub-items showing unassigned sessions (wireframe: story-2.3 lines 47-50)
+    - [Assign Timings] button → `/organizer/events/:eventCode/slot-assignment`
+  - Blocking logic: Phase 3 (Agenda) publish disabled if any session lacks timing
+  - Visual: ⚠️ icon if incomplete, ✓ if all assigned (line 47)
+- [ ] Implement PublishingTimeline component
+  - Phases: Topic → Speakers → Agenda → Updates
+  - Milestone markers with dates
+  - Current phase highlight
+  - Auto-publish schedule display
+- [ ] Write component tests
+
+Day 13:
+- [ ] Implement LivePreview component
+  - Device toggle: [Desktop] [Mobile] [Print]
+  - Preview URL generation with mode parameter
+  - Iframe integration for preview display
+  - Refresh on content changes
+- [ ] Implement PublishingControls component
+  - Mode selection: Draft / Progressive / Complete (radio buttons)
+  - [Publish Phase] button (enabled only if validation passes)
+  - [Schedule Publish] with date-time picker
+  - Newsletter toggle: "☑ Notify subscribers when publishing"
+  - [Preview Newsletter] button
+- [ ] Implement NewsletterPreviewModal (wireframe: story-2.3 lines 744-766)
+  - Subject line preview
+  - Email body preview (formatted HTML)
+  - [Send Test Email] button
+  - Subscriber count: "Will send to X active subscribers"
+- [ ] Write component tests
+
+Day 14:
+- [ ] Implement VersionControl component
+  - Version history table:
+    - Columns: Version | Published | Phase | Status | Actions
+    - Show: version number, publish timestamp, phase, CDN status
+    - [Rollback] button per version
+  - RollbackConfirmationModal with reason field (required, 10-500 chars)
+  - Rollback execution: calls API, shows progress, refreshes on success
+- [ ] Implement CDN invalidation status display (wireframe: story-2.3 lines 826-870)
+  - During publish: "⏳ CDN cache invalidating... Estimated time: 30-60 seconds"
+  - Success: "✓ Cache invalidation completed in Xs"
+  - Error: "⚠️ CDN cache invalidation failed" with retry button
+  - Status in version history: ✓ CDN cleared / ⚠️ CDN partial / ✗ CDN failed
+- [ ] Add subscriber notification UI (wireframe: story-2.3 lines 715-764)
+  - Checkbox: "☑ Notify subscribers when publishing"
+  - Subscriber count display
+  - Newsletter preview modal
+  - After-publish success: "Newsletter sent to X subscribers at HH:MM"
+- [ ] Write component tests and integration tests
+
+**Phase 6: Integration, Testing & Polish (Days 15-16)**
+
+*Dependencies: Phases 1-5 complete*
+*Deliverables: E2E tests, accessibility, responsive design, deployment ready*
+
+Day 15:
+- [ ] E2E tests with Playwright (`e2e/workflows/slot-assignment/`)
+  - Test: Organizer assigns session timings via drag-drop
+    - Navigate from Speakers tab → Slot Assignment page
+    - Drag speaker to time slot
+    - Verify conflict detection modal on overlap
+    - Resolve conflict and complete assignment
+    - Verify success banner and navigation to Publishing tab
+  - Test: Organizer uses auto-assignment feature
+    - Open auto-assignment modal
+    - Select algorithm (balanced)
+    - Preview assignments
+    - Accept and apply
+    - Verify sessions assigned correctly
+  - Test: Organizer publishes agenda phase
+    - Navigate to Publishing tab
+    - Verify session timing validation passes
+    - Publish Phase 3 (Agenda)
+    - Verify CDN invalidation triggered
+    - Verify newsletter sent
+    - Check version created
+  - Test: Organizer rolls back to previous version
+    - Navigate to version history
+    - Click rollback on previous version
+    - Enter reason
+    - Verify rollback success and CDN re-invalidation
+- [ ] E2E tests for progressive publishing (`e2e/workflows/progressive-publishing/`)
+  - Test full publish flow: Topic → Speakers → Agenda
+  - Test validation blocking (can't publish Agenda without timings)
+  - Test auto-publish scheduling
+  - Test newsletter delivery
+
+Day 16:
+- [ ] Implement accessibility features (wireframe: story-5.7-accessibility-features.md)
+  - Keyboard navigation for drag-drop:
+    - Tab to speaker card → Space to grab → Arrow keys to move → Enter to drop
+  - ARIA labels for all interactive elements
+  - Focus management: trap focus in modals, restore after close
+  - Screen reader announcements:
+    - "Session timing assigned successfully"
+    - "Conflict detected, 3 options available"
+    - "All session timings complete, ready to publish"
+  - High-contrast mode support
+  - Reduced motion preference support (disable animations)
+- [ ] Implement responsive design (wireframe: story-5.7-responsive-design.md)
+  - Desktop (≥1280px): Full three-column layout
+  - Tablet (768px-1279px): Collapsible sidebar, two-column main
+  - Mobile (<768px): Single column, speaker pool in bottom sheet
+  - Touch-friendly drag-drop for mobile (long-press to grab)
+- [ ] Implement celebration animations (wireframe: story-5.7-celebration-animations.md)
+  - Confetti animation on completing all assignments (canvas-confetti library)
+  - Progress bar fill animation (CSS transitions)
+  - Success badge pulse effect (Material-UI keyframes)
+- [ ] Performance optimization
+  - Lazy load timeline grid rows (virtual scrolling for large events)
+  - Debounce preference match calculations
+  - Memoize expensive components (React.memo)
+  - Optimize API calls (batch preference fetches)
+- [ ] Code review and refactoring
+  - Extract reusable components
+  - DRY up duplicate logic
+  - Ensure consistent error handling
+  - Update OpenAPI spec if any API changes
+  - Generate frontend types: `npm run generate:api-types`
+- [ ] Documentation updates
+  - Update CLAUDE.md with new routes and components
+  - Update architecture diagrams if needed
+  - Document deployment requirements (CloudFront, EventBridge, SES config)
+- [ ] Final regression testing
+  - Run full test suite: `make test`
+  - Verify coverage meets ≥85% target
+  - Test in all supported browsers (Chrome, Firefox, Safari, Edge)
+  - Test with screen readers (NVDA, JAWS, VoiceOver)
+  - Load testing: simulate 50 concurrent organizers assigning timings
+
+**Risk Mitigation**:
+- **Risk**: CloudFront API rate limits during testing
+  - Mitigation: Use LocalStack for all integration tests, only hit real CloudFront in staging
+- **Risk**: React DnD performance with 100+ sessions
+  - Mitigation: Implement virtual scrolling, lazy render off-screen slots
+- **Risk**: Conflict detection race conditions (concurrent assignments)
+  - Mitigation: Use database-level row locking with SELECT FOR UPDATE
+- **Risk**: CDN invalidation failures blocking publish
+  - Mitigation: Mark as warning, allow publish to proceed, retry invalidation in background
+
+**Success Criteria**:
+- ✅ All 29 acceptance criteria pass QA
+- ✅ All unit tests pass (≥90% coverage for business logic)
+- ✅ All integration tests pass (≥80% coverage for APIs)
+- ✅ E2E tests pass for critical workflows
+- ✅ Accessibility audit passes (WCAG 2.1 AA)
+- ✅ Performance targets met (LCP <2.5s, drag latency <100ms)
+- ✅ No P0/P1 bugs in QA review
 
 ### Debug Log
 See: `.ai/debug-log.md#story-5.7` for detailed implementation debugging
@@ -998,7 +1380,7 @@ See: `.ai/debug-log.md#story-5.7` for detailed implementation debugging
 - {files}
 
 ### Change Log
-- {date}: {change}
+- 2025-12-25: Phase 4 completion - Wireframe review, architecture decision documentation, route definition, implementation estimation
 
 ### Deployment Notes
 {Special deployment considerations}
@@ -1028,4 +1410,17 @@ publishing:
 ```
 
 ### Status
-Draft
+Ready for Implementation
+
+**Phase 4 Complete** (2025-12-25):
+- ✅ All Phase 1-3 wireframes reviewed and verified complete (9 wireframes total)
+- ✅ Story file updated with comprehensive wireframe references and architecture decision
+- ✅ Route definition added: `/organizer/events/:eventCode/slot-assignment`
+- ✅ Detailed 16-18 day implementation plan created with day-by-day breakdown
+- 🎯 **Ready to begin Phase 1 implementation** (Database & Backend Foundation)
+
+**Next Steps**:
+1. Assign developer to begin Phase 1 (Days 1-2): Database schema and JPA entities
+2. Review implementation plan with team for final adjustments
+3. Set up project board with tasks from implementation approach
+4. Begin TDD implementation following the plan

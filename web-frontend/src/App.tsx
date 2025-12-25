@@ -67,6 +67,9 @@ const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManag
 // Task Management Page - Story 5.5
 const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'));
 
+// Slot Assignment Page - Story 5.7 (BAT-11)
+const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
+
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
@@ -342,6 +345,17 @@ function App() {
                       <ProtectedRoute>
                         <AuthLayout>
                           <EventPage />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* Story 5.7 (BAT-11): Dedicated Slot Assignment Page */}
+                  <Route
+                    path="/organizer/events/:eventCode/slot-assignment"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <SlotAssignmentPage />
                         </AuthLayout>
                       </ProtectedRoute>
                     }
