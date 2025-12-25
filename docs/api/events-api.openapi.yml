@@ -3088,13 +3088,15 @@ components:
       type: object
       description: |
         Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+
+        **Placeholder Session Pattern (V21):**
+        Sessions can be created as placeholders when speakers accept invitations.
+        Placeholder sessions have title but null sessionType/startTime/endTime.
+        Timing is assigned later during slot assignment workflow (Story 5.7).
       required:
         - sessionSlug
         - eventCode
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         sessionSlug:
           type: string
@@ -3114,14 +3116,20 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - null for placeholder sessions, assigned during agenda planning
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
           example: keynote
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - null for placeholder sessions, assigned during slot assignment
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - null for placeholder sessions, assigned during slot assignment
         room:
           type: string
           maxLength: 100
@@ -3605,11 +3613,15 @@ components:
 
     CreateSessionRequest:
       type: object
+      description: |
+        Create session request - supports creating placeholder sessions.
+
+        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+        Timing will be assigned later during slot assignment workflow (Story 5.7).
+
+        **Full Sessions**: Provide all fields to create a fully-defined session.
       required:
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         title:
           type: string
@@ -3618,13 +3630,19 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - omit for placeholder sessions
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - omit for placeholder sessions
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - omit for placeholder sessions
         room:
           type: string
           maxLength: 100
@@ -3637,11 +3655,14 @@ components:
 
     UpdateSessionRequest:
       type: object
+      description: |
+        Update session request - supports partial updates and slot assignment.
+
+        **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
+        **Full Update**: Update any combination of fields.
+        **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
       required:
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         title:
           type: string
@@ -3650,16 +3671,24 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - can be null for placeholder sessions
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - use for slot assignment, set to null to clear
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - use for slot assignment, set to null to clear
         room:
           type: string
           maxLength: 100
+          nullable: true
+          description: Session room - assigned during slot assignment
         capacity:
           type: integer
         language:

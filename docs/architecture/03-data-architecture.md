@@ -1552,18 +1552,22 @@ CREATE TABLE events (
     metadata JSONB DEFAULT '{}'
 );
 
--- Sessions table
+-- Sessions table (V2, updated in V21 for placeholder session support)
+-- IMPORTANT: Sessions ARE the slot model for slot assignment workflow
+-- Placeholder pattern: session created when speaker accepts (with title, but null times)
+-- Timing assigned later: organizer sets start_time/end_time/room during slot assignment
+-- See also: speaker_pool.session_id FK (V20) links speakers to sessions
 CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    session_type VARCHAR(50) NOT NULL CHECK (session_type IN (
+    session_type VARCHAR(50) CHECK (session_type IN (  -- V21: Nullable for placeholder sessions
         'keynote', 'presentation', 'workshop', 'panel_discussion',
         'networking', 'break', 'lunch'
     )),
-    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE,  -- V21: Nullable - assigned during slot assignment
+    end_time TIMESTAMP WITH TIME ZONE,    -- V21: Nullable - assigned during slot assignment
     room VARCHAR(100),
     capacity INTEGER,
     language VARCHAR(10) DEFAULT 'de',
