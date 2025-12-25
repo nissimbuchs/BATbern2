@@ -1372,6 +1372,12 @@ See: `.ai/debug-log.md#story-5.7` for detailed implementation debugging
 ### File List
 **Created**:
 - services/event-management-service/src/main/resources/db/migration/V28__Add_slot_assignment_and_publishing.sql
+- web-frontend/e2e/workflows/slot-assignment/slot-assignment-workflow.spec.ts
+- web-frontend/e2e/workflows/progressive-publishing/progressive-publishing-workflow.spec.ts
+- services/event-management-service/src/test/java/ch/batbern/events/controller/SlotAssignmentControllerIntegrationTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/service/slotassignment/SessionTimingServiceTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/service/slotassignment/ConflictDetectionServiceTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/service/slotassignment/PreferenceMatchingAlgorithmTest.java
 
 **Modified**:
 - docs/stories/BAT-11.slot-assignment-publishing.md (Agent Model Used, File List, Change Log updated)
@@ -1381,6 +1387,11 @@ See: `.ai/debug-log.md#story-5.7` for detailed implementation debugging
 
 ### Change Log
 - 2025-12-25: Task 0 Complete - Created V28 migration for slot assignment and publishing schema (session_timing_history, speaker_slot_preferences, publishing_versions, publishing_config tables)
+- 2025-12-25: Task 1 Complete - Created E2E tests for slot assignment and publishing workflows (12 tests, RED phase, covers AC1-29)
+- 2025-12-25: Task 2a Complete - Created backend TDD tests for slot assignment (RED phase)
+  - Integration tests: SlotAssignmentControllerIntegrationTest (12 tests, Testcontainers PostgreSQL)
+  - Unit tests: SessionTimingServiceTest (5 tests), ConflictDetectionServiceTest (5 tests), PreferenceMatchingAlgorithmTest (6 tests)
+  - Coverage: AC5-AC13 mapped to tests, expected compilation errors (services not implemented yet)
 - 2025-12-25: Phase 4 completion - Wireframe review, architecture decision documentation, route definition, implementation estimation
 
 ### Deployment Notes
