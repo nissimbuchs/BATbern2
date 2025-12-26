@@ -54,12 +54,13 @@ export const EventManagementDashboard: React.FC = () => {
   const [isSessionBatchImportOpen, setIsSessionBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
+  // Include registrations to get actual registration counts from database
   const {
     data: eventsData,
     isLoading: isLoadingEvents,
     isError: isErrorEvents,
     error: eventsError,
-  } = useEvents(pagination, filters);
+  } = useEvents(pagination, filters, { expand: ['registrations'] });
 
   const {
     data: teamActivityData,

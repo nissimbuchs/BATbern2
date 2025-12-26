@@ -34,8 +34,14 @@ LOG_DIR="/tmp"
 BASE_PORT="${BASE_PORT:-8000}"  # Default instance port
 
 # Calculate instance identifier based on BASE_PORT
-# Always use BASE_PORT as the instance identifier for consistency
-INSTANCE="$BASE_PORT"
+# Use friendly names for common ports, otherwise use the port number itself
+if [ "$BASE_PORT" -eq 8000 ]; then
+    INSTANCE="1"
+elif [ "$BASE_PORT" -eq 9000 ]; then
+    INSTANCE="2"
+else
+    INSTANCE="$BASE_PORT"
+fi
 
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 

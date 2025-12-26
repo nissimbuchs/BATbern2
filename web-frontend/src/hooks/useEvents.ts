@@ -42,14 +42,19 @@ import type {
 /**
  * useEvents - Fetch paginated list of events with filters
  * Cache: 5 minutes (moderately volatile data)
+ *
+ * @param pagination - Page number and limit
+ * @param filters - Optional filters for events
+ * @param options - Optional expand resources (e.g., ['registrations'] for actual counts)
  */
 export const useEvents = (
   pagination: PaginationParams,
-  filters?: EventFilters
+  filters?: EventFilters,
+  options?: { expand?: string[] }
 ): UseQueryResult<EventListResponse, Error> => {
   return useQuery({
-    queryKey: ['events', pagination, filters],
-    queryFn: () => eventApiClient.getEvents(pagination, filters),
+    queryKey: ['events', pagination, filters, options],
+    queryFn: () => eventApiClient.getEvents(pagination, filters, options),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

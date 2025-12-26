@@ -49,7 +49,9 @@ const Analytics = React.lazy(() => import('@pages/Analytics'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
-const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
+const UserManagement = React.lazy(
+  () => import('@components/organizer/UserManagement/UserManagement')
+);
 const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAccountPage'));
 
 // Event Management Pages - Story 2.5.3, Task 4

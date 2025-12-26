@@ -11,6 +11,7 @@
       "speakers": "Referenten",
       "venue": "Veranstaltungsort",
       "team": "Team",
+      "participants": "Teilnehmer",
       "publishing": "Veröffentlichung",
       "settings": "Einstellungen"
     },
@@ -34,6 +35,44 @@
       "sendNotification": "Benachrichtigung senden",
       "previewPublic": "Öffentliche Seite vorschauen",
       "viewTimeline": "Zeitachse anzeigen"
+    },
+    "participantsTab": {
+      "title": "Veranstaltungsteilnehmer"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Name",
+        "email": "E-Mail",
+        "company": "Unternehmen",
+        "status": "Status",
+        "registrationDate": "Anmeldedatum"
+      },
+      "empty": "Noch keine Teilnehmer angemeldet"
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Teilnehmer suchen",
+        "placeholder": "Nach Name oder E-Mail suchen..."
+      },
+      "status": {
+        "label": "Anmeldestatus",
+        "all": "Alle Status",
+        "confirmed": "Bestätigt",
+        "registered": "Angemeldet",
+        "attended": "Teilgenommen",
+        "cancelled": "Abgesagt",
+        "waitlisted": "Warteliste"
+      },
+      "clearAll": "Filter zurücksetzen"
+    },
+    "participantList": {
+      "loading": "Teilnehmer werden geladen...",
+      "error": {
+        "loadFailed": "Fehler beim Laden der Teilnehmer. Bitte versuchen Sie es erneut."
+      },
+      "actions": {
+        "retry": "Erneut versuchen"
+      }
     }
   },
   "dashboard": {

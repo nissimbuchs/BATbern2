@@ -35,30 +35,32 @@ import {
   ViewList as ListIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useUserManagementStore } from '@/stores/userManagementStore';
 import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from './UserTable';
 import UserCard from './UserCard';
 import UserFilters from './UserFilters';
-import UserDetailModal from './UserDetailModal';
 import UserCreateEditModal from './UserCreateEditModal';
 import RoleManagerModal from './RoleManagerModal';
 import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
 import SpeakerBatchImportModal from './SpeakerBatchImportModal';
+import { ParticipantBatchImportModal } from './ParticipantBatchImportModal';
 // import UserSyncPanel from './UserSyncPanel'; // TODO: Re-enable when AWS credentials configured (Story 1.2.5)
 import type { User } from '@/types/user.types';
 
 const UserList: React.FC = () => {
   const { t } = useTranslation('userManagement');
-  const { filters, pagination, selectedUser, setSelectedUser, setPage, setLimit } =
-    useUserManagementStore();
+  const navigate = useNavigate();
+  const { filters, pagination, setPage, setLimit } = useUserManagementStore();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [roleManagerUser, setRoleManagerUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
   const [batchImportModalOpen, setBatchImportModalOpen] = useState(false);
+  const [participantImportModalOpen, setParticipantImportModalOpen] = useState(false);
 
   // Fetch user list with React Query
   const { data, isLoading, isError, refetch } = useUserList({
@@ -67,17 +69,7 @@ const UserList: React.FC = () => {
   });
 
   const handleRowClick = (user: User) => {
-    setSelectedUser(user);
-  };
-
-  const handleCloseDetailModal = () => {
-    setSelectedUser(null);
-  };
-
-  const handleEditUser = (user: User) => {
-    // Close detail modal and open edit modal
-    setSelectedUser(null);
-    setEditUser(user);
+    navigate(`/organizer/users/${user.id}`);
   };
 
   const handleOpenCreateModal = () => {
@@ -173,6 +165,14 @@ const UserList: React.FC = () => {
               {t('batchImport.button')}
             </Button>
             <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<UploadIcon />}
+              onClick={() => setParticipantImportModalOpen(true)}
+            >
+              {t('participantImport.button')}
+            </Button>
+            <Button
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
@@ -227,12 +227,6 @@ const UserList: React.FC = () => {
         )}
 
         {/* Modals */}
-        <UserDetailModal
-          user={selectedUser}
-          open={!!selectedUser}
-          onClose={handleCloseDetailModal}
-          onEdit={handleEditUser}
-        />
         {/* Create/Edit User Modal */}
         <UserCreateEditModal
           open={createModalOpen || !!editUser}
@@ -262,6 +256,11 @@ const UserList: React.FC = () => {
         <SpeakerBatchImportModal
           open={batchImportModalOpen}
           onClose={() => setBatchImportModalOpen(false)}
+          onImportComplete={() => refetch()}
+        />
+        <ParticipantBatchImportModal
+          open={participantImportModalOpen}
+          onClose={() => setParticipantImportModalOpen(false)}
           onImportComplete={() => refetch()}
         />
       </Container>

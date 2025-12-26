@@ -136,7 +136,7 @@ test-java: ## Run Java tests with coverage verification (requires Docker)
 	@echo "🧪 Running Java tests with coverage verification..."
 	@echo "  → Running unit + integration tests (Testcontainers PostgreSQL)"
 	@echo "  → AWS services are mocked (no credentials needed)"
-	@./gradlew test jacocoTestReport jacocoTestCoverageVerification --parallel
+	@./gradlew test jacocoTestReport jacocoTestCoverageVerification
 	@echo "✓ Java tests complete with coverage verified"
 	@echo ""
 	@echo "📊 Java Coverage: build/reports/jacoco/test/html/index.html"

@@ -1,0 +1,4 @@
+Name,FirstName,LastName,BestMail,companyKey,1,2,999
+Valid User,Valid,User,valid.user@example.com,validcompany,1,,
+Invalid Event,Invalid,Event,invalid.event@example.com,invalidcompany,,,1
+Missing Email,Missing,Email,,missingcompany,,1,

@@ -813,6 +813,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/batch_registrations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create batch event registrations for a participant
+     * @description Creates multiple event registrations for a single participant in one transaction.
+     *     Used for bulk importing historical attendance data.
+     *
+     *     **Story**: BAT-12 - API Contract - Participant Batch Registration
+     *
+     *     **Behavior**:
+     *     - Creates user if doesn't exist (get-or-create by email)
+     *     - Skips duplicate registrations (idempotent)
+     *     - Returns partial success if some registrations fail
+     *
+     *     **Use Case**: Historical data migration for 2,307 participants
+     *
+     *     **Performance**: <500ms (P95) for 100 registrations
+     */
+    post: operations['createBatchRegistrations'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/registrations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List user registrations across all events
+     * @description Retrieve all event registrations for a specific user.
+     *     Used by user detail page to show participation history.
+     *
+     *     **Story**: BAT-15 - Integration - Participant Batch Import
+     *     **Security**: Requires authentication
+     */
+    get: operations['listUserRegistrations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/analytics': {
     parameters: {
       query?: never;
@@ -1573,7 +1629,7 @@ export interface components {
       /** @description Company name from user_profiles.company_id (FK to companies table) */
       company?: string;
       /** @enum {string} */
-      status: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
+      status: 'REGISTERED' | 'WAITLISTED' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
       /** Format: date-time */
       registrationDate?: string;
       /** @description Event-level registration - sessions are preferences only, not commitments */
@@ -1787,6 +1843,94 @@ export interface components {
         /** @description Receive event reminders */
         eventReminders?: boolean;
       };
+    };
+    /**
+     * @description Story BAT-12: Batch registration request for historical data import.
+     *     Creates multiple event registrations for a single participant.
+     */
+    BatchRegistrationRequest: {
+      /**
+       * Format: email
+       * @description Participant email (used for user lookup/creation)
+       * @example adrian.buerki@centrisag.ch
+       */
+      participantEmail: string;
+      /**
+       * @description Participant first name
+       * @example Adrian
+       */
+      firstName: string;
+      /**
+       * @description Participant last name
+       * @example Bürki
+       */
+      lastName: string;
+      /**
+       * @description Company identifier (company name).
+       *     Optional for participants without company affiliation.
+       *     Story 3.2: Batch import includes company information from CSV.
+       * @example Centris AG
+       */
+      companyId?: string;
+      /** @description Array of event registrations (max 100 per batch) */
+      registrations: components['schemas']['BatchRegistrationItem'][];
+    };
+    /** @description Single event registration within a batch */
+    BatchRegistrationItem: {
+      /**
+       * @description Event code in format BATbernN where N is event number
+       * @example BATbern25
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (use 'ATTENDED' for historical data)
+       * @example ATTENDED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'ATTENDED' | 'CANCELLED';
+    };
+    /**
+     * @description Response for batch registration operation.
+     *     Returns partial success - some registrations may fail while others succeed.
+     */
+    BatchRegistrationResponse: {
+      /**
+       * @description Username of created/found participant
+       * @example adrian.buerki
+       */
+      username: string;
+      /**
+       * @description Total number of registrations attempted
+       * @example 3
+       */
+      totalRegistrations: number;
+      /**
+       * @description Number of registrations successfully created
+       * @example 3
+       */
+      successfulRegistrations: number;
+      /** @description List of registrations that failed */
+      failedRegistrations: components['schemas']['FailedRegistration'][];
+      /**
+       * @description List of error messages
+       * @example [
+       *       "Event BATbern99 not found"
+       *     ]
+       */
+      errors: string[];
+    };
+    /** @description Details of a failed registration within a batch */
+    FailedRegistration: {
+      /**
+       * @description Event code that failed
+       * @example BATbern99
+       */
+      eventCode: string;
+      /**
+       * @description Reason for failure
+       * @example Event not found
+       */
+      reason: string;
     };
     BatchUpdateRequest: {
       updates: {
@@ -2431,6 +2575,15 @@ export interface components {
     };
     /** @description Forbidden - insufficient permissions */
     Forbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Unauthorized - missing or invalid authentication token */
+    Unauthorized: {
       headers: {
         [name: string]: unknown;
       };
@@ -3831,6 +3984,102 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createBatchRegistrations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchRegistrationRequest'];
+      };
+    };
+    responses: {
+      /** @description Batch registrations processed (full or partial success) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchRegistrationResponse'];
+        };
+      };
+      /** @description Invalid request data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Forbidden",
+           *       "message": "This operation requires ORGANIZER role",
+           *       "code": "INSUFFICIENT_PERMISSIONS"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listUserRegistrations: {
+    parameters: {
+      query: {
+        /** @description Username to filter registrations */
+        attendeeUsername: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User registrations retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "registrationCode": "BATbern34-reg-A3X9K2",
+           *         "eventCode": "BATbern34",
+           *         "eventTitle": "Cloud Native Architecture",
+           *         "eventDate": "2023-03-15T18:00:00Z",
+           *         "status": "attended",
+           *         "registrationDate": "2023-02-01T10:30:00Z"
+           *       },
+           *       {
+           *         "registrationCode": "BATbern36-reg-B7Y1M4",
+           *         "eventCode": "BATbern36",
+           *         "eventTitle": "Microservices Patterns",
+           *         "eventDate": "2023-05-20T18:00:00Z",
+           *         "status": "attended",
+           *         "registrationDate": "2023-04-10T14:20:00Z"
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['Registration'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

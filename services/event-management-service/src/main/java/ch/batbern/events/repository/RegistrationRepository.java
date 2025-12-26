@@ -1,6 +1,8 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Registration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -57,6 +59,16 @@ public interface RegistrationRepository
     List<Registration> findByEventId(UUID eventId);
 
     /**
+     * Find registrations for a specific event with pagination
+     * Story 3.3: Event Participants Tab - Pagination support
+     *
+     * @param eventId Event UUID
+     * @param pageable Pagination parameters (page, size, sort)
+     * @return Page of registrations for this event
+     */
+    Page<Registration> findByEventId(UUID eventId, Pageable pageable);
+
+    /**
      * Find all registrations for a specific event and status
      */
     List<Registration> findByEventIdAndStatus(UUID eventId, String status);
@@ -84,4 +96,22 @@ public interface RegistrationRepository
      * @return Count of registrations with given status
      */
     long countByStatus(String status);
+
+    /**
+     * Find all registrations for a specific user
+     * Story BAT-15: Used by user detail page to show event participation history
+     *
+     * @param attendeeUsername Username reference to User Management Service
+     * @return List of registrations for this user
+     */
+    List<Registration> findByAttendeeUsername(String attendeeUsername);
+
+    /**
+     * Count total registrations for a specific event
+     * Used to display accurate registration counts on event cards and analytics
+     *
+     * @param eventId Event UUID
+     * @return Total count of registrations for this event (all statuses)
+     */
+    long countByEventId(UUID eventId);
 }
