@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -119,10 +120,10 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .created(true)
                 .user(mockUserProfile);
 
-        when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
+        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(mockCreateResponse);
 
         // Dynamic mock for getUserByUsername - handles any username
-        when(userApiClient.getUserByUsername(any(String.class)))
+        lenient().when(userApiClient.getUserByUsername(any(String.class)))
                 .thenAnswer(invocation -> {
                     String username = invocation.getArgument(0);
                     String[] parts = username.split("\\.");
@@ -326,11 +327,11 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         reset(userApiClient);
 
         // Mock UserApiClient to throw UserNotFoundException for deleted.user
-        when(userApiClient.getUserByUsername("deleted.user"))
+        lenient().when(userApiClient.getUserByUsername("deleted.user"))
                 .thenThrow(new ch.batbern.events.exception.UserNotFoundException("deleted.user"));
 
         // Keep the dynamic mock for other usernames (john.doe)
-        when(userApiClient.getUserByUsername("john.doe"))
+        lenient().when(userApiClient.getUserByUsername("john.doe"))
                 .thenAnswer(invocation -> new UserResponse()
                         .id("john.doe")
                         .firstName("John")

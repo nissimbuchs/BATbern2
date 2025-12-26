@@ -133,9 +133,14 @@ class SessionTimingServiceTest {
         String sessionSlug = "jane-smith-datainc";
         String changedBy = "test-organizer@batbern.ch";
 
+        // Store original values before they're modified
+        Instant originalStartTime = assignedSession.getStartTime();
+        Instant originalEndTime = assignedSession.getEndTime();
+        String originalRoom = assignedSession.getRoom();
+        UUID sessionId = assignedSession.getId();
+
         when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(assignedSession));
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(speakerPoolRepository.findBySessionId(any())).thenReturn(Optional.empty()); // No speaker for this session
 
         // When: unassignTiming(sessionSlug)
         Session result = sessionTimingService.unassignTiming(sessionSlug, changedBy);
@@ -145,12 +150,21 @@ class SessionTimingServiceTest {
         assertThat(result.getEndTime()).isNull();
         assertThat(result.getRoom()).isNull();
 
-        // And: History record created
-        verify(sessionTimingHistoryRepository).save(argThat(history ->
-                history.getSessionId().equals(assignedSession.getId())
-                && history.getPreviousStartTime().equals(assignedSession.getStartTime())
-                && history.getNewStartTime() == null
-        ));
+        // And: History record created with original values
+        org.mockito.ArgumentCaptor<SessionTimingHistory> historyCaptor =
+                org.mockito.ArgumentCaptor.forClass(SessionTimingHistory.class);
+        verify(sessionTimingHistoryRepository).save(historyCaptor.capture());
+
+        SessionTimingHistory capturedHistory = historyCaptor.getValue();
+        assertThat(capturedHistory.getSessionId()).isEqualTo(sessionId);
+        assertThat(capturedHistory.getPreviousStartTime()).isEqualTo(originalStartTime);
+        assertThat(capturedHistory.getPreviousEndTime()).isEqualTo(originalEndTime);
+        assertThat(capturedHistory.getPreviousRoom()).isEqualTo(originalRoom);
+        assertThat(capturedHistory.getNewStartTime()).isNull();
+        assertThat(capturedHistory.getNewEndTime()).isNull();
+        assertThat(capturedHistory.getNewRoom()).isNull();
+        assertThat(capturedHistory.getChangedBy()).isEqualTo(changedBy);
+        assertThat(capturedHistory.getChangeReason()).isEqualTo("manual_adjustment");
     }
 
     /**

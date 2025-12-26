@@ -60,10 +60,21 @@ class ConflictDetectionServiceTest {
                 speakerSlotPreferenceRepository
         );
 
+        UUID eventId = UUID.randomUUID();
+        UUID speakerId = UUID.randomUUID();
+
+        speaker = SpeakerPool.builder()
+                .id(speakerId)
+                .eventId(eventId)
+                .username("john.doe")
+                .build();
+
         sessionA = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("session-a")
+                .eventId(eventId)
                 .eventCode("BATbern997")
+                .speakerPoolId(speakerId)
                 .startTime(Instant.parse("2025-06-15T18:00:00Z"))
                 .endTime(Instant.parse("2025-06-15T18:45:00Z"))
                 .room("Main Hall")
@@ -72,15 +83,11 @@ class ConflictDetectionServiceTest {
         sessionB = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("session-b")
+                .eventId(eventId)
                 .eventCode("BATbern997")
                 .startTime(Instant.parse("2025-06-15T18:15:00Z"))
                 .endTime(Instant.parse("2025-06-15T19:00:00Z"))
                 .room("Main Hall")
-                .build();
-
-        speaker = SpeakerPool.builder()
-                .id(UUID.randomUUID())
-                .username("john.doe")
                 .build();
     }
 

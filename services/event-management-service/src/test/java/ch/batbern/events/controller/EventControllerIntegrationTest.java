@@ -72,6 +72,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
     @MockitoBean
     private UserApiClient userApiClient;
 
@@ -755,6 +758,19 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create an event in SLOT_ASSIGNMENT state (ready to be published)
         // The workflow requires SLOT_ASSIGNMENT → AGENDA_PUBLISHED transition
         Event draftEvent = createTestEvent("BATbern 2028", "2028-09-15T09:00:00Z", "SLOT_ASSIGNMENT");
+
+        // Story 5.7: Must have at least one session with timing assigned before publishing
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(draftEvent.getId())
+                .sessionSlug("keynote-2028")
+                .title("Keynote 2028")
+                .sessionType("keynote")
+                .startTime(Instant.parse("2028-09-15T09:00:00Z"))
+                .endTime(Instant.parse("2028-09-15T10:00:00Z"))
+                .room("Main Hall")
+                .capacity(200)
+                .build();
+        sessionRepository.save(session);
 
         mockMvc.perform(post("/api/v1/events/" + draftEvent.getEventCode() + "/publish")
                         .contentType(MediaType.APPLICATION_JSON))
