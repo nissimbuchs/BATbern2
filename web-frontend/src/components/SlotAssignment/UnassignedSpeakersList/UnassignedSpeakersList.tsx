@@ -145,8 +145,10 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
             {sessions.map((session) => {
               const speaker = session.speakers?.[0];
               const username = speaker?.username || '';
-              const displayName = speaker?.displayName || 'Unknown Speaker';
-              const companyName = speaker?.companyName || '';
+              const displayName = speaker
+                ? `${speaker.firstName} ${speaker.lastName}`
+                : 'Unknown Speaker';
+              const companyName = speaker?.company || '';
 
               return (
                 <Card

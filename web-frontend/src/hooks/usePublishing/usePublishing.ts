@@ -44,6 +44,7 @@ export interface UsePublishingReturn {
   preview: PublishPreviewResponse | null;
   fetchPreview: (phase: PublishingPhase, mode: PublishingMode) => void;
   isLoadingPreview: boolean;
+  previewError: Error | null;
 
   // Change log
   changeLog: ChangeLogResponse | undefined;
@@ -148,12 +149,16 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
   });
 
   // Extract validation errors from publish error (422 response)
-  const validationErrors =
+  const validationErrors: Array<{ field: string; message: string; requirement: string }> =
     publishPhaseMutation.error &&
+    typeof publishPhaseMutation.error === 'object' &&
     'response' in publishPhaseMutation.error &&
-    publishPhaseMutation.error.response?.status === 422
-      ? (publishPhaseMutation.error.response?.data as PublishValidationError)?.validationErrors ||
-        []
+    publishPhaseMutation.error.response &&
+    typeof publishPhaseMutation.error.response === 'object' &&
+    'status' in publishPhaseMutation.error.response &&
+    publishPhaseMutation.error.response.status === 422 &&
+    'data' in publishPhaseMutation.error.response
+      ? (publishPhaseMutation.error.response.data as PublishValidationError)?.validationErrors || []
       : [];
 
   return {
@@ -176,6 +181,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     preview: preview || null,
     fetchPreview: (phase, mode) => fetchPreviewMutation.mutate({ phase, mode }),
     isLoadingPreview: fetchPreviewMutation.isPending,
+    previewError: fetchPreviewMutation.error,
 
     // Change log
     changeLog,

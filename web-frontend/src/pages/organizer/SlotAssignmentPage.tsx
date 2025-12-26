@@ -40,14 +40,6 @@ const SlotAssignmentPage: React.FC = () => {
     navigate(`/organizer/events/${eventCode}`);
   };
 
-  const handleAssignmentComplete = () => {
-    // Success banner will be shown by DragDropSlotAssignment component
-    // Navigate to Publishing tab after short delay to allow user to see success message
-    setTimeout(() => {
-      navigate(`/organizer/events/${eventCode}?tab=publishing`);
-    }, 2000);
-  };
-
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Breadcrumb Navigation */}
@@ -100,12 +92,7 @@ const SlotAssignmentPage: React.FC = () => {
       </Alert>
 
       {/* Drag-and-Drop Slot Assignment Component */}
-      {eventCode && (
-        <DragDropSlotAssignment
-          eventCode={eventCode}
-          onAssignmentComplete={handleAssignmentComplete}
-        />
-      )}
+      {eventCode && <DragDropSlotAssignment eventCode={eventCode} />}
 
       {/* Return Navigation */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>

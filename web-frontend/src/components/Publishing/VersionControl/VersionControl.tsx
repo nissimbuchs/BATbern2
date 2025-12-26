@@ -18,20 +18,9 @@ import {
   CircularProgress,
   Tooltip,
 } from '@mui/material';
-import { RestoreIcon, CheckCircle, HourglassEmpty, ErrorIcon } from '@mui/icons-material';
+import { Restore, CheckCircle, HourglassEmpty, Error } from '@mui/icons-material';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-
-interface PublishingVersion {
-  id: string;
-  eventCode: string;
-  versionNumber: number;
-  publishedPhase: string;
-  publishedAt: string;
-  publishedBy: string;
-  cdnInvalidationId: string;
-  cdnInvalidationStatus: 'COMPLETED' | 'PENDING' | 'FAILED';
-  isCurrent: boolean;
-}
+import type { PublishingVersion } from '@/types/event.types';
 
 export interface VersionControlProps {
   eventCode: string;
@@ -50,7 +39,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
 
   const handleConfirmRollback = async () => {
     if (selectedVersion) {
-      await rollbackVersion?.(selectedVersion.id);
+      await rollbackVersion?.(selectedVersion.versionNumber, {
+        reason: `Manual rollback to version ${selectedVersion.versionNumber}`,
+      });
       setRollbackDialogOpen(false);
       setSelectedVersion(null);
     }
@@ -78,20 +69,20 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
     );
   };
 
-  const getCDNStatusIcon = (status: string) => {
+  const getCDNStatusIcon = (status?: string) => {
     switch (status) {
       case 'COMPLETED':
         return <CheckCircle color="success" fontSize="small" data-testid="cdn-status-completed" />;
       case 'PENDING':
         return <HourglassEmpty color="warning" fontSize="small" data-testid="cdn-status-pending" />;
       case 'FAILED':
-        return <ErrorIcon color="error" fontSize="small" data-testid="cdn-status-failed" />;
+        return <Error color="error" fontSize="small" data-testid="cdn-status-failed" />;
       default:
         return null;
     }
   };
 
-  const getCDNStatusText = (status: string): string => {
+  const getCDNStatusText = (status?: string): string => {
     switch (status) {
       case 'COMPLETED':
         return 'CDN Cleared';
@@ -156,7 +147,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                   </TableCell>
                   <TableCell>{version.publishedBy}</TableCell>
                   <TableCell>
-                    <Tooltip title={`CDN Invalidation ID: ${version.cdnInvalidationId}`}>
+                    <Tooltip title={`CDN Invalidation ID: ${version.cdnInvalidationId || 'N/A'}`}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {getCDNStatusIcon(version.cdnInvalidationStatus)}
                         <Typography variant="body2">
@@ -169,7 +160,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                     {!version.isCurrent && (
                       <Button
                         size="small"
-                        startIcon={<RestoreIcon />}
+                        startIcon={<Restore />}
                         onClick={() => handleRollbackClick(version)}
                         disabled={isRollingBack}
                         data-testid={`rollback-button-${version.versionNumber}`}
@@ -245,7 +236,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
             color="warning"
             disabled={isRollingBack}
             data-testid="confirm-rollback-button"
-            startIcon={isRollingBack ? <CircularProgress size={16} /> : <RestoreIcon />}
+            startIcon={isRollingBack ? <CircularProgress size={16} /> : <Restore />}
           >
             {isRollingBack ? 'Rolling back...' : 'Confirm Rollback'}
           </Button>

@@ -174,7 +174,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       {!isLoading && (
         <Grid container spacing={3} sx={{ flex: 1, overflow: 'hidden' }}>
           {/* Left Sidebar: Unassigned Speakers */}
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Paper sx={{ height: '100%', overflow: 'hidden' }}>
               <UnassignedSpeakersList
                 sessions={unassignedSessions.map((session) => ({
@@ -190,7 +190,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           </Grid>
 
           {/* Center: Session Timeline Grid */}
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper
               data-testid="session-timeline-grid"
               sx={{ height: '100%', overflow: 'auto', p: 2 }}
@@ -204,13 +204,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 <Box sx={{ minWidth: 800 }}>
                   {/* Header Row */}
                   <Grid container spacing={1} sx={{ mb: 1 }}>
-                    <Grid item xs={2}>
+                    <Grid size={2}>
                       <Typography variant="caption" fontWeight="bold">
                         Time
                       </Typography>
                     </Grid>
                     {ROOMS.map((room) => (
-                      <Grid item xs={3.33} key={room}>
+                      <Grid size={3.33} key={room}>
                         <Typography variant="caption" fontWeight="bold" noWrap>
                           {room}
                         </Typography>
@@ -221,7 +221,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                   {/* Time Slot Rows */}
                   {TIME_SLOTS.map((time) => (
                     <Grid container spacing={1} key={time} sx={{ mb: 1 }}>
-                      <Grid item xs={2}>
+                      <Grid size={2}>
                         <Typography variant="body2">{time}</Typography>
                       </Grid>
                       {ROOMS.map((room) => {
@@ -231,7 +231,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                         const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
 
                         return (
-                          <Grid item xs={3.33} key={room}>
+                          <Grid size={3.33} key={room}>
                             <Paper
                               data-testid={slotId}
                               className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
@@ -269,7 +269,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           </Grid>
 
           {/* Right Sidebar: Quick Actions */}
-          <Grid item xs={12} md={3}>
+          <Grid size={{ xs: 12, md: 3 }}>
             <Paper data-testid="quick-actions-panel" sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
                 Quick Actions
