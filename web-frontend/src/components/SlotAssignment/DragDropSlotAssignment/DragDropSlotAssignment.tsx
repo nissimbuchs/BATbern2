@@ -95,12 +95,16 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
 
   const handleDragStart = (session: Session) => (e: React.DragEvent) => {
     setDraggedSession(session);
-    e.dataTransfer.effectAllowed = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+    }
   };
 
   const handleDragOver = (time: string, room: string) => (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
     setHoveredSlot({ time, room });
   };
 

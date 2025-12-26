@@ -2,6 +2,7 @@ package ch.batbern.events.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,7 +33,27 @@ public class TestSecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                    // Require authentication at HTTP level for proper 401/403 distinction
+                    // Public endpoints - no authentication required (match production config)
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                    // Story 4.1.3: Public event discovery endpoints
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
+
+                    // Story 1.15a.1b: Public speaker list endpoint (GET only)
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers")
+                        .permitAll()
+
+                    // Story 2.2a: Public anonymous registration endpoints (ADR-005)
+                    .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm")
+                        .permitAll()
+
+                    // All other requests require authentication
                     .anyRequest().authenticated()
             )
                 .exceptionHandling(exceptions -> exceptions
@@ -40,9 +61,7 @@ public class TestSecurityConfig {
                     .authenticationEntryPoint(authenticationEntryPoint())
                     // Return 403 for authenticated but unauthorized requests (insufficient permissions)
                     .accessDeniedHandler(accessDeniedHandler())
-            )
-                // Allow @WithMockUser to work properly
-                .anonymous(anonymous -> anonymous.disable());
+            );
         return http.build();
     }
 

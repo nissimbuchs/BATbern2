@@ -18,6 +18,8 @@ export interface PublishingTimelineProps {
   publishedPhases: PublishingPhase[];
   eventDate: string;
   autoPublishSchedule?: AutoPublishSchedule[];
+  publishedDates?: Partial<Record<PublishingPhase, string>>;
+  scheduledDates?: Partial<Record<PublishingPhase, string>>;
 }
 
 const phases: Array<{ key: PublishingPhase | 'updates'; label: string }> = [
@@ -32,6 +34,8 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   publishedPhases,
   eventDate,
   autoPublishSchedule = [],
+  publishedDates = {},
+  scheduledDates = {},
 }) => {
   const getPhaseClass = (phaseKey: string): string => {
     if (phaseKey === currentPhase) return 'current';
@@ -169,15 +173,62 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
                 className={phaseClass}
                 optional={
                   <Box>
-                    {scheduledDate && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        data-testid={`milestone-${phase.key}`}
-                      >
-                        {scheduledDate}
-                      </Typography>
-                    )}
+                    {(() => {
+                      // Show published date if phase is published
+                      const publishedDate = publishedDates[phase.key as PublishingPhase];
+                      if (publishedDate && phaseClass === 'complete') {
+                        const date = new Date(publishedDate);
+                        return (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            data-testid={`published-date-${phase.key}`}
+                          >
+                            Published on{' '}
+                            {date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </Typography>
+                        );
+                      }
+
+                      // Show scheduled date if provided
+                      const schedDate = scheduledDates[phase.key as PublishingPhase];
+                      if (schedDate) {
+                        const date = new Date(schedDate);
+                        return (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            data-testid={`scheduled-date-${phase.key}`}
+                          >
+                            Scheduled:{' '}
+                            {date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </Typography>
+                        );
+                      }
+
+                      // Show default milestone date
+                      if (scheduledDate) {
+                        return (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            data-testid={`milestone-${phase.key}`}
+                          >
+                            {scheduledDate}
+                          </Typography>
+                        );
+                      }
+
+                      return null;
+                    })()}
                     {autoPublishLabel}
                   </Box>
                 }
