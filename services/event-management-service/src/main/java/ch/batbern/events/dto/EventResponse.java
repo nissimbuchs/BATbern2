@@ -39,6 +39,7 @@ public class EventResponse {
     private String eventType;
     private String topicCode;
     private String workflowState;
+    private String currentPublishedPhase;
 
     /**
      * Convert Event entity to EventResponse DTO
@@ -67,6 +68,8 @@ public class EventResponse {
                 .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
                 .topicCode(event.getTopicCode())
                 .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
+                .currentPublishedPhase(event.getCurrentPublishedPhase() != null
+                        ? event.getCurrentPublishedPhase().toUpperCase() : null)
                 .build();
     }
 }

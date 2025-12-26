@@ -319,7 +319,9 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
           </DialogContentText>
           <List dense>
             {highSimilarityTopics.map((st) => {
-              const similarity = (topic.similarityScores ?? []).find((s) => s.topicCode === st.topicCode);
+              const similarity = (topic.similarityScores ?? []).find(
+                (s) => s.topicCode === st.topicCode
+              );
               return (
                 <ListItem key={st.topicCode}>
                   <ListItemText

@@ -19,6 +19,15 @@
 -- SECTION 1: Slot Assignment Features
 -- ============================================================================
 
+-- Add speaker_pool_id to sessions table for slot assignment
+-- This allows linking a session (slot) to a speaker without full JPA relationship
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS speaker_pool_id UUID REFERENCES speaker_pool(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_sessions_speaker_pool ON sessions(speaker_pool_id);
+
+-- Add username to speaker_pool table for authenticated speakers
+-- This field is used for linking speakers to their user accounts
+ALTER TABLE speaker_pool ADD COLUMN IF NOT EXISTS username VARCHAR(255);
+
 -- Session Timing History Table (NEW - audit trail for timing changes)
 -- Tracks when session times are set/changed during drag-and-drop slot assignment
 -- NOTE: This is different from speaker assignment (tracked in speaker_status_history)
@@ -85,8 +94,7 @@ CREATE TABLE IF NOT EXISTS publishing_versions (
     rolled_back_at TIMESTAMP WITH TIME ZONE,
     rolled_back_by VARCHAR(255),
     rollback_reason TEXT,
-    CONSTRAINT unique_event_version UNIQUE(event_id, version_number),
-    CONSTRAINT unique_current_version UNIQUE(event_id, is_current) WHERE is_current = true
+    CONSTRAINT unique_event_version UNIQUE(event_id, version_number)
 );
 
 CREATE INDEX idx_publishing_versions_event_id ON publishing_versions(event_id);

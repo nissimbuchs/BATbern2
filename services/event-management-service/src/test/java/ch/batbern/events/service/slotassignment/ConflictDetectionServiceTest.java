@@ -2,15 +2,17 @@ package ch.batbern.events.service.slotassignment;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerSlotPreference;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerSlotPreferenceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -62,8 +64,8 @@ class ConflictDetectionServiceTest {
                 .id(UUID.randomUUID())
                 .sessionSlug("session-a")
                 .eventCode("BATbern997")
-                .startTime(LocalDateTime.parse("2025-06-15T18:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T18:45:00"))
+                .startTime(Instant.parse("2025-06-15T18:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T18:45:00Z"))
                 .room("Main Hall")
                 .build();
 
@@ -71,8 +73,8 @@ class ConflictDetectionServiceTest {
                 .id(UUID.randomUUID())
                 .sessionSlug("session-b")
                 .eventCode("BATbern997")
-                .startTime(LocalDateTime.parse("2025-06-15T18:15:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T19:00:00"))
+                .startTime(Instant.parse("2025-06-15T18:15:00Z"))
+                .endTime(Instant.parse("2025-06-15T19:00:00Z"))
                 .room("Main Hall")
                 .build();
 
@@ -90,13 +92,13 @@ class ConflictDetectionServiceTest {
     void should_detectRoomOverlap_when_sessionsOverlapInSameRoom() {
         // Given: Session A in Main Hall 18:00-18:45
         String eventCode = "BATbern997";
-        LocalDateTime proposedStartTime = LocalDateTime.parse("2025-06-15T18:15:00");
-        LocalDateTime proposedEndTime = LocalDateTime.parse("2025-06-15T19:00:00");
+        Instant proposedStartTime = Instant.parse("2025-06-15T18:15:00Z");
+        Instant proposedEndTime = Instant.parse("2025-06-15T19:00:00Z");
         String room = "Main Hall";
 
-        when(sessionRepository.findByEventCodeAndRoomAndStartTimeBetween(
-                eventCode, room, proposedStartTime, proposedEndTime))
-                .thenReturn(List.of(sessionA));
+        // Mock simplified - actual implementation uses findByEventCode and filters
+        when(sessionRepository.findByEventCode(eventCode))
+                .thenReturn(List.of(sessionA, sessionB));
 
         // When: detectRoomOverlap(eventCode, startTime, endTime, room)
         Optional<SchedulingConflict> conflict = conflictDetectionService.detectRoomOverlap(
@@ -118,11 +120,12 @@ class ConflictDetectionServiceTest {
     void should_detectSpeakerDoubleBooking_when_speakerInOverlappingSessions() {
         // Given: Speaker john.doe in session 18:00-18:45
         UUID speakerId = speaker.getId();
-        LocalDateTime proposedStartTime = LocalDateTime.parse("2025-06-15T18:30:00");
-        LocalDateTime proposedEndTime = LocalDateTime.parse("2025-06-15T19:15:00");
+        Instant proposedStartTime = Instant.parse("2025-06-15T18:30:00Z");
+        Instant proposedEndTime = Instant.parse("2025-06-15T19:15:00Z");
 
         when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(speaker));
-        when(sessionRepository.findBySpeakerIdAndTimeBetween(speakerId, proposedStartTime, proposedEndTime))
+        // Mock simplified - actual implementation uses findByEventId and filters
+        when(sessionRepository.findByEventId(speaker.getEventId()))
                 .thenReturn(List.of(sessionA));
 
         // When: detectSpeakerDoubleBooking(speakerId, startTime, endTime)
@@ -145,7 +148,7 @@ class ConflictDetectionServiceTest {
     void should_detectPreferenceConflict_when_sessionOutsidePreferredTime() {
         // Given: Speaker prefers morning sessions
         UUID speakerId = speaker.getId();
-        LocalDateTime proposedStartTime = LocalDateTime.parse("2025-06-15T18:00:00"); // Evening
+        Instant proposedStartTime = Instant.parse("2025-06-15T18:00:00Z"); // Evening
 
         SpeakerSlotPreference preference = SpeakerSlotPreference.builder()
                 .speakerId(speakerId)
@@ -181,8 +184,8 @@ class ConflictDetectionServiceTest {
                 .id(UUID.randomUUID())
                 .sessionSlug("session-c")
                 .eventCode(eventCode)
-                .startTime(LocalDateTime.parse("2025-06-15T19:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T19:45:00"))
+                .startTime(Instant.parse("2025-06-15T19:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T19:45:00Z"))
                 .room("Main Hall")
                 .build();
 
@@ -210,8 +213,8 @@ class ConflictDetectionServiceTest {
                 .id(UUID.randomUUID())
                 .sessionSlug("session-separate")
                 .eventCode(eventCode)
-                .startTime(LocalDateTime.parse("2025-06-15T19:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T19:45:00"))
+                .startTime(Instant.parse("2025-06-15T19:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T19:45:00Z"))
                 .room("Room B")
                 .build();
 

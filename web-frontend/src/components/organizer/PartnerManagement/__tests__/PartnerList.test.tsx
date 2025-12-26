@@ -29,7 +29,13 @@ const mockPartners = [
     partnershipStartDate: '2023-01-15',
     company: { industry: 'Technology', logoUrl: 'https://cdn.example.com/logo1.png' },
     contacts: [
-      { username: 'john.doe', firstName: 'John', lastName: 'Doe', email: 'john@example.com', isPrimary: true },
+      {
+        username: 'john.doe',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        isPrimary: true,
+      },
     ],
   },
   {

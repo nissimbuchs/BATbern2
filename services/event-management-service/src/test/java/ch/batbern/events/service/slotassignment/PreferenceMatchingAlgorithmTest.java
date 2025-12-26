@@ -1,13 +1,15 @@
 package ch.batbern.events.service.slotassignment;
 
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SpeakerSlotPreference;
+import ch.batbern.events.repository.SpeakerSlotPreferenceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,25 +61,25 @@ class PreferenceMatchingAlgorithmTest {
         morningSlot = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("morning-slot")
-                .startTime(LocalDateTime.parse("2025-06-15T09:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T09:45:00"))
+                .startTime(Instant.parse("2025-06-15T09:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T09:45:00Z"))
                 .room("Main Hall")
-                .roomCapacity(100)
+                .capacity(100)
                 .build();
 
         afternoonSlot = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("afternoon-slot")
-                .startTime(LocalDateTime.parse("2025-06-15T14:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T14:45:00"))
+                .startTime(Instant.parse("2025-06-15T14:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T14:45:00Z"))
                 .room("Room B")
                 .build();
 
         eveningSlot = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("evening-slot")
-                .startTime(LocalDateTime.parse("2025-06-15T18:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T18:45:00"))
+                .startTime(Instant.parse("2025-06-15T18:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T18:45:00Z"))
                 .room("Room C")
                 .build();
     }
@@ -147,16 +149,16 @@ class PreferenceMatchingAlgorithmTest {
         Session morningSlot2 = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("morning-slot-2")
-                .startTime(LocalDateTime.parse("2025-06-15T10:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T10:45:00"))
+                .startTime(Instant.parse("2025-06-15T10:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T10:45:00Z"))
                 .room("Room A")
                 .build();
 
         Session afternoonSlot2 = Session.builder()
                 .id(UUID.randomUUID())
                 .sessionSlug("afternoon-slot-2")
-                .startTime(LocalDateTime.parse("2025-06-15T15:00:00"))
-                .endTime(LocalDateTime.parse("2025-06-15T15:45:00"))
+                .startTime(Instant.parse("2025-06-15T15:00:00Z"))
+                .endTime(Instant.parse("2025-06-15T15:45:00Z"))
                 .room("Room C")
                 .build();
 

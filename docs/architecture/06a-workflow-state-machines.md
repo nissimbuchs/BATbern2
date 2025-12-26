@@ -153,7 +153,7 @@ public class EventWorkflowStateMachine {
     }
 
     /**
-     * Validates all speakers are confirmed (quality_reviewed AND slot_assigned)
+     * Validates all speakers are confirmed (quality_reviewed AND session.startTime exists)
      */
     private void validateAllSpeakersConfirmed(Event event) {
         long acceptedSpeakers = speakerPoolRepository
@@ -179,18 +179,18 @@ public class EventWorkflowStateMachine {
 ```
 identified → contacted → ready → accepted/declined
                                     ↓ (if accepted)
-                ┌───────────────────┴───────────────────┐
-                ↓                                       ↓
-        content_submitted                       slot_assigned
-                ↓                                       ↓
-        quality_reviewed                                │
-                └───────────────────┬───────────────────┘
+                                content_submitted
                                     ↓
-                               confirmed
+                                quality_reviewed
+                                    ↓
+                                confirmed
+                    (auto-confirmed when quality_reviewed AND session.startTime exists)
 
 overflow (backup speaker)
 withdrew (speaker drops out after accepting)
 ```
+
+**Note:** Slot assignment is NOT a speaker state. It's tracked by whether the session has timing assigned (`session.startTime != null`). The speaker reaches CONFIRMED when they are quality_reviewed AND their session has timing.
 
 ### State Definitions
 
@@ -203,22 +203,28 @@ withdrew (speaker drops out after accepting)
 | **declined** | Speaker declined invitation | speaker_pool.status | Speaker not available |
 | **content_submitted** | Title/abstract submitted | speaker_pool.status | Presentation details received |
 | **quality_reviewed** | Content approved by moderator | speaker_pool.status | Abstract meets quality standards |
-| **slot_assigned** | Assigned to time slot | speaker_pool.status + sessions.start_time | Speaker has specific presentation time |
-| **confirmed** | BOTH quality_reviewed AND slot_assigned | speaker_pool.status | Speaker fully confirmed, ready for publishing |
+| **confirmed** | Quality reviewed AND session timing assigned | speaker_pool.status | Auto-confirmed when quality_reviewed AND session.startTime exists. Speaker fully confirmed, ready for publishing |
 | **overflow** | Backup speaker (no slot available) | speaker_pool.status | Accepted but no slots left |
 | **withdrew** | Speaker dropped out after accepting | speaker_pool.status | Speaker cancelled commitment |
 
 ### Key Characteristics
 
 **Parallel Workflow:**
-- `quality_reviewed` and `slot_assigned` are **independent**
-- Either can happen first
-- `confirmed` state reached when BOTH complete (order doesn't matter)
+- Quality review and slot timing assignment are **independent** and can happen in any order
+- Quality review updates `speaker_pool.status = 'quality_reviewed'`
+- Slot timing assignment sets `session.startTime` and `session.endTime` (NOT a speaker state)
+- `confirmed` state reached when BOTH complete (order doesn't matter):
+  - Speaker is `quality_reviewed` AND
+  - Session has timing (`session.startTime != null`)
+- Auto-confirmation is bidirectional:
+  - Quality review completion → checks if session has timing → auto-confirms
+  - Session timing assignment → checks if speaker is quality_reviewed → auto-confirms
 
 **Data Model:**
-- **speaker_pool**: Tracks workflow state (11 possible states)
-- **sessions**: Stores presentation title/abstract
+- **speaker_pool**: Tracks workflow state (9 possible states: identified, contacted, ready, accepted, declined, content_submitted, quality_reviewed, confirmed, overflow, withdrew)
+- **sessions**: Stores presentation details AND timing (startTime, endTime, room)
 - **session_users**: Junction table linking speaker (username) to session
+- **speaker_pool.session_id**: FK to sessions table (links speaker to their session/slot)
 
 ### Implementation
 
@@ -265,17 +271,12 @@ public class SpeakerWorkflowService {
                 break;
 
             case "quality_reviewed":
-                // Content approved, check if also slot_assigned → confirmed
-                checkAndUpdateToConfirmed(speaker);
-                break;
-
-            case "slot_assigned":
-                // Slot assigned, check if also quality_reviewed → confirmed
+                // Content approved, check if session has timing → auto-confirm
                 checkAndUpdateToConfirmed(speaker);
                 break;
 
             case "confirmed":
-                // Both quality_reviewed AND slot_assigned complete
+                // Auto-confirmed when quality_reviewed AND session.startTime exists
                 updateSessionUserConfirmation(speaker, true);
                 break;
 
@@ -304,19 +305,20 @@ public class SpeakerWorkflowService {
     }
 
     /**
-     * Checks if speaker has both quality_reviewed AND slot_assigned,
+     * Checks if speaker has both quality_reviewed AND session timing assigned,
      * and auto-updates to confirmed if so.
+     *
+     * Parallel workflow: Either quality review or slot timing can happen first.
+     * When the second one completes, speaker is auto-confirmed.
      */
     private void checkAndUpdateToConfirmed(SpeakerPool speaker) {
         boolean isQualityReviewed = "quality_reviewed".equals(speaker.getStatus());
-        boolean hasSlotAssigned = speaker.getSessionId() != null &&
+        boolean hasSessionTiming = speaker.getSessionId() != null &&
             sessionRepository.findById(speaker.getSessionId())
                 .map(session -> session.getStartTime() != null)
                 .orElse(false);
 
-        if ((isQualityReviewed && hasSlotAssigned) ||
-            ("slot_assigned".equals(speaker.getStatus()) && isContentQualityReviewed(speaker))) {
-
+        if (isQualityReviewed && hasSessionTiming) {
             // Auto-update to confirmed
             speaker.setStatus("confirmed");
             speakerPoolRepository.save(speaker);
@@ -330,7 +332,7 @@ public class SpeakerWorkflowService {
                 speaker.getSpeakerName()
             ));
 
-            log.info("Speaker {} auto-updated to confirmed (both quality reviewed and slot assigned)",
+            log.info("Speaker {} auto-updated to confirmed (quality reviewed AND session timing assigned)",
                      speaker.getSpeakerName());
         }
     }
@@ -521,13 +523,9 @@ public class SlotAssignmentService {
             slot.setAssignedAt(Instant.now());
             slotRepository.save(slot);
 
-            // Update speaker workflow state
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                assignment.getSessionId(),
-                assignment.getSpeakerId(),
-                SpeakerWorkflowState.SLOT_ASSIGNED,
-                assignment.getAssignedBy()
-            );
+            // Note: No speaker state update needed
+            // Slot assignment is tracked via session.startTime, not speaker state
+            // Speaker auto-confirmed to CONFIRMED when quality_reviewed AND session.startTime exists
         }
 
         log.info("Assigned {} speakers to slots for event {}", assignments.size(), eventId);

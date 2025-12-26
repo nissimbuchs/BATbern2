@@ -260,6 +260,10 @@ public class EventController {
         if (event.getWorkflowState() != null) {
             response.put("workflowState", event.getWorkflowState().name());
         }
+        // Story 5.7 (BAT-11): Include currentPublishedPhase (uppercase per coding standards)
+        if (event.getCurrentPublishedPhase() != null) {
+            response.put("currentPublishedPhase", event.getCurrentPublishedPhase().toUpperCase());
+        }
         // Include audit fields
         response.put("createdAt", event.getCreatedAt());
         response.put("updatedAt", event.getUpdatedAt());

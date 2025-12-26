@@ -359,15 +359,25 @@ interface Speaker {
 }
 
 enum SpeakerWorkflowState {
-  OPEN = 'open',
+  IDENTIFIED = 'identified',
   CONTACTED = 'contacted',
   READY = 'ready',
   DECLINED = 'declined',
   ACCEPTED = 'accepted',
-  SLOT_ASSIGNED = 'slot_assigned',
+  CONTENT_SUBMITTED = 'content_submitted',
   QUALITY_REVIEWED = 'quality_reviewed',
-  FINAL_AGENDA = 'final_agenda'
+  CONFIRMED = 'confirmed',
+  OVERFLOW = 'overflow',
+  WITHDREW = 'withdrew'
 }
+
+/**
+ * Note: Slot assignment is NOT a speaker state.
+ * It's tracked by session.startTime existence.
+ * Speaker reaches CONFIRMED when:
+ * - speaker_pool.status = 'quality_reviewed' AND
+ * - session.startTime IS NOT NULL
+ */
 
 enum SpeakerAvailability {
   AVAILABLE = 'available',
@@ -1657,9 +1667,10 @@ CREATE TABLE speakers (
         'available', 'busy', 'unavailable'
     )) DEFAULT 'available',
     workflow_state VARCHAR(50) NOT NULL CHECK (workflow_state IN (
-        'open', 'contacted', 'ready', 'declined', 'accepted',
-        'slot_assigned', 'quality_reviewed', 'final_agenda'
-    )) DEFAULT 'open',
+        'identified', 'contacted', 'ready', 'declined', 'accepted',
+        'content_submitted', 'quality_reviewed', 'confirmed', 'overflow', 'withdrew'
+    )) DEFAULT 'identified',
+    -- Note: slot assignment tracked via session.startTime, NOT as speaker state
     expertise_areas TEXT[] DEFAULT '{}',
     speaking_topics TEXT[] DEFAULT '{}',
     linkedin_url VARCHAR(255),

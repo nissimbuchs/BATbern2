@@ -42,6 +42,8 @@ public class EventWorkflowStateMachine {
     private final EventRepository eventRepository;
     private final WorkflowTransitionValidator transitionValidator;
     private final DomainEventPublisher eventPublisher;
+    private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+    private final ch.batbern.events.repository.SessionRepository sessionRepository;
 
     /**
      * Transitions an event to a target workflow state (backward compatible).
@@ -216,16 +218,46 @@ public class EventWorkflowStateMachine {
      *
      * Required for transition to SLOT_ASSIGNMENT.
      *
-     * NOTE: This is a placeholder implementation for Story 5.1a.
-     * Full implementation depends on threshold checking logic (Story 5.8).
+     * Story 5.7 (BAT-11): Checks that we have at least one accepted speaker
+     * before allowing slot assignment to begin.
      *
      * @param event Event being validated
      * @throws WorkflowValidationException if threshold not met
      */
     private void validateMinimumThresholdMet(Event event) {
-        // Placeholder: Always fail validation for TDD tests
-        // TODO Story 5.8: Replace with actual threshold validation
-        throw new WorkflowValidationException("Minimum threshold not met");
+        long acceptedSpeakers = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(),
+                ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED
+        );
+
+        // Check for speakers in later states as well (CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED)
+        long contentSubmitted = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(),
+                ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED
+        );
+        long qualityReviewed = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(),
+                ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED
+        );
+        long confirmed = speakerPoolRepository.countByEventIdAndStatus(
+                event.getId(),
+                ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED
+        );
+
+        long totalReadyForSlots = acceptedSpeakers + contentSubmitted + qualityReviewed + confirmed;
+
+        if (totalReadyForSlots < 1) {
+            throw new WorkflowValidationException(
+                    "Minimum threshold not met - need at least 1 accepted speaker for slot assignment",
+                    Map.of(
+                            "required", 1,
+                            "accepted", acceptedSpeakers,
+                            "totalReady", totalReadyForSlots
+                    )
+            );
+        }
+
+        log.debug("Threshold validation passed: {} speakers ready for slot assignment", totalReadyForSlots);
     }
 
     /**
@@ -233,33 +265,70 @@ public class EventWorkflowStateMachine {
      *
      * Required for transition to AGENDA_FINALIZED.
      *
-     * NOTE: This is a placeholder implementation for Story 5.1a.
-     * Full implementation depends on slot assignment tracking (Story 5.10).
+     * Story 5.7 (BAT-11): Checks that all sessions have timing assigned
+     * before finalizing the agenda.
      *
      * @param event Event being validated
      * @throws WorkflowValidationException if slots not assigned
      */
     private void validateAllSlotsAssigned(Event event) {
-        // Placeholder: Always fail validation for TDD tests
-        // TODO Story 5.10: Replace with actual slot assignment validation
-        throw new WorkflowValidationException("Not all slots assigned");
+        long totalSessions = sessionRepository.countByEventId(event.getId());
+        long sessionsWithTiming = sessionRepository.countByEventIdAndStartTimeNotNull(event.getId());
+
+        if (totalSessions == 0) {
+            throw new WorkflowValidationException(
+                    "Cannot finalize agenda - no sessions exist for this event",
+                    Map.of("totalSessions", 0)
+            );
+        }
+
+        if (sessionsWithTiming < totalSessions) {
+            throw new WorkflowValidationException(
+                    "Cannot finalize agenda - not all sessions have timing assigned",
+                    Map.of(
+                            "totalSessions", totalSessions,
+                            "sessionsWithTiming", sessionsWithTiming,
+                            "unassigned", totalSessions - sessionsWithTiming
+                    )
+            );
+        }
+
+        log.debug("All {} sessions have timing assigned - agenda can be finalized", totalSessions);
     }
 
     /**
-     * Validates that quality review has been completed.
+     * Validates that agenda is ready to be published.
      *
      * Required for transition to AGENDA_PUBLISHED.
      *
-     * NOTE: This is a placeholder implementation for Story 5.1a.
-     * Full implementation depends on quality review workflow (Story 5.7).
-     *
-     * For now, this is a no-op to allow tests to pass for valid transitions.
+     * Story 5.7 (BAT-11): Checks that all sessions have timing assigned
+     * before publishing the agenda to attendees.
      *
      * @param event Event being validated
-     * @throws WorkflowValidationException if quality review not complete
+     * @throws WorkflowValidationException if agenda not ready for publishing
      */
     private void validateQualityReviewComplete(Event event) {
-        // Placeholder: No-op for now (tests expect this to pass)
-        // TODO Story 5.7: Replace with actual quality review validation
+        long totalSessions = sessionRepository.countByEventId(event.getId());
+        long sessionsWithTiming = sessionRepository.countByEventIdAndStartTimeNotNull(event.getId());
+
+        if (totalSessions == 0) {
+            throw new WorkflowValidationException(
+                    "Cannot publish agenda - no sessions exist for this event",
+                    Map.of("totalSessions", 0)
+            );
+        }
+
+        if (sessionsWithTiming < totalSessions) {
+            throw new WorkflowValidationException(
+                    "Cannot publish agenda - not all sessions have timing assigned",
+                    Map.of(
+                            "totalSessions", totalSessions,
+                            "sessionsWithTiming", sessionsWithTiming,
+                            "unassigned", totalSessions - sessionsWithTiming
+                    )
+            );
+        }
+
+        log.debug("All {} sessions have timing assigned - agenda ready for publishing", totalSessions);
     }
 }
