@@ -39,7 +39,8 @@ export const useEventRegistrations = ({
   enabled = true,
 }: UseEventRegistrationsOptions) => {
   // Build query key that includes all parameters affecting the API call
-  const queryKey = ['event-registrations', eventCode];
+  // Explicitly type as array that can contain strings and objects
+  const queryKey: (string | Record<string, unknown>)[] = ['event-registrations', eventCode];
 
   // Include filters and pagination in query key if provided
   if (filters || pagination) {

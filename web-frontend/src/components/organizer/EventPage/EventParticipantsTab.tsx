@@ -24,7 +24,7 @@ interface EventParticipantsTabProps {
 const EventParticipantsTab: React.FC<EventParticipantsTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
 
-  const participantCount = event.registrationCount || 0;
+  const participantCount = event.currentAttendeeCount || 0;
 
   return (
     <Box sx={{ py: 3 }}>
