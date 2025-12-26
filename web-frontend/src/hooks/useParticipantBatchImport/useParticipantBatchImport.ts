@@ -41,7 +41,14 @@ export function useParticipantBatchImport() {
   );
 
   /**
-   * Import candidates sequentially with progress tracking
+   * Import candidates in parallel batches with progress tracking
+   *
+   * Performance optimization: Processes participants in batches of 10 concurrent requests
+   * instead of sequentially. This reduces import time by ~10x.
+   *
+   * Example: 200 participants
+   * - Sequential: 200 × 100ms = 20+ seconds
+   * - Parallel (10 concurrent): 20 batches × 100ms = 2+ seconds
    */
   const importCandidates = useCallback(
     async (
@@ -70,54 +77,84 @@ export function useParticipantBatchImport() {
         skipped: 0,
       };
 
-      // Sequential processing with rate limiting
-      for (let i = 0; i < requests.length; i++) {
-        const request = requests[i];
-        setCurrentIndex(i);
+      // Parallel batch processing (10 concurrent requests per batch)
+      const BATCH_SIZE = 10;
+      const batches: BatchRegistrationRequest[][] = [];
 
-        updateCandidate(i, { importStatus: 'importing' });
-        onProgress?.(i + 1, requests.length);
+      // Split requests into batches
+      for (let i = 0; i < requests.length; i += BATCH_SIZE) {
+        batches.push(requests.slice(i, i + BATCH_SIZE));
+      }
 
-        try {
-          const data = await batchRegisterParticipant(request);
+      // Process each batch in parallel
+      let processedCount = 0;
 
-          if (data.failedRegistrations && data.failedRegistrations.length > 0) {
-            // Partial success
-            const errorMsg = `${data.successfulRegistrations}/${data.totalRegistrations} registrations succeeded`;
-            updateCandidate(i, {
-              importStatus: 'success',
-              errorMessage: errorMsg,
-            });
-          } else {
-            // Full success
-            updateCandidate(i, { importStatus: 'success' });
-          }
+      for (const batch of batches) {
+        // Process all requests in this batch concurrently
+        const batchPromises = batch.map(async (request, batchIndex) => {
+          const globalIndex = processedCount + batchIndex;
 
-          result.success++;
-        } catch (error) {
-          let errorMessage = 'Unknown error';
+          updateCandidate(globalIndex, { importStatus: 'importing' });
 
-          if (error instanceof AxiosError) {
-            if (error.response) {
-              errorMessage = error.response.data?.message || error.response.statusText;
-            } else if (error.request) {
-              errorMessage = 'No response from server';
+          try {
+            const data = await batchRegisterParticipant(request);
+
+            if (data.failedRegistrations && data.failedRegistrations.length > 0) {
+              // Partial success
+              const errorMsg = `${data.successfulRegistrations}/${data.totalRegistrations} registrations succeeded`;
+              updateCandidate(globalIndex, {
+                importStatus: 'success',
+                errorMessage: errorMsg,
+              });
             } else {
+              // Full success
+              updateCandidate(globalIndex, { importStatus: 'success' });
+            }
+
+            return { success: true, index: globalIndex };
+          } catch (error) {
+            let errorMessage = 'Unknown error';
+
+            if (error instanceof AxiosError) {
+              if (error.response) {
+                errorMessage = error.response.data?.message || error.response.statusText;
+              } else if (error.request) {
+                errorMessage = 'No response from server';
+              } else {
+                errorMessage = error.message;
+              }
+            } else if (error instanceof Error) {
               errorMessage = error.message;
             }
-          } else if (error instanceof Error) {
-            errorMessage = error.message;
+
+            updateCandidate(globalIndex, {
+              importStatus: 'error',
+              errorMessage,
+            });
+
+            return { success: false, index: globalIndex };
           }
+        });
 
-          updateCandidate(i, {
-            importStatus: 'error',
-            errorMessage,
-          });
-          result.failed++;
-        }
+        // Wait for all requests in this batch to complete
+        const batchResults = await Promise.all(batchPromises);
 
-        // Rate limiting: 10 requests/second max (100ms delay)
-        if (i < requests.length - 1) {
+        // Update result counts
+        batchResults.forEach((batchResult) => {
+          if (batchResult.success) {
+            result.success++;
+          } else {
+            result.failed++;
+          }
+        });
+
+        processedCount += batch.length;
+        setCurrentIndex(processedCount - 1);
+        onProgress?.(processedCount, requests.length);
+
+        // Rate limiting between batches: 100ms delay
+        // This allows 10 batches/second = 100 requests/second max throughput
+        if (processedCount < requests.length) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
