@@ -322,6 +322,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("deleted.user", "registered");
 
+        // Reset mock to clear any previous stubbing
+        reset(userApiClient);
+
         // Mock UserApiClient to throw UserNotFoundException for deleted.user
         when(userApiClient.getUserByUsername("deleted.user"))
                 .thenThrow(new ch.batbern.events.exception.UserNotFoundException("deleted.user"));
@@ -441,6 +444,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         // Create registrations with different companies
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.smith", "registered");
+
+        // Reset mock to clear any previous stubbing
+        reset(userApiClient);
 
         // Mock different companies for each user
         when(userApiClient.getUserByUsername("john.doe"))
