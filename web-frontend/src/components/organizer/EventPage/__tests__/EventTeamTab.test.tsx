@@ -94,9 +94,9 @@ describe('EventTeamTab Component (Story 5.6)', () => {
       renderWithProviders(<EventTeamTab event={mockEvent} eventCode="BAT54" />);
 
       // Each team member should have an edit button
-      const editButtons = screen.getAllByRole('button', { name: '' }).filter(
-        (btn) => btn.querySelector('[data-testid="EditIcon"]') !== null
-      );
+      const editButtons = screen
+        .getAllByRole('button', { name: '' })
+        .filter((btn) => btn.querySelector('[data-testid="EditIcon"]') !== null);
       expect(editButtons.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -104,8 +104,7 @@ describe('EventTeamTab Component (Story 5.6)', () => {
       renderWithProviders(<EventTeamTab event={mockEvent} eventCode="BAT54" />);
 
       // Non-lead members should have delete buttons
-      const deleteIcons = screen.getAllByTestId ?
-        screen.queryAllByRole('button') : [];
+      const deleteIcons = screen.getAllByTestId ? screen.queryAllByRole('button') : [];
       expect(deleteIcons).toBeDefined();
     });
   });

@@ -181,9 +181,7 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     it('should_displayDangerWarning_when_rendered', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
-      expect(
-        screen.getByText(/These actions are irreversible/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/These actions are irreversible/i)).toBeInTheDocument();
     });
 
     it('should_displayCancelEventButton_when_rendered', () => {
@@ -210,9 +208,7 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     it('should_displayCannotDeleteMessage_when_hasAttendees', () => {
       renderWithProviders(<EventSettingsTab event={mockEventWithAttendees} eventCode="BAT54" />);
 
-      expect(
-        screen.getByText(/Cannot delete event with registrations/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Cannot delete event with registrations/i)).toBeInTheDocument();
     });
   });
 
@@ -235,9 +231,7 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
       fireEvent.click(cancelButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/This will cancel the event and notify/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/This will cancel the event and notify/i)).toBeInTheDocument();
       });
     });
 

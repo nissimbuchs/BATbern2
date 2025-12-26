@@ -143,38 +143,69 @@ public class RegistrationService {
      * complete data to API consumers.
      * <p>
      * Cached via UserApiClient (15min TTL) for performance.
+     * <p>
+     * <strong>Data Integrity Handling:</strong> If a user is not found (data integrity issue),
+     * returns placeholder data instead of failing. This allows organizers to see all registrations
+     * even when some reference missing users, making data quality issues visible.
      *
      * @param registration Registration entity with attendeeUsername
-     * @return RegistrationResponse enriched with user data
+     * @return RegistrationResponse enriched with user data (or placeholders if user missing)
      */
     @Transactional(readOnly = true)
     public RegistrationResponse enrichRegistrationWithUserData(Registration registration) {
         log.debug("Enriching registration: {} with user data", registration.getRegistrationCode());
 
-        // Fetch user details from User Management Service (cached)
-        ch.batbern.events.dto.generated.users.UserResponse userProfile =
-            userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(),
-            userProfile.getId());
+        try {
+            // Fetch user details from User Management Service (cached)
+            ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+            log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(),
+                userProfile.getId());
 
-        return RegistrationResponse.builder()
-                // Registration fields
-                .registrationCode(registration.getRegistrationCode())
-                .eventCode(registration.getEventCode()) // Transient field populated by controller
-                .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
-                .registrationDate(registration.getRegistrationDate() != null
-                        ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
-                .createdAt(registration.getCreatedAt() != null
-                        ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
-                .updatedAt(registration.getUpdatedAt() != null
-                        ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
-                // Enriched user fields (ADR-004)
-                .attendeeUsername(userProfile.getId())
-                .attendeeFirstName(userProfile.getFirstName())
-                .attendeeLastName(userProfile.getLastName())
-                .attendeeEmail(userProfile.getEmail())
-                .attendeeCompany(userProfile.getCompanyId()) // May be null for anonymous users
-                .build();
+            return RegistrationResponse.builder()
+                    // Registration fields
+                    .registrationCode(registration.getRegistrationCode())
+                    .eventCode(registration.getEventCode()) // Transient field populated by controller
+                    .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
+                    .registrationDate(registration.getRegistrationDate() != null
+                            ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
+                    .createdAt(registration.getCreatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
+                    .updatedAt(registration.getUpdatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    // Enriched user fields (ADR-004)
+                    .attendeeUsername(userProfile.getId())
+                    .attendeeFirstName(userProfile.getFirstName())
+                    .attendeeLastName(userProfile.getLastName())
+                    .attendeeEmail(userProfile.getEmail())
+                    .attendeeCompany(userProfile.getCompanyId()) // May be null for anonymous users
+                    .build();
+
+        } catch (ch.batbern.events.exception.UserNotFoundException e) {
+            // Data integrity issue: Registration exists but user was deleted or never created
+            // Return placeholder data so organizers can see the registration and identify the issue
+            log.warn("User not found for registration {}: {} - returning placeholder data to maintain list integrity",
+                    registration.getRegistrationCode(), registration.getAttendeeUsername());
+
+            return RegistrationResponse.builder()
+                    // Registration fields
+                    .registrationCode(registration.getRegistrationCode())
+                    .eventCode(registration.getEventCode())
+                    .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
+                    .registrationDate(registration.getRegistrationDate() != null
+                            ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
+                    .createdAt(registration.getCreatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
+                    .updatedAt(registration.getUpdatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    // Placeholder user fields (data integrity issue)
+                    .attendeeUsername(registration.getAttendeeUsername())
+                    .attendeeFirstName("[User Not Found]")
+                    .attendeeLastName("[" + registration.getAttendeeUsername() + "]")
+                    .attendeeEmail("missing@unknown.invalid")
+                    .attendeeCompany(null)
+                    .build();
+        }
     }
 
     /**

@@ -11,6 +11,7 @@
       "speakers": "Speakers",
       "venue": "Venue",
       "team": "Team",
+      "participants": "Participants",
       "publishing": "Publishing",
       "settings": "Settings"
     },
@@ -34,6 +35,44 @@
       "sendNotification": "Send Notification",
       "previewPublic": "Preview Public Page",
       "viewTimeline": "View Timeline"
+    },
+    "participantsTab": {
+      "title": "Event Participants"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Name",
+        "email": "Email",
+        "company": "Company",
+        "status": "Status",
+        "registrationDate": "Registration Date"
+      },
+      "empty": "No participants registered yet"
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Search participants",
+        "placeholder": "Search by name or email..."
+      },
+      "status": {
+        "label": "Registration Status",
+        "all": "All Statuses",
+        "confirmed": "Confirmed",
+        "registered": "Registered",
+        "attended": "Attended",
+        "cancelled": "Cancelled",
+        "waitlisted": "Waitlisted"
+      },
+      "clearAll": "Clear Filters"
+    },
+    "participantList": {
+      "loading": "Loading participants...",
+      "error": {
+        "loadFailed": "Failed to load participants. Please try again."
+      },
+      "actions": {
+        "retry": "Retry"
+      }
     }
   },
   "dashboard": {

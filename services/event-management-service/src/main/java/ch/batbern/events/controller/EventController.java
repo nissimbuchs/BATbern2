@@ -1199,35 +1199,125 @@ public class EventController {
     }
 
     /**
-     * List Event Registrations - Story 2.2a
+     * List Event Registrations - Story 2.2a, Story 3.3 (Pagination)
      *
-     * GET /api/v1/events/{eventCode}/registrations
+     * GET /api/v1/events/{eventCode}/registrations?page=1&limit=25
      *
      * @param eventCode Event code to list registrations for
-     * @return List of registrations enriched with user data
+     * @param page Page number (1-indexed, default: 1)
+     * @param limit Items per page (default: 25, max: 100)
+     * @return Paginated list of registrations enriched with user data
      */
     @GetMapping("/{eventCode}/registrations")
     @Operation(
             summary = "List Event Registrations",
-            description = "Retrieve all registrations for a specific event with enriched user data"
+            description = "Retrieve registrations for a specific event with "
+                    + "enriched user data, filtering, and pagination"
     )
-    public ResponseEntity<List<RegistrationResponse>> listRegistrations(@PathVariable String eventCode) {
-        log.debug("GET /api/v1/events/{}/registrations", eventCode);
+    public ResponseEntity<PaginatedResponse<RegistrationResponse>> listRegistrations(
+            @PathVariable String eventCode,
+            @Parameter(description = "Page number (1-indexed, default: 1)")
+            @RequestParam(required = false) Integer page,
+            @Parameter(description = "Items per page (default: 25, max: 100)")
+            @RequestParam(required = false) Integer limit,
+            @Parameter(description = "Filter by registration status (can specify multiple)")
+            @RequestParam(required = false) List<String> status,
+            @Parameter(description = "Search in attendee name or email")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by company ID")
+            @RequestParam(required = false) String companyId
+    ) {
+        log.debug("GET /api/v1/events/{}/registrations - page: {}, limit: {}, status: {}, search: {}, companyId: {}",
+                eventCode, page, limit, status, search, companyId);
+
+        // Default pagination values
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0; // Convert 1-indexed to 0-indexed
+        int pageSize = (limit != null && limit > 0) ? Math.min(limit, 100) : 25; // Default 25, max 100
 
         // Find event to get UUID
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Fetch registrations
-        List<Registration> registrations = registrationRepository.findByEventId(event.getId());
+        // Build specification for database-level filters (status only)
+        // Note: search and companyId require enriched user data, so they're applied in-memory
+        org.springframework.data.jpa.domain.Specification<Registration> spec =
+                ch.batbern.events.specification.RegistrationSpecification.buildSpecification(
+                        event.getId(),
+                        status,
+                        null // Username search handled in-memory with name/email search
+                );
+
+        // Fetch ALL matching registrations (we'll paginate after in-memory filtering)
+        // This is necessary because search/companyId filters require enriched user data
+        List<Registration> allRegistrations = registrationRepository.findAll(spec);
 
         // Enrich each registration with user data
-        List<RegistrationResponse> responses = registrations.stream()
+        List<RegistrationResponse> enrichedResponses = allRegistrations.stream()
                 .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
                 .map(registrationService::enrichRegistrationWithUserData)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(responses);
+        // Apply in-memory filters (search in name/email, filter by companyId)
+        List<RegistrationResponse> filteredResponses = enrichedResponses.stream()
+                .filter(response -> {
+                    // Filter by search term (name or email)
+                    if (search != null && !search.isEmpty()) {
+                        String searchLower = search.toLowerCase();
+                        boolean matchesUsername = response.getAttendeeUsername() != null
+                                && response.getAttendeeUsername().toLowerCase().contains(searchLower);
+                        boolean matchesFirstName = response.getAttendeeFirstName() != null
+                                && response.getAttendeeFirstName().toLowerCase().contains(searchLower);
+                        boolean matchesLastName = response.getAttendeeLastName() != null
+                                && response.getAttendeeLastName().toLowerCase().contains(searchLower);
+                        boolean matchesEmail = response.getAttendeeEmail() != null
+                                && response.getAttendeeEmail().toLowerCase().contains(searchLower);
+
+                        if (!matchesUsername && !matchesFirstName && !matchesLastName && !matchesEmail) {
+                            return false;
+                        }
+                    }
+
+                    // Filter by companyId
+                    if (companyId != null && !companyId.isEmpty()) {
+                        if (response.getAttendeeCompany() == null
+                                || !companyId.equals(response.getAttendeeCompany())) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        // Apply pagination to filtered results
+        long totalItems = filteredResponses.size();
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        int startIndex = pageNumber * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, filteredResponses.size());
+
+        List<RegistrationResponse> paginatedResponses = filteredResponses.subList(
+                Math.min(startIndex, filteredResponses.size()),
+                Math.min(endIndex, filteredResponses.size())
+        );
+
+        // Build pagination metadata
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
+                ch.batbern.shared.api.PaginationMetadata.builder()
+                        .page(pageNumber + 1) // Convert back to 1-indexed for response
+                        .limit(pageSize)
+                        .totalItems(totalItems)
+                        .totalPages(totalPages)
+                        .hasNext(pageNumber + 1 < totalPages)
+                        .hasPrev(pageNumber > 0)
+                        .build();
+
+        // Build paginated response
+        PaginatedResponse<RegistrationResponse> response = PaginatedResponse.<RegistrationResponse>builder()
+                .data(paginatedResponses)
+                .pagination(paginationMetadata)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     /**
