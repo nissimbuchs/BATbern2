@@ -1251,8 +1251,8 @@ public class EventController {
                     // Add event details to response
                     if (event != null) {
                         response.setEventTitle(event.getTitle());
-                        response.setEventDate(event.getDate() != null ?
-                                event.getDate().toString() : null);
+                        response.setEventDate(event.getDate() != null
+                                ? event.getDate().toString() : null);
                     }
 
                     return response;

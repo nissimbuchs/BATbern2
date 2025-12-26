@@ -97,7 +97,7 @@
         "bio": "Ausbildung als Organisator mit Weiterbildung zum IT-Projektleiter und dipl. Wirtschaftsinformatiker. Langjährige Tätigkeit in entsprechenden Funktionen bei Schweiz. Volksbank, Crédit Suisse, Unisys (Schweiz) AG und RTC AG. Seit 2005 verantwortlich für die Enterprise Architecture PostMail. Besonderes Anliegen ist mir die ganzheitliche Betrachtung von Wechselwirkungen zwischen Prozessen und anwendungsorientierter Informatik.",
         "company": "Post",
         "portrait": "beat.stöckli.jpg",
-        "speakerId": "beat.stockli"
+        "speakerId": "beat.stoeckli"
       },
       {
         "name": "Alain Jacot-Guillarmod, PostMail",
@@ -241,7 +241,7 @@
         "bio": "Christian Hürlimann ist seit 2006 bei der BKW. Vorher war er als Geschäftsfeldleiter für die Akquisition und Abwicklung von Projekten im Bereich Individualentwicklungen für Kunden der öffentlichen Verwaltung tätig. Zuvor war er als Projektleiter und Organisationsberater im Umfeld von Standard- und Individuallösungen tätig. BWL- und VWL-Studium mit Schwerpunkt Wirtschaftsinformatik an den Universitäten Bern und Manchester.",
         "company": "BKW",
         "portrait": "christian.hürlimann.jpg",
-        "speakerId": "christian.hurlimann"
+        "speakerId": "christian.huerlimann"
       }
     ]
   },
@@ -256,7 +256,7 @@
         "bio": "Richard Schären ist eidg. dipl. Wirtschaftsinformatiker und beim Informatikstrategieorgan Bund ISB in der Rolle als Unternehmensarchitekt verantwortlich für die: - Leitung des Architekturboard Bund ABB und die Einführung der Unternehmensarchitektur Methodik in der Bundesverwaltung - Leitung des Change Board Supportprozesse CBSP welches die Änderungen von verwaltungsübergreifenden Supportprozesse steuert - Erstellung und Pflege der ERP Strategie und - architektur",
         "company": "isbbund",
         "portrait": "richard.schaeren.jpg",
-        "speakerId": "richard.isb"
+        "speakerId": "richard.schaeren"
       }
     ]
   },
@@ -329,7 +329,7 @@
         "bio": "Andreas Grütter arbeitet seit 2004 in der RTC als IT-Architekt und Java J2EE Entwickler. Er ist verantwortlich für die Client-Frameworks und Generatoren. Zuvor studierte er Informatik und Telekommunikation an der Fachhochschule Nordwestschweiz.",
         "company": "rtc",
         "portrait": "andreas.grütter.jpg",
-        "speakerId": "andreas.grutter"
+        "speakerId": "andreas.gruetter"
       }
     ]
   },
@@ -359,7 +359,7 @@
         "bio": "Ulrich Brawand ist Business Unit Manager bei Zühlke Engineering und setzt die Obejktorientierung und UML seit vielen Jahren in Entwicklungsprojekten erfolgreich ein. Seit 2 Jahren befasst er sich mit Modellen und Generierung von Code mit MDSD-Technologien. Ulrich Brawand ist Commiter beim Open Source Projekt openArchitectureWare, wo er für den EMF-basierten UML2 Exporter für Enterprise Architect verantwortlich ist.",
         "company": "zuehlke",
         "portrait": "ulrich.brawand.jpg",
-        "speakerId": "ulrich.engineering"
+        "speakerId": "ulrich.brawand"
       }
     ]
   },
@@ -438,7 +438,7 @@
         "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das Enterprise Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT.",
         "company": "SBB",
         "portrait": "bernhard.rytz.jpg",
-        "speakerId": "bernhard.sbb"
+        "speakerId": "bernhard.rytz"
       }
     ]
   },
@@ -453,7 +453,7 @@
         "bio": "Josef Lankes ist wissenschaftlicher Mitarbeiter und Doktorand am Lehrstuhl für Software Engineering betrieblicher Informationssysteme der Technischen Universität München. Er beschäftigt sich im Rahmen des Projekts Softwarekartographie mit der Beschreibung, Bewertung und Gestaltung komplexer betrieblicher InformationsInfrastrukturen. Sein Schwerpunkt liegt dabei auf Verfahren zur Bewertung von Anwendungslandschaften, vor allem dem Metrikeinsatz in diesem Bereich. Josef Lankes erhielt sein Diplom im Fach Wirtschaftsinformatik von der Universität Regensburg im Jahr 2004.",
         "company": "tumuenchen",
         "portrait": "josef.lankes.jpg",
-        "speakerId": "josef.munchen"
+        "speakerId": "josef.muenchen"
       }
     ]
   },
@@ -532,7 +532,7 @@
         "bio": "1991-2001 SAP AG, Anwendungsentwicklung und Basisentwicklung, versch. Entwicklungs-, Architektur- und Leitungsfunktionen 2001-2005 Gründung der Casabac Technologies GmbH, Pionier im Bereich interaktiver Browseranwendungen ('AJAX'), Übernahme durch die Software AG im Jahre 2005 2005-2007 Software AG, Leitung des Bereiches 'User Interface Technologien' 2007 Gründung der CaptainCasa GmbH, Entwicklung von Frontend Technologien für komplexe serverseitige Anwendungssysteme",
         "company": "captaincasa",
         "portrait": "bjoern.mueller.jpg",
-        "speakerId": "bjorn.captaincasa"
+        "speakerId": "bjoern.mueller"
       }
     ]
   },
@@ -788,7 +788,7 @@
         "bio": "Alain Wegmann worked 14 years at Logitech in engineering, manfacturing and marketing. In 1997, he joined EPFL as professor and develops, with his team, methods for business and IT alignment.",
         "company": "epfl",
         "portrait": "alain.wegmann.jpg",
-        "speakerId": "dr..wegmann"
+        "speakerId": "alain.wegmann"
       }
     ]
   },
@@ -803,7 +803,7 @@
         "bio": "Nach dem Informatik-Studium an der Universität Bern arbeitete Dierk Matthäus als Mitarbeiter, Team- oder Projektleiter und MfA an verschiedenen Orten in der Verwaltung und Privatwirtschaft. Seit 2003 ist er bei der Medizinischen Fakultät der Universität Bern, seit 2007 auch für deren Informatikdienste tätig für die Bereitstellung von vernetzten Softwarelösungen zur Unterstützung der Administration, Lehre und Forschung.",
         "company": "unibe",
         "portrait": "",
-        "speakerId": "dierk.matthaus"
+        "speakerId": "dierk.matthaeus"
       }
     ]
   },
@@ -833,7 +833,7 @@
         "bio": "Prof. Dr. Robert Winter ist Ordinarius für Wirtschaftsinformatik an der Universität St. Gallen (HSG), Direktor des dortigen Instituts für Wirtschaftsinformatik (IWI-HSG) und akademischer Direktor des Executive Master of Business Engineering (EMBE HSG). Nach dem Studium der Betriebswirtschaft und Wirtschaftspädagogik in Frankfurt am Main war er zehn Jahre am dortigen Institut für Wirtschaftsinformatik als wissenschaftlicher Mitarbeiter tätig. Seit 1996 lehrt und forscht er an der Universität St. Gallen. Prof. Winter baute das 1998 erstmals durchgeführte Executive Master-Programm in Business Engineering auf und leitet es seitdem. Er ist regelmässiger Keynoter bzw. Referent an Veranstaltungen im In- und Ausland, wissenschaftlicher Beirat verschiedener Institutionen, Autor bzw. Herausgeber von mehr als fünfzehn Büchern und Autor bzw. Koautor von mehr als 100 wissenschaftlichen Publikationen in den Bereichen Informationslogistik (seit 1999), Architekturen (seit 2000), Integration (seit 2002), Healthcare (seit 2005) und Unternehmenssteuerung (seit 2007).",
         "company": "unibe",
         "portrait": "robert.winter.jpg",
-        "speakerId": "dr..winter"
+        "speakerId": "robert.winter"
       }
     ]
   },
@@ -863,7 +863,7 @@
         "bio": "Willy Müller arbeitet als Enterprise Architect beim Informatikstrategieorgan Bund (ISB). Der Schwerpunkt seiner Arbeiten sind E-Government-Architektur und SOA. Er ist Gründer des Vereins eCH, welcher Standards für E-Government in der Schweiz herausgibt.",
         "company": "evd",
         "portrait": "willy.müller.jpg",
-        "speakerId": "willy.muller"
+        "speakerId": "willy.mueller"
       }
     ]
   },
@@ -969,7 +969,7 @@
         "bio": "2003 - heute Lead BI Architect Swisscom AG Design eines konvergenten Enterprise DWH für Swisscom Konzeption eines Enterprise DWH für Swisscom Mobile Architektur/Design für zahlreiche BI/DWH Vorhaben 2000-2003 Partner/Consultant Everywhere AG, Bern DWH/BI Beratung für diverse Grossfirmen 1998-2000 BI Entwickler/Architekt Swisscom AG, Bern Konzeption/Umsetzung mehrerer DWH Systeme für Swisscom Fixnet 1997-1998 BI Entwickler RBA Service, Gümligen Aufbau eines mandantenfähigen BI Cockpits für Marketing&Sales",
         "company": "Swisscom",
         "portrait": "peter.kuehni.jpg",
-        "speakerId": "peter.kuhni"
+        "speakerId": "peter.kuehni"
       }
     ]
   },
@@ -1009,7 +1009,7 @@
         "name": "Prof. Dr. Bernhard Hämmerli, Hochschule Luzern, Technik & Architektur",
         "bio": "Professor & Leiter Cisco Akademie, Präsident Schweizer Informatikgesellschaft / CEO Acris GmbH. Dr. Bernhard Hämmerli is professor for Networking and Information Security. He drives a master program \"IT-Network Manager\" with courses from the Cisco Academy Program CCNA, CCAN-Security and CCNP. His main interest in research is information security and critical information infrastructure protection CIIP. He has participated in three EU FP CIIP research programs the last was on Protection and Trust in Financial Infrastructures. He is editor of the European CIIP Newsletter called ECN. In associations he serves as president of the Swiss Informatics Society and as chair of scientific and international affairs in the Swiss Information Security Society ISSS. In 2007 he was assigned as seconded national expert from Switzerland to Joint Research Centre of the European Commission. He is now chairing the CIP task force at the centre for European Policy Studies CEPS in Brussels. In consulting his corporation Acris offers service in the same field.",
         "company": "hslu",
-        "speakerId": "dr..hammerli"
+        "speakerId": "bernhard.haemmerli"
       }
     ]
   },
@@ -1023,7 +1023,7 @@
         "name": "Urs Bürge, Urs Bürge Beratung GmbH",
         "bio": "Inhaber Urs Bürge Beratung GmbH für Informatik und Geschäftsprozess-Management in der öffentlichen Verwaltung. Seit Herbst 2006 selbständiger Berater mit Spezialisierung in den Bereichen eGovernment, eJustice, Digitale Identitäten. Früher IT-Führungsaufgaben im Bundesamt für Justiz, bei Unisys und im Generalsekretariat EJPD als CIO EJPD.",
         "company": "urscorp",
-        "speakerId": "urs.burge"
+        "speakerId": "urs.buerge"
       }
     ]
   },
@@ -1320,7 +1320,7 @@
         "bio": "Geschäftsleiter. Seit über 30 Jahren ist Anton Böhm in der Informatik tätig. Ende der 80er Jahre schloss er das Abendtechnikum als Informatik-Ingenieur ab und erwarb zudem ein Nachdiplom in Betriebswirtschaft. Seit 1996 ist er mit der eigenen Firma itServe ag bei unterschiedlichen Kunden meist in Innovationsprojekten und eigener Produktentwicklung engagiert. Zusätzlich unterrichtet er als Nebenamtdozent an der Berner Fachhochschule.",
         "company": "itserve",
         "portrait": "anton.böhm.jpg",
-        "speakerId": "anton.bohm"
+        "speakerId": "anton.boehm"
       }
     ]
   },
@@ -1335,7 +1335,7 @@
         "bio": "Stefan Hüsemann leitet seit mehreren Jahren für [ipt] Projekte, bei denen SOA umgesetzt wird. Seine Interessenschwerpunkte liegen beim Requirements Engineering, iterativen Projektvorgehensmethodiken, Austauschstandards für verteilte Informationssysteme und Web Service Standards. Stefan Hüsemann ist ebenfalls Lehrbeauftragter für Informationssysteme an der Universität Freiburg (Schweiz).",
         "company": "ipt",
         "portrait": "",
-        "speakerId": "stefan.husemann"
+        "speakerId": "stefan.huesemann"
       }
     ]
   },
@@ -1426,7 +1426,7 @@
         "bio": "David C. Gürlet ist Diplom-Ingenieur und seit 25 Jahren als Unternehmer, Berater, Geschäftsführer und Dozent in den Bereichen ICT/IT und RFID tätig. Er hat vier Unternehmen in diesen Branchen aufgebaut und geleitet und verfügt über technisches und internationales Business-Knowhow in der RFID- und Telecom-Branche.",
         "company": "guerlet",
         "portrait": "david.gürlet.jpg",
-        "speakerId": "david.gurlet"
+        "speakerId": "david.guerlet"
       },
       {
         "name": "Gerhard Schedler, Swisscom",
@@ -1448,7 +1448,7 @@
         "bio": "Philip Büchler ist als Technologiemanager Mobile bei der SBB für den Einsatz und den Lifecycle mobiler Technolgien zuständig. Als Leiter Fachgruppe Mobile koordiniert er die Bedarfsplanung und den Betrieb mobiler Clients, Anwendungen und Integrationssysteme.",
         "company": "SBB",
         "portrait": "philip.büchler.jpg",
-        "speakerId": "philip.buchler"
+        "speakerId": "philip.buechler"
       }
     ]
   },
@@ -1627,7 +1627,7 @@
         "bio": "Matthias Stürmer ist Manager bei Ernst & Young Schweiz mit Spezialisierung auf Open Source Software, Open Government Data und Social Media Governance. Er studierte an der Universität Bern Betriebswirtschaft und Informatik und schloss 2005 mit einer Lizenziatsarbeit zu «Open Source Community Building» ab. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und erforschte die Zusammenarbeit zwischen Open Source Communities und Technologie-Unternehmen. Danach arbeitete er beim Schweizer Software-Unternehmen Liip AG und ist seit 2010 bei Ernst & Young in Bern tätig. Matthias Stürmer ist Vorstandsmitglied von /ch/open, Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit und Mitgründer des Open Government Data Vereins Opendata.ch. Zudem ist er Leiter der Working Group Office Interoperability bei der Open Source Business Alliance OSBA und gehört als Stadtrat dem Parlament der Stadt Bern an.",
         "company": "chopen",
         "portrait": "matthias.stürmer.jpg",
-        "speakerId": "matthias.sturmer"
+        "speakerId": "matthias.stuermer"
       }
     ]
   },
@@ -1654,7 +1654,7 @@
         "bio": "Willy Müller arbeitet beim Informatiksteuerungsorgan Bund ISB. Er studierte Psychologie und Informatik und hat den Verein eCH ins Leben gerufen, der E-Government-Standards für die Schweizer Behörden herausgibt. Als Leiter der Arbeiten zur E-Government-Architektur Schweiz, einem priorisierten E-Government-Vorhaben der E-Government-Strategie, war er verantwortlich für die Erarbeitung der Cloud-Strategie der Schweizer Behörden.",
         "company": "isbbund",
         "portrait": "",
-        "speakerId": "willy.muller"
+        "speakerId": "willy.mueller"
       }
     ]
   },
@@ -1836,7 +1836,7 @@
         "bio": "Tobias Röthlisberger ist seit 2010 als Teamleiter Technologiemanagement in der SBB IT tätig. In dieser Architektursteuerungsfunktion definiert er die Technologien und Plattformen für sämtliche Geschäftsbereiche der SBB IT. Aktuell ist er als Auftraggeber der Mobile Enterprise Application Plattform (MEAP) für deren architektonische und organisatorische Positionierung zuständig.",
         "company": "SBB",
         "portrait": "",
-        "speakerId": "tobias.rothlisberger"
+        "speakerId": "tobias.roethlisberger"
       },
       {
         "name": "Erich Siegrist, SBB IT",
@@ -1865,7 +1865,7 @@
         "bio": "Angela Bühler studierte Rechtswissenschaften an den Universitäten Zürich und Bern und schloss mit dem MLaw in 2005 ab. Nach diversen Stellen im In- und Ausland arbeitete sie ab 2008 als IT-Projektleiterin bei Nothing Interactive in Bern. Von 2009 bis 2011 absolvierte sie zusätzlich das \"MAS Management & Technology\" an der ETH Zürich. In ihrer Masterarbeit untersuchte sie den Business Case einer eigens entwickelten iPad-App für den Einsatz im Retail-Sektor. Seit 2012 arbeitet sie als Projektleiterin für Netcetera AG, wobei sie u.a. zwei Mobilprojekte für die SBB betreute.",
         "company": "netcetera",
         "portrait": "",
-        "speakerId": "angela.buhler"
+        "speakerId": "angela.buehler"
       }
     ]
   },
@@ -2006,7 +2006,7 @@
         "name": "Eric Müller, PostFinance AG",
         "bio": "Nach Informatik Studium in der Schweiz und Schottland hat sich Eric Müller erst mit Maschinensteuerungen und Realtime Systemen auseinandergesetzt. Später folgte der Wechsel in die Finanzindustrie. Bei der UBS in Zürich war Eric Müller ein paar Jahre im Online-Bereich tätig, bevor er zu Paine Webber in New York wechselte, wo er den Online-Arbeitsplatz für die Kundenberater einführte. Zurück in Zürich führte er Marktdatenprojekte für die Schweiz und APAC, sowie Sales Tools für Strukturierte Produkte. Bei PostFinance ist Eric Müller nun im Distributionsbereich tätig. Das Aufgabenfeld umfasst u.a. die digitalen Kanäle.",
         "company": "PostFinance",
-        "speakerId": "eric.muller"
+        "speakerId": "eric.mueller"
       }
     ]
   },
@@ -2028,7 +2028,7 @@
         "bio": "Jürg Frühauf nahm im Oktober 2008 seine Tätigkeit im Bereich Business Intelligence und Data Warehousing der SBB Informatik auf. Seit 2014 ist er als Leiter Business Information Management bei der SBB IT für die Erstellung von BI/DWH-Lösungen mit SAP und Non-SAP Technologien zuständig. Seit gut zwei Jahren setzt er sich zudem mit Big Data Ansätzen und deren Nutzen für das Unternehmen auseinander.",
         "company": "SBB",
         "portrait": "",
-        "speakerId": "jurg.fruhauf"
+        "speakerId": "juerg.fruehauf"
       }
     ]
   },
@@ -2055,7 +2055,7 @@
         "bio": "Matthias Günter ist seit mehr als zwanzig Jahren in der Informatik tätig. Mehrheitlich war er in den Bereichen IT-Management, strategische Beratung, Projektleitung, Strategieentwicklung, Businessanalyse und Organisationsentwicklung aktiv. Einige seiner Projekte wurden in einem internationalen Kontext durchgeführt. Mehr als zehn Jahre leitete er als CIO eine grössere Informatikabteilung mit eigener Softwareentwicklung und eigenem Rechenzentrum. Er hat an internationalen und nationalen Informatikstandards mitgearbeitet.",
         "company": "gnostx",
         "portrait": "matthias.günter.jpg",
-        "speakerId": "matthias.gunter"
+        "speakerId": "matthias.guenter"
       }
     ]
   },
@@ -2070,7 +2070,7 @@
         "bio": "Werner Schäfer ist seit mehr als 30 Jahren in der Softwareentwicklung tätig. Er arbeitete als Architekt in unterschiedlichen Firmen wie die Roche, Galenica, SBB und nun als Chef-Architekt bei der PostFinance. Bei seinen Tätigkeiten hatte er immer einen Fuss in der Business-Analyse und der Methodik.",
         "company": "PostFinance",
         "portrait": "werner.schäfer.jpg",
-        "speakerId": "werner.schafer"
+        "speakerId": "werner.schaefer"
       }
     ]
   },
@@ -2147,7 +2147,7 @@
         "name": "Dr. Matthias Stürmer, Universität Bern",
         "bio": "Matthias Stürmer ist Leiter der Forschungsstelle Digitale Nachhaltigkeit am Institut für Wirtschaftsinformatik der Universität Bern. Dort befasst er sich als Oberassistent in der Lehre, Forschung und Beratung mit Open Data, Open Government, Open Source Software und ICT-Beschaffung. Er hat die Vorlesung \"Open Data\" entwickelt und ist Dozent in dieser und weiteren Veranstaltungen. Vorgängig arbeitete er bis 2013 als Manager bei EY (Ernst & Young) sowie als Projektleiter beim Schweizer Software-Unternehmen Liip AG. Bis 2009 doktorierte er an der ETH Zürich am Lehrstuhl für Strategisches Management und Innovation und hat zuvor an der Universität Bern Betriebswirtschaft und Informatik studiert. Matthias Stürmer ist ausserdem Geschäftsleiter der Parlamentarischen Gruppe Digitale Nachhaltigkeit sowie Mitgründer und Vorstandsmitglied des Vereins Opendata.ch.",
         "company": "unibe",
-        "speakerId": "matthias.sturmer"
+        "speakerId": "matthias.stuermer"
       }
     ]
   },
@@ -2233,14 +2233,14 @@
         "bio": "Jörg Furrer ist verantwortlich für die Technologie- und Produktentwicklung von Alarm- und Sicherheitssystemen der Securiton AG. Er verfügt über langjährige Erfahrung in R&D von Kommunikations- und Sicherheitssystemen. Nach der Ausbildung zum El.-Ing. FH mit Vertiefung in Technischer Informatik hat sich Jörg Furrer im Rahmen seines Master Studiums an der Northwestern University in Chicago in Kommunikationstechnik spezialisiert. Ein MBA Studium im Bereich Technologie-Management runden seine Ausbildung ab.",
         "company": "securiton",
         "portrait": "",
-        "speakerId": "jorg.furrer"
+        "speakerId": "joerg.furrer"
       },
       {
         "name": "Hansjürg Inniger, Zühlke Engineering AG",
         "bio": "Hansjürg Inniger ist verantwortlich für alle Internet-of-Things-Lösungen in der Zühlke Engineering AG Schweiz. Er ist El.-Ing. HTL mit Nachdiplomstudium in SW Engineering NDS/FH und Executive MBA HSG in General Management. Mit über 10 Jahren Erfahrung in der Telecom Branche mit Remote Diensten, sowie 7 Jahren Erfahrung in vernetzten Lösungen in verschiedenen Industrien ist ein langjähriger praxiserprobter Erfahrungsschatz vorhanden.",
         "company": "zuehlke",
         "portrait": "",
-        "speakerId": "hansjurg.inniger"
+        "speakerId": "hansjuerg.inniger"
       }
     ]
   },
@@ -2372,7 +2372,7 @@
         "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertieft er sein Wissen als Software Engineer in verschiedenen Firmen und vielfältigen Projekten. Momentan steht er vor der Gründung eines Spin-Offs im IoT Bereich.",
         "company": "soom-it",
         "portrait": "patrick.bönzli.jpg",
-        "speakerId": "patrick.bonzli"
+        "speakerId": "patrick.boenzli"
       },
       {
         "name": "Manuel Linder, Noser Group",
@@ -2394,7 +2394,7 @@
         "bio": "Andreas Grütter arbeitet seit November 2012 bei der Mobiliar. Er ist eingestiegen als Software Architekt, hat danach die Applikationsarchitektur aufgebaut, leitet seit April 2015 die gesamte IT Architektur und ist Mitglied der IT Führung. Mit seinem Team kümmert er sich vorwiegend um die Modernisierung und Transformation der IT Landschaft, mit dem Ziel der Mobiliar den Weg in die digitale Zukunft zu ermöglichen. Zuvor war Andreas Leiter der IT Architektur in der Bank Julius Bär und im HP BSC (vormals RTC). Er hatte während 10 Jahren als Software Engineer, IT Architekt und technischer Projektleiter Kernbankenlösungen entwickelt und migriert.",
         "company": "Mobiliar",
         "portrait": "",
-        "speakerId": "andreas.grutter"
+        "speakerId": "andreas.gruetter"
       }
     ]
   },
@@ -2439,7 +2439,7 @@
         "bio": "Gerhard Knolmayer promovierte an der Wirtschaftsuniversität Wien und wurde an der Universität Wien für Betriebswirtschaftslehre und Betriebsinformatik habilitiert. 1980 wurde er ord. Professor an der Universität Kiel, 1988 an das Institut für Wirtschaftsinformatik der Universität Bern berufen, an dem er 25 Jahre lang tätig war. Einer breiteren Öffentlichkeit wurde Knolmayer als Leiter der Arbeitsgruppe CHIG2000 (Swiss Interest Group in Solving the Year 2000 Problem) bekannt. Forschungsaufenthalte führten ihn u.a. an das International Computer Science Institute (ICSI) der University of California, Berkeley, und an das Centre for Information Technology Innovation (CITI) der Queensland University of Technology. In den letzten Jahren beschäftigt sich Knolmayer insbesondere mit der Gestaltung benutzerfreundlicher Schnittstellen bei webbasierten Systemen. Er ist Fellow der Gesellschaft für Informatik; die Universität Freiburg im Breisgau verlieh ihm ein Ehrendoktorat.",
         "company": "unibe",
         "portrait": "gerhard.knolmayer.jpg",
-        "speakerId": "dr..knolmayer"
+        "speakerId": "gerhard.knolmayer"
       }
     ]
   },
@@ -2797,7 +2797,7 @@
         "bio": "Nach seinem Informationstechnologie Studium an der ETH und Tätigkeit bei Google und Netcetera vertiefte er sein Wissen als Engineer, Architekt und Consultant in verschiedenen Firmen und Projekten. Seit 5 Jahren arbeitet Patrick für Technologie Startups und gründete vor 2 Jahren SPOUD AG um Enterprises zu helfen ihre Daten Supply Chain transparent, schnell und kontrollierbar zu machen.",
         "company": "spoud",
         "portrait": "patrick.bönzli.jpg",
-        "speakerId": "patrick.bonzli"
+        "speakerId": "patrick.boenzli"
       }
     ]
   },
@@ -2911,7 +2911,7 @@
         "bio": "Matthias Kämpf hat an der EPF Lausanne ein Master-Studium in Mathematik absolviert und ist Leiter ICT/Forschung und Gesamtprojektleiter Clinical Data Warehouse.",
         "company": "insel",
         "portrait": "matthias.kaempf.jpg",
-        "speakerId": "matthias.kampf"
+        "speakerId": "matthias.kaempf"
       },
       {
         "name": "Tomas Dikk, Zühlke Engineering",
@@ -2933,7 +2933,7 @@
         "bio": "Seit über 20 Jahren ist Andreas im In- und Ausland in unterschiedlichen Rollen und Disziplinen in der Informatik tätig. Er leitet seit 2011 die Technologie Architektur und beeinflusst massgeblich, die Art und Weise wie in der Mobiliar Software entwickelt und betrieben wird. Als Visionär treibt er die technologische Vision der Mobiliar. Zusammen mit seinem Team lebt und fördert Andreas die konsequente Automation der Softwareentwicklungsprozesse. Als verantwortlicher Architekt von Pythagoras, der kognitiven Entwicklungsplattform der Mobiliar, verbindet er die neuen AI Entwicklungsmöglichkeiten mit den bewährten Prinzipien der traditionellen Softwareentwicklung.",
         "company": "Mobiliar",
         "portrait": "andreas.mösching.jpg",
-        "speakerId": "andreas.mosching"
+        "speakerId": "andreas.moesching"
       },
       {
         "name": "Jérôme Koller, Die Mobiliar",
@@ -2954,7 +2954,7 @@
         "bio": "Lothar Jöckel arbeitet seit 1983 als Software-Entwickler und Architekt in unterschiedlichen Branchen wie Health-Care, Banking, Telecom, Defense+Intelligence sowie Travel. Hierbei konnten wichtige Erfahrungen in Unternehmen wie McDonnellDouglas, IBM, Dresdner Bank, Bundeswehr/BND und Deutsches Reisebüro (DER) gesammelt werden. Seit 2012 ist er bei der SBB in der Informatik der SBB-Infrastruktur als Business-Analyst tätig. Seit 2015 ist er für «Plattform für Forschung und Innovation» tätig und unterstützt in den Themenbereichen Optimierung und Machine Learning.",
         "company": "SBB",
         "portrait": "lothar.jöckel.jpg",
-        "speakerId": "lothar.jockel"
+        "speakerId": "lothar.joeckel"
       }
     ]
   },
@@ -3040,7 +3040,7 @@
         "bio": "Emanuel Indermühle arbeitet in der Technologie Architektur der Mobiliar und verantwortet Techstacks für Angular und Node.js. In dieser Rolle treibt er die Modularisierung im Frontend und die LifeCycle Migration nach Angular voran. Zuvor arbeitete er beim Softwaredienstleister Mimacom und studierte Informatik an der Universität Bern.",
         "portrait": "Emanuel_Indermuehle.jpg",
         "company": "Mobiliar",
-        "speakerId": "emanuel.indermuhle"
+        "speakerId": "emanuel.indermuehle"
       }
     ]
   },
@@ -3055,7 +3055,7 @@
         "bio": "Christoph Bühlmann arbeitet als Software Ingenieur bei SBB AG. Zu seinem Glück ist seine Vergangenheit mit RCP und JEE nicht ganz so lang. Aktuell beschäftigt er sich als Full-Stack Entwickler, Architekt und DevOps Evangelist mit der Automatisierung der Infrastruktur-Planung.",
         "portrait": "Christoph_Buehlmann.jpg",
         "company": "SBB",
-        "speakerId": "christoph.buhlmann"
+        "speakerId": "christoph.buehlmann"
       },
       {
         "name": "Daniel Wiehl, mtrail GmbH",
@@ -3112,7 +3112,7 @@
         "bio": "Beat Winistörfer arbeitet seit über 5 Jahren in der Applikationsarchitektur der Mobiliar als Domänenarchitekt Partner und Basisdienste sowie als Systemarchitekt in einem der Release Trains der agilen Software Delivery Organisation. In diesen Rollen beschäftigt er sich intensiv mit der Umsetzung von Business Prozessen und den damit einhergehenden Anforderungen an die Arbeitsorganisation. Zuvor war er bei hp und rtc für die BEKB tätig, auch dort mit Schwerpunkt Business Transaktionen. Er hat an der Universität Zürich Wirtschaftsinformatik studiert.",
         "portrait": "Beat_Winistoerfer.png",
         "company": "Mobiliar",
-        "speakerId": "beat.winistorfer"
+        "speakerId": "beat.winistoerfer"
       }
     ]
   },
@@ -3324,7 +3324,7 @@
         "bio": "Arbeitet seit 2013 bei der Mobiliar und hat die IT Architektur inklusive der notwendigen Prozesse und Praktiken für die digitale Transformation Mobiliar neu aufgebaut. Zusammen mit seinem Team hat er diese auf die strategischen Geschäftsziele ausgerichtet und in der Organisation etabliert. Zuvor arbeitete er u.a. als IT Architekt, Projektleiter und Software Engineer bei RTC, HP und der Bank Julius Bär. Sein Spezialgebiet ist die IT Modernisierung, damit die digitale Transformation gemeistert werden kann. Andreas Grütter hat an der Fachhochschule Nordwestschweiz Informatik studiert und besitzt einen EMBA in Innovation Management der Berner Fachhochschule.",
         "portrait": "andreas_gruetter.png",
         "company": "Mobiliar",
-        "speakerId": "andreas.grutter"
+        "speakerId": "andreas.gruetter"
       }
     ]
   },
@@ -3559,7 +3559,7 @@
         "bio": "Jürg Haldimann is leading the global Software Architecture discipline as part of the Architecture Center of Excellence at Bank Julius Baer. He has been passionate about creating customer value by automating and standardizing the software delivery value chain across technologies and locations in order to deliver quality software in a fast way. He studied Computer Science at Bern University of Applied Sciences and holds a Master in Advanced Studies ETH in Management, Technology, and Economics.",
         "portrait": "Jürg_Haldimann.png",
         "company": "BJB",
-        "speakerId": "jurg.haldimann"
+        "speakerId": "juerg.haldimann"
       }
     ]
   },
@@ -4123,14 +4123,14 @@
         "bio": "Jonas rutschte während der Dotcom-Blase als Filme- und Webseitenmacher in die IT. In der angewandten Forschung und und Entwicklung lernte er die Agilen Prinzipien erfolgreich einzusetzen. Er liebt es, mit dem Zug zu reisen und für eines der ehrgeizigsten Bahnunternehmen der Welt resiliente Software-Architekturen zu entwickeln.",
         "portrait": "Jonas_Ruettimann.jpeg",
         "company": "SBB",
-        "speakerId": "jonas.ruttimann"
+        "speakerId": "jonas.ruettimann"
       },
       {
         "name": "Patrick Bönzli, SBB",
         "bio": "Patrick Bönzli war in den letzten zehn Jahren in Startups tätig und arbeitet heute bei der SBB, wo er für Databases as a Service verantwortlich ist. Vor seiner Zeit in Startups arbeitete er als Software Engineer.",
         "portrait": "Patrick_Boenzli.png",
         "company": "SBB",
-        "speakerId": "patrick.bonzli"
+        "speakerId": "patrick.boenzli"
       }
     ]
   },
@@ -4227,7 +4227,7 @@
         "bio": "Dominik Wüst leitet seit mehreren Jahren die Enterprise Architektur von PostFinance. Davor war er in den letzten 15 Jahren in verschiedenen Rollen bei PostFinance unterwegs. Dominik sein Fokus liegt auf der Schnittstelle zwischen Fach und IT. Dabei beschäftigt er sich intensiv mit der Disziplin Enterprise Design und des Einflusses von agilen Veränderungen auf die Architekturprozesse und Entscheide.",
         "portrait": "DominikWuest.jpg",
         "company": "PostFinance",
-        "speakerId": "dominik.wust"
+        "speakerId": "dominik.wuest"
       },
       {
         "name": "Mustapha Bouaaoud, PostFinance",
@@ -4249,7 +4249,7 @@
         "bio": "Marcel ist ein erfahrener IT Experte, der seit 2019 als Customer Engineer für Google Cloud tätig ist. Mit einem Fokus auf die Handels- und Konsumgüterbranche hilft er Unternehmen, ihre digitale Transformation durch die Modernisierung ihrer Anwendungs- und SAP-Landschaften in der Cloud zu beschleunigen. Seine über 35-jährige Karriere begann als Wirtschaftsinformatiker in der Softwareentwicklung für Banken und führte ihn über strategische Positionen bei Technologieführern wie Sun Microsystems, Microsoft und SAP zu seiner heutigen Rolle bei Google.",
         "portrait": "MarcelTruempy.jpeg",
         "company": "googlecloud",
-        "speakerId": "marcel.trumpy"
+        "speakerId": "marcel.truempy"
       },
       {
         "name": "Sam Kruklis, Google Cloud",
@@ -4345,7 +4345,7 @@
         "bio": "Aeneas Grüter ist Softwareentwickler mit Masterabschluss in Computer Science und fundierter Erfahrung in der Entwicklung komplexer Webapplikationen. Seine technische Bandbreite reicht von Java über TypeScript bis hin zu Kubernetes, wobei er stets den Fokus auf saubere Architektur, Skalierbarkeit und agile Arbeitsweisen legt. Vor seiner IT-Laufbahn hat er Geografie in Bern studiert.",
         "portrait": "AeneasGrueter.jpg",
         "company": "mtrail",
-        "speakerId": "aeneas.gruter"
+        "speakerId": "aeneas.grueter"
       }
     ]
   },

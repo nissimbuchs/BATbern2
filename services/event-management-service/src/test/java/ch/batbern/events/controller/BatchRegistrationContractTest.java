@@ -3,7 +3,6 @@ package ch.batbern.events.controller;
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.BatchRegistrationItem;
 import ch.batbern.events.dto.generated.BatchRegistrationItem.StatusEnum;
 import ch.batbern.events.dto.generated.BatchRegistrationRequest;
@@ -28,11 +27,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Contract tests for Batch Registration API (Story BAT-14).
