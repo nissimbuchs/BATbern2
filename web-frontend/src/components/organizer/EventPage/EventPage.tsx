@@ -81,12 +81,20 @@ export const EventPage: React.FC = () => {
   // Get current tab from URL, default to 'overview'
   const currentTab = isValidTab(searchParams.get('tab')) ? searchParams.get('tab')! : 'overview';
 
-  // Fetch event data with resource expansion
+  // Fetch event data with resource expansion including registrations for accurate counts
   const {
     data: event,
     isLoading,
     error,
-  } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'team', 'workflow', 'metrics']);
+  } = useEvent(eventCode, [
+    'venue',
+    'topics',
+    'sessions',
+    'team',
+    'workflow',
+    'metrics',
+    'registrations',
+  ]);
 
   // Build breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = useMemo(

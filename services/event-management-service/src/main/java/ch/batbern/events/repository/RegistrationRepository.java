@@ -93,4 +93,13 @@ public interface RegistrationRepository
      * @return List of registrations for this user
      */
     List<Registration> findByAttendeeUsername(String attendeeUsername);
+
+    /**
+     * Count total registrations for a specific event
+     * Used to display accurate registration counts on event cards and analytics
+     *
+     * @param eventId Event UUID
+     * @return Total count of registrations for this event (all statuses)
+     */
+    long countByEventId(UUID eventId);
 }

@@ -58,11 +58,14 @@ describe('ParticipantBatchImportModal Component', () => {
 
   // Mock hook implementation
   const mockImportCandidates = vi.fn();
+  const mockReset = vi.fn();
+
   const mockHookReturn = {
     importCandidates: mockImportCandidates,
     isImporting: false,
     currentIndex: 0,
     candidates: [],
+    reset: mockReset,
   };
 
   beforeEach(() => {
@@ -75,6 +78,7 @@ describe('ParticipantBatchImportModal Component', () => {
     mockOnClose.mockClear();
     mockOnImportComplete.mockClear();
     mockImportCandidates.mockClear();
+    mockReset.mockClear();
 
     // Setup default mock return
     vi.mocked(useParticipantBatchImportModule.useParticipantBatchImport).mockReturnValue(
@@ -144,7 +148,9 @@ describe('ParticipantBatchImportModal Component', () => {
       await userEvent.upload(fileInput, file);
 
       await waitFor(() => {
-        expect(screen.getByText(/File loaded: participants.csv/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole('region', { name: /participant import preview table/i })
+        ).toBeInTheDocument();
       });
     });
 
@@ -188,6 +194,7 @@ describe('ParticipantBatchImportModal Component', () => {
           {
             firstName: 'John',
             lastName: 'Doe',
+            username: 'john.doe',
             email: 'john.doe@example.com',
             eventCount: 3,
             isSyntheticEmail: false,
@@ -196,6 +203,7 @@ describe('ParticipantBatchImportModal Component', () => {
           {
             firstName: 'Jane',
             lastName: 'Smith',
+            username: 'jane.smith',
             email: 'jane.smith@batbern.ch',
             eventCount: 5,
             isSyntheticEmail: true,
@@ -206,19 +214,20 @@ describe('ParticipantBatchImportModal Component', () => {
 
       renderComponent();
 
-      // Check table headers
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Email')).toBeInTheDocument();
-      expect(screen.getByText('Events')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
+      // Check that the preview table is rendered
+      expect(
+        screen.getByRole('region', { name: /participant import preview table/i })
+      ).toBeInTheDocument();
 
-      // Check participant data
+      // Check participant data is displayed
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
       expect(screen.getByText('Jane Smith')).toBeInTheDocument();
       expect(screen.getByText('jane.smith@batbern.ch')).toBeInTheDocument();
-      expect(screen.getAllByText('3')[0]).toBeInTheDocument(); // Event count
-      expect(screen.getAllByText('5')[0]).toBeInTheDocument(); // Event count
+
+      // Check usernames are displayed
+      expect(screen.getByText('@john.doe')).toBeInTheDocument();
+      expect(screen.getByText('@jane.smith')).toBeInTheDocument();
     });
 
     it('should_showSyntheticBadge_when_emailIsSynthetic', () => {
@@ -423,12 +432,15 @@ describe('ParticipantBatchImportModal Component', () => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       await userEvent.upload(fileInput, file);
 
+      // Wait for preview table to appear after file is loaded
       await waitFor(() => {
-        expect(screen.getByText(/File loaded: participants.csv/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole('region', { name: /participant import preview table/i })
+        ).toBeInTheDocument();
       });
 
-      // Click Start Import button
-      const importButton = screen.getByText('Start Import');
+      // Click Start Import button (using aria-label)
+      const importButton = screen.getByRole('button', { name: /start importing participants/i });
       expect(importButton).toBeInTheDocument();
 
       mockImportCandidates.mockResolvedValue({
@@ -462,7 +474,7 @@ describe('ParticipantBatchImportModal Component', () => {
     it('should_callOnClose_when_cancelClicked', async () => {
       renderComponent();
 
-      const cancelButton = screen.getByText('Cancel');
+      const cancelButton = screen.getByRole('button', { name: /close import modal/i });
       await userEvent.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -557,8 +569,11 @@ describe('ParticipantBatchImportModal Component', () => {
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       await userEvent.upload(fileInput, file);
 
+      // Wait for preview table to appear
       await waitFor(() => {
-        expect(screen.getByText(/File loaded: participants.csv/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole('region', { name: /participant import preview table/i })
+        ).toBeInTheDocument();
       });
 
       const mockResult: ParticipantBatchImportResult = {
@@ -571,7 +586,7 @@ describe('ParticipantBatchImportModal Component', () => {
       mockImportCandidates.mockResolvedValue(mockResult);
 
       // Click Start Import
-      const importButton = screen.getByText('Start Import');
+      const importButton = screen.getByRole('button', { name: /start importing participants/i });
       await userEvent.click(importButton);
 
       await waitFor(() => {

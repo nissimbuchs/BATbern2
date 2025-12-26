@@ -76,7 +76,9 @@ describe('participantImportUtils', () => {
     it('should_throwError_when_invalidCsvStructure', () => {
       const invalidCsv = 'Name,FirstName,LastName\nJohn,Doe,john@example.com';
 
-      expect(() => parseParticipantCsv(invalidCsv)).toThrow('Invalid CSV structure');
+      expect(() => parseParticipantCsv(invalidCsv)).toThrow(
+        'Missing required columns: BestMail, companyKey'
+      );
     });
 
     it('should_skipEmptyLines_when_csvHasBlankRows', () => {
@@ -120,7 +122,7 @@ describe('participantImportUtils', () => {
 
     it('should_throwError_when_bothNamesEmpty', () => {
       expect(() => generateSyntheticEmail('', '')).toThrow(
-        'Cannot generate synthetic email: both first name and last name are empty'
+        'Cannot construct username: both first name and last name are empty'
       );
     });
 

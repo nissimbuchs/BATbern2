@@ -117,7 +117,8 @@ public class EventController {
     @Operation(
             summary = "List/Search Events",
             description = "Retrieve events with optional filtering, sorting, and pagination. "
-                    + "Uses MongoDB-style filter syntax for rich querying."
+                    + "Uses MongoDB-style filter syntax for rich querying. "
+                    + "Supports resource expansion via ?include parameter (e.g., ?include=registrations)"
     )
     public ResponseEntity<PaginatedResponse<EventResponse>> listEvents(
             @Parameter(description = "JSON filter object (e.g., {\"status\":\"published\"})")
@@ -130,17 +131,33 @@ public class EventController {
             @RequestParam(required = false) Integer page,
 
             @Parameter(description = "Items per page (default: 20, max: 100)")
-            @RequestParam(required = false) Integer limit
+            @RequestParam(required = false) Integer limit,
+
+            @Parameter(description = "Comma-separated list of resources to include (e.g., registrations)")
+            @RequestParam(required = false) String include
     ) {
-        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}", filter, sort, page, limit);
+        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, include: {}",
+                filter, sort, page, limit, include);
 
         // Search events using EventSearchService
         PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit);
 
-        // Convert entities to DTOs
-        List<EventResponse> eventResponses = result.getData().stream()
-                .map(EventResponse::fromEntity)
-                .collect(Collectors.toList());
+        // Convert entities to DTOs with optional registration counts
+        List<EventResponse> eventResponses;
+        if (include != null && include.contains("registrations")) {
+            // Include actual registration counts from database
+            eventResponses = result.getData().stream()
+                    .map(event -> {
+                        long regCount = registrationRepository.countByEventId(event.getId());
+                        return EventResponse.fromEntity(event, regCount);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            // Use default conversion (uses cached currentAttendeeCount)
+            eventResponses = result.getData().stream()
+                    .map(EventResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
 
         // Build response
         PaginatedResponse<EventResponse> response = PaginatedResponse.<EventResponse>builder()
@@ -292,6 +309,12 @@ public class EventController {
                     break;
                 case "sessions":
                     response.put("sessions", expandSessions(event));
+                    break;
+                case "registrations":
+                    // Include actual registration count from registrations table
+                    long registrationCount = registrationRepository.countByEventId(event.getId());
+                    response.put("currentAttendeeCount", (int) registrationCount);
+                    response.put("registrationCount", (int) registrationCount);
                     break;
                 // Additional resources can be added here as needed
                 default:
