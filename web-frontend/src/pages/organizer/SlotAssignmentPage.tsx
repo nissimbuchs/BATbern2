@@ -87,20 +87,16 @@ const SlotAssignmentPage: React.FC = () => {
             Drag confirmed speakers to available time slots to create the event schedule
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBackToEvent}
-        >
+        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
           Back to Event
         </Button>
       </Box>
 
       {/* Help Banner */}
       <Alert severity="info" sx={{ mb: 3 }}>
-        <strong>How it works:</strong> Drag speaker cards from the left panel to time slots on the right.
-        The system will highlight preference matches and warn you of conflicts.
-        Once all speakers are assigned, the schedule will be saved automatically.
+        <strong>How it works:</strong> Drag speaker cards from the left panel to time slots on the
+        right. The system will highlight preference matches and warn you of conflicts. Once all
+        speakers are assigned, the schedule will be saved automatically.
       </Alert>
 
       {/* Drag-and-Drop Slot Assignment Component */}
@@ -113,11 +109,7 @@ const SlotAssignmentPage: React.FC = () => {
 
       {/* Return Navigation */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="text"
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBackToEvent}
-        >
+        <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
           Return to Event Overview
         </Button>
       </Box>
