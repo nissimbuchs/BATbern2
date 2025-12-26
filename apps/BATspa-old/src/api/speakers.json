@@ -189,18 +189,11 @@
     "bio": "Benjamin Fankhauser hat bei der SBB eine Informatiker-Lehre absolviert und zwei Jahre als Entwickler gearbeitet. Danach hat er an der Berner Fachhochschule Informatik mit Schwerpunkt Security studiert. Seit 2016 ist er als Assistent in der E-Voting-Forschungsgruppe der Berner Fachhochschule tätig."
   },
   {
-    "id": "bernhard.rytz",
-    "name": "Bernhard Rytz",
-    "companyId": "SBB",
-    "portrait": null,
-    "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH und EMBA HSG hat als Entwickler, Projektleiter und Architekt über 12 Jahre Informatikdienstleistungen in den Bereichen Finance, Aerospace und Telecom erbracht. 2005 hat er begonnen, die Unternehmensarchitektur bei den Schweizerischen Bundesbahnen SBB aufzubauen. Seit 2010 ist er Chef IT Architekt der SBB und führt im Auftrag der Konzernleitung die Umsetzung der Datenstrategie."
-  },
-  {
     "id": "bernhard.sbb",
     "name": "Bernhard Rytz (SBB)",
     "companyId": "SBB",
     "portrait": "bernhard.rytz.jpg",
-    "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH hat als Entwickler, Projektleiter, Methodiker und Architekt Informatikdienstleistungen in unterschiedlichsten Branchen erbracht. Seit 2005 baut er das Enterprise Architekturmanagement der Schweizerischen Bundesbahnen (SBB) auf. Zur Zeit ist er Leiter des Architekturmanagements der SBB IT."
+    "bio": "Bernhard Rytz, Dipl. Inf. Ing. ETH und EMBA HSG hat als Entwickler, Projektleiter und Architekt über 12 Jahre Informatikdienstleistungen in den Bereichen Finance, Aerospace und Telecom erbracht. 2005 hat er begonnen, die Unternehmensarchitektur bei den Schweizerischen Bundesbahnen SBB aufzubauen. Seit 2010 ist er Chef IT Architekt der SBB und führt im Auftrag der Konzernleitung die Umsetzung der Datenstrategie."
   },
   {
     "id": "bettina.horster",

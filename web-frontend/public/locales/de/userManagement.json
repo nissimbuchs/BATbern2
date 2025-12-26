@@ -223,5 +223,71 @@
     },
     "hasPortrait": "Hat Portrait-Bild",
     "noPortrait": "Kein Portrait-Bild"
+  },
+  "participantImport": {
+    "button": "Teilnehmer importieren",
+    "title": "Teilnehmer aus CSV importieren",
+    "dropzone": "CSV-Datei hier ablegen",
+    "dropzoneActive": "CSV-Datei hier ablegen",
+    "dropzoneHint": "oder klicken Sie, um eine Datei auszuwählen",
+    "fileLoaded": "Datei geladen: {{name}} ({{size}} KB)",
+    "preview": "Vorschau: {{count}} Teilnehmer zum Importieren bereit",
+    "importButton": "{{count}} Teilnehmer importieren",
+    "startImport": "Import starten",
+    "progress": "Importiere: {{current}} / {{total}}",
+    "summary": "Import-Zusammenfassung",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "events": "Veranstaltungen",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "importing": "Importiere",
+      "success": "Erfolgreich",
+      "error": "Fehler",
+      "skipped": "Übersprungen"
+    },
+    "stats": {
+      "total": "Gesamt: {{count}}",
+      "success": "Erfolgreich: {{count}}",
+      "failed": "Fehlgeschlagen: {{count}}",
+      "pending": "Ausstehend: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthetisch",
+      "eventsCount": "{{count}} Veranstaltungen"
+    },
+    "noParticipants": "Dieser Benutzer hat noch an keinen Veranstaltungen teilgenommen.",
+    "loadingEvents": "Lade Veranstaltungen...",
+    "errorLoadingEvents": "Fehler beim Laden der Teilnahmen"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Übersicht",
+      "eventsParticipated": "Teilgenommene Veranstaltungen"
+    },
+    "overviewText": "Benutzerprofil-Übersicht. Weitere Informationen können hier hinzugefügt werden.",
+    "eventsTable": {
+      "eventCode": "Veranstaltungscode",
+      "title": "Titel",
+      "date": "Datum",
+      "status": "Status",
+      "loading": "Veranstaltungen werden geladen...",
+      "loadError": "Fehler beim Laden der Veranstaltungs-Teilnahme-Historie",
+      "noEvents": "Dieser Benutzer hat noch an keinen Veranstaltungen teilgenommen",
+      "untitledEvent": "Unbenannte Veranstaltung",
+      "dateTBD": "Noch nicht festgelegt",
+      "ariaLabel": "Tabelle der besuchten Veranstaltungen",
+      "statusValues": {
+        "REGISTERED": "Registriert",
+        "CONFIRMED": "Bestätigt",
+        "ATTENDED": "Teilgenommen",
+        "CANCELLED": "Abgesagt",
+        "WAITLISTED": "Warteliste"
+      }
+    },
+    "bio": "Biografie"
   }
 }

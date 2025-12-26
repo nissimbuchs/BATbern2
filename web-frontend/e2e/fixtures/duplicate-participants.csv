@@ -1,0 +1,3 @@
+Name,FirstName,LastName,BestMail,companyKey,1,2
+Duplicate User1,Duplicate,User1,duplicate.user1@example.com,dupcompany1,1,
+Duplicate User2,Duplicate,User2,duplicate.user2@example.com,dupcompany2,,1

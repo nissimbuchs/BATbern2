@@ -1,0 +1,40 @@
+meta {
+  name: Batch Registration - Unauthorized
+  type: http
+  seq: 54
+}
+
+post {
+  url: {{baseUrl}}/events/batch_registrations
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "participantEmail": "test@example.com",
+    "firstName": "Test",
+    "lastName": "Participant",
+    "registrations": [
+      {
+        "eventCode": "BATbern1",
+        "status": "ATTENDED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 401
+}
+
+tests {
+  test("should return 401 without authentication token", function() {
+    expect(res.getStatus()).to.equal(401);
+  });
+
+  test("should require JWT authentication (Story BAT-12)", function() {
+    const response = res.getBody();
+    expect(response.error).to.equal('UNAUTHORIZED');
+  });
+}

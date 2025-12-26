@@ -1,0 +1,45 @@
+meta {
+  name: Batch Registration - Forbidden (Non-ORGANIZER)
+  type: http
+  seq: 57
+}
+
+post {
+  url: {{baseUrl}}/events/batch_registrations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{attendeeAuthToken}}
+}
+
+body:json {
+  {
+    "participantEmail": "test@example.com",
+    "firstName": "Test",
+    "lastName": "Participant",
+    "registrations": [
+      {
+        "eventCode": "BATbern1",
+        "status": "ATTENDED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 403
+}
+
+tests {
+  test("should return 403 for non-ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(403);
+  });
+
+  test("should require ORGANIZER role (Story BAT-12)", function() {
+    const response = res.getBody();
+    expect(response.error).to.equal('Forbidden');
+    expect(response.message).to.include('ORGANIZER');
+  });
+}

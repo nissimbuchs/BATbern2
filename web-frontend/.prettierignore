@@ -17,4 +17,5 @@ package-lock.json
 *.gif
 *.svg
 *.webp
+*.csv
 release-notes.txt

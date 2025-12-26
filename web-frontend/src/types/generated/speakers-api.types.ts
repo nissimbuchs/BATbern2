@@ -158,32 +158,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/{speakerId}/outreach': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get outreach history for speaker
-     * @description Get the complete outreach/contact history for a speaker.
-     *     Story 5.3: Speaker Outreach Tracking
-     */
-    get: operations['getOutreachHistory'];
-    put?: never;
-    /**
-     * Record outreach attempt
-     * @description Record a new outreach/contact attempt with a speaker.
-     *     Story 5.3: Speaker Outreach Tracking
-     */
-    post: operations['recordOutreach'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -309,9 +283,9 @@ export interface components {
      *     - READY: Speaker confirmed availability and interest
      *     - DECLINED: Speaker declined invitation
      *     - ACCEPTED: Speaker accepted invitation and confirmed participation
-     *     - CONTENT_SUBMITTED: Speaker submitted presentation content (title, abstract) [Story 5.5]
-     *     - QUALITY_REVIEWED: Speaker's content passed quality review [Story 5.5]
-     *     - CONFIRMED: Speaker has both quality-reviewed content and assigned slot [Story 5.5]
+     *     - SLOT_ASSIGNED: Speaker assigned to specific time slot
+     *     - QUALITY_REVIEWED: Speaker's content passed quality review
+     *     - FINAL_AGENDA: Speaker finalized in published agenda
      * @enum {string}
      */
     SpeakerWorkflowState:
@@ -320,9 +294,9 @@ export interface components {
       | 'READY'
       | 'DECLINED'
       | 'ACCEPTED'
-      | 'CONTENT_SUBMITTED'
+      | 'SLOT_ASSIGNED'
       | 'QUALITY_REVIEWED'
-      | 'CONFIRMED';
+      | 'FINAL_AGENDA';
     SpeakerSlotPreferences: {
       /**
        * @description Speaker username (ADR-003)
@@ -553,53 +527,6 @@ export interface components {
       details?: {
         [key: string]: unknown;
       };
-    };
-    /** @description Record of outreach/contact attempt with a speaker */
-    OutreachHistory: {
-      /**
-       * Format: uuid
-       * @description Outreach record ID
-       */
-      id: string;
-      /**
-       * Format: uuid
-       * @description Speaker pool entry ID
-       */
-      speakerPoolId: string;
-      /**
-       * Format: date-time
-       * @description When the contact was made
-       */
-      contactDate: string;
-      contactMethod: components['schemas']['ContactMethod'];
-      /** @description Notes about the outreach attempt */
-      notes?: string;
-      /**
-       * @description Username of organizer who made contact
-       * @example john.doe
-       */
-      organizerUsername: string;
-      /**
-       * Format: date-time
-       * @description When the record was created
-       */
-      createdAt: string;
-    };
-    /**
-     * @description Method of contact used
-     * @enum {string}
-     */
-    ContactMethod: 'email' | 'phone' | 'in_person';
-    /** @description Request to record an outreach attempt */
-    RecordOutreachRequest: {
-      contactMethod: components['schemas']['ContactMethod'];
-      /**
-       * Format: date-time
-       * @description When the contact was made
-       */
-      contactDate: string;
-      /** @description Optional notes about the outreach */
-      notes?: string;
     };
   };
   responses: never;
@@ -985,115 +912,6 @@ export interface operations {
         content?: never;
       };
       /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  getOutreachHistory: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code (ADR-003) */
-        eventCode: string;
-        /** @description Speaker pool ID (UUID) */
-        speakerId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Outreach history retrieved successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OutreachHistory'][];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden - requires ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Speaker not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  recordOutreach: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code (ADR-003) */
-        eventCode: string;
-        /** @description Speaker pool ID (UUID) */
-        speakerId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RecordOutreachRequest'];
-      };
-    };
-    responses: {
-      /** @description Outreach recorded successfully */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OutreachHistory'];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Forbidden - requires ORGANIZER role */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Speaker not found */
       404: {
         headers: {
           [name: string]: unknown;

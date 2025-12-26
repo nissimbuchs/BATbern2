@@ -223,5 +223,71 @@
     },
     "hasPortrait": "Has portrait image",
     "noPortrait": "No portrait image"
+  },
+  "participantImport": {
+    "button": "Import Participants",
+    "title": "Import Participants from CSV",
+    "dropzone": "Drag & drop CSV file here",
+    "dropzoneActive": "Drop CSV file here",
+    "dropzoneHint": "or click to select file",
+    "fileLoaded": "File loaded: {{name}} ({{size}} KB)",
+    "preview": "Preview: {{count}} participants ready to import",
+    "importButton": "Import {{count}} Participants",
+    "startImport": "Start Import",
+    "progress": "Importing: {{current}} / {{total}}",
+    "summary": "Import Summary",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "events": "Events",
+      "status": "Status"
+    },
+    "status": {
+      "pending": "Pending",
+      "importing": "Importing",
+      "success": "Success",
+      "error": "Failed",
+      "skipped": "Skipped"
+    },
+    "stats": {
+      "total": "Total: {{count}}",
+      "success": "Success: {{count}}",
+      "failed": "Failed: {{count}}",
+      "pending": "Pending: {{count}}"
+    },
+    "badges": {
+      "synthetic": "Synthetic",
+      "eventsCount": "{{count}} events"
+    },
+    "noParticipants": "This user has not participated in any events yet.",
+    "loadingEvents": "Loading events...",
+    "errorLoadingEvents": "Failed to load event participations"
+  },
+  "userDetail": {
+    "tabs": {
+      "overview": "Overview",
+      "eventsParticipated": "Events Participated"
+    },
+    "overviewText": "User profile overview. Additional information can be added here.",
+    "eventsTable": {
+      "eventCode": "Event Code",
+      "title": "Title",
+      "date": "Date",
+      "status": "Status",
+      "loading": "Loading events...",
+      "loadError": "Failed to load event participation history",
+      "noEvents": "This user has not participated in any events yet",
+      "untitledEvent": "Untitled Event",
+      "dateTBD": "TBD",
+      "ariaLabel": "Events participated table",
+      "statusValues": {
+        "REGISTERED": "Registered",
+        "CONFIRMED": "Confirmed",
+        "ATTENDED": "Attended",
+        "CANCELLED": "Cancelled",
+        "WAITLISTED": "Waitlisted"
+      }
+    },
+    "bio": "Bio"
   }
 }

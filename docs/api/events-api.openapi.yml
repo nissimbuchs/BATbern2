@@ -2197,6 +2197,181 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/batch_registrations:
+    post:
+      tags:
+        - Registrations
+      summary: Create batch event registrations for a participant
+      description: |
+        Creates multiple event registrations for a single participant in one transaction.
+        Used for bulk importing historical attendance data.
+
+        **Story**: BAT-12 - API Contract - Participant Batch Registration
+
+        **Behavior**:
+        - Creates user if doesn't exist (get-or-create by email)
+        - Skips duplicate registrations (idempotent)
+        - Returns partial success if some registrations fail
+
+        **Use Case**: Historical data migration for 2,307 participants
+
+        **Performance**: <500ms (P95) for 100 registrations
+      operationId: createBatchRegistrations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRegistrationRequest'
+            examples:
+              historicalAttendee:
+                summary: Historical participant with multiple events
+                value:
+                  participantEmail: "adrian.buerki@centrisag.ch"
+                  firstName: "Adrian"
+                  lastName: "Bürki"
+                  registrations:
+                    - eventCode: "BATbern17"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern25"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern31"
+                      status: "ATTENDED"
+              syntheticEmail:
+                summary: Participant with synthetic email
+                value:
+                  participantEmail: "max.muster@batbern.ch"
+                  firstName: "Max"
+                  lastName: "Muster"
+                  registrations:
+                    - eventCode: "BATbern1"
+                      status: "ATTENDED"
+      responses:
+        '200':
+          description: Batch registrations processed (full or partial success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRegistrationResponse'
+              examples:
+                fullSuccess:
+                  summary: All registrations successful
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 3
+                    failedRegistrations: []
+                    errors: []
+                partialSuccess:
+                  summary: Some registrations failed
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 2
+                    failedRegistrations:
+                      - eventCode: "BATbern99"
+                        reason: "Event not found"
+                    errors: ["Event BATbern99 not found"]
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: "Validation failed"
+                    message: "Invalid email format"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "participantEmail"
+                        message: "must be a well-formed email address"
+                emptyRegistrations:
+                  summary: Empty registrations array
+                  value:
+                    error: "Validation failed"
+                    message: "Registrations array cannot be empty"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at least 1 item"
+                tooManyRegistrations:
+                  summary: Too many registrations
+                  value:
+                    error: "Validation failed"
+                    message: "Too many registrations in batch"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at most 100 items"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Forbidden"
+                message: "This operation requires ORGANIZER role"
+                code: "INSUFFICIENT_PERMISSIONS"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: List user registrations across all events
+      description: |
+        Retrieve all event registrations for a specific user.
+        Used by user detail page to show participation history.
+
+        **Story**: BAT-15 - Integration - Participant Batch Import
+        **Security**: Requires authentication
+      operationId: listUserRegistrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: attendeeUsername
+          in: query
+          description: Username to filter registrations
+          required: true
+          schema:
+            type: string
+            example: "a.roethlisberger"
+      responses:
+        '200':
+          description: User registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Registration'
+              example:
+                - registrationCode: "BATbern34-reg-A3X9K2"
+                  eventCode: "BATbern34"
+                  eventTitle: "Cloud Native Architecture"
+                  eventDate: "2023-03-15T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-02-01T10:30:00Z"
+                - registrationCode: "BATbern36-reg-B7Y1M4"
+                  eventCode: "BATbern36"
+                  eventTitle: "Microservices Patterns"
+                  eventDate: "2023-05-20T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-04-10T14:20:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/analytics:
     get:
       tags:
@@ -3406,7 +3581,7 @@ components:
         # Registration metadata
         status:
           type: string
-          enum: [registered, waitlisted, confirmed, cancelled, attended]
+          enum: [REGISTERED, WAITLISTED, CONFIRMED, CANCELLED, ATTENDED]
         registrationDate:
           type: string
           format: date-time
@@ -3747,6 +3922,111 @@ components:
             eventReminders:
               type: boolean
               description: Receive event reminders
+
+    BatchRegistrationRequest:
+      type: object
+      description: |
+        Story BAT-12: Batch registration request for historical data import.
+        Creates multiple event registrations for a single participant.
+      required:
+        - participantEmail
+        - firstName
+        - lastName
+        - registrations
+      properties:
+        participantEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Participant email (used for user lookup/creation)
+          example: "adrian.buerki@centrisag.ch"
+        firstName:
+          type: string
+          maxLength: 100
+          description: Participant first name
+          example: "Adrian"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Participant last name
+          example: "Bürki"
+        registrations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Array of event registrations (max 100 per batch)
+          items:
+            $ref: '#/components/schemas/BatchRegistrationItem'
+
+    BatchRegistrationItem:
+      type: object
+      description: Single event registration within a batch
+      required:
+        - eventCode
+        - status
+      properties:
+        eventCode:
+          type: string
+          pattern: '^BATbern\d+$'
+          description: Event code in format BATbernN where N is event number
+          example: "BATbern25"
+        status:
+          type: string
+          enum: [REGISTERED, ATTENDED, CANCELLED]
+          description: Registration status (use 'ATTENDED' for historical data)
+          example: "ATTENDED"
+
+    BatchRegistrationResponse:
+      type: object
+      description: |
+        Response for batch registration operation.
+        Returns partial success - some registrations may fail while others succeed.
+      required:
+        - username
+        - totalRegistrations
+        - successfulRegistrations
+        - failedRegistrations
+        - errors
+      properties:
+        username:
+          type: string
+          description: Username of created/found participant
+          example: "adrian.buerki"
+        totalRegistrations:
+          type: integer
+          description: Total number of registrations attempted
+          example: 3
+        successfulRegistrations:
+          type: integer
+          description: Number of registrations successfully created
+          example: 3
+        failedRegistrations:
+          type: array
+          description: List of registrations that failed
+          items:
+            $ref: '#/components/schemas/FailedRegistration'
+        errors:
+          type: array
+          description: List of error messages
+          items:
+            type: string
+          example: ["Event BATbern99 not found"]
+
+    FailedRegistration:
+      type: object
+      description: Details of a failed registration within a batch
+      required:
+        - eventCode
+        - reason
+      properties:
+        eventCode:
+          type: string
+          description: Event code that failed
+          example: "BATbern99"
+        reason:
+          type: string
+          description: Reason for failure
+          example: "Event not found"
 
     BatchUpdateRequest:
       type: object
@@ -4552,6 +4832,20 @@ components:
                 error: FORBIDDEN
                 errorCode: FORBIDDEN
                 message: "Insufficient permissions to perform this action"
+                timestamp: "2025-01-15T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: "Authentication token is missing or invalid"
                 timestamp: "2025-01-15T10:30:00Z"
 
   securitySchemes:

@@ -7,6 +7,8 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
+import ch.batbern.events.dto.generated.BatchRegistrationRequest;
+import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
@@ -32,6 +34,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -40,6 +43,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -1202,6 +1206,104 @@ public class EventController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * List User Registrations - Story BAT-15
+     *
+     * GET /api/v1/events/registrations?attendeeUsername={username}
+     *
+     * @param attendeeUsername Username to list registrations for
+     * @return List of registrations enriched with event data
+     */
+    @GetMapping("/registrations")
+    @Operation(
+            summary = "List User Registrations",
+            description = "Retrieve all registrations for a specific user across all events"
+    )
+    public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
+            @RequestParam String attendeeUsername) {
+        log.debug("GET /api/v1/events/registrations?attendeeUsername={}", attendeeUsername);
+
+        // Fetch registrations for this user
+        List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);
+
+        // Fetch all events in one query to avoid N+1 (collect unique event IDs)
+        Set<UUID> eventIds = registrations.stream()
+                .map(Registration::getEventId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Event> eventsMap = eventRepository.findAllById(eventIds).stream()
+                .collect(Collectors.toMap(Event::getId, e -> e));
+
+        // Enrich each registration with event data
+        List<RegistrationResponse> responses = registrations.stream()
+                .map(reg -> {
+                    // Get event from map (avoids N+1)
+                    Event event = eventsMap.get(reg.getEventId());
+                    if (event != null) {
+                        reg.setEventCode(event.getEventCode()); // Set transient field
+                    }
+
+                    // Enrich with user data
+                    RegistrationResponse response = registrationService.enrichRegistrationWithUserData(reg);
+
+                    // Add event details to response
+                    if (event != null) {
+                        response.setEventTitle(event.getTitle());
+                        response.setEventDate(event.getDate() != null ?
+                                event.getDate().toString() : null);
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Create Batch Registrations - Story BAT-14
+     *
+     * POST /api/v1/events/batch_registrations
+     *
+     * Creates multiple event registrations for a single participant in a single transaction.
+     * Designed for historical data migration where participants attended multiple events.
+     *
+     * Features:
+     * - Creates or retrieves user by email (anonymous users with cognitoSync=false)
+     * - Creates registrations for all specified events
+     * - Idempotent: Skips duplicate registrations without error
+     * - Partial success: Some registrations may succeed while others fail
+     * - Transactional: All-or-nothing for database operations
+     *
+     * Authorization: Requires ORGANIZER role
+     *
+     * @param request Batch registration request with participant data and event list
+     * @return Batch registration response with detailed success/failure information
+     */
+    @PostMapping("/batch_registrations")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Create Batch Event Registrations",
+            description = "Create multiple event registrations for a single participant. "
+                    + "Designed for historical data migration. Returns partial success details. "
+                    + "Requires ORGANIZER role."
+    )
+    public ResponseEntity<BatchRegistrationResponse> createBatchRegistrations(
+            @Valid @RequestBody BatchRegistrationRequest request) {
+        log.debug("POST /api/v1/events/batch_registrations - Participant: {}, Events: {}",
+                request.getParticipantEmail(), request.getRegistrations().size());
+
+        BatchRegistrationResponse response = registrationService.createBatchRegistrations(request);
+
+        log.info("Batch registration completed - User: {}, Total: {}, Successful: {}, Failed: {}",
+                response.getUsername(),
+                response.getTotalRegistrations(),
+                response.getSuccessfulRegistrations(),
+                response.getFailedRegistrations().size());
+
+        return ResponseEntity.ok(response);
     }
 
     /**

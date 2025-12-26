@@ -84,4 +84,13 @@ public interface RegistrationRepository
      * @return Count of registrations with given status
      */
     long countByStatus(String status);
+
+    /**
+     * Find all registrations for a specific user
+     * Story BAT-15: Used by user detail page to show event participation history
+     *
+     * @param attendeeUsername Username reference to User Management Service
+     * @return List of registrations for this user
+     */
+    List<Registration> findByAttendeeUsername(String attendeeUsername);
 }
