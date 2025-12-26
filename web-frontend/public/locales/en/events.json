@@ -377,7 +377,125 @@
     "qualityChecks": "Quality Checks",
     "configure": "Configure Publishing",
     "republish": "Republish",
-    "previewPublicPage": "Preview Public Page"
+    "previewPublicPage": "Preview Public Page",
+    "tab": {
+      "title": "Publishing Controls (Story 5.7)",
+      "notice": "The publishing components are now integrated. Backend API integration is in progress. Some features use temporary mock data."
+    },
+    "controls": {
+      "publish": "Publish",
+      "publishing": "Publishing...",
+      "publishPhase": "Publish {{phase}}",
+      "schedulePublish": "Schedule Publish",
+      "previewNewsletter": "Preview Newsletter",
+      "mode": "Mode",
+      "modeDraft": "Draft",
+      "modeProgressive": "Progressive",
+      "modeComplete": "Complete",
+      "notifySubscribers": "Notify subscribers",
+      "validationErrors": "Validation Errors:",
+      "scheduleDialog": {
+        "title": "Schedule Publishing",
+        "dateLabel": "Schedule Date & Time",
+        "cancel": "Cancel",
+        "confirm": "Confirm Schedule"
+      },
+      "newsletterDialog": {
+        "title": "Newsletter Preview",
+        "subject": "Subject: New {{phase}} published for {{eventCode}}",
+        "contentPreview": "Newsletter content preview for {{phase}} phase...",
+        "close": "Close",
+        "sendTest": "Send Test Email"
+      },
+      "accessibility": {
+        "publishingPhase": "Publishing {{phase}}",
+        "publishingMode": "Publishing Mode",
+        "notifySubscribers": "Notify subscribers when publishing"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Ready to Publish",
+      "notReadyToPublish": "Not Ready to Publish",
+      "eventTopic": "Event Topic",
+      "speakerLineup": "Speaker Lineup",
+      "sessionTimings": "Session Timings",
+      "complete": "Complete",
+      "incomplete": "Incomplete ({{assigned}}/{{total}} sessions assigned)",
+      "ready": "Ready ({{assigned}}/{{total}} sessions assigned)",
+      "notRequired": "Not Required",
+      "assignTimings": "Assign Timings",
+      "expandUnassigned": "Expand unassigned sessions",
+      "collapseUnassigned": "Collapse unassigned sessions",
+      "accessibility": {
+        "readyToPublish": "Ready to publish",
+        "notReadyToPublish": "Not ready to publish",
+        "eventTopic": "Event Topic Validation",
+        "speakerLineup": "Speaker Lineup Validation",
+        "sessionTimings": "Session Timings Validation"
+      }
+    },
+    "preview": {
+      "desktop": "Desktop",
+      "mobile": "Mobile",
+      "print": "Print",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing preview...",
+      "retry": "Retry",
+      "loadFailed": "Failed to load preview. Please try again.",
+      "previewMode": "Preview Mode: {{mode}} | Phase: {{phase}}",
+      "deviceDimensions": "Device: {{device}} ({{width}} x {{height}})",
+      "switchedTo": "Switched to {{device}} preview",
+      "accessibility": {
+        "devicePreviewMode": "device preview mode",
+        "desktopPreview": "Desktop preview",
+        "mobilePreview": "Mobile preview",
+        "printPreview": "Print preview",
+        "refreshPreview": "Refresh preview",
+        "eventContentPreview": "Event content preview"
+      }
+    },
+    "timeline": {
+      "phasesPublished": "{{completed}} of {{total}} phases published ({{percent}}%)",
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates",
+      "now": "Now",
+      "publishedOn": "Published on {{date}}",
+      "scheduled": "Scheduled: {{date}}",
+      "autoPublishIn": "Auto-publish in {{days}} days",
+      "autoPublishScheduled": "Auto-publish scheduled",
+      "days": "{{count}} days"
+    },
+    "versionControl": {
+      "title": "Version History",
+      "version": "Version",
+      "published": "Published",
+      "phase": "Phase",
+      "publisher": "Publisher",
+      "status": "Status",
+      "actions": "Actions",
+      "rollback": "Rollback",
+      "current": "Current",
+      "cdnCleared": "CDN Cleared",
+      "cdnPending": "CDN Pending",
+      "cdnFailed": "CDN Failed",
+      "cdnUnknown": "Unknown",
+      "cdnInvalidationId": "CDN Invalidation ID: {{id}}",
+      "noVersions": "No version history available",
+      "rollbackDialog": {
+        "title": "Confirm Rollback",
+        "message": "Are you sure you want to rollback to this version?",
+        "versionLabel": "Version:",
+        "phaseLabel": "Phase:",
+        "publishedLabel": "Published:",
+        "publisherLabel": "Publisher:",
+        "warning": "This action will invalidate the CloudFront CDN cache and may take a few minutes to complete.",
+        "cancel": "Cancel",
+        "confirm": "Confirm Rollback",
+        "confirming": "Rolling back..."
+      }
+    }
   },
   "notifications": {
     "title": "Notifications & Reminders",
@@ -490,6 +608,12 @@
   },
   "public": {
     "comingSoon": "Coming soon...",
+    "preview": {
+      "title": "Preview Mode",
+      "phase": "Phase",
+      "mode": "Mode",
+      "description": "Viewing unpublished changes - this is how the event will appear when published"
+    },
     "logistics": {
       "title": "Event Details",
       "date": "Date",

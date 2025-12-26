@@ -96,9 +96,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
   };
 
   // Sort versions by version number descending (newest first)
-  const sortedVersions = [...(versionHistory || [])].sort(
-    (a, b) => b.versionNumber - a.versionNumber
-  );
+  const sortedVersions = Array.isArray(versionHistory)
+    ? [...versionHistory].sort((a, b) => b.versionNumber - a.versionNumber)
+    : [];
 
   return (
     <Paper sx={{ p: 2 }}>

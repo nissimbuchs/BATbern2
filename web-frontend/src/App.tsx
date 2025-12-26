@@ -181,8 +181,10 @@ function App() {
             <NavigationSetup>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6 */}
+                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
                   <Route path="/" element={<HomePage />} />
+                  {/* Story 5.7: Public event page with preview mode support */}
+                  <Route path="/events/:eventCode" element={<HomePage />} />
                   <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
                   <Route path="/registration-success" element={<RegistrationSuccessPage />} />
                   <Route

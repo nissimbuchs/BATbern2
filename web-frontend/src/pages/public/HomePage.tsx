@@ -1,9 +1,16 @@
 /**
- * HomePage Component (Story 4.1.3, 4.1.4)
+ * HomePage Component (Story 4.1.3, 4.1.4, 5.7)
  * BATbern-public design with dynamic event data from backend
  * Displays current event with hero, logistics, countdown, speakers, sessions, venue, and social sharing
+ *
+ * Story 5.7 (BAT-11): Supports preview mode for organizers
+ * - Route "/" shows current published event
+ * - Route "/events/:eventCode" shows specific event (with optional preview mode)
+ * - Query params: ?preview=true&phase=speakers&mode=progressive
  */
 
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
 import { EventLogistics } from '@/components/public/Event/EventLogistics';
@@ -17,12 +24,41 @@ import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 // import { TopicBadges } from '@/components/public/Event/TopicBadges'; // TODO: Uncomment when topics are added
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
+import { eventApiClient } from '@/services/eventApiClient';
+import type { EventDetail } from '@/types/event.types';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const HomePage = () => {
   const { t } = useTranslation('events');
-  const { data: event, isLoading, error } = useCurrentEvent();
+  const { eventCode } = useParams<{ eventCode?: string }>();
+  const [searchParams] = useSearchParams();
+
+  // Check if we're in preview mode
+  const isPreview = searchParams.get('preview') === 'true';
+  const previewPhase = searchParams.get('phase') || 'speakers';
+  const previewMode = searchParams.get('mode') || 'progressive';
+
+  // Fetch specific event if eventCode is provided, otherwise fetch current event
+  const specificEventQuery = useQuery<EventDetail | null, Error>({
+    queryKey: ['events', eventCode, { preview: isPreview, phase: previewPhase, mode: previewMode }],
+    queryFn: () => {
+      if (!eventCode) return Promise.reject(new Error('Event code is required'));
+      // TODO: Add preview support to API - for now just fetches published data
+      return eventApiClient.getEvent(eventCode, {
+        expand: ['topics', 'venue', 'speakers', 'sessions'],
+      });
+    },
+    enabled: !!eventCode,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+  });
+
+  // Use current event query if no eventCode specified
+  const currentEventQuery = useCurrentEvent();
+
+  // Select the appropriate query result
+  const { data: event, isLoading, error } = eventCode ? specificEventQuery : currentEventQuery;
 
   // Loading state
   if (isLoading) {
@@ -58,8 +94,25 @@ const HomePage = () => {
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
 
+  // Preview Mode Banner (Story 5.7) - shown above navigation
+  // Fixed positioning to stay above the fixed navigation
+  const previewBanner = isPreview ? (
+    <div className="fixed top-0 left-0 right-0 z-[60] bg-blue-500 text-white py-3 px-4 text-center">
+      <div className="container mx-auto flex items-center justify-center gap-4 flex-wrap">
+        <span className="font-semibold">🔍 {t('public.preview.title')}</span>
+        <span className="text-sm">
+          {t('public.preview.phase')}: {previewPhase}
+        </span>
+        <span className="text-sm">
+          {t('public.preview.mode')}: {previewMode}
+        </span>
+        <span className="text-xs opacity-90">{t('public.preview.description')}</span>
+      </div>
+    </div>
+  ) : undefined;
+
   return (
-    <PublicLayout>
+    <PublicLayout topBanner={previewBanner}>
       {/* SEO Meta Tags */}
       <OpenGraphTags
         title={eventTitle}

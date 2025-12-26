@@ -367,7 +367,125 @@
     "qualityChecks": "Qualitätsprüfungen",
     "configure": "Veröffentlichung konfigurieren",
     "republish": "Neu veröffentlichen",
-    "previewPublicPage": "Öffentliche Seite vorschauen"
+    "previewPublicPage": "Öffentliche Seite vorschauen",
+    "tab": {
+      "title": "Veröffentlichungssteuerung (Story 5.7)",
+      "notice": "Die Veröffentlichungskomponenten sind jetzt integriert. Die Backend-API-Integration ist in Arbeit. Einige Funktionen verwenden temporäre Mock-Daten."
+    },
+    "controls": {
+      "publish": "Veröffentlichen",
+      "publishing": "Veröffentliche...",
+      "publishPhase": "{{phase}} veröffentlichen",
+      "schedulePublish": "Veröffentlichung planen",
+      "previewNewsletter": "Newsletter-Vorschau",
+      "mode": "Modus",
+      "modeDraft": "Entwurf",
+      "modeProgressive": "Progressiv",
+      "modeComplete": "Vollständig",
+      "notifySubscribers": "Abonnenten benachrichtigen",
+      "validationErrors": "Validierungsfehler:",
+      "scheduleDialog": {
+        "title": "Veröffentlichung planen",
+        "dateLabel": "Datum & Uhrzeit planen",
+        "cancel": "Abbrechen",
+        "confirm": "Planung bestätigen"
+      },
+      "newsletterDialog": {
+        "title": "Newsletter-Vorschau",
+        "subject": "Betreff: Neue {{phase}} veröffentlicht für {{eventCode}}",
+        "contentPreview": "Newsletter-Inhaltsvorschau für {{phase}}-Phase...",
+        "close": "Schließen",
+        "sendTest": "Test-E-Mail senden"
+      },
+      "accessibility": {
+        "publishingPhase": "Veröffentliche {{phase}}",
+        "publishingMode": "Veröffentlichungsmodus",
+        "notifySubscribers": "Abonnenten bei Veröffentlichung benachrichtigen"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Bereit zur Veröffentlichung",
+      "notReadyToPublish": "Nicht bereit zur Veröffentlichung",
+      "eventTopic": "Veranstaltungsthema",
+      "speakerLineup": "Referenten-Aufstellung",
+      "sessionTimings": "Session-Zeitplan",
+      "complete": "Vollständig",
+      "incomplete": "Unvollständig ({{assigned}}/{{total}} Sessions zugewiesen)",
+      "ready": "Bereit ({{assigned}}/{{total}} Sessions zugewiesen)",
+      "notRequired": "Nicht erforderlich",
+      "assignTimings": "Zeitplan zuweisen",
+      "expandUnassigned": "Nicht zugewiesene Sessions erweitern",
+      "collapseUnassigned": "Nicht zugewiesene Sessions einklappen",
+      "accessibility": {
+        "readyToPublish": "Bereit zur Veröffentlichung",
+        "notReadyToPublish": "Nicht bereit zur Veröffentlichung",
+        "eventTopic": "Veranstaltungsthema-Validierung",
+        "speakerLineup": "Referenten-Aufstellung-Validierung",
+        "sessionTimings": "Session-Zeitplan-Validierung"
+      }
+    },
+    "preview": {
+      "desktop": "Desktop",
+      "mobile": "Mobil",
+      "print": "Druck",
+      "refresh": "Aktualisieren",
+      "refreshing": "Vorschau wird aktualisiert...",
+      "retry": "Erneut versuchen",
+      "loadFailed": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+      "previewMode": "Vorschau-Modus: {{mode}} | Phase: {{phase}}",
+      "deviceDimensions": "Gerät: {{device}} ({{width}} x {{height}})",
+      "switchedTo": "Zu {{device}}-Vorschau gewechselt",
+      "accessibility": {
+        "devicePreviewMode": "Geräte-Vorschaumodus",
+        "desktopPreview": "Desktop-Vorschau",
+        "mobilePreview": "Mobil-Vorschau",
+        "printPreview": "Druck-Vorschau",
+        "refreshPreview": "Vorschau aktualisieren",
+        "eventContentPreview": "Veranstaltungsinhalts-Vorschau"
+      }
+    },
+    "timeline": {
+      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "topic": "Thema",
+      "speakers": "Referenten",
+      "agenda": "Agenda",
+      "updates": "Aktualisierungen",
+      "now": "Jetzt",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}",
+      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
+      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
+      "days": "{{count}} Tage"
+    },
+    "versionControl": {
+      "title": "Versionsverlauf",
+      "version": "Version",
+      "published": "Veröffentlicht",
+      "phase": "Phase",
+      "publisher": "Veröffentlicht von",
+      "status": "Status",
+      "actions": "Aktionen",
+      "rollback": "Zurücksetzen",
+      "current": "Aktuell",
+      "cdnCleared": "CDN gelöscht",
+      "cdnPending": "CDN ausstehend",
+      "cdnFailed": "CDN fehlgeschlagen",
+      "cdnUnknown": "Unbekannt",
+      "cdnInvalidationId": "CDN-Invalidierungs-ID: {{id}}",
+      "noVersions": "Kein Versionsverlauf verfügbar",
+      "rollbackDialog": {
+        "title": "Zurücksetzen bestätigen",
+        "message": "Sind Sie sicher, dass Sie auf diese Version zurücksetzen möchten?",
+        "versionLabel": "Version:",
+        "phaseLabel": "Phase:",
+        "publishedLabel": "Veröffentlicht:",
+        "publisherLabel": "Veröffentlicht von:",
+        "warning": "Diese Aktion wird den CloudFront CDN-Cache invalidieren und kann einige Minuten dauern.",
+        "cancel": "Abbrechen",
+        "confirm": "Zurücksetzen bestätigen",
+        "confirming": "Setze zurück..."
+      }
+    }
   },
   "notifications": {
     "title": "Benachrichtigungen & Erinnerungen",
@@ -480,6 +598,12 @@
   },
   "public": {
     "comingSoon": "Demnächst...",
+    "preview": {
+      "title": "Vorschau-Modus",
+      "phase": "Phase",
+      "mode": "Modus",
+      "description": "Unveröffentlichte Änderungen werden angezeigt - so wird die Veranstaltung nach der Veröffentlichung erscheinen"
+    },
     "logistics": {
       "title": "Veranstaltungsdetails",
       "date": "Datum",

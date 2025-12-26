@@ -19,6 +19,7 @@ import {
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PublishingPhase } from '@/types/event.types';
 
 interface ValidationItem {
@@ -46,6 +47,7 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
   phase,
   validation,
 }) => {
+  const { t } = useTranslation('events');
   const navigate = useNavigate();
   const [expandedSessions, setExpandedSessions] = useState(false);
   const [statusAnnouncement, setStatusAnnouncement] = useState('');
@@ -78,8 +80,12 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
 
   // Update screen reader announcement when validation changes
   useEffect(() => {
-    setStatusAnnouncement(overallValid ? 'Ready to publish' : 'Not ready to publish');
-  }, [overallValid]);
+    setStatusAnnouncement(
+      overallValid
+        ? t('publishing.validation.accessibility.readyToPublish')
+        : t('publishing.validation.accessibility.notReadyToPublish')
+    );
+  }, [overallValid, t]);
 
   const handleAssignTimingsClick = () => {
     navigate(`/organizer/events/${eventCode}/slot-assignment`);
@@ -100,9 +106,9 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
     const { assignedCount = 0, totalCount = 0, isValid } = validation.sessions;
 
     if (isValid) {
-      return `Ready (${assignedCount}/${totalCount} sessions assigned)`;
+      return t('publishing.validation.ready', { assigned: assignedCount, total: totalCount });
     }
-    return `Incomplete (${assignedCount}/${totalCount} sessions assigned)`;
+    return t('publishing.validation.incomplete', { assigned: assignedCount, total: totalCount });
   };
 
   return (
@@ -122,12 +128,12 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
           {overallValid ? (
             <>
               <CheckIcon color="success" />
-              Ready to Publish
+              {t('publishing.validation.readyToPublish')}
             </>
           ) : (
             <>
               <WarningIcon color="warning" />
-              Not Ready to Publish
+              {t('publishing.validation.notReadyToPublish')}
             </>
           )}
         </Typography>
@@ -139,22 +145,27 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
         <ListItem
           data-testid="validation-item-topic"
           data-required={requiredItems.topic}
-          aria-label="Event Topic Validation"
+          aria-label={t('publishing.validation.accessibility.eventTopic')}
         >
           <ListItemIcon>{renderValidationIcon('topic', validation.topic)}</ListItemIcon>
           <ListItemText
-            primary="Event Topic"
+            primary={t('publishing.validation.eventTopic')}
             secondary={
               requiredItems.topic ? (
                 validation.topic.isValid ? (
-                  'Complete'
+                  t('publishing.validation.complete')
                 ) : (
                   <span style={{ color: 'error.main' }}>{validation.topic.errors.join(', ')}</span>
                 )
               ) : (
-                <Chip label="Not Required" size="small" sx={{ opacity: 0.6 }} />
+                <Chip
+                  label={t('publishing.validation.notRequired')}
+                  size="small"
+                  sx={{ opacity: 0.6 }}
+                />
               )
             }
+            secondaryTypographyProps={{ component: 'div' }}
           />
         </ListItem>
 
@@ -162,24 +173,29 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
         <ListItem
           data-testid="validation-item-speakers"
           data-required={requiredItems.speakers}
-          aria-label="Speaker Lineup Validation"
+          aria-label={t('publishing.validation.accessibility.speakerLineup')}
         >
           <ListItemIcon>{renderValidationIcon('speakers', validation.speakers)}</ListItemIcon>
           <ListItemText
-            primary="Speaker Lineup"
+            primary={t('publishing.validation.speakerLineup')}
             secondary={
               requiredItems.speakers ? (
                 validation.speakers.isValid ? (
-                  'Complete'
+                  t('publishing.validation.complete')
                 ) : (
                   <span style={{ color: 'error.main' }}>
                     {validation.speakers.errors.join(', ')}
                   </span>
                 )
               ) : (
-                <Chip label="Not Required" size="small" sx={{ opacity: 0.6 }} />
+                <Chip
+                  label={t('publishing.validation.notRequired')}
+                  size="small"
+                  sx={{ opacity: 0.6 }}
+                />
               )
             }
+            secondaryTypographyProps={{ component: 'div' }}
           />
         </ListItem>
 
@@ -187,13 +203,13 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
         <ListItem
           data-testid="validation-item-sessions"
           data-required={requiredItems.sessions}
-          aria-label="Session Timings Validation"
+          aria-label={t('publishing.validation.accessibility.sessionTimings')}
         >
           <ListItemIcon>{renderValidationIcon('sessions', validation.sessions)}</ListItemIcon>
           <ListItemText
             primary={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span>Session Timings</span>
+                <span>{t('publishing.validation.sessionTimings')}</span>
                 {!validation.sessions.isValid &&
                   validation.sessions.unassignedSessions &&
                   validation.sessions.unassignedSessions.length > 0 && (
@@ -203,8 +219,8 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
                       data-testid="expand-sessions-button"
                       aria-label={
                         expandedSessions
-                          ? 'Collapse unassigned sessions'
-                          : 'Expand unassigned sessions'
+                          ? t('publishing.validation.collapseUnassigned')
+                          : t('publishing.validation.expandUnassigned')
                       }
                     >
                       {expandedSessions ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -224,7 +240,7 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
                         onClick={handleAssignTimingsClick}
                         sx={{ ml: 1 }}
                       >
-                        Assign Timings
+                        {t('publishing.validation.assignTimings')}
                       </Button>
                     )}
                   </Box>
@@ -241,9 +257,14 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
                   )}
                 </>
               ) : (
-                <Chip label="Not Required" size="small" sx={{ opacity: 0.6 }} />
+                <Chip
+                  label={t('publishing.validation.notRequired')}
+                  size="small"
+                  sx={{ opacity: 0.6 }}
+                />
               )
             }
+            secondaryTypographyProps={{ component: 'div' }}
           />
         </ListItem>
       </List>

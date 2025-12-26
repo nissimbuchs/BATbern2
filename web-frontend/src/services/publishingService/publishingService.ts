@@ -43,10 +43,7 @@ async function publishPhase(
   phase: PublishingPhase,
   options?: PublishRequest
 ): Promise<PublishPhaseResponse> {
-  const response = await apiClient.post(
-    `/api/v1/events/${eventCode}/publish/${phase}`,
-    options || {}
-  );
+  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`, options || {});
   return response.data;
 }
 
@@ -61,7 +58,7 @@ async function unpublishPhase(
   eventCode: string,
   phase: PublishingPhase
 ): Promise<UnpublishPhaseResponse> {
-  const response = await apiClient.post(`/api/v1/events/${eventCode}/unpublish/${phase}`);
+  const response = await apiClient.post(`/events/${eventCode}/unpublish/${phase}`);
   return response.data;
 }
 
@@ -78,7 +75,7 @@ async function getPublishPreview(
   phase: PublishingPhase,
   mode: PublishingMode
 ): Promise<PublishPreviewResponse> {
-  const response = await apiClient.get(`/api/v1/events/${eventCode}/publish/${phase}/preview`, {
+  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`, {
     params: { mode },
   });
   return response.data;
@@ -91,7 +88,7 @@ async function getPublishPreview(
  * @returns Array of publishing versions (newest first)
  */
 async function getVersionHistory(eventCode: string): Promise<VersionHistoryResponse> {
-  const response = await apiClient.get(`/api/v1/events/${eventCode}/publishing/versions`);
+  const response = await apiClient.get(`/events/${eventCode}/publish/versions`);
   return response.data;
 }
 
@@ -110,7 +107,7 @@ async function rollbackVersion(
   options: RollbackRequest
 ): Promise<RollbackResponse> {
   const response = await apiClient.post(
-    `/api/v1/events/${eventCode}/publishing/versions/${versionNumber}/rollback`,
+    `/events/${eventCode}/publish/rollback/${versionNumber}`,
     options
   );
   return response.data;
@@ -123,7 +120,7 @@ async function rollbackVersion(
  * @returns Change log entries
  */
 async function getChangeLog(eventCode: string): Promise<ChangeLogResponse> {
-  const response = await apiClient.get(`/api/v1/events/${eventCode}/publishing/changelog`);
+  const response = await apiClient.get(`/events/${eventCode}/publish/changelog`);
   return response.data;
 }
 
@@ -131,19 +128,16 @@ async function getChangeLog(eventCode: string): Promise<ChangeLogResponse> {
  * Schedule auto-publish for a phase
  *
  * @param eventCode - Event code
- * @param phase - Phase to auto-publish
+ * @param _phase - Phase to auto-publish (reserved for future use)
  * @param options - Schedule options (scheduledDate, notifySubscribers)
  * @returns Auto-publish schedule details with AWS EventBridge rule ARN
  */
 async function scheduleAutoPublish(
   eventCode: string,
-  phase: PublishingPhase,
+  _phase: PublishingPhase,
   options: AutoPublishScheduleRequest
 ): Promise<AutoPublishScheduleResponse> {
-  const response = await apiClient.post(
-    `/api/v1/events/${eventCode}/publishing/schedule/${phase}`,
-    options
-  );
+  const response = await apiClient.post(`/events/${eventCode}/publish/schedule`, options);
   return response.data;
 }
 
@@ -158,9 +152,9 @@ async function cancelAutoPublish(
   eventCode: string,
   phase: PublishingPhase
 ): Promise<CancelAutoPublishResponse> {
-  const response = await apiClient.delete(
-    `/api/v1/events/${eventCode}/publishing/schedule/${phase}`
-  );
+  // TODO: Backend will use phase parameter when implementing phase-specific schedules
+  console.debug('cancelAutoPublish called for phase:', phase);
+  const response = await apiClient.delete(`/events/${eventCode}/publish/schedule`);
   return response.data;
 }
 

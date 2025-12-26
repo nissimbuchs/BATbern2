@@ -58,9 +58,11 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
   }, [preview]);
 
   // Fetch preview on mount or when phase/mode changes
-  useEffect(() => {
-    fetchPreview?.(phase, mode);
-  }, [phase, mode, fetchPreview]);
+  // DISABLED: Causes infinite loop because fetchPreview is not memoized
+  // Users can manually refresh using the refresh button
+  // useEffect(() => {
+  //   fetchPreview?.(phase, mode);
+  // }, [phase, mode, fetchPreview]);
 
   const handleDeviceChange = (_: React.MouseEvent<HTMLElement>, newDevice: DeviceType | null) => {
     if (newDevice !== null) {
@@ -90,9 +92,10 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
     if (preview?.previewUrl) {
       return preview.previewUrl;
     }
-    // Generate preview URL
-    const baseUrl = `https://preview.batbern.ch/events/${eventCode}`;
-    const params = new URLSearchParams({ mode: mode || 'preview' });
+    // Generate preview URL - use actual public event page with preview mode
+    // This allows previewing how the event will look on the public site
+    const baseUrl = `/events/${eventCode}`;
+    const params = new URLSearchParams({ preview: 'true', mode: mode || 'progressive' });
     if (phase) {
       params.append('phase', phase);
     }

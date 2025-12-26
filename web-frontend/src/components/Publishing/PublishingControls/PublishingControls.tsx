@@ -22,6 +22,7 @@ import {
   Schedule as ScheduleIcon,
   Email as EmailIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import { PublishingPhase, PublishingMode, PublishValidationError } from '@/types/event.types';
 
@@ -36,6 +37,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   currentPhase,
   validationErrors = [],
 }) => {
+  const { t } = useTranslation('events');
   const { publishPhase, scheduleAutoPublish, isPublishing, isScheduling } =
     usePublishing(eventCode);
 
@@ -69,7 +71,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
 
   const getPublishButtonLabel = () => {
     const phaseLabel = currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1);
-    return `Publish ${phaseLabel}`;
+    return t('publishing.controls.publishPhase', { phase: phaseLabel });
   };
 
   return (
@@ -77,7 +79,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
       {/* Screen reader announcement for publish action */}
       {isAnnouncingPublish && (
         <div role="status" aria-live="polite" style={{ position: 'absolute', left: '-10000px' }}>
-          Publishing {currentPhase}
+          {t('publishing.controls.accessibility.publishingPhase', { phase: currentPhase })}
         </div>
       )}
 
@@ -89,7 +91,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           sx={{ mb: 2 }}
         >
           <Typography variant="subtitle2" gutterBottom>
-            Validation Errors:
+            {t('publishing.controls.validationErrors')}
           </Typography>
           {validationErrors.map((error, index) => (
             <Typography key={index} variant="body2">
@@ -101,8 +103,12 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
 
       {/* Mode Selection */}
       <FormControl component="fieldset" sx={{ mb: 3 }}>
-        <FormLabel component="legend" id="publishing-mode-label" aria-label="Publishing Mode">
-          Mode
+        <FormLabel
+          component="legend"
+          id="publishing-mode-label"
+          aria-label={t('publishing.controls.accessibility.publishingMode')}
+        >
+          {t('publishing.controls.mode')}
         </FormLabel>
         <RadioGroup
           aria-labelledby="publishing-mode-label"
@@ -110,9 +116,21 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           onChange={(e) => setPublishingMode(e.target.value as PublishingMode)}
           row
         >
-          <FormControlLabel value="draft" control={<Radio />} label="Draft" />
-          <FormControlLabel value="progressive" control={<Radio />} label="Progressive" />
-          <FormControlLabel value="complete" control={<Radio />} label="Complete" />
+          <FormControlLabel
+            value="draft"
+            control={<Radio />}
+            label={t('publishing.controls.modeDraft')}
+          />
+          <FormControlLabel
+            value="progressive"
+            control={<Radio />}
+            label={t('publishing.controls.modeProgressive')}
+          />
+          <FormControlLabel
+            value="complete"
+            control={<Radio />}
+            label={t('publishing.controls.modeComplete')}
+          />
         </RadioGroup>
       </FormControl>
 
@@ -122,10 +140,12 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           <Checkbox
             checked={notifySubscribers}
             onChange={(e) => setNotifySubscribers(e.target.checked)}
-            inputProps={{ 'aria-label': 'Notify subscribers when publishing' }}
+            inputProps={{
+              'aria-label': t('publishing.controls.accessibility.notifySubscribers'),
+            }}
           />
         }
-        label="Notify subscribers"
+        label={t('publishing.controls.notifySubscribers')}
         sx={{ mb: 2, display: 'block' }}
       />
 
@@ -140,7 +160,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           aria-label={getPublishButtonLabel()}
         >
           {isPublishing ? (
-            <span data-testid="publishing-loading-text">Publishing...</span>
+            <span data-testid="publishing-loading-text">{t('publishing.controls.publishing')}</span>
           ) : (
             getPublishButtonLabel()
           )}
@@ -152,7 +172,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           onClick={() => setShowScheduleDialog(true)}
           disabled={isScheduling}
         >
-          Schedule Publish
+          {t('publishing.controls.schedulePublish')}
         </Button>
 
         <Button
@@ -160,17 +180,17 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           startIcon={<EmailIcon />}
           onClick={() => setShowNewsletterPreview(true)}
         >
-          Preview Newsletter
+          {t('publishing.controls.previewNewsletter')}
         </Button>
       </Box>
 
       {/* Schedule Publish Dialog */}
       <Dialog open={showScheduleDialog} onClose={() => setShowScheduleDialog(false)}>
-        <DialogTitle>Schedule Publishing</DialogTitle>
+        <DialogTitle>{t('publishing.controls.scheduleDialog.title')}</DialogTitle>
         <DialogContent>
           <TextField
             inputProps={{ 'data-testid': 'schedule-datetime-picker' }}
-            label="Schedule Date & Time"
+            label={t('publishing.controls.scheduleDialog.dateLabel')}
             type="datetime-local"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
@@ -182,9 +202,11 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowScheduleDialog(false)}>
+            {t('publishing.controls.scheduleDialog.cancel')}
+          </Button>
           <Button onClick={handleScheduleConfirm} variant="contained">
-            Confirm Schedule
+            {t('publishing.controls.scheduleDialog.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -196,20 +218,25 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Newsletter Preview</DialogTitle>
+        <DialogTitle>{t('publishing.controls.newsletterDialog.title')}</DialogTitle>
         <DialogContent data-testid="newsletter-preview-modal">
           <Typography variant="h6" gutterBottom>
-            Subject: New {currentPhase} published for {eventCode}
+            {t('publishing.controls.newsletterDialog.subject', {
+              phase: currentPhase,
+              eventCode,
+            })}
           </Typography>
           <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
             <Typography variant="body1">
-              Newsletter content preview for {currentPhase} phase...
+              {t('publishing.controls.newsletterDialog.contentPreview', { phase: currentPhase })}
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowNewsletterPreview(false)}>Close</Button>
-          <Button variant="contained">Send Test Email</Button>
+          <Button onClick={() => setShowNewsletterPreview(false)}>
+            {t('publishing.controls.newsletterDialog.close')}
+          </Button>
+          <Button variant="contained">{t('publishing.controls.newsletterDialog.sendTest')}</Button>
         </DialogActions>
       </Dialog>
     </Box>
