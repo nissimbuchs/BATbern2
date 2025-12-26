@@ -232,6 +232,7 @@
     "dropzoneHint": "oder klicken Sie, um eine Datei auszuwählen",
     "fileLoaded": "Datei geladen: {{name}} ({{size}} KB)",
     "preview": "Vorschau: {{count}} Teilnehmer zum Importieren bereit",
+    "previewLimitation": "Hinweis: Die Vorschau zeigt nur bestehende Benutzer anhand des Benutzernamens. Beim Import können Benutzer auch anhand des Namens (Vor- + Nachname) abgeglichen werden, wenn eindeutig. Einige als 'Neu' angezeigte Teilnehmer können mit bestehenden Benutzern anhand des Namens übereinstimmen.",
     "importButton": "{{count}} Teilnehmer importieren",
     "startImport": "Import starten",
     "progress": "Importiere: {{current}} / {{total}}",

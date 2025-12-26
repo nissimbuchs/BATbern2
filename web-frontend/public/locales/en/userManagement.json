@@ -232,6 +232,7 @@
     "dropzoneHint": "or click to select file",
     "fileLoaded": "File loaded: {{name}} ({{size}} KB)",
     "preview": "Preview: {{count}} participants ready to import",
+    "previewLimitation": "Note: Preview shows existing users by username match only. During import, users may also be matched by name (first + last) if unambiguous. Some participants shown as 'New' may match existing users by name.",
     "importButton": "Import {{count}} Participants",
     "startImport": "Start Import",
     "progress": "Importing: {{current}} / {{total}}",

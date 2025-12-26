@@ -200,6 +200,7 @@ public class RegistrationService {
         userRequest.setEmail(request.getParticipantEmail());
         userRequest.setFirstName(request.getFirstName());
         userRequest.setLastName(request.getLastName());
+        userRequest.setCompanyId(request.getCompanyId()); // Story 3.2: Include company from batch import
         userRequest.setCognitoSync(false); // ADR-005: Create anonymous user for historical data
 
         GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);

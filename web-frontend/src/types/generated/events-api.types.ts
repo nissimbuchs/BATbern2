@@ -1865,6 +1865,13 @@ export interface components {
        * @example Bürki
        */
       lastName: string;
+      /**
+       * @description Company identifier (company name).
+       *     Optional for participants without company affiliation.
+       *     Story 3.2: Batch import includes company information from CSV.
+       * @example Centris AG
+       */
+      companyId?: string;
       /** @description Array of event registrations (max 100 per batch) */
       registrations: components['schemas']['BatchRegistrationItem'][];
     };

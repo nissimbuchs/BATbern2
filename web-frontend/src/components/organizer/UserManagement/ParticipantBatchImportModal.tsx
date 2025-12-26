@@ -346,9 +346,14 @@ export function ParticipantBatchImportModal({
 
             {/* Preview info when showing preview */}
             {previewCandidates.length > 0 && candidates.length === 0 && (
-              <Alert severity="info" sx={{ mb: 2, mt: 2 }}>
-                {t('participantImport.preview', { count: previewCandidates.length })}
-              </Alert>
+              <>
+                <Alert severity="info" sx={{ mb: 2, mt: 2 }}>
+                  {t('participantImport.preview', { count: previewCandidates.length })}
+                </Alert>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {t('participantImport.previewLimitation')}
+                </Alert>
+              </>
             )}
 
             <TableContainer

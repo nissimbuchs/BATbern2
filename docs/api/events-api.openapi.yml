@@ -3950,6 +3950,14 @@ components:
           maxLength: 100
           description: Participant last name
           example: "Bürki"
+        companyId:
+          type: string
+          maxLength: 100
+          description: |
+            Company identifier (company name).
+            Optional for participants without company affiliation.
+            Story 3.2: Batch import includes company information from CSV.
+          example: "Centris AG"
         registrations:
           type: array
           minItems: 1

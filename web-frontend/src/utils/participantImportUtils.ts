@@ -157,6 +157,7 @@ export function convertParticipantToRegistrationRequest(
     participantEmail: email,
     firstName: participant.FirstName,
     lastName: participant.LastName,
+    companyId: participant.companyKey?.trim() || undefined, // Story 3.2: Include company from CSV
     registrations,
   };
 }
