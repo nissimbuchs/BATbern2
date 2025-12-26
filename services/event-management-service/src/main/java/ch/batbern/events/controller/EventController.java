@@ -311,10 +311,9 @@ public class EventController {
                     response.put("sessions", expandSessions(event));
                     break;
                 case "registrations":
-                    // Include actual registration count from registrations table
+                    // Override currentAttendeeCount with actual count from registrations table
                     long registrationCount = registrationRepository.countByEventId(event.getId());
                     response.put("currentAttendeeCount", (int) registrationCount);
-                    response.put("registrationCount", (int) registrationCount);
                     break;
                 // Additional resources can be added here as needed
                 default:
