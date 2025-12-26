@@ -54,6 +54,12 @@ class EventWorkflowStateMachineTest {
     @Mock
     private DomainEventPublisher eventPublisher;
 
+    @Mock
+    private ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+
+    @Mock
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
     @InjectMocks
     private EventWorkflowStateMachine stateMachine;
 
@@ -185,6 +191,8 @@ class EventWorkflowStateMachineTest {
         // Given: Event that hasn't met minimum speaker threshold
         testEvent.setWorkflowState(EventWorkflowState.THRESHOLD_CHECK);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
+        // Mock speaker pool to return 0 speakers (threshold not met)
+        when(speakerPoolRepository.countByEventIdAndStatus(any(UUID.class), any())).thenReturn(0L);
 
         // When/Then: Transition to SLOT_ASSIGNMENT should fail
         assertThatThrownBy(() ->
@@ -204,13 +212,16 @@ class EventWorkflowStateMachineTest {
         // Given: Event with unassigned slots
         testEvent.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
+        // Mock session repository: 5 total sessions, 3 with timing assigned
+        when(sessionRepository.countByEventId(any(UUID.class))).thenReturn(5L);
+        when(sessionRepository.countByEventIdAndStartTimeNotNull(any(UUID.class))).thenReturn(3L);
 
         // When/Then: Transition to AGENDA_FINALIZED should fail
         assertThatThrownBy(() ->
                 stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_FINALIZED, organizerUsername)
         )
                 .isInstanceOf(WorkflowValidationException.class)
-                .hasMessageContaining("Not all slots assigned");
+                .hasMessageContaining("not all sessions have timing assigned");
 
         // Verify event was NOT saved
         verify(eventRepository, never()).save(any(Event.class));
