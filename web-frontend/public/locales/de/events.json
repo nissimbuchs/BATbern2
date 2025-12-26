@@ -341,6 +341,7 @@
     "manageMaterials": "Materialien verwalten",
     "viewFullAgenda": "Vollständige Agenda anzeigen",
     "manageSpeakerAssignments": "Referenten-Zuweisungen verwalten",
+    "manageSlotAssignments": "Slot-Zuweisungen verwalten",
     "autoAssignSpeakers": "Referenten automatisch zuweisen",
     "autoAssignConfirmTitle": "Referenten automatisch zuweisen",
     "autoAssignConfirmMessage": "Dies wird automatisch Referenten basierend auf Themenexpertise und Verfügbarkeit optimalen Zeitfenstern zuweisen. Bestehende Zuweisungen werden überschrieben. Fortfahren?",
@@ -669,5 +670,100 @@
         "saveFailed": "Session konnte nicht gespeichert werden"
       }
     }
+  },
+  "slotAssignment": {
+    "title": "Slot-Zuweisung",
+    "pageTitle": "Referenten zu Zeitfenstern zuweisen",
+    "pageDescription": "Ziehen Sie bestätigte Referenten zu verfügbaren Zeitfenstern, um den Veranstaltungsplan zu erstellen",
+    "backToEvent": "Zurück zur Veranstaltung",
+    "returnToEventOverview": "Zurück zur Veranstaltungsübersicht",
+    "helpBanner": {
+      "title": "So funktioniert's:",
+      "description": "Ziehen Sie Referentenkarten aus dem linken Panel zu Zeitfenstern auf der rechten Seite. Das System hebt Präferenz-Übereinstimmungen hervor und warnt Sie vor Konflikten. Sobald alle Referenten zugewiesen sind, wird der Zeitplan automatisch gespeichert."
+    },
+    "timeline": {
+      "title": "Sitzungs-Zeitplan",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}% Übereinstimmung"
+    },
+    "speakerPool": {
+      "title": "Referenten-Pool",
+      "assigned": "{{count}} von {{total}} zugewiesen ({{percent}}%)",
+      "remaining": "{{count}} verbleibend",
+      "filters": {
+        "all": "Alle",
+        "assigned": "Zugewiesen",
+        "unassigned": "Nicht zugewiesen"
+      },
+      "emptyState": {
+        "title": "Alle Sitzungen zugewiesen!",
+        "message": "Großartige Arbeit! Alle Referenten wurden Zeitfenstern zugewiesen."
+      },
+      "viewPreferences": "Präferenzen"
+    },
+    "actions": {
+      "autoAssign": "Auto-Zuweisung",
+      "clearAll": "Alle löschen",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen"
+    },
+    "modals": {
+      "autoAssign": {
+        "title": "Auto-Zuweisung von Sitzungen",
+        "message": "Algorithmus für Auto-Zuweisung auswählen:",
+        "algorithms": {
+          "preferenceFirst": "Präferenz zuerst",
+          "timeBalance": "Zeit-Balance"
+        }
+      },
+      "clearAll": {
+        "title": "Alle Zuweisungen löschen",
+        "message": "Sind Sie sicher, dass Sie alle Zeitzuweisungen löschen möchten?"
+      }
+    },
+    "conflicts": {
+      "title": "Zeitkonflikt erkannt",
+      "types": {
+        "room_overlap": "Raum-Überschneidung",
+        "speaker_double_booked": "Referent doppelt gebucht",
+        "speaker_unavailable": "Referent nicht verfügbar"
+      },
+      "severity": {
+        "error": "FEHLER",
+        "warning": "WARNUNG"
+      },
+      "timeRange": "Konflikt-Zeitbereich",
+      "start": "Start",
+      "end": "Ende",
+      "conflictingSession": "Konflikt-Sitzung",
+      "resolutionOptions": "Lösungsoptionen",
+      "resolutionMessage": "Wählen Sie ein anderes Zeitfenster oder einen anderen Raum, um diesen Konflikt zu lösen.",
+      "chooseDifferentSlot": "Anderes Zeitfenster wählen"
+    },
+    "preferences": {
+      "title": "Referenten-Präferenzen",
+      "close": "Schließen",
+      "timePreferences": "Zeit-Präferenzen",
+      "preferredTime": "Bevorzugte Tageszeit",
+      "unavailableTimes": "Nicht verfügbare Zeiten",
+      "avRequirements": "AV-Anforderungen",
+      "setupNotes": "Raum-Setup-Notizen",
+      "slotMatchScore": "Zeitfenster-Übereinstimmung",
+      "matchPercent": "{{percent}}% Übereinstimmung",
+      "times": {
+        "morning": "Morgen",
+        "afternoon": "Nachmittag",
+        "evening": "Abend",
+        "any": "Beliebig"
+      },
+      "equipment": {
+        "microphone": "Mikrofon",
+        "projector": "Projektor",
+        "recording": "Aufzeichnung",
+        "whiteboard": "Whiteboard"
+      }
+    },
+    "loading": "Lädt...",
+    "dragInstructions": "Ziehen Sie Referenten zu Zeitfenstern, um sie zuzuweisen"
   }
 }

@@ -30,6 +30,7 @@ import {
   Cancel,
   CalendarToday,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 interface SpeakerPreference {
   preferredTimeOfDay?: 'morning' | 'afternoon' | 'evening';
@@ -73,6 +74,8 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
   hoveredSlot,
   matchScore,
 }) => {
+  const { t } = useTranslation('events');
+
   if (!speaker) {
     return null;
   }
@@ -111,7 +114,9 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
         {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 3 }}>
           <Box>
-            <Typography variant="h6">{speaker.displayName} - Preferences</Typography>
+            <Typography variant="h6">
+              {speaker.displayName} - {t('slotAssignment.preferences.title')}
+            </Typography>
             {speaker.companyName && (
               <Typography variant="body2" color="text.secondary">
                 {speaker.companyName}
@@ -129,17 +134,14 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
           {/* Time Preferences */}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Time Preferences
+              {t('slotAssignment.preferences.timePreferences')}
             </Typography>
 
             {/* Preferred Time */}
             {preferences?.preferredTimeOfDay && (
               <Chip
                 icon={getTimeIcon(preferences.preferredTimeOfDay)}
-                label={
-                  preferences.preferredTimeOfDay.charAt(0).toUpperCase() +
-                  preferences.preferredTimeOfDay.slice(1)
-                }
+                label={t(`slotAssignment.preferences.times.${preferences.preferredTimeOfDay}`)}
                 color="success"
                 data-testid={`preferred-icon-${preferences.preferredTimeOfDay}`}
                 className="icon-preferred"
@@ -152,7 +154,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
               <Chip
                 key={time}
                 icon={getTimeIcon(time)}
-                label={time.charAt(0).toUpperCase() + time.slice(1)}
+                label={t(`slotAssignment.preferences.times.${time}`)}
                 variant="outlined"
                 data-testid={`neutral-icon-${time}`}
                 className="icon-neutral"
@@ -165,7 +167,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
               <Chip
                 key={time}
                 icon={getTimeIcon(time)}
-                label={time.charAt(0).toUpperCase() + time.slice(1)}
+                label={t(`slotAssignment.preferences.times.${time}`)}
                 color="error"
                 variant="outlined"
                 data-testid={`avoid-icon-${time}`}
@@ -178,7 +180,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
             {preferences?.avoidTimes && preferences.avoidTimes.length > 0 && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Unavailable Times
+                  {t('slotAssignment.preferences.unavailableTimes')}
                 </Typography>
                 {preferences.avoidTimes.map((timeRange, index) => (
                   <Paper
@@ -209,7 +211,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
           {/* A/V Requirements */}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              A/V Requirements
+              {t('slotAssignment.preferences.avRequirements')}
             </Typography>
             <List dense>
               <ListItem>
@@ -221,7 +223,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
                   )}
                 </ListItemIcon>
                 <ListItemText
-                  primary="Microphone"
+                  primary={t('slotAssignment.preferences.equipment.microphone')}
                   data-testid="av-requirement-microphone"
                   className={
                     preferences?.avRequirements?.microphone
@@ -239,7 +241,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
                   )}
                 </ListItemIcon>
                 <ListItemText
-                  primary="Projector"
+                  primary={t('slotAssignment.preferences.equipment.projector')}
                   data-testid="av-requirement-projector"
                   className={
                     preferences?.avRequirements?.projector
@@ -257,7 +259,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
                   )}
                 </ListItemIcon>
                 <ListItemText
-                  primary="Recording"
+                  primary={t('slotAssignment.preferences.equipment.recording')}
                   data-testid="av-requirement-recording"
                   className={
                     preferences?.avRequirements?.recording
@@ -275,7 +277,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
           {preferences?.roomSetupNotes && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Room Setup Notes
+                {t('slotAssignment.preferences.setupNotes')}
               </Typography>
               <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
                 <Typography variant="body2">{preferences.roomSetupNotes}</Typography>
@@ -289,7 +291,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
               <Divider />
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
-                  Slot Match Score
+                  {t('slotAssignment.preferences.slotMatchScore')}
                 </Typography>
                 <Paper
                   data-testid="match-score-indicator"
@@ -303,7 +305,7 @@ export const SpeakerPreferencePanel: React.FC<SpeakerPreferencePanelProps> = ({
                   }}
                 >
                   <Typography variant="h4" fontWeight="bold">
-                    {matchScore}% Match
+                    {t('slotAssignment.preferences.matchPercent', { percent: matchScore })}
                   </Typography>
                   <Typography variant="body2">
                     {hoveredSlot.time} - {hoveredSlot.room}

@@ -40,16 +40,22 @@ public class ConflictDetectionService {
 
     /**
      * Detect room overlap conflict
+     *
+     * @param excludeSessionSlug - Optional session slug to exclude from conflict check (for reassignments)
      */
     public Optional<SchedulingConflict> detectRoomOverlap(String eventCode, Instant startTime,
-                                                          Instant endTime, String room) {
-        log.debug("Checking room overlap for {} at {}-{}", room, startTime, endTime);
+                                                          Instant endTime, String room,
+                                                          String excludeSessionSlug) {
+        log.debug("Checking room overlap for {} at {}-{} (excluding: {})",
+                room, startTime, endTime, excludeSessionSlug);
 
         // Find sessions in same room with overlapping time
         List<Session> sessions = sessionRepository.findByEventCode(eventCode);
         List<UUID> conflictingSessionIds = sessions.stream()
                 .filter(s -> s.getRoom() != null && s.getRoom().equals(room))
                 .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
+                // Exclude the session being updated to allow reassignment
+                .filter(s -> excludeSessionSlug == null || !s.getSessionSlug().equals(excludeSessionSlug))
                 .filter(s -> timesOverlap(s.getStartTime(), s.getEndTime(), startTime, endTime))
                 .map(Session::getId)
                 .toList();

@@ -21,12 +21,14 @@ import {
   Skeleton,
 } from '@mui/material';
 import { DragIndicator, Visibility } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import type { Session } from '@/types/event.types';
 
 export interface UnassignedSpeakersListProps {
   sessions: Session[];
   totalSessions: number;
   onViewPreferences: (username: string) => void;
+  onDragStart?: (session: Session) => (e: React.DragEvent) => void;
   activeFilter?: 'all' | 'assigned' | 'unassigned';
   onFilterChange?: (filter: 'all' | 'assigned' | 'unassigned') => void;
   isLoading?: boolean;
@@ -36,10 +38,12 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   sessions,
   totalSessions,
   onViewPreferences,
+  onDragStart,
   activeFilter = 'unassigned',
   onFilterChange,
   isLoading = false,
 }) => {
+  const { t } = useTranslation('events');
   const assignedCount = totalSessions - sessions.length;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
 
@@ -64,13 +68,17 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
       {/* Header with Progress */}
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Typography variant="h6" gutterBottom>
-          Speaker Pool
+          {t('slotAssignment.speakerPool.title')}
         </Typography>
 
         {/* Progress Indicator */}
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {assignedCount} of {totalSessions} assigned ({progressPercent}%)
+            {t('slotAssignment.speakerPool.assigned', {
+              count: assignedCount,
+              total: totalSessions,
+              percent: progressPercent,
+            })}
           </Typography>
           <LinearProgress
             variant="determinate"
@@ -84,7 +92,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
         {sessions.length > 0 && (
           <Chip
             data-testid="unassigned-badge"
-            label={`${sessions.length} Remaining`}
+            label={t('slotAssignment.speakerPool.remaining', { count: sessions.length })}
             color="warning"
             size="small"
             sx={{ mb: 2 }}
@@ -99,7 +107,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
             variant={activeFilter === 'all' ? 'contained' : 'outlined'}
             className={activeFilter === 'all' ? 'filter-active' : ''}
           >
-            All
+            {t('slotAssignment.speakerPool.filters.all')}
           </Button>
           <Button
             data-testid="filter-assigned"
@@ -107,7 +115,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
             variant={activeFilter === 'assigned' ? 'contained' : 'outlined'}
             className={activeFilter === 'assigned' ? 'filter-active' : ''}
           >
-            Assigned
+            {t('slotAssignment.speakerPool.filters.assigned')}
           </Button>
           <Button
             data-testid="filter-unassigned"
@@ -115,7 +123,7 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
             variant={activeFilter === 'unassigned' ? 'contained' : 'outlined'}
             className={activeFilter === 'unassigned' ? 'filter-active' : ''}
           >
-            Unassigned
+            {t('slotAssignment.speakerPool.filters.unassigned')}
           </Button>
         </ButtonGroup>
       </Box>
@@ -134,10 +142,10 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
             }}
           >
             <Typography variant="h6" color="success.main" gutterBottom>
-              All sessions assigned!
+              {t('slotAssignment.speakerPool.emptyState.title')}
             </Typography>
             <Typography variant="body2">
-              Great work! All speakers have been assigned to time slots.
+              {t('slotAssignment.speakerPool.emptyState.message')}
             </Typography>
           </Box>
         ) : (
@@ -148,12 +156,12 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
               const displayName = speaker
                 ? `${speaker.firstName} ${speaker.lastName}`
                 : 'Unknown Speaker';
-              const companyName = speaker?.company || '';
 
               return (
                 <Card
                   key={session.sessionSlug}
                   draggable
+                  onDragStart={onDragStart?.(session)}
                   role="article"
                   aria-label={`Speaker: ${displayName}`}
                   tabIndex={0}
@@ -191,8 +199,11 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
 
                     {/* Speaker Info */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="subtitle2" noWrap>
-                        {session.title || `${displayName}${companyName ? ` - ${companyName}` : ''}`}
+                      <Typography variant="subtitle2" fontWeight="bold" noWrap>
+                        {session.title}
+                      </Typography>
+                      <Typography variant="caption" display="block" color="text.secondary" noWrap>
+                        {displayName}
                       </Typography>
                     </Box>
 
@@ -205,10 +216,10 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                         onViewPreferences(username);
                       }}
                       data-testid={`view-preferences-${username}`}
-                      aria-label="View Preferences"
+                      aria-label={t('slotAssignment.speakerPool.viewPreferences')}
                       sx={{ flexShrink: 0 }}
                     >
-                      Preferences
+                      {t('slotAssignment.speakerPool.viewPreferences')}
                     </Button>
                   </CardContent>
                 </Card>

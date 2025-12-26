@@ -351,6 +351,7 @@
     "manageMaterials": "Manage Materials",
     "viewFullAgenda": "View Full Agenda",
     "manageSpeakerAssignments": "Manage Speaker Assignments",
+    "manageSlotAssignments": "Manage Slot Assignments",
     "autoAssignSpeakers": "Auto-Assign Speakers",
     "autoAssignConfirmTitle": "Auto-Assign Speakers",
     "autoAssignConfirmMessage": "This will automatically assign speakers to optimal time slots based on topic expertise and availability. Existing assignments will be overwritten. Continue?",
@@ -679,5 +680,100 @@
         "saveFailed": "Failed to save session"
       }
     }
+  },
+  "slotAssignment": {
+    "title": "Slot Assignment",
+    "pageTitle": "Assign Speakers to Time Slots",
+    "pageDescription": "Drag confirmed speakers to available time slots to create the event schedule",
+    "backToEvent": "Back to Event",
+    "returnToEventOverview": "Return to Event Overview",
+    "helpBanner": {
+      "title": "How it works:",
+      "description": "Drag speaker cards from the left panel to time slots on the right. The system will highlight preference matches and warn you of conflicts. Once all speakers are assigned, the schedule will be saved automatically."
+    },
+    "timeline": {
+      "title": "Session Timeline",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}% match"
+    },
+    "speakerPool": {
+      "title": "Speaker Pool",
+      "assigned": "{{count}} of {{total}} assigned ({{percent}}%)",
+      "remaining": "{{count}} Remaining",
+      "filters": {
+        "all": "All",
+        "assigned": "Assigned",
+        "unassigned": "Unassigned"
+      },
+      "emptyState": {
+        "title": "All sessions assigned!",
+        "message": "Great work! All speakers have been assigned to time slots."
+      },
+      "viewPreferences": "Preferences"
+    },
+    "actions": {
+      "autoAssign": "Auto-Assign",
+      "clearAll": "Clear All",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "modals": {
+      "autoAssign": {
+        "title": "Auto-Assign Sessions",
+        "message": "Select algorithm for auto-assignment:",
+        "algorithms": {
+          "preferenceFirst": "Preference-First",
+          "timeBalance": "Time Balance"
+        }
+      },
+      "clearAll": {
+        "title": "Clear All Assignments",
+        "message": "Are you sure you want to clear all timing assignments?"
+      }
+    },
+    "conflicts": {
+      "title": "Timing Conflict Detected",
+      "types": {
+        "room_overlap": "Room Overlap",
+        "speaker_double_booked": "Speaker Double-Booked",
+        "speaker_unavailable": "Speaker Unavailable"
+      },
+      "severity": {
+        "error": "ERROR",
+        "warning": "WARNING"
+      },
+      "timeRange": "Conflict Time Range",
+      "start": "Start",
+      "end": "End",
+      "conflictingSession": "Conflicting Session",
+      "resolutionOptions": "Resolution Options",
+      "resolutionMessage": "Choose a different time slot or room to resolve this conflict.",
+      "chooseDifferentSlot": "Choose Different Slot"
+    },
+    "preferences": {
+      "title": "Speaker Preferences",
+      "close": "Close",
+      "timePreferences": "Time Preferences",
+      "preferredTime": "Preferred Time of Day",
+      "unavailableTimes": "Unavailable Times",
+      "avRequirements": "A/V Requirements",
+      "setupNotes": "Room Setup Notes",
+      "slotMatchScore": "Slot Match Score",
+      "matchPercent": "{{percent}}% Match",
+      "times": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening",
+        "any": "Any"
+      },
+      "equipment": {
+        "microphone": "Microphone",
+        "projector": "Projector",
+        "recording": "Recording",
+        "whiteboard": "Whiteboard"
+      }
+    },
+    "loading": "Loading...",
+    "dragInstructions": "Drag speakers to time slots to assign"
   }
 }

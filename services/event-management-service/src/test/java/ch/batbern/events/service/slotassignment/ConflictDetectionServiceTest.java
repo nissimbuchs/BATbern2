@@ -100,9 +100,9 @@ class ConflictDetectionServiceTest {
         when(sessionRepository.findByEventCode(eventCode))
                 .thenReturn(List.of(sessionA, sessionB));
 
-        // When: detectRoomOverlap(eventCode, startTime, endTime, room)
+        // When: detectRoomOverlap(eventCode, startTime, endTime, room, excludeSessionSlug)
         Optional<SchedulingConflict> conflict = conflictDetectionService.detectRoomOverlap(
-                eventCode, proposedStartTime, proposedEndTime, room
+                eventCode, proposedStartTime, proposedEndTime, room, null
         );
 
         // Then: Returns conflict with type=room_overlap

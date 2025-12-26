@@ -32,6 +32,7 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   AutoAwesome as AutoAssignIcon,
+  Schedule as SlotAssignmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -160,6 +161,10 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     console.log('Auto-assign speakers for:', code);
   };
 
+  const handleManageSlotAssignments = () => {
+    navigate(`/organizer/events/${eventCode}/slot-assignment`);
+  };
+
   // Loading state
   const isLoading = summaryLoading || speakersLoading;
 
@@ -281,13 +286,22 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
           </ToggleButtonGroup>
 
           {currentView === 'sessions' && (
-            <Button
-              variant="outlined"
-              startIcon={<AutoAssignIcon />}
-              onClick={() => handleAutoAssignSpeakers(eventCode)}
-            >
-              {t('events:speakers.autoAssignSpeakers', 'Auto-Assign')}
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                startIcon={<SlotAssignmentIcon />}
+                onClick={handleManageSlotAssignments}
+              >
+                {t('events:speakers.manageSlotAssignments', 'Manage Slot Assignments')}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<AutoAssignIcon />}
+                onClick={() => handleAutoAssignSpeakers(eventCode)}
+              >
+                {t('events:speakers.autoAssignSpeakers', 'Auto-Assign')}
+              </Button>
+            </Stack>
           )}
         </Stack>
       </Paper>

@@ -21,6 +21,7 @@ import {
   Paper,
 } from '@mui/material';
 import { Warning, Error as ErrorIcon, Info } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import type { TimingConflictError } from '@/types/event.types';
 
 export interface ConflictDetectionAlertProps {
@@ -36,15 +37,17 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
   onClose,
   onResolve,
 }) => {
+  const { t } = useTranslation('events');
+
   if (!conflict || !isOpen) {
     return null;
   }
 
   const firstConflict = conflict.conflicts[0];
   const conflictTypeLabels = {
-    room_overlap: 'Room Overlap',
-    speaker_double_booked: 'Speaker Double-Booked',
-    speaker_unavailable: 'Speaker Unavailable',
+    room_overlap: t('slotAssignment.conflicts.types.room_overlap'),
+    speaker_double_booked: t('slotAssignment.conflicts.types.speaker_double_booked'),
+    speaker_unavailable: t('slotAssignment.conflicts.types.speaker_unavailable'),
   };
 
   const conflictSeverity = firstConflict.type === 'speaker_unavailable' ? 'warning' : 'error';
@@ -61,7 +64,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getConflictIcon()}
-          <Typography variant="h6">Timing Conflict Detected</Typography>
+          <Typography variant="h6">{t('slotAssignment.conflicts.title')}</Typography>
         </Box>
       </DialogTitle>
 
@@ -87,7 +90,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
                 />
                 <Chip
                   data-testid="conflict-severity"
-                  label={conflictSeverity.toUpperCase()}
+                  label={t(`slotAssignment.conflicts.severity.${conflictSeverity}`)}
                   className={`severity-${conflictSeverity}`}
                   size="small"
                   sx={{ ml: 1 }}
@@ -99,45 +102,47 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
               </Typography>
 
               {/* Visual Timeline */}
-              <Box
-                data-testid="conflict-timeline"
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: 'background.paper',
-                  borderRadius: 1,
-                  border: 1,
-                  borderColor: conflictSeverity === 'error' ? 'error.light' : 'warning.light',
-                }}
-              >
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Conflict Time Range
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Start
-                    </Typography>
-                    <Typography variant="body2" fontWeight="medium">
-                      {new Date(conf.conflictingTimeRange.start).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      End
-                    </Typography>
-                    <Typography variant="body2" fontWeight="medium">
-                      {new Date(conf.conflictingTimeRange.end).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Typography>
+              {conf.conflictingTimeRange && (
+                <Box
+                  data-testid="conflict-timeline"
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    bgcolor: 'background.paper',
+                    borderRadius: 1,
+                    border: 1,
+                    borderColor: conflictSeverity === 'error' ? 'error.light' : 'warning.light',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" gutterBottom>
+                    {t('slotAssignment.conflicts.timeRange')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('slotAssignment.conflicts.start')}
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {new Date(conf.conflictingTimeRange.start).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('slotAssignment.conflicts.end')}
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {new Date(conf.conflictingTimeRange.end).toLocaleTimeString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
+              )}
 
               {/* Conflicting Session Info */}
               {conf.conflictingSessionSlug && (
@@ -154,7 +159,7 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
                   className="conflicting-slot-highlight"
                 >
                   <Typography variant="caption" color="text.secondary">
-                    Conflicting Session
+                    {t('slotAssignment.conflicts.conflictingSession')}
                   </Typography>
                   <Typography variant="body2" fontWeight="medium">
                     {conf.conflictingSessionSlug}
@@ -167,12 +172,12 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
           {/* Resolution Options */}
           <Box>
             <Typography variant="subtitle2" gutterBottom>
-              Resolution Options
+              {t('slotAssignment.conflicts.resolutionOptions')}
             </Typography>
             <Stack spacing={1}>
               <Alert severity="info" icon={<Info />}>
                 <Typography variant="body2">
-                  Choose a different time slot or room to resolve this conflict.
+                  {t('slotAssignment.conflicts.resolutionMessage')}
                 </Typography>
               </Alert>
             </Stack>
@@ -182,10 +187,10 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
 
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          Cancel
+          {t('slotAssignment.actions.cancel')}
         </Button>
         <Button onClick={onResolve} variant="contained" color="primary">
-          Choose Different Slot
+          {t('slotAssignment.conflicts.chooseDifferentSlot')}
         </Button>
       </DialogActions>
     </Dialog>

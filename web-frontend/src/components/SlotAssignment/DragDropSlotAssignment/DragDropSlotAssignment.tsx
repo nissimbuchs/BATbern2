@@ -9,7 +9,7 @@
  * AC12: Show unassigned speakers list with real-time updates
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Grid,
@@ -25,7 +25,11 @@ import {
   Link,
 } from '@mui/material';
 import { AutoAwesome, ClearAll } from '@mui/icons-material';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
+import { useEvent } from '@/hooks/useEvents';
+import { useEventType } from '@/hooks/useEventTypes';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
 import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
@@ -35,29 +39,16 @@ export interface DragDropSlotAssignmentProps {
   eventCode: string;
 }
 
-// Time slots for timeline (8:00 AM to 8:00 PM)
-const TIME_SLOTS = [
-  '08:00',
-  '09:00',
-  '10:00',
-  '11:00',
-  '12:00',
-  '13:00',
-  '14:00',
-  '15:00',
-  '16:00',
-  '17:00',
-  '18:00',
-  '19:00',
-  '20:00',
-];
-
-const ROOMS = ['Main Hall', 'Conference Room A', 'Conference Room B'];
+// Story 5.7: Single conference room (Main Hall)
+const ROOMS = ['Main Hall'];
 
 export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
+  const { t } = useTranslation('events');
+  const queryClient = useQueryClient();
+
   const {
     unassignedSessions,
-    isLoading,
+    isLoading: sessionsLoading,
     conflict,
     assignedCount,
     totalSessions,
@@ -65,11 +56,126 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     clearConflict,
   } = useSlotAssignment(eventCode);
 
+  // Fetch event to get eventType and all sessions (including assigned)
+  const { data: event, isLoading: eventLoading } = useEvent(eventCode, ['sessions']);
+
+  console.log('[DragDropSlotAssignment] Event data:', {
+    eventCode,
+    eventType: event?.eventType,
+    sessionsCount: event?.sessions?.length,
+  });
+
+  // Fetch event type configuration to get slot definitions
+  const { data: eventTypeConfig, isLoading: eventTypeLoading } = useEventType(
+    event?.eventType || 'FULL_DAY'
+  );
+
+  console.log('[DragDropSlotAssignment] Event type config:', eventTypeConfig);
+
+  // State must be declared before useMemo that depends on it
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
   const [autoAssignModalOpen, setAutoAssignModalOpen] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<{ time: string; room: string } | null>(null);
+  const [speakerFilter, setSpeakerFilter] = useState<'all' | 'assigned' | 'unassigned'>(
+    'unassigned'
+  );
+
+  // Extract assigned sessions from event data
+  const assignedSessions = useMemo(() => {
+    if (!event?.sessions) return [];
+    // Filter sessions that have timing assigned (startTime and endTime are set)
+    return event.sessions.filter((session) => session.startTime && session.endTime && session.room);
+  }, [event?.sessions]);
+
+  // Filter sessions for speaker pool based on active filter
+  const filteredSessions = useMemo(() => {
+    const allSessions = event?.sessions || [];
+
+    switch (speakerFilter) {
+      case 'all':
+        return allSessions;
+      case 'assigned':
+        return assignedSessions;
+      case 'unassigned':
+        return unassignedSessions;
+      default:
+        return unassignedSessions;
+    }
+  }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
+
+  // Generate time slots dynamically from event type configuration (in UTC)
+  const TIME_SLOTS = useMemo(() => {
+    console.log('[TIME_SLOTS] Building slots, eventTypeConfig:', eventTypeConfig);
+
+    if (!eventTypeConfig) {
+      // Fallback to default slots if config not loaded
+      console.warn('[TIME_SLOTS] No eventTypeConfig, using fallback slots');
+      return ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+    }
+
+    const slots: string[] = [];
+    const startTime = eventTypeConfig.typicalStartTime || '09:00';
+    const endTime = eventTypeConfig.typicalEndTime || '17:00';
+    const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
+    const breakCount = eventTypeConfig.breakSlots || 0;
+    const lunchCount = eventTypeConfig.lunchSlots || 0;
+    const totalSlots = eventTypeConfig.maxSlots || 8;
+
+    // Parse start time and create local date
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const currentTime = new Date();
+    currentTime.setHours(startHour, startMinute, 0, 0);
+
+    // Generate slots including session slots + breaks + lunch
+    const totalSlotsWithBreaks = totalSlots + breakCount + lunchCount;
+    for (let i = 0; i < totalSlotsWithBreaks; i++) {
+      const hours = currentTime.getHours().toString().padStart(2, '0');
+      const minutes = currentTime.getMinutes().toString().padStart(2, '0');
+      const timeSlot = `${hours}:${minutes}`;
+
+      // Only add if before end time
+      const [endHour, endMinute] = endTime.split(':').map(Number);
+      if (
+        currentTime.getHours() < endHour ||
+        (currentTime.getHours() === endHour && currentTime.getMinutes() < endMinute)
+      ) {
+        slots.push(timeSlot);
+      }
+
+      // Move to next slot
+      currentTime.setMinutes(currentTime.getMinutes() + slotDurationMinutes);
+    }
+
+    console.log('[TIME_SLOTS generated]', slots);
+    return slots;
+  }, [eventTypeConfig]);
+
+  // Get session assigned to a specific time slot and room
+  const getSessionForSlot = (time: string, room: string): Session | undefined => {
+    return assignedSessions.find((session) => {
+      if (!session.startTime || session.room !== room) return false;
+
+      // Parse session start time to get HH:MM in LOCAL time (timeline uses local time)
+      const sessionStartTime = new Date(session.startTime);
+      const sessionHours = sessionStartTime.getHours().toString().padStart(2, '0');
+      const sessionMinutes = sessionStartTime.getMinutes().toString().padStart(2, '0');
+      const sessionTime = `${sessionHours}:${sessionMinutes}`;
+
+      console.log('[getSessionForSlot]', {
+        sessionSlug: session.sessionSlug,
+        startTime: session.startTime,
+        parsedTimeLocal: sessionTime,
+        lookingFor: time,
+        match: sessionTime === time,
+      });
+
+      return sessionTime === time;
+    });
+  };
+
+  const isLoading = sessionsLoading || eventLoading || eventTypeLoading;
 
   // Mock speaker data for preferences panel
   const getSpeakerData = (username: string) => {
@@ -116,23 +222,79 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     e.preventDefault();
     setHoveredSlot(null);
 
-    if (!draggedSession) return;
+    if (!draggedSession) {
+      console.warn('No dragged session');
+      return;
+    }
 
-    // Create timing request
-    const startTime = new Date(`2025-05-15T${time}:00Z`).toISOString();
-    const endTime = new Date(`2025-05-15T${time}:00Z`);
-    endTime.setMinutes(endTime.getMinutes() + 45);
+    if (!event) {
+      console.error('Event not loaded - cannot assign timing');
+      return;
+    }
+
+    if (!eventTypeConfig) {
+      console.error('Event type config not loaded - cannot assign timing');
+      return;
+    }
+
+    const isReassignment = !!(draggedSession.startTime && draggedSession.endTime);
+    console.log('Dropping session:', {
+      sessionSlug: draggedSession.sessionSlug,
+      title: draggedSession.title,
+      time,
+      room,
+      event: event.eventCode,
+      eventType: event.eventType,
+      rawDate: event.date,
+      isReassignment,
+      currentTime: draggedSession.startTime,
+    });
+
+    // Use actual event date and slot duration from event type config
+    // Extract just the date part (YYYY-MM-DD) in case event.date is a full ISO datetime
+    const eventDateStr = event.date
+      ? event.date.split('T')[0]
+      : new Date().toISOString().split('T')[0];
+    const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
+
+    // Parse time (HH:MM) and create proper datetime
+    const [hours, minutes] = time.split(':').map(Number);
+
+    // Create start time
+    const startDate = new Date(eventDateStr);
+    startDate.setHours(hours, minutes, 0, 0);
+    const startTime = startDate.toISOString();
+
+    // Create end time by adding slot duration
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + slotDurationMinutes);
+    const endTime = endDate.toISOString();
+
+    console.log('Assigning timing:', {
+      eventDateStr,
+      startTime,
+      endTime,
+      room,
+      duration: slotDurationMinutes,
+    });
 
     try {
+      // assignTiming uses optimistic updates - session is removed from unassignedSessions
+      // immediately and only rolled back on error (see useSlotAssignment hook)
       await assignTiming(draggedSession.sessionSlug, {
         startTime,
-        endTime: endTime.toISOString(),
+        endTime,
         room,
         changeReason: 'drag_drop_reassignment',
       });
+      console.log('✓ Successfully assigned timing');
+
+      // Invalidate event cache to force refetch and show assigned session in timeline
+      console.log('[DragDropSlotAssignment] Invalidating event cache to refresh timeline');
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
     } catch (err) {
-      // Error handled by hook
-      console.error('Failed to assign timing:', err);
+      // Error handled by hook (includes rollback of optimistic update)
+      console.error('✗ Failed to assign timing:', err);
     }
 
     setDraggedSession(null);
@@ -181,13 +343,12 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Grid size={{ xs: 12, md: 3 }}>
             <Paper sx={{ height: '100%', overflow: 'hidden' }}>
               <UnassignedSpeakersList
-                sessions={unassignedSessions.map((session) => ({
-                  ...session,
-                  draggable: true,
-                  onDragStart: handleDragStart(session),
-                }))}
+                sessions={filteredSessions}
                 totalSessions={totalSessions}
                 onViewPreferences={(username) => setSelectedSpeaker(username)}
+                onDragStart={handleDragStart}
+                activeFilter={speakerFilter}
+                onFilterChange={setSpeakerFilter}
                 isLoading={isLoading}
               />
             </Paper>
@@ -200,7 +361,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
               sx={{ height: '100%', overflow: 'auto', p: 2 }}
             >
               <Typography variant="h6" gutterBottom>
-                Session Timeline
+                {t('slotAssignment.timeline.title')}
               </Typography>
 
               {/* Timeline Grid */}
@@ -233,11 +394,16 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                         const isHovered = hoveredSlot?.time === time && hoveredSlot?.room === room;
                         const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
                         const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
+                        const assignedSession = getSessionForSlot(time, room);
 
                         return (
                           <Grid size={3.33} key={room}>
                             <Paper
                               data-testid={slotId}
+                              draggable={!!assignedSession}
+                              onDragStart={
+                                assignedSession ? handleDragStart(assignedSession) : undefined
+                              }
                               className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
                               onDragOver={handleDragOver(time, room)}
                               onDragLeave={handleDragLeave}
@@ -246,21 +412,46 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                                 p: 1,
                                 minHeight: 60,
                                 border: 2,
-                                borderColor: isHovered ? 'primary.main' : 'divider',
+                                borderColor: isHovered
+                                  ? 'primary.main'
+                                  : assignedSession
+                                    ? 'success.main'
+                                    : 'divider',
                                 borderStyle: isHovered ? 'dashed' : 'solid',
-                                bgcolor: isHovered ? 'action.hover' : 'background.default',
-                                cursor: 'pointer',
+                                bgcolor: isHovered
+                                  ? 'action.hover'
+                                  : assignedSession
+                                    ? 'success.light'
+                                    : 'background.default',
+                                cursor: assignedSession ? 'grab' : 'pointer',
                                 transition: 'all 0.2s',
                                 '&:hover': {
-                                  bgcolor: 'action.hover',
+                                  bgcolor: assignedSession ? 'success.light' : 'action.hover',
+                                },
+                                '&:active': {
+                                  cursor: assignedSession ? 'grabbing' : 'pointer',
                                 },
                               }}
                             >
-                              {isHovered && matchPercent > 0 && (
+                              {assignedSession ? (
+                                <Box>
+                                  <Typography variant="caption" fontWeight="bold" noWrap>
+                                    {assignedSession.title}
+                                  </Typography>
+                                  {assignedSession.speakers?.[0] && (
+                                    <Typography variant="caption" display="block" noWrap>
+                                      {assignedSession.speakers[0].firstName}{' '}
+                                      {assignedSession.speakers[0].lastName}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              ) : isHovered && matchPercent > 0 ? (
                                 <Typography variant="caption" color="primary">
-                                  {matchPercent}% match
+                                  {t('slotAssignment.timeline.matchPercent', {
+                                    percent: matchPercent,
+                                  })}
                                 </Typography>
-                              )}
+                              ) : null}
                             </Paper>
                           </Grid>
                         );
@@ -300,7 +491,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 onClick={() => setAutoAssignModalOpen(true)}
                 sx={{ mb: 2 }}
               >
-                Auto-Assign All
+                {t('slotAssignment.actions.autoAssign')}
               </Button>
 
               <Button
@@ -309,7 +500,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 startIcon={<ClearAll />}
                 onClick={() => setClearAllModalOpen(true)}
               >
-                Clear All Assignments
+                {t('slotAssignment.actions.clearAll')}
               </Button>
 
               {/* Success Banner */}
@@ -346,28 +537,32 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
 
       {/* Auto-Assign Modal */}
       <Dialog open={autoAssignModalOpen} onClose={() => setAutoAssignModalOpen(false)}>
-        <DialogTitle>Auto-Assign Sessions</DialogTitle>
+        <DialogTitle>{t('slotAssignment.modals.autoAssign.title')}</DialogTitle>
         <DialogContent>
-          <Typography>Select algorithm for auto-assignment:</Typography>
+          <Typography>{t('slotAssignment.modals.autoAssign.message')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAutoAssignModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setAutoAssignModalOpen(false)}>
+            {t('slotAssignment.actions.cancel')}
+          </Button>
           <Button variant="contained" onClick={() => setAutoAssignModalOpen(false)}>
-            Assign
+            {t('slotAssignment.actions.confirm')}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Clear All Confirmation Modal */}
       <Dialog open={clearAllModalOpen} onClose={() => setClearAllModalOpen(false)}>
-        <DialogTitle>Clear All Assignments</DialogTitle>
+        <DialogTitle>{t('slotAssignment.modals.clearAll.title')}</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to clear all timing assignments?</Typography>
+          <Typography>{t('slotAssignment.modals.clearAll.message')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setClearAllModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setClearAllModalOpen(false)}>
+            {t('slotAssignment.actions.cancel')}
+          </Button>
           <Button variant="contained" color="error" onClick={() => setClearAllModalOpen(false)}>
-            Clear All
+            {t('slotAssignment.actions.clearAll')}
           </Button>
         </DialogActions>
       </Dialog>

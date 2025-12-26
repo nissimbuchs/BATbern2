@@ -18,6 +18,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Button, Breadcrumbs, Link, Alert } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { DragDropSlotAssignment } from '@components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment';
 
 /**
@@ -35,6 +36,7 @@ import { DragDropSlotAssignment } from '@components/SlotAssignment/DragDropSlotA
 const SlotAssignmentPage: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation('events');
 
   const handleBackToEvent = () => {
     navigate(`/organizer/events/${eventCode}`);
@@ -53,7 +55,7 @@ const SlotAssignmentPage: React.FC = () => {
           }}
           sx={{ cursor: 'pointer' }}
         >
-          Events
+          {t('navigation.events')}
         </Link>
         <Link
           color="inherit"
@@ -66,29 +68,28 @@ const SlotAssignmentPage: React.FC = () => {
         >
           {eventCode}
         </Link>
-        <Typography color="text.primary">Slot Assignment</Typography>
+        <Typography color="text.primary">{t('slotAssignment.title')}</Typography>
       </Breadcrumbs>
 
       {/* Page Header */}
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
-            Assign Speakers to Time Slots
+            {t('slotAssignment.pageTitle')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Drag confirmed speakers to available time slots to create the event schedule
+            {t('slotAssignment.pageDescription')}
           </Typography>
         </Box>
         <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
-          Back to Event
+          {t('slotAssignment.backToEvent')}
         </Button>
       </Box>
 
       {/* Help Banner */}
       <Alert severity="info" sx={{ mb: 3 }}>
-        <strong>How it works:</strong> Drag speaker cards from the left panel to time slots on the
-        right. The system will highlight preference matches and warn you of conflicts. Once all
-        speakers are assigned, the schedule will be saved automatically.
+        <strong>{t('slotAssignment.helpBanner.title')}</strong>{' '}
+        {t('slotAssignment.helpBanner.description')}
       </Alert>
 
       {/* Drag-and-Drop Slot Assignment Component */}
@@ -97,7 +98,7 @@ const SlotAssignmentPage: React.FC = () => {
       {/* Return Navigation */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
-          Return to Event Overview
+          {t('slotAssignment.returnToEventOverview')}
         </Button>
       </Box>
     </Container>

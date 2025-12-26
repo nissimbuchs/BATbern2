@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -9,6 +10,7 @@ import ch.batbern.events.service.slotassignment.ConflictDetectionService;
 import ch.batbern.events.service.slotassignment.SessionTimingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -72,6 +74,7 @@ public class SlotAssignmentController {
      */
     @PatchMapping("/{sessionSlug}/timing")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<?> assignTiming(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug,
@@ -86,9 +89,9 @@ public class SlotAssignmentController {
         // This ensures 404 is returned before conflict checks
         sessionTimingService.validateSessionExists(eventCode, sessionSlug);
 
-        // Detect conflicts before assignment
+        // Detect conflicts before assignment (exclude current session to allow reassignment)
         var roomConflict = conflictDetectionService.detectRoomOverlap(
-                eventCode, request.startTime, request.endTime, request.room);
+                eventCode, request.startTime, request.endTime, request.room, sessionSlug);
 
         if (roomConflict.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -139,6 +142,7 @@ public class SlotAssignmentController {
      */
     @PostMapping("/bulk-timing")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<?> bulkAssignTiming(
             @PathVariable String eventCode,
             @RequestBody BulkTimingRequest request) {

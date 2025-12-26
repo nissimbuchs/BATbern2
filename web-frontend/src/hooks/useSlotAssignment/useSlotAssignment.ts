@@ -57,19 +57,23 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    * Fetch unassigned sessions
    */
   const fetchUnassignedSessions = useCallback(async () => {
+    console.log('[useSlotAssignment] fetchUnassignedSessions called');
     setIsLoading(true);
     setError(null);
 
     try {
       const sessions = await slotAssignmentService.getUnassignedSessions(eventCode);
+      console.log('[useSlotAssignment] Fetched', sessions.length, 'unassigned sessions');
       setUnassignedSessions(sessions);
       // If this is first load, set total sessions
       if (totalSessions === 0) {
+        console.log('[useSlotAssignment] First load - setting total sessions to', sessions.length);
         setTotalSessions(sessions.length);
       }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch unassigned sessions';
+      console.error('[useSlotAssignment] Fetch failed:', errorMessage);
       setError(errorMessage);
       setUnassignedSessions([]);
     } finally {
@@ -82,20 +86,32 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    */
   const assignTiming = useCallback(
     async (sessionSlug: string, timing: SessionTimingRequest): Promise<void> => {
+      console.log('[useSlotAssignment] assignTiming called:', { sessionSlug, timing });
+
       // Clear any existing conflicts
       setConflict(null);
       setError(null);
 
-      // Optimistic update - remove from unassigned list
-      const originalSessions = [...unassignedSessions];
-      setUnassignedSessions((prev) => prev.filter((s) => s.sessionSlug !== sessionSlug));
+      // Optimistic update - remove from unassigned list and save snapshot for rollback
+      let rollbackSessions: Session[] = [];
+      setUnassignedSessions((prev) => {
+        console.log('[useSlotAssignment] Optimistic update - removing session from list');
+        console.log('[useSlotAssignment] Before:', prev.length, 'sessions');
+        rollbackSessions = [...prev]; // Capture current state for rollback
+        const filtered = prev.filter((s) => s.sessionSlug !== sessionSlug);
+        console.log('[useSlotAssignment] After:', filtered.length, 'sessions');
+        return filtered;
+      });
 
       try {
+        console.log('[useSlotAssignment] Calling API...');
         await slotAssignmentService.assignSessionTiming(eventCode, sessionSlug, timing);
-        // Success - optimistic update is kept
+        console.log('[useSlotAssignment] ✓ API call successful - keeping optimistic update');
+        // Success - optimistic update is kept, no need to refetch
       } catch (err) {
-        // Rollback optimistic update
-        setUnassignedSessions(originalSessions);
+        console.error('[useSlotAssignment] ✗ API call failed - rolling back optimistic update');
+        // Rollback optimistic update using captured snapshot
+        setUnassignedSessions(rollbackSessions);
 
         // Handle conflict errors (409)
         if (err instanceof AxiosError && err.response?.status === 409) {
@@ -107,7 +123,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
         throw err;
       }
     },
-    [eventCode, unassignedSessions]
+    [eventCode]
   );
 
   /**
