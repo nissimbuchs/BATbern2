@@ -5,6 +5,16 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
 
+// Mock react-router-dom navigate
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 // Mock child components to focus on integration
 vi.mock('../AssociatedUsersPanel', () => ({
   AssociatedUsersPanel: ({ companyId }: { companyId: string }) => (
@@ -279,7 +289,9 @@ describe('CompanyDetailView Component', () => {
         <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
-      expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+      // Component uses breadcrumbs for navigation instead of back button
+      expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument();
+      expect(screen.getByText('Company Management')).toBeInTheDocument();
     });
 
     it('should_callOnBack_when_backButtonClicked', async () => {
@@ -289,10 +301,12 @@ describe('CompanyDetailView Component', () => {
         <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
       );
 
-      const backButton = screen.getByRole('button', { name: /back/i });
-      await user.click(backButton);
+      // Component uses breadcrumbs - click the breadcrumb link to navigate back
+      const breadcrumbLink = screen.getByText('Company Management');
+      await user.click(breadcrumbLink);
 
-      expect(mockOnBack).toHaveBeenCalled();
+      // Verify navigation was called with correct path
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/companies');
     });
   });
 

@@ -8,9 +8,20 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import UserList from './UserList';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { User } from '@/types/user.types';
+
+// Mock react-router-dom
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 // Mock translation
 vi.mock('react-i18next', () => ({
@@ -121,12 +132,17 @@ const renderWithProviders = (ui: React.ReactElement) => {
     },
   });
 
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </MemoryRouter>
+  );
 };
 
 describe('UserList Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
     mockIsLoading = false;
     mockIsError = false;
     mockData = {
@@ -245,7 +261,7 @@ describe('UserList Component', () => {
       const userRow = screen.getByText('John Doe');
       await user.click(userRow);
 
-      expect(mockSetSelectedUser).toHaveBeenCalledWith(mockUsers[0]);
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/users/user-1');
     });
   });
 });
