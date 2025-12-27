@@ -294,13 +294,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       // to ensure the event data with sessions is refetched
       console.log('[DragDropSlotAssignment] Invalidating event cache to refresh timeline');
       await queryClient.invalidateQueries({
-        queryKey: ['event', eventCode, ['sessions']]
+        queryKey: ['event', eventCode, ['sessions']],
       });
 
       // Force immediate refetch to ensure UI updates right away
       await queryClient.refetchQueries({
         queryKey: ['event', eventCode, ['sessions']],
-        exact: true
+        exact: true,
       });
     } catch (err) {
       // Error handled by hook (includes rollback of optimistic update)
