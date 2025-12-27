@@ -290,8 +290,18 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       console.log('✓ Successfully assigned timing');
 
       // Invalidate event cache to force refetch and show assigned session in timeline
+      // CRITICAL: Must invalidate with exact query key including the 'include' parameter
+      // to ensure the event data with sessions is refetched
       console.log('[DragDropSlotAssignment] Invalidating event cache to refresh timeline');
-      await queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      await queryClient.invalidateQueries({
+        queryKey: ['event', eventCode, ['sessions']]
+      });
+
+      // Force immediate refetch to ensure UI updates right away
+      await queryClient.refetchQueries({
+        queryKey: ['event', eventCode, ['sessions']],
+        exact: true
+      });
     } catch (err) {
       // Error handled by hook (includes rollback of optimistic update)
       console.error('✗ Failed to assign timing:', err);

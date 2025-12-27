@@ -8,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.slotassignment.ConflictAnalysisResponse;
 import ch.batbern.events.service.slotassignment.ConflictDetectionService;
 import ch.batbern.events.service.slotassignment.SessionTimingService;
+import ch.batbern.events.client.UserApiClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,14 +48,18 @@ public class SlotAssignmentController {
     private final SessionTimingService sessionTimingService;
     private final ConflictDetectionService conflictDetectionService;
     private final EventRepository eventRepository;
+    private final UserApiClient userApiClient;
 
     /**
      * Get unassigned sessions (placeholder sessions without timing)
-     * AC5, AC12: Show unassigned speakers list
+     * AC5, AC12: Show unassigned speakers list with enriched speaker data
+     *
+     * Returns sessions as Maps with enriched speaker data (firstName, lastName, etc.)
+     * to match the format expected by the frontend UnassignedSpeakersList component
      */
     @GetMapping("/unassigned")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<Session>> getUnassignedSessions(
+    public ResponseEntity<List<Map<String, Object>>> getUnassignedSessions(
             @PathVariable String eventCode) {
 
         log.info("GET /api/v1/events/{}/sessions/unassigned", eventCode);
@@ -62,10 +69,76 @@ public class SlotAssignmentController {
 
         List<Session> unassignedSessions = sessionTimingService.getUnassignedSessionsByEventId(event.getId());
 
-        // Set eventCode for API responses
-        unassignedSessions.forEach(session -> session.setEventCode(eventCode));
+        // Convert to Maps with enriched speaker data
+        List<Map<String, Object>> enrichedSessions = unassignedSessions.stream()
+                .map(session -> enrichSessionWithSpeakers(session, eventCode))
+                .toList();
 
-        return ResponseEntity.ok(unassignedSessions);
+        return ResponseEntity.ok(enrichedSessions);
+    }
+
+    /**
+     * Enrich a session with speaker data from User Management Service
+     * Similar to EventController.expandSessionSpeakers but for individual sessions
+     */
+    private Map<String, Object> enrichSessionWithSpeakers(Session session, String eventCode) {
+        Map<String, Object> sessionMap = new HashMap<>();
+
+        // Add basic session fields
+        sessionMap.put("id", session.getId());
+        sessionMap.put("sessionSlug", session.getSessionSlug());
+        sessionMap.put("eventCode", eventCode);
+        sessionMap.put("title", session.getTitle());
+        sessionMap.put("description", session.getDescription());
+        sessionMap.put("sessionType", session.getSessionType());
+        sessionMap.put("startTime", session.getStartTime());
+        sessionMap.put("endTime", session.getEndTime());
+        sessionMap.put("room", session.getRoom());
+        sessionMap.put("capacity", session.getCapacity());
+        sessionMap.put("language", session.getLanguage());
+
+        // Enrich with speaker data
+        List<Map<String, Object>> speakers = new ArrayList<>();
+        for (var sessionUser : session.getSessionUsers()) {
+            Map<String, Object> speakerMap = new HashMap<>();
+
+            try {
+                if (sessionUser.getUsername() != null) {
+                    var userProfile = userApiClient.getUserByUsername(sessionUser.getUsername());
+                    speakerMap.put("username", userProfile.getId());
+                    speakerMap.put("firstName", userProfile.getFirstName());
+                    speakerMap.put("lastName", userProfile.getLastName());
+                    speakerMap.put("company", userProfile.getCompanyId());
+                    speakerMap.put("profilePictureUrl", userProfile.getProfilePictureUrl());
+                    speakerMap.put("bio", userProfile.getBio());
+                } else {
+                    log.warn("SessionUser {} has no username set", sessionUser.getId());
+                    speakerMap.put("username", null);
+                    speakerMap.put("firstName", "Unknown");
+                    speakerMap.put("lastName", "Speaker");
+                }
+
+                // Add SessionUser fields
+                speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
+                speakerMap.put("isConfirmed", sessionUser.isConfirmed());
+                speakerMap.put("presentationTitle", sessionUser.getPresentationTitle());
+
+                speakers.add(speakerMap);
+            } catch (Exception e) {
+                log.warn("Failed to enrich speaker data for username {}: {}",
+                        sessionUser.getUsername(), e.getMessage());
+                // Add fallback speaker data
+                speakerMap.put("username", sessionUser.getUsername());
+                speakerMap.put("firstName", "Unknown");
+                speakerMap.put("lastName", "Speaker");
+                speakerMap.put("speakerRole", sessionUser.getSpeakerRole().name());
+                speakerMap.put("isConfirmed", sessionUser.isConfirmed());
+                speakers.add(speakerMap);
+            }
+        }
+
+        sessionMap.put("speakers", speakers);
+        return sessionMap;
     }
 
     /**
