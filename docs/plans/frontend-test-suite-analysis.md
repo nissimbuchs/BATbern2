@@ -383,6 +383,42 @@ Removed 21 `expect(true).toBe(true)` tests that provided zero testing value:
 
 ---
 
+## Next Steps (Updated 2025-12-28)
+
+### Completed ✅
+
+| Task | Result |
+|------|--------|
+| Remove No-Op Tests (21) | Converted to `it.todo()` with explanations |
+| Audit Skipped Tests (84) | 64 valid TDD tests, properly documented |
+| Audit Non-Functional Button Tests | Presence-only tests, valid - KEEP |
+| Test Consolidation | 68 → 24 tests (-44 redundant tests) |
+
+### In Progress 🔄
+
+| Task | Approach |
+|------|----------|
+| Fix Type Safety (`as any`) | Replace 138 `as any` usages with proper types |
+
+### Proposed Next Steps
+
+1. **Fix `as any` usages (138 instances)** - Priority 2, Item 6
+   - Improves test reliability and catches type errors
+   - Can be done incrementally by file
+   - Target: reduce to <20 usages
+
+2. **Reduce Mock Depth** - Priority 2, Item 5
+   - Identify tests mocking 3+ dependencies
+   - Convert heavy-mock tests to integration patterns
+   - Ongoing during feature development
+
+3. **Enhance Shallow Assertions** - Priority 2, Item 4
+   - Add behavioral assertions to presence-only tests
+   - Focus on high-value components first
+   - 2-3 sprint effort
+
+---
+
 ## Conclusion
 
 The BATbern frontend test suite exhibits classic symptoms of:
