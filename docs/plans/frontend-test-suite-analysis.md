@@ -372,7 +372,7 @@ Removed 21 `expect(true).toBe(true)` tests that provided zero testing value:
 | No-Op Tests | 21 | 0 | 0 | ✅ DONE |
 | Skipped Tests | 84 | 64 | Valid TDD | ✅ AUDITED |
 | Test Consolidation | 68 | 24 | - | ✅ -44 tests |
-| `as any` Usage | 138 | 138 | <20 | Pending |
+| `as any` Usage | 138 | 95 | <20 | In Progress (-43) |
 | Avg Assertions/Test | ~2.5 | ~2.5 | >4 | Pending |
 | Integration Tests | 1 | 1 | 20+ | Pending |
 
@@ -396,15 +396,24 @@ Removed 21 `expect(true).toBe(true)` tests that provided zero testing value:
 
 ### In Progress 🔄
 
-| Task | Approach |
-|------|----------|
-| Fix Type Safety (`as any`) | Replace 138 `as any` usages with proper types |
+| Task | Approach | Progress |
+|------|----------|----------|
+| Fix Type Safety (`as any`) | Replace `as any` with `vi.mocked()` pattern | 138 → 95 (-43) |
+
+**Files Fixed:**
+- `PartnerList.test.tsx` - 28 usages fixed
+- `PartnerDetailScreen.accessibility.test.tsx` - 5 usages fixed
+- `PartnerDetailScreen.responsive.test.tsx` - 5 usages fixed
+- `Responsive.test.tsx` - 2 usages fixed
 
 ### Proposed Next Steps
 
-1. **Fix `as any` usages (138 instances)** - Priority 2, Item 6
-   - Improves test reliability and catches type errors
-   - Can be done incrementally by file
+1. **Continue fixing `as any` usages (95 remaining)** - Priority 2, Item 6
+   - Pattern: Replace `(hook as any).mockReturnValue` with `vi.mocked(hook).mockReturnValue`
+   - Remaining files with highest counts:
+     - `PartnerNotesTab.test.tsx` (17) - partial mock returns
+     - `PartnerDetailScreen.test.tsx` (15)
+     - `PartnerOverviewStats.test.tsx` (12)
    - Target: reduce to <20 usages
 
 2. **Reduce Mock Depth** - Priority 2, Item 5
