@@ -372,7 +372,7 @@ Removed 21 `expect(true).toBe(true)` tests that provided zero testing value:
 | No-Op Tests | 21 | 0 | 0 | ✅ DONE |
 | Skipped Tests | 84 | 64 | Valid TDD | ✅ AUDITED |
 | Test Consolidation | 68 | 24 | - | ✅ -44 tests |
-| `as any` Usage | 138 | 95 | <20 | In Progress (-43) |
+| `as any` Usage | 138 | 90 | <20 | In Progress (-48) |
 | Avg Assertions/Test | ~2.5 | ~2.5 | >4 | Pending |
 | Integration Tests | 1 | 1 | 20+ | Pending |
 
@@ -398,23 +398,27 @@ Removed 21 `expect(true).toBe(true)` tests that provided zero testing value:
 
 | Task | Approach | Progress |
 |------|----------|----------|
-| Fix Type Safety (`as any`) | Replace `as any` with `vi.mocked()` pattern | 138 → 95 (-43) |
+| Fix Type Safety (`as any`) | Replace `as any` with `vi.mocked()` pattern | 138 → 90 (-48) |
 
 **Files Fixed:**
 - `PartnerList.test.tsx` - 28 usages fixed
 - `PartnerDetailScreen.accessibility.test.tsx` - 5 usages fixed
 - `PartnerDetailScreen.responsive.test.tsx` - 5 usages fixed
 - `Responsive.test.tsx` - 2 usages fixed
+- `App.routing.test.tsx` - 5 usages fixed
+
+**Remaining (90):** Mostly partial mock returns (`} as any)`) requiring proper partial types
 
 ### Proposed Next Steps
 
-1. **Continue fixing `as any` usages (95 remaining)** - Priority 2, Item 6
-   - Pattern: Replace `(hook as any).mockReturnValue` with `vi.mocked(hook).mockReturnValue`
-   - Remaining files with highest counts:
-     - `PartnerNotesTab.test.tsx` (17) - partial mock returns
+1. **Continue fixing `as any` usages (90 remaining)** - Priority 2, Item 6
+   - ✅ Fixed: `(hook as any).mockReturnValue` → `vi.mocked(hook).mockReturnValue`
+   - Remaining: Partial mock return patterns (`} as any)`)
+   - Next approach: Define partial return types for mock values
+   - High-count files remaining:
+     - `PartnerNotesTab.test.tsx` (17)
      - `PartnerDetailScreen.test.tsx` (15)
      - `PartnerOverviewStats.test.tsx` (12)
-   - Target: reduce to <20 usages
 
 2. **Reduce Mock Depth** - Priority 2, Item 5
    - Identify tests mocking 3+ dependencies
