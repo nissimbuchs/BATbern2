@@ -50,41 +50,43 @@ describe('EventPublishingTab Component (Story 5.6)', () => {
     vi.clearAllMocks();
   });
 
-  describe('Publishing Status Section', () => {
-    it('should_displayPublishingStatusTitle_when_rendered', () => {
+  describe('Rendering', () => {
+    it('renders all sections with expected content', () => {
       renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
 
+      // Publishing Status Section
       expect(screen.getByText(/Publishing Status/i)).toBeInTheDocument();
-    });
-
-    it('should_displayConfigureButton_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByRole('button', { name: /Configure/i })).toBeInTheDocument();
-    });
-
-    it('should_displayStrategy_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Strategy/i)).toBeInTheDocument();
       expect(screen.getByText(/Progressive Publishing/i)).toBeInTheDocument();
-    });
-
-    it('should_displayCurrentPhase_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Current Phase/i)).toBeInTheDocument();
-    });
-  });
 
-  describe('Publishing Timeline Section', () => {
-    it('should_displayTimelineTitle_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
+      // Publishing Timeline Section
       expect(screen.getByRole('heading', { name: /Publishing Timeline/i })).toBeInTheDocument();
+      expect(screen.getByText(/Jan 5, 2025|5 Jan 2025/i)).toBeInTheDocument();
+      expect(screen.getByText(/Feb 15, 2025|15 Feb 2025/i)).toBeInTheDocument();
+      const completedPhases = screen.getAllByText(/Topic Published|Speakers Published/i);
+      expect(completedPhases.length).toBeGreaterThan(0);
+
+      // Quality Checkpoints Section
+      expect(screen.getByText(/Quality Checkpoints/i)).toBeInTheDocument();
+      expect(screen.getByText(/Abstract length validation/i)).toBeInTheDocument();
+      expect(screen.getByText(/Lessons learned requirement/i)).toBeInTheDocument();
+      expect(screen.getByText(/All materials submitted/i)).toBeInTheDocument();
+      expect(screen.getByText(/Moderator review complete/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 pending/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Resolve all checkpoints before publishing final agenda/i)
+      ).toBeInTheDocument();
+
+      // Actions Section
+      expect(screen.getByText(/^Actions$/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Preview Public Page/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Republish Event/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Notify Attendees/i })).toBeInTheDocument();
     });
 
-    it.skip('should_displayTimelinePhases_when_rendered', () => {
+    it.skip('displays all timeline phases when fully implemented', () => {
       renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
 
       expect(screen.getByText(/Topic Published/i)).toBeInTheDocument();
@@ -93,119 +95,16 @@ describe('EventPublishingTab Component (Story 5.6)', () => {
       expect(screen.getByText(/Event Day/i)).toBeInTheDocument();
       expect(screen.getByText(/Post-Event Materials/i)).toBeInTheDocument();
     });
-
-    it('should_displayTimelineDates_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Should display formatted dates
-      expect(screen.getByText(/Jan 5, 2025|5 Jan 2025/i)).toBeInTheDocument();
-      expect(screen.getByText(/Feb 15, 2025|15 Feb 2025/i)).toBeInTheDocument();
-    });
-
-    it('should_displayCompletedStatusIcon_for_completedPhases', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Topic Published and Speakers Published should be completed
-      const completedPhases = screen.getAllByText(/Topic Published|Speakers Published/i);
-      expect(completedPhases.length).toBeGreaterThan(0);
-    });
-
-    it.skip('should_displayPendingStatusIcon_for_pendingPhases', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Final Agenda should be pending
-      expect(screen.getByText(/Final Agenda/i)).toBeInTheDocument();
-    });
   });
 
-  describe('Quality Checkpoints Section', () => {
-    it('should_displayQualityCheckpointsTitle_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Quality Checkpoints/i)).toBeInTheDocument();
-    });
-
-    it('should_displayQualityChecks_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Abstract length validation/i)).toBeInTheDocument();
-      expect(screen.getByText(/Lessons learned requirement/i)).toBeInTheDocument();
-      expect(screen.getByText(/All materials submitted/i)).toBeInTheDocument();
-      expect(screen.getByText(/Moderator review complete/i)).toBeInTheDocument();
-    });
-
-    it('should_displayPendingMessage_for_pendingChecks', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/2 pending/i)).toBeInTheDocument();
-    });
-
-    it('should_displayResolveCheckpointsAlert_when_pendingChecksExist', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(
-        screen.getByText(/Resolve all checkpoints before publishing final agenda/i)
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe('Actions Section', () => {
-    it('should_displayActionsTitle_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/^Actions$/i)).toBeInTheDocument();
-    });
-
-    it('should_displayPreviewButton_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /Preview Public Page/i })).toBeInTheDocument();
-    });
-
-    it('should_openPublicPage_when_previewClicked', () => {
+  describe('Preview Public Page Action', () => {
+    it('opens public page in new tab when preview button clicked', () => {
       renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
 
       const previewButton = screen.getByRole('button', { name: /Preview Public Page/i });
       fireEvent.click(previewButton);
 
       expect(mockWindowOpen).toHaveBeenCalledWith('/events/BAT54', '_blank');
-    });
-
-    it('should_displayRepublishButton_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /Republish Event/i })).toBeInTheDocument();
-    });
-
-    it('should_displayNotifyAttendeesButton_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /Notify Attendees/i })).toBeInTheDocument();
-    });
-  });
-
-  describe('Status Icons', () => {
-    it('should_displayCorrectStatusIcons_when_rendered', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Component should render without errors
-      expect(screen.getByRole('heading', { name: /Publishing Timeline/i })).toBeInTheDocument();
-    });
-  });
-
-  describe('Check Icons', () => {
-    it('should_displayPassedCheckIcons_for_passedChecks', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Passed checks should be displayed
-      expect(screen.getByText(/Abstract length validation/i)).toBeInTheDocument();
-    });
-
-    it('should_displayWarningCheckIcons_for_pendingChecks', () => {
-      renderWithProviders(<EventPublishingTab event={mockEvent} eventCode="BAT54" />);
-
-      // Pending checks should be displayed
-      expect(screen.getByText(/All materials submitted/i)).toBeInTheDocument();
     });
   });
 });

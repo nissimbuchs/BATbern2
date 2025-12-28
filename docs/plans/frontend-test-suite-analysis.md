@@ -81,26 +81,38 @@ The BATbern web-frontend contains **~3,000 test cases** across **234 test files*
 
 ---
 
-### HIGH RISK: Shallow Assertion Pattern (1,714 occurrences)
+### MEDIUM RISK: toBeInTheDocument Pattern (1,865 occurrences)
 
-Many tests only verify element presence without testing behavior:
+**Nuanced Analysis (Updated 2025-12-28):**
 
+Not all `toBeInTheDocument` assertions are low value. Detailed breakdown:
+
+| Usage Pattern | Count | Value | Action |
+|---------------|-------|-------|--------|
+| `.not.toBeInTheDocument()` | 116 | **HIGH** | Keep - tests conditional absence |
+| In `waitFor` blocks | 58 | **HIGH** | Keep - tests async rendering |
+| With `userEvent/fireEvent` | 280+ | **MEDIUM** | Review - often redundant |
+| Static presence only | ~600 | **LOW** | Consolidate or remove |
+| Redundant (pre-click) | ~400 | **NEGATIVE** | Remove - click proves presence |
+
+**Patterns to FIX:**
 ```tsx
-// LOW VALUE - Only checks existence
-expect(screen.getByText('Submit')).toBeInTheDocument();
-
-// HIGH VALUE - Checks behavior
-expect(screen.getByText('Submit')).toBeEnabled();
-await userEvent.click(screen.getByText('Submit'));
-expect(mockOnSubmit).toHaveBeenCalledWith(expectedData);
+// REDUNDANT - the click already proves it's in the document
+const button = screen.getByText('Submit');
+expect(button).toBeInTheDocument();  // ← Remove this
+await userEvent.click(button);       // ← This proves presence
+expect(mockSubmit).toHaveBeenCalled();
 ```
 
-**Impact:**
-- Tests pass even when functionality is broken
-- No validation of user interactions
-- No verification of business logic
+**Patterns to KEEP:**
+```tsx
+// VALUABLE - testing conditional rendering
+expect(screen.queryByText('Error')).not.toBeInTheDocument();
+await userEvent.click(submitButton);
+expect(screen.getByText('Error')).toBeInTheDocument();
+```
 
-**Recommendation:** Audit and enhance with behavioral assertions.
+**Recommendation:** Consolidate static-presence tests into single "renders correctly" tests (see Cleanup Actions Completed above). Keep conditional rendering tests separate.
 
 ---
 
@@ -239,6 +251,30 @@ Tests that actively harm the codebase:
 | Task Management System | FR2 | Yes | Partial |
 | Content Quality Review | FR19 | Yes | Partial |
 | Email Template Management | FR7 | Minimal | NO |
+
+---
+
+## Cleanup Actions Completed
+
+### Test Consolidation (Completed 2025-12-28)
+
+The following test files were consolidated to reduce redundant render calls and shallow presence-only tests:
+
+| File | Before | After | Reduction |
+|------|--------|-------|-----------|
+| `EventPublishingTab.test.tsx` | 18 tests (17 renders) | 3 tests (3 renders) | **83%** |
+| `EventVenueTab.test.tsx` | 24 tests (24 renders) | 8 tests (8 renders) | **67%** |
+| `EventSettingsTab.test.tsx` | 26 tests (26 renders) | 13 tests (10 renders) | **50%** |
+
+**Total: 68 tests → 24 tests** (44 tests removed/consolidated)
+
+**Approach Used:**
+1. **Combined static presence checks** into single "renders all sections" tests
+2. **Preserved conditional rendering tests** (testing different outputs based on props)
+3. **Kept all behavioral tests** (clicks, dialogs, navigation)
+4. **Maintained edge case tests** (missing data handling)
+
+**Note:** `PartnerOverviewTab.test.tsx` was reviewed but NOT consolidated because its tests genuinely test conditional rendering based on partnership tier levels (PLATINUM vs STRATEGIC) - these are valuable, not redundant.
 
 ---
 
