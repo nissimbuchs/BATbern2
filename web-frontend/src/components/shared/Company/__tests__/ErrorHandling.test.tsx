@@ -68,11 +68,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
       // Specific validation errors should be shown inline
     });
 
-    it('should_includeCorrelationId_when_serverError', () => {
-      // Error messages should include correlation ID for support
-      // Format: "An error occurred (ID: abc-123). Please contact support."
-      expect(true).toBe(true); // Implementation depends on error format
-    });
+    it.todo('should_includeCorrelationId_when_serverError - depends on error response format from backend');
   });
 
   describe('AC13.2: Retry Buttons', () => {
@@ -118,19 +114,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
   });
 
   describe('AC13.3: Offline Mode', () => {
-    it('should_displayOfflineBanner_when_networkUnavailable', () => {
-      // Simulate offline state
-      Object.defineProperty(navigator, 'onLine', {
-        writable: true,
-        value: false,
-      });
-
-      renderWithProviders(<CompanyManagementScreen />);
-
-      // Offline banner should be visible
-      // This depends on implementation of offline detection
-      expect(true).toBe(true);
-    });
+    it.todo('should_displayOfflineBanner_when_networkUnavailable - requires offline detection implementation');
 
     it('should_showCachedData_when_offline', () => {
       // When offline, display cached data with indicator

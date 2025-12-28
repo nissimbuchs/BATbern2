@@ -213,11 +213,7 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
       });
     });
 
-    it('should_navigateToDetail_when_partnerClicked', async () => {
-      // This test will be indirectly verified through PartnerCard navigation
-      // Since navigation is handled by PartnerCard component, not the screen
-      expect(true).toBe(true);
-    });
+    it.todo('should_navigateToDetail_when_partnerClicked - tested in PartnerCard.test.tsx');
   });
 
   describe('Layout and Component Integration Tests', () => {
