@@ -85,11 +85,13 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      expect(screen.getByText('participantTable.headers.name')).toBeInTheDocument();
-      expect(screen.getByText('participantTable.headers.email')).toBeInTheDocument();
-      expect(screen.getByText('participantTable.headers.company')).toBeInTheDocument();
-      expect(screen.getByText('participantTable.headers.status')).toBeInTheDocument();
-      expect(screen.getByText('participantTable.headers.registrationDate')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantTable.headers.name')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantTable.headers.email')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantTable.headers.company')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantTable.headers.status')).toBeInTheDocument();
+      expect(
+        screen.getByText('eventPage.participantTable.headers.registrationDate')
+      ).toBeInTheDocument();
     });
 
     it('should render participant rows', () => {
@@ -106,7 +108,7 @@ describe('EventParticipantTable Component', () => {
     it('should show empty state when no participants', () => {
       renderWithProviders(<EventParticipantTable participants={[]} isLoading={false} />);
 
-      expect(screen.getByText('participantTable.empty')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantTable.empty')).toBeInTheDocument();
     });
 
     it('should render participant avatars with initials', () => {
@@ -154,7 +156,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const nameHeader = screen.getByText('participantTable.headers.name');
+      const nameHeader = screen.getByText('eventPage.participantTable.headers.name');
 
       // Table defaults to name ascending (Bob is already first)
       let rows = screen.getAllByRole('row');
@@ -173,7 +175,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const nameHeader = screen.getByText('participantTable.headers.name');
+      const nameHeader = screen.getByText('eventPage.participantTable.headers.name');
 
       // Default is ascending (Bob first)
       let rows = screen.getAllByRole('row');
@@ -197,7 +199,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const emailHeader = screen.getByText('participantTable.headers.email');
+      const emailHeader = screen.getByText('eventPage.participantTable.headers.email');
       await user.click(emailHeader);
 
       const rows = screen.getAllByRole('row');
@@ -212,7 +214,7 @@ describe('EventParticipantTable Component', () => {
         <EventParticipantTable participants={mockParticipants} isLoading={false} />
       );
 
-      const dateHeader = screen.getByText('participantTable.headers.registrationDate');
+      const dateHeader = screen.getByText('eventPage.participantTable.headers.registrationDate');
       await user.click(dateHeader);
 
       const rows = screen.getAllByRole('row');

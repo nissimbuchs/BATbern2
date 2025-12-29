@@ -97,8 +97,13 @@ describe('EventParticipantList Component', () => {
     // Setup default hook mock (success state)
     (useEventRegistrations as ReturnType<typeof vi.fn>).mockReturnValue({
       data: {
-        registrations: mockParticipants,
-        total: 50,
+        data: mockParticipants,
+        pagination: {
+          page: 1,
+          limit: 25,
+          total: 50,
+          totalPages: 2,
+        },
       },
       isLoading: false,
       error: null,
@@ -140,6 +145,7 @@ describe('EventParticipantList Component', () => {
         eventCode: 'BAT-2024-01',
         filters: {},
         pagination: { page: 1, limit: 25 },
+        search: '',
         enabled: true,
       });
     });
@@ -154,7 +160,7 @@ describe('EventParticipantList Component', () => {
 
       renderWithProviders(<EventParticipantList eventCode="BAT-2024-01" />);
 
-      expect(screen.getByText('participantList.loading')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantList.loading')).toBeInTheDocument();
     });
 
     it('should show error state when data loading fails', () => {
@@ -167,7 +173,7 @@ describe('EventParticipantList Component', () => {
 
       renderWithProviders(<EventParticipantList eventCode="BAT-2024-01" />);
 
-      expect(screen.getByText('participantList.error.loadFailed')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantList.error.loadFailed')).toBeInTheDocument();
     });
 
     it('should show retry button when error occurs', () => {
@@ -225,6 +231,21 @@ describe('EventParticipantList Component', () => {
         reset: vi.fn(),
       });
 
+      (useEventRegistrations as ReturnType<typeof vi.fn>).mockReturnValue({
+        data: {
+          data: mockParticipants,
+          pagination: {
+            page: 1,
+            limit: 50,
+            total: 50,
+            totalPages: 1,
+          },
+        },
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
       renderWithProviders(<EventParticipantList eventCode="BAT-2024-01" />);
 
       // 50 total participants / 50 per page = 1 page
@@ -265,6 +286,7 @@ describe('EventParticipantList Component', () => {
         eventCode: 'BAT-2024-01',
         filters: { status: ['CONFIRMED'] },
         pagination: { page: 1, limit: 25 },
+        search: 'john',
         enabled: true,
       });
     });
@@ -274,8 +296,13 @@ describe('EventParticipantList Component', () => {
     it('should show empty state when no participants', () => {
       (useEventRegistrations as ReturnType<typeof vi.fn>).mockReturnValue({
         data: {
-          registrations: [],
-          total: 0,
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 25,
+            total: 0,
+            totalPages: 0,
+          },
         },
         isLoading: false,
         error: null,

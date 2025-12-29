@@ -44,23 +44,25 @@ describe('EventParticipantFilters', () => {
       render(<EventParticipantFilters />);
 
       expect(
-        screen.getByPlaceholderText('participantFilters.search.placeholder')
+        screen.getByPlaceholderText('eventPage.participantFilters.search.placeholder')
       ).toBeInTheDocument();
     });
 
     it('should render status filter', () => {
       render(<EventParticipantFilters />);
 
-      expect(screen.getByText('participantFilters.status.label')).toBeInTheDocument();
-      expect(screen.getByText('participantFilters.status.all')).toBeInTheDocument();
-      expect(screen.getByText('participantFilters.status.confirmed')).toBeInTheDocument();
-      expect(screen.getByText('participantFilters.status.registered')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantFilters.status.label')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantFilters.status.all')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantFilters.status.confirmed')).toBeInTheDocument();
+      expect(
+        screen.getByText('eventPage.participantFilters.status.registered')
+      ).toBeInTheDocument();
     });
 
     it('should render clear filters button', () => {
       render(<EventParticipantFilters />);
 
-      expect(screen.getByText('participantFilters.clearAll')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantFilters.clearAll')).toBeInTheDocument();
     });
   });
 
@@ -69,7 +71,9 @@ describe('EventParticipantFilters', () => {
       const user = userEvent.setup();
       render(<EventParticipantFilters />);
 
-      const searchInput = screen.getByPlaceholderText('participantFilters.search.placeholder');
+      const searchInput = screen.getByPlaceholderText(
+        'eventPage.participantFilters.search.placeholder'
+      );
 
       await user.type(searchInput, 'john');
 
@@ -81,7 +85,9 @@ describe('EventParticipantFilters', () => {
 
       render(<EventParticipantFilters />);
 
-      const searchInput = screen.getByPlaceholderText('participantFilters.search.placeholder');
+      const searchInput = screen.getByPlaceholderText(
+        'eventPage.participantFilters.search.placeholder'
+      );
 
       await user.type(searchInput, 'john');
 
@@ -106,7 +112,9 @@ describe('EventParticipantFilters', () => {
 
       render(<EventParticipantFilters />);
 
-      const searchInput = screen.getByPlaceholderText('participantFilters.search.placeholder');
+      const searchInput = screen.getByPlaceholderText(
+        'eventPage.participantFilters.search.placeholder'
+      );
       expect(searchInput).toHaveValue('existing search');
     });
   });
@@ -116,7 +124,7 @@ describe('EventParticipantFilters', () => {
       render(<EventParticipantFilters />);
 
       const confirmedRadio = screen.getByRole('radio', {
-        name: 'participantFilters.status.confirmed',
+        name: 'eventPage.participantFilters.status.confirmed',
       });
 
       fireEvent.click(confirmedRadio);
@@ -131,7 +139,9 @@ describe('EventParticipantFilters', () => {
     it('should show "All" as default when no status filter is set', () => {
       render(<EventParticipantFilters />);
 
-      const allRadio = screen.getByRole('radio', { name: 'participantFilters.status.all' });
+      const allRadio = screen.getByRole('radio', {
+        name: 'eventPage.participantFilters.status.all',
+      });
       expect(allRadio).toBeChecked();
     });
 
@@ -147,7 +157,7 @@ describe('EventParticipantFilters', () => {
       render(<EventParticipantFilters />);
 
       const confirmedRadio = screen.getByRole('radio', {
-        name: 'participantFilters.status.confirmed',
+        name: 'eventPage.participantFilters.status.confirmed',
       });
       expect(confirmedRadio).toBeChecked();
     });
@@ -165,7 +175,7 @@ describe('EventParticipantFilters', () => {
 
       render(<EventParticipantFilters />);
 
-      const clearButton = screen.getByText('participantFilters.clearAll');
+      const clearButton = screen.getByText('eventPage.participantFilters.clearAll');
       fireEvent.click(clearButton);
 
       expect(mockResetFilters).toHaveBeenCalled();
@@ -182,10 +192,12 @@ describe('EventParticipantFilters', () => {
 
       render(<EventParticipantFilters />);
 
-      const searchInput = screen.getByPlaceholderText('participantFilters.search.placeholder');
+      const searchInput = screen.getByPlaceholderText(
+        'eventPage.participantFilters.search.placeholder'
+      );
       expect(searchInput).toHaveValue('test search');
 
-      const clearButton = screen.getByText('participantFilters.clearAll');
+      const clearButton = screen.getByText('eventPage.participantFilters.clearAll');
       fireEvent.click(clearButton);
 
       expect(searchInput).toHaveValue('');

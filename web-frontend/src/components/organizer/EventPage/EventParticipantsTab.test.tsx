@@ -70,13 +70,13 @@ describe('EventParticipantsTab Component', () => {
     it('should render tab title', () => {
       renderWithProviders(<EventParticipantsTab event={mockEvent} />);
 
-      expect(screen.getByText('participantsTab.title')).toBeInTheDocument();
+      expect(screen.getByText('eventPage.participantsTab.title')).toBeInTheDocument();
     });
 
     it('should render participant count badge', () => {
       const eventWithParticipants = {
         ...mockEvent,
-        registrationCount: 42,
+        currentAttendeeCount: 42,
       };
 
       renderWithProviders(<EventParticipantsTab event={eventWithParticipants} />);
