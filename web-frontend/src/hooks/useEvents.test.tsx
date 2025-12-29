@@ -119,7 +119,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, undefined);
+      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, undefined, undefined);
       expect(result.current.data).toEqual(mockEventsResponse);
     });
 
@@ -168,7 +168,7 @@ describe('Event Management React Query Hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, filters);
+      expect(eventApiClient.getEvents).toHaveBeenCalledWith({ page: 1, limit: 20 }, filters, undefined);
     });
 
     it('should_refetchEvents_when_filtersChange', async () => {
@@ -194,7 +194,8 @@ describe('Event Management React Query Hooks', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
         { page: 1, limit: 20 },
-        { status: ['active'] }
+        { status: ['active'] },
+        undefined
       );
     });
 
