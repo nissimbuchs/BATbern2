@@ -1018,6 +1018,14 @@ public class EventController {
                         "Event number " + request.getEventNumber() + " is already in use by event "
                         + existingEvent.get().getEventCode());
                 }
+
+                // Validate that the generated event code is not already in use by another event
+                String newEventCode = "BATbern" + request.getEventNumber();
+                Optional<Event> existingCodeEvent = eventRepository.findByEventCode(newEventCode);
+                if (existingCodeEvent.isPresent() && !existingCodeEvent.get().getId().equals(event.getId())) {
+                    throw new BusinessValidationException("Event code",
+                        "Generated event code " + newEventCode + " is already in use by another event");
+                }
             }
             event.setEventNumber(request.getEventNumber());
             // Regenerate eventCode when eventNumber changes

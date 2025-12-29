@@ -130,8 +130,9 @@ describe('NetworkStack', () => {
 
       // Verify security groups for:
       // - 4 base: database, cache, application, and lambda triggers tiers
-      // - 4 VPC endpoints: ECR API, ECR Docker, Secrets Manager, CloudWatch Logs
-      template.resourceCountIs('AWS::EC2::SecurityGroup', 8);
+      // - 0 VPC endpoints: All interface endpoints removed for cost optimization
+      //   (S3 gateway endpoint doesn't use security groups)
+      template.resourceCountIs('AWS::EC2::SecurityGroup', 4);
     });
   });
 });

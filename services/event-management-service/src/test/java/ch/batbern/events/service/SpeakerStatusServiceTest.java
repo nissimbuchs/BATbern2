@@ -69,12 +69,14 @@ public class SpeakerStatusServiceTest {
 
     /**
      * AC1: should_updateSpeakerStatus_when_validTransitionProvided
+     * V29: Updated to mock Event entity for eventCode lookup
      */
     @Test
     @DisplayName("Should update speaker status when valid transition is provided")
     void should_updateSpeakerStatus_when_validTransitionProvided() {
         // Given
         String eventCode = "BATbern998";
+        UUID eventId = UUID.randomUUID();
         UUID speakerId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         String organizerUsername = "organizer@example.com";
@@ -83,12 +85,19 @@ public class SpeakerStatusServiceTest {
         request.setNewStatus(SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
         SpeakerPool speaker = new SpeakerPool();
         speaker.setId(speakerId);
         speaker.setSessionId(sessionId);
+        speaker.setEventId(eventId); // V29: Speaker now has eventId
 
         when(speakerPoolRepository.findById(speakerId))
             .thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(eventId))
+            .thenReturn(Optional.of(event)); // V29: Mock event lookup for eventCode in response
         when(repository.save(any(SpeakerStatusHistory.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -190,17 +199,19 @@ public class SpeakerStatusServiceTest {
 
     /**
      * AC15: should_getStatusHistory_when_validSpeakerIdProvided
+     * V29: Updated to use eventId instead of eventCode
      */
     @Test
     @DisplayName("Should get status history when valid speaker ID is provided")
     void should_getStatusHistory_when_validSpeakerIdProvided() {
         // Given
         String eventCode = "BATbern998";
+        UUID eventId = UUID.randomUUID();
         UUID speakerId = UUID.randomUUID();
 
         SpeakerStatusHistory history = new SpeakerStatusHistory();
         history.setSpeakerPoolId(speakerId);
-        history.setEventCode(eventCode);
+        history.setEventId(eventId); // V29: Changed from setEventCode to setEventId
         history.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
         history.setNewStatus(SpeakerWorkflowState.CONTACTED);
 

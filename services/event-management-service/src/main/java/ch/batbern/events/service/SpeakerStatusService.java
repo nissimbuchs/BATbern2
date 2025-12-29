@@ -96,7 +96,7 @@ public class SpeakerStatusService {
         historyRecord.setSpeakerPoolId(speakerId);
         // Session ID from speaker pool (null until content submitted)
         historyRecord.setSessionId(speaker.getSessionId());
-        historyRecord.setEventCode(eventCode);
+        historyRecord.setEventId(speaker.getEventId()); // V29: Use eventId instead of eventCode
         historyRecord.setPreviousStatus(currentStatus);
         historyRecord.setNewStatus(request.getNewStatus());
         historyRecord.setChangedByUsername(organizerUsername);
@@ -215,11 +215,18 @@ public class SpeakerStatusService {
 
     /**
      * Map entity to response DTO
+     * V29: Fetch eventCode from Event entity since history now stores eventId
      */
     private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history) {
         SpeakerStatusResponse response = new SpeakerStatusResponse();
         response.setSpeakerId(history.getSpeakerPoolId());
-        response.setEventCode(history.getEventCode());
+
+        // V29: Look up eventCode from events table using eventId
+        String eventCode = eventRepository.findById(history.getEventId())
+            .map(Event::getEventCode)
+            .orElse("UNKNOWN");
+        response.setEventCode(eventCode);
+
         response.setCurrentStatus(history.getNewStatus());
         response.setPreviousStatus(history.getPreviousStatus());
         response.setChangedByUsername(history.getChangedByUsername());

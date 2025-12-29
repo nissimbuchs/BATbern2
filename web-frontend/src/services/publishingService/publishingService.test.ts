@@ -205,12 +205,9 @@ describe('publishingService', () => {
         reason: 'Incorrect speaker information published',
       });
 
-      expect(postSpy).toHaveBeenCalledWith(
-        '/events/BATbern142/publish/rollback/1',
-        {
-          reason: 'Incorrect speaker information published',
-        }
-      );
+      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/rollback/1', {
+        reason: 'Incorrect speaker information published',
+      });
       expect(result).toEqual(mockData);
     });
 
@@ -279,13 +276,10 @@ describe('publishingService', () => {
         notifySubscribers: true,
       });
 
-      expect(postSpy).toHaveBeenCalledWith(
-        '/events/BATbern142/publish/schedule',
-        {
-          scheduledDate: '2025-04-15T08:00:00Z',
-          notifySubscribers: true,
-        }
-      );
+      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule', {
+        scheduledDate: '2025-04-15T08:00:00Z',
+        notifySubscribers: true,
+      });
       expect(result).toEqual(mockData);
     });
   });
@@ -303,9 +297,7 @@ describe('publishingService', () => {
 
       const result = await publishingService.cancelAutoPublish('BATbern142', 'speakers');
 
-      expect(deleteSpy).toHaveBeenCalledWith(
-        '/events/BATbern142/publish/schedule'
-      );
+      expect(deleteSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule');
       expect(result).toEqual(mockData);
     });
   });

@@ -1904,4 +1904,34 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value(containsString("Event number 5002 is already in use")));
     }
+
+    @Test
+    @DisplayName("PATCH /api/v1/events/{eventCode} - Should reject duplicate eventCode when data inconsistency exists")
+    void should_rejectDuplicateEventCode_when_dataInconsistencyExists() throws Exception {
+        // Given - Create event with data inconsistency: eventCode "BATbern998" but eventNumber 500
+        Event event1 = createTestEvent("Event with inconsistent data", "2026-06-15T09:00:00Z", "CREATED");
+        event1.setEventNumber(500);
+        event1.setEventCode("BATbern998");  // Inconsistent: should be BATbern500
+        eventRepository.save(event1);
+
+        // And - Create another event that we'll try to update
+        Event event2 = createTestEvent("Event 58", "2026-06-15T09:00:00Z", "CREATED");
+        event2.setEventNumber(58);
+        event2.setEventCode("BATbern58");
+        eventRepository.save(event2);
+
+        // When - Try to change event2's number to 998 (would generate eventCode "BATbern998" which already exists)
+        String patchBody = """
+                {
+                    "eventNumber": 998
+                }
+                """;
+
+        // Then - Should return 422 Unprocessable Entity with validation error (not 500 Internal Server Error)
+        mockMvc.perform(patch("/api/v1/events/BATbern58")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchBody))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.message").value(containsString("Generated event code BATbern998 is already in use")));
+    }
 }

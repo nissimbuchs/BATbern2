@@ -25,14 +25,16 @@ public interface SpeakerStatusHistoryRepository extends JpaRepository<SpeakerSta
     List<SpeakerStatusHistory> findBySpeakerPoolIdOrderByChangedAtDesc(UUID speakerPoolId);
 
     /**
-     * Find status history by event code and new status
+     * Find status history by event ID and new status
      * Story 5.4 AC15
+     * Updated: V29 migration - changed from eventCode to eventId
      */
-    List<SpeakerStatusHistory> findByEventCodeAndNewStatus(String eventCode, SpeakerWorkflowState newStatus);
+    List<SpeakerStatusHistory> findByEventIdAndNewStatus(UUID eventId, SpeakerWorkflowState newStatus);
 
     /**
      * Find all status history for a specific event
      * Story 5.4 - Performance fix (PERF-001): Replace findAll() with event-specific query
+     * Updated: V29 migration - changed from eventCode to eventId
      */
-    List<SpeakerStatusHistory> findByEventCode(String eventCode);
+    List<SpeakerStatusHistory> findByEventId(UUID eventId);
 }

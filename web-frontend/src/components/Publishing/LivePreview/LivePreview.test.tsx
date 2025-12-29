@@ -160,10 +160,19 @@ describe('LivePreview', () => {
       render(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
 
       const refreshButton = screen.getByRole('button', { name: /refresh preview/i });
+      const iframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
+
+      // Mock iframe contentWindow.location.reload
+      const mockReload = vi.fn();
+      Object.defineProperty(iframe, 'contentWindow', {
+        value: { location: { reload: mockReload } },
+        writable: true,
+      });
+
       fireEvent.click(refreshButton);
 
       await waitFor(() => {
-        expect(mockUsePublishing.fetchPreview).toHaveBeenCalledWith('speakers', 'progressive');
+        expect(mockReload).toHaveBeenCalled();
       });
     });
 
@@ -185,11 +194,15 @@ describe('LivePreview', () => {
         <LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />
       );
 
-      // Update preview with new content
+      const iframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
+      const initialSrc = iframe.src;
+
+      // Update preview with new content and different preview URL
       vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
         ...mockUsePublishing,
         preview: {
           ...mockUsePublishing.preview,
+          previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview&updated=true',
           content: {
             ...mockUsePublishing.preview.content,
             speakers: [
@@ -203,7 +216,9 @@ describe('LivePreview', () => {
       rerender(<LivePreview eventCode="BATbern142" phase="speakers" mode="progressive" />);
 
       await waitFor(() => {
-        expect(mockUsePublishing.fetchPreview).toHaveBeenCalled();
+        const updatedIframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
+        expect(updatedIframe.src).not.toBe(initialSrc);
+        expect(updatedIframe.src).toContain('updated=true');
       });
     });
   });

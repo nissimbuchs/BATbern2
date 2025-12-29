@@ -139,12 +139,13 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
     }
 
     /**
-     * AC15: should_findHistoryByEventCodeAndStatus_when_queryExecuted
+     * AC15: should_findHistoryByEventIdAndStatus_when_queryExecuted
      * Story 5.4 AC15: Query history by event and status
+     * V29: Updated to use eventId instead of eventCode
      */
     @Test
-    @DisplayName("Should find history by event code and new status")
-    void should_findHistoryByEventCodeAndStatus_when_queryExecuted() {
+    @DisplayName("Should find history by event ID and new status")
+    void should_findHistoryByEventIdAndStatus_when_queryExecuted() {
         // Given: Multiple speakers with different statuses
         ch.batbern.events.domain.SpeakerPool speaker1 = createTestSpeaker("Speaker 1", "Company 1");
         ch.batbern.events.domain.SpeakerPool speaker2 = createTestSpeaker("Speaker 2", "Company 2");
@@ -154,13 +155,13 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         repository.save(createStatusHistory(speaker2.getId(), SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.ACCEPTED, Instant.now(), "Accepted 2"));
         repository.save(createStatusHistory(speaker3.getId(), SpeakerWorkflowState.IDENTIFIED, SpeakerWorkflowState.DECLINED, Instant.now(), "Declined"));
 
-        // When: Find history by event code and ACCEPTED status
-        List<SpeakerStatusHistory> result = repository.findByEventCodeAndNewStatus(TEST_EVENT_CODE, SpeakerWorkflowState.ACCEPTED);
+        // When: Find history by event ID and ACCEPTED status
+        List<SpeakerStatusHistory> result = repository.findByEventIdAndNewStatus(testEvent.getId(), SpeakerWorkflowState.ACCEPTED);
 
         // Then: Should return only ACCEPTED status changes
         assertThat(result).hasSize(2);
         assertThat(result).allMatch(h -> h.getNewStatus() == SpeakerWorkflowState.ACCEPTED);
-        assertThat(result).allMatch(h -> h.getEventCode().equals(TEST_EVENT_CODE));
+        assertThat(result).allMatch(h -> h.getEventId().equals(testEvent.getId()));
     }
 
     /**
@@ -187,7 +188,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getSpeakerPoolId()).isEqualTo(testSpeaker.getId());
         assertThat(saved.getSessionId()).isEqualTo(testSession.getId());
-        assertThat(saved.getEventCode()).isEqualTo(TEST_EVENT_CODE);
+        assertThat(saved.getEventId()).isEqualTo(testEvent.getId()); // V29: Changed from eventCode to eventId
         assertThat(saved.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
         assertThat(saved.getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
         assertThat(saved.getChangedByUsername()).isEqualTo(ORGANIZER_USERNAME);
@@ -243,6 +244,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
 
     /**
      * Helper: Create test status history record
+     * V29: Updated to use eventId instead of eventCode
      */
     private SpeakerStatusHistory createStatusHistory(
         UUID speakerPoolId,
@@ -254,7 +256,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         SpeakerStatusHistory history = new SpeakerStatusHistory();
         history.setSpeakerPoolId(speakerPoolId);
         history.setSessionId(testSession.getId());
-        history.setEventCode(TEST_EVENT_CODE);
+        history.setEventId(testEvent.getId()); // V29: Changed from setEventCode to setEventId
         history.setPreviousStatus(previousStatus);
         history.setNewStatus(newStatus);
         history.setChangedByUsername(ORGANIZER_USERNAME);
