@@ -46,6 +46,9 @@ import {
   useCreateCompany,
 } from '@/hooks/useCompanyMutations/useCompanyMutations';
 
+const mockUseCompanies = vi.mocked(useCompanies);
+const mockUseCompanyMutations = vi.mocked(useCompanyMutations);
+
 // Mock company data
 const mockCompanies = [
   {
@@ -116,14 +119,14 @@ describe('Responsive Design Tests (AC 11)', () => {
     vi.clearAllMocks();
 
     // Setup default mock returns
-    (useCompanies as any).mockReturnValue({
+    mockUseCompanies.mockReturnValue({
       data: mockCompanies,
       isLoading: false,
       isError: false,
       error: null,
     });
 
-    (useCompanyMutations as any).mockReturnValue({
+    mockUseCompanyMutations.mockReturnValue({
       createCompany: vi.fn(),
       updateCompany: vi.fn(),
       deleteCompany: vi.fn(),

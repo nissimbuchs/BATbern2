@@ -10,27 +10,24 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartnerDetailScreen } from './PartnerDetailScreen';
+import { usePartnerDetail } from '@/hooks/usePartnerDetail';
+import { usePartnerVotes } from '@/hooks/usePartnerVotes';
+import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
+import { usePartnerActivity } from '@/hooks/usePartnerActivity';
+import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 
 // Mock hooks
-vi.mock('@/hooks/usePartnerDetail', () => ({
-  usePartnerDetail: vi.fn(),
-}));
+vi.mock('@/hooks/usePartnerDetail');
+vi.mock('@/hooks/usePartnerVotes');
+vi.mock('@/hooks/usePartnerMeetings');
+vi.mock('@/hooks/usePartnerActivity');
+vi.mock('@/hooks/usePartnerNotes');
 
-vi.mock('@/hooks/usePartnerVotes', () => ({
-  usePartnerVotes: vi.fn(),
-}));
-
-vi.mock('@/hooks/usePartnerMeetings', () => ({
-  usePartnerMeetings: vi.fn(),
-}));
-
-vi.mock('@/hooks/usePartnerActivity', () => ({
-  usePartnerActivity: vi.fn(),
-}));
-
-vi.mock('@/hooks/usePartnerNotes', () => ({
-  usePartnerNotes: vi.fn(),
-}));
+const mockUsePartnerDetail = vi.mocked(usePartnerDetail);
+const mockUsePartnerVotes = vi.mocked(usePartnerVotes);
+const mockUsePartnerMeetings = vi.mocked(usePartnerMeetings);
+const mockUsePartnerActivity = vi.mocked(usePartnerActivity);
+const mockUsePartnerNotes = vi.mocked(usePartnerNotes);
 
 // Mock store
 const mockStoreState = {
@@ -112,32 +109,32 @@ describe('Partner Detail Screen - Accessibility', () => {
     vi.clearAllMocks();
 
     // Setup default mock returns
-    (usePartnerDetail as any).mockReturnValue({
+    mockUsePartnerDetail.mockReturnValue({
       data: mockPartnerDetail,
       isLoading: false,
       isError: false,
       error: null,
     });
 
-    (usePartnerVotes as any).mockReturnValue({
+    mockUsePartnerVotes.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
     });
 
-    (usePartnerMeetings as any).mockReturnValue({
+    mockUsePartnerMeetings.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
     });
 
-    (usePartnerActivity as any).mockReturnValue({
+    mockUsePartnerActivity.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
     });
 
-    (usePartnerNotes as any).mockReturnValue({
+    mockUsePartnerNotes.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,

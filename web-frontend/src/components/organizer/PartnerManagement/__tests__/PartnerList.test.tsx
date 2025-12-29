@@ -6,14 +6,18 @@ import userEvent from '@testing-library/user-event';
 import { PartnerList } from '../PartnerList';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
+import type { PartnerResponse } from '@/services/api/partnerApi';
 
 // Mock the hooks
 vi.mock('@/hooks/usePartners');
 vi.mock('@/stores/partnerStore');
 
+const mockUsePartners = vi.mocked(usePartners);
+const mockUsePartnerStore = vi.mocked(usePartnerStore);
+
 // Mock PartnerCard component
 vi.mock('../PartnerCard', () => ({
-  PartnerCard: ({ partner }: any) => (
+  PartnerCard: ({ partner }: { partner: PartnerResponse }) => (
     <div data-testid={`partner-card-${partner.companyName}`}>{partner.companyName}</div>
   ),
 }));
@@ -80,7 +84,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
   describe('AC1, AC3, AC4: Partner List Rendering and Pagination', () => {
     it('should_renderPartnerList_when_partnersLoaded', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -90,7 +94,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         error: null,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -110,7 +114,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_renderGridView_when_viewModeIsGrid', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -119,7 +123,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -139,7 +143,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_renderListView_when_viewModeIsList', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -148,7 +152,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'list',
         page: 0,
         setPage: vi.fn(),
@@ -166,7 +170,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_renderPagination_when_multiplePagesExist', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -175,7 +179,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -195,7 +199,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
     it('should_loadNextPage_when_nextButtonClicked', async () => {
       // Arrange
       const mockSetPage = vi.fn();
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -204,7 +208,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: mockSetPage,
@@ -224,13 +228,13 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_showLoadingState_when_fetching', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: undefined,
         isLoading: true,
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -248,7 +252,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_showErrorState_when_fetchFails', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: undefined,
         isLoading: false,
         isError: true,
@@ -258,7 +262,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         },
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -278,7 +282,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
   describe('AC4: Pagination Controls', () => {
     it('should_disableFirstPrev_when_onFirstPage', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: { ...mockPaginationMetadata, page: 0 },
@@ -287,7 +291,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -307,7 +311,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_disableNextLast_when_onLastPage', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
@@ -316,7 +320,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 1,
         setPage: vi.fn(),
@@ -336,7 +340,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_displayCorrectPageNumber_when_pageChanged', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: { ...mockPaginationMetadata, page: 1, totalPages: 2 },
@@ -345,7 +349,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 1,
         setPage: vi.fn(),
@@ -364,7 +368,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
   describe('AC1: Empty State and Edge Cases', () => {
     it('should_showEmptyState_when_noPartnersFound', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: [],
           metadata: { page: 0, size: 20, totalElements: 0, totalPages: 0 },
@@ -373,7 +377,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -390,7 +394,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
 
     it('should_hidePagination_when_singlePage', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: { page: 0, size: 20, totalElements: 2, totalPages: 1 },
@@ -399,7 +403,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -418,7 +422,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
   describe('AC6: Responsive Grid Layout', () => {
     it('should_useResponsiveGrid_when_gridModeActive', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -427,7 +431,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),
@@ -451,7 +455,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
   describe('AC8: Performance - Loading Optimization', () => {
     it('should_lazyLoadImages_when_partnersRendered', async () => {
       // Arrange
-      (usePartners as any).mockReturnValue({
+      mockUsePartners.mockReturnValue({
         data: {
           data: mockPartners,
           metadata: mockPaginationMetadata,
@@ -460,7 +464,7 @@ describe('PartnerList Component - RED Phase Tests', () => {
         isError: false,
       });
 
-      (usePartnerStore as any).mockReturnValue({
+      mockUsePartnerStore.mockReturnValue({
         viewMode: 'grid',
         page: 0,
         setPage: vi.fn(),

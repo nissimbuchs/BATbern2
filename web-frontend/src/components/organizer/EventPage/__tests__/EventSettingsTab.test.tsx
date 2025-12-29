@@ -61,153 +61,77 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     vi.clearAllMocks();
   });
 
-  describe('Event Information Section', () => {
-    it('should_displayEventInfoTitle_when_rendered', () => {
+  describe('Rendering', () => {
+    it('renders all sections with expected content', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
+      // Event Information Section
       expect(screen.getByText(/Event Information/i)).toBeInTheDocument();
-    });
-
-    it('should_displayEventNumber_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Event Number/i)).toBeInTheDocument();
       expect(screen.getByText('54')).toBeInTheDocument();
-    });
-
-    it('should_displayEventCode_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Event Code/i)).toBeInTheDocument();
       expect(screen.getByText('BAT54')).toBeInTheDocument();
-    });
-
-    it('should_displayCreatedBy_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Created By/i)).toBeInTheDocument();
       expect(screen.getByText('john.doe')).toBeInTheDocument();
-    });
-
-    it.skip('should_displayCreatedDate_when_provided', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Created/i)).toBeInTheDocument();
-      expect(screen.getByText(/December 1, 2024|1 December 2024/i)).toBeInTheDocument();
-    });
-
-    it('should_displayLastModified_when_provided', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Last Modified/i)).toBeInTheDocument();
       expect(screen.getByText(/January 15, 2025|15 January 2025/i)).toBeInTheDocument();
-    });
-  });
 
-  describe('Notifications Section', () => {
-    it('should_displayNotificationsTitle_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
+      // Notifications Section
       expect(screen.getByText(/^Notifications$/i)).toBeInTheDocument();
-    });
-
-    it('should_displayActiveAutomationsCount_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/active automations/i)).toBeInTheDocument();
-    });
-
-    it('should_displayNotificationRules_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/Speaker deadline reminders/i)).toBeInTheDocument();
       expect(screen.getByText(/Registration confirmation emails/i)).toBeInTheDocument();
       expect(screen.getByText(/Final agenda distribution/i)).toBeInTheDocument();
       expect(screen.getByText(/Event day check-in reminders/i)).toBeInTheDocument();
-    });
-
-    it('should_displayNotificationDescriptions_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
       expect(screen.getByText(/3 days before deadline/i)).toBeInTheDocument();
       expect(screen.getByText(/Immediate on registration/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Manage All Notifications/i })).toBeInTheDocument();
+      expect(screen.getByText(/Mar 1, 2025|1 Mar 2025/i)).toBeInTheDocument();
+
+      // Danger Zone Section
+      expect(screen.getByText(/Danger Zone/i)).toBeInTheDocument();
+      expect(screen.getByText(/These actions are irreversible/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Cancel Event/i })).toBeInTheDocument();
+      const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
+      expect(deleteButton).toBeInTheDocument();
+      expect(deleteButton).not.toBeDisabled();
     });
 
-    it.skip('should_displayNotificationSwitches_when_rendered', () => {
+    it.skip('displays notification switches when rendered', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
       const switches = screen.getAllByRole('checkbox');
       expect(switches.length).toBeGreaterThanOrEqual(4);
     });
 
-    it.skip('should_toggleNotification_when_switchClicked', async () => {
+    it.skip('toggles notification when switch clicked', async () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
       const switches = screen.getAllByRole('checkbox');
       const firstSwitch = switches[0];
-
-      // Initially all should be checked (enabled)
       expect(firstSwitch).toBeChecked();
 
-      // Click to toggle
       fireEvent.click(firstSwitch);
 
       await waitFor(() => {
         expect(firstSwitch).not.toBeChecked();
       });
     });
-
-    it('should_displayManageAllButton_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /Manage All Notifications/i })).toBeInTheDocument();
-    });
-
-    it('should_displayScheduledDates_when_notificationHasSchedule', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      // Agenda distribution has a scheduled date
-      expect(screen.getByText(/Mar 1, 2025|1 Mar 2025/i)).toBeInTheDocument();
-    });
   });
 
-  describe('Danger Zone Section', () => {
-    it('should_displayDangerZoneTitle_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/Danger Zone/i)).toBeInTheDocument();
-    });
-
-    it('should_displayDangerWarning_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByText(/These actions are irreversible/i)).toBeInTheDocument();
-    });
-
-    it('should_displayCancelEventButton_when_rendered', () => {
-      renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /Cancel Event/i })).toBeInTheDocument();
-    });
-
-    it('should_displayDeleteEventButton_when_noAttendees', () => {
+  describe('Conditional Rendering - Delete Button State', () => {
+    it('enables delete when no attendees', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
-      expect(deleteButton).toBeInTheDocument();
       expect(deleteButton).not.toBeDisabled();
     });
 
-    it('should_disableDeleteButton_when_hasAttendees', () => {
+    it('disables delete and shows warning when has attendees', () => {
       renderWithProviders(<EventSettingsTab event={mockEventWithAttendees} eventCode="BAT54" />);
 
       const deleteButton = screen.getByRole('button', { name: /Delete Event/i });
       expect(deleteButton).toBeDisabled();
-    });
-
-    it('should_displayCannotDeleteMessage_when_hasAttendees', () => {
-      renderWithProviders(<EventSettingsTab event={mockEventWithAttendees} eventCode="BAT54" />);
-
       expect(screen.getByText(/Cannot delete event with registrations/i)).toBeInTheDocument();
     });
   });

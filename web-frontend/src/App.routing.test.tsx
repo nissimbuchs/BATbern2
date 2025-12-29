@@ -14,6 +14,8 @@ import { PartnerDetailScreen } from '@/components/organizer/PartnerManagement/Pa
 // Mock the partner API
 vi.mock('@/services/api/partnerApi');
 
+const mockGetPartnerDetail = vi.mocked(partnerApi.getPartnerDetail);
+
 // Mock auth hook to return authenticated organizer
 vi.mock('@hooks/useAuth', () => ({
   useAuth: () => ({
@@ -81,7 +83,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
 
   // Test 13.1: Route should exist and accept companyName parameter
   it('should_renderPartnerDetail_when_routeWithCompanyNameAccessed', async () => {
-    (partnerApi.getPartnerDetail as any).mockResolvedValue(mockPartnerDetail);
+    mockGetPartnerDetail.mockResolvedValue(mockPartnerDetail);
 
     const queryClient = createTestQueryClient();
     render(
@@ -109,7 +111,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
   it('should_handle404_when_companyNameExceedsMaxLength', async () => {
     const longCompanyName = 'ThisIsAVeryLongCompanyName'; // > 12 chars
 
-    (partnerApi.getPartnerDetail as any).mockRejectedValue({
+    mockGetPartnerDetail.mockRejectedValue({
       response: { status: 400 },
     });
 
@@ -132,7 +134,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
 
   // Test 13.3: Direct URL access with companyName should work
   it('should_loadPartnerDetail_when_directURLAccessWithCompanyName', async () => {
-    (partnerApi.getPartnerDetail as any).mockResolvedValue(mockPartnerDetail);
+    mockGetPartnerDetail.mockResolvedValue(mockPartnerDetail);
 
     const queryClient = createTestQueryClient();
     render(
@@ -153,7 +155,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
 
   // Test 13.4: 404 handling for invalid companyName
   it('should_show404Error_when_invalidCompanyNameProvided', async () => {
-    (partnerApi.getPartnerDetail as any).mockRejectedValue({
+    mockGetPartnerDetail.mockRejectedValue({
       response: { status: 404, data: { message: 'Partner not found' } },
     });
 
@@ -176,7 +178,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
 
   // Test 13.5: Route parameter should be extracted correctly
   it('should_extractCompanyName_when_routeParameterProvided', async () => {
-    (partnerApi.getPartnerDetail as any).mockResolvedValue(mockPartnerDetail);
+    mockGetPartnerDetail.mockResolvedValue(mockPartnerDetail);
 
     const queryClient = createTestQueryClient();
     render(
