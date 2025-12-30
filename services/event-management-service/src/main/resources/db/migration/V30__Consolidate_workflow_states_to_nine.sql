@@ -46,6 +46,11 @@ UPDATE events
 SET workflow_state_old = workflow_state
 WHERE workflow_state_old IS NULL;
 
+-- Step 2.5: Drop old constraint BEFORE updating values
+-- =====================================================================================
+-- CRITICAL: Must drop constraint before UPDATE to allow new state values
+ALTER TABLE events DROP CONSTRAINT IF EXISTS events_workflow_state_check;
+
 -- Step 3: Consolidate 7 speaker-related states into SPEAKER_IDENTIFICATION
 -- =====================================================================================
 -- These states are consolidated because they represent sub-phases of speaker management
@@ -87,12 +92,9 @@ FROM events
 WHERE workflow_state_old IS NOT NULL
   AND workflow_state_old != workflow_state;
 
--- Step 6: Update database constraint to enforce 9-state model
+-- Step 6: Add new database constraint to enforce 9-state model
 -- =====================================================================================
--- Drop old constraint if it exists
-ALTER TABLE events DROP CONSTRAINT IF EXISTS events_workflow_state_check;
-
--- Add new constraint for 9-state model
+-- Add new constraint for 9-state model (old constraint already dropped in Step 2.5)
 ALTER TABLE events ADD CONSTRAINT events_workflow_state_check
 CHECK (workflow_state IN (
     'created',                  -- Event created, no topic yet
