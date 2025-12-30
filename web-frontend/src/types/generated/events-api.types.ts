@@ -1353,7 +1353,14 @@ export interface components {
       /** Format: uri */
       profilePhoto?: string;
     };
-    /** @description Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs */
+    /**
+     * @description Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+     *
+     *     **Placeholder Session Pattern (V21):**
+     *     Sessions can be created as placeholders when speakers accept invitations.
+     *     Placeholder sessions have title but null sessionType/startTime/endTime.
+     *     Timing is assigned later during slot assignment workflow (Story 5.7).
+     */
     Session: {
       /**
        * @description URL-friendly slug generated from session title
@@ -1368,21 +1375,29 @@ export interface components {
       title: string;
       description?: string;
       /**
+       * @description Session type - null for placeholder sessions, assigned during agenda planning
        * @example keynote
-       * @enum {string}
+       * @enum {string|null}
        */
-      sessionType:
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - null for placeholder sessions, assigned during slot assignment
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - null for placeholder sessions, assigned during slot assignment
+       */
+      endTime?: string | null;
       /** @example Main Hall */
       room?: string;
       /** @example 200 */
@@ -1729,44 +1744,80 @@ export interface components {
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
+    /**
+     * @description Create session request - supports creating placeholder sessions.
+     *
+     *     **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+     *     Timing will be assigned later during slot assignment workflow (Story 5.7).
+     *
+     *     **Full Sessions**: Provide all fields to create a fully-defined session.
+     */
     CreateSessionRequest: {
       title: string;
       description?: string;
-      /** @enum {string} */
-      sessionType:
+      /**
+       * @description Session type - omit for placeholder sessions
+       * @enum {string|null}
+       */
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - omit for placeholder sessions
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - omit for placeholder sessions
+       */
+      endTime?: string | null;
       room?: string;
       capacity?: number;
       /** @default de */
       language: string;
     };
+    /**
+     * @description Update session request - supports partial updates and slot assignment.
+     *
+     *     **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
+     *     **Full Update**: Update any combination of fields.
+     *     **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
+     */
     UpdateSessionRequest: {
       title: string;
       description?: string;
-      /** @enum {string} */
-      sessionType:
+      /**
+       * @description Session type - can be null for placeholder sessions
+       * @enum {string|null}
+       */
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
-      room?: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - use for slot assignment, set to null to clear
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - use for slot assignment, set to null to clear
+       */
+      endTime?: string | null;
+      /** @description Session room - assigned during slot assignment */
+      room?: string | null;
       capacity?: number;
       language?: string;
     };

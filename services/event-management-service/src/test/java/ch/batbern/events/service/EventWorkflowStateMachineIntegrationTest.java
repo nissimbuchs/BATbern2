@@ -226,13 +226,13 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should rollback transaction when validation fails")
     void should_rollbackTransaction_when_validationFails() {
-        // Given: Event in SPEAKER_BRAINSTORMING state
+        // Given: Event in SPEAKER_IDENTIFICATION state without accepted speakers (will fail threshold validation)
         testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         testEvent = eventRepository.save(testEvent);
 
-        // When: Attempt transition to SPEAKER_OUTREACH without sufficient speakers
+        // When: Attempt transition to SLOT_ASSIGNMENT without meeting threshold (no ACCEPTED speakers)
         assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername)
+                stateMachine.transitionToState(eventCode, EventWorkflowState.SLOT_ASSIGNMENT, organizerUsername)
         ).isInstanceOf(WorkflowValidationException.class);
 
         // Then: State should remain unchanged (transaction rolled back)

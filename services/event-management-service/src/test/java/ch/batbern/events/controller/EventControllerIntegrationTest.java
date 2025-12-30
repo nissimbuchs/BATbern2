@@ -1621,29 +1621,29 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_returnRegistrationOpenEvent_when_exists")
     void should_returnRegistrationOpenEvent_when_exists() throws Exception {
-        // Given - clean all and create NEWSLETTER_SENT event (equivalent to registration_open)
+        // Given - clean all and create AGENDA_FINALIZED event (equivalent to registration_open)
         eventRepository.deleteAll();
-        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2025-11-20T09:00:00Z", "NEWSLETTER_SENT");
+        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2025-11-20T09:00:00Z", "AGENDA_FINALIZED");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationOpenEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("NEWSLETTER_SENT"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
     }
 
     @Test
     @DisplayName("should_returnRegistrationClosedEvent_when_exists")
     void should_returnRegistrationClosedEvent_when_exists() throws Exception {
-        // Given - clean all and create EVENT_READY event (equivalent to registration_closed)
+        // Given - clean all and create AGENDA_FINALIZED event (equivalent to registration_closed)
         eventRepository.deleteAll();
-        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2025-10-10T09:00:00Z", "EVENT_READY");
+        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2025-10-10T09:00:00Z", "AGENDA_FINALIZED");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(registrationClosedEvent.getEventCode()))
-                .andExpect(jsonPath("$.workflowState").value("EVENT_READY"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
     }
 
     @Test
@@ -1654,15 +1654,15 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Create events with different dates and statuses
         createTestEvent("Future Event 1", "2026-12-15T09:00:00Z", "AGENDA_PUBLISHED");
-        Event nearestEvent = createTestEvent("Nearest Event", "2025-08-10T09:00:00Z", "NEWSLETTER_SENT");
-        createTestEvent("Future Event 2", "2027-01-20T09:00:00Z", "EVENT_READY");
+        Event nearestEvent = createTestEvent("Nearest Event", "2025-08-10T09:00:00Z", "AGENDA_FINALIZED");
+        createTestEvent("Future Event 2", "2027-01-20T09:00:00Z", "AGENDA_FINALIZED");
 
         // When/Then - should return the event with the earliest date
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(nearestEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value("Nearest Event"))
-                .andExpect(jsonPath("$.workflowState").value("NEWSLETTER_SENT"));
+                .andExpect(jsonPath("$.workflowState").value("AGENDA_FINALIZED"));
     }
 
     @Test

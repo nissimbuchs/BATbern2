@@ -55,7 +55,7 @@ public class WorkflowTransitionValidator {
             Map.entry(EventWorkflowState.CREATED, EnumSet.of(
                     EventWorkflowState.CREATED,              // Idempotent
                     EventWorkflowState.TOPIC_SELECTION,      // Manual transition
-                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto-transition when speaker added (skip TOPIC_SELECTION)
+                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto when speaker added
             )),
             Map.entry(EventWorkflowState.TOPIC_SELECTION, EnumSet.of(
                     EventWorkflowState.TOPIC_SELECTION,      // Idempotent

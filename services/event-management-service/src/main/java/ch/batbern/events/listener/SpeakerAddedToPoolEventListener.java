@@ -65,8 +65,8 @@ public class SpeakerAddedToPoolEventListener {
             EventWorkflowState currentState = eventEntity.getWorkflowState();
 
             // Only transition if event is in CREATED or TOPIC_SELECTION state
-            if (currentState == EventWorkflowState.CREATED ||
-                currentState == EventWorkflowState.TOPIC_SELECTION) {
+            if (currentState == EventWorkflowState.CREATED
+                || currentState == EventWorkflowState.TOPIC_SELECTION) {
 
                 log.info("Auto-transitioning event {} from {} to SPEAKER_IDENTIFICATION (speaker added: {})",
                         event.getEventCode(), currentState, event.getSpeakerName());
