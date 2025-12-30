@@ -1,17 +1,25 @@
 package ch.batbern.events.service.slotassignment;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionTimingHistory;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SessionNotFoundException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
+import ch.batbern.shared.events.SessionTimingAssignedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -34,6 +42,8 @@ public class SessionTimingService {
     private final SessionTimingHistoryRepository sessionTimingHistoryRepository;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.service.SpeakerWorkflowService speakerWorkflowService;
+    private final EventRepository eventRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Assign timing to a session (drag-and-drop slot assignment)
@@ -74,6 +84,9 @@ public class SessionTimingService {
 
         // Story BAT-11 Task 6: Auto-confirm speaker if quality reviewed
         checkAndAutoConfirmSpeaker(session, changedBy);
+
+        // Publish SessionTimingAssignedEvent to trigger workflow transition to AGENDA_PUBLISHED
+        publishSessionTimingAssignedEvent(session, changedBy);
 
         log.info("Session timing assigned successfully: {}", sessionSlug);
         return savedSession;
@@ -202,5 +215,69 @@ public class SessionTimingService {
                                 speaker.getId(), speaker.getStatus());
                     }
                 });
+    }
+
+    /**
+     * Publish SessionTimingAssignedEvent for workflow automation.
+     *
+     * This event triggers the listener to check if all sessions have timing
+     * and if the published phase is "speakers" or "agenda", then auto-transition
+     * the event to AGENDA_PUBLISHED state.
+     *
+     * @param session The session that just got timing assigned
+     * @param assignedBy Username of organizer making the change
+     */
+    private void publishSessionTimingAssignedEvent(Session session, String assignedBy) {
+        try {
+            // Get event details
+            Event event = eventRepository.findById(session.getEventId())
+                    .orElse(null);
+
+            if (event == null) {
+                log.warn("Event not found for session {}, skipping SessionTimingAssignedEvent", session.getId());
+                return;
+            }
+
+            // Get speaker details if available
+            Optional<SpeakerPool> speakerOpt = speakerPoolRepository.findBySessionId(session.getId());
+
+            // Convert Instant to LocalDateTime
+            LocalDateTime startTime = session.getStartTime() != null
+                    ? LocalDateTime.ofInstant(session.getStartTime(), ZoneId.systemDefault())
+                    : null;
+
+            if (startTime == null) {
+                log.warn("Session {} has null startTime after assignment, skipping event publication", session.getId());
+                return;
+            }
+
+            // Calculate duration in minutes
+            Integer duration = null;
+            if (session.getEndTime() != null) {
+                long durationSeconds = session.getEndTime().getEpochSecond() - session.getStartTime().getEpochSecond();
+                duration = (int) (durationSeconds / 60);
+            }
+
+            SessionTimingAssignedEvent timingEvent = SessionTimingAssignedEvent.builder()
+                    .eventId(event.getId())
+                    .eventCode(event.getEventCode())
+                    .sessionId(session.getId())
+                    .sessionTitle(session.getTitle())
+                    .startTime(startTime)
+                    .duration(duration)
+                    .speakerPoolId(speakerOpt.map(SpeakerPool::getId).orElse(null))
+                    .speakerName(speakerOpt.map(SpeakerPool::getSpeakerName).orElse(null))
+                    .assignedBy(assignedBy)
+                    .build();
+
+            eventPublisher.publishEvent(timingEvent);
+            log.debug("Published SessionTimingAssignedEvent for session: {}, event: {}",
+                    session.getId(), event.getEventCode());
+
+        } catch (Exception e) {
+            // Log error but don't break the timing assignment
+            log.error("Failed to publish SessionTimingAssignedEvent for session {}: {}",
+                    session.getId(), e.getMessage(), e);
+        }
     }
 }

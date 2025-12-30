@@ -469,10 +469,11 @@ public class EventController {
 
         // Find the next event with active workflow states (V17: changed from status to workflowState)
         // Returns the event nearest to current date
+        // 9-State Model: NEWSLETTER_SENT and EVENT_READY consolidated into AGENDA_FINALIZED
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.AGENDA_PUBLISHED,
-                EventWorkflowState.NEWSLETTER_SENT,
-                EventWorkflowState.EVENT_READY
+                EventWorkflowState.AGENDA_FINALIZED,
+                EventWorkflowState.EVENT_LIVE
         );
         Event currentEvent = eventRepository
                 .findFirstByWorkflowStateInOrderByDateAsc(activeWorkflowStates)

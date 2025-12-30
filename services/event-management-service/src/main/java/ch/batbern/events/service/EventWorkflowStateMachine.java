@@ -147,12 +147,7 @@ public class EventWorkflowStateMachine {
      */
     private void validateBusinessRules(Event event, EventWorkflowState targetState) {
         switch (targetState) {
-            case SPEAKER_OUTREACH:
-                validateMinimumSpeakersIdentified(event);
-                break;
-            case QUALITY_REVIEW:
-                validateAllContentSubmitted(event);
-                break;
+            // 9-State Model: Removed SPEAKER_OUTREACH and QUALITY_REVIEW (consolidated into SPEAKER_IDENTIFICATION)
             case SLOT_ASSIGNMENT:
                 validateMinimumThresholdMet(event);
                 break;

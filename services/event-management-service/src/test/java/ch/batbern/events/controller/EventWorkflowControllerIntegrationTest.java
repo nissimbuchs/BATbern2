@@ -128,7 +128,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
 
         // Verify final state
         Event updatedEvent = eventRepository.findById(testEvent.getId()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -169,7 +169,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 422 when invalid backward transition is attempted")
     void should_return422_when_invalidBackwardTransition_attempted() throws Exception {
         // Given: Event in SPEAKER_BRAINSTORMING state
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
         // When: Attempt backward transition SPEAKER_BRAINSTORMING → CREATED
@@ -190,7 +190,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 422 when validation fails for transition (e.g., insufficient speakers)")
     void should_return422_when_validationFails_forTransition() throws Exception {
         // Given: Event in TOPIC_SELECTION state (ready to transition to SPEAKER_OUTREACH)
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
         // When: Attempt transition to SPEAKER_OUTREACH (requires minimum speakers identified)
@@ -205,7 +205,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
 
         // Verify state unchanged in database
         Event unchangedEvent = eventRepository.findById(testEvent.getId()).orElseThrow();
-        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -216,7 +216,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @DisplayName("Should return 422 when validation fails for quality review (content not submitted)")
     void should_return422_when_validationFails_forQualityReview() throws Exception {
         // Given: Event in CONTENT_COLLECTION state
-        testEvent.setWorkflowState(EventWorkflowState.CONTENT_COLLECTION);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
         // When: Attempt transition to QUALITY_REVIEW (requires all content submitted)

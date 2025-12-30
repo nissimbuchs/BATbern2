@@ -3,6 +3,7 @@ package ch.batbern.events.service.slotassignment;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionTimingHistory;
 import ch.batbern.events.exception.SessionNotFoundException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.List;
@@ -56,6 +58,12 @@ class SessionTimingServiceTest {
     @Mock
     private ch.batbern.events.service.SpeakerWorkflowService speakerWorkflowService;
 
+    @Mock
+    private EventRepository eventRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private Session placeholderSession;
     private Session assignedSession;
 
@@ -65,7 +73,9 @@ class SessionTimingServiceTest {
                 sessionRepository,
                 sessionTimingHistoryRepository,
                 speakerPoolRepository,
-                speakerWorkflowService
+                speakerWorkflowService,
+                eventRepository,
+                eventPublisher
         );
 
         placeholderSession = Session.builder()

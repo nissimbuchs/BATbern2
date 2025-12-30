@@ -14,10 +14,12 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
+import ch.batbern.shared.events.SpeakerAcceptedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,7 @@ public class SpeakerStatusService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Update speaker status with validation
@@ -90,6 +93,25 @@ public class SpeakerStatusService {
 
         // Save updated speaker pool entry
         speakerPoolRepository.save(speaker);
+
+        // Publish SpeakerAcceptedEvent if status changed to ACCEPTED (triggers workflow transition)
+        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED) {
+            Event event = eventRepository.findById(speaker.getEventId())
+                    .orElseThrow(() -> new NotFoundException("Event not found: " + speaker.getEventId()));
+
+            SpeakerAcceptedEvent acceptedEvent = SpeakerAcceptedEvent.builder()
+                    .eventId(event.getId())
+                    .eventCode(event.getEventCode())
+                    .speakerPoolId(speaker.getId())
+                    .speakerName(speaker.getSpeakerName())
+                    .company(speaker.getCompany())
+                    .expertise(speaker.getExpertise())
+                    .acceptedBy(organizerUsername)
+                    .build();
+            eventPublisher.publishEvent(acceptedEvent);
+            log.debug("Published SpeakerAcceptedEvent for speaker: {}, event: {}",
+                    speaker.getSpeakerName(), event.getEventCode());
+        }
 
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();

@@ -148,12 +148,12 @@ class EventWorkflowStateMachineTest {
     @DisplayName("Test 2.3: Should throw validation exception when insufficient speakers for SPEAKER_OUTREACH")
     void should_throwValidationException_when_insufficientSpeakers_forTransition() {
         // Given: Event with insufficient speakers (need 6, have 3)
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
 
         // When/Then: Transition to SPEAKER_OUTREACH should fail
         assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_OUTREACH, organizerUsername)
+                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername)
         )
                 .isInstanceOf(WorkflowValidationException.class)
                 .hasMessageContaining("Insufficient speakers identified");
@@ -170,12 +170,12 @@ class EventWorkflowStateMachineTest {
     @DisplayName("Test 2.4: Should throw validation exception when content not submitted for QUALITY_REVIEW")
     void should_throwValidationException_when_contentNotSubmitted_forQualityReview() {
         // Given: Event without all content submitted
-        testEvent.setWorkflowState(EventWorkflowState.CONTENT_COLLECTION);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
 
         // When/Then: Transition to QUALITY_REVIEW should fail
         assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.QUALITY_REVIEW, organizerUsername)
+                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername)
         )
                 .isInstanceOf(WorkflowValidationException.class)
                 .hasMessageContaining("Not all content submitted");
@@ -189,7 +189,7 @@ class EventWorkflowStateMachineTest {
     @DisplayName("Test 2.5: Should throw validation exception when threshold not met for SLOT_ASSIGNMENT")
     void should_throwValidationException_when_thresholdNotMet_forSlotAssignment() {
         // Given: Event that hasn't met minimum speaker threshold
-        testEvent.setWorkflowState(EventWorkflowState.THRESHOLD_CHECK);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
         // Mock speaker pool to return 0 speakers (threshold not met)
         when(speakerPoolRepository.countByEventIdAndStatus(any(UUID.class), any())).thenReturn(0L);
@@ -286,10 +286,10 @@ class EventWorkflowStateMachineTest {
         testEvent.setWorkflowState(EventWorkflowState.TOPIC_SELECTION);
 
         // When: Second transition to SPEAKER_BRAINSTORMING
-        Event afterSecond = stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_BRAINSTORMING, organizerUsername);
+        Event afterSecond = stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername);
 
         // Then: Both transitions successful
-        assertThat(afterSecond.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(afterSecond.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         // Verify two domain events published (once per transition)
         verify(eventPublisher, times(2)).publish(any(EventWorkflowTransitionEvent.class));

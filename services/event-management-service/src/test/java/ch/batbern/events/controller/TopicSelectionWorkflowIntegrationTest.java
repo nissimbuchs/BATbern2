@@ -85,7 +85,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Verify: Event is now in SPEAKER_BRAINSTORMING state (topic selection complete)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -112,7 +112,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Verify state machine was called by checking the event state changed to SPEAKER_BRAINSTORMING
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -140,7 +140,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Verify the workflow transition occurred (event publishing happens in state machine)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
         assertThat(updatedEvent.getTopicCode()).isEqualTo(topic.getTopicCode());
     }
 
@@ -155,7 +155,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_validateEventState_when_attemptingTopicSelection() throws Exception {
         // Given: Event in SPEAKER_OUTREACH state (invalid for topic selection)
-        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_OUTREACH);
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_IDENTIFICATION);
         Topic topic = createTestTopic("DevOps Best Practices");
 
         // When: Attempt to select topic for event in invalid state
@@ -308,7 +308,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
         Topic initialTopic = createTestTopic("Cloud Architecture");
         Topic newTopic = createTestTopic("Microservices Patterns");
 
-        Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_BRAINSTORMING);
+        Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_IDENTIFICATION);
         event.setTopicCode(initialTopic.getTopicCode());
         event = eventRepository.save(event);
 
