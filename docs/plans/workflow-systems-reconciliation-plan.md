@@ -115,10 +115,10 @@ The following mapping will be applied during migration:
 | From State | To State | Trigger Type | Trigger Source | Implementation Status |
 |------------|----------|--------------|----------------|----------------------|
 | CREATED | TOPIC_SELECTION | Manual | `EventWorkflowController.transitionEventWorkflowState()` | ✅ Implemented |
-| CREATED | SPEAKER_IDENTIFICATION | Automatic | `SpeakerAddedToPoolEventListener` (when speaker added) | ⏳ Planned |
-| TOPIC_SELECTION | SPEAKER_IDENTIFICATION | Automatic | `TopicService.selectTopicForEvent()` OR `SpeakerAddedToPoolEventListener` | ✅ Topic auto-transition exists (currently → SPEAKER_BRAINSTORMING) |
-| SPEAKER_IDENTIFICATION | SLOT_ASSIGNMENT | Automatic | `SpeakerAcceptedEventListener` (when 1+ speaker ACCEPTED) | ⏳ Planned |
-| SLOT_ASSIGNMENT | AGENDA_PUBLISHED | Automatic | `SessionTimingAssignedEventListener` (all timing + phase check) | ⏳ Planned |
+| CREATED | SPEAKER_IDENTIFICATION | Automatic | `SpeakerAddedToPoolEventListener` (when speaker added) | ✅ **COMPLETE** (Phase 3) |
+| TOPIC_SELECTION | SPEAKER_IDENTIFICATION | Automatic | `TopicService.selectTopicForEvent()` OR `SpeakerAddedToPoolEventListener` | ✅ **COMPLETE** (Both paths implemented) |
+| SPEAKER_IDENTIFICATION | SLOT_ASSIGNMENT | Automatic | `SpeakerAcceptedEventListener` (when 1+ speaker ACCEPTED) | ✅ **COMPLETE** (Phase 4) |
+| SLOT_ASSIGNMENT | AGENDA_PUBLISHED | Automatic | `SessionTimingAssignedEventListener` (all timing + phase check) | ✅ **COMPLETE** (Phase 5) |
 | AGENDA_PUBLISHED | AGENDA_FINALIZED | Manual | `EventWorkflowController.transitionEventWorkflowState()` | ✅ Implemented |
 | AGENDA_FINALIZED | EVENT_LIVE | Automatic | **MISSING: Cron job** (event date reached) | ❌ Future work |
 | EVENT_LIVE | EVENT_COMPLETED | Automatic | **MISSING: Cron job** (event date passed) | ❌ Future work |
@@ -513,33 +513,33 @@ export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
 - Bulk-updated 6 test files with sed (replaced all removed state references)
 - **All 27 WorkflowTransitionValidatorTest tests PASSING** ✅
 
-### 📋 Remaining Tasks (6/16)
+### 📋 Remaining Tasks (3/16)
 
-**Phase 3: Auto-Transition #1 - Speaker Pool Addition**
-- 3.1: Create `SpeakerAddedToPoolEvent.java` domain event (NEW file in shared-kernel)
-- 3.2: Update `SpeakerPoolService.java` to publish event (after line 76)
-- 3.3: Create `SpeakerAddedToPoolEventListener.java` (NEW file)
-- 3.4: Create `AsyncConfig.java` to enable @Async (NEW file)
+**Phase 3: Auto-Transition #1 - Speaker Pool Addition** ✅ **COMPLETE**
+- ✅ 3.1: Create `SpeakerAddedToPoolEvent.java` domain event (NEW file in shared-kernel)
+- ✅ 3.2: Update `SpeakerPoolService.java` to publish event (after line 76)
+- ✅ 3.3: Create `SpeakerAddedToPoolEventListener.java` (NEW file)
+- ✅ 3.4: Update `AsyncConfig.java` to enable @Async for workflow listeners
 
-**Phase 4: Auto-Transition #2 - Speaker Acceptance**
-- 4.1: Create `SpeakerAcceptedEvent.java` domain event (NEW file in shared-kernel)
-- 4.2: Update `SpeakerStatusService.java` to publish event (after line 92)
-- 4.3: Create `SpeakerAcceptedEventListener.java` with threshold check (NEW file)
+**Phase 4: Auto-Transition #2 - Speaker Acceptance** ✅ **COMPLETE**
+- ✅ 4.1: Create `SpeakerAcceptedEvent.java` domain event (NEW file in shared-kernel)
+- ✅ 4.2: Update `SpeakerStatusService.java` to publish event (after line 92)
+- ✅ 4.3: Create `SpeakerAcceptedEventListener.java` with threshold check (NEW file)
 
-**Phase 5: Auto-Transition #3 - Session Timing**
-- 5.1: Create `SessionTimingAssignedEvent.java` domain event (NEW file in shared-kernel)
-- 5.2: Update `SessionTimingService.java` to publish event (after line 73)
-- 5.3: Create `SessionTimingAssignedEventListener.java` with phase check (NEW file)
+**Phase 5: Auto-Transition #3 - Session Timing** ✅ **COMPLETE**
+- ✅ 5.1: Create `SessionTimingAssignedEvent.java` domain event (NEW file in shared-kernel)
+- ✅ 5.2: Update `SessionTimingService.java` to publish event (after line 73)
+- ✅ 5.3: Create `SessionTimingAssignedEventListener.java` with phase check (NEW file)
 
-**Phase 6: Frontend Updates**
-- 6.1: Regenerate API types: `cd shared-kernel && ./gradlew build publishToMavenLocal && cd ../services/event-management-service && ./gradlew build && cd ../../web-frontend && npm run generate:api-types`
-- 6.2: Update `EventPublishingTab.tsx` workflow display logic
-- 6.3: Update any components displaying workflow state
+**Phase 6: Frontend Updates** ⏳ **IN PROGRESS**
+- ⏳ 6.1: Regenerate API types: `cd shared-kernel && ./gradlew build publishToMavenLocal && cd ../services/event-management-service && ./gradlew build && cd ../../web-frontend && npm run generate:api-types`
+- ⏳ 6.2: Update `EventPublishingTab.tsx` workflow display logic
+- ⏳ 6.3: Update any components displaying workflow state
 
-**Testing & Verification**
-- Run all integration tests with 9-state model
-- Verify migration on staging database
-- End-to-end workflow testing
+**Testing & Verification** ⏳ **PENDING**
+- ⏳ Run all integration tests with 9-state model
+- ⏳ Verify migration on staging database
+- ⏳ End-to-end workflow testing
 
 ### 🎯 Implementation Plan Reference
 
@@ -555,19 +555,19 @@ Full implementation plan available at:
 
 ### 📊 Progress Metrics
 
-- **Phases Complete**: 4/6 (67%) - **Phase 2 COMPLETE** ✅
-- **Tasks Complete**: 10/16 (63%)
-- **Critical Path Status**: Phase 2 (State Consolidation) - **100% COMPLETE** ✅
-- **Next Phase**: Phase 3 (Auto-Transitions) - Ready to start
-- **Estimated Remaining**: 4-6 days (Phases 3-6)
+- **Phases Complete**: 5/6 (83%) - **Phases 2-5 COMPLETE** ✅
+- **Tasks Complete**: 13/16 (81%)
+- **Critical Path Status**: Phase 5 (Auto-Transitions) - **100% COMPLETE** ✅
+- **Current Phase**: Phase 6 (Frontend Updates & Testing) - **IN PROGRESS** ⏳
+- **Estimated Remaining**: 1-2 days (Phase 6 + Testing)
 
 ### 🔄 How to Resume
 
 **To continue implementation in new session**:
 1. Review this section for current status
 2. Refer to implementation plan: `/Users/nissim/.claude/plans/cosmic-mixing-wand.md`
-3. **Start with Phase 3**: Auto-Transition #1 - Speaker Pool Addition
-4. Follow plan sequentially for Phases 3-6
+3. **Start with Phase 6**: Frontend Updates & Testing
+4. Run integration tests to verify all auto-transitions work correctly
 
 **Files Modified in Phase 2** (State Consolidation - COMPLETE):
 - ✅ `docs/plans/workflow-systems-reconciliation-plan.md` (this file)
@@ -581,8 +581,30 @@ Full implementation plan available at:
 - ✅ `services/event-management-service/src/main/java/ch/batbern/events/controller/EventWorkflowController.java`
 - ✅ 6 test files (bulk-updated with sed)
 
-**Files to Create in Phase 3** (Auto-Transitions):
-- `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerAddedToPoolEvent.java` (NEW)
-- `services/event-management-service/src/main/java/ch/batbern/events/listener/SpeakerAddedToPoolEventListener.java` (NEW)
-- `services/event-management-service/src/main/java/ch/batbern/events/config/AsyncConfig.java` (NEW)
-- See implementation plan for complete file list
+**Files Created/Modified in Phases 3-5** (Auto-Transitions - COMPLETE):
+
+*Domain Events (shared-kernel):*
+- ✅ `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerAddedToPoolEvent.java` (NEW)
+- ✅ `shared-kernel/src/main/java/ch/batbern/shared/events/SpeakerAcceptedEvent.java` (NEW)
+- ✅ `shared-kernel/src/main/java/ch/batbern/shared/events/SessionTimingAssignedEvent.java` (NEW)
+
+*Event Listeners (event-management-service):*
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/listener/SpeakerAddedToPoolEventListener.java` (NEW)
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/listener/SpeakerAcceptedEventListener.java` (NEW)
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/listener/SessionTimingAssignedEventListener.java` (NEW)
+
+*Service Updates (event publishers):*
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerPoolService.java` (MODIFIED - publishes SpeakerAddedToPoolEvent)
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerStatusService.java` (MODIFIED - publishes SpeakerAcceptedEvent)
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/service/slotassignment/SessionTimingService.java` (MODIFIED - publishes SessionTimingAssignedEvent)
+
+*Configuration:*
+- ✅ `services/event-management-service/src/main/java/ch/batbern/events/config/AsyncConfig.java` (MODIFIED - added workflow listener support)
+
+*Test Updates:*
+- ✅ `shared-kernel/src/test/java/ch/batbern/shared/unit/types/EventWorkflowStateTest.java` (MODIFIED - 9-state model)
+- ✅ `shared-kernel/src/test/java/ch/batbern/shared/unit/events/EventWorkflowTransitionEventTest.java` (MODIFIED - 9-state references)
+- ✅ `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerStatusServiceTest.java` (MODIFIED - added event publisher mock)
+- ✅ `services/event-management-service/src/test/java/ch/batbern/events/service/slotassignment/SessionTimingServiceTest.java` (MODIFIED - added event publisher mock)
+
+**Commit Hash**: `b551dbad` - feat(workflow): implement automatic workflow transitions (Phases 3-5)
