@@ -285,8 +285,14 @@ export const EventPage: React.FC = () => {
           mode="edit"
           event={event}
           onClose={closeEditModal}
-          onSuccess={() => {
+          onSuccess={(updatedEvent) => {
             closeEditModal();
+            // Redirect if eventCode changed (e.g., eventNumber 58 -> 998 regenerates BATbern58 -> BATbern998)
+            if (updatedEvent && updatedEvent.eventCode !== eventCode) {
+              navigate(
+                `/organizer/events/${updatedEvent.eventCode}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`
+              );
+            }
           }}
         />
       )}
