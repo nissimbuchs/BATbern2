@@ -217,12 +217,18 @@ export const useUpdateEvent = (): UseMutationResult<
       // Invalidate ALL event-related caches for proper MVC pattern
       // 1. List caches (all pagination/filter combinations)
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      // 2. Detail caches for BOTH old and new eventCode (in case eventCode changed)
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+
       if (updatedEvent.eventCode !== eventCode) {
         // EventCode changed (e.g., eventNumber 58 -> 998 regenerates BATbern58 -> BATbern998)
+        // REMOVE old eventCode cache (don't invalidate/refetch - it would 404)
+        queryClient.removeQueries({ queryKey: ['event', eventCode] });
+        // Invalidate new eventCode cache to trigger refetch with new data
         queryClient.invalidateQueries({ queryKey: ['event', updatedEvent.eventCode] });
+      } else {
+        // EventCode unchanged - normal invalidation to refresh data
+        queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
       }
+
       // 3. Current event cache (in case updated event is the current published one)
       queryClient.invalidateQueries({ queryKey: ['events', 'current'] });
     },
