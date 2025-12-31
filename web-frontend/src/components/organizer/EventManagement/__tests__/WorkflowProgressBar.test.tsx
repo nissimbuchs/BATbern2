@@ -55,8 +55,12 @@ vi.mock('react-i18next', () => ({
         const stateTranslations: Record<string, string> = {
           'workflow.states.created': 'Created',
           'workflow.states.topic_selection': 'Topic Selection',
-          'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
-          'workflow.states.quality_review': 'Quality Review',
+          'workflow.states.speaker_identification': 'Speaker Identification',
+          'workflow.states.slot_assignment': 'Slot Assignment',
+          'workflow.states.agenda_published': 'Agenda Published',
+          'workflow.states.agenda_finalized': 'Agenda Finalized',
+          'workflow.states.event_live': 'Event Live',
+          'workflow.states.event_completed': 'Event Completed',
           'workflow.states.archived': 'Archived',
         };
         return stateTranslations[key] || fallback || key;
@@ -76,9 +80,9 @@ describe('WorkflowProgressBar Component', () => {
   });
 
   const mockWorkflowInProgress: WorkflowState = {
-    currentStep: 7,
-    totalSteps: 16,
-    completionPercentage: 43,
+    currentStep: 4,
+    totalSteps: 9,
+    completionPercentage: 44,
     steps: [
       {
         stepNumber: 1,
@@ -97,20 +101,20 @@ describe('WorkflowProgressBar Component', () => {
         isRequired: true,
       },
       {
-        stepNumber: 7,
-        name: 'Speaker Research',
+        stepNumber: 4,
+        name: 'Slot Assignment',
         status: 'in_progress',
         isRequired: true,
       },
       {
-        stepNumber: 8,
-        name: 'Speaker Invitation',
+        stepNumber: 5,
+        name: 'Agenda Published',
         status: 'pending',
         isRequired: true,
       },
       {
-        stepNumber: 16,
-        name: 'Post-Event Review',
+        stepNumber: 9,
+        name: 'Archived',
         status: 'pending',
         isRequired: false,
       },
@@ -122,13 +126,13 @@ describe('WorkflowProgressBar Component', () => {
     ...mockWorkflowInProgress,
     blockers: [
       {
-        stepNumber: 7,
+        stepNumber: 4,
         severity: 'warning',
         message: 'Waiting for venue confirmation',
         blockedSince: '2025-01-10T10:00:00Z',
       },
       {
-        stepNumber: 9,
+        stepNumber: 5,
         severity: 'critical',
         message: '3 speakers have not confirmed',
         blockedSince: '2025-01-08T10:00:00Z',
@@ -137,8 +141,8 @@ describe('WorkflowProgressBar Component', () => {
   };
 
   const mockWorkflowCompleted: WorkflowState = {
-    currentStep: 16,
-    totalSteps: 16,
+    currentStep: 9,
+    totalSteps: 9,
     completionPercentage: 100,
     steps: [],
     blockers: [],
@@ -157,17 +161,17 @@ describe('WorkflowProgressBar Component', () => {
     it('should_displayCompletionPercentage_when_workflowInProgress', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should show "43%" completion
-      expect(screen.getByText(/43%/i)).toBeInTheDocument();
+      // Should show "44%" completion
+      expect(screen.getByText(/44%/i)).toBeInTheDocument();
     });
 
     it('should_setProgressBarValue_when_rendered', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
       const progressBar = screen.getByRole('progressbar', {
-        name: /click to view workflow details.*43%/i,
+        name: /click to view workflow details.*44%/i,
       });
-      expect(progressBar).toHaveAttribute('aria-valuenow', '43');
+      expect(progressBar).toHaveAttribute('aria-valuenow', '44');
       expect(progressBar).toHaveAttribute('aria-valuemin', '0');
       expect(progressBar).toHaveAttribute('aria-valuemax', '100');
     });
@@ -224,23 +228,23 @@ describe('WorkflowProgressBar Component', () => {
     it('should_showCurrentStep_when_workflowInProgress', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should display "Step 7/16"
-      expect(screen.getByText(/step 7\/16/i)).toBeInTheDocument();
+      // Should display "Step 4/9"
+      expect(screen.getByText(/step 4\/9/i)).toBeInTheDocument();
     });
 
     it('should_showStepName_when_workflowInProgress', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should display workflow state name "Quality Review" (Step 7 corresponds to QUALITY_REVIEW)
-      expect(screen.getByText(/quality review/i)).toBeInTheDocument();
+      // Should display workflow state name "Slot Assignment" (Step 4 corresponds to SLOT_ASSIGNMENT)
+      expect(screen.getByText(/slot assignment/i)).toBeInTheDocument();
     });
 
     it('should_showCurrentStepFormat_when_rendered', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
 
-      // Should display "Step 7/16" and workflow state name separately
-      expect(screen.getByText(/step 7\/16/i)).toBeInTheDocument();
-      expect(screen.getByText(/quality review/i)).toBeInTheDocument();
+      // Should display "Step 4/9" and workflow state name separately
+      expect(screen.getByText(/step 4\/9/i)).toBeInTheDocument();
+      expect(screen.getByText(/slot assignment/i)).toBeInTheDocument();
     });
 
     it('should_showCompletedStatus_when_workflowCompleted', () => {

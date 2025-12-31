@@ -35,10 +35,13 @@ vi.mock('react-i18next', () => ({
         'dashboard.workflowProgress': 'Workflow Progress',
         'workflow.states.created': 'Created',
         'workflow.states.topic_selection': 'Topic Selection',
-        'workflow.states.speaker_brainstorming': 'Speaker Brainstorming',
-        'workflow.states.speaker_outreach': 'Speaker Outreach',
-        'workflow.states.quality_review': 'Quality Review',
+        'workflow.states.speaker_identification': 'Speaker Identification',
+        'workflow.states.slot_assignment': 'Slot Assignment',
         'workflow.states.agenda_published': 'Agenda Published',
+        'workflow.states.agenda_finalized': 'Agenda Finalized',
+        'workflow.states.event_live': 'Event Live',
+        'workflow.states.event_completed': 'Event Completed',
+        'workflow.states.archived': 'Archived',
       };
 
       // Handle parameterized translations like stepIndicator
@@ -63,7 +66,7 @@ describe('EventCard Component', () => {
     eventDate: '2025-03-15T18:00:00Z',
     eventType: 'full_day',
     status: 'active',
-    workflowState: 'QUALITY_REVIEW', // Step 7 of 16 = 44% progress
+    workflowState: 'SLOT_ASSIGNMENT', // Step 4 of 9 = 44% progress
     registrationDeadline: '2025-03-08T23:59:59Z',
     capacity: 200,
     currentAttendeeCount: 50,
@@ -138,7 +141,7 @@ describe('EventCard Component', () => {
     });
 
     it('should_colorProgressBar_when_progressBelow30', () => {
-      const earlyEvent = { ...mockEvent, workflowState: 'TOPIC_SELECTION' as const }; // Step 2 = 13%
+      const earlyEvent = { ...mockEvent, workflowState: 'TOPIC_SELECTION' as const }; // Step 2/9 = 22%
       render(<EventCard event={earlyEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -146,7 +149,7 @@ describe('EventCard Component', () => {
     });
 
     it('should_colorProgressBar_when_progressAbove70', () => {
-      const advancedEvent = { ...mockEvent, workflowState: 'NEWSLETTER_SENT' as const }; // Step 13 = 81%
+      const advancedEvent = { ...mockEvent, workflowState: 'EVENT_LIVE' as const }; // Step 7/9 = 78%
       render(<EventCard event={advancedEvent} />, { wrapper: createWrapper() });
 
       const progressBar = screen.getByRole('progressbar');
@@ -158,29 +161,29 @@ describe('EventCard Component', () => {
     it('should_displayWorkflowStep_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Should display "Step 7/16" format
-      expect(screen.getByText(/step.*7.*16/i)).toBeInTheDocument();
+      // Should display "Step 4/9" format
+      expect(screen.getByText(/step.*4.*9/i)).toBeInTheDocument();
     });
 
     it('should_displayWorkflowStepName_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Should display workflow state name (e.g., "QUALITY_REVIEW")
-      // The i18n key is workflow.states.quality_review
+      // Should display workflow state name (e.g., "SLOT_ASSIGNMENT")
+      // The i18n key is workflow.states.slot_assignment
       // Using getAllByText since it may appear in multiple places
-      const elements = screen.getAllByText(/quality.?review/i);
+      const elements = screen.getAllByText(/slot.?assignment/i);
       expect(elements.length).toBeGreaterThan(0);
     });
 
     it('should_updateStep_when_differentWorkflowState', () => {
       const { rerender } = render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/step.*7.*16/i)).toBeInTheDocument();
+      expect(screen.getByText(/step.*4.*9/i)).toBeInTheDocument();
 
-      const updatedEvent = { ...mockEvent, workflowState: 'SPEAKER_BRAINSTORMING' as const }; // Step 3
+      const updatedEvent = { ...mockEvent, workflowState: 'SPEAKER_IDENTIFICATION' as const }; // Step 3/9
       rerender(<EventCard event={updatedEvent} />);
 
-      expect(screen.getByText(/step.*3.*16/i)).toBeInTheDocument();
+      expect(screen.getByText(/step.*3.*9/i)).toBeInTheDocument();
     });
   });
 
@@ -311,8 +314,8 @@ describe('EventCard Component', () => {
     it('should_translateWorkflowState_when_rendered', () => {
       render(<EventCard event={mockEvent} />, { wrapper: createWrapper() });
 
-      // Workflow state should be translated (QUALITY_REVIEW)
-      expect(screen.getAllByText(/quality.?review/i).length).toBeGreaterThan(0);
+      // Workflow state should be translated (SLOT_ASSIGNMENT)
+      expect(screen.getAllByText(/slot.?assignment/i).length).toBeGreaterThan(0);
     });
 
     it('should_translateEventType_when_rendered', () => {
