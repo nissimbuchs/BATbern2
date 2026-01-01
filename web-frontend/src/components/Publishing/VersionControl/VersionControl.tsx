@@ -17,8 +17,10 @@ import {
   Typography,
   CircularProgress,
   Tooltip,
+  TextField,
 } from '@mui/material';
 import { Restore, CheckCircle, HourglassEmpty, Error } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import type { PublishingVersion } from '@/types/event.types';
 
@@ -26,30 +28,71 @@ export interface VersionControlProps {
   eventCode: string;
 }
 
+const MIN_REASON_LENGTH = 10;
+const MAX_REASON_LENGTH = 500;
+
 export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => {
+  const { t } = useTranslation('events');
   const { versionHistory, rollbackVersion, isLoadingVersions, isRollingBack } =
     usePublishing(eventCode);
   const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<PublishingVersion | null>(null);
+  const [rollbackReason, setRollbackReason] = useState('');
+  const [reasonError, setReasonError] = useState('');
 
   const handleRollbackClick = (version: PublishingVersion) => {
     setSelectedVersion(version);
+    setRollbackReason('');
+    setReasonError('');
     setRollbackDialogOpen(true);
   };
 
+  const validateReason = (reason: string): boolean => {
+    if (reason.length < MIN_REASON_LENGTH) {
+      setReasonError(
+        t('publishing.versionControl.reasonTooShort', { min: MIN_REASON_LENGTH })
+      );
+      return false;
+    }
+    if (reason.length > MAX_REASON_LENGTH) {
+      setReasonError(
+        t('publishing.versionControl.reasonTooLong', { max: MAX_REASON_LENGTH })
+      );
+      return false;
+    }
+    setReasonError('');
+    return true;
+  };
+
+  const handleReasonChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newReason = e.target.value;
+    setRollbackReason(newReason);
+    // Clear error when user starts typing
+    if (reasonError && newReason.length >= MIN_REASON_LENGTH) {
+      setReasonError('');
+    }
+  };
+
   const handleConfirmRollback = async () => {
+    if (!validateReason(rollbackReason)) {
+      return;
+    }
+
     if (selectedVersion) {
       await rollbackVersion?.(selectedVersion.versionNumber, {
-        reason: `Manual rollback to version ${selectedVersion.versionNumber}`,
+        reason: rollbackReason,
       });
       setRollbackDialogOpen(false);
       setSelectedVersion(null);
+      setRollbackReason('');
     }
   };
 
   const handleCancelRollback = () => {
     setRollbackDialogOpen(false);
     setSelectedVersion(null);
+    setRollbackReason('');
+    setReasonError('');
   };
 
   const formatDate = (dateString: string): string => {
@@ -85,13 +128,13 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
   const getCDNStatusText = (status?: string): string => {
     switch (status) {
       case 'COMPLETED':
-        return 'CDN Cleared';
+        return t('publishing.versionControl.cdnCleared');
       case 'PENDING':
-        return 'CDN Pending';
+        return t('publishing.versionControl.cdnPending');
       case 'FAILED':
-        return 'CDN Failed';
+        return t('publishing.versionControl.cdnFailed');
       default:
-        return 'Unknown';
+        return t('publishing.versionControl.cdnUnknown');
     }
   };
 
@@ -100,10 +143,12 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
     ? [...versionHistory].sort((a, b) => b.versionNumber - a.versionNumber)
     : [];
 
+  const isReasonValid = rollbackReason.length >= MIN_REASON_LENGTH && rollbackReason.length <= MAX_REASON_LENGTH;
+
   return (
     <Paper sx={{ p: 2 }}>
       <Typography variant="h6" gutterBottom>
-        Version History
+        {t('publishing.versionControl.title')}
       </Typography>
 
       {isLoadingVersions ? (
@@ -112,15 +157,15 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
         </Box>
       ) : (
         <TableContainer>
-          <Table>
+          <Table aria-label={t('publishing.versionControl.tableAriaLabel')}>
             <TableHead>
               <TableRow>
-                <TableCell>Version</TableCell>
-                <TableCell>Published</TableCell>
-                <TableCell>Phase</TableCell>
-                <TableCell>Publisher</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell>{t('publishing.versionControl.version')}</TableCell>
+                <TableCell>{t('publishing.versionControl.published')}</TableCell>
+                <TableCell>{t('publishing.versionControl.phase')}</TableCell>
+                <TableCell>{t('publishing.versionControl.publisher')}</TableCell>
+                <TableCell>{t('publishing.versionControl.status')}</TableCell>
+                <TableCell>{t('publishing.versionControl.actions')}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -128,10 +173,10 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                 <TableRow key={version.id} data-testid={`version-row-${version.versionNumber}`}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      Version {version.versionNumber}
+                      {t('publishing.versionControl.versionNumber', { number: version.versionNumber })}
                       {version.isCurrent && (
                         <Chip
-                          label="Current"
+                          label={t('publishing.versionControl.current')}
                           size="small"
                           color="primary"
                           data-testid={`current-badge-${version.versionNumber}`}
@@ -164,8 +209,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                         onClick={() => handleRollbackClick(version)}
                         disabled={isRollingBack}
                         data-testid={`rollback-button-${version.versionNumber}`}
+                        aria-label={t('publishing.versionControl.rollbackToVersion', { version: version.versionNumber })}
                       >
-                        Rollback
+                        {t('publishing.versionControl.rollback')}
                       </Button>
                     )}
                   </TableCell>
@@ -179,7 +225,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                       color="text.secondary"
                       data-testid="no-versions-message"
                     >
-                      No version history available
+                      {t('publishing.versionControl.noVersions')}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -194,51 +240,81 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
         open={rollbackDialogOpen}
         onClose={handleCancelRollback}
         data-testid="rollback-confirmation-modal"
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle>Confirm Rollback</DialogTitle>
+        <DialogTitle>{t('publishing.versionControl.confirmRollback')}</DialogTitle>
         <DialogContent>
           {selectedVersion && (
             <Box>
               <Typography variant="body1" gutterBottom>
-                Are you sure you want to rollback to this version?
+                {t('publishing.versionControl.rollbackQuestion')}
               </Typography>
               <Box
                 sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}
                 data-testid="rollback-version-details"
               >
                 <Typography variant="body2">
-                  <strong>Version:</strong> {selectedVersion.versionNumber}
+                  <strong>{t('publishing.versionControl.version')}:</strong> {selectedVersion.versionNumber}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>Phase:</strong> {selectedVersion.publishedPhase}
+                  <strong>{t('publishing.versionControl.phase')}:</strong> {selectedVersion.publishedPhase}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>Published:</strong> {formatDate(selectedVersion.publishedAt)}
+                  <strong>{t('publishing.versionControl.published')}:</strong> {formatDate(selectedVersion.publishedAt)}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>Publisher:</strong> {selectedVersion.publishedBy}
+                  <strong>{t('publishing.versionControl.publisher')}:</strong> {selectedVersion.publishedBy}
                 </Typography>
               </Box>
+
+              {/* Rollback Reason Input */}
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label={t('publishing.versionControl.reasonLabel')}
+                placeholder={t('publishing.versionControl.reasonPlaceholder')}
+                value={rollbackReason}
+                onChange={handleReasonChange}
+                error={!!reasonError}
+                helperText={
+                  reasonError ||
+                  t('publishing.versionControl.reasonHelperText', {
+                    current: rollbackReason.length,
+                    min: MIN_REASON_LENGTH,
+                    max: MAX_REASON_LENGTH
+                  })
+                }
+                sx={{ mt: 2 }}
+                inputProps={{
+                  'data-testid': 'rollback-reason-input',
+                  maxLength: MAX_REASON_LENGTH + 10, // Allow slightly over to show error
+                }}
+                required
+              />
+
               <Typography variant="body2" color="warning.main" sx={{ mt: 2 }}>
-                This action will invalidate the CloudFront CDN cache and may take a few minutes to
-                complete.
+                {t('publishing.versionControl.cdnWarning')}
               </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelRollback} data-testid="cancel-rollback-button">
-            Cancel
+            {t('publishing.versionControl.cancel')}
           </Button>
           <Button
             onClick={handleConfirmRollback}
             variant="contained"
             color="warning"
-            disabled={isRollingBack}
+            disabled={isRollingBack || !isReasonValid}
             data-testid="confirm-rollback-button"
             startIcon={isRollingBack ? <CircularProgress size={16} /> : <Restore />}
           >
-            {isRollingBack ? 'Rolling back...' : 'Confirm Rollback'}
+            {isRollingBack
+              ? t('publishing.versionControl.rollingBack')
+              : t('publishing.versionControl.confirmRollbackButton')}
           </Button>
         </DialogActions>
       </Dialog>
