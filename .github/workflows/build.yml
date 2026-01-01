@@ -370,7 +370,7 @@ jobs:
 
       - name: Upload build artifacts
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: web-frontend/dist/
