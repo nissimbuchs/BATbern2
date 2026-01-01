@@ -94,6 +94,13 @@ const HomePage = () => {
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
 
+  // Progressive publishing phase-based display (Story 5.7)
+  // API returns uppercase: 'TOPIC', 'SPEAKERS', 'AGENDA'
+  const currentPhase = event.currentPublishedPhase;
+  const showSpeakersAndSessions = currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
+  const showTimetable = currentPhase === 'AGENDA';
+  const showSessionList = currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
+
   // Preview Mode Banner (Story 5.7) - shown above navigation
   // Fixed positioning to stay above the fixed navigation
   const previewBanner = isPreview ? (
@@ -148,14 +155,20 @@ const HomePage = () => {
           </div>
         )} */}
 
-        {/* Event Program Timeline */}
-        {event.sessions && event.sessions.length > 0 && <EventProgram sessions={event.sessions} />}
+        {/* Event Program Timeline (Timetable) - Only show when agenda is published */}
+        {showTimetable && event.sessions && event.sessions.length > 0 && (
+          <EventProgram sessions={event.sessions} />
+        )}
 
-        {/* Speaker Grid */}
-        {event.sessions && event.sessions.length > 0 && <SpeakerGrid sessions={event.sessions} />}
+        {/* Speaker Grid - Show when speakers or agenda is published */}
+        {showSpeakersAndSessions && event.sessions && event.sessions.length > 0 && (
+          <SpeakerGrid sessions={event.sessions} />
+        )}
 
-        {/* Session Cards */}
-        {event.sessions && event.sessions.length > 0 && <SessionCards sessions={event.sessions} />}
+        {/* Session Cards (List View) - Only show when speakers published, NOT when agenda published */}
+        {showSessionList && event.sessions && event.sessions.length > 0 && (
+          <SessionCards sessions={event.sessions} />
+        )}
 
         {/* Venue Map */}
         {event.venueName && event.venueAddress && (

@@ -93,7 +93,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   // Format ISO 8601 timestamp or simple time string (HH:mm) to localized time string
   const formatTime = (isoTimestamp: string | null | undefined): string => {
     if (!isoTimestamp) {
-      return '--:--';
+      return ''; // Session not yet assigned to time slot
     }
 
     // If it's already in HH:mm format (e.g., "09:00"), return as-is

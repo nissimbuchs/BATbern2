@@ -51,7 +51,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
     endTime: string | null | undefined
   ) => {
     if (!startTime || !endTime) {
-      return t('public.sessions.timeTBD');
+      return ''; // Session not yet assigned to time slot
     }
 
     try {
@@ -59,7 +59,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
       const end = new Date(endTime);
       return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
     } catch {
-      return t('public.sessions.timeTBD');
+      return '';
     }
   };
 
@@ -145,10 +145,12 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
               )}
 
               <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  {formatSessionTime(session.startTime, session.endTime)}
-                </span>
+                {session.startTime && session.endTime && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    {formatSessionTime(session.startTime, session.endTime)}
+                  </span>
+                )}
                 {session.room && (
                   <span className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />

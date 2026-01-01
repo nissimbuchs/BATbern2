@@ -45,7 +45,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
     endTime: string | null | undefined
   ): string => {
     if (!startTime || !endTime) {
-      return 'TBD';
+      return ''; // Session not yet assigned to time slot
     }
 
     try {
@@ -53,7 +53,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
       const end = new Date(endTime);
       return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
     } catch {
-      return t('public.sessions.timeTBD');
+      return '';
     }
   };
 
