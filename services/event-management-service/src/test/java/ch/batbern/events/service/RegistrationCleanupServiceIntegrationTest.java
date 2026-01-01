@@ -53,7 +53,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
      * Static counter to generate unique event numbers for each test execution
      * Starts from a timestamp-based base to ensure uniqueness across test suite runs
      */
-    private static final AtomicInteger eventNumberCounter =
+    private static final AtomicInteger EVENT_NUMBER_COUNTER =
             new AtomicInteger((int) ((System.currentTimeMillis() / 1000) % 100000) + 10000);
 
     /**
@@ -61,7 +61,7 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
      * Uses atomic counter to ensure each setUp() call gets a unique number
      */
     private static int generateUniqueEventNumber() {
-        return eventNumberCounter.getAndIncrement();
+        return EVENT_NUMBER_COUNTER.getAndIncrement();
     }
 
     @BeforeEach
@@ -254,11 +254,11 @@ class RegistrationCleanupServiceIntegrationTest extends AbstractIntegrationTest 
         String username = "test.user." + UUID.randomUUID();
 
         entityManager.createNativeQuery(
-                "INSERT INTO registrations " +
-                "(id, registration_code, event_id, attendee_username, status, " +
-                "registration_date, created_at, updated_at) " +
-                "VALUES (:id, :code, :eventId, :username, :status, " +
-                ":regDate, :createdAt, :updatedAt)")
+                "INSERT INTO registrations "
+                + "(id, registration_code, event_id, attendee_username, status, "
+                + "registration_date, created_at, updated_at) "
+                + "VALUES (:id, :code, :eventId, :username, :status, "
+                + ":regDate, :createdAt, :updatedAt)")
                 .setParameter("id", id)
                 .setParameter("code", code)
                 .setParameter("eventId", testEvent.getId())
