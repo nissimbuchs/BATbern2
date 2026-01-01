@@ -37,6 +37,8 @@ export interface UseSlotAssignmentReturn {
   detectConflicts: () => Promise<void>;
   clearConflict: () => void;
   refreshSessions: () => Promise<void>;
+  clearAllTimings: () => Promise<void>;
+  autoAssignTimings: () => Promise<void>;
 }
 
 /**
@@ -190,6 +192,48 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     await fetchUnassignedSessions();
   }, [fetchUnassignedSessions]);
 
+  /**
+   * Clear all session timings (reset all to unassigned)
+   */
+  const clearAllTimings = useCallback(async (): Promise<void> => {
+    console.log('[useSlotAssignment] clearAllTimings called');
+    setError(null);
+
+    try {
+      const result = await slotAssignmentService.clearAllTimings(eventCode);
+      console.log('[useSlotAssignment] ✓ Cleared', result.clearedCount, 'session timings');
+
+      // Refresh sessions to update UI
+      await fetchUnassignedSessions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to clear all timings';
+      console.error('[useSlotAssignment] ✗ Failed to clear timings:', errorMessage);
+      setError(errorMessage);
+      throw err;
+    }
+  }, [eventCode, fetchUnassignedSessions]);
+
+  /**
+   * Auto-assign all unassigned sessions to available time slots
+   */
+  const autoAssignTimings = useCallback(async (): Promise<void> => {
+    console.log('[useSlotAssignment] autoAssignTimings called');
+    setError(null);
+
+    try {
+      const result = await slotAssignmentService.autoAssignTimings(eventCode);
+      console.log('[useSlotAssignment] ✓ Auto-assigned', result.assignedCount, 'sessions');
+
+      // Refresh sessions to update UI
+      await fetchUnassignedSessions();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to auto-assign timings';
+      console.error('[useSlotAssignment] ✗ Failed to auto-assign:', errorMessage);
+      setError(errorMessage);
+      throw err;
+    }
+  }, [eventCode, fetchUnassignedSessions]);
+
   // Fetch unassigned sessions on mount
   useEffect(() => {
     fetchUnassignedSessions();
@@ -214,5 +258,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     detectConflicts,
     clearConflict,
     refreshSessions,
+    clearAllTimings,
+    autoAssignTimings,
   };
 };

@@ -149,6 +149,58 @@ class SlotAssignmentService {
   }
 
   /**
+   * Clear all session timings for an event
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/timing
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @returns Response with cleared count
+   */
+  async clearAllTimings(eventCode: string): Promise<{ message: string; clearedCount: number }> {
+    try {
+      const response = await apiClient.delete<{ message: string; clearedCount: number }>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/timing`
+      );
+      return response.data;
+    } catch (error) {
+      // Re-throw AxiosError to preserve 401/403 auth errors
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Auto-assign all unassigned sessions to available time slots
+   *
+   * POST /api/v1/events/{eventCode}/sessions/auto-assign
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @returns Response with assigned count
+   */
+  async autoAssignTimings(eventCode: string): Promise<{ message: string; assignedCount: number }> {
+    try {
+      const response = await apiClient.post<{ message: string; assignedCount: number }>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/auto-assign`
+      );
+      return response.data;
+    } catch (error) {
+      // Re-throw AxiosError to preserve 401/403 auth errors
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {

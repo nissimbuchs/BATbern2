@@ -133,6 +133,135 @@ public class SessionTimingService {
     }
 
     /**
+     * Clear all session timings for an event (reset all sessions to unassigned state)
+     * AC: Clear All button functionality
+     *
+     * @param eventId Event UUID
+     * @param changedBy Username of organizer performing the clear
+     * @return Number of sessions cleared
+     */
+    public int clearAllTimings(UUID eventId, String changedBy) {
+        log.info("Clearing all timings for event: {}", eventId);
+
+        // Find all sessions with timing assigned
+        List<Session> assignedSessions = sessionRepository.findByEventId(eventId).stream()
+                .filter(session -> session.getStartTime() != null)
+                .toList();
+
+        log.info("Found {} sessions with timing to clear", assignedSessions.size());
+
+        // Clear timing for each session
+        int clearedCount = 0;
+        for (Session session : assignedSessions) {
+            try {
+                unassignTiming(session.getSessionSlug(), changedBy);
+                clearedCount++;
+            } catch (Exception e) {
+                log.error("Failed to clear timing for session: {}", session.getSessionSlug(), e);
+                // Continue clearing other sessions even if one fails
+            }
+        }
+
+        log.info("Successfully cleared {} session timings", clearedCount);
+        return clearedCount;
+    }
+
+    /**
+     * Auto-assign all unassigned sessions to available time slots sequentially
+     * AC: Auto Assign button functionality
+     *
+     * @param event Event entity with type and date information
+     * @param changedBy Username of organizer performing the auto-assignment
+     * @return Number of sessions assigned
+     */
+    public int autoAssignTimings(Event event, String changedBy) {
+        log.info("Auto-assigning sessions for event: {}", event.getEventCode());
+
+        // Get all unassigned sessions
+        List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId());
+
+        if (unassignedSessions.isEmpty()) {
+            log.info("No unassigned sessions to auto-assign");
+            return 0;
+        }
+
+        log.info("Found {} unassigned sessions to assign", unassignedSessions.size());
+
+        // Get event type to determine slot configuration
+        String eventTypeStr = event.getEventType() != null ? event.getEventType().name() : "FULL_DAY";
+        int slotDurationMinutes = getSlotDuration(eventTypeStr);
+        String startTimeStr = getStartTime(eventTypeStr);
+
+        // Parse event date and start time to create first slot
+        Instant eventDate = event.getDate();
+        String[] timeParts = startTimeStr.split(":");
+        int startHour = Integer.parseInt(timeParts[0]);
+        int startMinute = Integer.parseInt(timeParts[1]);
+
+        // Create base time at event date + start hour/minute (UTC)
+        Instant currentSlotStart = eventDate
+                .atZone(java.time.ZoneId.of("UTC"))
+                .withHour(startHour)
+                .withMinute(startMinute)
+                .withSecond(0)
+                .withNano(0)
+                .toInstant();
+
+        // Assign each session sequentially to next available slot
+        int assignedCount = 0;
+        for (Session session : unassignedSessions) {
+            try {
+                Instant slotEnd = currentSlotStart.plus(slotDurationMinutes, java.time.temporal.ChronoUnit.MINUTES);
+
+                assignTiming(
+                        session.getSessionSlug(),
+                        currentSlotStart,
+                        slotEnd,
+                        "Main Hall",  // Default room
+                        "auto_assignment",
+                        changedBy
+                );
+
+                assignedCount++;
+
+                // Move to next slot
+                currentSlotStart = slotEnd;
+
+            } catch (Exception e) {
+                log.error("Failed to auto-assign session: {}", session.getSessionSlug(), e);
+                // Continue with next session even if one fails
+            }
+        }
+
+        log.info("Auto-assigned {} of {} sessions", assignedCount, unassignedSessions.size());
+        return assignedCount;
+    }
+
+    /**
+     * Get slot duration for event type (in minutes)
+     */
+    private int getSlotDuration(String eventType) {
+        return switch (eventType) {
+            case "EVENING" -> 45;
+            case "HALF_DAY" -> 45;
+            case "FULL_DAY" -> 45;
+            default -> 45;
+        };
+    }
+
+    /**
+     * Get start time for event type (HH:MM format)
+     */
+    private String getStartTime(String eventType) {
+        return switch (eventType) {
+            case "EVENING" -> "18:00";
+            case "HALF_DAY" -> "13:00";
+            case "FULL_DAY" -> "09:00";
+            default -> "09:00";
+        };
+    }
+
+    /**
      * Validate that a session exists (throws SessionNotFoundException if not found)
      */
     @Transactional(readOnly = true)

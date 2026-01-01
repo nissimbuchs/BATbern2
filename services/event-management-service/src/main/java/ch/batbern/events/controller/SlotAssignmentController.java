@@ -15,6 +15,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -284,6 +285,54 @@ public class SlotAssignmentController {
         ConflictAnalysisResponse analysis = conflictDetectionService.analyzeAllConflicts(eventCode);
 
         return ResponseEntity.ok(analysis);
+    }
+
+    /**
+     * Clear all session timings for an event
+     * AC: Clear All button functionality - resets all sessions to unassigned state
+     */
+    @DeleteMapping("/timing")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<Map<String, Object>> clearAllTimings(
+            @PathVariable String eventCode) {
+
+        log.info("DELETE /api/v1/events/{}/sessions/timing", eventCode);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        // TODO: Get username from security context
+        int clearedCount = sessionTimingService.clearAllTimings(event.getId(), "organizer");
+
+        return ResponseEntity.ok(Map.of(
+                "message", "All session timings cleared successfully",
+                "clearedCount", clearedCount
+        ));
+    }
+
+    /**
+     * Auto-assign all unassigned sessions to available time slots
+     * AC: Auto Assign button functionality - assigns sessions sequentially to available slots
+     */
+    @PostMapping("/auto-assign")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<Map<String, Object>> autoAssignTimings(
+            @PathVariable String eventCode) {
+
+        log.info("POST /api/v1/events/{}/sessions/auto-assign", eventCode);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        // TODO: Get username from security context
+        int assignedCount = sessionTimingService.autoAssignTimings(event, "organizer");
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Sessions auto-assigned successfully",
+                "assignedCount", assignedCount
+        ));
     }
 
     private boolean timesOverlap(Instant start1, Instant end1, Instant start2, Instant end2) {

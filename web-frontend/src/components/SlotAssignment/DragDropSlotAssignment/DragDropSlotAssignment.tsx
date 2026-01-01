@@ -54,6 +54,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     totalSessions,
     assignTiming,
     clearConflict,
+    clearAllTimings,
+    autoAssignTimings,
   } = useSlotAssignment(eventCode);
 
   // Fetch event to get eventType and all sessions (including assigned)
@@ -105,62 +107,99 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     }
   }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
 
-  // Generate time slots dynamically from event type configuration (in UTC)
+  // Generate time slots dynamically from event type configuration PLUS assigned sessions
+  // TIME_SLOTS are in LOCAL time for display to the user
   const TIME_SLOTS = useMemo(() => {
     console.log('[TIME_SLOTS] Building slots, eventTypeConfig:', eventTypeConfig);
 
-    if (!eventTypeConfig) {
-      // Fallback to default slots if config not loaded
-      console.warn('[TIME_SLOTS] No eventTypeConfig, using fallback slots');
-      return ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-    }
-
     const slots: string[] = [];
-    const startTime = eventTypeConfig.typicalStartTime || '09:00';
-    const endTime = eventTypeConfig.typicalEndTime || '17:00';
-    const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
-    const breakCount = eventTypeConfig.breakSlots || 0;
-    const lunchCount = eventTypeConfig.lunchSlots || 0;
-    const totalSlots = eventTypeConfig.maxSlots || 8;
 
-    // Parse start time and create local date
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const currentTime = new Date();
-    currentTime.setHours(startHour, startMinute, 0, 0);
-
-    // Generate slots including session slots + breaks + lunch
-    const totalSlotsWithBreaks = totalSlots + breakCount + lunchCount;
-    for (let i = 0; i < totalSlotsWithBreaks; i++) {
-      const hours = currentTime.getHours().toString().padStart(2, '0');
-      const minutes = currentTime.getMinutes().toString().padStart(2, '0');
-      const timeSlot = `${hours}:${minutes}`;
-
-      // Only add if before end time
-      const [endHour, endMinute] = endTime.split(':').map(Number);
-      if (
-        currentTime.getHours() < endHour ||
-        (currentTime.getHours() === endHour && currentTime.getMinutes() < endMinute)
-      ) {
-        slots.push(timeSlot);
-      }
-
-      // Move to next slot
-      currentTime.setMinutes(currentTime.getMinutes() + slotDurationMinutes);
+    // First, add times from assigned sessions converted to LOCAL time (so they're visible in the grid)
+    if (assignedSessions.length > 0) {
+      assignedSessions.forEach((session) => {
+        if (session.startTime) {
+          const sessionStart = new Date(session.startTime);
+          // Use getHours/getMinutes (LOCAL time) for display
+          const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
+          const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
+          const timeSlot = `${sessionHours}:${sessionMinutes}`;
+          if (!slots.includes(timeSlot)) {
+            slots.push(timeSlot);
+          }
+        }
+      });
     }
 
-    console.log('[TIME_SLOTS generated]', slots);
+    // Then, add predefined slots from event type config (also in local time)
+    if (eventTypeConfig) {
+      const startTime = eventTypeConfig.typicalStartTime || '09:00';
+      const endTime = eventTypeConfig.typicalEndTime || '17:00';
+      const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
+      const breakCount = eventTypeConfig.breakSlots || 0;
+      const lunchCount = eventTypeConfig.lunchSlots || 0;
+      const totalSlots = eventTypeConfig.maxSlots || 8;
+
+      // Parse start time and create local date
+      const [startHour, startMinute] = startTime.split(':').map(Number);
+      const currentTime = new Date();
+      currentTime.setHours(startHour, startMinute, 0, 0);
+
+      // Generate slots including session slots + breaks + lunch
+      const totalSlotsWithBreaks = totalSlots + breakCount + lunchCount;
+      for (let i = 0; i < totalSlotsWithBreaks; i++) {
+        const hours = currentTime.getHours().toString().padStart(2, '0');
+        const minutes = currentTime.getMinutes().toString().padStart(2, '0');
+        const timeSlot = `${hours}:${minutes}`;
+
+        // Only add if before end time and not already added from assigned sessions
+        const [endHour, endMinute] = endTime.split(':').map(Number);
+        if (
+          (currentTime.getHours() < endHour ||
+            (currentTime.getHours() === endHour && currentTime.getMinutes() < endMinute)) &&
+          !slots.includes(timeSlot)
+        ) {
+          slots.push(timeSlot);
+        }
+
+        // Move to next slot
+        currentTime.setMinutes(currentTime.getMinutes() + slotDurationMinutes);
+      }
+    } else {
+      // Fallback to default slots if config not loaded and no assigned sessions
+      if (slots.length === 0) {
+        console.warn(
+          '[TIME_SLOTS] No eventTypeConfig and no assigned sessions, using fallback slots'
+        );
+        slots.push('09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00');
+      }
+    }
+
+    // Sort slots chronologically
+    slots.sort((a, b) => {
+      const [aH, aM] = a.split(':').map(Number);
+      const [bH, bM] = b.split(':').map(Number);
+      return aH * 60 + aM - (bH * 60 + bM);
+    });
+
+    console.log('[TIME_SLOTS generated (local time)]', slots);
     return slots;
-  }, [eventTypeConfig]);
+  }, [eventTypeConfig, assignedSessions]);
 
   // Get session assigned to a specific time slot and room
   const getSessionForSlot = (time: string, room: string): Session | undefined => {
     return assignedSessions.find((session) => {
       if (!session.startTime || session.room !== room) return false;
 
-      // Parse session start time to get HH:MM in LOCAL time (timeline uses local time)
-      const sessionStartTime = new Date(session.startTime);
-      const sessionHours = sessionStartTime.getHours().toString().padStart(2, '0');
-      const sessionMinutes = sessionStartTime.getMinutes().toString().padStart(2, '0');
+      // Parse session start time - sessions are stored as ISO strings (UTC)
+      // TIME_SLOTS are in HH:MM format (LOCAL time for display)
+      // Convert session UTC time to local time for comparison
+
+      // Parse the session's ISO timestamp
+      const sessionStart = new Date(session.startTime);
+
+      // Extract LOCAL time portion from the session (for display/comparison)
+      const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
+      const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
       const sessionTime = `${sessionHours}:${sessionMinutes}`;
 
       console.log('[getSessionForSlot]', {
@@ -169,6 +208,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         parsedTimeLocal: sessionTime,
         lookingFor: time,
         match: sessionTime === time,
+        room: session.room,
+        matchingRoom: session.room === room,
       });
 
       return sessionTime === time;
@@ -555,7 +596,21 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Button onClick={() => setAutoAssignModalOpen(false)}>
             {t('slotAssignment.actions.cancel')}
           </Button>
-          <Button variant="contained" onClick={() => setAutoAssignModalOpen(false)}>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              try {
+                await autoAssignTimings();
+                // Invalidate event cache to refresh assigned sessions in the timeline
+                await queryClient.invalidateQueries({
+                  queryKey: ['event', eventCode, ['sessions']],
+                });
+                setAutoAssignModalOpen(false);
+              } catch (err) {
+                console.error('Failed to auto-assign:', err);
+              }
+            }}
+          >
             {t('slotAssignment.actions.confirm')}
           </Button>
         </DialogActions>
@@ -571,7 +626,23 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Button onClick={() => setClearAllModalOpen(false)}>
             {t('slotAssignment.actions.cancel')}
           </Button>
-          <Button variant="contained" color="error" onClick={() => setClearAllModalOpen(false)}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={async () => {
+              try {
+                await clearAllTimings();
+                // Invalidate event cache to refresh timeline (remove all assigned sessions)
+                await queryClient.invalidateQueries({
+                  queryKey: ['event', eventCode, ['sessions']],
+                });
+                setClearAllModalOpen(false);
+              } catch (err) {
+                console.error('Failed to clear all timings:', err);
+                // Modal will stay open to show error, user can try again or cancel
+              }
+            }}
+          >
             {t('slotAssignment.actions.clearAll')}
           </Button>
         </DialogActions>
