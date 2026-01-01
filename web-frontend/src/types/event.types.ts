@@ -66,6 +66,7 @@ export interface EventUI extends Event {
   venueCode?: string; // Venue identifier for dropdown selection
   version?: number; // Version number for optimistic concurrency control
   createdBy?: string; // Username who created the event
+  currentPublishedPhase?: 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null; // Current publishing phase (Story 5.7)
   // Note: eventType and workflowState are now in base Event type from API
 }
 

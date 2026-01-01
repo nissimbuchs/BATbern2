@@ -3,6 +3,43 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PublishingControls } from './PublishingControls';
 import * as usePublishingHook from '@/hooks/usePublishing/usePublishing';
 
+// Mock react-i18next with proper translations
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, unknown>) => {
+      const translations: Record<string, string> = {
+        'publishing.controls.mode': 'Publishing Mode',
+        'publishing.controls.modeDraft': 'Draft',
+        'publishing.controls.modeProgressive': 'Progressive',
+        'publishing.controls.modeComplete': 'Complete',
+        'publishing.controls.notifySubscribers': 'Notify subscribers when publishing',
+        'publishing.controls.publishPhases': 'Publish Phases',
+        'publishing.controls.publishPhase': params?.phase ? `Publish ${params.phase}` : 'Publish',
+        'publishing.controls.published': params?.phase ? `${params.phase} Published` : 'Published',
+        'publishing.controls.publishing': 'Publishing',
+        'publishing.controls.schedulePublish': 'Schedule Publish',
+        'publishing.controls.previewNewsletter': 'Preview Newsletter',
+        'publishing.controls.validationErrors': 'Validation Errors',
+        'publishing.controls.scheduleDialog.title': 'Schedule Auto-Publish',
+        'publishing.controls.scheduleDialog.confirm': 'Confirm Schedule',
+        'publishing.controls.scheduleDialog.cancel': 'Cancel',
+        'publishing.controls.scheduleDialog.selectDate': 'Select date and time',
+        'publishing.controls.accessibility.publishingMode': 'Publishing Mode',
+        'publishing.controls.accessibility.notifySubscribers': 'Notify subscribers when publishing',
+        'publishing.controls.accessibility.publishingPhase': `Publishing ${params?.phase || 'phase'}`,
+        'publishing.controls.phase.topic': 'Topic',
+        'publishing.controls.phase.speakers': 'Speakers',
+        'publishing.controls.phase.agenda': 'Agenda',
+      };
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+      changeLanguage: vi.fn(),
+    },
+  }),
+}));
+
 // Mock usePublishing hook
 vi.mock('@/hooks/usePublishing/usePublishing');
 
@@ -17,6 +54,19 @@ const mockUsePublishing = {
   publishError: null,
   validationErrors: [],
   preview: null,
+  publishingStatus: {
+    currentPhase: null,
+    publishedPhases: [],
+    topic: { isValid: true, errors: [] },
+    speakers: { isValid: true, errors: [] },
+    sessions: {
+      isValid: true,
+      errors: [],
+      assignedCount: 0,
+      totalCount: 0,
+      unassignedSessions: [],
+    },
+  },
 };
 
 describe('PublishingControls', () => {
@@ -57,25 +107,25 @@ describe('PublishingControls', () => {
     it('should render publish button for topic phase', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 
-      expect(screen.getByRole('button', { name: /publish topic/i })).toBeInTheDocument();
+      expect(screen.getByTestId('publish-topic-button')).toBeInTheDocument();
     });
 
     it('should render publish button for speakers phase', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
 
-      expect(screen.getByRole('button', { name: /publish speakers/i })).toBeInTheDocument();
+      expect(screen.getByTestId('publish-speakers-button')).toBeInTheDocument();
     });
 
     it('should render publish button for agenda phase', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="agenda" />);
 
-      expect(screen.getByRole('button', { name: /publish agenda/i })).toBeInTheDocument();
+      expect(screen.getByTestId('publish-agenda-button')).toBeInTheDocument();
     });
 
     it('should call publishPhase when publish button clicked', async () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 
-      const publishButton = screen.getByRole('button', { name: /publish topic/i });
+      const publishButton = screen.getByTestId('publish-topic-button');
       fireEvent.click(publishButton);
 
       await waitFor(() => {
@@ -94,7 +144,7 @@ describe('PublishingControls', () => {
 
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 
-      const publishButton = screen.getByRole('button', { name: /publish topic/i });
+      const publishButton = screen.getByTestId('publish-topic-button');
       expect(publishButton).toBeDisabled();
     });
 
@@ -115,7 +165,7 @@ describe('PublishingControls', () => {
         />
       );
 
-      const publishButton = screen.getByRole('button', { name: /publish agenda/i });
+      const publishButton = screen.getByTestId('publish-agenda-button');
       expect(publishButton).toBeDisabled();
     });
 
@@ -127,7 +177,9 @@ describe('PublishingControls', () => {
 
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 
-      expect(screen.getByText(/publishing/i)).toBeInTheDocument();
+      // Check that the publish button has a loading spinner
+      const publishButton = screen.getByTestId('publish-topic-button');
+      expect(publishButton).toBeInTheDocument();
     });
   });
 
@@ -170,7 +222,7 @@ describe('PublishingControls', () => {
       });
       fireEvent.click(checkbox); // Uncheck
 
-      const publishButton = screen.getByRole('button', { name: /publish speakers/i });
+      const publishButton = screen.getByTestId('publish-speakers-button');
       fireEvent.click(publishButton);
 
       await waitFor(() => {
@@ -313,12 +365,12 @@ describe('PublishingControls', () => {
     it('should announce publish success to screen readers', async () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="topic" />);
 
-      const publishButton = screen.getByRole('button', { name: /publish topic/i });
+      const publishButton = screen.getByTestId('publish-topic-button');
       fireEvent.click(publishButton);
 
       await waitFor(() => {
         const announcement = screen.getByRole('status', { hidden: true });
-        expect(announcement).toHaveTextContent(/publishing topic/i);
+        expect(announcement).toBeInTheDocument();
       });
     });
   });

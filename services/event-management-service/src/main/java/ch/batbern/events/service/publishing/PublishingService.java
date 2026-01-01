@@ -21,6 +21,7 @@ import ch.batbern.events.repository.PublishingVersionRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -336,10 +337,14 @@ public class PublishingService {
             topicErrors.add("Event must have title and date");
         }
 
-        // Speakers validation - at least one accepted speaker
+        // Speakers validation - at least one speaker in presenting state
+        // Valid presenting states: ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED
+        // (excludes DECLINED, WITHDREW, OVERFLOW, and early stages like IDENTIFIED/CONTACTED/READY)
         long acceptedSpeakers = speakerPoolRepository.findByEventId(event.getId()).stream()
-                .filter(sp -> "ACCEPTED".equalsIgnoreCase(sp.getStatus())
-                        || "CONFIRMED".equalsIgnoreCase(sp.getStatus()))
+                .filter(sp -> sp.getStatus() == SpeakerWorkflowState.ACCEPTED
+                        || sp.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED
+                        || sp.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED
+                        || sp.getStatus() == SpeakerWorkflowState.CONFIRMED)
                 .count();
         boolean speakersValid = acceptedSpeakers > 0;
         List<String> speakersErrors = new ArrayList<>();

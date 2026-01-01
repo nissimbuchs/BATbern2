@@ -587,20 +587,20 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_includeSpeakers_when_includeSpeakersRequested")
-    void should_includeSpeakers_when_includeSpeakersRequested() throws Exception {
+    @DisplayName("should_includeSessions_when_includeSessionsRequested")
+    void should_includeSessions_when_includeSessionsRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
-        // Story 1.16.2: Use eventCode in URL instead of UUID
+        // Speakers are now accessed through sessions.speakers (not top-level speakers array)
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
-                        .param("include", "speakers")
+                        .param("include", "sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
-                // Should include speakers array
-                .andExpect(jsonPath("$.speakers").isArray());
+                // Should include sessions array
+                .andExpect(jsonPath("$.sessions").isArray());
     }
 
     @Test
@@ -609,8 +609,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.findAll().get(0);
 
         // Story 1.16.2: Use eventCode in URL instead of UUID
+        // Note: speakers removed from top-level, now accessed via sessions.speakers
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
-                        .param("include", "venue,speakers,sessions")
+                        .param("include", "venue,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
@@ -618,7 +619,6 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
                 // Should include all requested resources
                 .andExpect(jsonPath("$.venue").exists())
-                .andExpect(jsonPath("$.speakers").isArray())
                 .andExpect(jsonPath("$.sessions").isArray());
     }
 
@@ -1262,9 +1262,10 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Make 3 requests to warm up and stabilize performance
         // Story 1.16.2: Use eventCode in URL instead of UUID
+        // Note: speakers removed from top-level, now accessed via sessions.speakers
         for (int i = 0; i < 3; i++) {
             mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
-                            .param("include", "venue,speakers,sessions")
+                            .param("include", "venue,sessions")
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk());
         }
@@ -1273,13 +1274,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         long startTime = System.currentTimeMillis();
         // Story 1.16.2: Use eventCode in URL instead of UUID
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
-                        .param("include", "venue,speakers,sessions")
+                        .param("include", "venue,sessions")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 // Story 1.16.2: Event responses use eventCode, not id
                 .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
                 .andExpect(jsonPath("$.venue").exists())
-                .andExpect(jsonPath("$.speakers").isArray())
                 .andExpect(jsonPath("$.sessions").isArray());
         long cachedDuration = System.currentTimeMillis() - startTime;
 
@@ -1708,11 +1708,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         Event agendaPublishedEvent = createTestEvent("Event with Expansions", "2025-11-15T09:00:00Z", "AGENDA_PUBLISHED");
 
         // When/Then - request with include parameter
-        mockMvc.perform(get("/api/v1/events/current?include=venue,speakers"))
+        // Note: speakers removed from top-level, now accessed via sessions.speakers
+        mockMvc.perform(get("/api/v1/events/current?include=venue,sessions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(agendaPublishedEvent.getEventCode()))
                 .andExpect(jsonPath("$.venue").exists())
-                .andExpect(jsonPath("$.speakers").exists());
+                .andExpect(jsonPath("$.sessions").exists());
     }
 
     // ============================================================================

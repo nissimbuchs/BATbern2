@@ -30,12 +30,12 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-import { PublishingPhase, PublishingMode, PublishValidationError } from '@/types/event.types';
+import { PublishingPhase, PublishingMode } from '@/types/event.types';
 
 export interface PublishingControlsProps {
   eventCode: string;
   currentPhase: PublishingPhase;
-  validationErrors?: PublishValidationError[];
+  validationErrors?: Array<{ field: string; message: string; requirement: string }>;
 }
 
 export const PublishingControls: React.FC<PublishingControlsProps> = ({
@@ -44,13 +44,8 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   validationErrors = [],
 }) => {
   const { t } = useTranslation('events');
-  const {
-    publishPhase,
-    scheduleAutoPublish,
-    isPublishing,
-    isScheduling,
-    publishingStatus,
-  } = usePublishing(eventCode);
+  const { publishPhase, scheduleAutoPublish, isPublishing, isScheduling, publishingStatus } =
+    usePublishing(eventCode);
 
   const [publishingMode, setPublishingMode] = useState<PublishingMode>('progressive');
   const [notifySubscribers, setNotifySubscribers] = useState(true);
@@ -109,7 +104,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           return t('publishing.controls.publishTopicFirst');
         }
         if (!publishingStatus.speakers?.isValid) {
-          return publishingStatus.speakers?.errors?.[0] || t('publishing.controls.speakersNotReady');
+          return (
+            publishingStatus.speakers?.errors?.[0] || t('publishing.controls.speakersNotReady')
+          );
         }
         break;
       case 'agenda':
@@ -118,7 +115,10 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
         }
         if (!publishingStatus.sessions?.isValid) {
           const { assignedCount = 0, totalCount = 0 } = publishingStatus.sessions || {};
-          return t('publishing.controls.agendaNotReady', { assigned: assignedCount, total: totalCount });
+          return t('publishing.controls.agendaNotReady', {
+            assigned: assignedCount,
+            total: totalCount,
+          });
         }
         break;
     }
@@ -253,7 +253,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           return (
             <Tooltip
               key={phase}
-              title={isPublished ? t('publishing.controls.alreadyPublished') : validationMessage || ''}
+              title={
+                isPublished ? t('publishing.controls.alreadyPublished') : validationMessage || ''
+              }
               arrow
             >
               <span>
@@ -272,7 +274,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
                     )
                   }
                   data-testid={`publish-${phase}-button`}
-                  aria-label={t('publishing.controls.publishPhase', { phase: getPhaseLabel(phase) })}
+                  aria-label={t('publishing.controls.publishPhase', {
+                    phase: getPhaseLabel(phase),
+                  })}
                   sx={{ minWidth: 160 }}
                 >
                   {isPublished

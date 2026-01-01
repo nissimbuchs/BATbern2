@@ -13,6 +13,46 @@ import i18n from '@/i18n/config';
 import { EventPublishingTab } from '../EventPublishingTab';
 import type { Event } from '@/types/event.types';
 
+// Mock usePublishing hook
+vi.mock('@/hooks/usePublishing/usePublishing', () => ({
+  usePublishing: () => ({
+    publishingStatus: {
+      currentPhase: null,
+      publishedPhases: [],
+      topic: { isValid: true, errors: [] },
+      speakers: { isValid: true, errors: [] },
+      sessions: {
+        isValid: true,
+        errors: [],
+        assignedCount: 0,
+        totalCount: 0,
+        unassignedSessions: [],
+      },
+    },
+    isLoadingStatus: false,
+    validationErrors: [],
+    publishPhase: vi.fn(),
+    unpublishPhase: vi.fn(),
+    isPublishing: false,
+    isUnpublishing: false,
+    publishError: null,
+    versionHistory: [],
+    isLoadingVersions: false,
+    rollbackVersion: vi.fn(),
+    isRollingBack: false,
+    preview: null,
+    fetchPreview: vi.fn(),
+    isLoadingPreview: false,
+    previewError: null,
+    changeLog: { eventCode: 'BAT54', changes: [] },
+    isLoadingChangeLog: false,
+    scheduleAutoPublish: vi.fn(),
+    cancelAutoPublish: vi.fn(),
+    isScheduling: false,
+    isCancelling: false,
+  }),
+}));
+
 // Mock window.open
 const mockWindowOpen = vi.fn();
 Object.defineProperty(window, 'open', { value: mockWindowOpen, writable: true });

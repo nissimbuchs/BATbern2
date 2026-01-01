@@ -113,12 +113,12 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .build();
         sessionRepository.save(session2);
 
-        // Create speakers
+        // Create speakers (QUALITY_REVIEWED = content approved, ready for slot assignment)
         SpeakerPool speaker1 = SpeakerPool.builder()
                 .eventId(testEvent.getId())
                 .speakerName("John Doe")
                 .company("TechCorp")
-                .status(ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED)
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
                 .sessionId(session1.getId())
                 .build();
         speakerPoolRepository.save(speaker1);
@@ -127,7 +127,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .eventId(testEvent.getId())
                 .speakerName("Jane Smith")
                 .company("DataInc")
-                .status(ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED)
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
                 .sessionId(session2.getId())
                 .build();
         speakerPoolRepository.save(speaker2);

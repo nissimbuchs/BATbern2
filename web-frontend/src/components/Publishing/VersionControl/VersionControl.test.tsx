@@ -3,6 +3,42 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VersionControl } from './VersionControl';
 import * as usePublishingHook from '@/hooks/usePublishing/usePublishing';
 
+// Mock react-i18next with proper translations
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, unknown>) => {
+      const translations: Record<string, string> = {
+        'publishing.versionControl.title': 'Version History',
+        'publishing.versionControl.version': params?.version
+          ? `Version ${params.version}`
+          : 'Version',
+        'publishing.versionControl.phase': 'Phase',
+        'publishing.versionControl.publishedAt': 'Published At',
+        'publishing.versionControl.publishedBy': 'Published By',
+        'publishing.versionControl.current': 'Current',
+        'publishing.versionControl.rollback': 'Rollback',
+        'publishing.versionControl.rollbackConfirm': 'Confirm Rollback',
+        'publishing.versionControl.rollbackCancel': 'Cancel',
+        'publishing.versionControl.rollbackTitle': 'Rollback to Previous Version?',
+        'publishing.versionControl.rollbackMessage':
+          'Are you sure you want to rollback to this version?',
+        'publishing.versionControl.rollbackReason': 'Reason for rollback',
+        'publishing.versionControl.noVersions': 'No versions published yet',
+      };
+
+      if (params && 'version' in params) {
+        return `Version ${params.version}`;
+      }
+
+      return translations[key] || key;
+    },
+    i18n: {
+      language: 'en',
+      changeLanguage: vi.fn(),
+    },
+  }),
+}));
+
 // Mock usePublishing hook
 vi.mock('@/hooks/usePublishing/usePublishing');
 

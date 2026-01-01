@@ -96,7 +96,11 @@ const HomePage = () => {
 
   // Progressive publishing phase-based display (Story 5.7)
   // API returns uppercase: 'TOPIC', 'SPEAKERS', 'AGENDA'
-  const currentPhase = event.currentPublishedPhase;
+  // Default to 'AGENDA' (show all) if not set (backward compatibility)
+  const currentPhase =
+    ('currentPublishedPhase' in event
+      ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
+      : null) || 'AGENDA';
   const showSpeakersAndSessions = currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
   const showTimetable = currentPhase === 'AGENDA';
   const showSessionList = currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
