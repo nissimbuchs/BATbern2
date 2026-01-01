@@ -198,9 +198,9 @@ public class SessionTimingService {
         int startHour = Integer.parseInt(timeParts[0]);
         int startMinute = Integer.parseInt(timeParts[1]);
 
-        // Create base time at event date + start hour/minute (UTC)
+        // Create base time at event date + start hour/minute (local time)
         Instant eventStartTime = eventDate
-                .atZone(java.time.ZoneId.of("UTC"))
+                .atZone(ZoneId.systemDefault())
                 .withHour(startHour)
                 .withMinute(startMinute)
                 .withSecond(0)
