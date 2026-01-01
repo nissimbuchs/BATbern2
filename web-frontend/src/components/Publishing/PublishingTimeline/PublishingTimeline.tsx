@@ -38,8 +38,9 @@ export const PublishingTimeline: React.FC<PublishingTimelineProps> = ({
   scheduledDates = {},
 }) => {
   const getPhaseClass = (phaseKey: string): string => {
-    if (phaseKey === currentPhase) return 'current';
+    // Check published status first - a phase can be both current and published
     if (publishedPhases.includes(phaseKey as PublishingPhase)) return 'complete';
+    if (phaseKey === currentPhase) return 'current';
     return 'pending';
   };
 
