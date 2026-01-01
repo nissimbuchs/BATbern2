@@ -132,6 +132,8 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     mutationFn: ({ versionNumber, options }: { versionNumber: number; options: RollbackRequest }) =>
       publishingService.rollbackVersion(eventCode, versionNumber, options),
     onSuccess: () => {
+      // Rollback changes the published phase, so invalidate status too
+      queryClient.invalidateQueries({ queryKey: statusKey });
       queryClient.invalidateQueries({ queryKey: versionHistoryKey });
       queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
