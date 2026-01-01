@@ -18,6 +18,7 @@ import type {
   PublishPhaseResponse,
   UnpublishPhaseResponse,
   PublishPreviewResponse,
+  PublishingStatusResponse,
   VersionHistoryResponse,
   RollbackRequest,
   RollbackResponse,
@@ -59,6 +60,18 @@ async function unpublishPhase(
   phase: PublishingPhase
 ): Promise<UnpublishPhaseResponse> {
   const response = await apiClient.post(`/events/${eventCode}/unpublish/${phase}`);
+  return response.data;
+}
+
+/**
+ * Get publishing status including validation for all phases
+ * Story BAT-11: Used by EventPublishingTab to display real validation data
+ *
+ * @param eventCode - Event code (e.g., "BATbern142")
+ * @returns Publishing status with validation for all phases
+ */
+async function getPublishingStatus(eventCode: string): Promise<PublishingStatusResponse> {
+  const response = await apiClient.get(`/events/${eventCode}/publish/status`);
   return response.data;
 }
 
@@ -165,6 +178,7 @@ async function cancelAutoPublish(
 export const publishingService = {
   publishPhase,
   unpublishPhase,
+  getPublishingStatus,
   getPublishPreview,
   getVersionHistory,
   rollbackVersion,
@@ -177,6 +191,7 @@ export const publishingService = {
 export {
   publishPhase,
   unpublishPhase,
+  getPublishingStatus,
   getPublishPreview,
   getVersionHistory,
   rollbackVersion,

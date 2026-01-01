@@ -10,6 +10,7 @@ import ch.batbern.events.dto.ChangeLogResponse;
 import ch.batbern.events.dto.PublishPhaseResponse;
 import ch.batbern.events.dto.PublishPreviewResponse;
 import ch.batbern.events.dto.PublishValidationError;
+import ch.batbern.events.dto.PublishingStatusResponse;
 import ch.batbern.events.dto.RollbackResponse;
 import ch.batbern.events.dto.UnpublishPhaseResponse;
 import ch.batbern.events.dto.VersionHistoryResponse;
@@ -317,6 +318,104 @@ public class PublishingService {
                 .phase3DaysBeforeEvent(config.getAutoPublishAgendaDaysBefore())
                 .phase3TriggerDate(phase3TriggerDate)
                 .build();
+    }
+
+    /**
+     * Get publishing status including validation for all phases
+     * Used by frontend to display current publishing state and validation errors
+     */
+    public PublishingStatusResponse getPublishingStatus(String eventCode) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        // Topic validation - must have title and date
+        boolean topicValid = event.getTitle() != null && !event.getTitle().isBlank()
+                && event.getDate() != null;
+        List<String> topicErrors = new ArrayList<>();
+        if (!topicValid) {
+            topicErrors.add("Event must have title and date");
+        }
+
+        // Speakers validation - at least one accepted speaker
+        long acceptedSpeakers = speakerPoolRepository.findByEventId(event.getId()).stream()
+                .filter(sp -> "ACCEPTED".equalsIgnoreCase(sp.getStatus())
+                        || "CONFIRMED".equalsIgnoreCase(sp.getStatus()))
+                .count();
+        boolean speakersValid = acceptedSpeakers > 0;
+        List<String> speakersErrors = new ArrayList<>();
+        if (!speakersValid) {
+            speakersErrors.add("At least one speaker must be accepted");
+        }
+
+        // Sessions validation - all sessions must have timing
+        List<Session> allSessions = sessionRepository.findByEventId(event.getId());
+        List<Session> unassignedSessions = allSessions.stream()
+                .filter(s -> s.getStartTime() == null || s.getEndTime() == null)
+                .collect(Collectors.toList());
+        boolean sessionsValid = unassignedSessions.isEmpty() && !allSessions.isEmpty();
+        List<String> sessionsErrors = new ArrayList<>();
+        if (!sessionsValid) {
+            if (allSessions.isEmpty()) {
+                sessionsErrors.add("No sessions found for this event");
+            } else {
+                sessionsErrors.add("All sessions must have timing assigned");
+            }
+        }
+
+        // Build unassigned sessions list
+        List<PublishingStatusResponse.UnassignedSession> unassignedList = unassignedSessions.stream()
+                .map(s -> PublishingStatusResponse.UnassignedSession.builder()
+                        .sessionSlug(s.getSessionSlug())
+                        .title(s.getTitle())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Determine published phases from currentPublishedPhase
+        List<String> publishedPhases = determinePublishedPhases(event.getCurrentPublishedPhase());
+
+        return PublishingStatusResponse.builder()
+                .currentPhase(event.getCurrentPublishedPhase())
+                .publishedPhases(publishedPhases)
+                .topic(PublishingStatusResponse.ValidationStatus.builder()
+                        .isValid(topicValid)
+                        .errors(topicErrors)
+                        .build())
+                .speakers(PublishingStatusResponse.ValidationStatus.builder()
+                        .isValid(speakersValid)
+                        .errors(speakersErrors)
+                        .build())
+                .sessions(PublishingStatusResponse.SessionValidationStatus.builder()
+                        .isValid(sessionsValid)
+                        .errors(sessionsErrors)
+                        .assignedCount(allSessions.size() - unassignedSessions.size())
+                        .totalCount(allSessions.size())
+                        .unassignedSessions(unassignedList)
+                        .build())
+                .build();
+    }
+
+    /**
+     * Determine which phases have been published based on currentPublishedPhase
+     */
+    private List<String> determinePublishedPhases(String currentPhase) {
+        if (currentPhase == null) {
+            return new ArrayList<>();
+        }
+        List<String> phases = new ArrayList<>();
+        switch (currentPhase.toLowerCase()) {
+            case "agenda":
+                phases.add("agenda");
+                // fall through
+            case "speakers":
+                phases.add(0, "speakers");
+                // fall through
+            case "topic":
+                phases.add(0, "topic");
+                break;
+            default:
+                break;
+        }
+        return phases;
     }
 
     // ==================== HELPER METHODS ====================

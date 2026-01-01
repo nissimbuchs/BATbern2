@@ -538,6 +538,35 @@ export interface PublishPreviewResponse {
 export type VersionHistoryResponse = PublishingVersion[];
 
 /**
+ * Validation status for a publishing phase
+ */
+export interface ValidationStatus {
+  isValid: boolean;
+  errors: string[];
+}
+
+/**
+ * Extended validation status for sessions with assignment counts
+ */
+export interface SessionValidationStatus extends ValidationStatus {
+  assignedCount: number;
+  totalCount: number;
+  unassignedSessions: Array<{ sessionSlug: string; title: string }>;
+}
+
+/**
+ * Publishing status response with validation for all phases
+ * Story BAT-11: Used by EventPublishingTab to display real validation data
+ */
+export interface PublishingStatusResponse {
+  currentPhase: PublishingPhase | null;
+  publishedPhases: PublishingPhase[];
+  topic: ValidationStatus;
+  speakers: ValidationStatus;
+  sessions: SessionValidationStatus;
+}
+
+/**
  * Rollback request
  */
 export interface RollbackRequest {
