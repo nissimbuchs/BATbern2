@@ -5,6 +5,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -68,8 +69,14 @@ public class UserReconciliationService {
      * Runs daily at 2:00 AM
      * <p>
      * ADR-001: Unidirectional sync (Cognito → Database only)
+     * ShedLock ensures only ONE ECS instance executes this job
      */
     @Scheduled(cron = "0 0 2 * * *")
+    @SchedulerLock(
+            name = "reconcileUsersScheduled",
+            lockAtMostFor = "1h",
+            lockAtLeastFor = "5m"
+    )
     public void reconcileUsersScheduled() {
         reconcileUsers();
     }

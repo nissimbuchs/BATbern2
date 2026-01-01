@@ -152,7 +152,7 @@ interface EventFormProps {
   mode: 'create' | 'edit';
   event?: Event;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (updatedEvent?: Event) => void;
 }
 
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
@@ -507,9 +507,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       delete (patchFields as Partial<Record<string, unknown>>).workflowState;
 
       // Update event fields (if any changed besides workflowState)
+      let updatedEvent: Event | undefined;
       if (Object.keys(patchFields).length > 0) {
         const patchData = transformDatesForApi(patchFields);
-        await updateEventMutation.mutateAsync({
+        updatedEvent = await updateEventMutation.mutateAsync({
           eventCode: event.eventCode,
           data: patchData,
         });
@@ -564,7 +565,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         console.log('⚠️ No templates selected, skipping task creation');
       }
 
-      onSuccess?.();
+      // Pass the updated event to onSuccess callback (used for redirect if eventCode changed)
+      onSuccess?.(updatedEvent);
       onClose();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

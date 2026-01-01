@@ -13,22 +13,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Unit tests for WorkflowTransitionValidator - Story 5.1a AC6 (RED Phase)
+ * Unit tests for WorkflowTransitionValidator - Story 5.7 (Updated for 9-State Model)
  *
  * Test Strategy: TDD Red-Green-Refactor
- * - These tests are written BEFORE implementation (RED Phase)
- * - Tests should FAIL initially because WorkflowTransitionValidator doesn't exist yet
- * - Implementation in Task 4 will make these tests pass (GREEN Phase)
+ * - Tests updated for 9-state consolidated workflow model
+ * - Tests ensure only valid transitions are allowed
  *
  * This validator defines the state transition matrix and ensures only valid
- * transitions are allowed based on the 16-step workflow.
+ * transitions are allowed based on the 9-step workflow.
  *
- * Valid Transitions (examples):
- * - CREATED → TOPIC_SELECTION
- * - TOPIC_SELECTION → SPEAKER_BRAINSTORMING
- * - SPEAKER_BRAINSTORMING → SPEAKER_OUTREACH
- * - SPEAKER_OUTREACH → SPEAKER_CONFIRMATION
- * - ... (all sequential transitions)
+ * Valid Transitions (9-State Model):
+ * - CREATED → TOPIC_SELECTION or SPEAKER_IDENTIFICATION
+ * - TOPIC_SELECTION → SPEAKER_IDENTIFICATION
+ * - SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
+ * - SLOT_ASSIGNMENT → AGENDA_PUBLISHED
+ * - AGENDA_PUBLISHED → AGENDA_FINALIZED
+ * - AGENDA_FINALIZED → EVENT_LIVE
+ * - EVENT_LIVE → EVENT_COMPLETED
+ * - EVENT_COMPLETED → ARCHIVED
  *
  * Invalid Transitions (examples):
  * - CREATED → ARCHIVED (skipping all intermediate steps)
@@ -51,24 +53,18 @@ class WorkflowTransitionValidatorTest {
                 .build();
     }
 
-    // Test: Valid sequential transitions
+    // Test: Valid sequential transitions (9-State Model)
     @ParameterizedTest
     @CsvSource({
         "CREATED, TOPIC_SELECTION",
-        "TOPIC_SELECTION, SPEAKER_BRAINSTORMING",
-        "SPEAKER_BRAINSTORMING, SPEAKER_OUTREACH",
-        "SPEAKER_OUTREACH, SPEAKER_CONFIRMATION",
-        "SPEAKER_CONFIRMATION, CONTENT_COLLECTION",
-        "CONTENT_COLLECTION, QUALITY_REVIEW",
-        "QUALITY_REVIEW, THRESHOLD_CHECK",
-        "THRESHOLD_CHECK, OVERFLOW_MANAGEMENT",
-        "OVERFLOW_MANAGEMENT, SLOT_ASSIGNMENT",
+        "CREATED, SPEAKER_IDENTIFICATION",        // Can skip TOPIC_SELECTION if speaker added directly
+        "TOPIC_SELECTION, SPEAKER_IDENTIFICATION",
+        "SPEAKER_IDENTIFICATION, SLOT_ASSIGNMENT",
         "SLOT_ASSIGNMENT, AGENDA_PUBLISHED",
         "AGENDA_PUBLISHED, AGENDA_FINALIZED",
-        "AGENDA_FINALIZED, NEWSLETTER_SENT",
-        "NEWSLETTER_SENT, EVENT_READY",
-        "EVENT_READY, PARTNER_MEETING_COMPLETE",
-        "PARTNER_MEETING_COMPLETE, ARCHIVED"
+        "AGENDA_FINALIZED, EVENT_LIVE",
+        "EVENT_LIVE, EVENT_COMPLETED",
+        "EVENT_COMPLETED, ARCHIVED"
     })
     @DisplayName("Should allow valid sequential state transitions")
     void should_allowTransition_when_validSequentialTransition(EventWorkflowState fromState, EventWorkflowState toState) {
@@ -81,14 +77,15 @@ class WorkflowTransitionValidatorTest {
         ).doesNotThrowAnyException();
     }
 
-    // Test: Invalid non-sequential transitions
+    // Test: Invalid non-sequential transitions (9-State Model)
     @ParameterizedTest
     @CsvSource({
-        "CREATED, ARCHIVED",                    // Skip all intermediate steps
-        "CREATED, SPEAKER_CONFIRMATION",        // Skip multiple steps
-        "TOPIC_SELECTION, SLOT_ASSIGNMENT",     // Jump ahead multiple steps
-        "SPEAKER_BRAINSTORMING, AGENDA_PUBLISHED", // Jump ahead many steps
-        "QUALITY_REVIEW, ARCHIVED"              // Skip to end
+        "CREATED, ARCHIVED",                       // Skip all intermediate steps
+        "CREATED, SLOT_ASSIGNMENT",                // Skip multiple steps
+        "TOPIC_SELECTION, SLOT_ASSIGNMENT",        // Jump ahead multiple steps
+        "SPEAKER_IDENTIFICATION, AGENDA_PUBLISHED", // Jump ahead multiple steps
+        "SLOT_ASSIGNMENT, EVENT_LIVE",             // Skip agenda phases
+        "AGENDA_PUBLISHED, EVENT_COMPLETED"        // Skip multiple steps
     })
     @DisplayName("Should reject invalid non-sequential state transitions")
     void should_rejectTransition_when_invalidNonSequentialTransition(EventWorkflowState fromState, EventWorkflowState toState) {
@@ -103,12 +100,16 @@ class WorkflowTransitionValidatorTest {
                 .hasMessageContaining("Invalid state transition from '" + fromState + "' to '" + toState + "'");
     }
 
-    // Test: Backwards transitions are not allowed
+    // Test: Backwards transitions are not allowed (9-State Model)
     @ParameterizedTest
     @CsvSource({
         "TOPIC_SELECTION, CREATED",
-        "SPEAKER_CONFIRMATION, SPEAKER_OUTREACH",
-        "AGENDA_FINALIZED, AGENDA_PUBLISHED"
+        "SPEAKER_IDENTIFICATION, TOPIC_SELECTION",
+        "SLOT_ASSIGNMENT, SPEAKER_IDENTIFICATION",
+        "AGENDA_PUBLISHED, SLOT_ASSIGNMENT",
+        "AGENDA_FINALIZED, AGENDA_PUBLISHED",
+        "EVENT_LIVE, AGENDA_FINALIZED",
+        "EVENT_COMPLETED, EVENT_LIVE"
     })
     @DisplayName("Should reject backwards state transitions")
     void should_rejectTransition_when_backwardsTransition(EventWorkflowState fromState, EventWorkflowState toState) {
@@ -152,16 +153,16 @@ class WorkflowTransitionValidatorTest {
                 .hasMessageContaining("Cannot transition from terminal state ARCHIVED");
     }
 
-    // Test: Skip OVERFLOW_MANAGEMENT when not needed
+    // Test: Skip TOPIC_SELECTION when speaker added directly
     @Test
-    @DisplayName("Should allow skipping OVERFLOW_MANAGEMENT when threshold not exceeded")
-    void should_allowSkippingOverflowManagement_when_thresholdNotExceeded() {
-        // Given: Event in THRESHOLD_CHECK state with acceptable speaker count
-        testEvent.setWorkflowState(EventWorkflowState.THRESHOLD_CHECK);
+    @DisplayName("Should allow skipping TOPIC_SELECTION when speaker added directly")
+    void should_allowSkippingTopicSelection_when_speakerAddedDirectly() {
+        // Given: Event in CREATED state
+        testEvent.setWorkflowState(EventWorkflowState.CREATED);
 
-        // When/Then: Direct transition to SLOT_ASSIGNMENT should be allowed
+        // When/Then: Direct transition to SPEAKER_IDENTIFICATION should be allowed
         assertThatCode(() ->
-                validator.validateTransition(EventWorkflowState.THRESHOLD_CHECK, EventWorkflowState.SLOT_ASSIGNMENT, testEvent)
+                validator.validateTransition(EventWorkflowState.CREATED, EventWorkflowState.SPEAKER_IDENTIFICATION, testEvent)
         ).doesNotThrowAnyException();
     }
 

@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +39,15 @@ public class RegistrationCleanupService {
      * - Day of month: * (every day)
      * - Month: * (every month)
      * - Day of week: * (every day of week)
+     *
+     * ShedLock ensures only ONE ECS instance executes this job
      */
     @Scheduled(cron = "0 0 3 * * *")
+    @SchedulerLock(
+            name = "cleanupUnconfirmedRegistrations",
+            lockAtMostFor = "30m",
+            lockAtLeastFor = "1m"
+    )
     @Transactional
     public void cleanupUnconfirmedRegistrations() {
         log.info("Starting scheduled cleanup of unconfirmed registrations");

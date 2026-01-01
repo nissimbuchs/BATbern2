@@ -14,10 +14,12 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
+import ch.batbern.shared.events.SpeakerAcceptedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +53,7 @@ public class SpeakerStatusService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Update speaker status with validation
@@ -91,12 +94,31 @@ public class SpeakerStatusService {
         // Save updated speaker pool entry
         speakerPoolRepository.save(speaker);
 
+        // Publish SpeakerAcceptedEvent if status changed to ACCEPTED (triggers workflow transition)
+        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED) {
+            Event event = eventRepository.findById(speaker.getEventId())
+                    .orElseThrow(() -> new NotFoundException("Event not found: " + speaker.getEventId()));
+
+            SpeakerAcceptedEvent acceptedEvent = SpeakerAcceptedEvent.builder()
+                    .eventId(event.getId())
+                    .eventCode(event.getEventCode())
+                    .speakerPoolId(speaker.getId())
+                    .speakerName(speaker.getSpeakerName())
+                    .company(speaker.getCompany())
+                    .expertise(speaker.getExpertise())
+                    .acceptedBy(organizerUsername)
+                    .build();
+            eventPublisher.publishEvent(acceptedEvent);
+            log.debug("Published SpeakerAcceptedEvent for speaker: {}, event: {}",
+                    speaker.getSpeakerName(), event.getEventCode());
+        }
+
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
         historyRecord.setSpeakerPoolId(speakerId);
         // Session ID from speaker pool (null until content submitted)
         historyRecord.setSessionId(speaker.getSessionId());
-        historyRecord.setEventCode(eventCode);
+        historyRecord.setEventId(speaker.getEventId()); // V29: Use eventId instead of eventCode
         historyRecord.setPreviousStatus(currentStatus);
         historyRecord.setNewStatus(request.getNewStatus());
         historyRecord.setChangedByUsername(organizerUsername);
@@ -215,11 +237,18 @@ public class SpeakerStatusService {
 
     /**
      * Map entity to response DTO
+     * V29: Fetch eventCode from Event entity since history now stores eventId
      */
     private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history) {
         SpeakerStatusResponse response = new SpeakerStatusResponse();
         response.setSpeakerId(history.getSpeakerPoolId());
-        response.setEventCode(history.getEventCode());
+
+        // V29: Look up eventCode from events table using eventId
+        String eventCode = eventRepository.findById(history.getEventId())
+            .map(Event::getEventCode)
+            .orElse("UNKNOWN");
+        response.setEventCode(eventCode);
+
         response.setCurrentStatus(history.getNewStatus());
         response.setPreviousStatus(history.getPreviousStatus());
         response.setChangedByUsername(history.getChangedByUsername());

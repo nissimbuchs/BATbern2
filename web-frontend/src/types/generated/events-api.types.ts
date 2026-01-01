@@ -813,6 +813,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/batch_registrations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create batch event registrations for a participant
+     * @description Creates multiple event registrations for a single participant in one transaction.
+     *     Used for bulk importing historical attendance data.
+     *
+     *     **Story**: BAT-12 - API Contract - Participant Batch Registration
+     *
+     *     **Behavior**:
+     *     - Creates user if doesn't exist (get-or-create by email)
+     *     - Skips duplicate registrations (idempotent)
+     *     - Returns partial success if some registrations fail
+     *
+     *     **Use Case**: Historical data migration for 2,307 participants
+     *
+     *     **Performance**: <500ms (P95) for 100 registrations
+     */
+    post: operations['createBatchRegistrations'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/registrations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List user registrations across all events
+     * @description Retrieve all event registrations for a specific user.
+     *     Used by user detail page to show participation history.
+     *
+     *     **Story**: BAT-15 - Integration - Participant Batch Import
+     *     **Security**: Requires authentication
+     */
+    get: operations['listUserRegistrations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/analytics': {
     parameters: {
       query?: never;
@@ -1297,7 +1353,14 @@ export interface components {
       /** Format: uri */
       profilePhoto?: string;
     };
-    /** @description Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs */
+    /**
+     * @description Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+     *
+     *     **Placeholder Session Pattern (V21):**
+     *     Sessions can be created as placeholders when speakers accept invitations.
+     *     Placeholder sessions have title but null sessionType/startTime/endTime.
+     *     Timing is assigned later during slot assignment workflow (Story 5.7).
+     */
     Session: {
       /**
        * @description URL-friendly slug generated from session title
@@ -1312,21 +1375,29 @@ export interface components {
       title: string;
       description?: string;
       /**
+       * @description Session type - null for placeholder sessions, assigned during agenda planning
        * @example keynote
-       * @enum {string}
+       * @enum {string|null}
        */
-      sessionType:
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - null for placeholder sessions, assigned during slot assignment
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - null for placeholder sessions, assigned during slot assignment
+       */
+      endTime?: string | null;
       /** @example Main Hall */
       room?: string;
       /** @example 200 */
@@ -1573,7 +1644,7 @@ export interface components {
       /** @description Company name from user_profiles.company_id (FK to companies table) */
       company?: string;
       /** @enum {string} */
-      status: 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended';
+      status: 'REGISTERED' | 'WAITLISTED' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
       /** Format: date-time */
       registrationDate?: string;
       /** @description Event-level registration - sessions are preferences only, not commitments */
@@ -1673,44 +1744,80 @@ export interface components {
       /** @description Upload ID from /logos/presigned-url for event theme image */
       themeImageUploadId?: string | null;
     };
+    /**
+     * @description Create session request - supports creating placeholder sessions.
+     *
+     *     **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+     *     Timing will be assigned later during slot assignment workflow (Story 5.7).
+     *
+     *     **Full Sessions**: Provide all fields to create a fully-defined session.
+     */
     CreateSessionRequest: {
       title: string;
       description?: string;
-      /** @enum {string} */
-      sessionType:
+      /**
+       * @description Session type - omit for placeholder sessions
+       * @enum {string|null}
+       */
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - omit for placeholder sessions
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - omit for placeholder sessions
+       */
+      endTime?: string | null;
       room?: string;
       capacity?: number;
       /** @default de */
       language: string;
     };
+    /**
+     * @description Update session request - supports partial updates and slot assignment.
+     *
+     *     **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
+     *     **Full Update**: Update any combination of fields.
+     *     **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
+     */
     UpdateSessionRequest: {
       title: string;
       description?: string;
-      /** @enum {string} */
-      sessionType:
+      /**
+       * @description Session type - can be null for placeholder sessions
+       * @enum {string|null}
+       */
+      sessionType?:
         | 'keynote'
         | 'presentation'
         | 'workshop'
         | 'panel_discussion'
         | 'networking'
         | 'break'
-        | 'lunch';
-      /** Format: date-time */
-      startTime: string;
-      /** Format: date-time */
-      endTime: string;
-      room?: string;
+        | 'lunch'
+        | null;
+      /**
+       * Format: date-time
+       * @description Session start time - use for slot assignment, set to null to clear
+       */
+      startTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Session end time - use for slot assignment, set to null to clear
+       */
+      endTime?: string | null;
+      /** @description Session room - assigned during slot assignment */
+      room?: string | null;
       capacity?: number;
       language?: string;
     };
@@ -1787,6 +1894,94 @@ export interface components {
         /** @description Receive event reminders */
         eventReminders?: boolean;
       };
+    };
+    /**
+     * @description Story BAT-12: Batch registration request for historical data import.
+     *     Creates multiple event registrations for a single participant.
+     */
+    BatchRegistrationRequest: {
+      /**
+       * Format: email
+       * @description Participant email (used for user lookup/creation)
+       * @example adrian.buerki@centrisag.ch
+       */
+      participantEmail: string;
+      /**
+       * @description Participant first name
+       * @example Adrian
+       */
+      firstName: string;
+      /**
+       * @description Participant last name
+       * @example Bürki
+       */
+      lastName: string;
+      /**
+       * @description Company identifier (company name).
+       *     Optional for participants without company affiliation.
+       *     Story 3.2: Batch import includes company information from CSV.
+       * @example Centris AG
+       */
+      companyId?: string;
+      /** @description Array of event registrations (max 100 per batch) */
+      registrations: components['schemas']['BatchRegistrationItem'][];
+    };
+    /** @description Single event registration within a batch */
+    BatchRegistrationItem: {
+      /**
+       * @description Event code in format BATbernN where N is event number
+       * @example BATbern25
+       */
+      eventCode: string;
+      /**
+       * @description Registration status (use 'ATTENDED' for historical data)
+       * @example ATTENDED
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'ATTENDED' | 'CANCELLED';
+    };
+    /**
+     * @description Response for batch registration operation.
+     *     Returns partial success - some registrations may fail while others succeed.
+     */
+    BatchRegistrationResponse: {
+      /**
+       * @description Username of created/found participant
+       * @example adrian.buerki
+       */
+      username: string;
+      /**
+       * @description Total number of registrations attempted
+       * @example 3
+       */
+      totalRegistrations: number;
+      /**
+       * @description Number of registrations successfully created
+       * @example 3
+       */
+      successfulRegistrations: number;
+      /** @description List of registrations that failed */
+      failedRegistrations: components['schemas']['FailedRegistration'][];
+      /**
+       * @description List of error messages
+       * @example [
+       *       "Event BATbern99 not found"
+       *     ]
+       */
+      errors: string[];
+    };
+    /** @description Details of a failed registration within a batch */
+    FailedRegistration: {
+      /**
+       * @description Event code that failed
+       * @example BATbern99
+       */
+      eventCode: string;
+      /**
+       * @description Reason for failure
+       * @example Event not found
+       */
+      reason: string;
     };
     BatchUpdateRequest: {
       updates: {
@@ -2431,6 +2626,15 @@ export interface components {
     };
     /** @description Forbidden - insufficient permissions */
     Forbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        'application/json': components['schemas']['ErrorResponse'];
+      };
+    };
+    /** @description Unauthorized - missing or invalid authentication token */
+    Unauthorized: {
       headers: {
         [name: string]: unknown;
       };
@@ -3831,6 +4035,102 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createBatchRegistrations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchRegistrationRequest'];
+      };
+    };
+    responses: {
+      /** @description Batch registrations processed (full or partial success) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchRegistrationResponse'];
+        };
+      };
+      /** @description Invalid request data */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Forbidden",
+           *       "message": "This operation requires ORGANIZER role",
+           *       "code": "INSUFFICIENT_PERMISSIONS"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listUserRegistrations: {
+    parameters: {
+      query: {
+        /** @description Username to filter registrations */
+        attendeeUsername: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description User registrations retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example [
+           *       {
+           *         "registrationCode": "BATbern34-reg-A3X9K2",
+           *         "eventCode": "BATbern34",
+           *         "eventTitle": "Cloud Native Architecture",
+           *         "eventDate": "2023-03-15T18:00:00Z",
+           *         "status": "attended",
+           *         "registrationDate": "2023-02-01T10:30:00Z"
+           *       },
+           *       {
+           *         "registrationCode": "BATbern36-reg-B7Y1M4",
+           *         "eventCode": "BATbern36",
+           *         "eventTitle": "Microservices Patterns",
+           *         "eventDate": "2023-05-20T18:00:00Z",
+           *         "status": "attended",
+           *         "registrationDate": "2023-04-10T14:20:00Z"
+           *       }
+           *     ]
+           */
+          'application/json': components['schemas']['Registration'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
       500: components['responses']['InternalServerError'];
     };
   };

@@ -57,6 +57,7 @@ export class EventManagementStack extends cdk.Stack {
           }),
           ...(props.cloudFrontDistribution && {
             CLOUDFRONT_DOMAIN: `https://${props.cloudFrontDistribution.distributionDomainName}`,
+            CLOUDFRONT_DISTRIBUTION_ID: props.cloudFrontDistribution.distributionId,
           }),
           // Service Connect URL for company-user-management service (ADR-004)
           // Uses DNS-based service discovery: http://<service-name>:8080
@@ -99,6 +100,43 @@ export class EventManagementStack extends cdk.Stack {
           // TO identities - all verified emails (required for sandbox mode)
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
+        ],
+      })
+    );
+
+    // Grant CloudFront cache invalidation permissions for publishing engine (Story 5.7 - BAT-11)
+    if (props.cloudFrontDistribution) {
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'cloudfront:CreateInvalidation',
+            'cloudfront:GetInvalidation',
+            'cloudfront:ListInvalidations',
+          ],
+          resources: [
+            `arn:aws:cloudfront::${cdk.Stack.of(this).account}:distribution/${
+              props.cloudFrontDistribution.distributionId
+            }`,
+          ],
+        })
+      );
+    }
+
+    // Grant EventBridge permissions for auto-publish scheduling (Story 5.7 - BAT-11)
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'events:PutRule',
+          'events:PutTargets',
+          'events:DeleteRule',
+          'events:RemoveTargets',
+          'events:DescribeRule',
+          'events:ListTargetsByRule',
+        ],
+        resources: [
+          `arn:aws:events:${props.config.region}:${cdk.Stack.of(this).account}:rule/batbern-auto-publish-*`,
         ],
       })
     );

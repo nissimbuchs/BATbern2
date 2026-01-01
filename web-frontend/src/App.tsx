@@ -49,7 +49,9 @@ const Analytics = React.lazy(() => import('@pages/Analytics'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
-const UserManagement = React.lazy(() => import('@components/organizer/UserManagement/UserList'));
+const UserManagement = React.lazy(
+  () => import('@components/organizer/UserManagement/UserManagement')
+);
 const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAccountPage'));
 
 // Event Management Pages - Story 2.5.3, Task 4
@@ -66,6 +68,9 @@ const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManag
 
 // Task Management Page - Story 5.5
 const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'));
+
+// Slot Assignment Page - Story 5.7 (BAT-11)
+const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
@@ -178,8 +183,10 @@ function App() {
             <NavigationSetup>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6 */}
+                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
                   <Route path="/" element={<HomePage />} />
+                  {/* Story 5.7: Public event page with preview mode support */}
+                  <Route path="/events/:eventCode" element={<HomePage />} />
                   <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
                   <Route path="/registration-success" element={<RegistrationSuccessPage />} />
                   <Route
@@ -342,6 +349,17 @@ function App() {
                       <ProtectedRoute>
                         <AuthLayout>
                           <EventPage />
+                        </AuthLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  {/* Story 5.7 (BAT-11): Dedicated Slot Assignment Page */}
+                  <Route
+                    path="/organizer/events/:eventCode/slot-assignment"
+                    element={
+                      <ProtectedRoute>
+                        <AuthLayout>
+                          <SlotAssignmentPage />
                         </AuthLayout>
                       </ProtectedRoute>
                     }

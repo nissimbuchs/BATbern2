@@ -578,13 +578,14 @@ public class TopicService {
                     "Topic not found: " + topicCode));
 
         // Validate event state (AC16)
-        // Allow topic assignment/update for CREATED, TOPIC_SELECTION, SPEAKER_BRAINSTORMING, and ARCHIVED states
-        // SPEAKER_BRAINSTORMING allows topic updates after initial selection (before speaker outreach starts)
+        // Allow topic assignment/update for CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, and ARCHIVED states
+        // SPEAKER_IDENTIFICATION allows topic updates after initial selection (during speaker management phase)
         // ARCHIVED state support added for Story 5.2a (historical event batch import)
+        // 9-State Model: SPEAKER_BRAINSTORMING replaced with SPEAKER_IDENTIFICATION
         EventWorkflowState currentState = event.getWorkflowState();
         if (currentState != EventWorkflowState.CREATED
                 && currentState != EventWorkflowState.TOPIC_SELECTION
-                && currentState != EventWorkflowState.SPEAKER_BRAINSTORMING
+                && currentState != EventWorkflowState.SPEAKER_IDENTIFICATION
                 && currentState != EventWorkflowState.ARCHIVED) {
             throw new ch.batbern.shared.exception.ValidationException(
                 "Invalid state transition",
@@ -595,24 +596,24 @@ public class TopicService {
             );
         }
 
-        // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED or SPEAKER_BRAINSTORMING
+        // Transition workflow state FIRST (AC14) - UNLESS event is already ARCHIVED or SPEAKER_IDENTIFICATION
         // For ARCHIVED events (historical imports), skip state transition to preserve archival workflowState
-        // For SPEAKER_BRAINSTORMING events, skip transition (already there, just updating topic)
+        // For SPEAKER_IDENTIFICATION events, skip transition (already there, just updating topic)
         Event updatedEvent;
         if (currentState == EventWorkflowState.ARCHIVED
-                || currentState == EventWorkflowState.SPEAKER_BRAINSTORMING) {
+                || currentState == EventWorkflowState.SPEAKER_IDENTIFICATION) {
             // Skip state transition - either already in correct state or preserving archival workflowState
             // IMPORTANT: Reload the event to ensure we have a properly managed entity for update
             // Without this, entity state management can cause save() to not persist changes
             updatedEvent = eventRepository.findByEventCode(eventCode)
                     .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
         } else {
-            // Transition to SPEAKER_BRAINSTORMING because topic selection is now complete
+            // Transition to SPEAKER_IDENTIFICATION because topic selection is now complete
             // Can transition from both CREATED and TOPIC_SELECTION states
             // This will also publish EventWorkflowTransitionEvent
             updatedEvent = eventWorkflowStateMachine.transitionToState(
                 eventCode,
-                EventWorkflowState.SPEAKER_BRAINSTORMING,
+                EventWorkflowState.SPEAKER_IDENTIFICATION,
                 organizerUsername
             );
         }

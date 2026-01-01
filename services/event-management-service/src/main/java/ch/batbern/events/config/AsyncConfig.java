@@ -15,8 +15,10 @@ import java.util.concurrent.Executor;
  * - Email sending
  * - Event publishing
  * - Background tasks
+ * - Workflow event listeners (auto-transitions)
  *
  * Story 2.2a Task B12: Async email confirmation
+ * Story 5.7 (BAT-11): Automatic workflow transitions via event listeners
  */
 @Configuration
 @EnableAsync

@@ -14,14 +14,14 @@ npm run generate:api-types
 
 This will generate TypeScript types from:
 
-| OpenAPI Spec | Generated File |
-|-------------|----------------|
-| `docs/api/companies-api.openapi.yml` | `company-api.types.ts` |
-| `docs/api/users-api.openapi.yml` | `user-api.types.ts` |
-| `docs/api/events-api.openapi.yml` | `events-api.types.ts` |
-| `docs/api/speakers-api.openapi.yml` | `speakers-api.types.ts` |
-| `docs/api/topics-api.openapi.yml` | `topics-api.types.ts` |
-| `docs/api/partners-api.openapi.yml` | `partner-api.types.ts` |
+| OpenAPI Spec                         | Generated File           |
+| ------------------------------------ | ------------------------ |
+| `docs/api/companies-api.openapi.yml` | `company-api.types.ts`   |
+| `docs/api/users-api.openapi.yml`     | `user-api.types.ts`      |
+| `docs/api/events-api.openapi.yml`    | `events-api.types.ts`    |
+| `docs/api/speakers-api.openapi.yml`  | `speakers-api.types.ts`  |
+| `docs/api/topics-api.openapi.yml`    | `topics-api.types.ts`    |
+| `docs/api/partners-api.openapi.yml`  | `partner-api.types.ts`   |
 | `docs/api/attendees-api.openapi.yml` | `attendees-api.types.ts` |
 
 ### Usage

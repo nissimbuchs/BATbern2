@@ -347,3 +347,266 @@ export interface TeamActivityResponse {
     hasNext: boolean;
   };
 }
+
+// ============================================================================
+// Slot Assignment & Publishing Types (Story 5.7)
+// ============================================================================
+
+/**
+ * Request to assign timing to a session during slot assignment
+ */
+export interface SessionTimingRequest {
+  startTime: string; // ISO 8601 date-time
+  endTime: string; // ISO 8601 date-time
+  room?: string;
+  sessionType?:
+    | 'keynote'
+    | 'presentation'
+    | 'workshop'
+    | 'panel_discussion'
+    | 'networking'
+    | 'break'
+    | 'lunch';
+  changeReason?:
+    | 'initial_assignment'
+    | 'drag_drop_reassignment'
+    | 'conflict_resolution'
+    | 'preference_matching'
+    | 'manual_adjustment';
+  notes?: string;
+}
+
+/**
+ * Bulk timing assignment request
+ */
+export interface BulkTimingRequest {
+  assignments: Array<{
+    sessionSlug: string;
+    startTime: string;
+    endTime: string;
+    room?: string;
+    sessionType?: string;
+  }>;
+  changeReason?: 'preference_matching' | 'manual_adjustment';
+}
+
+/**
+ * Bulk timing assignment response
+ */
+export interface BulkTimingResponse {
+  assignedCount: number;
+  sessions: Session[];
+}
+
+/**
+ * Timing conflict error response
+ */
+export interface TimingConflictError {
+  error: string;
+  message: string;
+  conflicts: Array<{
+    type: 'room_overlap' | 'speaker_double_booked' | 'speaker_unavailable';
+    conflictingSessionSlug?: string | null;
+    conflictingTimeRange: {
+      start: string;
+      end: string;
+    };
+    details: string;
+  }>;
+}
+
+/**
+ * Conflict analysis response
+ */
+export interface ConflictAnalysisResponse {
+  hasConflicts: boolean;
+  conflictCount: number;
+  conflicts: Array<{
+    sessionSlug: string;
+    conflictType: 'room_overlap' | 'speaker_double_booked' | 'speaker_unavailable';
+    severity: 'error' | 'warning';
+    affectedSessions: string[];
+    timeRange: {
+      start: string;
+      end: string;
+    };
+    resolution: string;
+  }>;
+}
+
+// ============================================================================
+// Progressive Publishing Types (Story 5.7 - Task 5b)
+// ============================================================================
+
+/**
+ * Publishing phase type
+ */
+export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
+
+/**
+ * Publishing mode
+ */
+export type PublishingMode = 'draft' | 'progressive' | 'complete';
+
+/**
+ * CDN invalidation status
+ */
+export type CDNInvalidationStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
+
+/**
+ * Request options for publishing a phase
+ */
+export interface PublishRequest {
+  mode?: PublishingMode;
+  approvalOverride?: boolean;
+  notifySubscribers?: boolean;
+}
+
+/**
+ * Publishing version entity (for rollback capability)
+ */
+export interface PublishingVersion {
+  id: string;
+  eventCode: string;
+  versionNumber: number;
+  publishedPhase: string; // UPPERCASE in API
+  publishedAt: string;
+  publishedBy: string;
+  cdnInvalidationId?: string;
+  cdnInvalidationStatus?: string; // UPPERCASE in API
+  contentSnapshot: Record<string, unknown>;
+  isCurrent: boolean;
+  rolledBackAt?: string | null;
+  rolledBackBy?: string | null;
+}
+
+/**
+ * Response from publishing a phase
+ */
+export type PublishPhaseResponse = PublishingVersion;
+
+/**
+ * Response from unpublishing a phase
+ */
+export interface UnpublishPhaseResponse {
+  eventCode: string;
+  unpublishedPhase: string; // UPPERCASE in API
+  newCurrentPhase: string | null; // UPPERCASE in API
+  unpublishedAt: string;
+  unpublishedBy: string;
+}
+
+/**
+ * Publish preview response
+ */
+export interface PublishPreviewResponse {
+  eventCode: string;
+  phase: string; // UPPERCASE in API
+  mode: string; // UPPERCASE in API
+  previewUrl: string;
+  content: {
+    topic?: {
+      title: string;
+      date: string;
+      venue: string;
+    };
+    speakers?: Array<{
+      displayName: string;
+      companyName: string;
+    }>;
+    agenda?: Array<{
+      sessionSlug: string;
+      title: string;
+      startTime: string;
+      endTime: string;
+      room: string;
+    }>;
+  };
+  validation: {
+    isValid: boolean;
+    errors: Array<{
+      field: string;
+      message: string;
+      requirement: string;
+    }>;
+  };
+}
+
+/**
+ * Version history response (array of versions)
+ */
+export type VersionHistoryResponse = PublishingVersion[];
+
+/**
+ * Rollback request
+ */
+export interface RollbackRequest {
+  reason: string; // 10-500 chars required
+}
+
+/**
+ * Response from rolling back to previous version
+ */
+export type RollbackResponse = PublishingVersion;
+
+/**
+ * Change log entry
+ */
+export interface ChangeLogEntry {
+  timestamp: string;
+  changedBy: string;
+  changeType: string; // UPPERCASE in API
+  description: string;
+  affectedPhase: string; // UPPERCASE in API
+}
+
+/**
+ * Change log response
+ */
+export interface ChangeLogResponse {
+  eventCode: string;
+  changes: ChangeLogEntry[];
+}
+
+/**
+ * Auto-publish schedule request
+ */
+export interface AutoPublishScheduleRequest {
+  scheduledDate: string; // ISO 8601 date-time
+  notifySubscribers?: boolean;
+}
+
+/**
+ * Auto-publish schedule response
+ */
+export interface AutoPublishScheduleResponse {
+  eventCode: string;
+  phase: string; // UPPERCASE in API
+  scheduledDate: string;
+  isEnabled: boolean;
+  ruleArn?: string; // AWS EventBridge rule ARN
+}
+
+/**
+ * Cancel auto-publish response
+ */
+export interface CancelAutoPublishResponse {
+  eventCode: string;
+  phase: string; // UPPERCASE in API
+  cancelledAt: string;
+  cancelledBy: string;
+}
+
+/**
+ * Publishing validation error (422 response)
+ */
+export interface PublishValidationError {
+  error: string;
+  message: string;
+  phase: string; // UPPERCASE in API
+  validationErrors: Array<{
+    field: string;
+    message: string;
+    requirement: string;
+  }>;
+}

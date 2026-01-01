@@ -129,6 +129,12 @@ public class Event {
     @Column(name = "topic_code", length = 100)
     private String topicCode;
 
+    @Column(name = "current_published_phase", length = 50)
+    private String currentPublishedPhase; // none, topic, speakers, agenda
+
+    @Column(name = "last_published_at")
+    private Instant lastPublishedAt;
+
     @Version
     @Column(name = "version")
     private Long version;

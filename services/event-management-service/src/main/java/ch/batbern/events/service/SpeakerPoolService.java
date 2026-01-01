@@ -7,7 +7,10 @@ import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.security.SecurityContextHelper;
+import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,11 +29,17 @@ public class SpeakerPoolService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final SecurityContextHelper securityContextHelper;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
-                              EventRepository eventRepository) {
+                              EventRepository eventRepository,
+                              ApplicationEventPublisher eventPublisher,
+                              SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
+        this.eventPublisher = eventPublisher;
+        this.securityContextHelper = securityContextHelper;
     }
 
     /**
@@ -70,7 +79,20 @@ public class SpeakerPoolService {
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
         log.info("Added speaker {} to pool (status: IDENTIFIED, no session yet)", saved.getSpeakerName());
 
-        // TODO: Publish SpeakerAddedToPoolEvent (AC21) when domain events are implemented
+        // Publish SpeakerAddedToPoolEvent to trigger workflow transition (AC21)
+        String addedBy = securityContextHelper.getCurrentUsername();
+        SpeakerAddedToPoolEvent speakerAddedEvent = SpeakerAddedToPoolEvent.builder()
+                .eventId(event.getId())
+                .eventCode(eventCode)
+                .speakerPoolId(saved.getId())
+                .speakerName(saved.getSpeakerName())
+                .company(saved.getCompany())
+                .expertise(saved.getExpertise())
+                .assignedOrganizerId(saved.getAssignedOrganizerId())
+                .addedBy(addedBy)
+                .build();
+        eventPublisher.publishEvent(speakerAddedEvent);
+        log.debug("Published SpeakerAddedToPoolEvent for speaker: {}, event: {}", saved.getSpeakerName(), eventCode);
 
         return SpeakerPoolResponse.fromEntity(saved);
     }

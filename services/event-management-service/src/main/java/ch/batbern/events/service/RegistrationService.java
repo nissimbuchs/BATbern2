@@ -3,7 +3,11 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.generated.BatchRegistrationItem;
+import ch.batbern.events.dto.generated.BatchRegistrationRequest;
+import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
+import ch.batbern.events.dto.generated.FailedRegistration;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
@@ -17,8 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service for Registration business logic
@@ -136,38 +143,180 @@ public class RegistrationService {
      * complete data to API consumers.
      * <p>
      * Cached via UserApiClient (15min TTL) for performance.
+     * <p>
+     * <strong>Data Integrity Handling:</strong> If a user is not found (data integrity issue),
+     * returns placeholder data instead of failing. This allows organizers to see all registrations
+     * even when some reference missing users, making data quality issues visible.
      *
      * @param registration Registration entity with attendeeUsername
-     * @return RegistrationResponse enriched with user data
+     * @return RegistrationResponse enriched with user data (or placeholders if user missing)
      */
     @Transactional(readOnly = true)
     public RegistrationResponse enrichRegistrationWithUserData(Registration registration) {
         log.debug("Enriching registration: {} with user data", registration.getRegistrationCode());
 
-        // Fetch user details from User Management Service (cached)
-        ch.batbern.events.dto.generated.users.UserResponse userProfile =
-            userApiClient.getUserByUsername(registration.getAttendeeUsername());
-        log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(),
-            userProfile.getId());
+        try {
+            // Fetch user details from User Management Service (cached)
+            ch.batbern.events.dto.generated.users.UserResponse userProfile =
+                userApiClient.getUserByUsername(registration.getAttendeeUsername());
+            log.debug("Enriched registration {} with user: {}", registration.getRegistrationCode(),
+                userProfile.getId());
 
-        return RegistrationResponse.builder()
-                // Registration fields
-                .registrationCode(registration.getRegistrationCode())
-                .eventCode(registration.getEventCode()) // Transient field populated by controller
-                .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
-                .registrationDate(registration.getRegistrationDate() != null
-                        ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
-                .createdAt(registration.getCreatedAt() != null
-                        ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
-                .updatedAt(registration.getUpdatedAt() != null
-                        ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
-                // Enriched user fields (ADR-004)
-                .attendeeUsername(userProfile.getId())
-                .attendeeFirstName(userProfile.getFirstName())
-                .attendeeLastName(userProfile.getLastName())
-                .attendeeEmail(userProfile.getEmail())
-                .attendeeCompany(userProfile.getCompanyId()) // May be null for anonymous users
-                .build();
+            return RegistrationResponse.builder()
+                    // Registration fields
+                    .registrationCode(registration.getRegistrationCode())
+                    .eventCode(registration.getEventCode()) // Transient field populated by controller
+                    .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
+                    .registrationDate(registration.getRegistrationDate() != null
+                            ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
+                    .createdAt(registration.getCreatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
+                    .updatedAt(registration.getUpdatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    // Enriched user fields (ADR-004)
+                    .attendeeUsername(userProfile.getId())
+                    .attendeeFirstName(userProfile.getFirstName())
+                    .attendeeLastName(userProfile.getLastName())
+                    .attendeeEmail(userProfile.getEmail())
+                    .attendeeCompany(userProfile.getCompanyId()) // May be null for anonymous users
+                    .build();
+
+        } catch (ch.batbern.events.exception.UserNotFoundException e) {
+            // Data integrity issue: Registration exists but user was deleted or never created
+            // Return placeholder data so organizers can see the registration and identify the issue
+            log.warn("User not found for registration {}: {} - returning placeholder data to maintain list integrity",
+                    registration.getRegistrationCode(), registration.getAttendeeUsername());
+
+            return RegistrationResponse.builder()
+                    // Registration fields
+                    .registrationCode(registration.getRegistrationCode())
+                    .eventCode(registration.getEventCode())
+                    .status(registration.getStatus() != null ? registration.getStatus().toUpperCase() : null)
+                    .registrationDate(registration.getRegistrationDate() != null
+                            ? ISO_FORMATTER.format(registration.getRegistrationDate()) : null)
+                    .createdAt(registration.getCreatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
+                    .updatedAt(registration.getUpdatedAt() != null
+                            ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    // Placeholder user fields (data integrity issue)
+                    .attendeeUsername(registration.getAttendeeUsername())
+                    .attendeeFirstName("[User Not Found]")
+                    .attendeeLastName("[" + registration.getAttendeeUsername() + "]")
+                    .attendeeEmail("missing@unknown.invalid")
+                    .attendeeCompany(null)
+                    .build();
+        }
+    }
+
+    /**
+     * Create batch event registrations for a participant (Story BAT-14).
+     * <p>
+     * This method:
+     * 1. Gets or creates user via User Management Service (anonymous user with cognitoSync=false)
+     * 2. Creates registrations for all events in the batch
+     * 3. Skips duplicate registrations (idempotent)
+     * 4. Returns detailed results with partial success support
+     * <p>
+     * Designed for historical data migration where a single participant attended multiple events.
+     *
+     * @param request Batch registration request with participant data and event list
+     * @return Batch registration response with success/failure counts and details
+     */
+    @Transactional
+    public BatchRegistrationResponse createBatchRegistrations(BatchRegistrationRequest request) {
+        log.debug("Creating batch registrations for participant: {}", request.getParticipantEmail());
+
+        // 1. Get or create user via User Management Service
+        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
+        userRequest.setEmail(request.getParticipantEmail());
+        userRequest.setFirstName(request.getFirstName());
+        userRequest.setLastName(request.getLastName());
+        userRequest.setCompanyId(request.getCompanyId()); // Story 3.2: Include company from batch import
+        userRequest.setCognitoSync(false); // ADR-005: Create anonymous user for historical data
+
+        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+        String username = userResponse.getUsername();
+        log.info("Got/created user for batch registration: {}, created: {}",
+                username, userResponse.getCreated());
+
+        // 2. Process each registration in the batch
+        List<FailedRegistration> failedRegistrations = new ArrayList<>();
+        int successCount = 0;
+
+        for (BatchRegistrationItem item : request.getRegistrations()) {
+            try {
+                // Validate event exists
+                Event event = eventRepository.findByEventCode(item.getEventCode())
+                        .orElseThrow(() -> new NoSuchElementException(
+                                "Event not found: " + item.getEventCode()));
+
+                log.debug("Processing registration for event: {} (ID: {})", item.getEventCode(), event.getId());
+
+                // Check if registration already exists (idempotency)
+                boolean exists = registrationRepository.existsByEventIdAndAttendeeUsername(
+                        event.getId(),
+                        username
+                );
+
+                if (exists) {
+                    // Skip duplicate - idempotent behavior
+                    log.debug("Registration already exists for event: {} by user: {}, skipping",
+                            item.getEventCode(), username);
+                    continue;
+                }
+
+                // Create registration
+                // Convert enum status to lowercase string for database (per coding standards)
+                String status = item.getStatus().getValue().toLowerCase();
+
+                Registration registration = Registration.builder()
+                        .registrationCode(generateUniqueRegistrationCode(item.getEventCode()))
+                        .eventId(event.getId())
+                        .attendeeUsername(username)
+                        .status(status)
+                        .registrationDate(Instant.now())
+                        .build();
+
+                registrationRepository.save(registration);
+                successCount++;
+                log.debug("Created registration for event: {} by user: {}", item.getEventCode(), username);
+
+            } catch (NoSuchElementException e) {
+                // Event not found
+                failedRegistrations.add(new FailedRegistration(
+                        item.getEventCode(),
+                        "Event not found"
+                ));
+                log.warn("Failed to create registration for event: {} - Event not found", item.getEventCode());
+
+            } catch (Exception e) {
+                // Other errors (e.g., database errors, validation errors)
+                failedRegistrations.add(new FailedRegistration(
+                        item.getEventCode(),
+                        e.getMessage()
+                ));
+                log.error("Failed to create registration for event: {} - {}", item.getEventCode(), e.getMessage(), e);
+            }
+        }
+
+        // 3. Build response with detailed results
+        List<String> errors = failedRegistrations.stream()
+                .map(f -> String.format("Event %s: %s", f.getEventCode(), f.getReason()))
+                .collect(Collectors.toList());
+
+        BatchRegistrationResponse response = new BatchRegistrationResponse(
+                username,
+                request.getRegistrations().size(),
+                successCount,
+                failedRegistrations,
+                errors
+        );
+
+        log.info("Batch registration completed for user: {} - Total: {}, Successful: {}, Failed: {}",
+                username, response.getTotalRegistrations(), response.getSuccessfulRegistrations(),
+                response.getFailedRegistrations().size());
+
+        return response;
     }
 
     /**
