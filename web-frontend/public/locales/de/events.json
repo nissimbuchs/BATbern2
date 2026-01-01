@@ -416,6 +416,11 @@
       "publish": "Veröffentlichen",
       "publishing": "Veröffentliche...",
       "publishPhase": "{{phase}} veröffentlichen",
+      "published": "{{phase}} veröffentlicht",
+      "publishPhases": "Phasen veröffentlichen",
+      "alreadyPublished": "Bereits veröffentlicht",
+      "publishTopicFirst": "Bitte veröffentlichen Sie zuerst das Thema",
+      "publishSpeakersFirst": "Bitte veröffentlichen Sie zuerst die Referenten",
       "schedulePublish": "Veröffentlichung planen",
       "previewNewsletter": "Newsletter-Vorschau",
       "mode": "Modus",
@@ -424,6 +429,11 @@
       "modeComplete": "Vollständig",
       "notifySubscribers": "Abonnenten benachrichtigen",
       "validationErrors": "Validierungsfehler:",
+      "phase": {
+        "topic": "Thema",
+        "speakers": "Referenten",
+        "agenda": "Agenda"
+      },
       "scheduleDialog": {
         "title": "Veröffentlichung planen",
         "dateLabel": "Datum & Uhrzeit planen",

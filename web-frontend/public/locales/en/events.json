@@ -426,6 +426,11 @@
       "publish": "Publish",
       "publishing": "Publishing...",
       "publishPhase": "Publish {{phase}}",
+      "published": "{{phase}} Published",
+      "publishPhases": "Publish Phases",
+      "alreadyPublished": "Already published",
+      "publishTopicFirst": "Please publish the topic first",
+      "publishSpeakersFirst": "Please publish the speakers first",
       "schedulePublish": "Schedule Publish",
       "previewNewsletter": "Preview Newsletter",
       "mode": "Mode",
@@ -434,6 +439,11 @@
       "modeComplete": "Complete",
       "notifySubscribers": "Notify subscribers",
       "validationErrors": "Validation Errors:",
+      "phase": {
+        "topic": "Topic",
+        "speakers": "Speakers",
+        "agenda": "Agenda"
+      },
       "scheduleDialog": {
         "title": "Schedule Publishing",
         "dateLabel": "Schedule Date & Time",
