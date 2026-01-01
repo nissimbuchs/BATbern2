@@ -199,7 +199,7 @@ public class SessionTimingService {
         int startMinute = Integer.parseInt(timeParts[1]);
 
         // Create base time at event date + start hour/minute (UTC)
-        Instant currentSlotStart = eventDate
+        Instant eventStartTime = eventDate
                 .atZone(java.time.ZoneId.of("UTC"))
                 .withHour(startHour)
                 .withMinute(startMinute)
@@ -207,18 +207,44 @@ public class SessionTimingService {
                 .withNano(0)
                 .toInstant();
 
+        // Find first available slot by checking existing assigned sessions
+        List<Session> assignedSessions = sessionRepository.findByEventId(event.getId()).stream()
+                .filter(s -> s.getStartTime() != null)
+                .sorted((a, b) -> a.getStartTime().compareTo(b.getStartTime()))
+                .toList();
+
+        // Start from event start time and find first free slot
+        Instant currentSlotStart = eventStartTime;
+
         // Assign each session sequentially to next available slot
         int assignedCount = 0;
         for (Session session : unassignedSessions) {
             try {
+                // Find next available slot that doesn't conflict with assigned sessions
                 Instant slotEnd = currentSlotStart.plus(slotDurationMinutes, java.time.temporal.ChronoUnit.MINUTES);
+
+                // Check if this slot overlaps with any assigned session
+                boolean hasConflict = true;
+                while (hasConflict) {
+                    final Instant checkStart = currentSlotStart;
+                    final Instant checkEnd = slotEnd;
+
+                    hasConflict = assignedSessions.stream()
+                            .anyMatch(s -> s.getStartTime().isBefore(checkEnd) && s.getEndTime().isAfter(checkStart));
+
+                    if (hasConflict) {
+                        // Move to next slot
+                        currentSlotStart = slotEnd;
+                        slotEnd = currentSlotStart.plus(slotDurationMinutes, java.time.temporal.ChronoUnit.MINUTES);
+                    }
+                }
 
                 assignTiming(
                         session.getSessionSlug(),
                         currentSlotStart,
                         slotEnd,
                         "Main Hall",  // Default room
-                        "auto_assignment",
+                        "preference_matching",  // Algorithm-based auto-assignment
                         changedBy
                 );
 
@@ -254,7 +280,7 @@ public class SessionTimingService {
      */
     private String getStartTime(String eventType) {
         return switch (eventType) {
-            case "EVENING" -> "18:00";
+            case "EVENING" -> "16:00";
             case "HALF_DAY" -> "13:00";
             case "FULL_DAY" -> "09:00";
             default -> "09:00";
