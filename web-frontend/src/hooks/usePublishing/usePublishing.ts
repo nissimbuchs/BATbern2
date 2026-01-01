@@ -18,6 +18,7 @@ import type {
   PublishingMode,
   PublishRequest,
   PublishPreviewResponse,
+  PublishingStatusResponse,
   VersionHistoryResponse,
   RollbackRequest,
   ChangeLogResponse,
@@ -26,6 +27,10 @@ import type {
 } from '@/types/event.types';
 
 export interface UsePublishingReturn {
+  // Publishing status (real-time validation data)
+  publishingStatus: PublishingStatusResponse | undefined;
+  isLoadingStatus: boolean;
+
   // Publish/unpublish mutations
   publishPhase: (phase: PublishingPhase, options?: PublishRequest) => void;
   unpublishPhase: (phase: PublishingPhase) => void;
@@ -67,9 +72,17 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
   const queryClient = useQueryClient();
 
   // Query keys
+  const statusKey = ['publishing', 'status', eventCode];
   const versionHistoryKey = ['publishing', 'versions', eventCode];
   const changeLogKey = ['publishing', 'changeLog', eventCode];
   const previewKey = ['publishing', 'preview', eventCode];
+
+  // Publishing status query (auto-fetched)
+  const { data: publishingStatus, isLoading: isLoadingStatus } = useQuery({
+    queryKey: statusKey,
+    queryFn: () => publishingService.getPublishingStatus(eventCode),
+    staleTime: 10000, // 10 seconds - validation can change frequently
+  });
 
   // Version history query (auto-fetched)
   const { data: versionHistory, isLoading: isLoadingVersions } = useQuery({
@@ -97,7 +110,8 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     mutationFn: ({ phase, options }: { phase: PublishingPhase; options?: PublishRequest }) =>
       publishingService.publishPhase(eventCode, phase, options),
     onSuccess: () => {
-      // Invalidate version history and change log to refetch
+      // Invalidate status, version history and change log to refetch
+      queryClient.invalidateQueries({ queryKey: statusKey });
       queryClient.invalidateQueries({ queryKey: versionHistoryKey });
       queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
@@ -107,6 +121,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
   const unpublishPhaseMutation = useMutation({
     mutationFn: (phase: PublishingPhase) => publishingService.unpublishPhase(eventCode, phase),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: statusKey });
       queryClient.invalidateQueries({ queryKey: versionHistoryKey });
       queryClient.invalidateQueries({ queryKey: changeLogKey });
     },
@@ -162,6 +177,10 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
       : [];
 
   return {
+    // Publishing status
+    publishingStatus,
+    isLoadingStatus,
+
     // Publish/unpublish
     publishPhase: (phase, options) => publishPhaseMutation.mutate({ phase, options }),
     unpublishPhase: (phase) => unpublishPhaseMutation.mutate(phase),

@@ -6,6 +6,7 @@ import ch.batbern.events.dto.ChangeLogResponse;
 import ch.batbern.events.dto.PublishPhaseResponse;
 import ch.batbern.events.dto.PublishPreviewResponse;
 import ch.batbern.events.dto.PublishValidationError;
+import ch.batbern.events.dto.PublishingStatusResponse;
 import ch.batbern.events.dto.RollbackResponse;
 import ch.batbern.events.dto.UnpublishPhaseResponse;
 import ch.batbern.events.dto.VersionHistoryResponse;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Endpoints:
  * - POST /api/v1/events/{eventCode}/publish/{phase} - Publish a phase
  * - POST /api/v1/events/{eventCode}/unpublish/{phase} - Unpublish a phase
+ * - GET /api/v1/events/{eventCode}/publish/status - Get publishing validation status
  * - GET /api/v1/events/{eventCode}/publish/preview - Get preview
  * - GET /api/v1/events/{eventCode}/publish/versions - Get version history
  * - POST /api/v1/events/{eventCode}/publish/rollback/{versionNumber} - Rollback
@@ -81,6 +83,21 @@ public class PublishingEngineController {
         log.info("Unpublishing phase {} for event {}", phase, eventCode);
 
         UnpublishPhaseResponse response = publishingService.unpublishPhase(eventCode, phase);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get publishing status including validation for all phases
+     * Used by frontend to display current publishing state and validation errors
+     */
+    @GetMapping("/{eventCode}/publish/status")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<PublishingStatusResponse> getPublishingStatus(@PathVariable String eventCode) {
+
+        log.info("Getting publishing status for event {}", eventCode);
+
+        PublishingStatusResponse response = publishingService.getPublishingStatus(eventCode);
 
         return ResponseEntity.ok(response);
     }
