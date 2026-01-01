@@ -109,8 +109,7 @@ export interface paths {
      *
      *     **Include Options**:
      *     - `venue`: Venue details with address and capacity
-     *     - `speakers`: Complete speaker list with profiles
-     *     - `sessions`: Event sessions with schedule
+     *     - `sessions`: Event sessions with schedule (speakers included in sessions)
      *     - `topics`: Event topics and categories
      *     - `workflow`: Workflow state and history
      *     - `registrations`: Registration counts and status
@@ -1330,7 +1329,6 @@ export interface components {
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
-      speakers?: components['schemas']['Speaker'][];
       sessions?: components['schemas']['Session'][];
     };
     Venue: {
@@ -2741,7 +2739,7 @@ export interface operations {
   getCurrentEvent: {
     parameters: {
       query?: {
-        /** @description Comma-separated list of resources to expand (topics,venue,speakers,sessions) */
+        /** @description Comma-separated list of resources to expand (topics,venue,sessions) */
         include?: string;
       };
       header?: never;

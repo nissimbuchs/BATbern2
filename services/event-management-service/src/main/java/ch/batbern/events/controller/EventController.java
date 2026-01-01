@@ -308,9 +308,6 @@ public class EventController {
                 case "venue":
                     response.put("venue", expandVenue(event));
                     break;
-                case "speakers":
-                    response.put("speakers", expandSpeakers(event));
-                    break;
                 case "sessions":
                     response.put("sessions", expandSessions(event));
                     break;
@@ -338,15 +335,6 @@ public class EventController {
         venue.put("capacity", 500);
         venue.put("address", "Mingerstrasse 6, 3014 Bern");
         return venue;
-    }
-
-    /**
-     * Expand speakers data for an event
-     * TODO: Replace with actual service call when Speaker Coordination Service is available
-     */
-    private java.util.List<Map<String, Object>> expandSpeakers(Event event) {
-        // Stub implementation - will be replaced with actual service call
-        return new java.util.ArrayList<>();
     }
 
     /**

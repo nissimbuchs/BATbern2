@@ -126,7 +126,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'venue,speakers,sessions'
+            example: 'venue,sessions'
       responses:
         '200':
           description: Successful response with paginated events
@@ -263,11 +263,11 @@ paths:
       parameters:
         - name: include
           in: query
-          description: Comma-separated list of resources to expand (topics,venue,speakers,sessions)
+          description: Comma-separated list of resources to expand (topics,venue,sessions)
           required: false
           schema:
             type: string
-            example: 'topics,venue,speakers'
+            example: 'topics,venue,sessions'
       responses:
         '200':
           description: Current event retrieved successfully
@@ -341,8 +341,7 @@ paths:
 
         **Include Options**:
         - `venue`: Venue details with address and capacity
-        - `speakers`: Complete speaker list with profiles
-        - `sessions`: Event sessions with schedule
+        - `sessions`: Event sessions with schedule (speakers included in sessions)
         - `topics`: Event topics and categories
         - `workflow`: Workflow state and history
         - `registrations`: Registration counts and status
@@ -375,7 +374,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'venue,speakers,sessions,workflow'
+            example: 'venue,sessions,workflow'
       responses:
         '200':
           description: Event details retrieved successfully
@@ -406,7 +405,7 @@ paths:
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
                 expandedEvent:
-                  summary: Event with venue and speakers
+                  summary: Event with venue
                   value:
                     eventCode: BATbern142
                     title: Spring Conference 2025
@@ -425,12 +424,6 @@ paths:
                       name: Kursaal Bern
                       address: Kornhausstrasse 3, 3013 Bern
                       capacity: 500
-                    speakers:
-                      - username: sara.kim
-                        firstName: Sara
-                        lastName: Kim
-                        company: Docker Inc.
-                        title: Container Security Expert
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -3216,10 +3209,6 @@ components:
           properties:
             venue:
               $ref: '#/components/schemas/Venue'
-            speakers:
-              type: array
-              items:
-                $ref: '#/components/schemas/Speaker'
             sessions:
               type: array
               items:
