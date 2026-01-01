@@ -22,6 +22,10 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
 
     sessions.forEach((session) => {
       try {
+        if (!session.startTime) {
+          console.warn('Session missing start time:', session.sessionSlug);
+          return;
+        }
         const timeKey = format(new Date(session.startTime), 'HH:mm');
         const existing = slotMap.get(timeKey) || [];
         slotMap.set(timeKey, [...existing, session]);
@@ -36,7 +40,14 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
       .sort((a, b) => a.time.localeCompare(b.time));
   }, [sessions]);
 
-  const formatSessionDuration = (startTime: string, endTime: string): string => {
+  const formatSessionDuration = (
+    startTime: string | null | undefined,
+    endTime: string | null | undefined
+  ): string => {
+    if (!startTime || !endTime) {
+      return 'TBD';
+    }
+
     try {
       const start = new Date(startTime);
       const end = new Date(endTime);

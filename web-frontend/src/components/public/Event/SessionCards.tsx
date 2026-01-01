@@ -46,7 +46,14 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
     );
   };
 
-  const formatSessionTime = (startTime: string, endTime: string) => {
+  const formatSessionTime = (
+    startTime: string | null | undefined,
+    endTime: string | null | undefined
+  ) => {
+    if (!startTime || !endTime) {
+      return t('public.sessions.timeTBD');
+    }
+
     try {
       const start = new Date(startTime);
       const end = new Date(endTime);
