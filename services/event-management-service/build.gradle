@@ -53,6 +53,9 @@ dependencies {
     // Service-specific: Thymeleaf for email templates (BAT-7)
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
+    // Service-specific: WebSocket for real-time push notifications (BAT-7)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Service-specific: Hypersistence Utils for JSONB support (BAT-7)
     implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
 

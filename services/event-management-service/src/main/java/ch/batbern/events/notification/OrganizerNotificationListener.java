@@ -24,6 +24,7 @@ import java.util.Map;
  * - Creates IN_APP notifications (no email sending)
  * - Notifies all users with ORGANIZER role
  * - Async processing to avoid blocking event publishers
+ * - Real-time WebSocket push for instant updates
  */
 @Component
 @Slf4j
@@ -32,6 +33,7 @@ public class OrganizerNotificationListener {
 
     private final NotificationRepository notificationRepository;
     private final UserServiceClient userServiceClient;
+    private final NotificationService notificationService;
 
     /**
      * Listen to ALL domain events and create in-app notifications for organizers
@@ -98,7 +100,10 @@ public class OrganizerNotificationListener {
                 .metadata(metadata)
                 .build();
 
-        notificationRepository.save(notification);
+        notification = notificationRepository.save(notification);
+
+        // Push to organizer's WebSocket topic for real-time update
+        notificationService.pushNotificationViaWebSocket(notification);
     }
 
     /**

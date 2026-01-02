@@ -8,6 +8,7 @@ import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ public class NotificationService {
     private final UserServiceClient userServiceClient;
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Event listener for EventPublishedEvent
@@ -226,5 +228,29 @@ public class NotificationService {
         body.append("\nBest regards,\nBATbern Team");
 
         return body.toString();
+    }
+
+    /**
+     * Push notification to user's WebSocket topic for real-time updates
+     *
+     * Sends notification to: /topic/notifications/{username}
+     * Frontend subscribes to this topic to receive live updates
+     */
+    public void pushNotificationViaWebSocket(Notification notification) {
+        try {
+            String destination = "/topic/notifications/" + notification.getRecipientUsername();
+
+            NotificationResponse response = NotificationResponse.fromEntity(notification);
+
+            messagingTemplate.convertAndSend(destination, response);
+
+            log.debug("Pushed notification via WebSocket to {}: {}",
+                    destination, notification.getNotificationType());
+
+        } catch (Exception e) {
+            log.error("Failed to push notification via WebSocket for user {}: {}",
+                    notification.getRecipientUsername(), e.getMessage());
+            // Don't fail the notification if WebSocket push fails
+        }
     }
 }

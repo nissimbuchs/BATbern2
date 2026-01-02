@@ -55,6 +55,9 @@ class NotificationServiceTest {
     @Mock
     private ch.batbern.events.repository.RegistrationRepository registrationRepository;
 
+    @Mock
+    private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
+
     private NotificationService notificationService;
 
     private String testUsername;
@@ -67,7 +70,8 @@ class NotificationServiceTest {
                 emailService,
                 userServiceClient,
                 eventRepository,
-                registrationRepository
+                registrationRepository,
+                messagingTemplate
         );
 
         testUsername = "john.doe";
