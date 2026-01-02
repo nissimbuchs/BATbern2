@@ -34,11 +34,7 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
-              <img
-                src="/BATbern_color_logo.svg"
-                alt="BATbern"
-                className="h-20 w-auto"
-              />
+              <img src="/BATbern_color_logo.svg" alt="BATbern" className="h-20 w-auto" />
             </Link>
           </div>
 

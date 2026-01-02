@@ -50,7 +50,16 @@ i18n
     lng: 'de', // Default language for first access
     fallbackLng: 'de', // Fallback if language not found
     defaultNS: 'common',
-    ns: ['common', 'auth', 'validation', 'userManagement', 'events', 'partners', 'organizer', 'about'],
+    ns: [
+      'common',
+      'auth',
+      'validation',
+      'userManagement',
+      'events',
+      'partners',
+      'organizer',
+      'about',
+    ],
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],

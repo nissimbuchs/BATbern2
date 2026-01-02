@@ -26,9 +26,7 @@ const AboutPage = () => {
       <div className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero Section */}
         <div className="mb-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-light mb-6 text-zinc-100">
-            {t('hero.title')}
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-light mb-6 text-zinc-100">{t('hero.title')}</h1>
           <p className="text-lg md:text-xl text-zinc-300 max-w-3xl mx-auto leading-relaxed">
             {t('hero.subtitle')}
           </p>
