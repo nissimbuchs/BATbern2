@@ -365,7 +365,7 @@ jobs:
           CHANGED_SERVICES="${{ steps.changes.outputs.changed_services }}"
           VALIDATION_FAILED=false
 
-          for SERVICE in event-management speaker-coordination partner-coordination attendee-experience company-management api-gateway-service; do
+          for SERVICE in event-management-service speaker-coordination-service partner-coordination-service attendee-experience-service company-user-management-service api-gateway; do
             # Only check services that are being deployed
             if [ "${{ steps.changes.outputs.deploy_all }}" = "true" ] || echo "$CHANGED_SERVICES" | grep -q "$SERVICE" || [ "$CHANGED_SERVICES" = "all-services" ]; then
               REPO_NAME="batbern/staging/${SERVICE}"
