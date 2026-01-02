@@ -38,15 +38,25 @@ export type NotificationCallback = (notification: Notification) => void;
 export type ConnectionStateCallback = (state: ConnectionState) => void;
 
 /**
- * Determine API URL based on current hostname
- * Mirrors logic from runtime-config.ts for consistency
+ * Determine WebSocket URL based on current hostname
+ *
+ * Local Development: Connect directly to event-management-service
+ * - Uses VITE_API_PORT (from BASE_PORT) + 2 for dynamic port allocation
+ * - Example: BASE_PORT=8000 → API Gateway on 8000, Event Management on 8002
+ * - Example: BASE_PORT=9000 → API Gateway on 9000, Event Management on 9002
+ * - WebSocket connections bypass API Gateway (doesn't support WebSocket proxying)
+ *
+ * Staging/Production: Connect to API Gateway which routes to event-management-service
  */
-function getApiUrl(): string {
+function getWebSocketUrl(): string {
   const hostname = window.location.hostname;
 
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const apiPort = import.meta.env.VITE_API_PORT || '8080';
-    return `http://localhost:${apiPort}`;
+    // Local development: Calculate event-management-service port from API Gateway port
+    // API Gateway = BASE_PORT, Event Management = BASE_PORT+2
+    const apiPort = parseInt(import.meta.env.VITE_API_PORT || '8000', 10);
+    const eventMgmtPort = apiPort + 2;
+    return `http://localhost:${eventMgmtPort}`;
   }
 
   if (hostname === 'staging.batbern.ch') {
@@ -86,7 +96,7 @@ class NotificationWebSocketClient {
     // Create STOMP client with SockJS
     const stompConfig: StompConfig = {
       webSocketFactory: () => {
-        return new SockJS(`${getApiUrl()}/ws`) as WebSocket;
+        return new SockJS(`${getWebSocketUrl()}/ws`) as WebSocket;
       },
       debug: (str: string) => {
         if (import.meta.env.DEV) {
