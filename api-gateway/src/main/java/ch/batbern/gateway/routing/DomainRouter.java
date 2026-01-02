@@ -68,7 +68,8 @@ public class DomainRouter {
         } else if (cleanPath.startsWith("/api/v1/events")
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")
-                || cleanPath.startsWith("/api/v1/tasks")) {
+                || cleanPath.startsWith("/api/v1/tasks")
+                || cleanPath.startsWith("/api/v1/notifications")) {
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/speakers")) {
             return "speaker-coordination-service";

@@ -98,4 +98,23 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
             ch.batbern.shared.types.EventWorkflowState workflowState,
             Instant beforeDate
     );
+
+    /**
+     * Find events published after a given timestamp
+     * Used for in-app notifications (Story BAT-7)
+     *
+     * @param publishedAfter Find events published after this timestamp
+     * @return List of events published after the given time
+     */
+    List<Event> findByPublishedAtAfter(Instant publishedAfter);
+
+    /**
+     * Find events with registration deadlines between start and end timestamps
+     * Used for deadline reminder notifications (Story BAT-7)
+     *
+     * @param start Start of the time range
+     * @param end End of the time range
+     * @return List of events with deadlines in the given range
+     */
+    List<Event> findByRegistrationDeadlineBetween(Instant start, Instant end);
 }
