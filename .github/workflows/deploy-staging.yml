@@ -390,14 +390,17 @@ jobs:
 
               echo "  Checking ${REPO_NAME}:${IMAGE_TAG}..."
 
-              if ! aws ecr describe-images \
+              # Check if image exists (capture output and errors for debugging)
+              AWS_OUTPUT=$(aws ecr describe-images \
                 --repository-name "$REPO_NAME" \
                 --image-ids imageTag="$IMAGE_TAG" \
                 --region ${{ env.AWS_REGION }} \
                 --query 'imageDetails[0].imageTags[0]' \
-                --output text 2>/dev/null | grep -q "$IMAGE_TAG"; then
+                --output text 2>&1)
 
+              if ! echo "$AWS_OUTPUT" | grep -q "$IMAGE_TAG"; then
                 echo "::error::❌ Image not found: ${REPO_NAME}:${IMAGE_TAG}"
+                echo "::error::AWS CLI output: $AWS_OUTPUT"
                 VALIDATION_FAILED=true
               else
                 echo "  ✅ Image exists: ${REPO_NAME}:${IMAGE_TAG}"
