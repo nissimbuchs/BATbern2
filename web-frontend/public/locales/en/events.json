@@ -3,7 +3,8 @@
     "dashboard": "Events",
     "createEvent": "Create Event",
     "eventTimeline": "Timeline",
-    "events": "Events"
+    "events": "Events",
+    "topicManagement": "Topic Management"
   },
   "eventPage": {
     "tabs": {
