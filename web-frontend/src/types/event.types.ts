@@ -197,6 +197,7 @@ export interface EventFilters {
   workflowState?: string[];
   year?: number;
   search?: string;
+  includeArchived?: boolean; // When false (default), excludes ARCHIVED events from results
 }
 
 export interface EventSortOption {

@@ -23,6 +23,8 @@ import {
   Box,
   SelectChangeEvent,
   OutlinedInput,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -42,19 +44,12 @@ interface EventSearchProps {
 const WORKFLOW_STATE_OPTIONS = [
   'CREATED',
   'TOPIC_SELECTION',
-  'SPEAKER_BRAINSTORMING',
-  'SPEAKER_OUTREACH',
-  'SPEAKER_CONFIRMATION',
-  'CONTENT_COLLECTION',
-  'QUALITY_REVIEW',
-  'THRESHOLD_CHECK',
-  'OVERFLOW_MANAGEMENT',
+  'SPEAKER_IDENTIFICATION',
   'SLOT_ASSIGNMENT',
   'AGENDA_PUBLISHED',
   'AGENDA_FINALIZED',
-  'NEWSLETTER_SENT',
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
+  'EVENT_LIVE',
+  'EVENT_COMPLETED',
   'ARCHIVED',
 ];
 
@@ -63,21 +58,30 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
+  const [showArchived, setShowArchived] = useState(filters.includeArchived ?? false);
 
   // Parse URL params on mount
   useEffect(() => {
     const workflowStateParam = searchParams.get('workflowState');
     const yearParam = searchParams.get('year');
     const searchParam = searchParams.get('search');
+    const includeArchivedParam = searchParams.get('includeArchived');
 
     const urlFilters: EventFilters = {};
     if (workflowStateParam) urlFilters.workflowState = workflowStateParam.split(',');
     if (yearParam) urlFilters.year = parseInt(yearParam, 10);
     if (searchParam) urlFilters.search = searchParam;
+    if (includeArchivedParam !== null) {
+      urlFilters.includeArchived = includeArchivedParam === 'true';
+    }
 
+    // Only apply URL filters if they exist
     if (Object.keys(urlFilters).length > 0) {
       onFiltersChange(urlFilters);
       if (searchParam) setSearchQuery(searchParam);
+      if (includeArchivedParam !== null) {
+        setShowArchived(includeArchivedParam === 'true');
+      }
     }
   }, []); // Only on mount
 
@@ -92,6 +96,9 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
     }
     if (filters.search) {
       params.set('search', filters.search);
+    }
+    if (filters.includeArchived !== undefined) {
+      params.set('includeArchived', filters.includeArchived.toString());
     }
     setSearchParams(params);
   }, [filters, setSearchParams]);
@@ -115,7 +122,18 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   const handleWorkflowStateChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value as string[];
-    onFiltersChange({ ...filters, workflowState: value });
+    onFiltersChange({ ...filters, workflowState: value.length > 0 ? value : undefined });
+  };
+
+  const handleShowArchivedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = event.target.checked;
+    setShowArchived(checked);
+
+    // Update the includeArchived flag
+    onFiltersChange({
+      ...filters,
+      includeArchived: checked,
+    });
   };
 
   const handleRemoveWorkflowState = (workflowStateToRemove: string) => {
@@ -130,7 +148,8 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   const handleClearAll = () => {
     setSearchQuery('');
-    onFiltersChange({});
+    setShowArchived(false);
+    onFiltersChange({ includeArchived: false });
   };
 
   // Count active filters
@@ -139,30 +158,32 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   return (
     <Box data-testid="filter-container">
-      <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="stretch">
-        {/* Search Input */}
-        <FormControl fullWidth>
-          <TextField
-            placeholder={t('dashboard.searchEvents')}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            aria-label="Search events"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon data-testid="search-icon" />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery && (
-                <InputAdornment position="end">
-                  <IconButton onClick={handleClearSearch} size="small" aria-label="Clear search">
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </FormControl>
+      <Stack spacing={2}>
+        {/* Row 1: Search and Filters */}
+        <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="stretch">
+          {/* Search Input */}
+          <FormControl fullWidth>
+            <TextField
+              placeholder={t('dashboard.searchEvents')}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              aria-label="Search events"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon data-testid="search-icon" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleClearSearch} size="small" aria-label="Clear search">
+                      <ClearIcon />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </FormControl>
 
         {/* Workflow State Filter */}
         <FormControl sx={{ minWidth: 200 }}>
@@ -199,25 +220,40 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           </Select>
         </FormControl>
 
-        {/* Year Filter */}
-        <FormControl sx={{ minWidth: 150 }}>
-          <TextField
-            type="number"
-            label={t('dashboard.filter.year')}
-            placeholder={t('dashboard.filter.allYears')}
-            value={filters.year || ''}
-            onChange={(e) => {
-              const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-              onFiltersChange({ ...filters, year: value });
-            }}
-            inputProps={{
-              min: 2000,
-              max: 2100,
-              step: 1,
-              'aria-label': 'Filter by year',
-            }}
+          {/* Year Filter */}
+          <FormControl sx={{ minWidth: 150 }}>
+            <TextField
+              type="number"
+              label={t('dashboard.filter.year')}
+              placeholder={t('dashboard.filter.allYears')}
+              value={filters.year || ''}
+              onChange={(e) => {
+                const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                onFiltersChange({ ...filters, year: value });
+              }}
+              inputProps={{
+                min: 2000,
+                max: 2100,
+                step: 1,
+                'aria-label': 'Filter by year',
+              }}
+            />
+          </FormControl>
+        </Stack>
+
+        {/* Row 2: Show Archived Toggle */}
+        <Box>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showArchived}
+                onChange={handleShowArchivedChange}
+                data-testid="show-archived-checkbox"
+              />
+            }
+            label={t('dashboard.filter.showArchived')}
           />
-        </FormControl>
+        </Box>
       </Stack>
 
       {/* Active Filters & Clear All */}

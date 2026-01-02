@@ -135,14 +135,17 @@ public class EventController {
             @Parameter(description = "Items per page (default: 20, max: 100)")
             @RequestParam(required = false) Integer limit,
 
+            @Parameter(description = "Include archived events (default: false)")
+            @RequestParam(required = false, defaultValue = "false") boolean includeArchived,
+
             @Parameter(description = "Comma-separated list of resources to include (e.g., registrations)")
             @RequestParam(required = false) String include
     ) {
-        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, include: {}",
-                filter, sort, page, limit, include);
+        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, includeArchived: {}, include: {}",
+                filter, sort, page, limit, includeArchived, include);
 
         // Search events using EventSearchService
-        PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit);
+        PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit, includeArchived);
 
         // Convert entities to DTOs with optional registration counts
         List<EventResponse> eventResponses;

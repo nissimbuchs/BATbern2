@@ -4264,26 +4264,20 @@ components:
     EventWorkflowState:
       type: string
       description: |
-        Event workflow state for 16-step workflow (Story 5.1a).
+        Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
         Defines the current state of an event in the organizer workflow.
+        Previous 16-state workflow was consolidated to improve clarity and automation.
       enum:
         - CREATED
         - TOPIC_SELECTION
-        - SPEAKER_BRAINSTORMING
-        - SPEAKER_OUTREACH
-        - SPEAKER_CONFIRMATION
-        - CONTENT_COLLECTION
-        - QUALITY_REVIEW
-        - THRESHOLD_CHECK
-        - OVERFLOW_MANAGEMENT
+        - SPEAKER_IDENTIFICATION
         - SLOT_ASSIGNMENT
         - AGENDA_PUBLISHED
         - AGENDA_FINALIZED
-        - NEWSLETTER_SENT
-        - EVENT_READY
-        - PARTNER_MEETING_COMPLETE
+        - EVENT_LIVE
+        - EVENT_COMPLETED
         - ARCHIVED
-      example: SPEAKER_BRAINSTORMING
+      example: SPEAKER_IDENTIFICATION
 
     TransitionStateRequest:
       type: object

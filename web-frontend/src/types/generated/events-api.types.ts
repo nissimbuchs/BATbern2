@@ -2132,27 +2132,21 @@ export interface components {
     /** @description Standard error response from shared-kernel */
     ErrorResponse: Record<string, never>;
     /**
-     * @description Event workflow state for 16-step workflow (Story 5.1a).
+     * @description Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
      *     Defines the current state of an event in the organizer workflow.
-     * @example SPEAKER_BRAINSTORMING
+     *     Previous 16-state workflow was consolidated to improve clarity and automation.
+     * @example SPEAKER_IDENTIFICATION
      * @enum {string}
      */
     EventWorkflowState:
       | 'CREATED'
       | 'TOPIC_SELECTION'
-      | 'SPEAKER_BRAINSTORMING'
-      | 'SPEAKER_OUTREACH'
-      | 'SPEAKER_CONFIRMATION'
-      | 'CONTENT_COLLECTION'
-      | 'QUALITY_REVIEW'
-      | 'THRESHOLD_CHECK'
-      | 'OVERFLOW_MANAGEMENT'
+      | 'SPEAKER_IDENTIFICATION'
       | 'SLOT_ASSIGNMENT'
       | 'AGENDA_PUBLISHED'
       | 'AGENDA_FINALIZED'
-      | 'NEWSLETTER_SENT'
-      | 'EVENT_READY'
-      | 'PARTNER_MEETING_COMPLETE'
+      | 'EVENT_LIVE'
+      | 'EVENT_COMPLETED'
       | 'ARCHIVED';
     /**
      * @description Request to transition event to target workflow state (Story 5.1a - AC12).

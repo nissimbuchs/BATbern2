@@ -138,6 +138,7 @@
       "workflowState": "Nach Workflow-Status filtern",
       "year": "Nach Jahr filtern",
       "allYears": "Alle Jahre",
+      "showArchived": "Archivierte Veranstaltungen anzeigen",
       "activeFilters": "{{count}} Filter aktiv",
       "activeFilters_plural": "{{count}} Filter aktiv",
       "clearAll": "Alle löschen"
@@ -298,19 +299,12 @@
     "states": {
       "created": "Erstellt",
       "topic_selection": "Themenauswahl",
-      "speaker_brainstorming": "Referenten-Brainstorming",
-      "speaker_outreach": "Referenten-Kontaktaufnahme",
-      "speaker_confirmation": "Referenten-Bestätigung",
-      "content_collection": "Inhaltssammlung",
-      "quality_review": "Qualitätsprüfung",
-      "threshold_check": "Schwellenprüfung",
-      "overflow_management": "Überlaufverwaltung",
+      "speaker_identification": "Referenten-Identifikation",
       "slot_assignment": "Slot-Zuweisung",
       "agenda_published": "Agenda veröffentlicht",
       "agenda_finalized": "Agenda finalisiert",
-      "newsletter_sent": "Newsletter versendet",
-      "event_ready": "Veranstaltung bereit",
-      "partner_meeting_complete": "Partnertreffen abgeschlossen",
+      "event_live": "Veranstaltung läuft",
+      "event_completed": "Veranstaltung abgeschlossen",
       "archived": "Archiviert"
     }
   },

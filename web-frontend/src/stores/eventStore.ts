@@ -47,11 +47,16 @@ const DEFAULT_PAGINATION: EventPagination = {
   limit: 20,
 };
 
+// Default filter: exclude ARCHIVED events via includeArchived flag
+const DEFAULT_FILTERS: EventFilters = {
+  includeArchived: false,
+};
+
 export const useEventStore = create<EventStore>()(
   persist(
     (set) => ({
       // Initial state
-      filters: {},
+      filters: DEFAULT_FILTERS,
       pagination: DEFAULT_PAGINATION,
       selectedEventCode: undefined,
       isCreateModalOpen: false,

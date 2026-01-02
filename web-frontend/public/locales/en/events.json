@@ -138,6 +138,7 @@
       "workflowState": "Filter by workflow state",
       "year": "Filter by year",
       "allYears": "All Years",
+      "showArchived": "Show archived events",
       "activeFilters": "{{count}} filter active",
       "activeFilters_plural": "{{count}} filters active",
       "clearAll": "Clear all"
@@ -308,19 +309,12 @@
     "states": {
       "created": "Created",
       "topic_selection": "Topic Selection",
-      "speaker_brainstorming": "Speaker Brainstorming",
-      "speaker_outreach": "Speaker Outreach",
-      "speaker_confirmation": "Speaker Confirmation",
-      "content_collection": "Content Collection",
-      "quality_review": "Quality Review",
-      "threshold_check": "Threshold Check",
-      "overflow_management": "Overflow Management",
+      "speaker_identification": "Speaker Identification",
       "slot_assignment": "Slot Assignment",
       "agenda_published": "Agenda Published",
       "agenda_finalized": "Agenda Finalized",
-      "newsletter_sent": "Newsletter Sent",
-      "event_ready": "Event Ready",
-      "partner_meeting_complete": "Partner Meeting Complete",
+      "event_live": "Event Live",
+      "event_completed": "Event Completed",
       "archived": "Archived"
     }
   },
