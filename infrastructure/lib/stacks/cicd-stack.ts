@@ -137,6 +137,7 @@ export class CICDStack extends cdk.Stack {
         'ecr:UploadLayerPart',
         'ecr:CompleteLayerUpload',
         'ecr:DescribeRepositories',
+        'ecr:DescribeImages',  // Required for ECR image validation in deployment workflow
         'ecr:ListImages',
       ],
       resources: ['*'], // GetAuthorizationToken requires '*'
