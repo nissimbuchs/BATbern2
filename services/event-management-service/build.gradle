@@ -39,10 +39,11 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
-    // Service-specific: AWS SDK for EventBridge and S3
+    // Service-specific: AWS SDK for EventBridge, S3, and CloudFront
     implementation platform('software.amazon.awssdk:bom:2.39.0')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:cloudfront'
     implementation 'software.amazon.awssdk:url-connection-client'
 
     // Service-specific: JWT for email confirmation tokens

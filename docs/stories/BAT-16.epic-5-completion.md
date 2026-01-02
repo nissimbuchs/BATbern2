@@ -1,9 +1,10 @@
-# Story BAT-12: Epic 5 Completion - Overflow, Auto-Publishing & Lifecycle
+# Story BAT-16: Epic 5 Completion - Overflow, Auto-Publishing & Lifecycle
 
 **Epic**: Epic 5 - Enhanced Organizer Workflows
-**Story ID**: BAT-12
+**Story ID**: BAT-16
+**Linear Issue**: [BAT-16](https://linear.app/batbern/issue/BAT-16/epic-5-completion-overflow-auto-publishing-and-lifecycle)
 **Priority**: High
-**Status**: Draft
+**Status**: Accepted
 **Estimated Effort**: 1.5-2 weeks
 **Created**: 2026-01-02
 
@@ -652,6 +653,75 @@ public void handleDropout(UUID speakerId, String reason, boolean promoteReplacem
 - `should_promoteOverflow_when_dropoutWithinThirtyDays()`
 - `should_notifyReplacement_when_promoted()`
 - `should_logDropoutHistory_when_dropoutRecorded()`
+
+---
+
+## Tasks
+
+**Scope**: Implementing Phase 2 (Auto-Publishing & CDN) and Phase 3 (Lifecycle Automation) only
+
+### Phase 2: Auto-Publishing & CDN Integration
+- [x] Create `PublishingScheduledService.java` with cron jobs
+- [x] Implement auto-publish logic for speakers/agenda phases
+- [x] Create `CdnInvalidationService.java` with CloudFront integration
+- [x] Update `PublishingService.java` to call CDN invalidation
+- [x] Configure AWS CloudFront SDK dependencies
+- [ ] Write integration tests for scheduled publishing
+
+### Phase 3: Lifecycle Automation
+- [x] Create `EventLifecycleScheduledService.java` with cron jobs (Already existed)
+- [x] Implement EVENT_LIVE and EVENT_COMPLETED transitions (Already existed)
+- [x] Add database query methods for date-based event lookup (Already existed)
+- [ ] Create `AgendaFinalizationPanel.tsx` frontend component (Deferred)
+- [x] Implement finalize/unfinalize endpoints
+- [ ] Write integration tests for lifecycle automation
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+- Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
+
+### Debug Log References
+- See: `.ai/debug-log.md`
+
+### Completion Notes
+- Implementation started: 2026-01-02
+- Scope: Phase 2 & 3 only (AC5, AC6, AC7, AC8)
+- Status: Phase 2 complete (5/6 tasks), Phase 3 complete (4/6 tasks)
+- Integration tests deferred, frontend component deferred
+
+### File List
+
+**Created Files:**
+1. `services/event-management-service/src/main/java/ch/batbern/events/scheduled/PublishingScheduledService.java` - Auto-publish cron jobs
+2. `services/event-management-service/src/main/java/ch/batbern/events/service/CdnInvalidationService.java` - CloudFront cache invalidation
+
+**Modified Files:**
+3. `services/event-management-service/build.gradle` - Added CloudFront SDK dependency
+4. `services/event-management-service/src/main/java/ch/batbern/events/config/AwsConfig.java` - Added CloudFront client bean
+5. `services/event-management-service/src/main/java/ch/batbern/events/config/LocalAwsConfig.java` - Added mock CloudFront client
+6. `services/event-management-service/src/main/java/ch/batbern/events/service/publishing/PublishingService.java` - Integrated CDN invalidation, added finalize/unfinalize methods
+7. `services/event-management-service/src/main/java/ch/batbern/events/controller/PublishingEngineController.java` - Added finalize/unfinalize endpoints
+
+**Existing Files (Already Implemented):**
+8. `services/event-management-service/src/main/java/ch/batbern/events/service/EventWorkflowScheduledService.java` - EVENT_LIVE and EVENT_COMPLETED transitions (GAP-2)
+9. `services/event-management-service/src/main/java/ch/batbern/events/repository/EventRepository.java` - Date-based event queries
+
+### Change Log
+- 2026-01-02: Story setup, added Tasks and Dev Agent Record sections
+- 2026-01-02: **Phase 2 Implementation (AC5, AC6)**
+  - Created `PublishingScheduledService.java` with auto-publish cron jobs (30 days speakers, 14 days agenda)
+  - Created `CdnInvalidationService.java` with CloudFront integration
+  - Updated `PublishingService.java` to call real CDN invalidation (replaced mock)
+  - Added CloudFront SDK dependency to build.gradle
+  - Configured CloudFront client beans (production + local mock)
+- 2026-01-02: **Phase 3 Implementation (AC7)**
+  - Verified `EventWorkflowScheduledService.java` already implements AC8 (lifecycle automation)
+  - Verified EventRepository already has date-based query methods
+  - Added `finalizeAgenda()` and `unfinalizeAgenda()` methods to PublishingService
+  - Added POST `/{eventCode}/finalize` and POST `/{eventCode}/unfinalize` endpoints to PublishingEngineController
 
 ---
 

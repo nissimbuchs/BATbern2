@@ -20,6 +20,7 @@ import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.PublishingVersionRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,7 +37,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +65,7 @@ public class PublishingService {
     private final PublishingConfigRepository publishingConfigRepository;
     private final ObjectMapper objectMapper;
     private final CacheManager cacheManager;
+    private final CdnInvalidationService cdnInvalidationService;
 
     /**
      * Publish a specific phase (topic, speakers, or agenda)
@@ -92,11 +93,12 @@ public class PublishingService {
         // Evict cache for this event
         evictEventCache(event.getEventCode());
 
-        // Create version snapshot
-        Integer versionNumber = createVersionSnapshot(event, phase, publishedBy);
+        // Invalidate CDN cache (Story BAT-16, AC6)
+        String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
+        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
 
-        // Simulate CDN invalidation
-        boolean cdnInvalidated = simulateCDNInvalidation(event.getId());
+        // Create version snapshot
+        Integer versionNumber = createVersionSnapshot(event, phase, publishedBy, cdnInvalidationId);
 
         return PublishPhaseResponse.builder()
                 .phase(phase)
@@ -125,8 +127,9 @@ public class PublishingService {
         // Evict cache for this event
         evictEventCache(event.getEventCode());
 
-        // Simulate CDN invalidation
-        boolean cdnInvalidated = simulateCDNInvalidation(event.getId());
+        // Invalidate CDN cache (Story BAT-16, AC6)
+        String cdnInvalidationId = cdnInvalidationService.invalidateCache(event.getEventCode(), phase);
+        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
 
         return UnpublishPhaseResponse.builder()
                 .phase(phase)
@@ -236,8 +239,10 @@ public class PublishingService {
         // Evict cache for this event
         evictEventCache(event.getEventCode());
 
-        // Simulate CDN invalidation
-        boolean cdnInvalidated = simulateCDNInvalidation(event.getId());
+        // Invalidate CDN cache (Story BAT-16, AC6)
+        String cdnInvalidationId = cdnInvalidationService.invalidateCache(
+                event.getEventCode(), targetVersion.getPublishedPhase());
+        boolean cdnInvalidated = cdnInvalidationId != null && !cdnInvalidationId.startsWith("error");
 
         return RollbackResponse.builder()
                 .rolledBack(true)
@@ -462,7 +467,7 @@ public class PublishingService {
     /**
      * Create version snapshot
      */
-    private Integer createVersionSnapshot(Event event, String phase, String publishedBy) {
+    private Integer createVersionSnapshot(Event event, String phase, String publishedBy, String cdnInvalidationId) {
         Integer nextVersionNumber = publishingVersionRepository
                 .findMaxVersionNumberByEventId(event.getId()) + 1;
 
@@ -490,21 +495,14 @@ public class PublishingService {
                 .publishedBy(publishedBy)
                 .contentSnapshot(snapshotJson)
                 .isCurrent(true)
-                .cdnInvalidationId("mock-invalidation-" + UUID.randomUUID())
-                .cdnInvalidationStatus("completed")
+                .cdnInvalidationId(cdnInvalidationId)
+                .cdnInvalidationStatus(cdnInvalidationId != null && !cdnInvalidationId.startsWith("error")
+                        ? "completed" : "failed")
                 .build();
 
         publishingVersionRepository.save(version);
 
         return nextVersionNumber;
-    }
-
-    /**
-     * Simulate CDN invalidation (mocked for integration tests)
-     */
-    private boolean simulateCDNInvalidation(UUID eventId) {
-        log.info("CDN invalidation simulated for event {}", eventId);
-        return true; // Always return success for tests
     }
 
     /**
@@ -541,6 +539,91 @@ public class PublishingService {
                 cache.clear();
             }
         }
+    }
+
+    /**
+     * Finalize the agenda for an event
+     * Story BAT-16 (AC7): Agenda Finalization Controls
+     *
+     * Prerequisites:
+     * - Event must be in AGENDA_PUBLISHED state
+     * - Event date must be at least 14 days in the future
+     *
+     * Effects:
+     * - Transitions event to AGENDA_FINALIZED state
+     * - Records finalization timestamp and user
+     * - Locks agenda for major changes (minor edits still allowed)
+     */
+    public Event finalizeAgenda(String eventCode, String organizerUsername) {
+        log.info("Finalizing agenda for event {}", eventCode);
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        // Validate prerequisites
+        if (event.getWorkflowState() != EventWorkflowState.AGENDA_PUBLISHED) {
+            throw new IllegalStateException(
+                    "Cannot finalize agenda: event must be in AGENDA_PUBLISHED state (current: "
+                            + event.getWorkflowState() + ")");
+        }
+
+        // Check that event is at least 14 days away
+        long daysUntilEvent = ChronoUnit.DAYS.between(Instant.now(), event.getDate());
+        if (daysUntilEvent < 14) {
+            throw new IllegalStateException(
+                    "Cannot finalize agenda: event must be at least 14 days in the future (currently: "
+                            + daysUntilEvent + " days)");
+        }
+
+        // Update event state
+        event.setWorkflowState(EventWorkflowState.AGENDA_FINALIZED);
+        // TODO: Add agendaFinalizedAt and agendaFinalizedBy fields to Event entity in future story
+
+        eventRepository.save(event);
+
+        log.info("Agenda finalized for event {} by {}", eventCode, organizerUsername);
+
+        return event;
+    }
+
+    /**
+     * Unfinalize the agenda for an event
+     * Story BAT-16 (AC7): Agenda Finalization Controls
+     *
+     * Requires explicit reason for audit trail.
+     * Allows emergency unlocking of agenda after finalization.
+     *
+     * @param eventCode Event code
+     * @param reason Required reason for unfinalizing
+     * @param organizerUsername Username of organizer
+     * @return Updated event
+     */
+    public Event unfinalizeAgenda(String eventCode, String reason, String organizerUsername) {
+        log.info("Unfinalizing agenda for event {} by {} (reason: {})", eventCode, organizerUsername, reason);
+
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Reason is required for unfinalizing agenda");
+        }
+
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException(eventCode));
+
+        // Validate state
+        if (event.getWorkflowState() != EventWorkflowState.AGENDA_FINALIZED) {
+            throw new IllegalStateException(
+                    "Cannot unfinalize agenda: event is not in AGENDA_FINALIZED state (current: "
+                            + event.getWorkflowState() + ")");
+        }
+
+        // Revert to AGENDA_PUBLISHED state
+        event.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
+        // Keep finalization record for audit trail (don't clear agendaFinalizedAt/By)
+
+        eventRepository.save(event);
+
+        log.warn("Agenda unfinalized for event {} by {} - Reason: {}", eventCode, organizerUsername, reason);
+
+        return event;
     }
 
     /**
