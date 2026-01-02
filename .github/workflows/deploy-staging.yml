@@ -360,6 +360,43 @@ jobs:
             exit 1
           fi
 
+          # Validate that ECR images exist before deployment
+          echo "🔍 Validating ECR images exist for IMAGE_TAG: $IMAGE_TAG"
+          CHANGED_SERVICES="${{ steps.changes.outputs.changed_services }}"
+          VALIDATION_FAILED=false
+
+          for SERVICE in event-management speaker-coordination partner-coordination attendee-experience company-management api-gateway-service; do
+            # Only check services that are being deployed
+            if [ "${{ steps.changes.outputs.deploy_all }}" = "true" ] || echo "$CHANGED_SERVICES" | grep -q "$SERVICE" || [ "$CHANGED_SERVICES" = "all-services" ]; then
+              REPO_NAME="batbern/staging/${SERVICE}"
+
+              echo "  Checking ${REPO_NAME}:${IMAGE_TAG}..."
+
+              if ! aws ecr describe-images \
+                --repository-name "$REPO_NAME" \
+                --image-ids imageTag="$IMAGE_TAG" \
+                --region ${{ env.AWS_REGION }} \
+                --query 'imageDetails[0].imageTags[0]' \
+                --output text 2>/dev/null | grep -q "$IMAGE_TAG"; then
+
+                echo "::error::❌ Image not found: ${REPO_NAME}:${IMAGE_TAG}"
+                VALIDATION_FAILED=true
+              else
+                echo "  ✅ Image exists: ${REPO_NAME}:${IMAGE_TAG}"
+              fi
+            fi
+          done
+
+          if [ "$VALIDATION_FAILED" = "true" ]; then
+            echo ""
+            echo "::error::One or more Docker images do not exist in ECR!"
+            echo "::error::This usually means the build workflow did not complete successfully."
+            echo "::error::Please check that the Build workflow completed and pushed all images."
+            exit 1
+          fi
+
+          echo "✅ All required ECR images validated successfully"
+
           # Determine which stacks to deploy
           STACKS_TO_DEPLOY=""
           USE_LAYER_DEPLOYMENT=false
@@ -425,6 +462,7 @@ jobs:
       # Layer-based deployment with token refresh between layers
       - name: Deploy Layer 0 - Foundation
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 0: Foundation (CICD, DNS, Monitoring, SES)"
@@ -441,6 +479,7 @@ jobs:
 
       - name: Deploy Layer 1 - Infrastructure
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus)"
@@ -457,6 +496,7 @@ jobs:
 
       - name: Deploy Layer 2 - Data
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 25
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 2: Data (Database, Storage, Bastion)"
@@ -473,6 +513,7 @@ jobs:
 
       - name: Deploy Layer 3 - Application
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 3: Application (Cognito, Cluster)"
@@ -489,6 +530,7 @@ jobs:
 
       - name: Deploy Layer 4.1 - Company Management Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.1: Company Management Service"
@@ -505,6 +547,7 @@ jobs:
 
       - name: Deploy Layer 4.2 - Event Management Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.2: Event Management Service"
@@ -521,6 +564,7 @@ jobs:
 
       - name: Deploy Layer 4.3 - Speaker Coordination Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.3: Speaker Coordination Service"
@@ -537,6 +581,7 @@ jobs:
 
       - name: Deploy Layer 4.4 - Partner Coordination Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.4: Partner Coordination Service"
@@ -553,6 +598,7 @@ jobs:
 
       - name: Deploy Layer 4.5 - Attendee Experience Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.5: Attendee Experience Service"
@@ -569,6 +615,7 @@ jobs:
 
       - name: Deploy Layer 4.6 - API Gateway Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 30
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.6: API Gateway Service"
@@ -585,6 +632,7 @@ jobs:
 
       - name: Deploy Layer 5 - Gateway
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
+        timeout-minutes: 20
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 5: Gateway (API Gateway, Frontend)"
