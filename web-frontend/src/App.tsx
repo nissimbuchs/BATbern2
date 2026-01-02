@@ -74,6 +74,7 @@ const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignm
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
 const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
@@ -213,14 +214,7 @@ function App() {
                       </div>
                     }
                   />
-                  <Route
-                    path="/about"
-                    element={
-                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                        About (Coming later)
-                      </div>
-                    }
-                  />
+                  <Route path="/about" element={<AboutPage />} />
                   <Route
                     path="/privacy"
                     element={

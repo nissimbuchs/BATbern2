@@ -1,0 +1,22 @@
+{
+  "hero": {
+    "title": "Über BATbern",
+    "subtitle": "Technologieaustausch zwischen IT Experten"
+  },
+  "association": {
+    "title": "Verein Berner-Architekten-Treffen",
+    "history": "Seit dem 23. Januar 2009 wird das Berner Architekten-Treffen durch den Verein Berner-Architekten-Treffen organisiert.",
+    "mission": "Das Berner Architekten-Treffen ist seit 2005 eine Begegnungsplattform für an Architekturfragen interessierte Informatikfachleute.",
+    "platform": "Durch Fachvorträge aus der Praxis und Gelegenheiten zur vertieften Diskussion von aktuellen Problemstellungen sowie zu direkten Kontakten zwischen Firmen unterschiedlicher Branchen bietet das Berner Architekten Treffen eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.",
+    "statuten": "Statuten des Vereins (PDF)"
+  },
+  "organizers": {
+    "title": "Organisationskomitee",
+    "description": "Das Berner-Architekten-Treffen wird inhaltlich und organisatorisch durch ein engagiertes Organisationskomitee begleitet:",
+    "noOrganizers": "Keine Organisatoren gefunden"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "description": "Für Fragen, Anregungen und Kommentare können Sie jederzeit eines der Mitglieder direkt kontaktieren oder sich an uns wenden:"
+  }
+}

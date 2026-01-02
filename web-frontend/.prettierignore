@@ -19,3 +19,5 @@ package-lock.json
 *.webp
 *.csv
 release-notes.txt
+web-frontend/public/assets/**/*.pdf
+*.pdf
