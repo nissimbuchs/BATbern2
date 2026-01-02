@@ -3,6 +3,7 @@ package ch.batbern.events.client.impl;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -400,21 +401,21 @@ public class UserApiClientImpl implements UserApiClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<UserListResponse> response = restTemplate.exchange(
+            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    UserListResponse.class
+                    PaginatedUserResponse.class
             );
 
-            UserListResponse body = response.getBody();
-            if (body == null || body.users == null) {
+            PaginatedUserResponse body = response.getBody();
+            if (body == null || body.getData() == null) {
                 log.debug("No organizers found");
                 return java.util.List.of();
             }
 
-            java.util.List<String> usernames = body.users.stream()
-                    .map(user -> user.username)
+            java.util.List<String> usernames = body.getData().stream()
+                    .map(UserResponse::getId)  // 'id' field contains the username
                     .collect(java.util.stream.Collectors.toList());
 
             log.debug("Successfully fetched {} organizer usernames", usernames.size());
@@ -485,17 +486,5 @@ public class UserApiClientImpl implements UserApiClient {
         }
 
         return headers;
-    }
-
-    // DTOs for User Service responses
-
-    private static class UserListResponse {
-        public java.util.List<UserDTO> users;
-    }
-
-    private static class UserDTO {
-        public String username;
-        public String email;
-        public String role;
     }
 }

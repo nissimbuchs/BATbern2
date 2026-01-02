@@ -18,4 +18,16 @@ public class PaginationMetadata {
     private int limit;
     private long totalItems;
     private int totalPages;
+
+    /**
+     * Convert from shared PaginationMetadata to notification-specific format
+     */
+    public static PaginationMetadata fromShared(ch.batbern.shared.api.PaginationMetadata shared) {
+        return PaginationMetadata.builder()
+                .page(shared.getPage())
+                .limit(shared.getLimit())
+                .totalItems(shared.getTotalItems())
+                .totalPages(shared.getTotalPages())
+                .build();
+    }
 }

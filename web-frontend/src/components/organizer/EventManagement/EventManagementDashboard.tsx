@@ -74,7 +74,7 @@ export const EventManagementDashboard: React.FC = () => {
   } = useNotifications(
     {
       username: user?.username || '',
-      status: 'SENT', // SENT status = unread notifications
+      status: 'UNREAD', // UNREAD status = in-app unread notifications
     },
     { page: 1, limit: 10 }
   );

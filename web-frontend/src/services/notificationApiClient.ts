@@ -80,7 +80,7 @@ class NotificationApiClient {
     try {
       const params = new URLSearchParams();
       params.append('username', username);
-      params.append('status', 'SENT'); // Unread notifications have status SENT
+      params.append('status', 'UNREAD'); // In-app notifications have status UNREAD
 
       const response = await apiClient.get<NotificationCountResponse>(
         `${NOTIFICATION_API_PATH}/count?${params.toString()}`

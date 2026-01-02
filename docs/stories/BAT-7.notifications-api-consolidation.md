@@ -510,3 +510,122 @@ COMMENT ON TABLE notifications IS 'Notification delivery tracking (email/SMS aud
 | 2026-01-02 | 4.0 | **MAJOR REWRITE**: Synced Dev Agent Record with Dec 25 architecture update. Changed from distributed storage to single table pattern following Task System (Story 5.5). Updated to ADR-003 compliance, hybrid storage strategy, Event Management Service ownership, removed API Gateway aggregation. Changed migration V016 → V33 (V25 already taken). | James (Dev) |
 | 2026-01-02 | 4.1 | **IMPLEMENTATION**: Completed TDD RED+GREEN phases. Created database migration V33, implemented all entities/services/controllers, wrote comprehensive test suite (integration + unit tests), added AWS SES and Thymeleaf dependencies. Status: InProgress (tests pending execution). | James (Dev) |
 | 2026-01-02 | 4.2 | **FRONTEND ALIGNMENT**: Updated backend API responses to match frontend contract. Added custom response wrappers (NotificationsResponse, PaginationMetadata, MarkAsReadResponse, DeleteNotificationResponse, BatchOperationRequest) to ensure 100% compatibility with existing frontend implementation. | James (Dev) |
+
+## Issue: JWT Propagation in Async Threads (Fixed 2026-01-02)
+
+### Problem
+When `OrganizerNotificationListener` processes domain events asynchronously (`@Async`), the SecurityContext is not propagated to the async thread. This causes:
+
+```
+Failed to extract JWT token from SecurityContext: Cannot invoke getAuthentication() because it is null
+Client error fetching organizer list: 401 UNAUTHORIZED
+```
+
+**Root Cause**: SecurityContext is thread-local and is NOT inherited by async threads by default.
+
+**Flow**:
+1. Original request thread has SecurityContext with JWT
+2. Domain event published to ApplicationEventPublisher
+3. `OrganizerNotificationListener.onAnyDomainEvent()` runs in async thread (`@Async`)
+4. Async thread has NO SecurityContext (thread-local, not inherited)
+5. `UserApiClientImpl.createHeadersWithJwtToken()` finds null authentication
+6. HTTP request to company-user-management-service gets 401
+
+### Solution
+Created `AsyncConfig.java` that configures Spring's async executor to propagate SecurityContext:
+
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+    
+    @Override
+    @Bean(name = "taskExecutor")
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setTaskDecorator(new ContextCopyingDecorator()); // KEY FIX
+        return executor;
+    }
+    
+    static class ContextCopyingDecorator implements TaskDecorator {
+        @Override
+        public Runnable decorate(Runnable runnable) {
+            // Capture SecurityContext from parent thread
+            SecurityContext securityContext = SecurityContextHolder.getContext();
+            
+            return () -> {
+                try {
+                    // Set context in async thread
+                    SecurityContextHolder.setContext(securityContext);
+                    runnable.run();
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
+            };
+        }
+    }
+}
+```
+
+**Result**: JWT token is now available in async threads, enabling service-to-service authentication.
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/config/AsyncConfig.java` (NEW)
+
+## Issue: Frontend Using Wrong Status Filter (Fixed 2026-01-02)
+
+### Problem
+Frontend was querying notifications with `status=SENT`, but in-app notifications use `status=UNREAD`:
+- Email notifications: `PENDING` → `SENT` (after delivery)
+- In-app notifications: `UNREAD` → `READ` (when marked as read)
+
+This caused the frontend to receive empty arrays when organizer notifications were successfully created.
+
+### Solution
+Fixed status filter in frontend code:
+1. **notificationApiClient.ts** (line 83): Changed `'SENT'` → `'UNREAD'`
+2. **EventManagementDashboard.tsx** (line 77): Changed `status: 'SENT'` → `status: 'UNREAD'`
+
+**Files Changed**:
+- `web-frontend/src/services/notificationApiClient.ts` - Fixed getUnreadCount() status filter
+- `web-frontend/src/components/organizer/EventManagement/EventManagementDashboard.tsx` - Fixed useNotifications() status filter
+
+## Issue: UserApiClient Response Parsing Error (Fixed 2026-01-02)
+
+### Problem
+`UserApiClientImpl.getOrganizerUsernames()` was using private inner class for JSON deserialization:
+```
+RestClientException: Error while extracting response for type [class ch.batbern.events.client.impl.UserApiClientImpl$UserListResponse]
+```
+
+Inner classes didn't have proper Jackson annotations for deserialization.
+
+### Solution
+Replaced inner classes with generated DTOs (same pattern as working methods):
+- Before: Custom `UserListResponse` inner class
+- After: Generated `PaginatedUserResponse` from `ch.batbern.events.dto.generated.users.*`
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/client/impl/UserApiClientImpl.java` - Use PaginatedUserResponse instead of inner class
+
+## Issue: Pagination Mismatch (Fixed 2026-01-02)
+
+### Problem
+Frontend sends 1-based page numbers (`page=1` = first page), but Spring's `Pageable` uses 0-based indexing (`page=0` = first page).
+
+Result: Requesting `page=1&limit=10` returned:
+- `data: []` (empty, showing page 2 content)
+- `pagination.page: 2` (wrong page number)
+- `pagination.limit: 20` (wrong limit, using Spring default)
+
+### Solution
+Changed `NotificationController.listNotifications()` to:
+1. Accept explicit `int page` and `int limit` parameters instead of Spring `Pageable`
+2. Convert from 1-based to 0-based: `int pageIndex = Math.max(0, page - 1)`
+3. Manually create `Pageable` with correct indexing and sorting
+4. Return original 1-based `page` number in response
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationController.java` - Use shared PaginationUtils for consistent 1-based pagination handling
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/PaginationMetadata.java` - Added fromShared() converter for shared-kernel PaginationMetadata
+

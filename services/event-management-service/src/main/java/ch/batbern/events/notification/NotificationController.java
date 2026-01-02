@@ -1,9 +1,13 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.shared.api.PaginationParams;
+import ch.batbern.shared.api.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,13 +50,24 @@ public class NotificationController {
     /**
      * AC1: List notifications with filtering and pagination
      * Returns custom response structure matching frontend API contract
+     *
+     * Uses shared PaginationUtils for consistent 1-based pagination
      */
     @GetMapping
     public NotificationsResponse listNotifications(
             @RequestParam String username,
             @RequestParam(required = false) String status,
-            Pageable pageable
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer limit
     ) {
+        // Parse pagination params (1-based, with defaults and validation)
+        PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
+        int pageNum = paginationParams.getPage();
+        int pageSize = paginationParams.getLimit();
+
+        // Convert to 0-based for Spring Pageable
+        Pageable pageable = PageRequest.of(pageNum - 1, pageSize, Sort.by("createdAt").descending());
+
         Page<Notification> notifications = status != null
                 ? notificationRepository.findByRecipientUsernameAndStatus(username, status.toUpperCase(), pageable)
                 : notificationRepository.findByRecipientUsername(username, pageable);
@@ -62,16 +77,13 @@ public class NotificationController {
                 .map(NotificationResponse::fromEntity)
                 .collect(Collectors.toList());
 
-        PaginationMetadata pagination = PaginationMetadata.builder()
-                .page(notifications.getNumber() + 1)  // Frontend uses 1-based indexing
-                .limit(notifications.getSize())
-                .totalItems(notifications.getTotalElements())
-                .totalPages(notifications.getTotalPages())
-                .build();
+        // Generate pagination metadata using shared utility
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
+                PaginationUtils.generateMetadata(pageNum, pageSize, notifications.getTotalElements());
 
         return NotificationsResponse.builder()
                 .data(data)
-                .pagination(pagination)
+                .pagination(PaginationMetadata.fromShared(paginationMetadata))
                 .build();
     }
 
