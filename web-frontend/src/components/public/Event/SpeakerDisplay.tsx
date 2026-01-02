@@ -42,21 +42,24 @@ export const SpeakerDisplay = ({
   const sizeClasses = {
     small: {
       avatar: 'h-12 w-12',
-      logo: 'h-12 w-12',
+      logoContainer: 'max-h-12',
+      logoImage: 'max-h-12 max-w-full',
       name: 'text-sm',
       company: 'text-xs',
       initials: 'text-base',
     },
     medium: {
       avatar: 'h-16 w-16',
-      logo: 'h-16 w-16',
+      logoContainer: 'max-h-16',
+      logoImage: 'max-h-16 max-w-full',
       name: 'text-base',
       company: 'text-sm',
       initials: 'text-xl',
     },
     large: {
       avatar: 'h-20 w-20',
-      logo: 'h-20 w-20',
+      logoContainer: 'max-h-20',
+      logoImage: 'max-h-20 max-w-full',
       name: 'text-lg',
       company: 'text-base',
       initials: 'text-2xl',
@@ -100,14 +103,16 @@ export const SpeakerDisplay = ({
         )}
       </div>
 
-      {/* Company Logo - Right aligned, same size as profile picture */}
+      {/* Company Logo - Right aligned, max height with flexible width */}
       {speaker.company && (
-        <div className={`${sizes.logo} rounded flex items-center justify-center flex-shrink-0 p-1`}>
+        <div
+          className={`${sizes.logoContainer} flex items-center justify-center flex-shrink-0 p-1`}
+        >
           {logoUrl ? (
             <img
               src={logoUrl}
               alt={`${speaker.company} logo`}
-              className="h-full w-full object-contain"
+              className={`${sizes.logoImage} object-contain`}
             />
           ) : (
             <Building2 className="h-8 w-8 text-zinc-400" />
