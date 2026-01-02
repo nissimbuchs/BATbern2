@@ -164,14 +164,14 @@ const HomePage = () => {
           <EventProgram sessions={event.sessions} />
         )}
 
-        {/* Speaker Grid - Show when speakers or agenda is published */}
-        {showSpeakersAndSessions && event.sessions && event.sessions.length > 0 && (
-          <SpeakerGrid sessions={event.sessions} />
-        )}
-
         {/* Session Cards (List View) - Only show when speakers published, NOT when agenda published */}
         {showSessionList && event.sessions && event.sessions.length > 0 && (
           <SessionCards sessions={event.sessions} />
+        )}
+
+        {/* Speaker Grid - Show when speakers or agenda is published */}
+        {showSpeakersAndSessions && event.sessions && event.sessions.length > 0 && (
+          <SpeakerGrid sessions={event.sessions} />
         )}
 
         {/* Venue Map */}
