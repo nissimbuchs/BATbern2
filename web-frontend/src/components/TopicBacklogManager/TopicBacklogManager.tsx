@@ -174,27 +174,24 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
       {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} />
+      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
       {/* Title section - always visible, shows event context if available */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          {t('topicBacklog.title', 'Topic Backlog Manager')}
+        <Typography variant="h4" component="h1" gutterBottom>
+          {eventCode && eventData
+            ? t('topicBacklog.breadcrumbs.topicSelection', 'Topic Selection')
+            : t('topicBacklog.title', 'Topic Backlog Manager')}
         </Typography>
         {eventCode && eventData && (
-          <>
-            <Typography variant="h6" color="primary" gutterBottom>
-              {eventData.title} ({eventData.eventCode})
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {t(
-                'topicBacklog.subtitle',
-                'Select topics from the backlog with intelligent suggestions and staleness detection'
-              )}
-            </Typography>
-          </>
+          <Typography variant="body1" color="text.secondary">
+            {t(
+              'topicBacklog.subtitle',
+              'Select topics from the backlog with intelligent suggestions and staleness detection'
+            )}
+          </Typography>
         )}
       </Box>
 
