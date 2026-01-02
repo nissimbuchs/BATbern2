@@ -25,11 +25,6 @@ import {
   CardActions,
   Alert,
   Skeleton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   Table,
   TableBody,
   TableCell,
@@ -47,8 +42,6 @@ import {
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-  CalendarToday as CalendarIcon,
-  AutoAwesome as AutoAssignIcon,
   Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -62,9 +55,6 @@ interface SpeakersSessionsTableProps {
   onViewDetails: (sessionId: string) => void;
   onEditSlot: (sessionId: string) => void;
   onViewMaterials: (sessionId: string) => void;
-  onViewFullAgenda: (eventCode: string) => void;
-  onManageSpeakerAssignments: (eventCode: string) => void;
-  onAutoAssignSpeakers: (eventCode: string) => void;
   onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
   isLoading?: boolean;
   error?: string;
@@ -72,13 +62,10 @@ interface SpeakersSessionsTableProps {
 
 export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   sessions,
-  eventCode,
+  eventCode: _eventCode, // eslint-disable-line @typescript-eslint/no-unused-vars
   onViewDetails,
   onEditSlot,
   onViewMaterials,
-  onViewFullAgenda,
-  onManageSpeakerAssignments,
-  onAutoAssignSpeakers,
   onSessionUpdate,
   isLoading = false,
   error,
@@ -86,7 +73,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const { t, i18n } = useTranslation('events');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<SessionUI | null>(null);
 
@@ -172,19 +158,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     }
   };
 
-  const handleAutoAssignClick = () => {
-    setAutoAssignDialogOpen(true);
-  };
-
-  const handleAutoAssignConfirm = () => {
-    setAutoAssignDialogOpen(false);
-    onAutoAssignSpeakers(eventCode);
-  };
-
-  const handleAutoAssignCancel = () => {
-    setAutoAssignDialogOpen(false);
-  };
-
   const handleRowClick = (session: SessionUI) => {
     setSelectedSession(session);
     setEditModalOpen(true);
@@ -242,15 +215,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         <Alert severity="info" sx={{ mb: 2 }}>
           {t('speakers.noSessionsScheduled')}
         </Alert>
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant="contained"
-            startIcon={<EditIcon />}
-            onClick={() => onManageSpeakerAssignments(eventCode)}
-          >
-            {t('speakers.manageSpeakerAssignments')}
-          </Button>
-        </Stack>
       </Box>
     );
   }
@@ -363,55 +327,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
             </CardActions>
           </Card>
         ))}
-
-        {/* Footer Actions */}
-        <Stack direction="column" spacing={1} sx={{ mt: 3 }}>
-          <Button
-            variant="outlined"
-            startIcon={<CalendarIcon />}
-            onClick={() => onViewFullAgenda(eventCode)}
-            fullWidth
-          >
-            {t('speakers.viewFullAgenda')}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<EditIcon />}
-            onClick={() => onManageSpeakerAssignments(eventCode)}
-            fullWidth
-          >
-            {t('speakers.manageSpeakerAssignments')}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AutoAssignIcon />}
-            onClick={handleAutoAssignClick}
-            fullWidth
-          >
-            {t('speakers.autoAssignSpeakers')}
-          </Button>
-        </Stack>
-
-        {/* Auto-Assign Confirmation Dialog */}
-        <Dialog
-          open={autoAssignDialogOpen}
-          onClose={handleAutoAssignCancel}
-          aria-labelledby="auto-assign-dialog-title"
-        >
-          <DialogTitle id="auto-assign-dialog-title">
-            {t('speakers.autoAssignConfirmTitle')}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText>{t('speakers.autoAssignConfirmMessage')}</DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleAutoAssignCancel}>{t('common.cancel', 'Cancel')}</Button>
-            <Button onClick={handleAutoAssignConfirm} variant="contained" autoFocus>
-              {t('common.confirm', 'Confirm')}
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     );
   }
@@ -548,52 +463,6 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
-
-      {/* Footer Actions */}
-      <Stack direction="row" spacing={2} justifyContent="flex-end">
-        <Button
-          variant="outlined"
-          startIcon={<CalendarIcon />}
-          onClick={() => onViewFullAgenda(eventCode)}
-        >
-          {t('speakers.viewFullAgenda')}
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<EditIcon />}
-          onClick={() => onManageSpeakerAssignments(eventCode)}
-        >
-          {t('speakers.manageSpeakerAssignments')}
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AutoAssignIcon />}
-          onClick={handleAutoAssignClick}
-        >
-          {t('speakers.autoAssignSpeakers')}
-        </Button>
-      </Stack>
-
-      {/* Auto-Assign Confirmation Dialog */}
-      <Dialog
-        open={autoAssignDialogOpen}
-        onClose={handleAutoAssignCancel}
-        aria-labelledby="auto-assign-dialog-title"
-      >
-        <DialogTitle id="auto-assign-dialog-title">
-          {t('speakers.autoAssignConfirmTitle')}
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText>{t('speakers.autoAssignConfirmMessage')}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleAutoAssignCancel}>{t('common.cancel', 'Cancel')}</Button>
-          <Button onClick={handleAutoAssignConfirm} variant="contained" autoFocus>
-            {t('common.confirm', 'Confirm')}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Session Edit Modal */}
       <SessionEditModal
