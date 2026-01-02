@@ -50,7 +50,8 @@ public class EventSearchService {
      * @param includeArchived Include archived events (default: false)
      * @return Paginated event results
      */
-    public PaginatedResponse<Event> searchEvents(String filterJson, String sortStr, Integer page, Integer limit, boolean includeArchived) {
+    public PaginatedResponse<Event> searchEvents(
+            String filterJson, String sortStr, Integer page, Integer limit, boolean includeArchived) {
         // Parse pagination parameters
         PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
         int pageNum = paginationParams.getPage();
@@ -66,7 +67,9 @@ public class EventSearchService {
         // Exclude ARCHIVED events if includeArchived is false
         if (!includeArchived) {
             Specification<Event> notArchivedSpec = (root, query, criteriaBuilder) ->
-                criteriaBuilder.notEqual(root.get("workflowState"), ch.batbern.shared.types.EventWorkflowState.ARCHIVED);
+                criteriaBuilder.notEqual(
+                    root.get("workflowState"),
+                    ch.batbern.shared.types.EventWorkflowState.ARCHIVED);
             spec = spec == null ? notArchivedSpec : spec.and(notArchivedSpec);
         }
 

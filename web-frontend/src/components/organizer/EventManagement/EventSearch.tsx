@@ -185,40 +185,40 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
             />
           </FormControl>
 
-        {/* Workflow State Filter */}
-        <FormControl sx={{ minWidth: 200 }}>
-          <InputLabel id="workflow-state-filter-label">
-            {t('dashboard.filter.workflowState')}
-          </InputLabel>
-          <Select
-            labelId="workflow-state-filter-label"
-            multiple
-            value={filters.workflowState || []}
-            onChange={handleWorkflowStateChange}
-            input={<OutlinedInput label={t('dashboard.filter.workflowState')} />}
-            renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((value) => (
-                  <Chip
-                    key={value}
-                    label={t(`workflow.states.${value.toLowerCase()}`)}
-                    size="small"
-                    onDelete={() => handleRemoveWorkflowState(value)}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    aria-label={`Remove ${t(`workflow.states.${value.toLowerCase()}`).toLowerCase()} filter`}
-                  />
-                ))}
-              </Box>
-            )}
-            aria-label="Filter by workflow state"
-          >
-            {WORKFLOW_STATE_OPTIONS.map((workflowState) => (
-              <MenuItem key={workflowState} value={workflowState}>
-                {t(`workflow.states.${workflowState.toLowerCase()}`)}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+          {/* Workflow State Filter */}
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel id="workflow-state-filter-label">
+              {t('dashboard.filter.workflowState')}
+            </InputLabel>
+            <Select
+              labelId="workflow-state-filter-label"
+              multiple
+              value={filters.workflowState || []}
+              onChange={handleWorkflowStateChange}
+              input={<OutlinedInput label={t('dashboard.filter.workflowState')} />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => (
+                    <Chip
+                      key={value}
+                      label={t(`workflow.states.${value.toLowerCase()}`)}
+                      size="small"
+                      onDelete={() => handleRemoveWorkflowState(value)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      aria-label={`Remove ${t(`workflow.states.${value.toLowerCase()}`).toLowerCase()} filter`}
+                    />
+                  ))}
+                </Box>
+              )}
+              aria-label="Filter by workflow state"
+            >
+              {WORKFLOW_STATE_OPTIONS.map((workflowState) => (
+                <MenuItem key={workflowState} value={workflowState}>
+                  {t(`workflow.states.${workflowState.toLowerCase()}`)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           {/* Year Filter */}
           <FormControl sx={{ minWidth: 150 }}>

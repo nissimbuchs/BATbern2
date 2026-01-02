@@ -800,9 +800,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       <MenuItem value="AGENDA_FINALIZED">
                         {t('workflow.states.agenda_finalized')}
                       </MenuItem>
-                      <MenuItem value="EVENT_LIVE">
-                        {t('workflow.states.event_live')}
-                      </MenuItem>
+                      <MenuItem value="EVENT_LIVE">{t('workflow.states.event_live')}</MenuItem>
                       <MenuItem value="EVENT_COMPLETED">
                         {t('workflow.states.event_completed')}
                       </MenuItem>
