@@ -487,10 +487,38 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @DisplayName("should_applyCombinedFilters_when_multipleFiltersProvided")
     void should_applyCombinedFilters_when_multipleFiltersProvided() throws Exception {
+        // Explicitly mock UserApiClient for each username to avoid flakiness
+        when(userApiClient.getUserByUsername("john.doe"))
+                .thenReturn(new UserResponse()
+                        .id("john.doe")
+                        .firstName("John")
+                        .lastName("Doe")
+                        .email("john.doe@example.com")
+                        .companyId("Test Company"));
+
+        when(userApiClient.getUserByUsername("jane.doe"))
+                .thenReturn(new UserResponse()
+                        .id("jane.doe")
+                        .firstName("Jane")
+                        .lastName("Doe")
+                        .email("jane.doe@example.com")
+                        .companyId("Test Company"));
+
+        when(userApiClient.getUserByUsername("bob.jones"))
+                .thenReturn(new UserResponse()
+                        .id("bob.jones")
+                        .firstName("Bob")
+                        .lastName("Jones")
+                        .email("bob.jones@example.com")
+                        .companyId("Test Company"));
+
         // Create registrations
         createTestRegistration("john.doe", "confirmed");
         createTestRegistration("jane.doe", "confirmed");
         createTestRegistration("bob.jones", "registered");
+
+        // Flush to ensure data is persisted before query
+        registrationRepository.flush();
 
         // Filter: status=CONFIRMED AND search="doe"
         mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
