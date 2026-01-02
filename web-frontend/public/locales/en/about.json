@@ -15,6 +15,10 @@
     "description": "The Berner-Architekten-Treffen is supported in terms of content and organization by a dedicated organizing committee:",
     "noOrganizers": "No organizers found"
   },
+  "partners": {
+    "title": "Our Partners",
+    "description": "The Berner Architekten-Treffen is made possible as a free event through the generous support of the following companies and organizations:"
+  },
   "contact": {
     "title": "Contact",
     "description": "For questions, suggestions and comments, you can contact any of the members directly or reach out to us:"

@@ -6,7 +6,10 @@
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card, CardContent, CardHeader } from '@/components/public/ui/card';
 import { OrganizerDisplay } from '@/components/public/About/OrganizerDisplay';
+import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
+import { PartnerShowcaseCard } from '@/components/public/Partners';
 import { useUserList } from '@/hooks/useUserManagement';
+import { usePublicPartners } from '@/hooks/usePublicPartners';
 import { useTranslation } from 'react-i18next';
 import { FileText, Loader2 } from 'lucide-react';
 
@@ -20,6 +23,10 @@ const AboutPage = () => {
   });
 
   const organizers = organizersData?.data || [];
+
+  // Fetch partners
+  const { data: partnersData } = usePublicPartners();
+  const partners = partnersData?.data || [];
 
   return (
     <PublicLayout>
@@ -85,6 +92,36 @@ const AboutPage = () => {
             <p className="text-zinc-400 text-center py-8">{t('organizers.noOrganizers')}</p>
           )}
         </div>
+
+        {/* Partner Showcase Section */}
+        {partners.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-3xl font-light mb-8 text-zinc-100">{t('partners.title')}</h2>
+            <p className="text-zinc-300 mb-8 leading-relaxed">{t('partners.description')}</p>
+
+            <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
+              <InfiniteMarquee direction="left" speed="slow">
+                {partners.map((partner) => (
+                  <PartnerShowcaseCard
+                    key={partner.companyName}
+                    companyName={partner.company?.displayName || partner.companyName}
+                    logoUrl={partner.company?.logoUrl}
+                    partnershipLevel={
+                      partner.partnershipLevel as
+                        | 'STRATEGIC'
+                        | 'PLATINUM'
+                        | 'GOLD'
+                        | 'SILVER'
+                        | 'BRONZE'
+                    }
+                    partnershipStartDate={partner.partnershipStartDate}
+                    website={partner.company?.website}
+                  />
+                ))}
+              </InfiniteMarquee>
+            </div>
+          </div>
+        )}
 
         {/* Contact Section */}
         <div>

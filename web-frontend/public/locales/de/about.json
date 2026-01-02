@@ -15,6 +15,10 @@
     "description": "Das Berner-Architekten-Treffen wird inhaltlich und organisatorisch durch ein engagiertes Organisationskomitee begleitet:",
     "noOrganizers": "Keine Organisatoren gefunden"
   },
+  "partners": {
+    "title": "Unsere Partner",
+    "description": "Das Berner Architekten-Treffen wird durch die freundliche Unterstützung folgender Firmen und Organisationen als kostenlose Veranstaltung ermöglicht:"
+  },
   "contact": {
     "title": "Kontakt",
     "description": "Für Fragen, Anregungen und Kommentare können Sie jederzeit eines der Mitglieder direkt kontaktieren oder sich an uns wenden:"
