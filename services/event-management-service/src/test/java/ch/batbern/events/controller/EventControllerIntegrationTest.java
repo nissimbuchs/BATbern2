@@ -214,11 +214,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(3)))
+                .andExpect(jsonPath("$.data", hasSize(2))) // Excludes ARCHIVED by default
                 .andExpect(jsonPath("$.pagination").exists())
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(20))
-                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+                .andExpect(jsonPath("$.pagination.totalItems").value(2)); // Excludes ARCHIVED by default
     }
 
     // ============================================================================
@@ -281,7 +281,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(2))); // 2024 and 2025 events
+                .andExpect(jsonPath("$.data", hasSize(1))); // Only 2025 event (2024 is ARCHIVED)
     }
 
     @Test
@@ -338,7 +338,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(3))); // All events contain "BATbern"
+                .andExpect(jsonPath("$.data", hasSize(2))); // Excludes ARCHIVED by default
     }
 
     @Test
@@ -380,10 +380,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data", hasSize(3)))
+                .andExpect(jsonPath("$.data", hasSize(2))) // Excludes ARCHIVED
                 .andExpect(jsonPath("$.data[0].title").value("BATbern 2026 Draft")) // Most recent first
-                .andExpect(jsonPath("$.data[1].title").value("BATbern 2025"))
-                .andExpect(jsonPath("$.data[2].title").value("BATbern 2024")); // Oldest last
+                .andExpect(jsonPath("$.data[1].title").value("BATbern 2025")); // Oldest last (excludes ARCHIVED 2024)
     }
 
     @Test
@@ -394,8 +393,8 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[0].title").value("BATbern 2024")) // Oldest first
-                .andExpect(jsonPath("$.data[2].title").value("BATbern 2026 Draft")); // Most recent last
+                .andExpect(jsonPath("$.data[0].title").value("BATbern 2025")) // Oldest first (excludes ARCHIVED 2024)
+                .andExpect(jsonPath("$.data[1].title").value("BATbern 2026 Draft")); // Most recent last
     }
 
     // ============================================================================
@@ -426,7 +425,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data", hasSize(10)))
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.limit").value(10))
-                .andExpect(jsonPath("$.pagination.totalItems").value(28)) // 3 initial + 25 new
+                .andExpect(jsonPath("$.pagination.totalItems").value(27)) // 2 non-archived initial + 25 new (excludes ARCHIVED)
                 .andExpect(jsonPath("$.pagination.totalPages").value(3))
                 .andExpect(jsonPath("$.pagination.hasNext").value(true))
                 .andExpect(jsonPath("$.pagination.hasPrev").value(false));
@@ -448,7 +447,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("limit", "10")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(8))) // Remaining 8 events
+                .andExpect(jsonPath("$.data", hasSize(7))) // Remaining 7 events (27 total - 20 on pages 1&2 = 7)
                 .andExpect(jsonPath("$.pagination.page").value(3))
                 .andExpect(jsonPath("$.pagination.hasNext").value(false))
                 .andExpect(jsonPath("$.pagination.hasPrev").value(true));

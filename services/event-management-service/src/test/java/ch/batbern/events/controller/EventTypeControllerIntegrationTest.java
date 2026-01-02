@@ -266,7 +266,7 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.slotDuration").value(45))
                 .andExpect(jsonPath("$.theoreticalSlotsAM").value(false))
                 .andExpect(jsonPath("$.defaultCapacity").value(200))
-                .andExpect(jsonPath("$.typicalStartTime").value("18:00"))
+                .andExpect(jsonPath("$.typicalStartTime").value("16:00")) // Updated to match seed data
                 .andExpect(jsonPath("$.typicalEndTime").value("19:00"));
     }
 }
