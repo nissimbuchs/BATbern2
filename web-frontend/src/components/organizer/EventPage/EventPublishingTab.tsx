@@ -14,6 +14,7 @@ import { LivePreview } from '@/components/Publishing/LivePreview/LivePreview';
 import { PublishingTimeline } from '@/components/Publishing/PublishingTimeline/PublishingTimeline';
 import { VersionControl } from '@/components/Publishing/VersionControl/VersionControl';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
+import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 
 interface EventPublishingTabProps {
   event: Event | EventDetailUI;
@@ -22,6 +23,7 @@ interface EventPublishingTabProps {
 
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
+  const { unassignedSessions } = useSlotAssignment(eventCode);
 
   const publishingMode = 'progressive' as const;
 
@@ -44,16 +46,22 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
     (publishingStatus?.publishedPhases as PublishingPhase[]) || [];
   const eventDate = event.date || new Date().toISOString();
 
-  // Build validation data from status response
+  // Build validation data from status response and slot assignment
   const validationData = {
     topic: publishingStatus?.topic || { isValid: true, errors: [] },
     speakers: publishingStatus?.speakers || { isValid: true, errors: [] },
-    sessions: publishingStatus?.sessions || {
-      isValid: true,
-      errors: [],
-      assignedCount: 0,
-      totalCount: 0,
-      unassignedSessions: [],
+    sessions: {
+      ...(publishingStatus?.sessions || {
+        isValid: true,
+        errors: [],
+        assignedCount: 0,
+        totalCount: 0,
+      }),
+      // Use actual unassigned sessions from slot assignment hook
+      unassignedSessions: unassignedSessions.map((session) => ({
+        sessionSlug: session.sessionSlug,
+        title: session.title || session.sessionSlug,
+      })),
     },
   };
 
