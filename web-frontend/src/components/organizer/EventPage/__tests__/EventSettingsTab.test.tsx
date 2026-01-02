@@ -5,12 +5,21 @@
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventSettingsTab } from '../EventSettingsTab';
 import type { Event } from '@/types/event.types';
+
+// Mock event API client
+vi.mock('@/services/eventApiClient', () => ({
+  eventApiClient: {
+    deleteEvent: vi.fn(() => Promise.resolve()),
+    cancelEvent: vi.fn(() => Promise.resolve()),
+  },
+}));
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -47,18 +56,32 @@ const mockEventWithAttendees: Event = {
   currentAttendeeCount: 87,
 };
 
-// Test wrapper with providers
-const renderWithProviders = (ui: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
-    </BrowserRouter>
-  );
-};
-
 describe('EventSettingsTab Component (Story 5.6)', () => {
+  let queryClient: QueryClient;
+
+  // Test wrapper with providers
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <I18nextProvider i18n={i18n}>{ui}</I18nextProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  afterEach(() => {
+    queryClient.clear();
   });
 
   describe('Rendering', () => {
