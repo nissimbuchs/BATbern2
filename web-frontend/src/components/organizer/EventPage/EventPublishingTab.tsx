@@ -23,10 +23,7 @@ interface EventPublishingTabProps {
 
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
-  const { unassignedSessions, isLoading: isLoadingSlots } = useSlotAssignment(eventCode);
-
-  console.log('[EventPublishingTab] unassignedSessions:', unassignedSessions);
-  console.log('[EventPublishingTab] isLoadingSlots:', isLoadingSlots);
+  const { unassignedSessions } = useSlotAssignment(eventCode);
 
   const publishingMode = 'progressive' as const;
 
@@ -56,10 +53,20 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
       title: session.title || session.sessionSlug,
     })) || [];
 
-  console.log('[EventPublishingTab] mappedUnassignedSessions:', mappedUnassignedSessions);
+  // Frontend safeguard: Check if event actually has a topic
+  const hasTopicCode = 'topicCode' in event && event.topicCode;
+  const topicValidation = publishingStatus?.topic || { isValid: true, errors: [] };
 
   const validationData = {
-    topic: publishingStatus?.topic || { isValid: true, errors: [] },
+    topic: {
+      ...topicValidation,
+      // Override if backend incorrectly reports valid but no topicCode exists
+      isValid: topicValidation.isValid && hasTopicCode,
+      errors:
+        !hasTopicCode && topicValidation.isValid
+          ? ['Event topic must be defined']
+          : topicValidation.errors,
+    },
     speakers: publishingStatus?.speakers || { isValid: true, errors: [] },
     sessions: {
       ...(publishingStatus?.sessions || {

@@ -329,12 +329,21 @@ public class PublishingService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // Topic validation - must have title and date
+        // Topic validation - must have title, date, and topicCode
         boolean topicValid = event.getTitle() != null && !event.getTitle().isBlank()
-                && event.getDate() != null;
+                && event.getDate() != null
+                && event.getTopicCode() != null && !event.getTopicCode().isBlank();
         List<String> topicErrors = new ArrayList<>();
         if (!topicValid) {
-            topicErrors.add("Event must have title and date");
+            if (event.getTopicCode() == null || event.getTopicCode().isBlank()) {
+                topicErrors.add("Event topic must be defined");
+            }
+            if (event.getTitle() == null || event.getTitle().isBlank()) {
+                topicErrors.add("Event must have title");
+            }
+            if (event.getDate() == null) {
+                topicErrors.add("Event must have date");
+            }
         }
 
         // Speakers validation - at least one speaker in presenting state
