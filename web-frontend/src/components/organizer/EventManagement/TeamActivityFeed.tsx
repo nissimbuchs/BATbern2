@@ -1,11 +1,13 @@
 /**
- * TeamActivityFeed Component
+ * TeamActivityFeed Component (Enhanced with Notifications)
  *
- * Story 2.5.3 - Task 8b (GREEN Phase)
- * AC: 1 (Event Dashboard Display)
- * Wireframe: docs/wireframes/story-1.16-event-management-dashboard.md v1.0
+ * Story BAT-7 - Notifications API Consolidation
+ * AC: Display EventBridge-triggered notifications for organizers
  *
- * Displays team activity feed with manual reload
+ * Displays notifications from Event Management Service:
+ * - EventBridge-triggered notifications (TASK_ASSIGNED, DEADLINE_WARNING, etc.)
+ * - Mark as read functionality
+ * - Real-time updates via React Query
  */
 
 import React from 'react';
@@ -23,81 +25,146 @@ import {
   Skeleton,
   Chip,
   CircularProgress,
+  Badge,
+  Tooltip,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
-  Person as PersonIcon,
   Description as DescriptionIcon,
   CheckCircle as CheckCircleIcon,
   People as PeopleIcon,
   Settings as SettingsIcon,
+  Notifications as NotificationsIcon,
+  Assignment as AssignmentIcon,
+  Warning as WarningIcon,
+  Event as EventIcon,
+  DoneAll as DoneAllIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
-import type { TeamActivity } from '@/types/event.types';
+import type { Notification, NotificationType } from '@/types/notification';
+import { useMarkAsRead } from '@/hooks/useNotifications';
 
 interface TeamActivityFeedProps {
-  activities: TeamActivity[];
+  notifications: Notification[];
   isLoading?: boolean;
   onReload?: () => void;
   limit?: number;
 }
 
-// Activity type to icon mapping
-const getActivityIcon = (type: string) => {
+// Notification type to icon mapping
+const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
-    case 'speaker_assigned':
+    // Event notifications
+    case 'EVENT_PUBLISHED':
+    case 'EVENT_STATUS_CHANGED':
+      return <EventIcon />;
+    // Speaker workflow notifications
+    case 'SPEAKER_INVITED':
+    case 'SPEAKER_ACCEPTED':
+    case 'SPEAKER_DECLINED':
+    case 'SPEAKER_CONFIRMED':
       return <PeopleIcon />;
-    case 'materials_uploaded':
+    case 'CONTENT_SUBMITTED':
+    case 'QUALITY_REVIEW_PENDING':
+    case 'QUALITY_REVIEW_APPROVED':
+    case 'QUALITY_REVIEW_REQUIRES_CHANGES':
       return <DescriptionIcon />;
-    case 'workflow_advanced':
+    case 'SLOT_ASSIGNED':
       return <CheckCircleIcon />;
-    case 'speaker_invited':
-      return <PersonIcon />;
+    // Task notifications
+    case 'TASK_ASSIGNED':
+      return <AssignmentIcon />;
+    case 'TASK_DEADLINE_WARNING':
+    case 'DEADLINE_WARNING':
+      return <WarningIcon />;
+    // Other notifications
+    case 'OVERFLOW_DETECTED':
+    case 'VOTING_REQUIRED':
+      return <NotificationsIcon />;
     default:
       return <SettingsIcon />;
   }
 };
 
-// Activity type to color mapping
-const getActivityColor = (type: string): 'primary' | 'success' | 'info' | 'default' => {
+// Notification type to color mapping
+const getNotificationColor = (
+  type: NotificationType,
+  priority: string
+): 'primary' | 'success' | 'info' | 'warning' | 'error' | 'default' => {
+  // Priority overrides type-based color for urgent notifications
+  if (priority === 'URGENT') return 'error';
+  if (priority === 'HIGH') return 'warning';
+
   switch (type) {
-    case 'speaker_assigned':
-    case 'speaker_invited':
-      return 'primary';
-    case 'workflow_advanced':
+    // Event notifications
+    case 'EVENT_PUBLISHED':
+    case 'EVENT_STATUS_CHANGED':
       return 'success';
-    case 'materials_uploaded':
+    // Speaker workflow
+    case 'SPEAKER_INVITED':
+    case 'SPEAKER_ACCEPTED':
+    case 'SPEAKER_CONFIRMED':
+      return 'primary';
+    case 'SPEAKER_DECLINED':
+      return 'warning';
+    // Content/Quality
+    case 'CONTENT_SUBMITTED':
+    case 'QUALITY_REVIEW_APPROVED':
+      return 'success';
+    case 'QUALITY_REVIEW_REQUIRES_CHANGES':
+      return 'warning';
+    case 'QUALITY_REVIEW_PENDING':
       return 'info';
+    // Tasks
+    case 'TASK_ASSIGNED':
+      return 'primary';
+    case 'TASK_DEADLINE_WARNING':
+    case 'DEADLINE_WARNING':
+      return 'warning';
+    // Critical
+    case 'OVERFLOW_DETECTED':
+    case 'VOTING_REQUIRED':
+      return 'error';
     default:
       return 'default';
   }
 };
 
 export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
-  activities,
+  notifications,
   isLoading = false,
   onReload,
   limit,
 }) => {
-  const { t, i18n } = useTranslation('events');
+  const { i18n } = useTranslation('events');
   const locale = i18n.language === 'de' ? de : enUS;
+  const markAsReadMutation = useMarkAsRead();
 
-  const displayedActivities = limit ? activities.slice(0, limit) : activities;
-  const hasMore = limit && activities.length > limit;
+  const displayedNotifications = limit ? notifications.slice(0, limit) : notifications;
+  const hasMore = limit && notifications.length > limit;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await markAsReadMutation.mutateAsync(notificationId);
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
 
   // Loading state
   if (isLoading) {
     return (
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">{t('dashboard.teamActivity')}</Typography>
+          <Typography variant="h6">Notifications</Typography>
           <CircularProgress size={20} />
         </Stack>
         <List>
           {[1, 2, 3, 4, 5].map((index) => (
-            <ListItem key={index} data-testid={`skeleton-activity-${index}`}>
+            <ListItem key={index} data-testid={`skeleton-notification-${index}`}>
               <Skeleton variant="rectangular" width="100%" height={60} />
             </ListItem>
           ))}
@@ -107,37 +174,40 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   }
 
   // Empty state
-  if (activities.length === 0) {
+  if (notifications.length === 0) {
     return (
       <Box textAlign="center" py={4}>
+        <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
         <Typography variant="h6" gutterBottom>
-          {t('dashboard.teamActivity')}
+          Notifications
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {t('dashboard.noRecentActivity')}
+          No notifications yet
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Box aria-label="Team activity feed">
+    <Box aria-label="Notification feed">
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="h6">{t('dashboard.teamActivity')}</Typography>
-          <Chip
-            label={t('dashboard.activityCount', { count: activities.length })}
-            size="small"
-            aria-label={`${activities.length} activities`}
-          />
+          <Typography variant="h6">Notifications</Typography>
+          <Badge badgeContent={unreadCount} color="error">
+            <Chip
+              label={notifications.length}
+              size="small"
+              aria-label={`${notifications.length} notifications`}
+            />
+          </Badge>
         </Stack>
 
         <IconButton
           onClick={onReload}
           disabled={isLoading}
           size="small"
-          aria-label="Reload activity feed"
+          aria-label="Reload notifications"
         >
           <RefreshIcon />
         </IconButton>
@@ -145,39 +215,53 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
 
       {/* Last updated timestamp */}
       <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-        {t('dashboard.lastUpdated')}: {formatDistanceToNow(new Date(), { locale, addSuffix: true })}
+        Last updated: {formatDistanceToNow(new Date(), { locale, addSuffix: true })}
       </Typography>
 
-      {/* Activity list */}
+      {/* Notification list */}
       <List>
-        {/* Today group header */}
-        <Typography variant="caption" color="text.secondary" sx={{ px: 2, py: 1 }}>
-          {t('dashboard.today')}
-        </Typography>
-
-        {displayedActivities.map((activity) => {
-          const isSystemActivity = activity.actorUsername === 'System';
-          const relativeTime = formatDistanceToNow(new Date(activity.timestamp), {
+        {displayedNotifications.map((notification) => {
+          const relativeTime = formatDistanceToNow(new Date(notification.createdAt), {
             locale,
             addSuffix: true,
           });
 
+          const color = getNotificationColor(notification.notificationType, notification.priority);
+          const isUnread = !notification.isRead;
+
           return (
             <ListItem
-              key={activity.id}
-              data-testid={`activity-item-${activity.id}`}
-              className={isSystemActivity ? 'system-activity' : ''}
-              sx={{ py: 1.5 }}
+              key={notification.id}
+              data-testid={`notification-item-${notification.id}`}
+              sx={{
+                py: 1.5,
+                bgcolor: isUnread ? 'action.hover' : 'transparent',
+                borderLeft: isUnread ? `4px solid` : 'none',
+                borderColor: `${color}.main`,
+              }}
+              secondaryAction={
+                isUnread ? (
+                  <Tooltip title="Mark as read">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => handleMarkAsRead(notification.id)}
+                      disabled={markAsReadMutation.isPending}
+                    >
+                      <DoneAllIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : null
+              }
             >
               <ListItemAvatar>
                 <Avatar
                   sx={{
-                    bgcolor: isSystemActivity
-                      ? 'grey.400'
-                      : `${getActivityColor(activity.type)}.light`,
+                    bgcolor: `${color}.light`,
+                    color: `${color}.dark`,
                   }}
                 >
-                  {getActivityIcon(activity.type)}
+                  {getNotificationIcon(notification.notificationType)}
                 </Avatar>
               </ListItemAvatar>
 
@@ -186,18 +270,27 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
                 secondaryTypographyProps={{ component: 'div' }}
                 primary={
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" fontWeight="bold">
-                      {activity.actorName}
+                    <Typography variant="body2" fontWeight={isUnread ? 'bold' : 'normal'}>
+                      {notification.subject}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t(`dashboard.activityAction.${activity.type}`)}
-                    </Typography>
-                    <Chip label={activity.eventCode} size="small" variant="outlined" />
+                    {notification.eventCode && (
+                      <Chip label={notification.eventCode} size="small" variant="outlined" />
+                    )}
+                    {notification.priority === 'URGENT' && (
+                      <Chip label="URGENT" size="small" color="error" />
+                    )}
+                    {notification.priority === 'HIGH' && (
+                      <Chip label="HIGH" size="small" color="warning" />
+                    )}
                   </Stack>
                 }
                 secondary={
                   <Stack spacing={0.5} mt={0.5}>
-                    <Typography variant="caption">{activity.targetDescription}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {notification.body.length > 80
+                        ? `${notification.body.substring(0, 80)}...`
+                        : notification.body}
+                    </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {relativeTime}
                     </Typography>
@@ -213,7 +306,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       {hasMore && (
         <Box textAlign="center" mt={2}>
           <Button variant="outlined" size="small">
-            {t('dashboard.viewAll')}
+            View All ({notifications.length})
           </Button>
         </Box>
       )}
