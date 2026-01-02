@@ -6,9 +6,9 @@
 
 import { Card, CardContent, CardHeader } from '@/components/public/ui/card';
 import type { Session } from '@/types/event.types';
-import { Building2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SpeakerDisplay } from './SpeakerDisplay';
 
 interface SpeakerWithSession {
   username: string;
@@ -70,32 +70,27 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
             key={speaker.username}
             className="group hover:border-blue-400 transition-colors bg-zinc-900/50 border-zinc-800"
           >
-            <CardHeader className="flex flex-row items-center gap-4 pb-4">
-              <div className="h-16 w-16 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {speaker.profilePictureUrl ? (
-                  <img
-                    src={speaker.profilePictureUrl}
-                    alt={`${speaker.firstName} ${speaker.lastName}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl font-light text-zinc-300">
-                    {speaker.firstName[0]}
-                    {speaker.lastName[0]}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-light text-lg text-zinc-100 truncate">
-                  {speaker.firstName} {speaker.lastName}
-                </h3>
-                {speaker.company && (
-                  <p className="text-sm text-zinc-400 flex items-center gap-1 truncate">
-                    <Building2 className="h-3 w-3 flex-shrink-0" />
-                    {speaker.company}
-                  </p>
-                )}
-              </div>
+            <CardHeader className="pb-4">
+              <SpeakerDisplay
+                speaker={{
+                  username: speaker.username,
+                  firstName: speaker.firstName,
+                  lastName: speaker.lastName,
+                  company: speaker.company,
+                  profilePictureUrl: speaker.profilePictureUrl,
+                  bio: speaker.bio,
+                  speakerRole:
+                    (speaker.speakerRole as
+                      | 'PRIMARY_SPEAKER'
+                      | 'CO_SPEAKER'
+                      | 'MODERATOR'
+                      | 'PANELIST') || 'PRIMARY_SPEAKER',
+                  presentationTitle: undefined,
+                  isConfirmed: true,
+                }}
+                size="medium"
+                showProfilePicture={true}
+              />
             </CardHeader>
             <CardContent className="pt-0">
               <div className="border-t border-zinc-800 pt-4">

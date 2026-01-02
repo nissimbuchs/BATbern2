@@ -12,6 +12,7 @@ import { LayoutGrid, List, Clock, MapPin, Users } from 'lucide-react';
 import type { Session } from '@/types/event.types';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { SpeakerDisplay } from './SpeakerDisplay';
 
 interface Topic {
   id: string;
@@ -61,13 +62,6 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
     } catch {
       return '';
     }
-  };
-
-  const getSpeakerNames = (session: Session): string => {
-    if (!session.speakers || session.speakers.length === 0) {
-      return t('public.speakers.speakerTBA');
-    }
-    return session.speakers.map((speaker) => `${speaker.firstName} ${speaker.lastName}`).join(', ');
   };
 
   if (sessions.length === 0) {
@@ -139,9 +133,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
             </CardHeader>
             <CardContent className="space-y-4">
               {session.description && (
-                <p className="text-sm text-zinc-400 line-clamp-3 group-hover:line-clamp-none transition-all">
-                  {session.description}
-                </p>
+                <p className="text-sm text-zinc-400">{session.description}</p>
               )}
 
               <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
@@ -166,10 +158,23 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
               </div>
 
               <div className="pt-2 border-t border-zinc-800">
-                <p className="text-sm text-zinc-300">
-                  <span className="text-zinc-500">{t('public.sessions.speaker')}: </span>
-                  {getSpeakerNames(session)}
-                </p>
+                {session.speakers && session.speakers.length > 0 ? (
+                  <div>
+                    <p className="text-xs text-zinc-500 mb-2">{t('public.sessions.speaker')}:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {session.speakers.map((speaker) => (
+                        <SpeakerDisplay
+                          key={speaker.username}
+                          speaker={speaker}
+                          size="small"
+                          showProfilePicture={false}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
+                )}
               </div>
             </CardContent>
           </Card>
