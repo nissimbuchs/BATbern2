@@ -7,7 +7,7 @@
  * - SpeakerOutreachPage (outreach tracking)
  *
  * Route: /organizer/events/:eventCode
- * URL params: ?tab=overview|speakers|venue|team|publishing|settings
+ * URL params: ?tab=overview|speakers|venue|participants|publishing|settings
  */
 
 import React, { useMemo } from 'react';
@@ -34,7 +34,6 @@ import {
   Dashboard as OverviewIcon,
   People as SpeakersIcon,
   LocationOn as VenueIcon,
-  Groups as TeamIcon,
   PersonAdd as ParticipantsIcon,
   Publish as PublishIcon,
   Settings as SettingsIcon,
@@ -49,7 +48,6 @@ import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { EventOverviewTab } from './EventOverviewTab';
 import { EventSpeakersTab } from './EventSpeakersTab';
 import { EventVenueTab } from './EventVenueTab';
-import { EventTeamTab } from './EventTeamTab';
 import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
@@ -60,7 +58,6 @@ const TABS = [
   { id: 'overview', labelKey: 'eventPage.tabs.overview', icon: <OverviewIcon /> },
   { id: 'speakers', labelKey: 'eventPage.tabs.speakers', icon: <SpeakersIcon /> },
   { id: 'venue', labelKey: 'eventPage.tabs.venue', icon: <VenueIcon /> },
-  { id: 'team', labelKey: 'eventPage.tabs.team', icon: <TeamIcon /> },
   { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
@@ -89,15 +86,7 @@ export const EventPage: React.FC = () => {
     data: event,
     isLoading,
     error,
-  } = useEvent(eventCode, [
-    'venue',
-    'topics',
-    'sessions',
-    'team',
-    'workflow',
-    'metrics',
-    'registrations',
-  ]);
+  } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'workflow', 'metrics', 'registrations']);
 
   // Build breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
@@ -190,8 +179,6 @@ export const EventPage: React.FC = () => {
         return <EventSpeakersTab eventCode={eventCode!} />;
       case 'venue':
         return <EventVenueTab event={event} />;
-      case 'team':
-        return <EventTeamTab event={event} eventCode={eventCode!} />;
       case 'participants':
         return <EventParticipantsTab event={event} />;
       case 'publishing':
