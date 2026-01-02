@@ -124,6 +124,7 @@ public interface RegistrationRepository
      * @param eventCode Event code (e.g., "BATbern123")
      * @return List of usernames registered for this event
      */
-    @Query("SELECT r.attendeeUsername FROM Registration r JOIN Event e ON r.eventId = e.id WHERE e.eventCode = :eventCode")
+    @Query("SELECT r.attendeeUsername FROM Registration r JOIN Event e "
+            + "ON r.eventId = e.id WHERE e.eventCode = :eventCode")
     List<String> findUsernamesByEventCode(@Param("eventCode") String eventCode);
 }

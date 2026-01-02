@@ -53,9 +53,9 @@ public class OrganizerNotificationListener {
             } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
                 // No JWT token available (async system event without user context)
                 // This is expected for system-triggered events (scheduled tasks, etc.)
-                log.warn("Cannot fetch organizer list for system event {} - no authentication context available. " +
-                        "Organizer notifications will be skipped for this event. " +
-                        "Consider implementing service account authentication for background tasks.",
+                log.warn("Cannot fetch organizer list for system event {} - no authentication context available. "
+                        + "Organizer notifications will be skipped for this event. "
+                        + "Consider implementing service account authentication for background tasks.",
                         event.getEventType());
                 return;
             } catch (Exception e) {

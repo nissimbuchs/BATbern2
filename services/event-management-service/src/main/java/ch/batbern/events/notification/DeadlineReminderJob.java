@@ -78,8 +78,8 @@ public class DeadlineReminderJob {
      */
     private String buildDeadlineReminderBody(Event event, Duration timeUntilDeadline) {
         return String.format(
-                "This is a reminder that registration for %s will close in %d days on %s. " +
-                        "Please ensure you have completed all required actions.",
+                "This is a reminder that registration for %s will close in %d days on %s. "
+                        + "Please ensure you have completed all required actions.",
                 event.getTitle(),
                 timeUntilDeadline.toDays(),
                 event.getRegistrationDeadline()

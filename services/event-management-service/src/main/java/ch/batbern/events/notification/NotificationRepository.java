@@ -38,7 +38,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     /**
      * Find delivery history for a user by channel
      */
-    java.util.List<Notification> findByRecipientUsernameAndChannelOrderByCreatedAtDesc(String recipientUsername, String channel);
+    java.util.List<Notification> findByRecipientUsernameAndChannelOrderByCreatedAtDesc(
+            String recipientUsername, String channel);
 
     /**
      * Find notifications by status created before a certain time (for cleanup jobs)
