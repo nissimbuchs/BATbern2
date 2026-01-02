@@ -123,7 +123,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                                   key={speaker.username}
                                   speaker={speaker}
                                   size="small"
-                                  showProfilePicture={false}
+                                  showProfilePicture={true}
                                 />
                               ))}
                             </div>

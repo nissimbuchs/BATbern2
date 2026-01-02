@@ -167,7 +167,7 @@ export const SessionCards = ({ sessions, topics = [] }: SessionCardsProps) => {
                           key={speaker.username}
                           speaker={speaker}
                           size="small"
-                          showProfilePicture={false}
+                          showProfilePicture={true}
                         />
                       ))}
                     </div>
