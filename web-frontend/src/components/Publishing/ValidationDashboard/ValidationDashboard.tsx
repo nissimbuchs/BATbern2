@@ -257,7 +257,9 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
                     </Collapse>
                   )}
                 </>
-              ) : phase === 'speakers' && validation.sessions.unassignedSessions?.length > 0 ? (
+              ) : phase === 'speakers' &&
+                validation.sessions.unassignedSessions &&
+                validation.sessions.unassignedSessions.length > 0 ? (
                 <>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
