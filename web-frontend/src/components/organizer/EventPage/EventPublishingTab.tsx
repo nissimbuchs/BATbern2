@@ -75,8 +75,9 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
         assignedCount: 0,
         totalCount: 0,
       }),
-      // Override isValid if there are unassigned sessions
-      isValid: mappedUnassignedSessions.length === 0,
+      // Override isValid: only valid if no unassigned sessions AND there are sessions total
+      isValid:
+        mappedUnassignedSessions.length === 0 && (publishingStatus?.sessions?.totalCount || 0) > 0,
       // Use actual unassigned sessions from slot assignment hook
       unassignedSessions: mappedUnassignedSessions,
     },
