@@ -592,14 +592,34 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   # DEPLOYMENT: Trigger staging deployment after successful build
   # ═══════════════════════════════════════════════════════════
+  # Generate IMAGE_TAG to pass to deployment
+  generate-image-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+    steps:
+      - name: Generate image tag
+        id: tag
+        run: |
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            IMAGE_TAG="${SHORT_SHA}-staging.${GITHUB_RUN_NUMBER}"
+          else
+            IMAGE_TAG="${SHORT_SHA}"
+          fi
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Generated IMAGE_TAG: $IMAGE_TAG"
+
   deploy-to-staging:
-    needs: [build-shared-kernel, build-services, build-frontend, sonarcloud]
+    needs: [build-shared-kernel, build-services, build-frontend, sonarcloud, generate-image-tag]
     # Deploy to staging on: (1) push to develop OR (2) PR to develop
     # This allows testing PRs in staging environment before merge
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop')
     uses: ./.github/workflows/deploy-staging.yml
+    with:
+      image_tag: ${{ needs.generate-image-tag.outputs.image_tag }}
     secrets: inherit
     permissions:
       id-token: write
