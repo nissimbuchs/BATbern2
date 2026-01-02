@@ -1,5 +1,6 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.repository.EventRepository;
@@ -35,7 +36,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
-    private final UserServiceClient userServiceClient;
+    private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -83,7 +84,7 @@ public class NotificationService {
     @Transactional
     public void createAndSendEmailNotification(NotificationRequest request) {
         // Check user preferences
-        UserPreferences prefs = userServiceClient.getPreferences(request.getRecipientUsername());
+        UserPreferences prefs = userApiClient.getPreferences(request.getRecipientUsername());
 
         if (!shouldSend(prefs, request)) {
             log.info("Skipping notification for {} due to user preferences", request.getRecipientUsername());
@@ -106,7 +107,7 @@ public class NotificationService {
         // Send via AWS SES using shared-kernel EmailService
         try {
             // Fetch user email
-            String email = userServiceClient.getEmailByUsername(request.getRecipientUsername());
+            String email = userApiClient.getEmailByUsername(request.getRecipientUsername());
 
             // Build HTML content (simple for now, can add Thymeleaf templates later)
             String htmlBody = buildEmailContent(notification);
@@ -137,7 +138,7 @@ public class NotificationService {
      */
     public List<InAppNotification> getInAppNotifications(String username) {
         // Find events published since user's last login
-        Instant lastLogin = userServiceClient.getLastLogin(username);
+        Instant lastLogin = userApiClient.getLastLogin(username);
 
         List<Event> newEvents = eventRepository.findByPublishedAtAfter(lastLogin);
 

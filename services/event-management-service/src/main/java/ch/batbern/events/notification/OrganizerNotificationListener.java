@@ -1,5 +1,6 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.shared.events.DomainEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ import java.util.Map;
 public class OrganizerNotificationListener {
 
     private final NotificationRepository notificationRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserApiClient userApiClient;
     private final NotificationService notificationService;
 
     /**
@@ -46,7 +47,22 @@ public class OrganizerNotificationListener {
             log.debug("Received domain event: {} (type: {})", event.getEventId(), event.getEventType());
 
             // Fetch all organizers
-            List<String> organizers = userServiceClient.getOrganizerUsernames();
+            List<String> organizers;
+            try {
+                organizers = userApiClient.getOrganizerUsernames();
+            } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
+                // No JWT token available (async system event without user context)
+                // This is expected for system-triggered events (scheduled tasks, etc.)
+                log.warn("Cannot fetch organizer list for system event {} - no authentication context available. " +
+                        "Organizer notifications will be skipped for this event. " +
+                        "Consider implementing service account authentication for background tasks.",
+                        event.getEventType());
+                return;
+            } catch (Exception e) {
+                log.error("Failed to fetch organizer list for event {}: {}",
+                        event.getEventType(), e.getMessage());
+                return;
+            }
 
             if (organizers.isEmpty()) {
                 log.debug("No organizers found, skipping notification for event: {}", event.getEventType());

@@ -1,5 +1,6 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.service.EmailService;
@@ -47,7 +48,7 @@ class NotificationServiceTest {
     private EmailService emailService;
 
     @Mock
-    private UserServiceClient userServiceClient;
+    private UserApiClient userApiClient;
 
     @Mock
     private EventRepository eventRepository;
@@ -68,7 +69,7 @@ class NotificationServiceTest {
         notificationService = new NotificationService(
                 notificationRepository,
                 emailService,
-                userServiceClient,
+                userApiClient,
                 eventRepository,
                 registrationRepository,
                 messagingTemplate
@@ -96,8 +97,8 @@ class NotificationServiceTest {
         UserPreferences prefs = new UserPreferences();
         prefs.setEmailNotificationsEnabled(true);
 
-        when(userServiceClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userServiceClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
+        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             n.setId(UUID.randomUUID());
@@ -128,7 +129,7 @@ class NotificationServiceTest {
         UserPreferences prefs = new UserPreferences();
         prefs.setEmailNotificationsEnabled(false);
 
-        when(userServiceClient.getPreferences(testUsername)).thenReturn(prefs);
+        when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
 
         // When
         notificationService.createAndSendEmailNotification(request);
@@ -157,8 +158,8 @@ class NotificationServiceTest {
 
         AtomicReference<Notification> savedNotification = new AtomicReference<>();
 
-        when(userServiceClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userServiceClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
+        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             if (n.getId() == null) {
@@ -196,8 +197,8 @@ class NotificationServiceTest {
 
         AtomicReference<Notification> savedNotification = new AtomicReference<>();
 
-        when(userServiceClient.getPreferences(testUsername)).thenReturn(prefs);
-        when(userServiceClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
+        when(userApiClient.getPreferences(testUsername)).thenReturn(prefs);
+        when(userApiClient.getEmailByUsername(testUsername)).thenReturn("john.doe@example.com");
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification n = invocation.getArgument(0);
             if (n.getId() == null) {
@@ -231,7 +232,7 @@ class NotificationServiceTest {
                 .publishedAt(Instant.now().minusSeconds(1800)) // 30 min ago
                 .build();
 
-        when(userServiceClient.getLastLogin(testUsername)).thenReturn(lastLogin);
+        when(userApiClient.getLastLogin(testUsername)).thenReturn(lastLogin);
         when(eventRepository.findByPublishedAtAfter(lastLogin)).thenReturn(List.of(newEvent));
 
         // When
