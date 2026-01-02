@@ -98,6 +98,8 @@ public class EventController {
     private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
     private final ch.batbern.events.service.TopicService topicService;
     private final ch.batbern.events.service.SpeakerPoolService speakerPoolService;
+    private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+    private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
 
     /**
      * List/Search Events (AC1)
@@ -316,6 +318,10 @@ public class EventController {
                     long registrationCount = registrationRepository.countByEventId(event.getId());
                     response.put("currentAttendeeCount", (int) registrationCount);
                     break;
+                case "metrics":
+                    // Add speaker metrics (confirmed count, materials status)
+                    expandMetrics(event, response);
+                    break;
                 // Additional resources can be added here as needed
                 default:
                     log.warn("Unknown include resource requested: {}", trimmed);
@@ -335,6 +341,67 @@ public class EventController {
         venue.put("capacity", 500);
         venue.put("address", "Mingerstrasse 6, 3014 Bern");
         return venue;
+    }
+
+    /**
+     * Expand metrics data for an event (speaker KPIs)
+     *
+     * Calculates and adds speaker-related metrics to the response:
+     * - confirmedSpeakersCount: Number of speakers who accepted invitation (ACCEPTED or higher)
+     * - speakersWithCompleteInfoCount: Speakers who submitted materials
+     *   (CONTENT_SUBMITTED, QUALITY_REVIEWED, or CONFIRMED)
+     * - pendingMaterialsCount: Speakers who accepted but haven't submitted materials yet
+     * - maxSpeakerSlots: Max speaker slots based on event type configuration
+     *
+     * @param event The event entity
+     * @param response The response map to populate with metrics
+     */
+    private void expandMetrics(Event event, Map<String, Object> response) {
+        UUID eventId = event.getId();
+
+        // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
+        long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        long contentSubmittedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+        long slotAssignedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED);
+        long confirmedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
+
+        // Total confirmed speakers (accepted or higher)
+        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount
+                + qualityReviewedCount + slotAssignedCount + confirmedCount;
+
+        // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
+        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount
+                + slotAssignedCount + confirmedCount;
+
+        // Pending materials = accepted but haven't submitted content yet
+        long pendingMaterials = acceptedCount;
+
+        // Get max speaker slots from event type configuration
+        Integer maxSpeakerSlots = null;
+        if (event.getEventType() != null) {
+            maxSpeakerSlots = eventTypeRepository.findByType(event.getEventType())
+                    .map(ch.batbern.events.entity.EventTypeConfiguration::getMaxSlots)
+                    .orElse(null);
+        }
+
+        // Add metrics to response
+        response.put("confirmedSpeakersCount", (int) totalConfirmedSpeakers);
+        response.put("speakersWithCompleteInfoCount", (int) speakersWithCompleteInfo);
+        response.put("pendingMaterialsCount", (int) pendingMaterials);
+        if (maxSpeakerSlots != null) {
+            response.put("maxSpeakerSlots", maxSpeakerSlots);
+        }
+
+        log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
+                        + "pending materials: {}, max slots: {}",
+                event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
+                pendingMaterials, maxSpeakerSlots);
     }
 
     /**

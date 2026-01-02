@@ -83,9 +83,11 @@ export interface EventDetailUI extends EventDetail {
   eventDate?: string; // Alias for 'date' field
   topics?: string[]; // List of topic IDs/names
   workflowStep?: number; // Current workflow step number
-  confirmedSpeakersCount?: number;
+  confirmedSpeakersCount?: number; // Number of speakers who accepted invitation (from metrics expansion)
+  speakersWithCompleteInfoCount?: number; // Number of speakers who submitted materials (from metrics expansion)
   assignedTopicsCount?: number;
-  pendingMaterialsCount?: number;
+  pendingMaterialsCount?: number; // Number of speakers with pending materials (from metrics expansion)
+  maxSpeakerSlots?: number; // Maximum number of speaker slots based on event type (from metrics expansion)
   budget?: {
     allocated?: number;
     spent?: number;

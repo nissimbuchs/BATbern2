@@ -75,6 +75,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ch.batbern.events.repository.SessionRepository sessionRepository;
 
+    @Autowired
+    private ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+
     @MockitoBean
     private UserApiClient userApiClient;
 
@@ -620,6 +623,55 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Should include all requested resources
                 .andExpect(jsonPath("$.venue").exists())
                 .andExpect(jsonPath("$.sessions").isArray());
+    }
+
+    @Test
+    @DisplayName("should_includeMetrics_when_includeMetricsRequested")
+    void should_includeMetrics_when_includeMetricsRequested() throws Exception {
+        Event savedEvent = eventRepository.findAll().get(0);
+
+        // Create speaker pool entries with different statuses
+        // 2 ACCEPTED speakers (not yet submitted materials)
+        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
+                .eventId(savedEvent.getId())
+                .speakerName("John Doe")
+                .company("TechCorp")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED)
+                .build());
+        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
+                .eventId(savedEvent.getId())
+                .speakerName("Jane Smith")
+                .company("DevCorp")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED)
+                .build());
+
+        // 1 CONTENT_SUBMITTED speaker
+        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
+                .eventId(savedEvent.getId())
+                .speakerName("Bob Wilson")
+                .company("CodeCorp")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED)
+                .build());
+
+        // 1 CONFIRMED speaker
+        speakerPoolRepository.save(ch.batbern.events.domain.SpeakerPool.builder()
+                .eventId(savedEvent.getId())
+                .speakerName("Alice Johnson")
+                .company("BuildCorp")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED)
+                .build());
+
+        // Request event with metrics
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
+                        .param("include", "metrics")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()))
+                .andExpect(jsonPath("$.title").value(savedEvent.getTitle()))
+                // Should include speaker metrics
+                .andExpect(jsonPath("$.confirmedSpeakersCount").value(4)) // 2 ACCEPTED + 1 CONTENT_SUBMITTED + 1 CONFIRMED
+                .andExpect(jsonPath("$.speakersWithCompleteInfoCount").value(2)) // 1 CONTENT_SUBMITTED + 1 CONFIRMED
+                .andExpect(jsonPath("$.pendingMaterialsCount").value(2)); // 2 ACCEPTED (haven't submitted content)
     }
 
     // ============================================================================
