@@ -210,7 +210,8 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
             primary={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <span>{t('publishing.validation.sessionTimings')}</span>
-                {!validation.sessions.isValid &&
+                {/* Show dropdown for unassigned sessions in speakers or agenda phase */}
+                {(phase === 'speakers' || phase === 'agenda') &&
                   validation.sessions.unassignedSessions &&
                   validation.sessions.unassignedSessions.length > 0 && (
                     <IconButton
@@ -255,6 +256,28 @@ export const ValidationDashboard: React.FC<ValidationDashboardProps> = ({
                       </List>
                     </Collapse>
                   )}
+                </>
+              ) : phase === 'speakers' && validation.sessions.unassignedSessions?.length > 0 ? (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      label={t('publishing.validation.notRequired')}
+                      size="small"
+                      sx={{ opacity: 0.6 }}
+                    />
+                    <span style={{ fontSize: '0.875rem', color: 'warning.main' }}>
+                      ({validation.sessions.unassignedSessions.length} unassigned sessions)
+                    </span>
+                  </Box>
+                  <Collapse in={expandedSessions} timeout="auto" unmountOnExit>
+                    <List dense sx={{ mt: 1 }}>
+                      {validation.sessions.unassignedSessions.map((session) => (
+                        <ListItem key={session.sessionSlug} sx={{ pl: 4 }}>
+                          <ListItemText primary={session.title} />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Collapse>
                 </>
               ) : (
                 <Chip

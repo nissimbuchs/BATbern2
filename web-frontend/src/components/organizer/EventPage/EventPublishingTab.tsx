@@ -40,11 +40,15 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
   }
 
   // Extract data from status response, with fallbacks
+  // Convert uppercase phase from API to lowercase (API returns 'SPEAKERS', we need 'speakers')
   const currentPhase: PublishingPhase =
-    (publishingStatus?.currentPhase as PublishingPhase) || 'topic';
+    (publishingStatus?.currentPhase?.toLowerCase() as PublishingPhase) || 'topic';
   const publishedPhases: PublishingPhase[] =
-    (publishingStatus?.publishedPhases as PublishingPhase[]) || [];
+    publishingStatus?.publishedPhases?.map((p) => p.toLowerCase() as PublishingPhase) || [];
   const eventDate = event.date || new Date().toISOString();
+
+  console.log('[EventPublishingTab] currentPhase:', currentPhase);
+  console.log('[EventPublishingTab] publishedPhases:', publishedPhases);
 
   // Build validation data from status response and slot assignment
   const mappedUnassignedSessions =
@@ -52,6 +56,9 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
       sessionSlug: session.sessionSlug,
       title: session.title || session.sessionSlug,
     })) || [];
+
+  console.log('[EventPublishingTab] unassignedSessions from hook:', unassignedSessions);
+  console.log('[EventPublishingTab] mappedUnassignedSessions:', mappedUnassignedSessions);
 
   // Frontend safeguard: Check if event actually has a topic
   const hasTopicCode = 'topicCode' in event && event.topicCode;
@@ -82,6 +89,8 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
       unassignedSessions: mappedUnassignedSessions,
     },
   };
+
+  console.log('[EventPublishingTab] validationData.sessions:', validationData.sessions);
 
   return (
     <Stack spacing={3}>
