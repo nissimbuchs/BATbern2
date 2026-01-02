@@ -52,9 +52,11 @@ const TopicManagementPage: React.FC = () => {
   });
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+    <Box>
+      <Box sx={{ py: 3, px: 3 }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+      </Box>
 
       <TopicBacklogManager eventCode={eventCode || undefined} />
     </Box>

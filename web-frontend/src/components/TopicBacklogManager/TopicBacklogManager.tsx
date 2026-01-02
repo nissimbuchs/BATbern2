@@ -33,7 +33,6 @@ import { useTranslation } from 'react-i18next';
 import { useTopics, useTopic } from '@/hooks/useTopics';
 import { useEvent, useEvents } from '@/hooks/useEvents';
 import { useUserList } from '@/hooks/useUserManagement/useUserList';
-import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { Event } from '@/types/event.types';
 import { TopicFilterPanel } from './TopicFilterPanel';
 import { TopicList } from './TopicList';
@@ -42,7 +41,6 @@ import { CreateTopicModal } from './CreateTopicModal';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { MultiTopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic, TopicFilters } from '@/types/topic.types';
-import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 type ViewMode = 'heatMap' | 'list' | 'board';
 
@@ -123,22 +121,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
     }));
   }, [organizersData]);
 
-  // Build breadcrumb items based on context (memoized to prevent re-renders)
-  // Must be called after all hooks but before handlers/returns
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    if (eventCode && eventData) {
-      return [
-        { label: t('breadcrumbs.events', 'Events'), path: '/organizer/events' },
-        { label: eventData.title, path: `/organizer/events/${eventCode}` },
-        { label: t('topicBacklog.breadcrumbs.topicSelection', 'Topic Selection') },
-      ];
-    }
-    return [
-      { label: t('breadcrumbs.events', 'Events'), path: '/organizer/events' },
-      { label: t('topicBacklog.breadcrumbs.manageTopics', 'Manage Topics') },
-    ];
-  }, [eventCode, eventData, t]);
-
   const handleFilterChange = (newFilters: TopicFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: 1 })); // Reset to page 1 on filter change
   };
@@ -174,10 +156,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
-
+    <Container maxWidth="xl">
       {/* Title section - always visible, shows event context if available */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
