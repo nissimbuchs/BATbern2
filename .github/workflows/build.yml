@@ -594,11 +594,9 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   deploy-to-staging:
     needs: [build-shared-kernel, build-services, build-frontend, sonarcloud]
-    # Deploy to staging on: (1) push to develop OR (2) PR to develop
-    # This allows testing PRs in staging environment before merge
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'develop')
+    # Deploy to staging only on push to develop
+    # PRs do not deploy automatically (images aren't pushed to ECR for PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:
