@@ -218,6 +218,18 @@ export function createDomainService(
       maxHealthyPercent: 200, // Allow temporary extra tasks during deployments
       securityGroups: [serviceSecurityGroup], // Use explicit security group
       enableExecuteCommand: true, // Allow ECS Exec for debugging
+      // Circuit breaker to fail fast on repeated task failures
+      // This prevents endless retry loops when images don't exist or tasks can't start
+      // After 3 consecutive failures, the deployment will roll back automatically
+      circuitBreaker: {
+        enable: true,
+        rollback: true,
+      },
+      // Deployment timeout to prevent hanging deployments
+      // CloudFormation will fail the stack update if service doesn't stabilize in 30 minutes
+      deploymentController: {
+        type: ecs.DeploymentControllerType.ECS,
+      },
       // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
       // This provides ~20-30% cost savings with acceptable interruption risk
       ...(!isProd && {

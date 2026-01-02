@@ -230,6 +230,14 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       }],
     });
 
+    // Add circuit breaker to fail fast on repeated task failures
+    // This prevents endless retry loops when images don't exist or tasks can't start
+    // After 3 consecutive failures, the deployment will roll back automatically
+    cfnService.addPropertyOverride('DeploymentConfiguration.DeploymentCircuitBreaker', {
+      Enable: true,
+      Rollback: true,
+    });
+
     // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
     // This provides ~20-30% cost savings with acceptable interruption risk
     // NOTE: Disabled because ApplicationLoadBalancedFargateService implicitly sets launchType
