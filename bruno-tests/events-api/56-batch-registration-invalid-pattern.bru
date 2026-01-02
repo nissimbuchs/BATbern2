@@ -1,0 +1,45 @@
+meta {
+  name: Batch Registration - Invalid Event Code Pattern
+  type: http
+  seq: 56
+}
+
+post {
+  url: {{baseUrl}}/events/batch_registrations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "participantEmail": "test@example.com",
+    "firstName": "Test",
+    "lastName": "Participant",
+    "registrations": [
+      {
+        "eventCode": "invalid123",
+        "status": "ATTENDED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 for invalid eventCode pattern", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should validate pattern constraint (Story BAT-12)", function() {
+    const response = res.getBody();
+    expect(response.error).to.include('Validation');
+    expect(response.message).to.match(/pattern|format/i);
+  });
+}

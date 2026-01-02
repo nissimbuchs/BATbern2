@@ -1,17 +1,21 @@
 # Epic 3: Historical Data Migration
 
 ## Status
-🔄 **IN PROGRESS** - Phase 1 Complete (33%)
+🔄 **IN PROGRESS** - Phase 2 Nearly Complete (85%)
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2025-12-25
 
 **Progress Summary:**
 - ✅ Phase 1: Data Analysis & Mapping - COMPLETE
-- ⏳ Phase 2: Migration Implementation - PENDING
+- 🔄 Phase 2: Migration Implementation - 85% COMPLETE
 - ⏳ Phase 3: Validation & Testing - PENDING
 
-**Completed Stories:**
-- ✅ Story 3.1.1: Historical Data Inventory Analysis
+**Completed Batch Imports:**
+- ✅ Companies (via frontend batch import modal)
+- ✅ Speakers (via frontend batch import modal)
+- ✅ Events (via frontend batch import modal)
+- ✅ Sessions (via frontend batch import modal)
+- ⏳ Participants/Attendees (in progress - see Story 3.2 below)
 
 ## Epic Overview
 
@@ -20,11 +24,11 @@
 **Deliverable**: Complete migration of 54+ historical events, speaker profiles, presentations, and company data from JSON files to PostgreSQL microservices with S3 storage for files.
 
 **Architecture Context**:
-- **Migration Tool**: Dedicated Spring Boot batch application
-- **Source**: Existing Angular website data (JSON files, presentations, images)
-- **Targets**: Event Management, Speaker Coordination, Company Management, Attendee Experience Services
+- **Migration Tool**: Frontend batch import modals (changed from original Spring Batch approach)
+- **Source**: Existing Angular website data (JSON/CSV files, presentations, images)
+- **Targets**: Event Management, Speaker Coordination, Company Management Services
 - **Storage**: AWS S3 for presentations, photos, and media with CDN
-- **Validation**: Comprehensive data integrity checking and reporting
+- **Rationale for Frontend Approach**: Simpler, reusable, consistent with existing patterns, better user control
 
 **Duration**: 3 weeks (Weeks 19-21)
 
@@ -92,47 +96,67 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 
 ---
 
-### Phase 2: Migration Implementation (Week 18-19, Days 3-10)
+### Phase 2: Migration Implementation (Actual: Frontend Batch Import Approach)
+
+**Implementation Approach:**
+Instead of Spring Batch, the team implemented **frontend batch import modals** for better user control and consistency with existing patterns.
 
 **Acceptance Criteria:**
 
-**Batch Processing Infrastructure:**
-1. **Spring Batch Setup**: Configure Spring Batch with job repository and task execution
-2. **Batch Jobs**: Create jobs for each entity type (EventMigrationJob, SpeakerMigrationJob, etc.)
-3. **Chunk Processing**: Implement chunk-oriented processing (100 records per chunk)
-4. **Parallel Execution**: Configure parallel step execution for independent entities
+**Company Data Migration:** ✅ COMPLETE
+1. ✅ **Company Batch Import Modal**: Upload JSON file with company data
+2. ✅ **Company Profiles**: Create/update company records in Company Management Service
+3. ✅ **Logo Migration**: Upload company logos to S3 with presigned URLs
+4. ✅ **Duplicate Detection**: Check existing companies by name before import
+5. ✅ **Progress Tracking**: Real-time progress bar with success/error counts
 
-**Event Data Migration:**
-5. **Event Migration**: Migrate 54+ historical events to Event Management Service
-6. **Session Migration**: Migrate event sessions with speaker assignments
-7. **Timeline Migration**: Migrate event timeline data (planning history)
-8. **Metadata Migration**: Migrate event metadata (topics, descriptions, logistics)
+**Speaker Data Migration:** ✅ COMPLETE
+6. ✅ **Speaker Batch Import Modal**: Upload JSON file with speaker data
+7. ✅ **Speaker Profile Migration**: Create/update user profiles with SPEAKER role
+8. ✅ **Photo Migration**: Upload speaker photos to S3 via presigned URLs
+9. ✅ **Change Detection**: Identify and update only changed fields
+10. ✅ **Company Relationships**: Link speakers to companies by companyId
 
-**Speaker Data Migration:**
-9. **Speaker Profile Migration**: Migrate speaker profiles with validation
-10. **Photo Migration**: Upload speaker photos to S3 with CDN URL generation
-11. **CV Migration**: Upload speaker CVs to S3 with access controls
-12. **Speaking History**: Establish speaker-event relationships
+**Event Data Migration:** ✅ COMPLETE
+11. ✅ **Event Batch Import Modal**: Upload JSON file with event data
+12. ✅ **Event Migration**: Create/update 54+ historical events in Event Management Service
+13. ✅ **Field Selection**: Selectable fields for partial updates (title, description, topic, date, venue, organizer)
+14. ✅ **Topic Assignment**: Automatic topic assignment based on event category
+15. ✅ **Archived Status**: All historical events marked with `workflowState: ARCHIVED`
 
-**Content & Media Migration:**
-13. **Presentation Files**: Migrate presentations to S3 (PDF, PPTX)
-14. **Event Photos**: Migrate event photo galleries to S3
-15. **Thumbnail Generation**: Generate thumbnails for presentations and photos
-16. **CDN Configuration**: Update all file references to CDN URLs
+**Session Data Migration:** ✅ COMPLETE
+16. ✅ **Session Batch Import Modal**: Upload JSON file with session data
+17. ✅ **Session Migration**: Create event sessions with speaker assignments
+18. ✅ **Batch Processing**: Group sessions by event for efficient API calls
+19. ✅ **Speaker References**: Link sessions to speakers via speakerId
+20. ✅ **Metadata Migration**: Preserve abstracts, PDFs, and session details
 
-**Company Data Migration:**
-17. **Company Profiles**: Create company records in Company Management Service
-18. **Partner Status**: Migrate historical partner status
-19. **Employee Relationships**: Establish speaker-company affiliations
-20. **Logo Migration**: Migrate company logos to S3
+**Participant Data Migration:** ⏳ IN PROGRESS (Story 3.2)
+21. ⏳ **Participant Batch Import Modal**: Upload CSV file with participant attendance data
+22. ⏳ **User Creation**: Create users with ATTENDEE role (idempotent get-or-create)
+23. ⏳ **Event Registrations**: Create registrations for all events attended (status: attended)
+24. ⏳ **Batch Registration API**: Backend endpoint for efficient bulk registration creation
+25. ⏳ **Synthetic Emails**: Generate emails for participants without email addresses
+
+**Common Features Across All Batch Imports:**
+- React dropzone for file upload (JSON/CSV)
+- Preview table showing items to import with status indicators
+- Duplicate detection and handling (skip or update)
+- Sequential processing with progress tracking
+- Result summary (success, updated, failed, skipped counts)
+- Error export for failed items
+- React Query cache invalidation after import
 
 **Deliverables:**
-- [ ] Spring Batch application with all migration jobs implemented
-- [ ] All entity data migrated to appropriate microservices
-- [ ] All files migrated to S3 with proper organization
-- [ ] CDN URLs generated and database references updated
+- ✅ Company batch import modal (`CompanyBatchImportModal.tsx`)
+- ✅ Speaker batch import modal (`SpeakerBatchImportModal.tsx`)
+- ✅ Event batch import modal (`EventBatchImportModal.tsx`)
+- ✅ Session batch import modal (`SessionBatchImportModal.tsx`)
+- ⏳ Participant batch import modal (`ParticipantBatchImportModal.tsx`)
+- ⏳ Batch registration API endpoint (`POST /events/batch_registrations`)
+- ⏳ Batch import pattern template (`docs/templates/frontend/batch-import-pattern.md`)
 
-**Estimated Duration:** 8 days (1.5 weeks)
+**Actual Duration:** ~6 weeks (distributed across development)
 
 ---
 
@@ -171,6 +195,121 @@ As a **platform stakeholder**, I want all 20+ years of historical BATbern event 
 - [ ] Performance report (migration timing and optimization)
 
 **Estimated Duration:** 5 days (1 week)
+
+---
+
+## Story 3.2: Participant/Attendee Batch Import
+
+**User Story:**
+As an **organizer**, I want to import historical event participation data from a CSV file, so that all past attendees are properly recorded in the system with their event attendance history.
+
+**Business Context:**
+- **Data Source**: `/apps/BATspa-old/src/api/anmeldungen.csv` - 2,307 participants, 57 events
+- **Goal**: Complete the historical data migration by adding participant attendance records
+- **Value**: Preserve 20+ years of BATbern attendance history for analytics and attendee tracking
+
+**Acceptance Criteria:**
+
+**CSV Upload & Parsing:**
+1. Organizer can upload CSV file via drag-and-drop interface
+2. System validates CSV structure (62 columns: 5 metadata + 57 event participation flags)
+3. System shows preview table with participant details and event count
+4. CSV parser handles edge cases (BOM character, German characters, missing fields)
+
+**User Creation:**
+5. Create users with role ATTENDEE if they don't exist (lookup by email)
+6. Use existing users if email already exists (idempotent get-or-create)
+7. Generate synthetic emails for participants without email: `firstname.lastname@batbern.ch`
+8. Convert German characters in names (ä→ae, ö→oe, ü→ue, ß→ss) for email generation
+9. Anonymous users created with `cognitoSync=false` (ADR-005 compliance)
+
+**Event Registration Creation:**
+10. Create event registrations for all events participant attended (column value = "1")
+11. Event codes formatted as `BATbern{N}` where N is the column number (1-57)
+12. Historical registrations marked with status `attended`
+13. Skip participants with no events attended (all columns empty)
+14. Handle duplicate registrations gracefully (skip if already exists)
+
+**Progress & Feedback:**
+15. Display progress bar showing participants processed
+16. Show real-time statistics (success, partial, failed, skipped counts)
+17. Export list of failed participants for manual review
+18. Complete full import in under 10 minutes
+
+**Technical Implementation:**
+
+**Frontend Components:**
+- `ParticipantBatchImportModal.tsx` - Modal UI with CSV dropzone
+- `useParticipantBatchImport.ts` - Business logic hook
+- `participantImport.types.ts` - TypeScript interfaces
+- `participantImportUtils.ts` - CSV parsing with Papa Parse library
+
+**Backend Batch API (Proposed):**
+
+**Endpoint**: `POST /events/batch_registrations`
+
+**Purpose**: Create multiple event registrations for a participant in a single transaction
+
+**Request**:
+```json
+{
+  "participantEmail": "adrian.buerki@centrisag.ch",
+  "firstName": "Adrian",
+  "lastName": "Bürki",
+  "registrations": [
+    { "eventCode": "BATbern17", "status": "attended" },
+    { "eventCode": "BATbern25", "status": "attended" },
+    { "eventCode": "BATbern31", "status": "attended" },
+    { "eventCode": "BATbern32", "status": "attended" }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "username": "adrian.buerki",
+  "totalRegistrations": 4,
+  "successfulRegistrations": 4,
+  "failedRegistrations": [],
+  "errors": []
+}
+```
+
+**Benefits of Batch API**:
+- **3x reduction in API calls**: One batch call per participant instead of N individual calls
+- **Transactional safety**: All-or-nothing per participant (rollback on failure)
+- **Better error handling**: Detailed per-registration results with partial success tracking
+- **Faster import**: 8-12 minutes (down from 25-40 minutes without batch)
+- **Idempotent operation**: Get-or-create user, skip duplicate registrations
+
+**Implementation Files:**
+- Frontend: `ParticipantBatchImportModal.tsx`, `useParticipantBatchImport.ts`, utils
+- Backend: `BatchRegistrationController.java`, `BatchRegistrationService.java`, DTOs
+- API spec: Update `events-api.openapi.yml` with batch registration endpoint
+
+**Data Volume:**
+- Participants: 2,307
+- Total registrations: ~11,535-23,070 (avg 5-10 events per participant)
+- API calls: ~4,600 (with batch endpoint) vs ~25,400 (without)
+
+**Deliverables:**
+- [ ] CSV parser handling 62-column format with Papa Parse
+- [ ] Batch registration API endpoint in Event Management Service
+- [ ] Frontend batch import modal following existing patterns
+- [ ] Integration tests for batch registration API
+- [ ] E2E test for full participant import flow
+- [ ] Template extraction: `docs/templates/frontend/batch-import-pattern.md`
+- [ ] All 2,307 participants imported with 100% data integrity
+
+**Success Metrics:**
+- [ ] All participants imported successfully
+- [ ] ~11,500-23,000 event registrations created
+- [ ] Import completes in under 10 minutes
+- [ ] 100% data integrity (all CSV rows accounted for)
+- [ ] Export available for any failed imports
+
+**Estimated Duration:** 2-3 days
 
 ---
 

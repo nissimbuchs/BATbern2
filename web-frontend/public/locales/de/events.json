@@ -3,7 +3,8 @@
     "dashboard": "Veranstaltungen",
     "createEvent": "Neue Veranstaltung",
     "eventTimeline": "Zeitachse",
-    "events": "Veranstaltungen"
+    "events": "Veranstaltungen",
+    "topicManagement": "Themen-Verwaltung"
   },
   "eventPage": {
     "tabs": {
@@ -11,6 +12,7 @@
       "speakers": "Referenten",
       "venue": "Veranstaltungsort",
       "team": "Team",
+      "participants": "Teilnehmer",
       "publishing": "Veröffentlichung",
       "settings": "Einstellungen"
     },
@@ -34,6 +36,44 @@
       "sendNotification": "Benachrichtigung senden",
       "previewPublic": "Öffentliche Seite vorschauen",
       "viewTimeline": "Zeitachse anzeigen"
+    },
+    "participantsTab": {
+      "title": "Veranstaltungsteilnehmer"
+    },
+    "participantTable": {
+      "headers": {
+        "name": "Name",
+        "email": "E-Mail",
+        "company": "Unternehmen",
+        "status": "Status",
+        "registrationDate": "Anmeldedatum"
+      },
+      "empty": "Noch keine Teilnehmer angemeldet"
+    },
+    "participantFilters": {
+      "search": {
+        "label": "Teilnehmer suchen",
+        "placeholder": "Nach Name oder E-Mail suchen..."
+      },
+      "status": {
+        "label": "Anmeldestatus",
+        "all": "Alle Status",
+        "confirmed": "Bestätigt",
+        "registered": "Angemeldet",
+        "attended": "Teilgenommen",
+        "cancelled": "Abgesagt",
+        "waitlisted": "Warteliste"
+      },
+      "clearAll": "Filter zurücksetzen"
+    },
+    "participantList": {
+      "loading": "Teilnehmer werden geladen...",
+      "error": {
+        "loadFailed": "Fehler beim Laden der Teilnehmer. Bitte versuchen Sie es erneut."
+      },
+      "actions": {
+        "retry": "Erneut versuchen"
+      }
     }
   },
   "dashboard": {
@@ -98,6 +138,7 @@
       "workflowState": "Nach Workflow-Status filtern",
       "year": "Nach Jahr filtern",
       "allYears": "Alle Jahre",
+      "showArchived": "Archivierte Veranstaltungen anzeigen",
       "activeFilters": "{{count}} Filter aktiv",
       "activeFilters_plural": "{{count}} Filter aktiv",
       "clearAll": "Alle löschen"
@@ -258,19 +299,12 @@
     "states": {
       "created": "Erstellt",
       "topic_selection": "Themenauswahl",
-      "speaker_brainstorming": "Referenten-Brainstorming",
-      "speaker_outreach": "Referenten-Kontaktaufnahme",
-      "speaker_confirmation": "Referenten-Bestätigung",
-      "content_collection": "Inhaltssammlung",
-      "quality_review": "Qualitätsprüfung",
-      "threshold_check": "Schwellenprüfung",
-      "overflow_management": "Überlaufverwaltung",
+      "speaker_identification": "Referenten-Identifikation",
       "slot_assignment": "Slot-Zuweisung",
       "agenda_published": "Agenda veröffentlicht",
       "agenda_finalized": "Agenda finalisiert",
-      "newsletter_sent": "Newsletter versendet",
-      "event_ready": "Veranstaltung bereit",
-      "partner_meeting_complete": "Partnertreffen abgeschlossen",
+      "event_live": "Veranstaltung läuft",
+      "event_completed": "Veranstaltung abgeschlossen",
       "archived": "Archiviert"
     }
   },
@@ -341,6 +375,7 @@
     "manageMaterials": "Materialien verwalten",
     "viewFullAgenda": "Vollständige Agenda anzeigen",
     "manageSpeakerAssignments": "Referenten-Zuweisungen verwalten",
+    "manageSlotAssignments": "Slot-Zuweisungen verwalten",
     "autoAssignSpeakers": "Referenten automatisch zuweisen",
     "autoAssignConfirmTitle": "Referenten automatisch zuweisen",
     "autoAssignConfirmMessage": "Dies wird automatisch Referenten basierend auf Themenexpertise und Verfügbarkeit optimalen Zeitfenstern zuweisen. Bestehende Zuweisungen werden überschrieben. Fortfahren?",
@@ -367,7 +402,135 @@
     "qualityChecks": "Qualitätsprüfungen",
     "configure": "Veröffentlichung konfigurieren",
     "republish": "Neu veröffentlichen",
-    "previewPublicPage": "Öffentliche Seite vorschauen"
+    "previewPublicPage": "Öffentliche Seite vorschauen",
+    "tab": {
+      "title": "Veröffentlichungssteuerung (Story 5.7)",
+      "notice": "Die Veröffentlichungskomponenten sind jetzt integriert. Die Backend-API-Integration ist in Arbeit. Einige Funktionen verwenden temporäre Mock-Daten."
+    },
+    "controls": {
+      "publish": "Veröffentlichen",
+      "publishing": "Veröffentliche...",
+      "publishPhase": "{{phase}} veröffentlichen",
+      "published": "{{phase}} veröffentlicht",
+      "publishPhases": "Phasen veröffentlichen",
+      "alreadyPublished": "Bereits veröffentlicht",
+      "publishTopicFirst": "Bitte veröffentlichen Sie zuerst das Thema",
+      "publishSpeakersFirst": "Bitte veröffentlichen Sie zuerst die Referenten",
+      "schedulePublish": "Veröffentlichung planen",
+      "previewNewsletter": "Newsletter-Vorschau",
+      "mode": "Modus",
+      "modeDraft": "Entwurf",
+      "modeProgressive": "Progressiv",
+      "modeComplete": "Vollständig",
+      "notifySubscribers": "Abonnenten benachrichtigen",
+      "validationErrors": "Validierungsfehler:",
+      "phase": {
+        "topic": "Thema",
+        "speakers": "Referenten",
+        "agenda": "Agenda"
+      },
+      "scheduleDialog": {
+        "title": "Veröffentlichung planen",
+        "dateLabel": "Datum & Uhrzeit planen",
+        "cancel": "Abbrechen",
+        "confirm": "Planung bestätigen"
+      },
+      "newsletterDialog": {
+        "title": "Newsletter-Vorschau",
+        "subject": "Betreff: Neue {{phase}} veröffentlicht für {{eventCode}}",
+        "contentPreview": "Newsletter-Inhaltsvorschau für {{phase}}-Phase...",
+        "close": "Schließen",
+        "sendTest": "Test-E-Mail senden"
+      },
+      "accessibility": {
+        "publishingPhase": "Veröffentliche {{phase}}",
+        "publishingMode": "Veröffentlichungsmodus",
+        "notifySubscribers": "Abonnenten bei Veröffentlichung benachrichtigen"
+      }
+    },
+    "validation": {
+      "readyToPublish": "Bereit zur Veröffentlichung",
+      "notReadyToPublish": "Nicht bereit zur Veröffentlichung",
+      "eventTopic": "Veranstaltungsthema",
+      "speakerLineup": "Referenten-Aufstellung",
+      "sessionTimings": "Session-Zeitplan",
+      "complete": "Vollständig",
+      "incomplete": "Unvollständig ({{assigned}}/{{total}} Sessions zugewiesen)",
+      "ready": "Bereit ({{assigned}}/{{total}} Sessions zugewiesen)",
+      "notRequired": "Nicht erforderlich",
+      "assignTimings": "Zeitplan zuweisen",
+      "expandUnassigned": "Nicht zugewiesene Sessions erweitern",
+      "collapseUnassigned": "Nicht zugewiesene Sessions einklappen",
+      "accessibility": {
+        "readyToPublish": "Bereit zur Veröffentlichung",
+        "notReadyToPublish": "Nicht bereit zur Veröffentlichung",
+        "eventTopic": "Veranstaltungsthema-Validierung",
+        "speakerLineup": "Referenten-Aufstellung-Validierung",
+        "sessionTimings": "Session-Zeitplan-Validierung"
+      }
+    },
+    "preview": {
+      "desktop": "Desktop",
+      "mobile": "Mobil",
+      "print": "Druck",
+      "refresh": "Aktualisieren",
+      "refreshing": "Vorschau wird aktualisiert...",
+      "retry": "Erneut versuchen",
+      "loadFailed": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+      "previewMode": "Vorschau-Modus: {{mode}} | Phase: {{phase}}",
+      "deviceDimensions": "Gerät: {{device}} ({{width}} x {{height}})",
+      "switchedTo": "Zu {{device}}-Vorschau gewechselt",
+      "accessibility": {
+        "devicePreviewMode": "Geräte-Vorschaumodus",
+        "desktopPreview": "Desktop-Vorschau",
+        "mobilePreview": "Mobil-Vorschau",
+        "printPreview": "Druck-Vorschau",
+        "refreshPreview": "Vorschau aktualisieren",
+        "eventContentPreview": "Veranstaltungsinhalts-Vorschau"
+      }
+    },
+    "timeline": {
+      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "topic": "Thema",
+      "speakers": "Referenten",
+      "agenda": "Agenda",
+      "updates": "Aktualisierungen",
+      "now": "Jetzt",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}",
+      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
+      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
+      "days": "{{count}} Tage"
+    },
+    "versionControl": {
+      "title": "Versionsverlauf",
+      "version": "Version",
+      "published": "Veröffentlicht",
+      "phase": "Phase",
+      "publisher": "Veröffentlicht von",
+      "status": "Status",
+      "actions": "Aktionen",
+      "rollback": "Zurücksetzen",
+      "current": "Aktuell",
+      "cdnCleared": "CDN gelöscht",
+      "cdnPending": "CDN ausstehend",
+      "cdnFailed": "CDN fehlgeschlagen",
+      "cdnUnknown": "Unbekannt",
+      "cdnInvalidationId": "CDN-Invalidierungs-ID: {{id}}",
+      "noVersions": "Kein Versionsverlauf verfügbar",
+      "rollbackDialog": {
+        "title": "Zurücksetzen bestätigen",
+        "message": "Sind Sie sicher, dass Sie auf diese Version zurücksetzen möchten?",
+        "versionLabel": "Version:",
+        "phaseLabel": "Phase:",
+        "publishedLabel": "Veröffentlicht:",
+        "publisherLabel": "Veröffentlicht von:",
+        "warning": "Diese Aktion wird den CloudFront CDN-Cache invalidieren und kann einige Minuten dauern.",
+        "cancel": "Abbrechen",
+        "confirm": "Zurücksetzen bestätigen",
+        "confirming": "Setze zurück..."
+      }
+    }
   },
   "notifications": {
     "title": "Benachrichtigungen & Erinnerungen",
@@ -480,6 +643,12 @@
   },
   "public": {
     "comingSoon": "Demnächst...",
+    "preview": {
+      "title": "Vorschau-Modus",
+      "phase": "Phase",
+      "mode": "Modus",
+      "description": "Unveröffentlichte Änderungen werden angezeigt - so wird die Veranstaltung nach der Veröffentlichung erscheinen"
+    },
     "logistics": {
       "title": "Veranstaltungsdetails",
       "date": "Datum",
@@ -545,5 +714,100 @@
         "saveFailed": "Session konnte nicht gespeichert werden"
       }
     }
+  },
+  "slotAssignment": {
+    "title": "Slot-Zuweisung",
+    "pageTitle": "Referenten zu Zeitfenstern zuweisen",
+    "pageDescription": "Ziehen Sie bestätigte Referenten zu verfügbaren Zeitfenstern, um den Veranstaltungsplan zu erstellen",
+    "backToEvent": "Zurück zur Veranstaltung",
+    "returnToEventOverview": "Zurück zur Veranstaltungsübersicht",
+    "helpBanner": {
+      "title": "So funktioniert's:",
+      "description": "Ziehen Sie Referentenkarten aus dem linken Panel zu Zeitfenstern auf der rechten Seite. Das System hebt Präferenz-Übereinstimmungen hervor und warnt Sie vor Konflikten. Sobald alle Referenten zugewiesen sind, wird der Zeitplan automatisch gespeichert."
+    },
+    "timeline": {
+      "title": "Sitzungs-Zeitplan",
+      "room": "{{room}}",
+      "matchPercent": "{{percent}}% Übereinstimmung"
+    },
+    "speakerPool": {
+      "title": "Referenten-Pool",
+      "assigned": "{{count}} von {{total}} zugewiesen ({{percent}}%)",
+      "remaining": "{{count}} verbleibend",
+      "filters": {
+        "all": "Alle",
+        "assigned": "Zugewiesen",
+        "unassigned": "Nicht zugewiesen"
+      },
+      "emptyState": {
+        "title": "Alle Sitzungen zugewiesen!",
+        "message": "Großartige Arbeit! Alle Referenten wurden Zeitfenstern zugewiesen."
+      },
+      "viewPreferences": "Präferenzen"
+    },
+    "actions": {
+      "autoAssign": "Auto-Zuweisung",
+      "clearAll": "Alle löschen",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen"
+    },
+    "modals": {
+      "autoAssign": {
+        "title": "Auto-Zuweisung von Sitzungen",
+        "message": "Algorithmus für Auto-Zuweisung auswählen:",
+        "algorithms": {
+          "preferenceFirst": "Präferenz zuerst",
+          "timeBalance": "Zeit-Balance"
+        }
+      },
+      "clearAll": {
+        "title": "Alle Zuweisungen löschen",
+        "message": "Sind Sie sicher, dass Sie alle Zeitzuweisungen löschen möchten?"
+      }
+    },
+    "conflicts": {
+      "title": "Zeitkonflikt erkannt",
+      "types": {
+        "room_overlap": "Raum-Überschneidung",
+        "speaker_double_booked": "Referent doppelt gebucht",
+        "speaker_unavailable": "Referent nicht verfügbar"
+      },
+      "severity": {
+        "error": "FEHLER",
+        "warning": "WARNUNG"
+      },
+      "timeRange": "Konflikt-Zeitbereich",
+      "start": "Start",
+      "end": "Ende",
+      "conflictingSession": "Konflikt-Sitzung",
+      "resolutionOptions": "Lösungsoptionen",
+      "resolutionMessage": "Wählen Sie ein anderes Zeitfenster oder einen anderen Raum, um diesen Konflikt zu lösen.",
+      "chooseDifferentSlot": "Anderes Zeitfenster wählen"
+    },
+    "preferences": {
+      "title": "Referenten-Präferenzen",
+      "close": "Schließen",
+      "timePreferences": "Zeit-Präferenzen",
+      "preferredTime": "Bevorzugte Tageszeit",
+      "unavailableTimes": "Nicht verfügbare Zeiten",
+      "avRequirements": "AV-Anforderungen",
+      "setupNotes": "Raum-Setup-Notizen",
+      "slotMatchScore": "Zeitfenster-Übereinstimmung",
+      "matchPercent": "{{percent}}% Übereinstimmung",
+      "times": {
+        "morning": "Morgen",
+        "afternoon": "Nachmittag",
+        "evening": "Abend",
+        "any": "Beliebig"
+      },
+      "equipment": {
+        "microphone": "Mikrofon",
+        "projector": "Projektor",
+        "recording": "Aufzeichnung",
+        "whiteboard": "Whiteboard"
+      }
+    },
+    "loading": "Lädt...",
+    "dragInstructions": "Ziehen Sie Referenten zu Zeitfenstern, um sie zuzuweisen"
   }
 }

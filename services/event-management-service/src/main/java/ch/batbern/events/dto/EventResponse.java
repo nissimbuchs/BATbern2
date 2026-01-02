@@ -39,6 +39,7 @@ public class EventResponse {
     private String eventType;
     private String topicCode;
     private String workflowState;
+    private String currentPublishedPhase;
 
     /**
      * Convert Event entity to EventResponse DTO
@@ -55,6 +56,43 @@ public class EventResponse {
                 .venueCapacity(event.getVenueCapacity())
                 .organizerUsername(event.getOrganizerUsername())
                 .currentAttendeeCount(event.getCurrentAttendeeCount())
+                .publishedAt(event.getPublishedAt())
+                .metadata(event.getMetadata())
+                .description(event.getDescription())
+                .createdAt(event.getCreatedAt())
+                .updatedAt(event.getUpdatedAt())
+                .createdBy(event.getCreatedBy())
+                .updatedBy(event.getUpdatedBy())
+                .themeImageUrl(event.getThemeImageUrl())
+                .themeImageUploadId(event.getThemeImageUploadId())
+                .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
+                .topicCode(event.getTopicCode())
+                .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
+                .currentPublishedPhase(event.getCurrentPublishedPhase() != null
+                        ? event.getCurrentPublishedPhase().toUpperCase() : null)
+                .build();
+    }
+
+    /**
+     * Convert Event entity to EventResponse DTO with actual registration count
+     * Used when displaying event lists and details to show accurate registration numbers
+     *
+     * @param event The event entity
+     * @param actualRegistrationCount The actual count from registrations table
+     * @return EventResponse with accurate registration count
+     */
+    public static EventResponse fromEntity(Event event, long actualRegistrationCount) {
+        return EventResponse.builder()
+                .eventCode(event.getEventCode())
+                .title(event.getTitle())
+                .eventNumber(event.getEventNumber())
+                .date(event.getDate())
+                .registrationDeadline(event.getRegistrationDeadline())
+                .venueName(event.getVenueName())
+                .venueAddress(event.getVenueAddress())
+                .venueCapacity(event.getVenueCapacity())
+                .organizerUsername(event.getOrganizerUsername())
+                .currentAttendeeCount((int) actualRegistrationCount)
                 .publishedAt(event.getPublishedAt())
                 .metadata(event.getMetadata())
                 .description(event.getDescription())

@@ -73,9 +73,7 @@ describe('sessionImport', () => {
           abstract: 'Detailed abstract',
           pdf: 'presentation.pdf',
           authoren: 'John Doe',
-          referenten: [
-            { name: 'Jane Smith', bio: 'Speaker bio', company: 'ACME' },
-          ],
+          referenten: [{ name: 'Jane Smith', bio: 'Speaker bio', company: 'ACME' }],
         },
       ]);
 
@@ -149,9 +147,7 @@ describe('sessionImport', () => {
     });
 
     it('should_handleEmptyAbstract_when_notProvided', () => {
-      const sessions: LegacySession[] = [
-        { bat: 142, title: 'No Abstract', abstract: '' },
-      ];
+      const sessions: LegacySession[] = [{ bat: 142, title: 'No Abstract', abstract: '' }];
 
       const candidates = createSessionImportCandidates(sessions);
 

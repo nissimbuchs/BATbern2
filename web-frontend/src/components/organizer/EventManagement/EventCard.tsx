@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import type { Event, EventUI } from '@/types/event.types';
 import {
+  WORKFLOW_STATE_ORDER,
   getWorkflowProgress,
   getProgressColor,
   getWorkflowStateLabel,
@@ -168,7 +169,10 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               {workflowLabel}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {t('workflow.stepIndicator', { current: workflowStep, total: 16 })}
+              {t('workflow.stepIndicator', {
+                current: workflowStep,
+                total: WORKFLOW_STATE_ORDER.length,
+              })}
             </Typography>
           </Stack>
           {/* Progress Bar with Percentage */}

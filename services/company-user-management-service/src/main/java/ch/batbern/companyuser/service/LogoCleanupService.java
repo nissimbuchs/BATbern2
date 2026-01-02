@@ -4,6 +4,7 @@ import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.domain.LogoStatus;
 import ch.batbern.companyuser.repository.LogoRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,8 +54,15 @@ public class LogoCleanupService {
      * - Day of month: * (every day)
      * - Month: * (every month)
      * - Day of week: * (every day of week)
+     *
+     * ShedLock ensures only ONE ECS instance executes this job
      */
     @Scheduled(cron = "0 0 2 * * *")
+    @SchedulerLock(
+            name = "cleanupOrphanedLogos",
+            lockAtMostFor = "30m",
+            lockAtLeastFor = "1m"
+    )
     @Transactional
     public void cleanupOrphanedLogos() {
         log.info("Starting scheduled cleanup of orphaned logos");

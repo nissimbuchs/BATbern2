@@ -1,0 +1,6 @@
+Name,FirstName,LastName,BestMail,companyKey,1,2,3,4,5
+Test User1,Test,User1,test.user1@example.com,testcompany1,1,,,,
+Test User2,Test,User2,test.user2@example.com,testcompany2,,1,,,
+Test User3,Test,User3,test.user3@example.com,testcompany3,,,1,,
+Test User4,Test,User4,test.user4@example.com,testcompany4,,,,1,
+Test User5,Test,User5,test.user5@example.com,testcompany5,,,,,1

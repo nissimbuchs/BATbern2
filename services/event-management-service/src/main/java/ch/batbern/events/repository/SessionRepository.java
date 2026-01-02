@@ -57,4 +57,61 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      * Find a session by event ID and title (for duplicate detection during batch import)
      */
     Optional<Session> findByEventIdAndTitle(UUID eventId, String title);
+
+    /**
+     * Find unassigned sessions (placeholder sessions without timing)
+     * Story BAT-11 (5.7): Slot Assignment - AC5, AC12
+     */
+    List<Session> findByEventIdAndStartTimeIsNull(UUID eventId);
+
+    /**
+     * Find sessions with timing assigned for an event
+     * Story BAT-11 (5.7): Slot Assignment - conflict detection
+     */
+    List<Session> findByEventIdAndStartTimeIsNotNull(UUID eventId);
+
+    /**
+     * Find sessions in a specific room during a time range (for conflict detection)
+     * Story BAT-11 (5.7): Slot Assignment - AC9
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventId = :eventId "
+           + "AND s.room = :room "
+           + "AND s.startTime IS NOT NULL "
+           + "AND s.endTime IS NOT NULL "
+           + "AND s.startTime < :endTime "
+           + "AND s.endTime > :startTime")
+    List<Session> findOverlappingSessionsInRoom(
+            @Param("eventId") UUID eventId,
+            @Param("room") String room,
+            @Param("startTime") java.time.Instant startTime,
+            @Param("endTime") java.time.Instant endTime
+    );
+
+    /**
+     * Find unassigned sessions by event code (joins with events table)
+     * Story BAT-11 (5.7): Slot Assignment - for unit test compatibility
+     */
+    @Query("SELECT s FROM Session s JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
+           + "WHERE e.eventCode = :eventCode AND s.startTime IS NULL")
+    List<Session> findByEventCodeAndStartTimeIsNull(@Param("eventCode") String eventCode);
+
+    /**
+     * Find all sessions by event code (joins with events table)
+     * Story BAT-11 (5.7): Slot Assignment - for conflict detection
+     */
+    @Query("SELECT s FROM Session s JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
+           + "WHERE e.eventCode = :eventCode")
+    List<Session> findByEventCode(@Param("eventCode") String eventCode);
+
+    /**
+     * Count all sessions for a specific event
+     * Story BAT-11 (5.7): Workflow validation for agenda publishing
+     */
+    long countByEventId(UUID eventId);
+
+    /**
+     * Count sessions with timing assigned for an event
+     * Story BAT-11 (5.7): Workflow validation for agenda publishing
+     */
+    long countByEventIdAndStartTimeNotNull(UUID eventId);
 }

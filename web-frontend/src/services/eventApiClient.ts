@@ -46,14 +46,22 @@ class EventApiClient {
     options?: { expand?: string[] }
   ): Promise<EventListResponse> {
     try {
+      // Use URLSearchParams for proper URL encoding
       const params = new URLSearchParams();
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
 
+      // Add includeArchived parameter (defaults to false on backend)
+      // When explicitly set to false or undefined, backend excludes ARCHIVED events
+      if (filters?.includeArchived !== undefined) {
+        params.append('includeArchived', filters.includeArchived.toString());
+      }
+
       // Build JSON filter object
       const filterObj: Record<string, unknown> = {};
       if (filters?.workflowState && filters.workflowState.length > 0) {
-        filterObj.workflowState = filters.workflowState.join(','); // Convert array to comma-separated string
+        // Send as array with $in operator for OR logic (match any of the states)
+        filterObj.workflowState = { $in: filters.workflowState };
       }
       if (filters?.year) {
         filterObj.year = filters.year;
@@ -64,6 +72,7 @@ class EventApiClient {
       }
 
       // Add filter parameter if we have filters
+      // URLSearchParams will properly encode all special characters
       if (Object.keys(filterObj).length > 0) {
         params.append('filter', JSON.stringify(filterObj));
       }

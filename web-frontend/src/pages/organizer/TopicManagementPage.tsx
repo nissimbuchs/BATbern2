@@ -42,7 +42,10 @@ const TopicManagementPage: React.FC = () => {
       ];
     }
     // Standalone topic management
-    return [{ label: t('navigation.topicManagement', 'Topic Management') }];
+    return [
+      { label: t('navigation.events', 'Events'), path: '/organizer/events' },
+      { label: t('navigation.topicManagement', 'Topic Management') },
+    ];
   }, [eventCode, event?.title, t]);
 
   console.log('[TopicManagementPage] Rendering', {
@@ -52,9 +55,11 @@ const TopicManagementPage: React.FC = () => {
   });
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+    <Box>
+      <Box sx={{ py: 3, px: 3 }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+      </Box>
 
       <TopicBacklogManager eventCode={eventCode || undefined} />
     </Box>

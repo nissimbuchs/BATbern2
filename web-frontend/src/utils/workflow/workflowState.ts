@@ -12,25 +12,19 @@
 import type { TFunction } from 'i18next';
 
 /**
- * Complete 16-step workflow state order for BATbern events.
+ * Complete 9-step workflow state order for BATbern events.
  * States progress linearly from CREATED through ARCHIVED.
+ * Updated for Story 5.7 - Consolidated from 16 states to 9 states.
  */
 export const WORKFLOW_STATE_ORDER = [
   'CREATED',
   'TOPIC_SELECTION',
-  'SPEAKER_BRAINSTORMING',
-  'SPEAKER_OUTREACH',
-  'SPEAKER_CONFIRMATION',
-  'CONTENT_COLLECTION',
-  'QUALITY_REVIEW',
-  'THRESHOLD_CHECK',
-  'OVERFLOW_MANAGEMENT',
+  'SPEAKER_IDENTIFICATION',
   'SLOT_ASSIGNMENT',
   'AGENDA_PUBLISHED',
   'AGENDA_FINALIZED',
-  'NEWSLETTER_SENT',
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
+  'EVENT_LIVE',
+  'EVENT_COMPLETED',
   'ARCHIVED',
 ] as const;
 
@@ -47,21 +41,17 @@ const EARLY_STAGE_STATES: readonly string[] = ['CREATED', 'TOPIC_SELECTION'] as 
 /**
  * Late stage workflow states where event is essentially complete
  */
-const LATE_STAGE_STATES: readonly string[] = [
-  'EVENT_READY',
-  'PARTNER_MEETING_COMPLETE',
-  'ARCHIVED',
-] as const;
+const LATE_STAGE_STATES: readonly string[] = ['EVENT_LIVE', 'EVENT_COMPLETED', 'ARCHIVED'] as const;
 
 /**
  * Calculate workflow completion percentage from current state.
  *
- * @param workflowState - The current workflow state (e.g., 'SPEAKER_OUTREACH')
+ * @param workflowState - The current workflow state (e.g., 'SPEAKER_IDENTIFICATION')
  * @returns Progress percentage (0-100), or 0 if state is invalid
  *
  * @example
- * getWorkflowProgress('CREATED') // Returns 6 (step 1/16)
- * getWorkflowProgress('ARCHIVED') // Returns 100 (step 16/16)
+ * getWorkflowProgress('CREATED') // Returns 11 (step 1/9)
+ * getWorkflowProgress('ARCHIVED') // Returns 100 (step 9/9)
  * getWorkflowProgress('INVALID') // Returns 0
  */
 export function getWorkflowProgress(workflowState: string): number {
@@ -127,14 +117,14 @@ export function getWorkflowStateLabel(state: string, t: TFunction): string {
 }
 
 /**
- * Get the step number for a workflow state (1-16).
+ * Get the step number for a workflow state (1-9).
  *
  * @param state - The workflow state
  * @returns Step number (1-indexed), or 0 if state is invalid
  *
  * @example
  * getWorkflowStepNumber('CREATED') // Returns 1
- * getWorkflowStepNumber('ARCHIVED') // Returns 16
+ * getWorkflowStepNumber('ARCHIVED') // Returns 9
  * getWorkflowStepNumber('INVALID') // Returns 0
  */
 export function getWorkflowStepNumber(state: string): number {
@@ -153,14 +143,14 @@ export function getWorkflowStepNumber(state: string): number {
  * @example
  * isEarlyStage('CREATED') // Returns true
  * isEarlyStage('TOPIC_SELECTION') // Returns true
- * isEarlyStage('SPEAKER_OUTREACH') // Returns false
+ * isEarlyStage('SPEAKER_IDENTIFICATION') // Returns false
  */
 export function isEarlyStage(state: string): boolean {
   return EARLY_STAGE_STATES.includes(state);
 }
 
 /**
- * Check if the workflow state is in a late stage (EVENT_READY, PARTNER_MEETING_COMPLETE, or ARCHIVED).
+ * Check if the workflow state is in a late stage (EVENT_LIVE, EVENT_COMPLETED, or ARCHIVED).
  *
  * Late stages indicate the event workflow is essentially complete.
  *
@@ -169,7 +159,7 @@ export function isEarlyStage(state: string): boolean {
  *
  * @example
  * isLateStage('ARCHIVED') // Returns true
- * isLateStage('EVENT_READY') // Returns true
+ * isLateStage('EVENT_COMPLETED') // Returns true
  * isLateStage('CREATED') // Returns false
  */
 export function isLateStage(state: string): boolean {
@@ -180,11 +170,11 @@ export function isLateStage(state: string): boolean {
  * Validate if a string is a valid workflow state.
  *
  * @param state - The state string to validate
- * @returns true if state is one of the 16 valid workflow states
+ * @returns true if state is one of the 9 valid workflow states
  *
  * @example
  * isValidWorkflowState('CREATED') // Returns true
- * isValidWorkflowState('SPEAKER_OUTREACH') // Returns true
+ * isValidWorkflowState('SPEAKER_IDENTIFICATION') // Returns true
  * isValidWorkflowState('INVALID_STATE') // Returns false
  */
 export function isValidWorkflowState(state: string): boolean {

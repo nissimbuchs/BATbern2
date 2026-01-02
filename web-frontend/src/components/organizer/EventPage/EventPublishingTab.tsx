@@ -1,318 +1,128 @@
 /**
- * EventPublishingTab Component (Story 5.6)
+ * EventPublishingTab Component (Story 5.7 - Updated)
  *
- * Publishing configuration, timeline, and quality checkpoints
+ * Progressive publishing controls with validation, timeline, and version control
+ * Now uses real data from usePublishing hook instead of mocked data
  */
 
 import React from 'react';
-import {
-  Paper,
-  Typography,
-  Button,
-  Stack,
-  Divider,
-  Chip,
-  Alert,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import {
-  CheckCircle as CheckIcon,
-  RadioButtonUnchecked as PendingIcon,
-  Warning as WarningIcon,
-  Visibility as PreviewIcon,
-  Publish as PublishIcon,
-  Email as EmailIcon,
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
-import { format } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
-import type { Event, EventDetailUI } from '@/types/event.types';
+import { Stack, Skeleton, Box } from '@mui/material';
+import type { Event, EventDetailUI, PublishingPhase } from '@/types/event.types';
+import { ValidationDashboard } from '@/components/Publishing/ValidationDashboard/ValidationDashboard';
+import { PublishingControls } from '@/components/Publishing/PublishingControls/PublishingControls';
+import { LivePreview } from '@/components/Publishing/LivePreview/LivePreview';
+import { PublishingTimeline } from '@/components/Publishing/PublishingTimeline/PublishingTimeline';
+import { VersionControl } from '@/components/Publishing/VersionControl/VersionControl';
+import { usePublishing } from '@/hooks/usePublishing/usePublishing';
+import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 
 interface EventPublishingTabProps {
   event: Event | EventDetailUI;
   eventCode: string;
 }
 
-interface TimelineItem {
-  phase: string;
-  date: string;
-  status: 'completed' | 'pending' | 'upcoming';
-  description: string;
-}
-
-interface QualityCheck {
-  name: string;
-  status: 'passed' | 'pending' | 'failed';
-  message?: string;
-}
-
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
-  const { t, i18n } = useTranslation('events');
-  const locale = i18n.language === 'de' ? de : enUS;
+  const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
+  const { unassignedSessions } = useSlotAssignment(eventCode);
 
-  // ⚠️ MOCK DATA - Publishing timeline (backend integration pending)
-  const timeline: TimelineItem[] = [
-    {
-      phase: t('eventPage.publishing.topicPublished', 'Topic Published'),
-      date: '2025-01-05',
-      status: 'completed',
-      description: t('eventPage.publishing.topicDesc', 'Immediate after topic selection'),
-    },
-    {
-      phase: t('eventPage.publishing.speakersPublished', 'Speakers Published'),
-      date: '2025-02-15',
-      status: 'completed',
-      description: t('eventPage.publishing.speakersDesc', '1 month before event'),
-    },
-    {
-      phase: t('eventPage.publishing.finalAgenda', 'Final Agenda'),
-      date: '2025-03-01',
-      status: 'pending',
-      description: t('eventPage.publishing.agendaDesc', '2 weeks before event'),
-    },
-    {
-      phase: t('eventPage.publishing.eventDay', 'Event Day'),
-      date: event.date || '2025-03-15',
-      status: 'upcoming',
-      description: t('eventPage.publishing.eventDesc', 'Event takes place'),
-    },
-    {
-      phase: t('eventPage.publishing.postEvent', 'Post-Event Materials'),
-      date: '2025-03-22',
-      status: 'upcoming',
-      description: t('eventPage.publishing.postDesc', '1 week after event'),
-    },
-  ];
+  const publishingMode = 'progressive' as const;
 
-  // ⚠️ MOCK DATA - Quality checkpoints (backend integration pending)
-  const qualityChecks: QualityCheck[] = [
-    {
-      name: t('eventPage.publishing.abstractLength', 'Abstract length validation'),
-      status: 'passed',
+  // Loading state
+  if (isLoadingStatus) {
+    return (
+      <Stack spacing={3}>
+        <Skeleton variant="rectangular" height={200} />
+        <Skeleton variant="rectangular" height={150} />
+        <Skeleton variant="rectangular" height={100} />
+        <Skeleton variant="rectangular" height={300} />
+      </Stack>
+    );
+  }
+
+  // Extract data from status response, with fallbacks
+  // Convert uppercase phase from API to lowercase (API returns 'SPEAKERS', we need 'speakers')
+  const currentPhase: PublishingPhase =
+    (publishingStatus?.currentPhase?.toLowerCase() as PublishingPhase) || 'topic';
+  const publishedPhases: PublishingPhase[] =
+    publishingStatus?.publishedPhases?.map((p) => p.toLowerCase() as PublishingPhase) || [];
+  const eventDate = event.date || new Date().toISOString();
+
+  // Build validation data from status response and slot assignment
+  const mappedUnassignedSessions =
+    unassignedSessions?.map((session) => ({
+      sessionSlug: session.sessionSlug,
+      title: session.title || session.sessionSlug,
+    })) || [];
+
+  // Frontend safeguard: Check if event actually has a topic
+  const hasTopicCode = 'topicCode' in event && event.topicCode;
+  const topicValidation = publishingStatus?.topic || { isValid: true, errors: [] };
+
+  const validationData = {
+    topic: {
+      ...topicValidation,
+      // Override if backend incorrectly reports valid but no topicCode exists
+      isValid: !!(topicValidation.isValid && hasTopicCode),
+      errors:
+        !hasTopicCode && topicValidation.isValid
+          ? ['Event topic must be defined']
+          : topicValidation.errors,
     },
-    {
-      name: t('eventPage.publishing.lessonsLearned', 'Lessons learned requirement'),
-      status: 'passed',
+    speakers: publishingStatus?.speakers || { isValid: true, errors: [] },
+    sessions: {
+      ...(publishingStatus?.sessions || {
+        isValid: true,
+        errors: [],
+        assignedCount: 0,
+        totalCount: 0,
+      }),
+      // Override isValid: only valid if no unassigned sessions AND there are sessions total
+      isValid:
+        mappedUnassignedSessions.length === 0 && (publishingStatus?.sessions?.totalCount || 0) > 0,
+      // Use actual unassigned sessions from slot assignment hook
+      unassignedSessions: mappedUnassignedSessions,
     },
-    {
-      name: t('eventPage.publishing.materialsSubmitted', 'All materials submitted'),
-      status: 'pending',
-      message: '2 pending',
-    },
-    {
-      name: t('eventPage.publishing.moderatorReview', 'Moderator review complete'),
-      status: 'pending',
-    },
-  ];
-
-  const getStatusIcon = (status: TimelineItem['status']) => {
-    switch (status) {
-      case 'completed':
-        return <CheckIcon color="success" />;
-      case 'pending':
-        return <PendingIcon color="warning" />;
-      case 'upcoming':
-        return <PendingIcon color="disabled" />;
-    }
-  };
-
-  const getCheckIcon = (status: QualityCheck['status']) => {
-    switch (status) {
-      case 'passed':
-        return <CheckIcon color="success" fontSize="small" />;
-      case 'pending':
-        return <WarningIcon color="warning" fontSize="small" />;
-      case 'failed':
-        return <WarningIcon color="error" fontSize="small" />;
-    }
-  };
-
-  const handlePreview = () => {
-    window.open(`/events/${eventCode}`, '_blank');
-  };
-
-  const handleRepublish = () => {
-    console.log('Republish event:', eventCode);
-  };
-
-  const handleNotifyAttendees = () => {
-    console.log('Notify attendees:', eventCode);
   };
 
   return (
     <Stack spacing={3}>
-      {/* MOCK DATA Warning */}
-      <Alert severity="warning" icon={false}>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="body2" fontWeight="bold">
-            ⚠️ MOCK DATA FOR UI DEMONSTRATION
-          </Typography>
-        </Stack>
-        <Typography variant="body2">
-          All publishing timeline and quality checkpoint data shown below is mock data. Backend
-          integration is pending.
-        </Typography>
-      </Alert>
+      {/* Validation Dashboard - Shows content validation status */}
+      <Box data-testid="validation-dashboard-container">
+        <ValidationDashboard
+          eventCode={eventCode}
+          phase={currentPhase}
+          validation={validationData}
+        />
+      </Box>
 
-      {/* Publishing Status */}
-      <Paper sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="h6">
-              {t('eventPage.publishing.status', 'Publishing Status')}
-            </Typography>
-            <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
-          </Stack>
-          <Button variant="outlined" startIcon={<SettingsIcon />} size="small">
-            {t('eventPage.publishing.configure', 'Configure')}
-          </Button>
-        </Stack>
-        <Divider sx={{ mb: 2 }} />
+      {/* Publishing Controls - Phase publishing buttons */}
+      <Box data-testid="publishing-controls-container">
+        <PublishingControls
+          eventCode={eventCode}
+          currentPhase={currentPhase}
+          validationErrors={validationErrors}
+        />
+      </Box>
 
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              {t('eventPage.publishing.strategy', 'Strategy')}:
-            </Typography>
-            <Chip
-              label={t('eventPage.publishing.progressive', 'Progressive Publishing')}
-              color="primary"
-              size="small"
-            />
-          </Stack>
+      {/* Publishing Timeline - Visual timeline of phases */}
+      <Box data-testid="publishing-timeline-container">
+        <PublishingTimeline
+          eventCode={eventCode}
+          currentPhase={currentPhase}
+          publishedPhases={publishedPhases}
+          eventDate={eventDate}
+        />
+      </Box>
 
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              {t('eventPage.publishing.currentPhase', 'Current Phase')}:
-            </Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {t('eventPage.publishing.speakersPublished', 'Speakers Published')}
-            </Typography>
-          </Stack>
-        </Stack>
-      </Paper>
+      {/* Live Preview - Preview published content */}
+      <Box data-testid="live-preview-container">
+        <LivePreview eventCode={eventCode} phase={currentPhase} mode={publishingMode} />
+      </Box>
 
-      {/* Publishing Timeline */}
-      <Paper sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-          <Typography variant="h6">
-            {t('eventPage.publishing.timeline', 'Publishing Timeline')}
-          </Typography>
-          <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
-        </Stack>
-        <Divider sx={{ mb: 2 }} />
-
-        <List>
-          {timeline.map((item, index) => (
-            <ListItem
-              key={index}
-              sx={{
-                borderLeft: '2px solid',
-                borderColor:
-                  item.status === 'completed'
-                    ? 'success.main'
-                    : item.status === 'pending'
-                      ? 'warning.main'
-                      : 'grey.300',
-                ml: 1,
-                py: 1.5,
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{getStatusIcon(item.status)}</ListItemIcon>
-              <ListItemText
-                primary={
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Typography variant="body1" fontWeight="medium">
-                      {item.phase}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {format(new Date(item.date), 'MMM d, yyyy', { locale })}
-                    </Typography>
-                  </Stack>
-                }
-                secondary={item.description}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
-
-      {/* Quality Checkpoints */}
-      <Paper sx={{ p: 3 }}>
-        <Stack direction="row" spacing={1} alignItems="center" mb={1}>
-          <Typography variant="h6">
-            {t('eventPage.publishing.qualityCheckpoints', 'Quality Checkpoints')}
-          </Typography>
-          <Chip label="MOCK DATA" size="small" color="warning" variant="outlined" />
-        </Stack>
-        <Divider sx={{ mb: 2 }} />
-
-        <Stack spacing={1}>
-          {qualityChecks.map((check, index) => (
-            <Stack
-              key={index}
-              direction="row"
-              spacing={2}
-              alignItems="center"
-              sx={{
-                py: 1,
-                px: 2,
-                borderRadius: 1,
-                bgcolor:
-                  check.status === 'passed'
-                    ? 'success.light'
-                    : check.status === 'pending'
-                      ? 'warning.light'
-                      : 'error.light',
-                opacity: 0.8,
-              }}
-            >
-              {getCheckIcon(check.status)}
-              <Typography variant="body2" sx={{ flex: 1 }}>
-                {check.name}
-              </Typography>
-              {check.message && (
-                <Typography variant="caption" color="text.secondary">
-                  ({check.message})
-                </Typography>
-              )}
-            </Stack>
-          ))}
-        </Stack>
-
-        {qualityChecks.some((c) => c.status !== 'passed') && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            {t(
-              'eventPage.publishing.resolveCheckpoints',
-              'Resolve all checkpoints before publishing final agenda.'
-            )}
-          </Alert>
-        )}
-      </Paper>
-
-      {/* Actions */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('eventPage.publishing.actions', 'Actions')}
-        </Typography>
-        <Divider sx={{ mb: 2 }} />
-
-        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-          <Button variant="outlined" startIcon={<PreviewIcon />} onClick={handlePreview}>
-            {t('eventPage.publishing.preview', 'Preview Public Page')}
-          </Button>
-          <Button variant="outlined" startIcon={<PublishIcon />} onClick={handleRepublish}>
-            {t('eventPage.publishing.republish', 'Republish Event')}
-          </Button>
-          <Button variant="outlined" startIcon={<EmailIcon />} onClick={handleNotifyAttendees}>
-            {t('eventPage.publishing.notifyAttendees', 'Notify Attendees')}
-          </Button>
-        </Stack>
-      </Paper>
+      {/* Version Control - Publishing history and rollback */}
+      <Box data-testid="version-control-container">
+        <VersionControl eventCode={eventCode} />
+      </Box>
     </Stack>
   );
 };

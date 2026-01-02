@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,4 +68,34 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * @return Optional containing the event if found
      */
     Optional<Event> findByEventNumber(Integer eventNumber);
+
+    /**
+     * Find events by workflow state where event date is on the given date
+     * Used by scheduled jobs to find events going live today
+     * GAP-2: Automatic workflow transitions
+     *
+     * @param workflowState The event workflow state
+     * @param startOfDay Start of the day (00:00:00)
+     * @param endOfDay End of the day (23:59:59)
+     * @return List of events matching the criteria
+     */
+    List<Event> findByWorkflowStateAndDateBetween(
+            ch.batbern.shared.types.EventWorkflowState workflowState,
+            Instant startOfDay,
+            Instant endOfDay
+    );
+
+    /**
+     * Find events by workflow state where event date is before the given date
+     * Used by scheduled jobs to find events that have completed
+     * GAP-2: Automatic workflow transitions
+     *
+     * @param workflowState The event workflow state
+     * @param beforeDate Events before this date
+     * @return List of events matching the criteria
+     */
+    List<Event> findByWorkflowStateAndDateBefore(
+            ch.batbern.shared.types.EventWorkflowState workflowState,
+            Instant beforeDate
+    );
 }

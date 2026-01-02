@@ -1,6 +1,15 @@
 # Data Architecture
 
-This document outlines the comprehensive data model and database design for the BATbern Event Management Platform, following Domain-Driven Design principles with separate databases per bounded context.
+This document outlines the comprehensive data model and database design for the BATbern Event Management Platform.
+
+**Database Architecture** (CRITICAL):
+- **Single PostgreSQL database**: `batbern` (dev: `batbern_development`)
+- **Single shared schema**: `public` (no schema-per-service isolation)
+- **Table ownership by convention**: Services own specific tables (not enforced by database)
+- **ADR-003 compliance**: Cross-service references use meaningful IDs (username, event_code), NOT foreign keys
+- **Flyway separation**: Each service has own `flyway_schema_history_<service>` table for independent migrations
+
+**Design Pattern**: Domain-Driven Design with microservices sharing a single database schema.
 
 ## Data Models
 
@@ -359,15 +368,25 @@ interface Speaker {
 }
 
 enum SpeakerWorkflowState {
-  OPEN = 'open',
+  IDENTIFIED = 'identified',
   CONTACTED = 'contacted',
   READY = 'ready',
   DECLINED = 'declined',
   ACCEPTED = 'accepted',
-  SLOT_ASSIGNED = 'slot_assigned',
+  CONTENT_SUBMITTED = 'content_submitted',
   QUALITY_REVIEWED = 'quality_reviewed',
-  FINAL_AGENDA = 'final_agenda'
+  CONFIRMED = 'confirmed',
+  OVERFLOW = 'overflow',
+  WITHDREW = 'withdrew'
 }
+
+/**
+ * Note: Slot assignment is NOT a speaker state.
+ * It's tracked by session.startTime existence.
+ * Speaker reaches CONFIRMED when:
+ * - speaker_pool.status = 'quality_reviewed' AND
+ * - session.startTime IS NOT NULL
+ */
 
 enum SpeakerAvailability {
   AVAILABLE = 'available',
@@ -1552,18 +1571,22 @@ CREATE TABLE events (
     metadata JSONB DEFAULT '{}'
 );
 
--- Sessions table
+-- Sessions table (V2, updated in V21 for placeholder session support)
+-- IMPORTANT: Sessions ARE the slot model for slot assignment workflow
+-- Placeholder pattern: session created when speaker accepts (with title, but null times)
+-- Timing assigned later: organizer sets start_time/end_time/room during slot assignment
+-- See also: speaker_pool.session_id FK (V20) links speakers to sessions
 CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT,
-    session_type VARCHAR(50) NOT NULL CHECK (session_type IN (
+    session_type VARCHAR(50) CHECK (session_type IN (  -- V21: Nullable for placeholder sessions
         'keynote', 'presentation', 'workshop', 'panel_discussion',
         'networking', 'break', 'lunch'
     )),
-    start_time TIMESTAMP WITH TIME ZONE NOT NULL,
-    end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE,  -- V21: Nullable - assigned during slot assignment
+    end_time TIMESTAMP WITH TIME ZONE,    -- V21: Nullable - assigned during slot assignment
     room VARCHAR(100),
     capacity INTEGER,
     language VARCHAR(10) DEFAULT 'de',
@@ -1653,9 +1676,10 @@ CREATE TABLE speakers (
         'available', 'busy', 'unavailable'
     )) DEFAULT 'available',
     workflow_state VARCHAR(50) NOT NULL CHECK (workflow_state IN (
-        'open', 'contacted', 'ready', 'declined', 'accepted',
-        'slot_assigned', 'quality_reviewed', 'final_agenda'
-    )) DEFAULT 'open',
+        'identified', 'contacted', 'ready', 'declined', 'accepted',
+        'content_submitted', 'quality_reviewed', 'confirmed', 'overflow', 'withdrew'
+    )) DEFAULT 'identified',
+    -- Note: slot assignment tracked via session.startTime, NOT as speaker state
     expertise_areas TEXT[] DEFAULT '{}',
     speaking_topics TEXT[] DEFAULT '{}',
     linkedin_url VARCHAR(255),
@@ -2055,78 +2079,60 @@ CREATE INDEX idx_approvals_request ON role_change_approvals(role_change_request_
 
 ### Notification Service Database Schema
 
+**Implementation**: Story 1.15a.10 - Notifications API Consolidation
+
+**Pattern**: Single table in shared `public` schema, owned by Event Management Service (follows Task System pattern from Story 5.5)
+
+**Notification Preferences**: Stored in existing `user_profiles.user_preferences` JSONB column (Company-User Management Service)
+
 ```sql
--- Email Templates Table
-CREATE TABLE email_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    template_type VARCHAR(50) NOT NULL, -- speaker_invitation, deadline_reminder, newsletter, etc.
-    language VARCHAR(2) NOT NULL DEFAULT 'de',
-    subject VARCHAR(200) NOT NULL,
-    html_body TEXT NOT NULL,
-    text_body TEXT NOT NULL,
-    variables JSONB NOT NULL, -- List of available template variables
-    version INTEGER NOT NULL DEFAULT 1,
-    is_active BOOLEAN DEFAULT true,
-    created_by UUID REFERENCES users(id),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(template_type, language, version)
-);
+-- Notifications table (Event Management Service - V25 migration)
+-- ADR-003 compliant: Uses meaningful IDs (recipient_username, event_code)
+-- Hybrid storage: Email audit trail (create rows), in-app queries (dynamic)
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-CREATE INDEX idx_email_templates_type_lang ON email_templates(template_type, language) WHERE is_active = true;
+    -- ADR-003: Meaningful IDs (NOT foreign keys)
+    recipient_username VARCHAR(100) NOT NULL,
+    event_code VARCHAR(50),  -- Nullable (non-event notifications)
 
--- Notification Preferences Table
-CREATE TABLE notification_preferences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    channel VARCHAR(20) NOT NULL, -- email, in_app, push, sms
-    notification_type VARCHAR(50) NOT NULL, -- event_update, speaker_deadline, etc.
-    is_enabled BOOLEAN DEFAULT true,
-    frequency VARCHAR(20) DEFAULT 'immediate', -- immediate, daily_digest, weekly_digest
-    quiet_hours_start TIME,
-    quiet_hours_end TIME,
-    updated_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE(user_id, channel, notification_type)
-);
-
-CREATE INDEX idx_notification_prefs_user ON notification_preferences(user_id);
-
--- Escalation Rules Table
-CREATE TABLE escalation_rules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_id UUID REFERENCES events(id),
-    rule_type VARCHAR(50) NOT NULL, -- speaker_deadline, content_review, etc.
-    tier_1_hours_before INTEGER NOT NULL, -- Hours before deadline for reminder
-    tier_2_hours_before INTEGER NOT NULL, -- Hours before deadline for warning
-    tier_3_hours_before INTEGER NOT NULL, -- Hours before deadline for critical alert
-    escalation_threshold INTEGER, -- Minutes after critical with no action
-    backup_organizer_ids UUID[], -- Array of backup organizer IDs
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT NOW(),
-    CONSTRAINT valid_tiers CHECK (tier_1_hours_before > tier_2_hours_before AND tier_2_hours_before > tier_3_hours_before)
-);
-
-CREATE INDEX idx_escalation_rules_event ON escalation_rules(event_id) WHERE is_active = true;
-
--- Notification Log Table
-CREATE TABLE notification_log (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id),
+    -- Notification details
     notification_type VARCHAR(50) NOT NULL,
     channel VARCHAR(20) NOT NULL,
-    template_id UUID REFERENCES email_templates(id),
-    subject VARCHAR(200),
-    sent_at TIMESTAMP DEFAULT NOW(),
-    delivery_status VARCHAR(20) DEFAULT 'sent', -- sent, delivered, bounced, failed
-    ses_message_id VARCHAR(100),
-    error_message TEXT,
-    metadata JSONB
+    priority VARCHAR(20) DEFAULT 'NORMAL',
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+
+    -- Delivery tracking
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    sent_at TIMESTAMP,
+    read_at TIMESTAMP,
+    failed_at TIMESTAMP,
+    failure_reason TEXT,
+
+    -- Metadata
+    metadata JSONB,
+
+    -- Timestamps
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_notification_log_user_sent ON notification_log(user_id, sent_at DESC);
-CREATE INDEX idx_notification_log_ses_message ON notification_log(ses_message_id);
-CREATE INDEX idx_notification_log_delivery_status ON notification_log(delivery_status, sent_at DESC);
+-- Indexes for performance
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_username);
+CREATE INDEX idx_notifications_event ON notifications(event_code) WHERE event_code IS NOT NULL;
+CREATE INDEX idx_notifications_status ON notifications(status);
+CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX idx_notifications_recipient_created ON notifications(recipient_username, created_at DESC);
+CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_username, status);
+
+-- Comment for documentation
+COMMENT ON TABLE notifications IS 'Notification delivery tracking (email/SMS audit trail). In-app notifications queried dynamically. Follows Task System pattern (Story 5.5). ADR-003 compliant (meaningful IDs).';
 ```
+
+**See also**:
+- [Story 1.15a.10: Notifications API Consolidation](../stories/1.15a.10.notifications-api-consolidation.md) - Implementation details
+- [06d-notification-system.md](./06d-notification-system.md) - Architecture and patterns
 
 ### Business Rule Enforcement
 

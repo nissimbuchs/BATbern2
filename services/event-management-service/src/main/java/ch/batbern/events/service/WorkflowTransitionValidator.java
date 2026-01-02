@@ -13,33 +13,33 @@ import java.util.Set;
  * Validator for event workflow state transitions.
  *
  * Defines the state transition matrix that determines which transitions are valid.
- * The 16-step workflow follows a mostly sequential pattern with a few allowed skips.
+ * The 9-step workflow follows a mostly sequential pattern with automatic and manual transitions.
  *
- * Valid Transitions:
- * 1. CREATED → TOPIC_SELECTION or SPEAKER_BRAINSTORMING (can skip TOPIC_SELECTION if topic already selected)
- * 2. TOPIC_SELECTION → SPEAKER_BRAINSTORMING
- * 3. SPEAKER_BRAINSTORMING → SPEAKER_OUTREACH
- * 4. SPEAKER_OUTREACH → SPEAKER_CONFIRMATION
- * 5. SPEAKER_CONFIRMATION → CONTENT_COLLECTION
- * 6. CONTENT_COLLECTION → QUALITY_REVIEW
- * 7. QUALITY_REVIEW → THRESHOLD_CHECK
- * 8. THRESHOLD_CHECK → OVERFLOW_MANAGEMENT or SLOT_ASSIGNMENT (can skip OVERFLOW)
- * 9. OVERFLOW_MANAGEMENT → SLOT_ASSIGNMENT
- * 10. SLOT_ASSIGNMENT → AGENDA_PUBLISHED
- * 11. AGENDA_PUBLISHED → AGENDA_FINALIZED
- * 12. AGENDA_FINALIZED → NEWSLETTER_SENT
- * 13. NEWSLETTER_SENT → EVENT_READY
- * 14. EVENT_READY → PARTNER_MEETING_COMPLETE
- * 15. PARTNER_MEETING_COMPLETE → ARCHIVED
+ * Valid Transitions (9-State Model):
+ * 1. CREATED → TOPIC_SELECTION (manual)
+ * 2. CREATED → SPEAKER_IDENTIFICATION (automatic when speaker added, skip TOPIC_SELECTION)
+ * 3. TOPIC_SELECTION → SPEAKER_IDENTIFICATION (automatic when topic selected)
+ * 4. SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT (automatic when speaker accepted)
+ * 5. SLOT_ASSIGNMENT → AGENDA_PUBLISHED (automatic when all sessions timed + phase ready)
+ * 6. AGENDA_PUBLISHED → AGENDA_FINALIZED (manual, typically 14 days before event)
+ * 7. AGENDA_FINALIZED → EVENT_LIVE (automatic via cron when event date reached)
+ * 8. EVENT_LIVE → EVENT_COMPLETED (automatic via cron when event date passed)
+ * 9. EVENT_COMPLETED → ARCHIVED (manual archival)
  *
  * Special Rules:
  * - Idempotent transitions (same state to same state) are allowed
  * - ARCHIVED is a terminal state (no transitions out allowed)
  * - Backwards transitions are NOT allowed
- * - Skipping TOPIC_SELECTION is allowed when topic is selected immediately
- * - Skipping OVERFLOW_MANAGEMENT is allowed when threshold not exceeded
+ * - Skipping TOPIC_SELECTION is allowed when speaker added directly to pool
  *
- * Story 5.1a: Workflow State Machine Foundation - AC6
+ * State Consolidation:
+ * - SPEAKER_IDENTIFICATION consolidates 7 previous states: SPEAKER_BRAINSTORMING,
+ *   SPEAKER_OUTREACH, SPEAKER_CONFIRMATION, CONTENT_COLLECTION, QUALITY_REVIEW,
+ *   THRESHOLD_CHECK, OVERFLOW_MANAGEMENT
+ * - AGENDA_FINALIZED consolidates: NEWSLETTER_SENT, EVENT_READY
+ * - ARCHIVED consolidates: PARTNER_MEETING_COMPLETE
+ *
+ * Story 5.7: Slot Assignment & Progressive Publishing - Workflow Reconciliation
  *
  * @see EventWorkflowState
  * @see EventWorkflowStateMachine
@@ -48,71 +48,42 @@ import java.util.Set;
 public class WorkflowTransitionValidator {
 
     /**
-     * State transition matrix defining valid transitions.
+     * State transition matrix defining valid transitions for the 9-state model.
      * Key: From state, Value: Set of valid target states
      */
     private static final Map<EventWorkflowState, Set<EventWorkflowState>> VALID_TRANSITIONS = Map.ofEntries(
             Map.entry(EventWorkflowState.CREATED, EnumSet.of(
-                    EventWorkflowState.CREATED,          // Idempotent
-                    EventWorkflowState.TOPIC_SELECTION,
-                    EventWorkflowState.SPEAKER_BRAINSTORMING  // Can skip TOPIC_SELECTION if topic selected immediately
+                    EventWorkflowState.CREATED,              // Idempotent
+                    EventWorkflowState.TOPIC_SELECTION,      // Manual transition
+                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto when speaker added
             )),
             Map.entry(EventWorkflowState.TOPIC_SELECTION, EnumSet.of(
-                    EventWorkflowState.TOPIC_SELECTION,  // Idempotent
-                    EventWorkflowState.SPEAKER_BRAINSTORMING
+                    EventWorkflowState.TOPIC_SELECTION,      // Idempotent
+                    EventWorkflowState.SPEAKER_IDENTIFICATION // Auto-transition when topic selected
             )),
-            Map.entry(EventWorkflowState.SPEAKER_BRAINSTORMING, EnumSet.of(
-                    EventWorkflowState.SPEAKER_BRAINSTORMING, // Idempotent
-                    EventWorkflowState.SPEAKER_OUTREACH
-            )),
-            Map.entry(EventWorkflowState.SPEAKER_OUTREACH, EnumSet.of(
-                    EventWorkflowState.SPEAKER_OUTREACH,  // Idempotent
-                    EventWorkflowState.SPEAKER_CONFIRMATION
-            )),
-            Map.entry(EventWorkflowState.SPEAKER_CONFIRMATION, EnumSet.of(
-                    EventWorkflowState.SPEAKER_CONFIRMATION, // Idempotent
-                    EventWorkflowState.CONTENT_COLLECTION
-            )),
-            Map.entry(EventWorkflowState.CONTENT_COLLECTION, EnumSet.of(
-                    EventWorkflowState.CONTENT_COLLECTION, // Idempotent
-                    EventWorkflowState.QUALITY_REVIEW
-            )),
-            Map.entry(EventWorkflowState.QUALITY_REVIEW, EnumSet.of(
-                    EventWorkflowState.QUALITY_REVIEW,    // Idempotent
-                    EventWorkflowState.THRESHOLD_CHECK
-            )),
-            Map.entry(EventWorkflowState.THRESHOLD_CHECK, EnumSet.of(
-                    EventWorkflowState.THRESHOLD_CHECK,   // Idempotent
-                    EventWorkflowState.OVERFLOW_MANAGEMENT,
-                    EventWorkflowState.SLOT_ASSIGNMENT    // Can skip OVERFLOW_MANAGEMENT
-            )),
-            Map.entry(EventWorkflowState.OVERFLOW_MANAGEMENT, EnumSet.of(
-                    EventWorkflowState.OVERFLOW_MANAGEMENT, // Idempotent
-                    EventWorkflowState.SLOT_ASSIGNMENT
+            Map.entry(EventWorkflowState.SPEAKER_IDENTIFICATION, EnumSet.of(
+                    EventWorkflowState.SPEAKER_IDENTIFICATION, // Idempotent
+                    EventWorkflowState.SLOT_ASSIGNMENT        // Auto-transition when speaker accepted
             )),
             Map.entry(EventWorkflowState.SLOT_ASSIGNMENT, EnumSet.of(
                     EventWorkflowState.SLOT_ASSIGNMENT,   // Idempotent
-                    EventWorkflowState.AGENDA_PUBLISHED
+                    EventWorkflowState.AGENDA_PUBLISHED   // Auto-transition when all sessions timed + phase ready
             )),
             Map.entry(EventWorkflowState.AGENDA_PUBLISHED, EnumSet.of(
                     EventWorkflowState.AGENDA_PUBLISHED,  // Idempotent
-                    EventWorkflowState.AGENDA_FINALIZED
+                    EventWorkflowState.AGENDA_FINALIZED   // Manual transition (typically 14 days before event)
             )),
             Map.entry(EventWorkflowState.AGENDA_FINALIZED, EnumSet.of(
                     EventWorkflowState.AGENDA_FINALIZED,  // Idempotent
-                    EventWorkflowState.NEWSLETTER_SENT
+                    EventWorkflowState.EVENT_LIVE         // Auto-transition via cron when event date reached
             )),
-            Map.entry(EventWorkflowState.NEWSLETTER_SENT, EnumSet.of(
-                    EventWorkflowState.NEWSLETTER_SENT,   // Idempotent
-                    EventWorkflowState.EVENT_READY
+            Map.entry(EventWorkflowState.EVENT_LIVE, EnumSet.of(
+                    EventWorkflowState.EVENT_LIVE,        // Idempotent
+                    EventWorkflowState.EVENT_COMPLETED    // Auto-transition via cron when event date passed
             )),
-            Map.entry(EventWorkflowState.EVENT_READY, EnumSet.of(
-                    EventWorkflowState.EVENT_READY,       // Idempotent
-                    EventWorkflowState.PARTNER_MEETING_COMPLETE
-            )),
-            Map.entry(EventWorkflowState.PARTNER_MEETING_COMPLETE, EnumSet.of(
-                    EventWorkflowState.PARTNER_MEETING_COMPLETE, // Idempotent
-                    EventWorkflowState.ARCHIVED
+            Map.entry(EventWorkflowState.EVENT_COMPLETED, EnumSet.of(
+                    EventWorkflowState.EVENT_COMPLETED,   // Idempotent
+                    EventWorkflowState.ARCHIVED           // Manual archival
             )),
             Map.entry(EventWorkflowState.ARCHIVED, EnumSet.of(
                     EventWorkflowState.ARCHIVED           // Terminal state - only idempotent allowed

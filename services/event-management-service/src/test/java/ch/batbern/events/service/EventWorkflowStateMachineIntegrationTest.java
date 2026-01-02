@@ -119,19 +119,19 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
         EventWorkflowState[] workflowSequence = {
             EventWorkflowState.CREATED,
             EventWorkflowState.TOPIC_SELECTION,
-            EventWorkflowState.SPEAKER_BRAINSTORMING,
-            EventWorkflowState.SPEAKER_OUTREACH,
-            EventWorkflowState.SPEAKER_CONFIRMATION,
-            EventWorkflowState.CONTENT_COLLECTION,
-            EventWorkflowState.QUALITY_REVIEW,
-            EventWorkflowState.THRESHOLD_CHECK,
-            EventWorkflowState.OVERFLOW_MANAGEMENT,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
+            EventWorkflowState.SPEAKER_IDENTIFICATION,
             EventWorkflowState.SLOT_ASSIGNMENT,
             EventWorkflowState.AGENDA_PUBLISHED,
             EventWorkflowState.AGENDA_FINALIZED,
-            EventWorkflowState.NEWSLETTER_SENT,
-            EventWorkflowState.EVENT_READY,
-            EventWorkflowState.PARTNER_MEETING_COMPLETE,
+            EventWorkflowState.AGENDA_FINALIZED,
+            EventWorkflowState.AGENDA_FINALIZED,
+            EventWorkflowState.ARCHIVED,
             EventWorkflowState.ARCHIVED
         };
 
@@ -226,18 +226,18 @@ class EventWorkflowStateMachineIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Should rollback transaction when validation fails")
     void should_rollbackTransaction_when_validationFails() {
-        // Given: Event in SPEAKER_BRAINSTORMING state
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        // Given: Event in SPEAKER_IDENTIFICATION state without accepted speakers (will fail threshold validation)
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         testEvent = eventRepository.save(testEvent);
 
-        // When: Attempt transition to SPEAKER_OUTREACH without sufficient speakers
+        // When: Attempt transition to SLOT_ASSIGNMENT without meeting threshold (no ACCEPTED speakers)
         assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_OUTREACH, organizerUsername)
+                stateMachine.transitionToState(eventCode, EventWorkflowState.SLOT_ASSIGNMENT, organizerUsername)
         ).isInstanceOf(WorkflowValidationException.class);
 
         // Then: State should remain unchanged (transaction rolled back)
         Event unchangedEvent = eventRepository.findByEventCode(eventCode).orElseThrow();
-        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     // Test: Database index usage (workflow_state column)
