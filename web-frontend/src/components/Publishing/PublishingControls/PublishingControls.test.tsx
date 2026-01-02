@@ -215,6 +215,15 @@ describe('PublishingControls', () => {
     });
 
     it('should pass notifySubscribers=false when unchecked', async () => {
+      // Mock with topic already published so speakers can be published in progressive mode
+      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
+        ...mockUsePublishing,
+        publishingStatus: {
+          ...mockUsePublishing.publishingStatus,
+          publishedPhases: ['topic'],
+        },
+      });
+
       render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
 
       const checkbox = screen.getByRole('checkbox', {

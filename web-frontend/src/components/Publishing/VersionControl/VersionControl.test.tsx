@@ -9,26 +9,48 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'publishing.versionControl.title': 'Version History',
-        'publishing.versionControl.version': params?.version
-          ? `Version ${params.version}`
+        'publishing.versionControl.version': 'Version',
+        'publishing.versionControl.versionNumber': params?.number
+          ? `Version ${params.number}`
           : 'Version',
         'publishing.versionControl.phase': 'Phase',
+        'publishing.versionControl.published': 'Published',
         'publishing.versionControl.publishedAt': 'Published At',
         'publishing.versionControl.publishedBy': 'Published By',
+        'publishing.versionControl.publisher': 'Publisher',
+        'publishing.versionControl.status': 'Status',
+        'publishing.versionControl.actions': 'Actions',
         'publishing.versionControl.current': 'Current',
         'publishing.versionControl.rollback': 'Rollback',
-        'publishing.versionControl.rollbackConfirm': 'Confirm Rollback',
-        'publishing.versionControl.rollbackCancel': 'Cancel',
-        'publishing.versionControl.rollbackTitle': 'Rollback to Previous Version?',
-        'publishing.versionControl.rollbackMessage':
+        'publishing.versionControl.rollbackToVersion': params?.version
+          ? `Rollback to version ${params.version}`
+          : 'Rollback to version',
+        'publishing.versionControl.confirmRollback': 'Confirm Rollback',
+        'publishing.versionControl.rollbackQuestion':
           'Are you sure you want to rollback to this version?',
-        'publishing.versionControl.rollbackReason': 'Reason for rollback',
-        'publishing.versionControl.noVersions': 'No versions published yet',
+        'publishing.versionControl.cancel': 'Cancel',
+        'publishing.versionControl.confirmRollbackButton': 'Confirm Rollback',
+        'publishing.versionControl.rollingBack': 'Rolling Back...',
+        'publishing.versionControl.reasonLabel': 'Reason for rollback',
+        'publishing.versionControl.reasonPlaceholder':
+          'Explain why you are rolling back this version',
+        'publishing.versionControl.reasonHelperText': params
+          ? `${params.current}/${params.min}-${params.max} characters`
+          : 'Enter reason for rollback',
+        'publishing.versionControl.reasonTooShort': params?.min
+          ? `Reason must be at least ${params.min} characters`
+          : 'Reason too short',
+        'publishing.versionControl.reasonTooLong': params?.max
+          ? `Reason must not exceed ${params.max} characters`
+          : 'Reason too long',
+        'publishing.versionControl.cdnWarning': 'CDN cache will be invalidated after rollback',
+        'publishing.versionControl.cdnCleared': 'CDN Cleared',
+        'publishing.versionControl.cdnPending': 'CDN Pending',
+        'publishing.versionControl.cdnFailed': 'CDN Failed',
+        'publishing.versionControl.cdnUnknown': 'CDN Unknown',
+        'publishing.versionControl.noVersions': 'No version history available',
+        'publishing.versionControl.tableAriaLabel': 'Version history table',
       };
-
-      if (params && 'version' in params) {
-        return `Version ${params.version}`;
-      }
 
       return translations[key] || key;
     },
@@ -301,13 +323,18 @@ describe('VersionControl', () => {
         expect(screen.getByTestId('rollback-confirmation-modal')).toBeInTheDocument();
       });
 
+      // Fill in the rollback reason (minimum 10 characters required)
+      const reasonInput = screen.getByTestId('rollback-reason-input');
+      fireEvent.change(reasonInput, {
+        target: { value: 'Fixing critical bug found in production' },
+      });
+
       const confirmButton = screen.getByRole('button', { name: /confirm rollback/i });
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
-        // Component uses hardcoded reason: "Manual rollback to version 2"
         expect(mockUsePublishing.rollbackVersion).toHaveBeenCalledWith(2, {
-          reason: 'Manual rollback to version 2',
+          reason: 'Fixing critical bug found in production',
         });
       });
     });

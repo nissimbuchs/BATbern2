@@ -29,7 +29,7 @@ describe('PublishingTimeline', () => {
         <PublishingTimeline
           eventCode="BATbern142"
           currentPhase="speakers"
-          publishedPhases={['topic', 'speakers']}
+          publishedPhases={['topic']}
           eventDate="2025-05-15"
         />
       );

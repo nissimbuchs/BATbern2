@@ -24,7 +24,7 @@ describe('PublicFooter', () => {
 
     expect(screen.getByText('BATbern')).toBeInTheDocument();
     // Tagline is translated - check for part of it
-    expect(screen.getByText(/innovation meets tradition/i)).toBeInTheDocument();
+    expect(screen.getByText(/technology exchange between IT experts/i)).toBeInTheDocument();
   });
 
   it('should render contact email link', () => {

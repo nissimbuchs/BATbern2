@@ -192,11 +192,7 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
 
       {/* Mode Selection */}
       <FormControl component="fieldset" sx={{ mb: 3 }}>
-        <FormLabel
-          component="legend"
-          id="publishing-mode-label"
-          aria-label={t('publishing.controls.accessibility.publishingMode')}
-        >
+        <FormLabel component="legend" id="publishing-mode-label">
           {t('publishing.controls.mode')}
         </FormLabel>
         <RadioGroup
