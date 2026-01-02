@@ -1,0 +1,71 @@
+name: Test ECR Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to test (e.g., bf5c0f7-staging.690)'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  test-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test ECR validation
+        run: |
+          IMAGE_TAG="${{ inputs.image_tag }}"
+          echo "🔍 Testing ECR validation for IMAGE_TAG: $IMAGE_TAG"
+
+          VALIDATION_FAILED=false
+
+          for SERVICE in event-management-service speaker-coordination-service partner-coordination-service attendee-experience-service company-user-management-service api-gateway; do
+            REPO_NAME="batbern/staging/${SERVICE}"
+            echo "  Checking ${REPO_NAME}:${IMAGE_TAG}..."
+
+            # Check if image exists - run command directly with error handling
+            set +e  # Temporarily disable exit-on-error
+            AWS_OUTPUT=$(aws ecr describe-images \
+              --repository-name "$REPO_NAME" \
+              --image-ids imageTag="$IMAGE_TAG" \
+              --region ${{ env.AWS_REGION }} \
+              --query 'imageDetails[0].imageTags[0]' \
+              --output text 2>&1)
+            AWS_EXIT_CODE=$?
+            set -e  # Re-enable exit-on-error
+
+            if [ $AWS_EXIT_CODE -ne 0 ]; then
+              echo "::error::❌ AWS CLI failed (exit code: $AWS_EXIT_CODE): ${REPO_NAME}:${IMAGE_TAG}"
+              echo "::error::AWS CLI output: $AWS_OUTPUT"
+              VALIDATION_FAILED=true
+            elif ! echo "$AWS_OUTPUT" | grep -q "$IMAGE_TAG"; then
+              echo "::error::❌ Image not found: ${REPO_NAME}:${IMAGE_TAG}"
+              echo "::error::AWS CLI output: $AWS_OUTPUT"
+              VALIDATION_FAILED=true
+            else
+              echo "  ✅ Image exists: ${REPO_NAME}:${IMAGE_TAG}"
+            fi
+          done
+
+          if [ "$VALIDATION_FAILED" = "true" ]; then
+            echo ""
+            echo "::error::❌ Validation failed for some images"
+            exit 1
+          fi
+
+          echo "✅ All images validated successfully!"
