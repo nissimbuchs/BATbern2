@@ -23,6 +23,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    // Polyfill for sockjs-client which expects Node.js global
+    global: 'globalThis',
+  },
   plugins: [
     react(),
     // PWA configuration with service worker (Task 14b)
