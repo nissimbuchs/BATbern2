@@ -747,7 +747,8 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     private String generateRandomCode() {
-        return "TEST" + System.currentTimeMillis() % 100000;
+        // Use UUID to guarantee uniqueness (prevents duplicate key violations in fast test runs)
+        return "TEST" + java.util.UUID.randomUUID().toString().substring(0, 8);
     }
 
     private String capitalize(String str) {
