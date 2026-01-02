@@ -52,6 +52,9 @@ class NotificationServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private ch.batbern.events.repository.RegistrationRepository registrationRepository;
+
     private NotificationService notificationService;
 
     private String testUsername;
@@ -63,7 +66,8 @@ class NotificationServiceTest {
                 notificationRepository,
                 emailService,
                 userServiceClient,
-                eventRepository
+                eventRepository,
+                registrationRepository
         );
 
         testUsername = "john.doe";
