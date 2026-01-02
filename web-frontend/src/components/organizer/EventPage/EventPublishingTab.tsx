@@ -23,7 +23,10 @@ interface EventPublishingTabProps {
 
 export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, eventCode }) => {
   const { publishingStatus, isLoadingStatus, validationErrors } = usePublishing(eventCode);
-  const { unassignedSessions } = useSlotAssignment(eventCode);
+  const { unassignedSessions, isLoading: isLoadingSlots } = useSlotAssignment(eventCode);
+
+  console.log('[EventPublishingTab] unassignedSessions:', unassignedSessions);
+  console.log('[EventPublishingTab] isLoadingSlots:', isLoadingSlots);
 
   const publishingMode = 'progressive' as const;
 
@@ -47,6 +50,14 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
   const eventDate = event.date || new Date().toISOString();
 
   // Build validation data from status response and slot assignment
+  const mappedUnassignedSessions =
+    unassignedSessions?.map((session) => ({
+      sessionSlug: session.sessionSlug,
+      title: session.title || session.sessionSlug,
+    })) || [];
+
+  console.log('[EventPublishingTab] mappedUnassignedSessions:', mappedUnassignedSessions);
+
   const validationData = {
     topic: publishingStatus?.topic || { isValid: true, errors: [] },
     speakers: publishingStatus?.speakers || { isValid: true, errors: [] },
@@ -57,11 +68,10 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
         assignedCount: 0,
         totalCount: 0,
       }),
+      // Override isValid if there are unassigned sessions
+      isValid: mappedUnassignedSessions.length === 0,
       // Use actual unassigned sessions from slot assignment hook
-      unassignedSessions: unassignedSessions.map((session) => ({
-        sessionSlug: session.sessionSlug,
-        title: session.title || session.sessionSlug,
-      })),
+      unassignedSessions: mappedUnassignedSessions,
     },
   };
 
