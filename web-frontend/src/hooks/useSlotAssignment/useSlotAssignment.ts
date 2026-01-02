@@ -59,17 +59,14 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    * Fetch unassigned sessions
    */
   const fetchUnassignedSessions = useCallback(async () => {
-    console.log('[useSlotAssignment] fetchUnassignedSessions called');
     setIsLoading(true);
     setError(null);
 
     try {
       const sessions = await slotAssignmentService.getUnassignedSessions(eventCode);
-      console.log('[useSlotAssignment] Fetched', sessions.length, 'unassigned sessions');
       setUnassignedSessions(sessions);
       // If this is first load, set total sessions
       if (totalSessions === 0) {
-        console.log('[useSlotAssignment] First load - setting total sessions to', sessions.length);
         setTotalSessions(sessions.length);
       }
     } catch (err) {
@@ -88,8 +85,6 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    */
   const assignTiming = useCallback(
     async (sessionSlug: string, timing: SessionTimingRequest): Promise<void> => {
-      console.log('[useSlotAssignment] assignTiming called:', { sessionSlug, timing });
-
       // Clear any existing conflicts
       setConflict(null);
       setError(null);
@@ -97,18 +92,13 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
       // Optimistic update - remove from unassigned list and save snapshot for rollback
       let rollbackSessions: Session[] = [];
       setUnassignedSessions((prev) => {
-        console.log('[useSlotAssignment] Optimistic update - removing session from list');
-        console.log('[useSlotAssignment] Before:', prev.length, 'sessions');
         rollbackSessions = [...prev]; // Capture current state for rollback
         const filtered = prev.filter((s) => s.sessionSlug !== sessionSlug);
-        console.log('[useSlotAssignment] After:', filtered.length, 'sessions');
         return filtered;
       });
 
       try {
-        console.log('[useSlotAssignment] Calling API...');
         await slotAssignmentService.assignSessionTiming(eventCode, sessionSlug, timing);
-        console.log('[useSlotAssignment] ✓ API call successful - keeping optimistic update');
         // Success - optimistic update is kept, no need to refetch
       } catch (err) {
         console.error('[useSlotAssignment] ✗ API call failed - rolling back optimistic update');
@@ -196,12 +186,10 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    * Clear all session timings (reset all to unassigned)
    */
   const clearAllTimings = useCallback(async (): Promise<void> => {
-    console.log('[useSlotAssignment] clearAllTimings called');
     setError(null);
 
     try {
-      const result = await slotAssignmentService.clearAllTimings(eventCode);
-      console.log('[useSlotAssignment] ✓ Cleared', result.clearedCount, 'session timings');
+      await slotAssignmentService.clearAllTimings(eventCode);
 
       // Refresh sessions to update UI
       await fetchUnassignedSessions();
@@ -217,12 +205,10 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
    * Auto-assign all unassigned sessions to available time slots
    */
   const autoAssignTimings = useCallback(async (): Promise<void> => {
-    console.log('[useSlotAssignment] autoAssignTimings called');
     setError(null);
 
     try {
-      const result = await slotAssignmentService.autoAssignTimings(eventCode);
-      console.log('[useSlotAssignment] ✓ Auto-assigned', result.assignedCount, 'sessions');
+      await slotAssignmentService.autoAssignTimings(eventCode);
 
       // Refresh sessions to update UI
       await fetchUnassignedSessions();

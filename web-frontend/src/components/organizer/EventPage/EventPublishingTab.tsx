@@ -62,7 +62,7 @@ export const EventPublishingTab: React.FC<EventPublishingTabProps> = ({ event, e
     topic: {
       ...topicValidation,
       // Override if backend incorrectly reports valid but no topicCode exists
-      isValid: topicValidation.isValid && hasTopicCode,
+      isValid: !!(topicValidation.isValid && hasTopicCode),
       errors:
         !hasTopicCode && topicValidation.isValid
           ? ['Event topic must be defined']
