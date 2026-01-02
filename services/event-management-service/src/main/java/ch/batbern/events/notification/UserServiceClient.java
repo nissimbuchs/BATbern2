@@ -26,13 +26,14 @@ public class UserServiceClient {
 
     private final RestTemplate restTemplate;
 
-    private static final String USER_SERVICE_URL = "http://company-user-management-service:8081";
+    @org.springframework.beans.factory.annotation.Value("${user-service.base-url}")
+    private String userServiceBaseUrl;
 
     /**
      * Fetch user notification preferences
      */
     public UserPreferences getPreferences(String username) {
-        String url = USER_SERVICE_URL + "/api/v1/users/{username}/preferences";
+        String url = userServiceBaseUrl + "/api/v1/users/{username}/preferences";
         return restTemplate.getForObject(url, UserPreferences.class, username);
     }
 
@@ -40,7 +41,7 @@ public class UserServiceClient {
      * Get user's last login timestamp (for in-app notifications)
      */
     public Instant getLastLogin(String username) {
-        String url = USER_SERVICE_URL + "/api/v1/users/{username}/last-login";
+        String url = userServiceBaseUrl + "/api/v1/users/{username}/last-login";
         return restTemplate.getForObject(url, Instant.class, username);
     }
 
@@ -48,7 +49,7 @@ public class UserServiceClient {
      * Get user email address
      */
     public String getEmailByUsername(String username) {
-        String url = USER_SERVICE_URL + "/api/v1/users/{username}/email";
+        String url = userServiceBaseUrl + "/api/v1/users/{username}/email";
         return restTemplate.getForObject(url, String.class, username);
     }
 
@@ -56,7 +57,7 @@ public class UserServiceClient {
      * Get all organizer usernames (for escalation)
      */
     public List<String> getOrganizerUsernames() {
-        String url = USER_SERVICE_URL + "/api/v1/users?role=ORGANIZER";
+        String url = userServiceBaseUrl + "/api/v1/users?role=ORGANIZER";
         UserListResponse response = restTemplate.getForObject(url, UserListResponse.class);
 
         if (response == null || response.getUsers() == null) {
