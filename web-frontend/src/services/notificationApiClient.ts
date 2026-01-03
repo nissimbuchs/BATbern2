@@ -55,13 +55,17 @@ class NotificationApiClient {
         `${NOTIFICATION_API_PATH}?${params.toString()}`
       );
 
-      // Enhance notifications with computed properties
+      // Enhance notifications with computed properties and UI aliases
       const enhancedData = response.data.data.map((notification) => ({
         ...notification,
         isRead: notification.status === 'READ',
         actionUrl: notification.eventCode
           ? `/organizer/events/${notification.eventCode}`
           : undefined,
+        // UI aliases for backward compatibility
+        title: notification.subject,
+        message: notification.body,
+        timestamp: notification.createdAt,
       }));
 
       return {

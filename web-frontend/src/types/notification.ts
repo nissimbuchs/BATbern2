@@ -30,9 +30,9 @@ export type NotificationType =
 
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
-export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ';
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED' | 'READ' | 'UNREAD';
 
-export type NotificationChannel = 'EMAIL' | 'SMS' | 'WEBHOOK';
+export type NotificationChannel = 'EMAIL' | 'SMS' | 'WEBHOOK' | 'IN_APP';
 
 export interface Notification {
   id: string;
@@ -51,9 +51,12 @@ export interface Notification {
   metadata?: Record<string, unknown>;
   createdAt: string; // ISO 8601 format
   updatedAt: string; // ISO 8601 format
-  // UI helper properties
+  // UI helper properties (aliases for backward compatibility)
   isRead?: boolean; // Computed from status === 'READ'
   actionUrl?: string; // Computed from eventCode/metadata
+  title?: string; // Alias for subject (for UI components)
+  message?: string; // Alias for body (for UI components)
+  timestamp?: string; // Alias for createdAt (for UI components)
 }
 
 export interface NotificationsResponse {
@@ -64,6 +67,7 @@ export interface NotificationsResponse {
     totalItems: number;
     totalPages: number;
   };
+  unreadCount?: number; // Total unread notifications (for in-app notifications)
 }
 
 export interface NotificationCountResponse {
@@ -86,7 +90,7 @@ export interface DeleteNotificationResponse {
 
 export interface NotificationFilters {
   username: string;
-  status?: 'PENDING' | 'SENT' | 'READ' | 'FAILED';
+  status?: 'PENDING' | 'SENT' | 'READ' | 'FAILED' | 'UNREAD';
   eventCode?: string;
   notificationType?: NotificationType;
 }

@@ -116,8 +116,8 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
     void should_returnFilteredNotifications_when_usernameProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
-                        .param("page", "0")
-                        .param("size", "20"))
+                        .param("page", "1")
+                        .param("limit", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.pagination").exists())
@@ -133,8 +133,8 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
                         .param("status", "UNREAD")
-                        .param("page", "0")
-                        .param("size", "20"))
+                        .param("page", "1")
+                        .param("limit", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
                 // All results should have status=UNREAD (verified in GREEN phase)
@@ -148,8 +148,8 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
     void should_paginateResults_when_pageParamProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
-                        .param("page", "0")
-                        .param("size", "10"))
+                        .param("page", "1")
+                        .param("limit", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.limit").value(10))
                 .andExpect(jsonPath("$.pagination.page").value(1));  // Frontend uses 1-based indexing

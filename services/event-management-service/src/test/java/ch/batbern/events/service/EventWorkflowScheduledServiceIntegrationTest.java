@@ -55,6 +55,14 @@ public class EventWorkflowScheduledServiceIntegrationTest extends AbstractIntegr
 
     @BeforeEach
     void setUp() {
+        // Clear any leftover data from previous tests
+        transactionTemplate.execute(status -> {
+            eventRepository.deleteAll();
+            entityManager.flush();
+            return null;
+        });
+        entityManager.clear();
+
         // Each test uses unique event numbers to avoid constraint violations
         eventNumberSequence += 1;
     }
@@ -67,6 +75,8 @@ public class EventWorkflowScheduledServiceIntegrationTest extends AbstractIntegr
             entityManager.flush();
             return null;
         });
+        // Clear entity manager cache to ensure clean state for next test
+        entityManager.clear();
     }
 
     /**

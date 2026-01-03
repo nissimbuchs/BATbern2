@@ -77,7 +77,8 @@ class NotificationWebSocketClient {
   private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
   private notificationCallbacks: Set<NotificationCallback> = new Set();
   private stateCallbacks: Set<ConnectionStateCallback> = new Set();
-  private subscriptionId: string | null = null;
+  // Reserved for future unsubscribe functionality
+  private _subscriptionId: string | null = null;
 
   /**
    * Connect to WebSocket server for a specific user
@@ -132,7 +133,7 @@ class NotificationWebSocketClient {
     if (this.client) {
       this.client.deactivate();
       this.client = null;
-      this.subscriptionId = null;
+      this._subscriptionId = null;
       this.updateConnectionState(ConnectionState.DISCONNECTED);
     }
   }
@@ -200,8 +201,10 @@ class NotificationWebSocketClient {
       this.handleNotificationMessage(message.body);
     });
 
-    this.subscriptionId = subscription.id;
-    console.log(`Subscribed to notification topic: ${topic}`);
+    this._subscriptionId = subscription.id;
+    console.log(
+      `Subscribed to notification topic: ${topic} (subscription: ${this._subscriptionId})`
+    );
   }
 
   /**
@@ -209,7 +212,7 @@ class NotificationWebSocketClient {
    */
   private onDisconnected(): void {
     console.log('WebSocket disconnected');
-    this.subscriptionId = null;
+    this._subscriptionId = null;
 
     if (this.connectionState === ConnectionState.CONNECTED) {
       // Unexpected disconnection - will auto-reconnect
