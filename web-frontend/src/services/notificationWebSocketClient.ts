@@ -38,6 +38,19 @@ export type NotificationCallback = (notification: Notification) => void;
 export type ConnectionStateCallback = (state: ConnectionState) => void;
 
 /**
+ * Check if WebSocket infrastructure is available in current environment
+ *
+ * WebSocket is ONLY available in local development.
+ * Staging/Production use polling-based notifications (no WebSocket gateway deployed).
+ *
+ * See: docs/plans/websocket-aws-infrastructure.md (Status: DEFERRED)
+ */
+function isWebSocketAvailable(): boolean {
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+/**
  * Determine WebSocket URL based on current hostname
  *
  * Local Development: Connect directly to event-management-service
@@ -46,7 +59,7 @@ export type ConnectionStateCallback = (state: ConnectionState) => void;
  * - Example: BASE_PORT=9000 → API Gateway on 9000, Event Management on 9002
  * - WebSocket connections bypass API Gateway (doesn't support WebSocket proxying)
  *
- * Staging/Production: Connect to API Gateway which routes to event-management-service
+ * Staging/Production: WebSocket not available (infrastructure deferred)
  */
 function getWebSocketUrl(): string {
   const hostname = window.location.hostname;
@@ -59,11 +72,9 @@ function getWebSocketUrl(): string {
     return `http://localhost:${eventMgmtPort}`;
   }
 
-  if (hostname === 'staging.batbern.ch') {
-    return 'https://api.staging.batbern.ch';
-  }
-
-  return 'https://api.batbern.ch';
+  // Cloud environments don't have WebSocket infrastructure (deferred)
+  // This should never be reached if isWebSocketAvailable() check is used
+  throw new Error('WebSocket not available in cloud environments');
 }
 
 /**
@@ -83,9 +94,21 @@ class NotificationWebSocketClient {
   /**
    * Connect to WebSocket server for a specific user
    *
+   * Note: WebSocket is only available in local development.
+   * Staging/Production environments use REST API polling (WebSocket infrastructure deferred).
+   *
    * @param username Username to subscribe to notifications for
    */
   connect(username: string): void {
+    // Skip WebSocket connection in cloud environments (infrastructure not deployed)
+    if (!isWebSocketAvailable()) {
+      console.log(
+        'WebSocket not available in cloud environment - using REST API polling for notifications'
+      );
+      this.updateConnectionState(ConnectionState.DISCONNECTED);
+      return;
+    }
+
     if (this.client && this.connectionState === ConnectionState.CONNECTED) {
       console.warn('WebSocket already connected');
       return;
