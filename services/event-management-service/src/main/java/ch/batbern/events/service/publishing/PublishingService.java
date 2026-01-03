@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.PublishingVersion;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.dto.AutoPublishScheduleRequest;
 import ch.batbern.events.dto.AutoPublishScheduleResponse;
 import ch.batbern.events.dto.ChangeLogResponse;
@@ -16,13 +17,13 @@ import ch.batbern.events.dto.UnpublishPhaseResponse;
 import ch.batbern.events.dto.VersionHistoryResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.PublishingVersionRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,7 @@ public class PublishingService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final PublishingVersionRepository publishingVersionRepository;
     private final PublishingConfigRepository publishingConfigRepository;
+    private final EventTypeRepository eventTypeRepository;
     private final ObjectMapper objectMapper;
     private final CacheManager cacheManager;
     private final CdnInvalidationService cdnInvalidationService;
@@ -351,19 +353,22 @@ public class PublishingService {
             }
         }
 
-        // Speakers validation - at least one speaker in presenting state
-        // Valid presenting states: ACCEPTED, CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED
-        // (excludes DECLINED, WITHDREW, OVERFLOW, and early stages like IDENTIFIED/CONTACTED/READY)
-        long acceptedSpeakers = speakerPoolRepository.findByEventId(event.getId()).stream()
-                .filter(sp -> sp.getStatus() == SpeakerWorkflowState.ACCEPTED
-                        || sp.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED
-                        || sp.getStatus() == SpeakerWorkflowState.QUALITY_REVIEWED
-                        || sp.getStatus() == SpeakerWorkflowState.CONFIRMED)
-                .count();
-        boolean speakersValid = acceptedSpeakers > 0;
+        // Speakers validation - minimum number of sessions based on event type
+        // Sessions are created when speakers submit material, so session count correlates with speaker submissions
+        // Get event type configuration for minimum slot requirements
+        EventTypeConfiguration typeConfig = eventTypeRepository.findByType(event.getEventType())
+                .orElseThrow(() -> new RuntimeException(
+                        "Event type configuration not found for type: " + event.getEventType()));
+
+        long sessionCount = sessionRepository.findByEventId(event.getId()).size();
+        int minSlotsRequired = typeConfig.getMinSlots();
+        boolean speakersValid = sessionCount >= minSlotsRequired;
+
         List<String> speakersErrors = new ArrayList<>();
         if (!speakersValid) {
-            speakersErrors.add("At least one speaker must be accepted");
+            speakersErrors.add(String.format(
+                    "At least %d sessions required for %s event type (currently: %d)",
+                    minSlotsRequired, event.getEventType().getValue(), sessionCount));
         }
 
         // Sessions validation - all sessions must have timing

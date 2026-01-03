@@ -114,6 +114,51 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .build();
         sessionRepository.save(session2);
 
+        // Additional sessions to meet FULL_DAY minimum requirement (6 sessions total)
+        Session session3 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-three")
+                .title("Container Orchestration with Kubernetes")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(4, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(4, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room B")
+                .build();
+        sessionRepository.save(session3);
+
+        Session session4 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-four")
+                .title("DevOps Best Practices")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(5, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(5, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Main Hall")
+                .build();
+        sessionRepository.save(session4);
+
+        Session session5 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-five")
+                .title("Serverless Architectures")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(6, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(6, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room A")
+                .build();
+        sessionRepository.save(session5);
+
+        Session session6 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-six")
+                .title("Infrastructure as Code")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(7, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(7, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room B")
+                .build();
+        sessionRepository.save(session6);
+
         // Create speakers (QUALITY_REVIEWED = content approved, ready for slot assignment)
         SpeakerPool speaker1 = SpeakerPool.builder()
                 .eventId(testEvent.getId())
@@ -448,8 +493,8 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.topic.isValid").value(true))
                 .andExpect(jsonPath("$.speakers.isValid").value(true))
                 .andExpect(jsonPath("$.sessions.isValid").value(true))
-                .andExpect(jsonPath("$.sessions.assignedCount").value(2))
-                .andExpect(jsonPath("$.sessions.totalCount").value(2))
+                .andExpect(jsonPath("$.sessions.assignedCount").value(6))
+                .andExpect(jsonPath("$.sessions.totalCount").value(6))
                 .andExpect(jsonPath("$.sessions.unassignedSessions").isEmpty());
     }
 
@@ -525,8 +570,8 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
         mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sessions.isValid").value(false))
-                .andExpect(jsonPath("$.sessions.assignedCount").value(2))
-                .andExpect(jsonPath("$.sessions.totalCount").value(3))
+                .andExpect(jsonPath("$.sessions.assignedCount").value(6))
+                .andExpect(jsonPath("$.sessions.totalCount").value(7))
                 .andExpect(jsonPath("$.sessions.unassignedSessions", hasSize(1)))
                 .andExpect(jsonPath("$.sessions.unassignedSessions[0].sessionSlug").value("bob-jones-cloudco"))
                 .andExpect(jsonPath("$.sessions.unassignedSessions[0].title").value("Kubernetes Best Practices"))
