@@ -228,9 +228,7 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       );
 
       // Should display heading with session count
-      expect(
-        screen.getByRole('heading', { name: /speakers & sessions/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /speakers & sessions/i })).toBeInTheDocument();
 
       // Should display all 12 session rows
       const rows = screen.getAllByRole('row');
@@ -450,7 +448,6 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       const materialsButtons = screen.queryAllByRole('button', { name: /materials/i });
       expect(materialsButtons).toHaveLength(0);
     });
-
   });
 
   describe('Loading State (Test 8.13: AC17 - Loading states)', () => {
