@@ -118,9 +118,12 @@ describe('EventSpeakersTab Component (Story 5.6)', () => {
 
 // Integration tests for dual API call flow (Story BAT-17, P0-2)
 // These tests verify the actual implementation without mocking
-describe('EventSpeakersTab - Dual API Call Integration (BAT-17 P0-2)', () => {
+describe.skip('EventSpeakersTab - Dual API Call Integration (BAT-17 P0-2)', () => {
   // TODO: Implement integration tests for dual API call flow
   // - Test: Both API calls execute when session is updated with title AND timing
   // - Test: Partial failure scenario (first call succeeds, second fails with 409)
   // - Test: Query invalidation after successful save
+  it.todo('should execute both API calls when session is updated with title AND timing');
+  it.todo('should handle partial failure when first call succeeds but second fails with 409');
+  it.todo('should invalidate queries after successful save');
 });
