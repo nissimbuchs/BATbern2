@@ -22,5 +22,5 @@ public class ErrorResponse {
     private String correlationId;
     private String severity;
     private Map<String, Object> details;
-    private String stackTrace; // Only in dev/staging
+    private String stackTrace; // Only in dev and staging
 }
