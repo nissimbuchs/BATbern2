@@ -23,32 +23,73 @@ import {
   useEvents,
   useEvent,
   useEventWorkflow,
-  useCriticalTasks,
-  useTeamActivity,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
 } from '@/hooks/useEvents';
+import { useNotifications } from '@/hooks/useNotifications';
 import { taskService } from '@/services/taskService';
 import type { EventListResponse } from '@/types/event.types';
+import type { Notification } from '@/types/notification';
 
 // Mock the hooks
 vi.mock('@/hooks/useEvents', () => ({
   useEvents: vi.fn(),
   useEvent: vi.fn(),
   useEventWorkflow: vi.fn(),
-  useCriticalTasks: vi.fn(),
-  useTeamActivity: vi.fn(),
   useCreateEvent: vi.fn(),
   useUpdateEvent: vi.fn(),
   useDeleteEvent: vi.fn(),
 }));
 
+// Mock useNotifications
+vi.mock('@/hooks/useNotifications', () => ({
+  useNotifications: vi.fn(),
+  useMarkAsRead: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+}));
+
+// Mock useAuth
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: { username: 'test-organizer', role: 'organizer' },
+    isAuthenticated: true,
+  })),
+}));
+
+// Mock useEventStore
+vi.mock('@/stores/eventStore', () => ({
+  useEventStore: vi.fn(() => ({
+    filters: {},
+    setFilters: vi.fn(),
+    pagination: { page: 1, limit: 20 },
+    setPage: vi.fn(),
+    setLimit: vi.fn(),
+    isCreateModalOpen: false,
+    openCreateModal: vi.fn(),
+    closeCreateModal: vi.fn(),
+    isEditModalOpen: false,
+    selectedEventCode: null,
+    openEditModal: vi.fn(),
+    closeEditModal: vi.fn(),
+  })),
+}));
+
+// Mock useNotificationWebSocket
+vi.mock('@/hooks/useNotificationWebSocket', () => ({
+  useNotificationWebSocket: vi.fn(() => ({
+    onNotification: vi.fn(() => vi.fn()),
+    isConnected: false,
+  })),
+}));
+
 // Mock taskService for TaskWidget
 vi.mock('@/services/taskService', () => ({
   taskService: {
-    getMyTasks: vi.fn(),
-    completeTask: vi.fn(),
+    getMyTasks: vi.fn(() => Promise.resolve([])),
+    completeTask: vi.fn(() => Promise.resolve()),
   },
 }));
 
@@ -140,26 +181,21 @@ describe('EventManagementDashboard Component', () => {
     },
   ];
 
-  const mockTeamActivityData = {
-    data: [
-      {
-        id: 'activity-1',
-        eventCode: 'BATbern56',
-        type: 'speaker_assigned',
-        actorUsername: 'john.doe',
-        actorName: 'John Doe',
-        action: 'assigned speaker',
-        targetDescription: 'Jane Smith to session 1',
-        timestamp: '2025-01-15T10:00:00Z',
-      },
-    ],
-    pagination: {
-      page: 1,
-      limit: 20,
-      totalItems: 1,
-      hasNext: false,
+  const mockNotificationsData: Notification[] = [
+    {
+      id: 'notification-1',
+      eventCode: 'BATbern56',
+      notificationType: 'TASK_ASSIGNED',
+      subject: 'New task assigned',
+      body: 'You have been assigned a new task',
+      recipientUsername: 'test-organizer',
+      priority: 'NORMAL',
+      isRead: false,
+      createdAt: '2025-01-15T10:00:00Z',
+      readAt: null,
+      metadata: {},
     },
-  };
+  ];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -220,17 +256,13 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
         isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
+      } as any);
+      vi.mocked(useNotifications).mockReturnValue({
+        data: mockNotificationsData,
         isLoading: false,
         isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+        refetch: vi.fn(),
+      } as any);
 
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
@@ -243,17 +275,13 @@ describe('EventManagementDashboard Component', () => {
         isLoading: true,
         isSuccess: false,
         isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
+      } as any);
+      vi.mocked(useNotifications).mockReturnValue({
         data: undefined,
         isLoading: true,
         isSuccess: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        isSuccess: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+        refetch: vi.fn(),
+      } as any);
 
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
