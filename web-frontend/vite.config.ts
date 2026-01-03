@@ -115,7 +115,7 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',
-              networkTimeoutSeconds: 10,
+              networkTimeoutSeconds: 20, // Increased from 10s to 20s to reduce false offline triggers
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 5, // 5 minutes
@@ -126,7 +126,7 @@ export default defineConfig({
             },
           },
         ],
-        // Offline fallback - exclude auth pages, API routes, and public event pages
+        // Offline fallback - exclude auth pages, API routes, public event pages, and authenticated routes
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [
           /^\/api/,
@@ -135,6 +135,12 @@ export default defineConfig({
           /^\/register/,
           /^\/forgot-password/,
           /^\/events/, // Story 4.1.5: Public event pages (registration confirmation, etc.)
+          /^\/organizer/, // Organizer pages - let app handle errors with proper auth context
+          /^\/speaker/, // Speaker pages - let app handle errors with proper auth context
+          /^\/partner/, // Partner pages - let app handle errors with proper auth context
+          /^\/attendee/, // Attendee pages - let app handle errors with proper auth context
+          /^\/admin/, // Admin pages - let app handle errors with proper auth context
+          /^\/user/, // User profile pages - let app handle errors with proper auth context
         ],
       },
       devOptions: {
