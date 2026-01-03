@@ -237,6 +237,9 @@
       "cascadeWarning": "All associated data (users, partnerships, speakers, events) may be affected.",
       "deleting": "Deleting...",
       "success": "Company deleted successfully"
+    },
+    "pagination": {
+      "itemsPerPage": "Items per page"
     }
   },
   "event": {

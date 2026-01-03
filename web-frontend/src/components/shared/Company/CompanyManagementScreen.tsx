@@ -34,6 +34,7 @@ import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
 import { CompanyBatchImportModal } from '@/components/shared/Company/CompanyBatchImportModal';
+import CompanyPagination from '@/components/shared/Company/CompanyPagination';
 import {
   useCreateCompany,
   useUpdateCompany,
@@ -91,7 +92,7 @@ const CompanyManagementScreen: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [pagination] = useState({ page: 1, limit: 100 });
+  const [pagination, setPagination] = useState({ page: 1, limit: 20 });
 
   // Fetch companies list with filters (including search) and logo expansion
   const { data: companiesData, isLoading: isLoadingCompanies } = useCompanies(pagination, filters, {
@@ -109,6 +110,16 @@ const CompanyManagementScreen: React.FC = () => {
 
   const handleFilterChange = useCallback((newFilters: CompanyFiltersType) => {
     setFilters(newFilters);
+    // Reset to page 1 when filters change
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handleLimitChange = useCallback((newLimit: number) => {
+    setPagination({ page: 1, limit: newLimit }); // Reset to page 1 when limit changes
   }, []);
 
   const handleCreateCompany = useCallback(() => {
@@ -219,12 +230,24 @@ const CompanyManagementScreen: React.FC = () => {
           <Route
             path="/*"
             element={
-              <CompanyList
-                companies={companiesData?.data || []}
-                isLoading={isLoadingCompanies}
-                viewMode={viewMode}
-                onCompanyClick={(id) => navigate(`${id}`)}
-              />
+              <>
+                <CompanyList
+                  companies={companiesData?.data || []}
+                  isLoading={isLoadingCompanies}
+                  viewMode={viewMode}
+                  onCompanyClick={(id) => navigate(`${id}`)}
+                />
+                {/* Pagination */}
+                {companiesData?.pagination && (
+                  <CompanyPagination
+                    page={companiesData.pagination.page}
+                    totalPages={companiesData.pagination.totalPages}
+                    limit={companiesData.pagination.limit}
+                    onPageChange={handlePageChange}
+                    onLimitChange={handleLimitChange}
+                  />
+                )}
+              </>
             }
           />
           <Route

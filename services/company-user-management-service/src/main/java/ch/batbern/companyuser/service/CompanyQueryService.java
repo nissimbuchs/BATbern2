@@ -101,9 +101,9 @@ public class CompanyQueryService {
 
         // Build Sort from SortCriteria
         if (sortCriteria.isEmpty()) {
-            // Default sort: createdAt DESC (most recent first)
+            // Default sort: name ASC (alphabetical order)
             return PageRequest.of(zeroIndexedPage, paginationParams.getLimit(),
-                    Sort.by(Sort.Direction.DESC, "createdAt"));
+                    Sort.by(Sort.Direction.ASC, "name"));
         }
 
         // Convert SortCriteria to Spring Data Sort

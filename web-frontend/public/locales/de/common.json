@@ -237,6 +237,9 @@
       "cascadeWarning": "Alle zugehörigen Daten (Benutzer, Partnerschaften, Sprecher, Veranstaltungen) können betroffen sein.",
       "deleting": "Wird gelöscht...",
       "success": "Unternehmen erfolgreich gelöscht"
+    },
+    "pagination": {
+      "itemsPerPage": "Einträge pro Seite"
     }
   },
   "event": {

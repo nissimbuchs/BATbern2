@@ -1358,6 +1358,18 @@ public class EventController {
 
                     return true;
                 })
+                .sorted((r1, r2) -> {
+                    // Sort alphabetically by last name, then first name
+                    String lastName1 = r1.getAttendeeLastName() != null ? r1.getAttendeeLastName() : "";
+                    String lastName2 = r2.getAttendeeLastName() != null ? r2.getAttendeeLastName() : "";
+                    int lastNameCompare = lastName1.compareToIgnoreCase(lastName2);
+                    if (lastNameCompare != 0) {
+                        return lastNameCompare;
+                    }
+                    String firstName1 = r1.getAttendeeFirstName() != null ? r1.getAttendeeFirstName() : "";
+                    String firstName2 = r2.getAttendeeFirstName() != null ? r2.getAttendeeFirstName() : "";
+                    return firstName1.compareToIgnoreCase(firstName2);
+                })
                 .collect(Collectors.toList());
 
         // Apply pagination to filtered results

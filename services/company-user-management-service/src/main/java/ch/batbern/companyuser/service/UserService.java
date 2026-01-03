@@ -264,9 +264,33 @@ public class UserService {
             users = applyJsonFilter(users, jsonFilter);
         }
 
+        // Sort alphabetically by lastName, then firstName
         return users.stream()
+                .sorted((u1, u2) -> {
+                    int lastNameCompare = compareNullable(u1.getLastName(), u2.getLastName());
+                    if (lastNameCompare != 0) {
+                        return lastNameCompare;
+                    }
+                    return compareNullable(u1.getFirstName(), u2.getFirstName());
+                })
                 .map(responseMapper::mapToResponse)
                 .toList();
+    }
+
+    /**
+     * Helper method to compare nullable strings (null values sorted last)
+     */
+    private int compareNullable(String s1, String s2) {
+        if (s1 == null && s2 == null) {
+            return 0;
+        }
+        if (s1 == null) {
+            return 1;  // null comes after non-null
+        }
+        if (s2 == null) {
+            return -1; // null comes after non-null
+        }
+        return s1.compareToIgnoreCase(s2);
     }
 
     /**
