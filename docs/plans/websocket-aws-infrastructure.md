@@ -3,7 +3,9 @@
 **Story**: BAT-7 - Notifications API Consolidation
 **Feature**: Real-time WebSocket Push Notifications
 **Date**: 2026-01-02
-**Status**: Planning
+**Updated**: 2026-01-03
+**Status**: ⏸️ DEFERRED - Using Polling-Based Approach (Option 1)
+**Decision**: Stay with REST API polling, no WebSocket gateway deployment for now
 
 ## Executive Summary
 
@@ -12,7 +14,15 @@ WebSocket push notifications are **fully implemented and working** in local deve
 - **Local Development**: WebSocket client connects directly to event-management-service (port BASE_PORT+2)
 - **AWS Staging/Production**: WebSocket client needs to connect through AWS API Gateway infrastructure
 
-This plan outlines the infrastructure changes needed to support WebSocket in AWS.
+**DECISION (2026-01-03)**: **Stay with Option 1** - Polling-based notifications via REST API. No WebSocket gateway deployment for now.
+
+**Rationale**:
+- ✅ App fully functional with REST API polling (1-minute refresh)
+- ✅ Zero additional cost vs. $43-50/month for WebSocket infrastructure
+- ✅ Graceful degradation confirmed - no errors or crashes without gateway
+- ✅ WebSocket infrastructure can be deployed later if real-time becomes critical
+
+This plan remains as **reference documentation** for future WebSocket gateway deployment if needed.
 
 ## Current State
 
@@ -49,9 +59,129 @@ Client → AWS HTTP API Gateway → API Gateway Service (ALB) → Microservices 
 - Event Management Service uses Service Connect (internal VPC DNS), no public endpoint
 - WebSocket requires persistent connections, different from HTTP request/response
 
-## Architecture Options
+**Current Behavior in Staging/Production (Verified 2026-01-03)**:
+- Frontend attempts WebSocket connection to `wss://api.staging.batbern.ch/ws`
+- Connection fails (endpoint doesn't support WebSocket upgrade)
+- `ConnectionState` → `ERROR` or `DISCONNECTED`
+- `isConnected` → `false`
+- Real-time subscription skipped (`if (!isConnected) return;`)
+- **Fallback to REST API polling** via `useNotifications` hook (1-minute refresh)
+- ✅ **No application errors or crashes** - graceful degradation confirmed
 
-### Option 1: AWS WebSocket API Gateway (RECOMMENDED)
+---
+
+## Graceful Degradation Analysis (2026-01-03)
+
+### Two-Tier Notification Architecture
+
+The application has **TWO independent notification systems** that work together:
+
+1. **WebSocket (Real-time)** - Story BAT-7
+   - Push notifications via WebSocket
+   - Instant updates without polling
+   - **Optional** - enhances UX but not required
+
+2. **REST API (Polling)** - Story 1.17
+   - Traditional HTTP polling via React Query
+   - 1-minute stale time (auto-refetch)
+   - **Required** - always works, no infrastructure dependencies
+
+### Frontend Implementation (EventManagementDashboard.tsx)
+
+```typescript
+// WebSocket connection attempt (graceful)
+const { onNotification, isConnected } = useNotificationWebSocket(user?.username);
+
+// Only subscribe if connected - no errors if not connected
+useEffect(() => {
+  if (!isConnected) {
+    return; // ← Gracefully skips WebSocket subscription
+  }
+
+  const unsubscribe = onNotification((notification) => {
+    console.log('Real-time notification received:', notification);
+    queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  });
+
+  return unsubscribe;
+}, [isConnected, onNotification, queryClient]);
+
+// REST API polling (always works)
+const { data: notificationsData } = useNotifications(
+  { username: user?.username || '', status: 'UNREAD' },
+  { page: 1, limit: 10 }
+);
+```
+
+### User Experience Comparison
+
+| Feature | With WebSocket Gateway | Without Gateway (Current) |
+|---------|----------------------|--------------------------|
+| **Notifications** | ✅ Instant (real-time) | ✅ Delayed (1-minute polling) |
+| **Dashboard Updates** | ✅ Instant | ✅ 1-minute auto-refresh |
+| **App Functionality** | ✅ All features work | ✅ All features work |
+| **Errors/Crashes** | ❌ None | ❌ None |
+| **Browser Console** | Clean | WebSocket connection errors (diagnostics only) |
+| **Monthly Cost** | ~$43-50/month | $0/month |
+
+### Verified Behavior
+
+**Tested Scenarios**:
+1. ✅ Dashboard loads without WebSocket gateway
+2. ✅ Notifications appear via REST API polling
+3. ✅ No application errors or crashes
+4. ✅ Connection state managed gracefully (`DISCONNECTED`/`ERROR`)
+5. ✅ Auto-reconnect attempts with 5-second delay (expected behavior)
+6. ✅ All dashboard features functional
+
+**Conclusion**: Application is **production-ready** without WebSocket infrastructure. WebSocket gateway deployment is **optional enhancement** for instant notifications.
+
+---
+
+## Option 1: Polling-Based Approach (CURRENT - No Gateway Deployment)
+
+**Status**: ✅ Active - No infrastructure changes needed
+
+**Architecture**:
+```
+Client (Browser)
+  ↓ REST API (1-minute polling)
+API Gateway Service
+  ↓ Service Connect
+Event Management Service
+  ↓ Database queries
+Notifications stored in DB
+```
+
+**Pros**:
+- ✅ **Zero additional cost** - no AWS infrastructure needed
+- ✅ **Already implemented** - working in staging/production now
+- ✅ **Simple architecture** - no WebSocket complexity
+- ✅ **Proven reliability** - standard REST API pattern
+- ✅ **Easy to maintain** - no additional monitoring needed
+
+**Cons**:
+- ⏳ **1-minute delay** - notifications not instant
+- 📊 **Slightly higher DB load** - polling queries every minute
+- 🔄 **No true real-time** - page must refresh to see updates
+
+**Cost**: $0/month additional
+
+**When to Use**:
+- Low to medium traffic applications
+- Cost-conscious environments
+- Acceptable notification delay (1 minute)
+- Testing and staging environments
+
+**Decision**: ✅ **SELECTED** - Sufficient for current BATbern requirements
+
+---
+
+## Future Options: WebSocket Gateway Deployment (If Needed)
+
+The following options remain available if real-time notifications become critical in the future:
+
+### Option 2: AWS WebSocket API Gateway (RECOMMENDED if deploying)
 
 **Architecture**:
 ```
@@ -82,7 +212,7 @@ Notification Listeners
 - VPC Link (if used): $0.01/hour (~$7.20/month) - shared across environments
 - **Total**: ~$7-10/month for staging + production combined
 
-### Option 2: Application Load Balancer for Event Management Service
+### Option 3: Application Load Balancer for Event Management Service
 
 **Architecture**:
 ```
@@ -111,7 +241,7 @@ Notification Listeners
 - ALB: $16.20/month base + $0.008/LCU-hour
 - **Total**: ~$32-40/month for staging + production
 
-### Option 3: Route Through Existing API Gateway Service ALB
+### Option 4: Route Through Existing API Gateway Service ALB
 
 **Architecture**:
 ```
@@ -481,7 +611,21 @@ If WebSocket infrastructure fails:
 - [STOMP Protocol Specification](https://stomp.github.io/stomp-specification-1.2.html)
 - Story BAT-7: `docs/stories/BAT-7.notifications-api-consolidation.md`
 
-## Questions for Review
+## When to Reconsider WebSocket Gateway Deployment
+
+Deploy WebSocket infrastructure if ANY of these conditions occur:
+
+1. **User Feedback**: Users frequently request faster notification updates
+2. **Scale**: Monthly active users exceed 500+ concurrent sessions
+3. **Real-time Critical**: Instant notifications become business requirement
+4. **Budget Approved**: $43-50/month infrastructure cost approved
+5. **Competitive Advantage**: Real-time updates become differentiator
+
+**Re-evaluation Trigger**: Review this decision quarterly or when user base doubles.
+
+---
+
+## Questions for Future Review (If Deploying)
 
 1. **Cost Approval**: Is $43-50/month acceptable for WebSocket infrastructure?
 2. **Domain Name**: Confirm `ws.staging.batbern.ch` and `ws.batbern.ch` are acceptable
@@ -490,4 +634,21 @@ If WebSocket infrastructure fails:
 
 ---
 
-**Next Steps**: Review this plan, approve costs, and proceed with implementation.
+## Current Status (2026-01-03)
+
+**Decision**: ⏸️ **DEFERRED** - Stay with Option 1 (Polling-based notifications)
+
+**Deployment Status**:
+- ✅ Local Development: WebSocket working
+- ✅ AWS Staging/Production: Polling-based notifications working
+- ⏸️ WebSocket Gateway: Not deployed (deferred)
+
+**Next Steps**:
+1. ✅ Monitor user feedback on notification delays
+2. ✅ Track notification volume and latency
+3. ⏸️ Re-evaluate quarterly or when requirements change
+4. 📋 Keep this plan updated for future reference
+
+**Plan Maintained By**: Development Team
+**Last Updated**: 2026-01-03
+**Next Review**: 2026-04-03 (Quarterly)
