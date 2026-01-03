@@ -3,12 +3,39 @@
  * Tests for speaker grid display functionality
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerGrid } from './SpeakerGrid';
 import type { Session } from '@/types/event.types';
 
+// Mock API clients
+vi.mock('@/services/companyApiClient', () => ({
+  companyApiClient: {
+    getCompany: vi.fn(() => Promise.resolve({ name: 'Test Company', logoUrl: null })),
+  },
+}));
+
 describe('SpeakerGrid', () => {
+  let queryClient: QueryClient;
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  };
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
   const mockSessions: Session[] = [
     {
       sessionSlug: 'keynote-session',
@@ -62,7 +89,7 @@ describe('SpeakerGrid', () => {
   ];
 
   it('should_displaySpeakerGrid_when_sessionsWithSpeakersProvided', () => {
-    render(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     // Check heading
     expect(screen.getByText('Speakers')).toBeInTheDocument();
@@ -73,14 +100,14 @@ describe('SpeakerGrid', () => {
   });
 
   it('should_displayCompanyNames_when_speakersHaveCompanies', () => {
-    render(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     expect(screen.getByText('GoogleZH')).toBeInTheDocument();
     expect(screen.getByText('AcmeCorp')).toBeInTheDocument();
   });
 
   it('should_displaySessionTitles_when_speakersAssignedToSessions', () => {
-    render(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     expect(screen.getByText('Opening Keynote: Future of Architecture')).toBeInTheDocument();
     expect(screen.getByText('Green Building Innovations')).toBeInTheDocument(); // presentationTitle
@@ -89,7 +116,7 @@ describe('SpeakerGrid', () => {
   it('should_storeSessionDescription_when_sessionHasDescription', () => {
     // Session description is stored in speaker data but not displayed in card
     // Only session title and speaker bio are shown
-    render(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     // Verify session titles are displayed
     expect(screen.getByText('Opening Keynote: Future of Architecture')).toBeInTheDocument();
@@ -117,7 +144,7 @@ describe('SpeakerGrid', () => {
       },
     ];
 
-    render(<SpeakerGrid sessions={sessionsWithoutPhotos} />);
+    renderWithProviders(<SpeakerGrid sessions={sessionsWithoutPhotos} />);
 
     expect(screen.getByText('TU')).toBeInTheDocument(); // Initials
   });
@@ -139,7 +166,7 @@ describe('SpeakerGrid', () => {
       },
     ];
 
-    const { container } = render(<SpeakerGrid sessions={sessionsWithoutSpeakers} />);
+    const { container } = renderWithProviders(<SpeakerGrid sessions={sessionsWithoutSpeakers} />);
 
     expect(container.firstChild).toBeNull();
   });
@@ -154,7 +181,7 @@ describe('SpeakerGrid', () => {
       },
     ];
 
-    render(<SpeakerGrid sessions={sessionsWithDuplicateSpeaker} />);
+    renderWithProviders(<SpeakerGrid sessions={sessionsWithDuplicateSpeaker} />);
 
     // Should only appear once despite being in 2 sessions
     const speakerCards = screen.getAllByText('John Doe');
@@ -162,7 +189,7 @@ describe('SpeakerGrid', () => {
   });
 
   it('should_useGridLayout_when_rendered', () => {
-    const { container } = render(<SpeakerGrid sessions={mockSessions} />);
+    const { container } = renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     // Check for responsive grid classes
     const gridContainer = container.querySelector('.grid');
@@ -171,7 +198,7 @@ describe('SpeakerGrid', () => {
   });
 
   it('should_applyHoverStyles_when_cardHovered', () => {
-    const { container } = render(<SpeakerGrid sessions={mockSessions} />);
+    const { container } = renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
 
     const cards = container.querySelectorAll('.group');
     expect(cards.length).toBeGreaterThan(0);

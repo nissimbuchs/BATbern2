@@ -84,6 +84,17 @@ public class Session {
     private Instant updatedAt;
 
     /**
+     * Link to speaker pool entry (one session per speaker)
+     * Story BAT-11 (5.7): V20 added speaker_pool.session_id FK
+     * This allows tracking which speaker is assigned to which session/slot
+     */
+    @Column(name = "speaker_pool_id", columnDefinition = "UUID")
+    private UUID speakerPoolId;
+
+    @Transient
+    private SpeakerPool speakerPool; // Populated via join when needed
+
+    /**
      * Many-to-many relationship with users (speakers)
      * Story 4.1.4: Sessions can have multiple speakers with different roles
      * ADR-004: References User entities via userId in SessionUser

@@ -114,8 +114,6 @@ test.describe('Partner Directory - Search Functionality', () => {
     // Wait for initial partners to load
     await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
 
-    const initialCardCount = await page.locator('[data-testid="partner-card"]').count();
-
     // Enter search query
     const searchInput = page.getByPlaceholder(/search/i);
     await searchInput.fill('Tech');
@@ -303,7 +301,7 @@ test.describe('Partner Directory - Pagination', () => {
 
     // Check if pagination is present (only if more than one page exists)
     const paginationNav = page.getByRole('navigation', { name: /pagination/i });
-    const paginationExists = await paginationNav.count() > 0;
+    const paginationExists = (await paginationNav.count()) > 0;
 
     if (paginationExists) {
       // Click next page button
@@ -332,7 +330,7 @@ test.describe('Partner Directory - Pagination', () => {
 test.describe('Partner Directory - Error Handling', () => {
   test('should handle network errors gracefully', async ({ page }) => {
     // Intercept API calls and simulate network error
-    await page.route(`${API_URL}/api/partners**`, route => {
+    await page.route(`${API_URL}/api/partners**`, (route) => {
       route.abort('failed');
     });
 
@@ -345,15 +343,15 @@ test.describe('Partner Directory - Error Handling', () => {
 
   test('should handle API errors gracefully', async ({ page }) => {
     // Intercept API calls and simulate 500 error
-    await page.route(`${API_URL}/api/partners**`, route => {
+    await page.route(`${API_URL}/api/partners**`, (route) => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({
           error: 'Internal Server Error',
           message: 'Database connection failed',
-          correlationId: 'test-correlation-id-123'
-        })
+          correlationId: 'test-correlation-id-123',
+        }),
       });
     });
 

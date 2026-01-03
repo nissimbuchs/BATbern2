@@ -108,4 +108,17 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return List of users matching active status
      */
     List<User> findByIsActive(boolean isActive);
+
+    /**
+     * Find users by exact first and last name match
+     * Story 3.2: Batch import user matching by name when unambiguous
+     *
+     * Used for historical data import where email may not match but name does.
+     * Returns all users with matching firstName AND lastName (exact match, case-insensitive).
+     *
+     * @param firstName User's first name (exact match)
+     * @param lastName User's last name (exact match)
+     * @return List of users matching both first and last name (empty if no match)
+     */
+    List<User> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
 }

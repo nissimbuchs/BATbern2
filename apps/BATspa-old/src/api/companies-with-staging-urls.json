@@ -1,6 +1,6 @@
 [
   {
-    "id": "SBB",
+    "id": "sbb",
     "displayName": "SBB CFF FFS",
     "logo": "sbb.jpg",
     "url": "https://www.sbb.ch",
@@ -11,7 +11,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/sbb.jpg"
   },
   {
-    "id": "Mobiliar",
+    "id": "mobiliar",
     "displayName": "Die Mobiliar",
     "logo": "mobiliar.jpg",
     "url": "https://www.mobiliar.ch",
@@ -22,7 +22,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/mobiliar.jpg"
   },
   {
-    "id": "Swisscom",
+    "id": "swisscom",
     "displayName": "Swisscom AG",
     "logo": "swisscom.jpg",
     "url": "https://www.swisscom.ch",
@@ -33,7 +33,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/swisscom.jpg"
   },
   {
-    "id": "PostFinance",
+    "id": "postfinance",
     "displayName": "PostFinance AG",
     "logo": "postfinance.jpg",
     "url": "https://www.postfinance.ch",
@@ -44,7 +44,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/postfinance.jpg"
   },
   {
-    "id": "ELCA",
+    "id": "elca",
     "displayName": "ELCA Informatique SA",
     "logo": "elca.jpg",
     "url": "https://www.elca.ch",
@@ -68,7 +68,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/logo-rtc.jpg"
   },
   {
-    "id": "BKW",
+    "id": "bkw",
     "displayName": "BKW AG",
     "logo": "bkw.jpg",
     "url": "https://www.bkw.ch",
@@ -116,7 +116,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/isc-ejpd.png"
   },
   {
-    "id": "BLS",
+    "id": "bls",
     "displayName": "BLS AG",
     "logo": null,
     "url": "https://www.bls.ch",
@@ -140,7 +140,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/aws-logo.png"
   },
   {
-    "id": "Post",
+    "id": "post",
     "displayName": "Die Schweizerische Post",
     "logo": "postfinance.jpg",
     "url": "https://www.post.ch",
@@ -354,7 +354,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/swisstopo.JPG"
   },
   {
-    "id": "DVBern",
+    "id": "dvbern",
     "displayName": "DV Bern AG",
     "logo": null,
     "url": "https://www.dvbern.ch",
@@ -366,7 +366,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "Microsoft",
+    "id": "microsoft",
     "displayName": "Microsoft",
     "logo": "microsoft.png",
     "url": "https://www.microsoft.com",
@@ -400,7 +400,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/vshn.png"
   },
   {
-    "id": "TWINT",
+    "id": "twint",
     "displayName": "TWINT",
     "logo": "twint-logo.png",
     "url": "https://www.twint.ch",
@@ -478,7 +478,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/lifestage.png"
   },
   {
-    "id": "BJB",
+    "id": "bjb",
     "displayName": "Bank Julius Baer",
     "logo": "JB_LA_RGB_blue.jpg",
     "url": "https://www.juliusbaer.com",
@@ -500,7 +500,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/innoq.png"
   },
   {
-    "id": "Finnova",
+    "id": "finnova",
     "displayName": "Finnova",
     "logo": null,
     "url": "https://finnova.ch",
@@ -598,7 +598,7 @@
     "logoUrl": "https://cdn.staging.batbern.ch/import-data/company-logos/confluent.jpg"
   },
   {
-    "id": "BCGE",
+    "id": "bcge",
     "displayName": "BCGE (Banque Cantonale de Genève)",
     "logo": "bcge.jpg",
     "url": "https://www.bcge.ch",
@@ -775,7 +775,7 @@
     "status": "complete"
   },
   {
-    "id": "Innoopract",
+    "id": "innoopract",
     "displayName": "Innoopract Informationssysteme GmbH",
     "url": null,
     "industry": "IT Consulting",
@@ -786,7 +786,7 @@
     "status": "complete"
   },
   {
-    "id": "KtBernSTV",
+    "id": "ktbernstv",
     "displayName": "Kanton Bern Steuerverwaltung",
     "url": "https://www.sv.fin.be.ch",
     "industry": "Government",
@@ -941,7 +941,7 @@
     "status": "complete"
   },
   {
-    "id": "SNB",
+    "id": "snb",
     "displayName": "Schweizerische Nationalbank",
     "url": "https://www.snb.ch",
     "industry": "Financial Services",
@@ -952,7 +952,7 @@
     "status": "complete"
   },
   {
-    "id": "ZKB",
+    "id": "zkb",
     "displayName": "Zürcher Kantonalbank",
     "url": "https://www.zkb.ch",
     "industry": "Financial Services",

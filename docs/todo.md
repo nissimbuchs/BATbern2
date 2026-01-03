@@ -1,18 +1,27 @@
 # BATbern Project TODO
 
 ## Errors:
+- cannot see the results of 5.4
+- 5.4 mentions speacker coordianation service, but there we do all in event ,anagement service
+- as ux epert to help with eventdetail and eventdetaildit pages and where to put all the session pages. use tabs?
+- update prd with new flow
 - ask ux expert to reorganize better the user-guide.
 - ask user expert to use playwright on localhost to get screenshots of all the major screens and pages
+- company list has double grid-table buttons
+- company detail has no breadcrumb
+- user management has no breadcrumb
 - company logos on list does not show, but on detail shows. again the origin problem?
+
 
 ## Documentation & Website
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one
 
 ## Architecture & Development
-- [on branch claude/review-branches-BROGI] topics have UUID in api, against ADR-003
-- [on branch claude/review-branches-BROGI] event has dto and generated dto in backend, should only use generated dto's.
-- [] event has metadata in api payload for theme and eventType that are both obsolete
+- [ ] topics have UUID in api, against ADR-003
+- [ ] event has dto and generated dto in backend, should only use generated dto's.
+- [ ] event has metadata in api payload for theme and eventType that are both obsolete
 - [ ] TODO: story-1.16-workflow-visualisation wirframe was never implemented. shows up when you press on the progress bar
+- [x] event dashboard status filter has wrong stati. change year filter to be a textbox that allows any year
 
 Accessing the PostgeSQL through the tunnel:
 PGPASSWORD from /Users/nissim/dev/bat/BATbern-feature/.env.native

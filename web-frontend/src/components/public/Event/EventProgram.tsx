@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { Clock, MapPin } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SpeakerDisplay } from './SpeakerDisplay';
 
 interface EventProgramProps {
   sessions: Session[];
@@ -22,6 +23,10 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
 
     sessions.forEach((session) => {
       try {
+        if (!session.startTime) {
+          console.warn('Session missing start time:', session.sessionSlug);
+          return;
+        }
         const timeKey = format(new Date(session.startTime), 'HH:mm');
         const existing = slotMap.get(timeKey) || [];
         slotMap.set(timeKey, [...existing, session]);
@@ -36,21 +41,21 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
       .sort((a, b) => a.time.localeCompare(b.time));
   }, [sessions]);
 
-  const formatSessionDuration = (startTime: string, endTime: string): string => {
+  const formatSessionDuration = (
+    startTime: string | null | undefined,
+    endTime: string | null | undefined
+  ): string => {
+    if (!startTime || !endTime) {
+      return ''; // Session not yet assigned to time slot
+    }
+
     try {
       const start = new Date(startTime);
       const end = new Date(endTime);
       return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
     } catch {
-      return t('public.sessions.timeTBD');
+      return '';
     }
-  };
-
-  const getSpeakerNames = (session: Session): string => {
-    if (!session.speakers || session.speakers.length === 0) {
-      return t('public.speakers.speakerTBA');
-    }
-    return session.speakers.map((speaker) => `${speaker.firstName} ${speaker.lastName}`).join(', ');
   };
 
   if (sessions.length === 0) {
@@ -90,9 +95,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                       </div>
 
                       {session.description && (
-                        <p className="text-sm text-zinc-400 mb-4 line-clamp-2">
-                          {session.description}
-                        </p>
+                        <p className="text-sm text-zinc-400 mb-4">{session.description}</p>
                       )}
 
                       <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
@@ -109,10 +112,25 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                       </div>
 
                       <div className="mt-4 pt-4 border-t border-zinc-800">
-                        <p className="text-sm text-zinc-300">
-                          <span className="text-zinc-500">{t('public.program.speaker')}: </span>
-                          {getSpeakerNames(session)}
-                        </p>
+                        {session.speakers && session.speakers.length > 0 ? (
+                          <div>
+                            <p className="text-xs text-zinc-500 mb-2">
+                              {t('public.program.speaker')}:
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {session.speakers.map((speaker) => (
+                                <SpeakerDisplay
+                                  key={speaker.username}
+                                  speaker={speaker}
+                                  size="small"
+                                  showProfilePicture={true}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
+                        )}
                       </div>
                     </div>
                   ))}

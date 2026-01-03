@@ -54,8 +54,8 @@ public class SpeakerStatusHistory {
     private UUID sessionId;
 
     @NotNull
-    @Column(name = "event_code", nullable = false, length = 20)
-    private String eventCode;
+    @Column(name = "event_id", nullable = false)
+    private UUID eventId;
 
     @NotNull
     @Column(name = "previous_status", nullable = false, length = 50)

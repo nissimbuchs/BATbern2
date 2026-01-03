@@ -100,6 +100,10 @@ management:
     export:
       prometheus:
         enabled: true
+      cloudwatch2:
+        # Disabled by default to save ~$35/month per service in non-production
+        # Only enable in production via MANAGEMENT_METRICS_EXPORT_CLOUDWATCH2_ENABLED=true
+        enabled: ${CLOUDWATCH_METRICS_ENABLED:false}
   health:
     livenessState:
       enabled: true

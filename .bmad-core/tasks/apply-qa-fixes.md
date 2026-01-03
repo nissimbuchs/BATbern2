@@ -51,6 +51,7 @@ optional:
 
 ### 1) Collect QA Findings
 
+**Primary Source**: Gate YAML file
 - Parse the latest gate YAML:
   - `gate` (PASS|CONCERNS|FAIL|WAIVED)
   - `top_issues[]` with `id`, `severity`, `finding`, `suggested_action`
@@ -59,6 +60,20 @@ optional:
   - `test_design.coverage_gaps[]`
   - `risk_summary.recommendations.must_fix[]` (if present)
 - Read any present assessment markdowns and extract explicit gaps/recommendations
+
+**NEW - Linear Integration (Optional)**:
+If Linear is enabled in core-config.yaml (`linear.enabled: true` and `linear.postQaToLinear: true`):
+- Extract Linear issue ID from story header `**Linear Issue**: [BAT-{N}](url)`
+- Call `mcp__linear-server__list_comments(issueId: "{issue_id}")`
+- Find most recent QA comment (contains "## QA Results -" header)
+- Parse Linear QA comment for additional findings:
+  - Executive Summary
+  - Code Quality Assessment (Strengths and Areas for Improvement)
+  - Test Coverage metrics
+  - Requirements Traceability table
+  - NFR Validation results
+  - Recommended Actions
+- Merge Linear findings with gate YAML findings (Linear provides context, YAML is authoritative)
 
 ### 2) Build Deterministic Fix Plan (Priority Order)
 
@@ -106,6 +121,48 @@ Status Rule:
 
 - If gate was PASS and all identified gaps are closed → set `Status: Ready for Done`
 - Otherwise → set `Status: Ready for Review` and notify QA to re-run the review
+
+**NEW - Post Fix Summary to Linear (Optional)**:
+If Linear integration is enabled:
+- Format fix summary as Linear comment:
+
+```markdown
+## QA Fixes Applied - {Date}
+
+**Developer**: {dev_agent_name}
+**Status**: Ready for Review
+
+### Changes Summary
+{Brief summary of fixes applied}
+
+### Issues Addressed
+{For each fixed issue from top_issues}
+- ✅ {issue_id}: {finding} → {what_was_done}
+
+### Test Coverage Improvements
+- Added {count} unit tests
+- Added {count} integration tests
+- Current coverage: {percent}%
+
+### Files Modified
+{List files from File List}
+
+### Next Steps
+Ready for QA re-review. Please run `/qa-gate` to update gate status.
+
+---
+📊 Changes: {files_changed} files modified
+*Dev Agent | Powered by BMAD™ Core*
+```
+
+- Call `mcp__linear-server__create_comment`:
+  - `issueId`: Linear issue ID from story header
+  - `body`: Formatted fix summary
+- Update Linear issue status to "In Review":
+  - Call `mcp__linear-server__update_issue`:
+    - `id`: Linear issue ID
+    - `state`: "In Review"
+    - `labels`: Remove `qa-fail` or `qa-concerns` labels if present
 
 ### 6) Do NOT Edit Gate Files
 

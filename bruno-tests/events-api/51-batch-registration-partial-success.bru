@@ -1,0 +1,58 @@
+meta {
+  name: Batch Registration - Partial Success
+  type: http
+  seq: 51
+}
+
+post {
+  url: {{baseUrl}}/events/batch_registrations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "participantEmail": "test.participant@example.com",
+    "firstName": "Test",
+    "lastName": "Participant",
+    "registrations": [
+      {
+        "eventCode": "BATbern1",
+        "status": "ATTENDED"
+      },
+      {
+        "eventCode": "BATbern999",
+        "status": "ATTENDED"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.successfulRegistrations: gt 0
+}
+
+tests {
+  test("should return 200 status for partial success", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should handle partial success (Story BAT-12)", function() {
+    const response = res.getBody();
+    expect(response.totalRegistrations).to.equal(2);
+    expect(response.successfulRegistrations).to.be.lessThan(response.totalRegistrations);
+    expect(response.failedRegistrations).to.be.an('array').that.is.not.empty;
+    expect(response.errors).to.be.an('array').that.is.not.empty;
+  });
+
+  test("should provide failure details", function() {
+    const response = res.getBody();
+    expect(response.failedRegistrations[0]).to.have.property('eventCode');
+    expect(response.failedRegistrations[0]).to.have.property('reason');
+  });
+}

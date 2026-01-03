@@ -69,58 +69,44 @@ describe('EventVenueTab Component (Story 5.6)', () => {
     vi.clearAllMocks();
   });
 
-  describe('Venue Information Section', () => {
-    it.skip('should_displayVenueTitle_when_rendered', () => {
+  describe('Rendering', () => {
+    it('renders venue information with all details', () => {
       renderWithProviders(<EventVenueTab event={mockEvent} />);
 
-      expect(screen.getByText(/Venue/i)).toBeInTheDocument();
-    });
-
-    it('should_displayVenueName_when_provided', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
+      // Venue details
       expect(screen.getByText('Kursaal Bern')).toBeInTheDocument();
-    });
-
-    it('should_displayVenueAddress_when_provided', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByText('Kornhausstrasse 3, 3013 Bern')).toBeInTheDocument();
-    });
-
-    it('should_displayVenueCapacity_when_provided', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByText(/200/)).toBeInTheDocument();
-    });
-
-    it('should_displayChangeVenueButton_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByRole('button', { name: /Change Venue/i })).toBeInTheDocument();
-    });
-
-    it('should_displayParkingChip_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByText(/Parking/i)).toBeInTheDocument();
-    });
-
-    it('should_displayAccessibleChip_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByText(/Accessible/i)).toBeInTheDocument();
+
+      // Day Schedule
+      expect(screen.getByText(/Day Schedule/i)).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: /Edit/i }).length).toBeGreaterThan(0);
+      expect(screen.getByText('08:00')).toBeInTheDocument();
+      expect(screen.getByText('09:00')).toBeInTheDocument();
+      expect(screen.getByText('12:30')).toBeInTheDocument();
+      expect(screen.getByText('19:00')).toBeInTheDocument();
+      expect(screen.getByText(/Registration.*Coffee/i)).toBeInTheDocument();
+      expect(screen.getByText(/Lunch Break/i)).toBeInTheDocument();
+      expect(screen.getByText(/Networking/i)).toBeInTheDocument();
+      expect(screen.getByText(/Event Ends/i)).toBeInTheDocument();
+
+      // VenueLogistics integration
+      expect(screen.getByTestId('venue-logistics')).toBeInTheDocument();
+      expect(screen.getByTestId('venue-logistics')).toHaveTextContent('BAT54');
     });
   });
 
-  describe('Booking Status', () => {
-    it('should_displayNotBookedWarning_when_noBooking', () => {
+  describe('Conditional Rendering - Booking Status', () => {
+    it('displays warning when venue not booked', () => {
       renderWithProviders(<EventVenueTab event={mockEvent} />);
 
       expect(screen.getByText(/Venue not yet booked/i)).toBeInTheDocument();
     });
 
-    it('should_displayConfirmedStatus_when_bookingExists', () => {
+    it('displays confirmation when booking exists', () => {
       renderWithProviders(<EventVenueTab event={mockEventWithBooking} />);
 
       expect(screen.getByText(/Confirmed/i)).toBeInTheDocument();
@@ -128,32 +114,15 @@ describe('EventVenueTab Component (Story 5.6)', () => {
     });
   });
 
-  describe('Catering Section', () => {
-    it.skip('should_displayCateringTitle_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByText(/Catering/i)).toBeInTheDocument();
-    });
-
-    it('should_displayConfigureButton_when_rendered', () => {
+  describe('Conditional Rendering - Catering', () => {
+    it('displays configure message when no catering', () => {
       renderWithProviders(<EventVenueTab event={mockEvent} />);
 
       expect(screen.getByRole('button', { name: /Configure/i })).toBeInTheDocument();
-    });
-
-    it('should_displayNoCateringMessage_when_noCatering', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
       expect(screen.getByText(/Catering not yet configured/i)).toBeInTheDocument();
     });
 
-    it.skip('should_displayCateringProvider_when_cateringExists', () => {
-      renderWithProviders(<EventVenueTab event={mockEventWithBooking} />);
-
-      expect(screen.getByText('Bern Catering Services')).toBeInTheDocument();
-    });
-
-    it('should_displayDietaryRequirements_when_cateringExists', () => {
+    it('displays dietary requirements when catering configured', () => {
       renderWithProviders(<EventVenueTab event={mockEventWithBooking} />);
 
       expect(screen.getByText(/15 Vegetarian/i)).toBeInTheDocument();
@@ -162,75 +131,22 @@ describe('EventVenueTab Component (Story 5.6)', () => {
     });
   });
 
-  describe('Day Schedule Section', () => {
-    it('should_displayScheduleTitle_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByText(/Day Schedule/i)).toBeInTheDocument();
-    });
-
-    it('should_displayEditScheduleButton_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      // There should be multiple edit buttons
-      const editButtons = screen.getAllByRole('button', { name: /Edit/i });
-      expect(editButtons.length).toBeGreaterThan(0);
-    });
-
-    it('should_displayScheduleTimes_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByText('08:00')).toBeInTheDocument();
-      expect(screen.getByText('09:00')).toBeInTheDocument();
-      expect(screen.getByText('12:30')).toBeInTheDocument();
-    });
-
-    it('should_displayScheduleActivities_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByText(/Registration.*Coffee/i)).toBeInTheDocument();
-      expect(screen.getByText(/Lunch Break/i)).toBeInTheDocument();
-      expect(screen.getByText(/Networking/i)).toBeInTheDocument();
-    });
-
-    it('should_displayEventEndsTime_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByText('19:00')).toBeInTheDocument();
-      expect(screen.getByText(/Event Ends/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('VenueLogistics Component Integration', () => {
-    it('should_renderVenueLogisticsComponent_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByTestId('venue-logistics')).toBeInTheDocument();
-    });
-
-    it('should_passEventToVenueLogistics_when_rendered', () => {
-      renderWithProviders(<EventVenueTab event={mockEvent} />);
-
-      expect(screen.getByTestId('venue-logistics')).toHaveTextContent('BAT54');
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should_handleMissingVenueName_gracefully', () => {
+  describe('Edge Cases - Missing Data', () => {
+    it('handles missing venue name gracefully', () => {
       const eventWithoutVenue = { ...mockEvent, venueName: undefined };
       renderWithProviders(<EventVenueTab event={eventWithoutVenue} />);
 
       expect(screen.getByText('-')).toBeInTheDocument();
     });
 
-    it('should_handleMissingAddress_gracefully', () => {
+    it('handles missing address gracefully', () => {
       const eventWithoutAddress = { ...mockEvent, venueAddress: undefined };
       renderWithProviders(<EventVenueTab event={eventWithoutAddress} />);
 
       expect(screen.getByText(/No address provided/i)).toBeInTheDocument();
     });
 
-    it('should_handleMissingCapacity_gracefully', () => {
+    it('handles missing capacity gracefully', () => {
       const eventWithoutCapacity = { ...mockEvent, venueCapacity: undefined };
       renderWithProviders(<EventVenueTab event={eventWithoutCapacity} />);
 

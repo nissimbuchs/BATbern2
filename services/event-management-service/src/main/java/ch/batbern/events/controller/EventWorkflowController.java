@@ -177,65 +177,16 @@ public class EventWorkflowController {
 
     /**
      * Get next available states based on current state
-     * This follows the 16-step workflow sequence
+     * This follows the 9-step workflow sequence
+     *
+     * Delegates to WorkflowTransitionValidator for single source of truth
      */
     private List<String> getNextAvailableStates(EventWorkflowState currentState) {
-        List<String> nextStates = new ArrayList<>();
-
-        switch (currentState) {
-            case CREATED:
-                nextStates.add(EventWorkflowState.TOPIC_SELECTION.name());
-                break;
-            case TOPIC_SELECTION:
-                nextStates.add(EventWorkflowState.SPEAKER_BRAINSTORMING.name());
-                break;
-            case SPEAKER_BRAINSTORMING:
-                nextStates.add(EventWorkflowState.SPEAKER_OUTREACH.name());
-                break;
-            case SPEAKER_OUTREACH:
-                nextStates.add(EventWorkflowState.SPEAKER_CONFIRMATION.name());
-                break;
-            case SPEAKER_CONFIRMATION:
-                nextStates.add(EventWorkflowState.CONTENT_COLLECTION.name());
-                break;
-            case CONTENT_COLLECTION:
-                nextStates.add(EventWorkflowState.QUALITY_REVIEW.name());
-                break;
-            case QUALITY_REVIEW:
-                nextStates.add(EventWorkflowState.THRESHOLD_CHECK.name());
-                break;
-            case THRESHOLD_CHECK:
-                nextStates.add(EventWorkflowState.OVERFLOW_MANAGEMENT.name());
-                break;
-            case OVERFLOW_MANAGEMENT:
-                nextStates.add(EventWorkflowState.SLOT_ASSIGNMENT.name());
-                break;
-            case SLOT_ASSIGNMENT:
-                nextStates.add(EventWorkflowState.AGENDA_PUBLISHED.name());
-                break;
-            case AGENDA_PUBLISHED:
-                nextStates.add(EventWorkflowState.AGENDA_FINALIZED.name());
-                break;
-            case AGENDA_FINALIZED:
-                nextStates.add(EventWorkflowState.NEWSLETTER_SENT.name());
-                break;
-            case NEWSLETTER_SENT:
-                nextStates.add(EventWorkflowState.EVENT_READY.name());
-                break;
-            case EVENT_READY:
-                nextStates.add(EventWorkflowState.PARTNER_MEETING_COMPLETE.name());
-                break;
-            case PARTNER_MEETING_COMPLETE:
-                nextStates.add(EventWorkflowState.ARCHIVED.name());
-                break;
-            case ARCHIVED:
-                // Terminal state - no next states
-                break;
-            default:
-                // All enum values covered above
-                break;
-        }
-
-        return nextStates;
+        // Get valid target states from WorkflowTransitionValidator
+        // Filter out idempotent transitions (same state to same state) for UI display
+        return transitionValidator.getValidTargetStates(currentState).stream()
+                .filter(state -> state != currentState)
+                .map(Enum::name)
+                .toList();
     }
 }

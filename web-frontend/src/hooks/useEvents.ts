@@ -42,14 +42,19 @@ import type {
 /**
  * useEvents - Fetch paginated list of events with filters
  * Cache: 5 minutes (moderately volatile data)
+ *
+ * @param pagination - Page number and limit
+ * @param filters - Optional filters for events
+ * @param options - Optional expand resources (e.g., ['registrations'] for actual counts)
  */
 export const useEvents = (
   pagination: PaginationParams,
-  filters?: EventFilters
+  filters?: EventFilters,
+  options?: { expand?: string[] }
 ): UseQueryResult<EventListResponse, Error> => {
   return useQuery({
-    queryKey: ['events', pagination, filters],
-    queryFn: () => eventApiClient.getEvents(pagination, filters),
+    queryKey: ['events', pagination, filters, options],
+    queryFn: () => eventApiClient.getEvents(pagination, filters, options),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -208,12 +213,27 @@ export const useUpdateEvent = (): UseMutationResult<
       }
     },
     // Invalidate and refetch on success
-    onSuccess: (_data, { eventCode }) => {
+    onSuccess: async (updatedEvent, { eventCode }) => {
       // Invalidate ALL event-related caches for proper MVC pattern
       // 1. List caches (all pagination/filter combinations)
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      // 2. Detail caches (all include parameter combinations)
-      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+
+      if (updatedEvent.eventCode !== eventCode) {
+        // EventCode changed (e.g., eventNumber 58 -> 998 regenerates BATbern58 -> BATbern998)
+
+        // CRITICAL: Cancel all active queries for old eventCode to prevent refetch
+        await queryClient.cancelQueries({ queryKey: ['event', eventCode] });
+
+        // Set the new data for the new eventCode (prevents unnecessary refetch)
+        queryClient.setQueryData(['event', updatedEvent.eventCode], updatedEvent);
+
+        // Remove old eventCode cache (no longer needed)
+        queryClient.removeQueries({ queryKey: ['event', eventCode] });
+      } else {
+        // EventCode unchanged - normal invalidation to refresh data
+        queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+      }
+
       // 3. Current event cache (in case updated event is the current published one)
       queryClient.invalidateQueries({ queryKey: ['events', 'current'] });
     },

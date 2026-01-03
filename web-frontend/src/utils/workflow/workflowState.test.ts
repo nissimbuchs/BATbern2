@@ -22,8 +22,8 @@ import {
 
 describe('workflowState utilities', () => {
   describe('WORKFLOW_STATE_ORDER', () => {
-    it('should contain exactly 16 workflow states', () => {
-      expect(WORKFLOW_STATE_ORDER).toHaveLength(16);
+    it('should contain exactly 9 workflow states', () => {
+      expect(WORKFLOW_STATE_ORDER).toHaveLength(9);
     });
 
     it('should start with CREATED', () => {
@@ -31,26 +31,19 @@ describe('workflowState utilities', () => {
     });
 
     it('should end with ARCHIVED', () => {
-      expect(WORKFLOW_STATE_ORDER[15]).toBe('ARCHIVED');
+      expect(WORKFLOW_STATE_ORDER[8]).toBe('ARCHIVED');
     });
 
     it('should contain all expected workflow states in order', () => {
       const expected = [
         'CREATED',
         'TOPIC_SELECTION',
-        'SPEAKER_BRAINSTORMING',
-        'SPEAKER_OUTREACH',
-        'SPEAKER_CONFIRMATION',
-        'CONTENT_COLLECTION',
-        'QUALITY_REVIEW',
-        'THRESHOLD_CHECK',
-        'OVERFLOW_MANAGEMENT',
+        'SPEAKER_IDENTIFICATION',
         'SLOT_ASSIGNMENT',
         'AGENDA_PUBLISHED',
         'AGENDA_FINALIZED',
-        'NEWSLETTER_SENT',
-        'EVENT_READY',
-        'PARTNER_MEETING_COMPLETE',
+        'EVENT_LIVE',
+        'EVENT_COMPLETED',
         'ARCHIVED',
       ];
       expect(WORKFLOW_STATE_ORDER).toEqual(expected);
@@ -58,31 +51,31 @@ describe('workflowState utilities', () => {
   });
 
   describe('getWorkflowProgress', () => {
-    it('should return 6% for CREATED (step 1/16)', () => {
-      expect(getWorkflowProgress('CREATED')).toBe(6);
+    it('should return 11% for CREATED (step 1/9)', () => {
+      expect(getWorkflowProgress('CREATED')).toBe(11);
     });
 
-    it('should return 13% for TOPIC_SELECTION (step 2/16)', () => {
-      expect(getWorkflowProgress('TOPIC_SELECTION')).toBe(13);
+    it('should return 22% for TOPIC_SELECTION (step 2/9)', () => {
+      expect(getWorkflowProgress('TOPIC_SELECTION')).toBe(22);
     });
 
-    it('should return 25% for SPEAKER_OUTREACH (step 4/16)', () => {
-      expect(getWorkflowProgress('SPEAKER_OUTREACH')).toBe(25);
+    it('should return 33% for SPEAKER_IDENTIFICATION (step 3/9)', () => {
+      expect(getWorkflowProgress('SPEAKER_IDENTIFICATION')).toBe(33);
     });
 
-    it('should return 44% for QUALITY_REVIEW (step 7/16)', () => {
-      expect(getWorkflowProgress('QUALITY_REVIEW')).toBe(44);
+    it('should return 44% for SLOT_ASSIGNMENT (step 4/9)', () => {
+      expect(getWorkflowProgress('SLOT_ASSIGNMENT')).toBe(44);
     });
 
-    it('should return 50% for THRESHOLD_CHECK (step 8/16)', () => {
-      expect(getWorkflowProgress('THRESHOLD_CHECK')).toBe(50);
+    it('should return 67% for AGENDA_FINALIZED (step 6/9)', () => {
+      expect(getWorkflowProgress('AGENDA_FINALIZED')).toBe(67);
     });
 
-    it('should return 81% for NEWSLETTER_SENT (step 13/16)', () => {
-      expect(getWorkflowProgress('NEWSLETTER_SENT')).toBe(81);
+    it('should return 78% for EVENT_LIVE (step 7/9)', () => {
+      expect(getWorkflowProgress('EVENT_LIVE')).toBe(78);
     });
 
-    it('should return 100% for ARCHIVED (step 16/16)', () => {
+    it('should return 100% for ARCHIVED (step 9/9)', () => {
       expect(getWorkflowProgress('ARCHIVED')).toBe(100);
     });
 
@@ -150,14 +143,14 @@ describe('workflowState utilities', () => {
       expect(getWorkflowStateI18nKey('TOPIC_SELECTION')).toBe('workflow.states.topic_selection');
     });
 
-    it('should convert SPEAKER_OUTREACH to workflow.states.speaker_outreach', () => {
-      expect(getWorkflowStateI18nKey('SPEAKER_OUTREACH')).toBe('workflow.states.speaker_outreach');
+    it('should convert SPEAKER_IDENTIFICATION to workflow.states.speaker_identification', () => {
+      expect(getWorkflowStateI18nKey('SPEAKER_IDENTIFICATION')).toBe(
+        'workflow.states.speaker_identification'
+      );
     });
 
-    it('should convert PARTNER_MEETING_COMPLETE to workflow.states.partner_meeting_complete', () => {
-      expect(getWorkflowStateI18nKey('PARTNER_MEETING_COMPLETE')).toBe(
-        'workflow.states.partner_meeting_complete'
-      );
+    it('should convert EVENT_LIVE to workflow.states.event_live', () => {
+      expect(getWorkflowStateI18nKey('EVENT_LIVE')).toBe('workflow.states.event_live');
     });
 
     it('should convert ARCHIVED to workflow.states.archived', () => {
@@ -183,13 +176,16 @@ describe('workflowState utilities', () => {
 
     it('should return translated label in German locale', () => {
       const mockT = vi.fn((key: string, fallback: string) => {
-        if (key === 'workflow.states.speaker_outreach') return 'Referenten-Kontaktaufnahme';
+        if (key === 'workflow.states.speaker_identification') return 'Referenten-Identifikation';
         return fallback;
       }) as unknown as TFunction;
 
-      const label = getWorkflowStateLabel('SPEAKER_OUTREACH', mockT);
-      expect(label).toBe('Referenten-Kontaktaufnahme');
-      expect(mockT).toHaveBeenCalledWith('workflow.states.speaker_outreach', 'SPEAKER_OUTREACH');
+      const label = getWorkflowStateLabel('SPEAKER_IDENTIFICATION', mockT);
+      expect(label).toBe('Referenten-Identifikation');
+      expect(mockT).toHaveBeenCalledWith(
+        'workflow.states.speaker_identification',
+        'SPEAKER_IDENTIFICATION'
+      );
     });
 
     it('should use fallback for missing translation', () => {
@@ -199,7 +195,7 @@ describe('workflowState utilities', () => {
       expect(label).toBe('CREATED');
     });
 
-    it('should handle all 16 workflow states', () => {
+    it('should handle all 9 workflow states', () => {
       const mockT = vi.fn((_key: string, fallback: string) => fallback) as unknown as TFunction;
 
       WORKFLOW_STATE_ORDER.forEach((state) => {
@@ -207,7 +203,7 @@ describe('workflowState utilities', () => {
         expect(label).toBe(state);
       });
 
-      expect(mockT).toHaveBeenCalledTimes(16);
+      expect(mockT).toHaveBeenCalledTimes(9);
     });
   });
 
@@ -220,12 +216,12 @@ describe('workflowState utilities', () => {
       expect(getWorkflowStepNumber('TOPIC_SELECTION')).toBe(2);
     });
 
-    it('should return 7 for QUALITY_REVIEW', () => {
-      expect(getWorkflowStepNumber('QUALITY_REVIEW')).toBe(7);
+    it('should return 4 for SLOT_ASSIGNMENT', () => {
+      expect(getWorkflowStepNumber('SLOT_ASSIGNMENT')).toBe(4);
     });
 
-    it('should return 16 for ARCHIVED', () => {
-      expect(getWorkflowStepNumber('ARCHIVED')).toBe(16);
+    it('should return 9 for ARCHIVED', () => {
+      expect(getWorkflowStepNumber('ARCHIVED')).toBe(9);
     });
 
     it('should return 0 for invalid state', () => {
@@ -268,12 +264,12 @@ describe('workflowState utilities', () => {
   });
 
   describe('isLateStage', () => {
-    it('should return true for EVENT_READY', () => {
-      expect(isLateStage('EVENT_READY')).toBe(true);
+    it('should return true for EVENT_LIVE', () => {
+      expect(isLateStage('EVENT_LIVE')).toBe(true);
     });
 
-    it('should return true for PARTNER_MEETING_COMPLETE', () => {
-      expect(isLateStage('PARTNER_MEETING_COMPLETE')).toBe(true);
+    it('should return true for EVENT_COMPLETED', () => {
+      expect(isLateStage('EVENT_COMPLETED')).toBe(true);
     });
 
     it('should return true for ARCHIVED', () => {
@@ -284,12 +280,12 @@ describe('workflowState utilities', () => {
       expect(isLateStage('CREATED')).toBe(false);
     });
 
-    it('should return false for NEWSLETTER_SENT', () => {
-      expect(isLateStage('NEWSLETTER_SENT')).toBe(false);
+    it('should return false for AGENDA_PUBLISHED', () => {
+      expect(isLateStage('AGENDA_PUBLISHED')).toBe(false);
     });
 
-    it('should return false for SPEAKER_OUTREACH', () => {
-      expect(isLateStage('SPEAKER_OUTREACH')).toBe(false);
+    it('should return false for SPEAKER_IDENTIFICATION', () => {
+      expect(isLateStage('SPEAKER_IDENTIFICATION')).toBe(false);
     });
 
     it('should return false for invalid state', () => {
@@ -302,7 +298,7 @@ describe('workflowState utilities', () => {
   });
 
   describe('isValidWorkflowState', () => {
-    it('should return true for all 16 valid workflow states', () => {
+    it('should return true for all 9 valid workflow states', () => {
       WORKFLOW_STATE_ORDER.forEach((state) => {
         expect(isValidWorkflowState(state)).toBe(true);
       });
@@ -339,32 +335,32 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(13); // Step 2/16
+      expect(progress).toBe(22); // Step 2/9
       expect(color).toBe('warning'); // < 30%
       expect(isEarlyStage(state)).toBe(true);
       expect(isLateStage(state)).toBe(false);
     });
 
     it('should correctly calculate progress and color for mid-stage event', () => {
-      const state = 'QUALITY_REVIEW';
+      const state = 'SLOT_ASSIGNMENT';
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(44); // Step 7/16
+      expect(progress).toBe(44); // Step 4/9
       expect(color).toBe('primary'); // 30-70%
       expect(isEarlyStage(state)).toBe(false);
       expect(isLateStage(state)).toBe(false);
     });
 
     it('should correctly calculate progress and color for late stage event', () => {
-      const state = 'NEWSLETTER_SENT';
+      const state = 'EVENT_LIVE';
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(81); // Step 13/16
+      expect(progress).toBe(78); // Step 7/9
       expect(color).toBe('success'); // > 70%
       expect(isEarlyStage(state)).toBe(false);
-      expect(isLateStage(state)).toBe(false);
+      expect(isLateStage(state)).toBe(true);
     });
 
     it('should correctly handle completed event (ARCHIVED)', () => {
@@ -372,19 +368,19 @@ describe('workflowState utilities', () => {
       const progress = getWorkflowProgress(state);
       const color = getProgressColor(progress);
 
-      expect(progress).toBe(100); // Step 16/16
+      expect(progress).toBe(100); // Step 9/9
       expect(color).toBe('success');
       expect(isEarlyStage(state)).toBe(false);
       expect(isLateStage(state)).toBe(true);
     });
 
     it('should generate correct i18n key and step number', () => {
-      const state = 'SPEAKER_CONFIRMATION';
+      const state = 'SPEAKER_IDENTIFICATION';
       const i18nKey = getWorkflowStateI18nKey(state);
       const stepNumber = getWorkflowStepNumber(state);
 
-      expect(i18nKey).toBe('workflow.states.speaker_confirmation');
-      expect(stepNumber).toBe(5); // Step 5/16
+      expect(i18nKey).toBe('workflow.states.speaker_identification');
+      expect(stepNumber).toBe(3); // Step 3/9
     });
   });
 });

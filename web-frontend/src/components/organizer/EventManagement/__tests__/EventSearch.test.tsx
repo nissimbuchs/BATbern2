@@ -131,8 +131,8 @@ describe('EventSearch Component', () => {
 
       fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by workflow state/i }));
 
-      expect(screen.getByText(/created/i)).toBeInTheDocument();
-      expect(screen.getByText(/archived/i)).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /created/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /archived/i })).toBeInTheDocument();
     });
 
     it('should_allowMultipleSelection_when_statusOptionsClicked', () => {
@@ -142,7 +142,7 @@ describe('EventSearch Component', () => {
 
       // Open dropdown and select first option
       fireEvent.mouseDown(statusSelect);
-      fireEvent.click(screen.getByText(/created/i));
+      fireEvent.click(screen.getByRole('option', { name: /created/i }));
 
       // Verify first selection was called
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
@@ -153,7 +153,7 @@ describe('EventSearch Component', () => {
       rerender(<EventSearch {...defaultProps} filters={{ workflowState: ['CREATED'] }} />);
 
       // Dropdown is still open after first selection, just click second option
-      fireEvent.click(screen.getByText(/archived/i));
+      fireEvent.click(screen.getByRole('option', { name: /archived/i }));
 
       // Verify both selections were called
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
@@ -169,9 +169,9 @@ describe('EventSearch Component', () => {
         }
       );
 
-      // Multiple elements may contain "created" (workflowState chip + filter count chip)
+      // Multiple elements may contain "created" and "archived" (workflowState chips + filter count chips + "Show archived events" checkbox)
       expect(screen.getAllByText(/created/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/archived/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/archived/i).length).toBeGreaterThan(0);
     });
 
     it('should_removeStatus_when_chipDeleted', () => {
@@ -264,7 +264,8 @@ describe('EventSearch Component', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /clear all/i }));
 
-      expect(mockOnFiltersChange).toHaveBeenCalledWith({});
+      // Clear all only clears user-applied filters, but preserves includeArchived default state
+      expect(mockOnFiltersChange).toHaveBeenLastCalledWith({ includeArchived: false });
     });
   });
 
@@ -400,8 +401,8 @@ describe('EventSearch Component', () => {
       fireEvent.mouseDown(screen.getByRole('combobox', { name: /filter by workflow state/i }));
 
       // Workflow state options should be translated
-      expect(screen.getByText(/created/i)).toBeInTheDocument();
-      expect(screen.getByText(/archived/i)).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /created/i })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /archived/i })).toBeInTheDocument();
     });
   });
 });

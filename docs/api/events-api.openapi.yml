@@ -126,7 +126,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'venue,speakers,sessions'
+            example: 'venue,sessions'
       responses:
         '200':
           description: Successful response with paginated events
@@ -263,11 +263,11 @@ paths:
       parameters:
         - name: include
           in: query
-          description: Comma-separated list of resources to expand (topics,venue,speakers,sessions)
+          description: Comma-separated list of resources to expand (topics,venue,sessions)
           required: false
           schema:
             type: string
-            example: 'topics,venue,speakers'
+            example: 'topics,venue,sessions'
       responses:
         '200':
           description: Current event retrieved successfully
@@ -341,8 +341,7 @@ paths:
 
         **Include Options**:
         - `venue`: Venue details with address and capacity
-        - `speakers`: Complete speaker list with profiles
-        - `sessions`: Event sessions with schedule
+        - `sessions`: Event sessions with schedule (speakers included in sessions)
         - `topics`: Event topics and categories
         - `workflow`: Workflow state and history
         - `registrations`: Registration counts and status
@@ -375,7 +374,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'venue,speakers,sessions,workflow'
+            example: 'venue,sessions,workflow'
       responses:
         '200':
           description: Event details retrieved successfully
@@ -406,7 +405,7 @@ paths:
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
                 expandedEvent:
-                  summary: Event with venue and speakers
+                  summary: Event with venue
                   value:
                     eventCode: BATbern142
                     title: Spring Conference 2025
@@ -425,12 +424,6 @@ paths:
                       name: Kursaal Bern
                       address: Kornhausstrasse 3, 3013 Bern
                       capacity: 500
-                    speakers:
-                      - username: sara.kim
-                        firstName: Sara
-                        lastName: Kim
-                        company: Docker Inc.
-                        title: Container Security Expert
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2197,6 +2190,181 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/batch_registrations:
+    post:
+      tags:
+        - Registrations
+      summary: Create batch event registrations for a participant
+      description: |
+        Creates multiple event registrations for a single participant in one transaction.
+        Used for bulk importing historical attendance data.
+
+        **Story**: BAT-12 - API Contract - Participant Batch Registration
+
+        **Behavior**:
+        - Creates user if doesn't exist (get-or-create by email)
+        - Skips duplicate registrations (idempotent)
+        - Returns partial success if some registrations fail
+
+        **Use Case**: Historical data migration for 2,307 participants
+
+        **Performance**: <500ms (P95) for 100 registrations
+      operationId: createBatchRegistrations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRegistrationRequest'
+            examples:
+              historicalAttendee:
+                summary: Historical participant with multiple events
+                value:
+                  participantEmail: "adrian.buerki@centrisag.ch"
+                  firstName: "Adrian"
+                  lastName: "Bürki"
+                  registrations:
+                    - eventCode: "BATbern17"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern25"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern31"
+                      status: "ATTENDED"
+              syntheticEmail:
+                summary: Participant with synthetic email
+                value:
+                  participantEmail: "max.muster@batbern.ch"
+                  firstName: "Max"
+                  lastName: "Muster"
+                  registrations:
+                    - eventCode: "BATbern1"
+                      status: "ATTENDED"
+      responses:
+        '200':
+          description: Batch registrations processed (full or partial success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRegistrationResponse'
+              examples:
+                fullSuccess:
+                  summary: All registrations successful
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 3
+                    failedRegistrations: []
+                    errors: []
+                partialSuccess:
+                  summary: Some registrations failed
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 2
+                    failedRegistrations:
+                      - eventCode: "BATbern99"
+                        reason: "Event not found"
+                    errors: ["Event BATbern99 not found"]
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: "Validation failed"
+                    message: "Invalid email format"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "participantEmail"
+                        message: "must be a well-formed email address"
+                emptyRegistrations:
+                  summary: Empty registrations array
+                  value:
+                    error: "Validation failed"
+                    message: "Registrations array cannot be empty"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at least 1 item"
+                tooManyRegistrations:
+                  summary: Too many registrations
+                  value:
+                    error: "Validation failed"
+                    message: "Too many registrations in batch"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at most 100 items"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Forbidden"
+                message: "This operation requires ORGANIZER role"
+                code: "INSUFFICIENT_PERMISSIONS"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: List user registrations across all events
+      description: |
+        Retrieve all event registrations for a specific user.
+        Used by user detail page to show participation history.
+
+        **Story**: BAT-15 - Integration - Participant Batch Import
+        **Security**: Requires authentication
+      operationId: listUserRegistrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: attendeeUsername
+          in: query
+          description: Username to filter registrations
+          required: true
+          schema:
+            type: string
+            example: "a.roethlisberger"
+      responses:
+        '200':
+          description: User registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Registration'
+              example:
+                - registrationCode: "BATbern34-reg-A3X9K2"
+                  eventCode: "BATbern34"
+                  eventTitle: "Cloud Native Architecture"
+                  eventDate: "2023-03-15T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-02-01T10:30:00Z"
+                - registrationCode: "BATbern36-reg-B7Y1M4"
+                  eventCode: "BATbern36"
+                  eventTitle: "Microservices Patterns"
+                  eventDate: "2023-05-20T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-04-10T14:20:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/{eventCode}/analytics:
     get:
       tags:
@@ -3041,10 +3209,6 @@ components:
           properties:
             venue:
               $ref: '#/components/schemas/Venue'
-            speakers:
-              type: array
-              items:
-                $ref: '#/components/schemas/Speaker'
             sessions:
               type: array
               items:
@@ -3088,13 +3252,15 @@ components:
       type: object
       description: |
         Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+
+        **Placeholder Session Pattern (V21):**
+        Sessions can be created as placeholders when speakers accept invitations.
+        Placeholder sessions have title but null sessionType/startTime/endTime.
+        Timing is assigned later during slot assignment workflow (Story 5.7).
       required:
         - sessionSlug
         - eventCode
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         sessionSlug:
           type: string
@@ -3114,14 +3280,20 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - null for placeholder sessions, assigned during agenda planning
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
           example: keynote
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - null for placeholder sessions, assigned during slot assignment
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - null for placeholder sessions, assigned during slot assignment
         room:
           type: string
           maxLength: 100
@@ -3406,7 +3578,7 @@ components:
         # Registration metadata
         status:
           type: string
-          enum: [registered, waitlisted, confirmed, cancelled, attended]
+          enum: [REGISTERED, WAITLISTED, CONFIRMED, CANCELLED, ATTENDED]
         registrationDate:
           type: string
           format: date-time
@@ -3605,11 +3777,15 @@ components:
 
     CreateSessionRequest:
       type: object
+      description: |
+        Create session request - supports creating placeholder sessions.
+
+        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+        Timing will be assigned later during slot assignment workflow (Story 5.7).
+
+        **Full Sessions**: Provide all fields to create a fully-defined session.
       required:
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         title:
           type: string
@@ -3618,13 +3794,19 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - omit for placeholder sessions
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - omit for placeholder sessions
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - omit for placeholder sessions
         room:
           type: string
           maxLength: 100
@@ -3637,11 +3819,14 @@ components:
 
     UpdateSessionRequest:
       type: object
+      description: |
+        Update session request - supports partial updates and slot assignment.
+
+        **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
+        **Full Update**: Update any combination of fields.
+        **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
       required:
         - title
-        - sessionType
-        - startTime
-        - endTime
       properties:
         title:
           type: string
@@ -3650,16 +3835,24 @@ components:
           type: string
         sessionType:
           type: string
+          nullable: true
+          description: Session type - can be null for placeholder sessions
           enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
         startTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session start time - use for slot assignment, set to null to clear
         endTime:
           type: string
           format: date-time
+          nullable: true
+          description: Session end time - use for slot assignment, set to null to clear
         room:
           type: string
           maxLength: 100
+          nullable: true
+          description: Session room - assigned during slot assignment
         capacity:
           type: integer
         language:
@@ -3747,6 +3940,119 @@ components:
             eventReminders:
               type: boolean
               description: Receive event reminders
+
+    BatchRegistrationRequest:
+      type: object
+      description: |
+        Story BAT-12: Batch registration request for historical data import.
+        Creates multiple event registrations for a single participant.
+      required:
+        - participantEmail
+        - firstName
+        - lastName
+        - registrations
+      properties:
+        participantEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Participant email (used for user lookup/creation)
+          example: "adrian.buerki@centrisag.ch"
+        firstName:
+          type: string
+          maxLength: 100
+          description: Participant first name
+          example: "Adrian"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Participant last name
+          example: "Bürki"
+        companyId:
+          type: string
+          maxLength: 100
+          description: |
+            Company identifier (company name).
+            Optional for participants without company affiliation.
+            Story 3.2: Batch import includes company information from CSV.
+          example: "Centris AG"
+        registrations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Array of event registrations (max 100 per batch)
+          items:
+            $ref: '#/components/schemas/BatchRegistrationItem'
+
+    BatchRegistrationItem:
+      type: object
+      description: Single event registration within a batch
+      required:
+        - eventCode
+        - status
+      properties:
+        eventCode:
+          type: string
+          pattern: '^BATbern\d+$'
+          description: Event code in format BATbernN where N is event number
+          example: "BATbern25"
+        status:
+          type: string
+          enum: [REGISTERED, ATTENDED, CANCELLED]
+          description: Registration status (use 'ATTENDED' for historical data)
+          example: "ATTENDED"
+
+    BatchRegistrationResponse:
+      type: object
+      description: |
+        Response for batch registration operation.
+        Returns partial success - some registrations may fail while others succeed.
+      required:
+        - username
+        - totalRegistrations
+        - successfulRegistrations
+        - failedRegistrations
+        - errors
+      properties:
+        username:
+          type: string
+          description: Username of created/found participant
+          example: "adrian.buerki"
+        totalRegistrations:
+          type: integer
+          description: Total number of registrations attempted
+          example: 3
+        successfulRegistrations:
+          type: integer
+          description: Number of registrations successfully created
+          example: 3
+        failedRegistrations:
+          type: array
+          description: List of registrations that failed
+          items:
+            $ref: '#/components/schemas/FailedRegistration'
+        errors:
+          type: array
+          description: List of error messages
+          items:
+            type: string
+          example: ["Event BATbern99 not found"]
+
+    FailedRegistration:
+      type: object
+      description: Details of a failed registration within a batch
+      required:
+        - eventCode
+        - reason
+      properties:
+        eventCode:
+          type: string
+          description: Event code that failed
+          example: "BATbern99"
+        reason:
+          type: string
+          description: Reason for failure
+          example: "Event not found"
 
     BatchUpdateRequest:
       type: object
@@ -3958,26 +4264,20 @@ components:
     EventWorkflowState:
       type: string
       description: |
-        Event workflow state for 16-step workflow (Story 5.1a).
+        Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
         Defines the current state of an event in the organizer workflow.
+        Previous 16-state workflow was consolidated to improve clarity and automation.
       enum:
         - CREATED
         - TOPIC_SELECTION
-        - SPEAKER_BRAINSTORMING
-        - SPEAKER_OUTREACH
-        - SPEAKER_CONFIRMATION
-        - CONTENT_COLLECTION
-        - QUALITY_REVIEW
-        - THRESHOLD_CHECK
-        - OVERFLOW_MANAGEMENT
+        - SPEAKER_IDENTIFICATION
         - SLOT_ASSIGNMENT
         - AGENDA_PUBLISHED
         - AGENDA_FINALIZED
-        - NEWSLETTER_SENT
-        - EVENT_READY
-        - PARTNER_MEETING_COMPLETE
+        - EVENT_LIVE
+        - EVENT_COMPLETED
         - ARCHIVED
-      example: SPEAKER_BRAINSTORMING
+      example: SPEAKER_IDENTIFICATION
 
     TransitionStateRequest:
       type: object
@@ -4552,6 +4852,20 @@ components:
                 error: FORBIDDEN
                 errorCode: FORBIDDEN
                 message: "Insufficient permissions to perform this action"
+                timestamp: "2025-01-15T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: "Authentication token is missing or invalid"
                 timestamp: "2025-01-15T10:30:00Z"
 
   securitySchemes:

@@ -1,6 +1,7 @@
 /**
  * PublicNavigation Component
  * Adapted from BATbern-public Navbar with React Router integration
+ * Story 5.7: Supports top offset for banners (e.g., preview mode)
  */
 
 import { Link } from 'react-router-dom';
@@ -8,7 +9,12 @@ import { Button } from '@/components/public/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 
-export const PublicNavigation = () => {
+interface PublicNavigationProps {
+  /** Top offset in pixels (e.g., when a banner is present above) */
+  topOffset?: string;
+}
+
+export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) => {
   const { isAuthenticated } = useAuth();
   const { t } = useTranslation('common');
 
@@ -19,13 +25,16 @@ export const PublicNavigation = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <nav
+      style={{ top: topOffset }}
+      className="fixed left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border"
+    >
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-24">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="text-2xl font-bold text-primary">
-              {t('app.name')}
+            <Link to="/" className="flex items-center">
+              <img src="/BATbern_color_logo.svg" alt="BATbern" className="h-20 w-auto" />
             </Link>
           </div>
 

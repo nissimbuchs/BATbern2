@@ -43,4 +43,25 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return list of speaker pool entries ordered by created_at ascending
      */
     List<SpeakerPool> findByEventIdAndStatusOrderByCreatedAtAsc(UUID eventId, SpeakerWorkflowState status);
+
+    /**
+     * Count speaker pool entries for a specific event with a specific status.
+     *
+     * Story 5.7 (BAT-11): Threshold validation for slot assignment
+     *
+     * @param eventId the event ID
+     * @param status the speaker workflow status
+     * @return count of speakers with the given status
+     */
+    long countByEventIdAndStatus(UUID eventId, SpeakerWorkflowState status);
+
+    /**
+     * Find speaker assigned to a specific session.
+     *
+     * Story 5.7 (BAT-11): Speaker auto-confirmation when session timing assigned
+     *
+     * @param sessionId the session ID
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findBySessionId(UUID sessionId);
 }

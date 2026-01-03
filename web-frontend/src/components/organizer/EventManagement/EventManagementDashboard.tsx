@@ -54,12 +54,13 @@ export const EventManagementDashboard: React.FC = () => {
   const [isSessionBatchImportOpen, setIsSessionBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
+  // Include registrations to get actual registration counts from database
   const {
     data: eventsData,
     isLoading: isLoadingEvents,
     isError: isErrorEvents,
     error: eventsError,
-  } = useEvents(pagination, filters);
+  } = useEvents(pagination, filters, { expand: ['registrations'] });
 
   const {
     data: teamActivityData,
@@ -199,9 +200,13 @@ export const EventManagementDashboard: React.FC = () => {
             mode="edit"
             event={eventsData?.data?.find((e) => e.eventCode === selectedEventCode)}
             onClose={closeEditModal}
-            onSuccess={() => {
+            onSuccess={(updatedEvent) => {
               closeEditModal();
-              // Refetch events after successful update
+              // Redirect to event detail page if eventCode changed (e.g., eventNumber updated)
+              if (updatedEvent && updatedEvent.eventCode !== selectedEventCode) {
+                navigate(`/organizer/events/${updatedEvent.eventCode}`);
+              }
+              // Otherwise, refetch events to show updated data in list
               // The useEvents hook will automatically refetch due to query invalidation
             }}
           />

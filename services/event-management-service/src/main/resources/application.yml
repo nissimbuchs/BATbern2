@@ -2,6 +2,8 @@ server:
   port: 8080
   compression:
     enabled: false
+  tomcat:
+    relaxed-query-chars: [ '[', ']', '{', '}', '|', '$' ]
 
 spring:
   application:
@@ -75,6 +77,19 @@ app:
 # JWT Configuration for confirmation tokens
 jwt:
   secret: ${JWT_SECRET:changeme}
+
+# Workflow Scheduled Tasks Configuration (GAP-2)
+# Automatic event state transitions based on event date
+workflow:
+  scheduled:
+    events-going-live:
+      # Daily at 00:01 (1 minute past midnight, Europe/Zurich timezone)
+      # Transitions AGENDA_FINALIZED → EVENT_LIVE when event date is reached
+      cron: "0 1 0 * * *"
+    events-completed:
+      # Daily at 23:59 (1 minute before midnight, Europe/Zurich timezone)
+      # Transitions EVENT_LIVE → EVENT_COMPLETED when event date has passed
+      cron: "0 59 23 * * *"
 
 # Application Info (exposed via /actuator/info)
 info:

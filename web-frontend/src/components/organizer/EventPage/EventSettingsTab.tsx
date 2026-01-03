@@ -36,6 +36,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { useDeleteEvent } from '@/hooks/useEvents';
 import type { Event, EventDetailUI } from '@/types/event.types';
 
 interface EventSettingsTabProps {
@@ -54,9 +55,11 @@ interface NotificationRule {
 export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, eventCode }) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
+  const deleteEventMutation = useDeleteEvent();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ⚠️ MOCK DATA - Notification rules (backend integration pending)
   const [notifications, setNotifications] = useState<NotificationRule[]>([
@@ -92,10 +95,20 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n)));
   };
 
-  const handleDeleteEvent = () => {
-    console.log('Delete event:', eventCode);
-    setDeleteDialogOpen(false);
-    navigate('/organizer/events');
+  const handleDeleteEvent = async () => {
+    try {
+      setDeleteError(null);
+      await deleteEventMutation.mutateAsync(eventCode);
+      setDeleteDialogOpen(false);
+      navigate('/organizer/events');
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : t('eventPage.settings.deleteError', 'Failed to delete event. Please try again.')
+      );
+    }
   };
 
   const handleCancelEvent = () => {
@@ -326,7 +339,10 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deleteEventMutation.isPending && setDeleteDialogOpen(false)}
+      >
         <DialogTitle color="error">
           {t('eventPage.settings.confirmDelete', 'Delete Event?')}
         </DialogTitle>
@@ -337,11 +353,28 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
               'This will permanently delete the event "{title}". This action cannot be undone.'
             ).replace('{title}', event.title)}
           </DialogContentText>
+          {deleteError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>{t('common.cancel', 'Cancel')}</Button>
-          <Button onClick={handleDeleteEvent} color="error" variant="contained">
-            {t('eventPage.settings.confirmDeleteBtn', 'Yes, Delete Event')}
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={deleteEventMutation.isPending}
+          >
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button
+            onClick={handleDeleteEvent}
+            color="error"
+            variant="contained"
+            disabled={deleteEventMutation.isPending}
+          >
+            {deleteEventMutation.isPending
+              ? t('common.deleting', 'Deleting...')
+              : t('eventPage.settings.confirmDeleteBtn', 'Yes, Delete Event')}
           </Button>
         </DialogActions>
       </Dialog>
