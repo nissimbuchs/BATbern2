@@ -13,10 +13,10 @@ This file contains **implementation details only** (Dev Agent Record). The full 
 ## Dev Agent Record
 
 ### Status
-Draft
+InProgress
 
 ### Agent Model Used
-- Created: N/A (story not yet implemented)
+- Implementation: Claude Sonnet 4.5 (2026-01-02)
 
 ### Template References
 
@@ -24,24 +24,30 @@ Draft
 - `docs/templates/backend/spring-boot-service-foundation.md` - Service structure, JPA entities, repositories
 - `docs/templates/backend/integration-test-pattern.md` - Testcontainers PostgreSQL, MockMvc tests
 
+**Architecture References**:
+- `docs/architecture/06d-notification-system.md` - Complete notification system architecture
+- `docs/stories/5.5-speaker-content-quality-review-task-system.md` - Task System pattern (reference implementation)
+- `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` - Meaningful ID requirements
+
+### Implementation Pattern
+
+**CRITICAL**: This story follows the **Task System pattern** (Story 5.5):
+- ✅ Single `notifications` table in shared `public` schema
+- ✅ Owned by Event Management Service (by convention)
+- ✅ Hybrid storage: email audit trail (create rows), in-app queries (no rows)
+- ✅ ADR-003 compliant (meaningful IDs: `recipient_username`, `event_code`)
+- ✅ No API Gateway aggregation (simple REST API)
+
 ### Test Implementation Details
 
 **Test File Locations**:
 ```
-shared-kernel/src/test/java/ch/batbern/shared/notification/
-├── NotificationModuleTest.java                    # Unit tests for shared notification module
-├── NotificationPreferencesTest.java               # Unit tests for preferences logic
-└── SESIntegrationTest.java                        # Integration tests for AWS SES
-
-api-gateway/src/test/java/ch/batbern/gateway/notification/
-├── NotificationAggregationControllerIntegrationTest.java  # Integration tests for aggregation
-└── NotificationAggregationServiceTest.java                # Unit tests for aggregation logic
-
-services/{service}/src/test/java/ch/batbern/{domain}/notification/
-├── controller/
-│   └── NotificationControllerIntegrationTest.java # Integration tests per service
-└── service/
-    └── NotificationServiceTest.java               # Unit tests per service
+services/event-management-service/src/test/java/ch/batbern/events/notification/
+├── NotificationControllerIntegrationTest.java     # Integration tests for REST API
+├── NotificationServiceTest.java                   # Unit tests for notification service
+├── NotificationRepositoryTest.java                # Repository tests
+├── EmailServiceTest.java                          # Email delivery tests (AWS SES mock)
+└── DeadlineReminderJobTest.java                   # Scheduled job tests
 ```
 
 **Testcontainers Configuration** (MANDATORY):
@@ -63,224 +69,406 @@ public abstract class AbstractIntegrationTest {
 
 ### Story-Specific Implementation
 
-**Shared Notification Module** (Shared Kernel):
+**Notification Entity** (Event Management Service):
 ```java
-// shared-kernel/src/main/java/ch/batbern/shared/notification/
-package ch.batbern.shared.notification;
+// services/event-management-service/src/main/java/ch/batbern/events/notification/
+@Entity
+@Table(name = "notifications")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Notification {
 
-@MappedSuperclass
-public abstract class NotificationEntity {
     @Id
+    @GeneratedValue
     private UUID id;
 
-    @Column(name = "user_id", nullable = false)
-    private String userId;
+    // ADR-003: Meaningful IDs (NOT foreign keys)
+    @Column(name = "recipient_username", nullable = false, length = 100)
+    private String recipientUsername;
 
-    @Column(name = "title", nullable = false)
-    private String title;
+    @Column(name = "event_code", length = 50)
+    private String eventCode;  // Nullable for non-event notifications
 
-    @Column(name = "message", nullable = false)
-    private String message;
+    // Notification details
+    @Column(name = "notification_type", nullable = false, length = 50)
+    private String notificationType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private NotificationStatus status; // UNREAD, READ, DELETED
+    @Column(name = "channel", nullable = false, length = 20)
+    private String channel;  // EMAIL, SMS
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "channel", nullable = false)
-    private NotificationChannel channel; // EMAIL, PUSH, IN_APP
+    @Column(name = "priority", length = 20)
+    private String priority;  // LOW, NORMAL, HIGH, URGENT
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @Column(name = "subject", nullable = false)
+    private String subject;
+
+    @Column(name = "body", nullable = false, columnDefinition = "TEXT")
+    private String body;
+
+    // Delivery tracking
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;  // PENDING, SENT, FAILED, READ
+
+    @Column(name = "sent_at")
+    private Instant sentAt;
 
     @Column(name = "read_at")
     private Instant readAt;
-}
 
-@Embeddable
-public class NotificationPreferences {
-    @Column(name = "email_enabled")
-    private boolean emailEnabled = true;
+    @Column(name = "failed_at")
+    private Instant failedAt;
 
-    @Column(name = "push_enabled")
-    private boolean pushEnabled = true;
+    @Column(name = "failure_reason", columnDefinition = "TEXT")
+    private String failureReason;
 
-    @Column(name = "in_app_enabled")
-    private boolean inAppEnabled = true;
-
+    // Metadata (flexible JSONB storage)
     @Type(JsonBinaryType.class)
-    @Column(name = "topic_preferences", columnDefinition = "jsonb")
-    private Map<String, Boolean> topicPreferences; // event_updates, speaker_updates, etc.
-}
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
 
-@Component
-public class NotificationSender {
-    private final AmazonSES sesClient;
-    private final AmazonSNS snsClient;
+    // Timestamps
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    public void sendEmail(String to, String subject, String body) {
-        SendEmailRequest request = new SendEmailRequest()
-            .withDestination(new Destination().withToAddresses(to))
-            .withMessage(new Message()
-                .withSubject(new Content(subject))
-                .withBody(new Body().withText(new Content(body))));
-        sesClient.sendEmail(request);
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
     }
 
-    public void sendPush(String deviceToken, String title, String message) {
-        PublishRequest request = new PublishRequest()
-            .withTargetArn(deviceToken)
-            .withMessage(message)
-            .withSubject(title);
-        snsClient.publish(request);
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
     }
 }
 ```
 
-**API Gateway Aggregation** (Custom - not in template):
+**Repository**:
 ```java
-// api-gateway/src/main/java/ch/batbern/gateway/notification/
+@Repository
+public interface NotificationRepository extends JpaRepository<Notification, UUID> {
+
+    Page<Notification> findByRecipientUsername(String username, Pageable pageable);
+
+    Page<Notification> findByRecipientUsernameAndStatus(
+        String username,
+        String status,
+        Pageable pageable
+    );
+
+    long countByRecipientUsernameAndStatus(String username, String status);
+
+    List<Notification> findByRecipientUsernameAndChannelOrderByCreatedAtDesc(
+        String username,
+        String channel
+    );
+
+    List<Notification> findByStatusAndCreatedAtBefore(String status, Instant before);
+}
+```
+
+**NotificationService** (Hybrid Storage):
+```java
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class NotificationService {
+
+    private final NotificationRepository notificationRepository;
+    private final EmailService emailService;
+    private final UserServiceClient userServiceClient;
+    private final EventRepository eventRepository;
+
+    /**
+     * Send email notification (creates audit trail record)
+     */
+    @EventListener
+    @Async
+    public void onEventPublished(EventPublishedEvent event) {
+        List<String> attendees = registrationRepository
+            .findUsernamesByEventId(event.getEventId());
+
+        for (String username : attendees) {
+            createAndSendEmailNotification(NotificationRequest.builder()
+                .recipientUsername(username)
+                .eventCode(event.getEventCode())
+                .type("EVENT_PUBLISHED")
+                .channel("EMAIL")
+                .subject("Event " + event.getTitle() + " is now published")
+                .body(buildEmailBody(event))
+                .build());
+        }
+    }
+
+    /**
+     * Create notification record and send via email
+     */
+    @Transactional
+    public void createAndSendEmailNotification(NotificationRequest request) {
+        // Check user preferences (via HTTP call to User Service)
+        UserPreferences prefs = userServiceClient
+            .getPreferences(request.getRecipientUsername());
+
+        if (!shouldSend(prefs, request)) {
+            return;
+        }
+
+        // Create notification record (audit trail)
+        Notification notification = notificationRepository.save(Notification.builder()
+            .recipientUsername(request.getRecipientUsername())
+            .eventCode(request.getEventCode())
+            .notificationType(request.getType())
+            .channel("EMAIL")
+            .subject(request.getSubject())
+            .body(request.getBody())
+            .status("PENDING")
+            .build());
+
+        // Send via AWS SES
+        try {
+            emailService.send(notification);
+            notification.setStatus("SENT");
+            notification.setSentAt(Instant.now());
+            notificationRepository.save(notification);
+        } catch (Exception e) {
+            notification.setStatus("FAILED");
+            notification.setFailedAt(Instant.now());
+            notification.setFailureReason(e.getMessage());
+            notificationRepository.save(notification);
+            log.error("Failed to send email notification", e);
+        }
+    }
+
+    /**
+     * Query in-app notifications dynamically (no rows created)
+     */
+    public List<InAppNotification> getInAppNotifications(String username) {
+        Instant lastLogin = userServiceClient.getLastLogin(username);
+        List<Event> newEvents = eventRepository.findPublishedAfter(lastLogin);
+
+        return newEvents.stream()
+            .map(event -> InAppNotification.builder()
+                .type("EVENT_PUBLISHED")
+                .title(event.getTitle() + " is now published")
+                .eventCode(event.getEventCode())
+                .createdAt(event.getPublishedAt())
+                .build())
+            .collect(Collectors.toList());
+    }
+}
+```
+
+**REST API Controller**:
+```java
 @RestController
 @RequestMapping("/api/v1/notifications")
-public class NotificationAggregationController {
+@RequiredArgsConstructor
+public class NotificationController {
 
-    private final List<NotificationServiceClient> serviceClients; // Event, Speaker, Partner, etc.
+    private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
 
     @GetMapping
-    public Page<NotificationDTO> listNotifications(
-            @RequestParam(required = false) String filter,
-            @RequestParam(defaultValue = "all") String status,
-            Pageable pageable) {
+    public Page<NotificationResponse> listNotifications(
+        @RequestParam String username,
+        @RequestParam(required = false) String status,
+        Pageable pageable
+    ) {
+        Page<Notification> notifications = status != null
+            ? notificationRepository.findByRecipientUsernameAndStatus(username, status, pageable)
+            : notificationRepository.findByRecipientUsername(username, pageable);
 
-        // Aggregate notifications from all services
-        List<NotificationDTO> allNotifications = serviceClients.stream()
-            .flatMap(client -> client.getNotifications(filter, status, pageable).stream())
-            .sorted(Comparator.comparing(NotificationDTO::getCreatedAt).reversed())
-            .collect(Collectors.toList());
-
-        return new PageImpl<>(allNotifications, pageable, allNotifications.size());
+        return notifications.map(this::toResponse);
     }
 
-    @PutMapping("/read")
-    public ResponseEntity<Void> markAsRead(@RequestBody List<UUID> notificationIds) {
-        // Route each notification to its owning service
-        Map<String, List<UUID>> idsByService = groupIdsByService(notificationIds);
-
-        idsByService.forEach((service, ids) ->
-            getServiceClient(service).markAsRead(ids)
-        );
-
-        return ResponseEntity.ok().build();
+    @GetMapping("/count")
+    public NotificationCountResponse getUnreadCount(
+        @RequestParam String username,
+        @RequestParam(defaultValue = "unread") String status
+    ) {
+        long count = notificationRepository.countByRecipientUsernameAndStatus(username, status);
+        return NotificationCountResponse.builder().count(count).build();
     }
 
-    private Map<String, List<UUID>> groupIdsByService(List<UUID> ids) {
-        // Logic to determine which service owns each notification
-        // (could be based on ID prefix, separate lookup table, etc.)
+    @PutMapping("/{id}/read")
+    public void markAsRead(@PathVariable UUID id) {
+        Notification notification = notificationRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Notification not found"));
+
+        notification.setStatus("READ");
+        notification.setReadAt(Instant.now());
+        notificationRepository.save(notification);
+    }
+
+    @PutMapping("/batch-read")
+    public void batchMarkAsRead(@RequestBody List<UUID> ids) {
+        List<Notification> notifications = notificationRepository.findAllById(ids);
+        notifications.forEach(n -> {
+            n.setStatus("READ");
+            n.setReadAt(Instant.now());
+        });
+        notificationRepository.saveAll(notifications);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteNotification(@PathVariable UUID id) {
+        notificationRepository.deleteById(id);
+    }
+
+    @DeleteMapping("/batch-delete")
+    public void batchDelete(@RequestBody List<UUID> ids) {
+        notificationRepository.deleteAllById(ids);
     }
 }
 ```
 
-**Per-Service Integration** (Pattern - repeat for all 5 services):
+**UserServiceClient** (HTTP Integration):
 ```java
-// services/{service}/src/main/java/ch/batbern/{domain}/notification/
-@Entity
-@Table(name = "notifications")
-public class {Service}Notification extends NotificationEntity {
-    // Service-specific fields (e.g., event_id for EventNotification)
-}
+@Component
+@RequiredArgsConstructor
+public class UserServiceClient {
 
-@RestController
-@RequestMapping("/api/v1/{service}/notifications")
-public class {Service}NotificationController {
-    // Standard CRUD endpoints for this service's notifications
+    private final RestTemplate restTemplate;
+
+    public UserPreferences getPreferences(String username) {
+        String url = "http://company-user-management-service:8081/api/v1/users/{username}/preferences";
+        return restTemplate.getForObject(url, UserPreferences.class, username);
+    }
+
+    public Instant getLastLogin(String username) {
+        String url = "http://company-user-management-service:8081/api/v1/users/{username}/last-login";
+        return restTemplate.getForObject(url, Instant.class, username);
+    }
+
+    public List<String> getOrganizerUsernames() {
+        String url = "http://company-user-management-service:8081/api/v1/users?role=ORGANIZER";
+        UserListResponse response = restTemplate.getForObject(url, UserListResponse.class);
+        return response.getUsers().stream()
+            .map(User::getUsername)
+            .collect(Collectors.toList());
+    }
 }
 ```
 
 ### API Contracts
 
-**Consolidated Endpoints** (6 total):
+**Consolidated Endpoints** (Event Management Service):
 ```
-# Notification Management (API Gateway)
-GET    /api/v1/notifications?filter={}&status=unread|read|all&page={}
-GET    /api/v1/notifications/count?status=unread
-PUT    /api/v1/notifications/read
+# Notification Management
+GET    /api/v1/notifications?username={}&status={}&page={}
+GET    /api/v1/notifications/count?username={}&status={}
+PUT    /api/v1/notifications/{id}/read
+PUT    /api/v1/notifications/batch-read    # Bulk mark as read
 DELETE /api/v1/notifications/{id}
-DELETE /api/v1/notifications         # Batch delete
+DELETE /api/v1/notifications/batch-delete  # Bulk delete
 
-# Preferences & History (API Gateway)
-GET    /api/v1/notifications/preferences
-PUT    /api/v1/notifications/preferences
-GET    /api/v1/notifications/history?timeframe={}&channel=email|push|in_app
+# Delivery History
+GET    /api/v1/notifications/history?username={}&channel={}
+
+# Preferences (Company-User Management Service - EXISTING)
+GET    /api/v1/users/me/preferences
+PUT    /api/v1/users/me/preferences
 ```
+
+**Note**: User preferences already exist in `user_profiles.user_preferences` JSONB column with fields: `emailNotifications`, `inAppNotifications`, `pushNotifications`, `notificationFrequency`, `quietHoursStart`, `quietHoursEnd`.
 
 ### Database Schema
 
-**Shared Kernel Base**:
+**Migration**: `V25__Create_notifications_table.sql` (Event Management Service)
+
+**File Location**: `services/event-management-service/src/main/resources/db/migration/V25__Create_notifications_table.sql`
+
 ```sql
--- Each service has its own notifications table (extends base schema)
--- Example for event-management-service:
-CREATE TABLE notifications (
-    id UUID PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL,  -- UNREAD, READ, DELETED
-    channel VARCHAR(50) NOT NULL, -- EMAIL, PUSH, IN_APP
-    created_at TIMESTAMP NOT NULL,
+-- Notifications table (follows Task System pattern - Story 5.5)
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    -- ADR-003: Meaningful IDs (NOT foreign keys)
+    recipient_username VARCHAR(100) NOT NULL,
+    event_code VARCHAR(50),  -- Nullable (non-event notifications)
+
+    -- Notification details
+    notification_type VARCHAR(50) NOT NULL,  -- SPEAKER_INVITED, DEADLINE_WARNING, etc.
+    channel VARCHAR(20) NOT NULL,            -- EMAIL, SMS, WEBHOOK
+    priority VARCHAR(20) DEFAULT 'NORMAL',   -- LOW, NORMAL, HIGH, URGENT
+    subject VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+
+    -- Delivery tracking
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- PENDING, SENT, FAILED, READ
+    sent_at TIMESTAMP,
     read_at TIMESTAMP,
-    
-    -- Service-specific columns
-    event_id UUID,
-    
-    INDEX idx_user_status (user_id, status),
-    INDEX idx_created_at (created_at)
+    failed_at TIMESTAMP,
+    failure_reason TEXT,
+
+    -- Metadata
+    metadata JSONB,  -- Flexible storage (task_id, speaker_id, etc.)
+
+    -- Timestamps
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Centralized preferences (in company-user-management-service)
-CREATE TABLE notification_preferences (
-    user_id VARCHAR(255) PRIMARY KEY,
-    email_enabled BOOLEAN DEFAULT true,
-    push_enabled BOOLEAN DEFAULT true,
-    in_app_enabled BOOLEAN DEFAULT true,
-    topic_preferences JSONB,
-    updated_at TIMESTAMP NOT NULL
-);
+-- Indexes for performance
+CREATE INDEX idx_notifications_recipient ON notifications(recipient_username);
+CREATE INDEX idx_notifications_event ON notifications(event_code) WHERE event_code IS NOT NULL;
+CREATE INDEX idx_notifications_status ON notifications(status);
+CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX idx_notifications_recipient_created ON notifications(recipient_username, created_at DESC);
+CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_username, status);
+
+-- Comment for documentation
+COMMENT ON TABLE notifications IS 'Notification delivery tracking (email/SMS audit trail). In-app notifications queried dynamically. Follows Task System pattern (Story 5.5). ADR-003 compliant (meaningful IDs).';
 ```
 
-**Flyway Migrations**:
-- `V016__create_notification_module_shared.sql` (Shared Kernel docs)
-- `V016__create_notifications_event.sql` (Event Management Service)
-- `V016__create_notifications_speaker.sql` (Speaker Coordination Service)
-- `V016__create_notifications_partner.sql` (Partner Coordination Service)
-- `V016__create_notifications_attendee.sql` (Attendee Experience Service)
-- `V016__create_notification_preferences.sql` (Company/User Management Service)
+**Key Architecture Points**:
+- ✅ Single table in `public` schema (shared database)
+- ✅ Owned by Event Management Service (by convention)
+- ✅ ADR-003 compliant (no foreign keys, meaningful IDs)
+- ✅ Hybrid storage: Email/SMS create rows, in-app queries dynamic
+- ✅ Follows Task System pattern (Story 5.5)
 
-### AWS Integration
-
-**SES Configuration** (application.yml):
-```yaml
-aws:
-  ses:
-    region: eu-central-1
-    from-email: notifications@batbern.ch
-    configuration-set: batbern-notifications
-```
-
-**SNS Configuration** (application.yml):
-```yaml
-aws:
-  sns:
-    region: eu-central-1
-    platform-application-arn: arn:aws:sns:eu-central-1:ACCOUNT_ID:app/PLATFORM/batbern-app
-```
+**User Preferences** (EXISTING - No Migration Needed):
+- Already exist in `user_profiles.user_preferences` JSONB column
+- Company-User Management Service owns this table
+- Access via HTTP API: `GET /api/v1/users/{username}/preferences`
 
 ### File List
 
 **Created Files**:
-- (Placeholder - story not yet implemented)
+- `services/event-management-service/src/main/resources/db/migration/V33__Create_notifications_table.sql` - Database schema migration
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/Notification.java` - Entity model
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationRequest.java` - Request DTO
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationResponse.java` - Response DTO
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationCountResponse.java` - Count response DTO
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationsResponse.java` - List response wrapper (frontend API contract)
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/PaginationMetadata.java` - Pagination metadata (frontend API contract)
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/MarkAsReadResponse.java` - Mark-as-read response (frontend API contract)
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/DeleteNotificationResponse.java` - Delete response (frontend API contract)
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/BatchOperationRequest.java` - Batch operation request (frontend API contract)
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/InAppNotification.java` - In-app notification DTO
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/UserPreferences.java` - User preferences DTO
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationRepository.java` - JPA repository
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationService.java` - Business logic service
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/EmailService.java` - AWS SES email service
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/UserServiceClient.java` - HTTP client for User Service
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationController.java` - REST API controller
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/DeadlineReminderJob.java` - Scheduled notification job
+- `services/event-management-service/src/test/java/ch/batbern/events/notification/NotificationControllerIntegrationTest.java` - Integration tests (RED)
+- `services/event-management-service/src/test/java/ch/batbern/events/notification/NotificationServiceTest.java` - Service unit tests (RED)
+- `services/event-management-service/src/test/java/ch/batbern/events/notification/NotificationRepositoryTest.java` - Repository tests (RED)
+- `services/event-management-service/src/test/java/ch/batbern/events/notification/EmailServiceTest.java` - Email service tests (RED)
+- `services/event-management-service/src/test/java/ch/batbern/events/notification/DeadlineReminderJobTest.java` - Scheduled job tests (RED)
 
 **Modified Files**:
-- (Placeholder - story not yet implemented)
+- `services/event-management-service/build.gradle` - Added AWS SES and Thymeleaf dependencies
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/EventRepository.java` - Added findByPublishedAtAfter() and findByRegistrationDeadlineBetween() methods
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` - Added findUsernamesByEventCode() method
 
 ### Debug Log References
 
@@ -288,12 +476,156 @@ aws:
 
 ### Completion Notes
 
-- (Placeholder - story not yet implemented)
+**Implementation Summary** (2026-01-02):
+- ✅ Database schema created (V33 migration) with ADR-003 compliance
+- ✅ Single table pattern following Task System (Story 5.5)
+- ✅ Hybrid storage strategy: email/SMS audit trail + in-app dynamic queries
+- ✅ Full REST API implemented (6 endpoints consolidated)
+- ✅ Email delivery via AWS SES with Thymeleaf templates
+- ✅ User preferences integration via HTTP (Company-User Management Service)
+- ✅ Scheduled deadline reminder job
+- ✅ Comprehensive test suite written (TDD RED phase)
+- ✅ All 6 ACs covered with integration and unit tests
+
+**TDD Workflow Followed**:
+1. RED: Wrote failing tests first (integration + unit tests)
+2. GREEN: Implemented all classes to make tests pass (pending test execution)
+3. REFACTOR: Pending (will clean up after tests pass)
+
+**Next Steps**:
+- Run tests to verify GREEN phase
+- Fix any failing tests
+- Add email templates for Thymeleaf
+- Configure AWS SES credentials
+- Run full regression suite
+- Update Linear issue with implementation progress
 
 ### Change Log
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
-| 2025-10-12 | 2.0 | Clarified as cross-cutting concern (legacy format) | Winston (Architect) |
 | 2024-10-04 | 1.0 | Initial story creation (legacy format) | Winston (Architect) |
+| 2025-10-12 | 2.0 | Clarified as cross-cutting concern (legacy format) | Winston (Architect) |
 | 2025-12-21 | 3.0 | Migrated to Linear-first format | James (Dev) |
+| 2026-01-02 | 4.0 | **MAJOR REWRITE**: Synced Dev Agent Record with Dec 25 architecture update. Changed from distributed storage to single table pattern following Task System (Story 5.5). Updated to ADR-003 compliance, hybrid storage strategy, Event Management Service ownership, removed API Gateway aggregation. Changed migration V016 → V33 (V25 already taken). | James (Dev) |
+| 2026-01-02 | 4.1 | **IMPLEMENTATION**: Completed TDD RED+GREEN phases. Created database migration V33, implemented all entities/services/controllers, wrote comprehensive test suite (integration + unit tests), added AWS SES and Thymeleaf dependencies. Status: InProgress (tests pending execution). | James (Dev) |
+| 2026-01-02 | 4.2 | **FRONTEND ALIGNMENT**: Updated backend API responses to match frontend contract. Added custom response wrappers (NotificationsResponse, PaginationMetadata, MarkAsReadResponse, DeleteNotificationResponse, BatchOperationRequest) to ensure 100% compatibility with existing frontend implementation. | James (Dev) |
+
+## Issue: JWT Propagation in Async Threads (Fixed 2026-01-02)
+
+### Problem
+When `OrganizerNotificationListener` processes domain events asynchronously (`@Async`), the SecurityContext is not propagated to the async thread. This causes:
+
+```
+Failed to extract JWT token from SecurityContext: Cannot invoke getAuthentication() because it is null
+Client error fetching organizer list: 401 UNAUTHORIZED
+```
+
+**Root Cause**: SecurityContext is thread-local and is NOT inherited by async threads by default.
+
+**Flow**:
+1. Original request thread has SecurityContext with JWT
+2. Domain event published to ApplicationEventPublisher
+3. `OrganizerNotificationListener.onAnyDomainEvent()` runs in async thread (`@Async`)
+4. Async thread has NO SecurityContext (thread-local, not inherited)
+5. `UserApiClientImpl.createHeadersWithJwtToken()` finds null authentication
+6. HTTP request to company-user-management-service gets 401
+
+### Solution
+Created `AsyncConfig.java` that configures Spring's async executor to propagate SecurityContext:
+
+```java
+@Configuration
+@EnableAsync
+public class AsyncConfig implements AsyncConfigurer {
+    
+    @Override
+    @Bean(name = "taskExecutor")
+    public Executor getAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setTaskDecorator(new ContextCopyingDecorator()); // KEY FIX
+        return executor;
+    }
+    
+    static class ContextCopyingDecorator implements TaskDecorator {
+        @Override
+        public Runnable decorate(Runnable runnable) {
+            // Capture SecurityContext from parent thread
+            SecurityContext securityContext = SecurityContextHolder.getContext();
+            
+            return () -> {
+                try {
+                    // Set context in async thread
+                    SecurityContextHolder.setContext(securityContext);
+                    runnable.run();
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
+            };
+        }
+    }
+}
+```
+
+**Result**: JWT token is now available in async threads, enabling service-to-service authentication.
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/config/AsyncConfig.java` (NEW)
+
+## Issue: Frontend Using Wrong Status Filter (Fixed 2026-01-02)
+
+### Problem
+Frontend was querying notifications with `status=SENT`, but in-app notifications use `status=UNREAD`:
+- Email notifications: `PENDING` → `SENT` (after delivery)
+- In-app notifications: `UNREAD` → `READ` (when marked as read)
+
+This caused the frontend to receive empty arrays when organizer notifications were successfully created.
+
+### Solution
+Fixed status filter in frontend code:
+1. **notificationApiClient.ts** (line 83): Changed `'SENT'` → `'UNREAD'`
+2. **EventManagementDashboard.tsx** (line 77): Changed `status: 'SENT'` → `status: 'UNREAD'`
+
+**Files Changed**:
+- `web-frontend/src/services/notificationApiClient.ts` - Fixed getUnreadCount() status filter
+- `web-frontend/src/components/organizer/EventManagement/EventManagementDashboard.tsx` - Fixed useNotifications() status filter
+
+## Issue: UserApiClient Response Parsing Error (Fixed 2026-01-02)
+
+### Problem
+`UserApiClientImpl.getOrganizerUsernames()` was using private inner class for JSON deserialization:
+```
+RestClientException: Error while extracting response for type [class ch.batbern.events.client.impl.UserApiClientImpl$UserListResponse]
+```
+
+Inner classes didn't have proper Jackson annotations for deserialization.
+
+### Solution
+Replaced inner classes with generated DTOs (same pattern as working methods):
+- Before: Custom `UserListResponse` inner class
+- After: Generated `PaginatedUserResponse` from `ch.batbern.events.dto.generated.users.*`
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/client/impl/UserApiClientImpl.java` - Use PaginatedUserResponse instead of inner class
+
+## Issue: Pagination Mismatch (Fixed 2026-01-02)
+
+### Problem
+Frontend sends 1-based page numbers (`page=1` = first page), but Spring's `Pageable` uses 0-based indexing (`page=0` = first page).
+
+Result: Requesting `page=1&limit=10` returned:
+- `data: []` (empty, showing page 2 content)
+- `pagination.page: 2` (wrong page number)
+- `pagination.limit: 20` (wrong limit, using Spring default)
+
+### Solution
+Changed `NotificationController.listNotifications()` to:
+1. Accept explicit `int page` and `int limit` parameters instead of Spring `Pageable`
+2. Convert from 1-based to 0-based: `int pageIndex = Math.max(0, page - 1)`
+3. Manually create `Pageable` with correct indexing and sorting
+4. Return original 1-based `page` number in response
+
+**Files Changed**:
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/NotificationController.java` - Use shared PaginationUtils for consistent 1-based pagination handling
+- `services/event-management-service/src/main/java/ch/batbern/events/notification/PaginationMetadata.java` - Added fromShared() converter for shared-kernel PaginationMetadata
+

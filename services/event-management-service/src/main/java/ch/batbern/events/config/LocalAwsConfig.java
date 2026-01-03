@@ -12,6 +12,10 @@ import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
+import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationRequest;
+import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationResponse;
+import software.amazon.awssdk.services.cloudfront.model.Invalidation;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
@@ -112,6 +116,48 @@ public class LocalAwsConfig {
                     .build();
 
                 return CompletableFuture.completedFuture(successResponse);
+            }
+        };
+    }
+
+    /**
+     * Mock CloudFront client for local development
+     * Story BAT-16 (AC6): CDN Cache Invalidation
+     * Logs invalidation requests instead of actually invalidating CloudFront
+     */
+    @Bean
+    @Primary
+    public CloudFrontClient cloudFrontClient() {
+        log.info("☁️ [LOCAL] Using mock CloudFrontClient - invalidations will be logged but not executed");
+
+        return new CloudFrontClient() {
+            @Override
+            public String serviceName() {
+                return "cloudfront";
+            }
+
+            @Override
+            public void close() {
+                // No-op for mock
+            }
+
+            @Override
+            public CreateInvalidationResponse createInvalidation(CreateInvalidationRequest request) {
+                log.info("☁️ [LOCAL] Mock CloudFront - Would invalidate {} paths for distribution {}",
+                        request.invalidationBatch().paths().quantity(),
+                        request.distributionId());
+                log.debug("☁️ [LOCAL] Paths: {}", request.invalidationBatch().paths().items());
+
+                // Return a mock response
+                String mockInvalidationId = "mock-invalidation-" + request.invalidationBatch().callerReference();
+                Invalidation mockInvalidation = Invalidation.builder()
+                        .id(mockInvalidationId)
+                        .status("Completed")
+                        .build();
+
+                return CreateInvalidationResponse.builder()
+                        .invalidation(mockInvalidation)
+                        .build();
             }
         };
     }

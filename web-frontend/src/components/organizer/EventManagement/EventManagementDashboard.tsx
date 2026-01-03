@@ -12,14 +12,17 @@
  * - Quick actions sidebar
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Paper, Typography, Box, Stack, CircularProgress, Alert, Container } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useEvents, useTeamActivity } from '@/hooks/useEvents';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEvents } from '@/hooks/useEvents';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/stores/eventStore';
+import { useNotificationWebSocket } from '@/hooks/useNotificationWebSocket';
 import { EventList } from './EventList';
 import { EventSearch } from './EventSearch';
 import { TaskWidget } from '../Tasks/TaskWidget';
@@ -34,6 +37,7 @@ import type { EventFilters } from '@/types/event.types';
 export const EventManagementDashboard: React.FC = () => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const {
     filters,
@@ -62,11 +66,36 @@ export const EventManagementDashboard: React.FC = () => {
     error: eventsError,
   } = useEvents(pagination, filters, { expand: ['registrations'] });
 
+  // Fetch notifications for current organizer (unread notifications)
   const {
-    data: teamActivityData,
-    isLoading: isLoadingActivity,
-    refetch: refetchActivity,
-  } = useTeamActivity(user?.username);
+    data: notificationsData,
+    isLoading: isLoadingNotifications,
+    refetch: refetchNotifications,
+  } = useNotifications(
+    {
+      username: user?.username || '',
+      status: 'UNREAD', // UNREAD status = in-app unread notifications
+    },
+    { page: 1, limit: 10 }
+  );
+
+  // Real-time WebSocket notifications (Story BAT-7)
+  const { onNotification, isConnected } = useNotificationWebSocket(user?.username);
+
+  // Subscribe to real-time notification updates
+  useEffect(() => {
+    if (!isConnected) {
+      return;
+    }
+
+    const unsubscribe = onNotification((notification) => {
+      console.log('Real-time notification received:', notification);
+      // Invalidate notifications query to refetch with new notification
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    });
+
+    return unsubscribe;
+  }, [isConnected, onNotification, queryClient]);
 
   const handleFiltersChange = (newFilters: EventFilters) => {
     setFilters(newFilters);
@@ -85,7 +114,7 @@ export const EventManagementDashboard: React.FC = () => {
   };
 
   // Loading state
-  if (isLoadingEvents && isLoadingActivity) {
+  if (isLoadingEvents && isLoadingNotifications) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -168,12 +197,12 @@ export const EventManagementDashboard: React.FC = () => {
                 <TaskWidget organizerUsername={user?.username || ''} />
               </Paper>
 
-              {/* Team Activity Feed */}
+              {/* Notifications Feed - EventBridge Integration */}
               <Paper sx={{ p: 3 }}>
                 <TeamActivityFeed
-                  activities={teamActivityData?.data || []}
-                  isLoading={isLoadingActivity}
-                  onReload={() => refetchActivity()}
+                  notifications={notificationsData?.data || []}
+                  isLoading={isLoadingNotifications}
+                  onReload={() => refetchNotifications()}
                   limit={5}
                 />
               </Paper>

@@ -1,7 +1,7 @@
 # BAT-15: Integration - Participant Batch Import
 
 **Linear**: [BAT-15](https://linear.app/batbern/issue/BAT-15)
-**Status**: InProgress
+**Status**: Done
 **Epic**: Epic 3 - Historical Data Migration
 **Project**: [Epic 3: Historical Data Migration](https://linear.app/batbern/project/epic-3-historical-data-migration-168670d74297)
 **Created**: 2025-12-25

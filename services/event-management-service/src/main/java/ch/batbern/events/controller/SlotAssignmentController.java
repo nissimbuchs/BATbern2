@@ -201,7 +201,7 @@ public class SlotAssignmentController {
                 request.startTime,
                 request.endTime,
                 request.room,
-                request.changeReason != null ? request.changeReason : "manual_assignment",
+                request.changeReason != null ? request.changeReason : "manual_adjustment",
                 "organizer" // TODO: Get from security context
         );
 

@@ -84,6 +84,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .organizerUsername("test.organizer")
                 .eventType(ch.batbern.events.dto.generated.EventType.FULL_DAY)
                 .workflowState(ch.batbern.shared.types.EventWorkflowState.SLOT_ASSIGNMENT) // Ready for publishing
+                .topicCode("cloud-architecture") // Required for topic validation
                 // currentPublishedPhase will be added in GREEN phase (Task 3b)
                 .build();
 
@@ -112,6 +113,51 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .room("Main Hall")
                 .build();
         sessionRepository.save(session2);
+
+        // Additional sessions to meet FULL_DAY minimum requirement (6 sessions total)
+        Session session3 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-three")
+                .title("Container Orchestration with Kubernetes")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(4, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(4, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room B")
+                .build();
+        sessionRepository.save(session3);
+
+        Session session4 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-four")
+                .title("DevOps Best Practices")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(5, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(5, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Main Hall")
+                .build();
+        sessionRepository.save(session4);
+
+        Session session5 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-five")
+                .title("Serverless Architectures")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(6, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(6, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room A")
+                .build();
+        sessionRepository.save(session5);
+
+        Session session6 = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("speaker-six")
+                .title("Infrastructure as Code")
+                .sessionType("presentation")
+                .startTime(eventDate.plus(7, ChronoUnit.HOURS))
+                .endTime(eventDate.plus(7, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES))
+                .room("Room B")
+                .build();
+        sessionRepository.save(session6);
 
         // Create speakers (QUALITY_REVIEWED = content approved, ready for slot assignment)
         SpeakerPool speaker1 = SpeakerPool.builder()
@@ -429,5 +475,126 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
     void should_return403_when_notOrganizer() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
                 .andExpect(status().isForbidden());
+    }
+
+    // ========== Publishing Status Endpoint Tests (Task 7) ==========
+
+    /**
+     * Test: Get publishing status when no phase published
+     * Validates that status endpoint returns correct validation data for unpublished event
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_returnPublishingStatus_when_noPhasePublished() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentPhase").doesNotExist())
+                .andExpect(jsonPath("$.publishedPhases").isEmpty())
+                .andExpect(jsonPath("$.topic.isValid").value(true))
+                .andExpect(jsonPath("$.speakers.isValid").value(true))
+                .andExpect(jsonPath("$.sessions.isValid").value(true))
+                .andExpect(jsonPath("$.sessions.assignedCount").value(6))
+                .andExpect(jsonPath("$.sessions.totalCount").value(6))
+                .andExpect(jsonPath("$.sessions.unassignedSessions").isEmpty());
+    }
+
+    /**
+     * Test: Get publishing status with topic phase published
+     * Validates that status reflects phase 1 publication state
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_returnPublishingStatus_with_topicPhasePublished() throws Exception {
+        // Publish topic phase first
+        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
+                .andExpect(status().isOk());
+
+        // Verify status reflects topic publication
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentPhase").value("topic"))
+                .andExpect(jsonPath("$.publishedPhases").isArray())
+                .andExpect(jsonPath("$.publishedPhases", hasSize(1)))
+                .andExpect(jsonPath("$.publishedPhases[0]").value("topic"))
+                .andExpect(jsonPath("$.topic.isValid").value(true))
+                .andExpect(jsonPath("$.speakers.isValid").value(true))
+                .andExpect(jsonPath("$.sessions.isValid").value(true));
+    }
+
+    /**
+     * Test: Get publishing status with all phases published
+     * Validates that status reflects complete publication state
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_returnPublishingStatus_with_allPhasesPublished() throws Exception {
+        // Publish all three phases
+        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/speakers", eventCode))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/agenda", eventCode))
+                .andExpect(status().isOk());
+
+        // Verify status reflects all publications
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentPhase").value("agenda"))
+                .andExpect(jsonPath("$.publishedPhases", hasSize(3)))
+                .andExpect(jsonPath("$.publishedPhases[0]").value("topic"))
+                .andExpect(jsonPath("$.publishedPhases[1]").value("speakers"))
+                .andExpect(jsonPath("$.publishedPhases[2]").value("agenda"))
+                .andExpect(jsonPath("$.topic.isValid").value(true))
+                .andExpect(jsonPath("$.speakers.isValid").value(true))
+                .andExpect(jsonPath("$.sessions.isValid").value(true));
+    }
+
+    /**
+     * Test: Get publishing status with unassigned sessions
+     * Validates that sessions validation fails when sessions lack timing
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_returnInvalidSessionStatus_when_sessionsLackTiming() throws Exception {
+        // Create session without timing
+        Session untimedSession = Session.builder()
+                .eventId(testEvent.getId())
+                .sessionSlug("bob-jones-cloudco")
+                .title("Kubernetes Best Practices")
+                .sessionType("presentation")
+                // No startTime or endTime - invalid for publishing
+                .build();
+        sessionRepository.save(untimedSession);
+
+        // Verify status shows invalid sessions
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessions.isValid").value(false))
+                .andExpect(jsonPath("$.sessions.assignedCount").value(6))
+                .andExpect(jsonPath("$.sessions.totalCount").value(7))
+                .andExpect(jsonPath("$.sessions.unassignedSessions", hasSize(1)))
+                .andExpect(jsonPath("$.sessions.unassignedSessions[0].sessionSlug").value("bob-jones-cloudco"))
+                .andExpect(jsonPath("$.sessions.unassignedSessions[0].title").value("Kubernetes Best Practices"))
+                .andExpect(jsonPath("$.sessions.errors", hasSize(greaterThan(0))));
+    }
+
+    /**
+     * Test: Status endpoint requires authentication
+     * Note: Spring Security returns 403 (Forbidden) for unauthenticated requests
+     */
+    @Test
+    void should_return403_when_statusRequestedWithoutAuth() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Test: Status endpoint returns 404 for non-existent event
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_return404_when_statusRequestedForNonExistentEvent() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", "NON-EXISTENT-CODE"))
+                .andExpect(status().isNotFound());
     }
 }

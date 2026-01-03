@@ -322,6 +322,89 @@ npm run deploy:staging
 npm run deploy:prod
 ```
 
+## AWS Monitoring & Logs
+
+### AWS Profiles
+
+The project uses multiple AWS accounts:
+- `batbern-dev` - Development environment (Account: 954163570305)
+- `batbern-staging` - Staging environment (Account: 188701360969)
+- `batbern-prod` - Production environment (Account: 422940799530)
+
+```bash
+# Switch AWS profile for staging
+export AWS_PROFILE=batbern-staging
+
+# Or prefix commands
+AWS_PROFILE=batbern-staging aws <command>
+```
+
+### CloudWatch Log Groups
+
+All services log to CloudWatch with the naming pattern: `/aws/ecs/BATbern-{env}/{service-name}`
+
+**Staging Environment Log Groups:**
+```bash
+/aws/ecs/BATbern-staging/api-gateway
+/aws/ecs/BATbern-staging/event-management
+/aws/ecs/BATbern-staging/speaker-coordination
+/aws/ecs/BATbern-staging/partner-coordination
+/aws/ecs/BATbern-staging/attendee-experience
+/aws/ecs/BATbern-staging/company-user-management
+```
+
+### Quick Log Access
+
+```bash
+# Tail logs (last 30 minutes)
+AWS_PROFILE=batbern-staging aws logs tail /aws/ecs/BATbern-staging/event-management --since 30m --follow
+
+# Search for errors
+AWS_PROFILE=batbern-staging aws logs tail /aws/ecs/BATbern-staging/event-management --since 1h --filter-pattern "ERROR"
+
+# CloudWatch Insights query
+QUERY_ID=$(AWS_PROFILE=batbern-staging aws logs start-query \
+  --log-group-name "/aws/ecs/BATbern-staging/event-management" \
+  --start-time $(date -v-1H +%s) \
+  --end-time $(date +%s) \
+  --query-string 'fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 50' \
+  --output text)
+
+# Get results after 3-5 seconds
+AWS_PROFILE=batbern-staging aws logs get-query-results --query-id $QUERY_ID
+```
+
+### ECS Service Status
+
+```bash
+# List ECS clusters
+AWS_PROFILE=batbern-staging aws ecs list-clusters
+
+# Check service status
+AWS_PROFILE=batbern-staging aws ecs describe-services \
+  --cluster batbern-staging \
+  --services BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy \
+  --query 'services[0].{Status:status,Running:runningCount,Desired:desiredCount,Events:events[:5]}'
+
+# View running tasks
+AWS_PROFILE=batbern-staging aws ecs list-tasks \
+  --cluster batbern-staging \
+  --service-name BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy
+```
+
+### Common Issues
+
+**Fargate Spot Interruptions:**
+- Services use FARGATE_SPOT (70%) + FARGATE (30%) capacity providers
+- Spot interruptions cause 4-5 minute service restarts (no logs, silent task termination)
+- ECS automatically replaces with FARGATE task
+- Check deployment history for task replacement events
+
+**Log Stream Naming:**
+- Pattern: `{service-name}/Container/{task-id}`
+- Example: `event-management/Container/25e22b04a1984e288bbf09f8c8662035`
+- Use `describe-log-streams` to find streams by task ID
+
 ## Coverage Requirements
 
 - Unit Tests: 90% for business logic

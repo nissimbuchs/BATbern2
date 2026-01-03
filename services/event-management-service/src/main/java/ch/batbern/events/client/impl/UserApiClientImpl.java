@@ -3,6 +3,7 @@ package ch.batbern.events.client.impl;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -208,6 +209,247 @@ public class UserApiClientImpl implements UserApiClient {
                     request.getEmail(), e.getMessage(), e);
             throw new UserServiceException(
                     "Unexpected error getting/creating user for email: " + request.getEmail(),
+                    e
+            );
+        }
+    }
+
+    @Override
+    public ch.batbern.events.notification.UserPreferences getPreferences(String username) {
+        log.debug("Fetching preferences for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/preferences";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<ch.batbern.events.notification.UserPreferences> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    ch.batbern.events.notification.UserPreferences.class
+            );
+
+            ch.batbern.events.notification.UserPreferences prefs = response.getBody();
+            log.debug("Successfully fetched preferences for username: {}", username);
+            return prefs;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching preferences for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching preferences for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for preferences {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for preferences {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching preferences for {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching preferences for user: " + username,
+                    e
+            );
+        }
+    }
+
+    @Override
+    public String getEmailByUsername(String username) {
+        log.debug("Fetching email for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/email";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    String.class
+            );
+
+            String email = response.getBody();
+            log.debug("Successfully fetched email for username: {}", username);
+            return email;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching email for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching email for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for email {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for email {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching email for {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching email for user: " + username,
+                    e
+            );
+        }
+    }
+
+    @Override
+    public java.time.Instant getLastLogin(String username) {
+        log.debug("Fetching last login for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/last-login";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<java.time.Instant> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    java.time.Instant.class
+            );
+
+            java.time.Instant lastLogin = response.getBody();
+            log.debug("Successfully fetched last login for username: {}", username);
+            return lastLogin;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching last login for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching last login for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for last login {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for last login {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching last login for {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching last login for user: " + username,
+                    e
+            );
+        }
+    }
+
+    @Override
+    public java.util.List<String> getOrganizerUsernames() {
+        log.debug("Fetching organizer usernames");
+
+        String url = userServiceBaseUrl + "/api/v1/users?role=ORGANIZER";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    PaginatedUserResponse.class
+            );
+
+            PaginatedUserResponse body = response.getBody();
+            if (body == null || body.getData() == null) {
+                log.debug("No organizers found");
+                return java.util.List.of();
+            }
+
+            java.util.List<String> usernames = body.getData().stream()
+                    .map(UserResponse::getId)  // 'id' field contains the username
+                    .collect(java.util.stream.Collectors.toList());
+
+            log.debug("Successfully fetched {} organizer usernames", usernames.size());
+            return usernames;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error fetching organizer list: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error fetching organizer list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for organizer list: {} - {}",
+                    e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error fetching organizer list",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for organizer list: {}",
+                    e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for organizer list",
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error fetching organizer list: {}", e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error fetching organizer list",
                     e
             );
         }

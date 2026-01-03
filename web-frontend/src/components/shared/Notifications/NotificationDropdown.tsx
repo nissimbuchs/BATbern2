@@ -145,7 +145,10 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
                     component="span"
                     sx={{ display: 'block', mt: 0.5 }}
                   >
-                    {formatDateTime(new Date(notification.timestamp), i18n.language)}
+                    {formatDateTime(
+                      new Date(notification.timestamp || notification.createdAt),
+                      i18n.language
+                    )}
                   </Typography>
                 </>
               }

@@ -67,6 +67,9 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
+                // Story BAT-7: WebSocket endpoints for real-time notifications
+                .requestMatchers("/ws/**").permitAll()
+
                 // Story 4.1.3: Public event discovery endpoints
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()

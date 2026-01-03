@@ -39,11 +39,25 @@ dependencies {
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
-    // Service-specific: AWS SDK for EventBridge and S3
+    // Service-specific: AWS SDK for EventBridge, S3, CloudFront, and SES
     implementation platform('software.amazon.awssdk:bom:2.39.0')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:cloudfront'
+    implementation 'software.amazon.awssdk:ses'  // BAT-7: Email notifications
     implementation 'software.amazon.awssdk:url-connection-client'
+    // Note: AWS SDK v2 uses software.amazon.awssdk:ses, but EmailService uses legacy v1 API
+    // Adding AWS SDK v1 SES for compatibility with existing EmailService implementation
+    implementation 'com.amazonaws:aws-java-sdk-ses:1.12.772'
+
+    // Service-specific: Thymeleaf for email templates (BAT-7)
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+    // Service-specific: WebSocket for real-time push notifications (BAT-7)
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+    // Service-specific: Hypersistence Utils for JSONB support (BAT-7)
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.9.0'
 
     // Service-specific: JWT for email confirmation tokens
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'

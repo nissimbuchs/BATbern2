@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /**
@@ -29,6 +30,20 @@ public class AwsConfig {
         log.info("Creating S3Client for AWS region: eu-central-1");
         return S3Client.builder()
                 .region(Region.EU_CENTRAL_1) // Bern, Switzerland region
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+                .build();
+    }
+
+    /**
+     * CloudFront client for CDN cache invalidation (Production)
+     * Story BAT-16 (AC6): CDN Cache Invalidation
+     * Used by CdnInvalidationService to invalidate CloudFront cache
+     */
+    @Bean
+    public CloudFrontClient cloudFrontClient() {
+        log.info("Creating CloudFrontClient for AWS");
+        return CloudFrontClient.builder()
+                .region(Region.AWS_GLOBAL) // CloudFront is a global service
                 .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build();
     }

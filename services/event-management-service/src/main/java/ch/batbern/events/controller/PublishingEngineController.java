@@ -196,6 +196,69 @@ public class PublishingEngineController {
     }
 
     /**
+     * Finalize agenda
+     * Story BAT-16 (AC7): Agenda Finalization Controls
+     *
+     * Prerequisites:
+     * - Event must be in AGENDA_PUBLISHED state
+     * - Event date must be at least 14 days in the future
+     */
+    @PostMapping("/{eventCode}/finalize")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ch.batbern.events.dto.EventResponse> finalizeAgenda(
+            @PathVariable String eventCode,
+            Authentication authentication) {
+
+        log.info("Finalizing agenda for event {}", eventCode);
+
+        String organizerUsername = authentication != null ? authentication.getName() : "system";
+
+        ch.batbern.events.domain.Event event = publishingService.finalizeAgenda(eventCode, organizerUsername);
+
+        // Convert to response DTO (simplified)
+        ch.batbern.events.dto.EventResponse response = ch.batbern.events.dto.EventResponse.builder()
+                .eventCode(event.getEventCode())
+                .workflowState(event.getWorkflowState().name())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Unfinalize agenda
+     * Story BAT-16 (AC7): Agenda Finalization Controls
+     *
+     * Requires explicit reason for audit trail
+     */
+    @PostMapping("/{eventCode}/unfinalize")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ch.batbern.events.dto.EventResponse> unfinalizeAgenda(
+            @PathVariable String eventCode,
+            @RequestBody UnfinalizeRequest request,
+            Authentication authentication) {
+
+        log.info("Unfinalizing agenda for event {}", eventCode);
+
+        String organizerUsername = authentication != null ? authentication.getName() : "system";
+
+        ch.batbern.events.domain.Event event = publishingService.unfinalizeAgenda(
+                eventCode, request.reason(), organizerUsername);
+
+        // Convert to response DTO (simplified)
+        ch.batbern.events.dto.EventResponse response = ch.batbern.events.dto.EventResponse.builder()
+                .eventCode(event.getEventCode())
+                .workflowState(event.getWorkflowState().name())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Request DTO for unfinalizing agenda
+     */
+    public record UnfinalizeRequest(String reason) {}
+
+    /**
      * Exception handler for publishing validation errors
      */
     @ExceptionHandler(PublishingService.PublishValidationException.class)
