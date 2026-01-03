@@ -66,14 +66,17 @@ const CompanyPagination: React.FC<CompanyPaginationProps> = ({
 
       {/* Items Per Page Selector */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" id="items-per-page-label">
           {t('company.pagination.itemsPerPage')}:
         </Typography>
         <FormControl size="small">
           <Select
             value={limit}
             onChange={handleLimitChange}
-            aria-label={t('company.pagination.itemsPerPage')}
+            aria-labelledby="items-per-page-label"
+            inputProps={{
+              'aria-label': t('company.pagination.itemsPerPage'),
+            }}
           >
             <MenuItem value={10}>10</MenuItem>
             <MenuItem value={20}>20</MenuItem>
