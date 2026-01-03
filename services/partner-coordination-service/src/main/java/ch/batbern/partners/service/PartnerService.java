@@ -84,7 +84,7 @@ public class PartnerService {
             partners = partnerRepository.findAll();
         }
 
-        // Sort alphabetically by company name
+        // Sort alphabetically by company name for better UX
         return partners.stream()
                 .sorted((p1, p2) -> {
                     String name1 = p1.getCompanyName() != null ? p1.getCompanyName() : "";

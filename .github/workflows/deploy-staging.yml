@@ -41,18 +41,32 @@ jobs:
 
       - name: Detect changed components
         id: changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Detecting which components changed..."
 
-          # For PR events, compare against base branch
-          # For push events, compare against previous commit
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PRs: compare against base branch
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "📌 PR: comparing $BASE_SHA → $HEAD_SHA"
           else
-            # For push events, compare with previous commit
-            BASE_SHA="${{ github.event.before }}"
+            # Push events: compare against last successful deployment
+            chmod +x ./scripts/ci/deployment-tracking.sh
+
+            LAST_DEPLOYED=$(./scripts/ci/deployment-tracking.sh staging get-last-deployed || echo "")
+
+            if [ -n "$LAST_DEPLOYED" ]; then
+              BASE_SHA="$LAST_DEPLOYED"
+              echo "✅ Comparing against last successful deployment: $BASE_SHA"
+            else
+              BASE_SHA="${{ github.event.before }}"
+              echo "⚠️  No deployment history found, comparing against previous commit: $BASE_SHA"
+            fi
+
             HEAD_SHA="${{ github.sha }}"
+            echo "📊 Change detection: $BASE_SHA → $HEAD_SHA"
           fi
 
           echo "Comparing $BASE_SHA...$HEAD_SHA"
@@ -970,6 +984,22 @@ jobs:
           name: playwright-report-staging
           path: web-frontend/playwright-report/
           retention-days: 7
+
+      - name: Mark deployment as successful
+        if: success()  # Only run if ALL previous steps succeeded
+        run: |
+          chmod +x ./scripts/ci/deployment-tracking.sh
+
+          echo "🎯 Recording successful deployment to staging"
+          echo "   Commit: ${{ github.sha }}"
+          echo "   Run: ${{ github.run_id }}"
+
+          ./scripts/ci/deployment-tracking.sh staging mark-deployed ${{ github.sha }}
+
+          echo "✅ Deployment tracking updated"
+          echo "   Next build will compare against this commit"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify deployment success
         if: success()

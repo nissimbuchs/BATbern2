@@ -1359,7 +1359,7 @@ public class EventController {
                     return true;
                 })
                 .sorted((r1, r2) -> {
-                    // Sort alphabetically by last name, then first name
+                    // Sort alphabetically by last name, then first name for better user experience
                     String lastName1 = r1.getAttendeeLastName() != null ? r1.getAttendeeLastName() : "";
                     String lastName2 = r2.getAttendeeLastName() != null ? r2.getAttendeeLastName() : "";
                     int lastNameCompare = lastName1.compareToIgnoreCase(lastName2);

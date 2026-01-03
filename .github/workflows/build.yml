@@ -101,14 +101,32 @@ jobs:
 
       - name: Detect if service should be built
         id: should-build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Determine base and head SHA for comparison
           if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PRs: compare against base branch (existing behavior)
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            echo "📌 PR: comparing $BASE_SHA → $HEAD_SHA"
           else
-            BASE_SHA="${{ github.event.before }}"
+            # Push events: compare against last successful deployment
+            chmod +x ./scripts/ci/deployment-tracking.sh
+
+            # Get last deployed commit for staging (target environment)
+            LAST_DEPLOYED=$(./scripts/ci/deployment-tracking.sh staging get-last-deployed || echo "")
+
+            if [ -n "$LAST_DEPLOYED" ]; then
+              BASE_SHA="$LAST_DEPLOYED"
+              echo "✅ Comparing against last successful deployment: $BASE_SHA"
+            else
+              BASE_SHA="${{ github.event.before }}"
+              echo "⚠️  No deployment history found, comparing against previous commit: $BASE_SHA"
+            fi
+
             HEAD_SHA="${{ github.sha }}"
+            echo "📊 Change detection: $BASE_SHA → $HEAD_SHA"
           fi
 
           # Get list of changed files
