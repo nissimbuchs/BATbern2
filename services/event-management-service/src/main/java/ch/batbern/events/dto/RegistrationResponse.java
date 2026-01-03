@@ -33,6 +33,10 @@ public class RegistrationResponse {
     private String createdAt; // ISO-8601 format
     private String updatedAt; // ISO-8601 format
 
+    // From Event entity (enriched from Event - Story BAT-15)
+    private String eventTitle;
+    private String eventDate; // ISO-8601 format
+
     // From User entity (enriched via UserApiClient - ADR-004)
     private String attendeeUsername;
     private String attendeeFirstName;

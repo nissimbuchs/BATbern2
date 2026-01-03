@@ -1,0 +1,26 @@
+{
+  "hero": {
+    "title": "About BATbern",
+    "subtitle": "Technology exchange between IT experts"
+  },
+  "association": {
+    "title": "Berner-Architekten-Treffen Association",
+    "history": "Since January 23, 2009, the Berner Architekten-Treffen has been organized by the Berner-Architekten-Treffen association.",
+    "mission": "The Berner Architekten-Treffen has been a meeting platform for IT professionals interested in architecture topics since 2005.",
+    "platform": "Through practical presentations and opportunities for in-depth discussion of current issues as well as direct contacts between companies from different industries, the Berner Architekten Treffen offers an excellent platform for the exchange of ideas and experiences.",
+    "statuten": "Association Statutes (PDF)"
+  },
+  "organizers": {
+    "title": "Organizing Committee",
+    "description": "The Berner-Architekten-Treffen is supported in terms of content and organization by a dedicated organizing committee:",
+    "noOrganizers": "No organizers found"
+  },
+  "partners": {
+    "title": "Our Partners",
+    "description": "The Berner Architekten-Treffen is made possible as a free event through the generous support of the following companies and organizations:"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "For questions, suggestions and comments, you can contact any of the members directly or reach out to us:"
+  }
+}

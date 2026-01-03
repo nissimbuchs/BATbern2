@@ -74,8 +74,8 @@ class EventWorkflowTransitionEventTest {
     void should_createValidEvent_when_allRequiredFieldsProvided() {
         // Given: Valid workflow transition data
         String eventCode = "BATbern56";
-        EventWorkflowState fromState = EventWorkflowState.SPEAKER_BRAINSTORMING;
-        EventWorkflowState toState = EventWorkflowState.SPEAKER_OUTREACH;
+        EventWorkflowState fromState = EventWorkflowState.SPEAKER_IDENTIFICATION;
+        EventWorkflowState toState = EventWorkflowState.SPEAKER_IDENTIFICATION;
         String organizerUsername = "jane.smith";
         Instant transitionedAt = Instant.now();
 
@@ -109,8 +109,8 @@ class EventWorkflowTransitionEventTest {
     void should_includeContext_when_eventCreated() {
         // Given: Workflow transition
         String eventCode = "BATbern56";
-        EventWorkflowState fromState = EventWorkflowState.CONTENT_COLLECTION;
-        EventWorkflowState toState = EventWorkflowState.QUALITY_REVIEW;
+        EventWorkflowState fromState = EventWorkflowState.SPEAKER_IDENTIFICATION;
+        EventWorkflowState toState = EventWorkflowState.SPEAKER_IDENTIFICATION;
         String organizerUsername = "john.doe";
         Instant transitionedAt = Instant.now();
 
@@ -152,10 +152,10 @@ class EventWorkflowTransitionEventTest {
         assertThat(createToTopicSelection.getToState()).isEqualTo(EventWorkflowState.TOPIC_SELECTION);
 
         EventWorkflowTransitionEvent speakerOutreachToConfirmation = new EventWorkflowTransitionEvent(
-            eventCode, EventWorkflowState.SPEAKER_OUTREACH, EventWorkflowState.SPEAKER_CONFIRMATION, organizerUsername, now
+            eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername, now
         );
-        assertThat(speakerOutreachToConfirmation.getFromState()).isEqualTo(EventWorkflowState.SPEAKER_OUTREACH);
-        assertThat(speakerOutreachToConfirmation.getToState()).isEqualTo(EventWorkflowState.SPEAKER_CONFIRMATION);
+        assertThat(speakerOutreachToConfirmation.getFromState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        assertThat(speakerOutreachToConfirmation.getToState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         EventWorkflowTransitionEvent publishedToArchived = new EventWorkflowTransitionEvent(
             eventCode, EventWorkflowState.AGENDA_PUBLISHED, EventWorkflowState.ARCHIVED, organizerUsername, now

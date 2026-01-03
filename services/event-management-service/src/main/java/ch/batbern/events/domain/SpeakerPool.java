@@ -11,6 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,6 +27,10 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "speaker_pool")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SpeakerPool {
 
     @Id
@@ -31,6 +40,9 @@ public class SpeakerPool {
 
     @Column(name = "event_id", nullable = false, columnDefinition = "UUID")
     private UUID eventId;
+
+    @Column(name = "username", length = 255)
+    private String username; // Username for authenticated speakers (Story BAT-11)
 
     @Column(name = "speaker_name", nullable = false, length = 255)
     private String speakerName;
@@ -82,13 +94,6 @@ public class SpeakerPool {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    // Constructors
-
-    public SpeakerPool() {
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
-    }
-
     // Getters and Setters
 
     public UUID getId() {
@@ -105,6 +110,14 @@ public class SpeakerPool {
 
     public void setEventId(UUID eventId) {
         this.eventId = eventId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getSpeakerName() {

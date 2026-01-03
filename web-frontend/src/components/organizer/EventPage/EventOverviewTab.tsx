@@ -86,8 +86,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
 
   // Calculate speaker progress
   const confirmedSpeakers = eventUI.confirmedSpeakersCount || 0;
-  const totalSpeakers = 12; // Default for full-day event
-  const speakerPercent = Math.round((confirmedSpeakers / totalSpeakers) * 100);
+  const totalSpeakers = eventUI.maxSpeakerSlots || 4; // Use event type's max slots or default to 4
+  const speakerPercent =
+    totalSpeakers > 0 ? Math.round((confirmedSpeakers / totalSpeakers) * 100) : 0;
 
   // Handle edit
   const handleEditDetails = () => {
@@ -323,14 +324,20 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 />
               </Box>
 
-              {/* Materials */}
+              {/* Materials - Speakers with complete info */}
               <Box>
                 <Typography variant="subtitle2">
                   📋 {t('eventPage.overview.materials', 'Materials')}
                 </Typography>
                 <Typography variant="body1">
-                  {eventUI.pendingMaterialsCount || 0} {t('eventPage.overview.pending', 'pending')}
+                  {eventUI.speakersWithCompleteInfoCount || 0}/{confirmedSpeakers}{' '}
+                  {t('eventPage.overview.materialsComplete', 'complete')}
                 </Typography>
+                {(eventUI.pendingMaterialsCount || 0) > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    {eventUI.pendingMaterialsCount} {t('eventPage.overview.pending', 'pending')}
+                  </Typography>
+                )}
               </Box>
 
               {/* Budget (if available) */}

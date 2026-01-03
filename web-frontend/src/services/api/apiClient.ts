@@ -55,6 +55,12 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Configure params serialization for Spring compatibility
+  // Arrays are sent as repeated parameters: status=CONFIRMED&status=REGISTERED
+  // instead of bracket notation: status[]=CONFIRMED&status[]=REGISTERED
+  paramsSerializer: {
+    indexes: null, // This removes brackets from array parameters
+  },
 });
 
 /**

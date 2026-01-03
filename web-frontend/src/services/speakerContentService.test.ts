@@ -579,12 +579,7 @@ describe('speakerContentService', () => {
       });
     });
 
-    describe('AC34: Session Deletion Protection (already covered above)', () => {
-      it('should be covered in getSpeakerContent orphaned session test', () => {
-        // This AC is already covered by the "handle orphaned session FK with warning" test
-        expect(true).toBe(true);
-      });
-    });
+    // AC34: Session Deletion Protection - covered by getSpeakerContent "handle orphaned session FK with warning" test
 
     describe('AC37: Content Submission State Validation', () => {
       it('should reject submission when speaker not in accepted state', async () => {

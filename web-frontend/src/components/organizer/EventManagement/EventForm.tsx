@@ -98,19 +98,12 @@ const createEventSchema = (t: (key: string) => string) =>
       workflowState: z.enum([
         'CREATED',
         'TOPIC_SELECTION',
-        'SPEAKER_BRAINSTORMING',
-        'SPEAKER_OUTREACH',
-        'SPEAKER_CONFIRMATION',
-        'CONTENT_COLLECTION',
-        'QUALITY_REVIEW',
-        'THRESHOLD_CHECK',
-        'OVERFLOW_MANAGEMENT',
+        'SPEAKER_IDENTIFICATION',
         'SLOT_ASSIGNMENT',
         'AGENDA_PUBLISHED',
         'AGENDA_FINALIZED',
-        'NEWSLETTER_SENT',
-        'EVENT_READY',
-        'PARTNER_MEETING_COMPLETE',
+        'EVENT_LIVE',
+        'EVENT_COMPLETED',
         'ARCHIVED',
       ]),
       eventType: z.enum(['FULL_DAY', 'AFTERNOON', 'EVENING']).optional(),
@@ -152,7 +145,7 @@ interface EventFormProps {
   mode: 'create' | 'edit';
   event?: Event;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (updatedEvent?: Event) => void;
 }
 
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
@@ -507,9 +500,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       delete (patchFields as Partial<Record<string, unknown>>).workflowState;
 
       // Update event fields (if any changed besides workflowState)
+      let updatedEvent: Event | undefined;
       if (Object.keys(patchFields).length > 0) {
         const patchData = transformDatesForApi(patchFields);
-        await updateEventMutation.mutateAsync({
+        updatedEvent = await updateEventMutation.mutateAsync({
           eventCode: event.eventCode,
           data: patchData,
         });
@@ -564,7 +558,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         console.log('⚠️ No templates selected, skipping task creation');
       }
 
-      onSuccess?.();
+      // Pass the updated event to onSuccess callback (used for redirect if eventCode changed)
+      onSuccess?.(updatedEvent);
       onClose();
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -793,26 +788,8 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       <MenuItem value="TOPIC_SELECTION">
                         {t('workflow.states.topic_selection')}
                       </MenuItem>
-                      <MenuItem value="SPEAKER_BRAINSTORMING">
-                        {t('workflow.states.speaker_brainstorming')}
-                      </MenuItem>
-                      <MenuItem value="SPEAKER_OUTREACH">
-                        {t('workflow.states.speaker_outreach')}
-                      </MenuItem>
-                      <MenuItem value="SPEAKER_CONFIRMATION">
-                        {t('workflow.states.speaker_confirmation')}
-                      </MenuItem>
-                      <MenuItem value="CONTENT_COLLECTION">
-                        {t('workflow.states.content_collection')}
-                      </MenuItem>
-                      <MenuItem value="QUALITY_REVIEW">
-                        {t('workflow.states.quality_review')}
-                      </MenuItem>
-                      <MenuItem value="THRESHOLD_CHECK">
-                        {t('workflow.states.threshold_check')}
-                      </MenuItem>
-                      <MenuItem value="OVERFLOW_MANAGEMENT">
-                        {t('workflow.states.overflow_management')}
+                      <MenuItem value="SPEAKER_IDENTIFICATION">
+                        {t('workflow.states.speaker_identification')}
                       </MenuItem>
                       <MenuItem value="SLOT_ASSIGNMENT">
                         {t('workflow.states.slot_assignment')}
@@ -823,12 +800,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       <MenuItem value="AGENDA_FINALIZED">
                         {t('workflow.states.agenda_finalized')}
                       </MenuItem>
-                      <MenuItem value="NEWSLETTER_SENT">
-                        {t('workflow.states.newsletter_sent')}
-                      </MenuItem>
-                      <MenuItem value="EVENT_READY">{t('workflow.states.event_ready')}</MenuItem>
-                      <MenuItem value="PARTNER_MEETING_COMPLETE">
-                        {t('workflow.states.partner_meeting_complete')}
+                      <MenuItem value="EVENT_LIVE">{t('workflow.states.event_live')}</MenuItem>
+                      <MenuItem value="EVENT_COMPLETED">
+                        {t('workflow.states.event_completed')}
                       </MenuItem>
                       <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
                     </Select>

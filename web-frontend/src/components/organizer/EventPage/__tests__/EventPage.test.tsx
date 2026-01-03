@@ -86,9 +86,9 @@ vi.mock('../EventVenueTab', () => ({
   EventVenueTab: () => <div data-testid="event-venue-tab">Venue Tab</div>,
 }));
 
-vi.mock('../EventTeamTab', () => ({
-  EventTeamTab: ({ eventCode }: { eventCode: string }) => (
-    <div data-testid="event-team-tab">Team Tab - {eventCode}</div>
+vi.mock('../EventParticipantsTab', () => ({
+  default: ({ event }: { event: any }) => (
+    <div data-testid="event-participants-tab">Participants Tab - {event.eventCode}</div>
   ),
 }));
 
@@ -213,7 +213,7 @@ describe('EventPage Component (Story 5.6)', () => {
       expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /speakers/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /venue/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /team/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /participants/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /publishing/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
     });
@@ -246,14 +246,14 @@ describe('EventPage Component (Story 5.6)', () => {
       });
     });
 
-    it('should_switchToTeamTab_when_clicked', async () => {
+    it('should_switchToParticipantsTab_when_clicked', async () => {
       renderWithProviders();
 
-      const teamTab = screen.getByRole('tab', { name: /team/i });
-      fireEvent.click(teamTab);
+      const participantsTab = screen.getByRole('tab', { name: /participants/i });
+      fireEvent.click(participantsTab);
 
       await waitFor(() => {
-        expect(screen.getByTestId('event-team-tab')).toBeInTheDocument();
+        expect(screen.getByTestId('event-participants-tab')).toBeInTheDocument();
       });
     });
 
@@ -293,10 +293,10 @@ describe('EventPage Component (Story 5.6)', () => {
       expect(screen.getByTestId('event-venue-tab')).toBeInTheDocument();
     });
 
-    it('should_selectTeamTab_when_urlHasTeamParam', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=team');
+    it('should_selectParticipantsTab_when_urlHasParticipantsParam', () => {
+      renderWithProviders('/organizer/events/BAT54?tab=participants');
 
-      expect(screen.getByTestId('event-team-tab')).toBeInTheDocument();
+      expect(screen.getByTestId('event-participants-tab')).toBeInTheDocument();
     });
 
     it('should_selectPublishingTab_when_urlHasPublishingParam', () => {
@@ -331,10 +331,10 @@ describe('EventPage Component (Story 5.6)', () => {
       expect(screen.getByText(/Speakers Tab - BAT54/)).toBeInTheDocument();
     });
 
-    it('should_passEventCodeToTeamTab', () => {
-      renderWithProviders('/organizer/events/BAT54?tab=team');
+    it('should_passEventCodeToParticipantsTab', () => {
+      renderWithProviders('/organizer/events/BAT54?tab=participants');
 
-      expect(screen.getByText(/Team Tab - BAT54/)).toBeInTheDocument();
+      expect(screen.getByText(/Participants Tab - BAT54/)).toBeInTheDocument();
     });
   });
 
@@ -407,6 +407,7 @@ describe('EventPage Component (Story 5.6)', () => {
       renderWithProviders();
 
       const tabs = screen.getAllByRole('tab');
+      // 6 tabs: Overview, Speakers, Venue, Participants, Publishing, Settings
       expect(tabs.length).toBe(6);
     });
 

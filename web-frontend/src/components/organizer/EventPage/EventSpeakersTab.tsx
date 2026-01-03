@@ -32,12 +32,15 @@ import {
   Add as AddIcon,
   Close as CloseIcon,
   AutoAwesome as AutoAssignIcon,
+  Schedule as SlotAssignmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
+import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
+import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
@@ -54,6 +57,7 @@ interface EventSpeakersTabProps {
 export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { t } = useTranslation(['events', 'organizer']);
 
   // Get view mode from URL, default to 'kanban'
@@ -64,6 +68,8 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [addSpeakerDrawerOpen, setAddSpeakerDrawerOpen] = useState(false);
   const [selectedSpeaker, setSelectedSpeaker] = useState<SpeakerPoolEntry | null>(null);
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
+  const [autoAssignLoading, setAutoAssignLoading] = useState(false);
+  const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -144,20 +150,28 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     console.log('View materials:', sessionId);
   };
 
-  const handleViewFullAgenda = (code: string) => {
-    navigate(`/organizer/events/${code}/agenda`);
+  const handleAutoAssignSpeakers = async () => {
+    try {
+      setAutoAssignLoading(true);
+      setAutoAssignError(null);
+      const result = await slotAssignmentService.autoAssignTimings(eventCode);
+      console.log('Auto-assigned', result.assignedCount, 'sessions');
+      // Refresh event data to show updated assignments
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+    } catch (error) {
+      console.error('Failed to auto-assign speakers:', error);
+      setAutoAssignError(
+        error instanceof Error
+          ? error.message
+          : t('events:speakers.autoAssignError', 'Failed to auto-assign speakers')
+      );
+    } finally {
+      setAutoAssignLoading(false);
+    }
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleManageSpeakerAssignments = (_code: string) => {
-    // Switch to kanban view
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('view', 'kanban');
-    setSearchParams(newParams, { replace: true });
-  };
-
-  const handleAutoAssignSpeakers = (code: string) => {
-    console.log('Auto-assign speakers for:', code);
+  const handleManageSlotAssignments = () => {
+    navigate(`/organizer/events/${eventCode}/slot-assignment`);
   };
 
   // Loading state
@@ -279,16 +293,6 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               {t('events:eventPage.speakers.sessions', 'Sessions')}
             </ToggleButton>
           </ToggleButtonGroup>
-
-          {currentView === 'sessions' && (
-            <Button
-              variant="outlined"
-              startIcon={<AutoAssignIcon />}
-              onClick={() => handleAutoAssignSpeakers(eventCode)}
-            >
-              {t('events:speakers.autoAssignSpeakers', 'Auto-Assign')}
-            </Button>
-          )}
         </Stack>
       </Paper>
 
@@ -313,14 +317,41 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               onViewDetails={handleViewDetails}
               onEditSlot={handleEditSlot}
               onViewMaterials={handleViewMaterials}
-              onViewFullAgenda={handleViewFullAgenda}
-              onManageSpeakerAssignments={handleManageSpeakerAssignments}
-              onAutoAssignSpeakers={handleAutoAssignSpeakers}
               onSessionUpdate={async () => {}}
             />
           </Paper>
         )}
       </Box>
+
+      {/* Action Buttons (Sessions View Only) */}
+      {currentView === 'sessions' && (
+        <Paper sx={{ p: 2, flexShrink: 0 }}>
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button
+              variant="contained"
+              startIcon={<SlotAssignmentIcon />}
+              onClick={handleManageSlotAssignments}
+            >
+              {t('events:speakers.manageSlotAssignments', 'Slot Assignment')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<AutoAssignIcon />}
+              onClick={handleAutoAssignSpeakers}
+              disabled={autoAssignLoading}
+            >
+              {autoAssignLoading
+                ? t('events:speakers.autoAssigning', 'Auto-Assigning...')
+                : t('events:speakers.autoAssignSpeakers', 'Auto-Assign Slots')}
+            </Button>
+          </Stack>
+          {autoAssignError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {autoAssignError}
+            </Alert>
+          )}
+        </Paper>
+      )}
 
       {/* Speaker Details Drawer */}
       <SpeakerOutreachDetailsDrawer

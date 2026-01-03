@@ -30,7 +30,14 @@ WHERE t.id = d.id AND d.rn > 1;
 
 -- Now make the column NOT NULL and add unique constraint
 ALTER TABLE topics ALTER COLUMN topic_code SET NOT NULL;
-ALTER TABLE topics ADD CONSTRAINT uk_topics_topic_code UNIQUE (topic_code);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'uk_topics_topic_code'
+    ) THEN
+        ALTER TABLE topics ADD CONSTRAINT uk_topics_topic_code UNIQUE (topic_code);
+    END IF;
+END $$;
 
 -- Add index for fast lookups by topic_code (primary API identifier per ADR-003)
 CREATE INDEX IF NOT EXISTS idx_topics_topic_code ON topics(topic_code);

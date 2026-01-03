@@ -1,6 +1,6 @@
 [
   {
-    "id": "SBB",
+    "id": "sbb",
     "displayName": "SBB CFF FFS",
     "logo": "sbb.jpg",
     "url": "https://www.sbb.ch",
@@ -10,7 +10,7 @@
     "industry": "Transportation"
   },
   {
-    "id": "Mobiliar",
+    "id": "mobiliar",
     "displayName": "Die Mobiliar",
     "logo": "mobiliar.jpg",
     "url": "https://www.mobiliar.ch",
@@ -20,7 +20,7 @@
     "industry": "Insurance"
   },
   {
-    "id": "Swisscom",
+    "id": "swisscom",
     "displayName": "Swisscom AG",
     "logo": "swisscom.jpg",
     "url": "https://www.swisscom.ch",
@@ -30,7 +30,7 @@
     "industry": "Telecommunications"
   },
   {
-    "id": "PostFinance",
+    "id": "postfinance",
     "displayName": "PostFinance AG",
     "logo": "postfinance.jpg",
     "url": "https://www.postfinance.ch",
@@ -40,7 +40,7 @@
     "industry": "Financial Services"
   },
   {
-    "id": "ELCA",
+    "id": "elca",
     "displayName": "ELCA Informatique SA",
     "logo": "elca.jpg",
     "url": "https://www.elca.ch",
@@ -62,7 +62,7 @@
     "industry": "Banking Software"
   },
   {
-    "id": "BKW",
+    "id": "bkw",
     "displayName": "BKW AG",
     "logo": "bkw.jpg",
     "url": "https://www.bkw.ch",
@@ -106,7 +106,7 @@
     "industry": "Government"
   },
   {
-    "id": "BLS",
+    "id": "bls",
     "displayName": "BLS AG",
     "logo": null,
     "url": "https://www.bls.ch",
@@ -128,7 +128,7 @@
     "industry": "Cloud Provider"
   },
   {
-    "id": "Post",
+    "id": "post",
     "displayName": "Die Schweizerische Post",
     "logo": "postfinance.jpg",
     "url": "https://www.post.ch",
@@ -333,7 +333,7 @@
     "industry": "Government"
   },
   {
-    "id": "DVBern",
+    "id": "dvbern",
     "displayName": "DV Bern AG",
     "logo": null,
     "url": "https://www.dvbern.ch",
@@ -345,7 +345,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "Microsoft",
+    "id": "microsoft",
     "displayName": "Microsoft",
     "logo": "microsoft.png",
     "url": "https://www.microsoft.com",
@@ -377,7 +377,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "TWINT",
+    "id": "twint",
     "displayName": "TWINT",
     "logo": "twint-logo.png",
     "url": "https://www.twint.ch",
@@ -448,7 +448,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "BJB",
+    "id": "bjb",
     "displayName": "Bank Julius Baer",
     "logo": "JB_LA_RGB_blue.jpg",
     "url": "https://www.juliusbaer.com",
@@ -468,7 +468,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "Finnova",
+    "id": "finnova",
     "displayName": "Finnova",
     "logo": null,
     "url": "https://finnova.ch",
@@ -558,7 +558,7 @@
     "industry": "IT Consulting"
   },
   {
-    "id": "BCGE",
+    "id": "bcge",
     "displayName": "BCGE (Banque Cantonale de Genève)",
     "logo": "bcge.jpg",
     "url": "https://www.bcge.ch",
@@ -732,7 +732,7 @@
     "status": "complete"
   },
   {
-    "id": "Innoopract",
+    "id": "innoopract",
     "displayName": "Innoopract Informationssysteme GmbH",
     "url": null,
     "industry": "IT Consulting",
@@ -743,7 +743,7 @@
     "status": "complete"
   },
   {
-    "id": "KtBernSTV",
+    "id": "ktbernstv",
     "displayName": "Kanton Bern Steuerverwaltung",
     "url": "https://www.sv.fin.be.ch",
     "industry": "Government",
@@ -898,7 +898,7 @@
     "status": "complete"
   },
   {
-    "id": "SNB",
+    "id": "snb",
     "displayName": "Schweizerische Nationalbank",
     "url": "https://www.snb.ch",
     "industry": "Financial Services",
@@ -909,7 +909,7 @@
     "status": "complete"
   },
   {
-    "id": "ZKB",
+    "id": "zkb",
     "displayName": "Zürcher Kantonalbank",
     "url": "https://www.zkb.ch",
     "industry": "Financial Services",

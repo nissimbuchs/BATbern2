@@ -3,12 +3,39 @@
  * Tests for vertical timeline program display
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventProgram } from './EventProgram';
 import type { Session } from '@/types/event.types';
 
+// Mock API clients
+vi.mock('@/services/companyApiClient', () => ({
+  companyApiClient: {
+    getCompany: vi.fn(() => Promise.resolve({ name: 'Test Company', logoUrl: null })),
+  },
+}));
+
 describe('EventProgram', () => {
+  let queryClient: QueryClient;
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  };
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
   const mockSessions: Session[] = [
     {
       sessionSlug: 'keynote-morning',
@@ -68,7 +95,7 @@ describe('EventProgram', () => {
   ];
 
   it('should_displayEventProgram_when_sessionsProvided', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     expect(screen.getByText('Event Program')).toBeInTheDocument();
     expect(screen.getByText('Opening Keynote')).toBeInTheDocument();
@@ -77,7 +104,7 @@ describe('EventProgram', () => {
   });
 
   it('should_groupSessionsByTime_when_multipleSessions', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Should have 2 time slots (09:00 and 12:00)
     const timeIndicators = screen.getAllByText(/^\d{2}:\d{2}$/);
@@ -85,7 +112,7 @@ describe('EventProgram', () => {
   });
 
   it('should_displaySessionDetails_when_rendered', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Check descriptions
     expect(screen.getByText(/Welcome and introduction to the conference/i)).toBeInTheDocument();
@@ -98,20 +125,20 @@ describe('EventProgram', () => {
   });
 
   it('should_displaySpeakerNames_when_speakersAssigned', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     expect(screen.getByText(/Jane Smith/i)).toBeInTheDocument();
   });
 
   it('should_displaySpeakerTBA_when_noSpeakersAssigned', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     expect(screen.getByText(/Speaker TBA/i)).toBeInTheDocument();
   });
 
   it('should_displaySessionTypes_when_rendered', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     expect(screen.getByText('keynote')).toBeInTheDocument();
     expect(screen.getByText('workshop')).toBeInTheDocument();
@@ -119,7 +146,7 @@ describe('EventProgram', () => {
   });
 
   it('should_sortTimeSlots_when_rendered', () => {
-    const { container } = render(<EventProgram sessions={mockSessions} />);
+    const { container } = renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Find time indicators in the timeline circles
     const timeIndicators = container.querySelectorAll('.rounded-full .text-sm');
@@ -132,7 +159,7 @@ describe('EventProgram', () => {
   });
 
   it('should_displayTimelineLine_when_rendered', () => {
-    const { container } = render(<EventProgram sessions={mockSessions} />);
+    const { container } = renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Check for timeline vertical line
     const timeline = container.querySelector('.absolute.w-px.bg-zinc-800');
@@ -140,13 +167,13 @@ describe('EventProgram', () => {
   });
 
   it('should_renderNull_when_noSessionsProvided', () => {
-    const { container } = render(<EventProgram sessions={[]} />);
+    const { container } = renderWithProviders(<EventProgram sessions={[]} />);
 
     expect(container.firstChild).toBeNull();
   });
 
   it('should_formatSessionDuration_when_rendered', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Check for formatted time ranges
     const timeRanges = screen.getAllByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/);
@@ -154,7 +181,7 @@ describe('EventProgram', () => {
   });
 
   it('should_handleParallelSessions_when_sameStartTime', () => {
-    render(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} />);
 
     // Both morning sessions start at 09:00
     // They should both appear under the same time slot

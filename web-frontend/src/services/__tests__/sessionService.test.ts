@@ -8,7 +8,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AxiosError } from 'axios';
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { SessionApiClient } from '../sessionService';
-import type { BatchImportSessionRequest, SessionBatchImportResult } from '@/types/sessionImport.types';
+import type {
+  BatchImportSessionRequest,
+  SessionBatchImportResult,
+} from '@/types/sessionImport.types';
 
 // Mock apiClient
 vi.mock('@/services/api/apiClient', () => ({
@@ -51,8 +54,18 @@ describe('SessionApiClient', () => {
       skipped: 0,
       failed: 0,
       details: [
-        { title: 'Test Session 1', status: 'success', message: 'Created', sessionSlug: 'session-1' },
-        { title: 'Test Session 2', status: 'success', message: 'Created', sessionSlug: 'session-2' },
+        {
+          title: 'Test Session 1',
+          status: 'success',
+          message: 'Created',
+          sessionSlug: 'session-1',
+        },
+        {
+          title: 'Test Session 2',
+          status: 'success',
+          message: 'Created',
+          sessionSlug: 'session-2',
+        },
       ],
     };
 
@@ -61,10 +74,7 @@ describe('SessionApiClient', () => {
 
       await client.batchImportSessions(eventCode, sessions);
 
-      expect(mockPost).toHaveBeenCalledWith(
-        '/events/BATbern142/sessions/batch-import',
-        sessions
-      );
+      expect(mockPost).toHaveBeenCalledWith('/events/BATbern142/sessions/batch-import', sessions);
     });
 
     it('should_returnImportResult_when_importSuccessful', async () => {

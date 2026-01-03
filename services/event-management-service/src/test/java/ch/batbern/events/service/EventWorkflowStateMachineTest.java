@@ -54,6 +54,12 @@ class EventWorkflowStateMachineTest {
     @Mock
     private DomainEventPublisher eventPublisher;
 
+    @Mock
+    private ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+
+    @Mock
+    private ch.batbern.events.repository.SessionRepository sessionRepository;
+
     @InjectMocks
     private EventWorkflowStateMachine stateMachine;
 
@@ -137,54 +143,18 @@ class EventWorkflowStateMachineTest {
         verify(eventPublisher, never()).publish(any());
     }
 
-    // Test 2.3: AC5 - should_throwValidationException_when_insufficientSpeakers_forTransition
-    @Test
-    @DisplayName("Test 2.3: Should throw validation exception when insufficient speakers for SPEAKER_OUTREACH")
-    void should_throwValidationException_when_insufficientSpeakers_forTransition() {
-        // Given: Event with insufficient speakers (need 6, have 3)
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
-        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
-
-        // When/Then: Transition to SPEAKER_OUTREACH should fail
-        assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_OUTREACH, organizerUsername)
-        )
-                .isInstanceOf(WorkflowValidationException.class)
-                .hasMessageContaining("Insufficient speakers identified");
-
-        // Verify event was NOT saved
-        verify(eventRepository, never()).save(any(Event.class));
-
-        // Verify domain event was NOT published
-        verify(eventPublisher, never()).publish(any());
-    }
-
-    // Test 2.4: AC5 - should_throwValidationException_when_contentNotSubmitted_forQualityReview
-    @Test
-    @DisplayName("Test 2.4: Should throw validation exception when content not submitted for QUALITY_REVIEW")
-    void should_throwValidationException_when_contentNotSubmitted_forQualityReview() {
-        // Given: Event without all content submitted
-        testEvent.setWorkflowState(EventWorkflowState.CONTENT_COLLECTION);
-        when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
-
-        // When/Then: Transition to QUALITY_REVIEW should fail
-        assertThatThrownBy(() ->
-                stateMachine.transitionToState(eventCode, EventWorkflowState.QUALITY_REVIEW, organizerUsername)
-        )
-                .isInstanceOf(WorkflowValidationException.class)
-                .hasMessageContaining("Not all content submitted");
-
-        // Verify event was NOT saved
-        verify(eventRepository, never()).save(any(Event.class));
-    }
+    // Test 2.3 and 2.4: REMOVED - These tests validated transitions to removed states
+    // (SPEAKER_IDENTIFICATION validations don't exist in 9-state model)
 
     // Test 2.5: AC5 - should_throwValidationException_when_thresholdNotMet_forSlotAssignment
     @Test
     @DisplayName("Test 2.5: Should throw validation exception when threshold not met for SLOT_ASSIGNMENT")
     void should_throwValidationException_when_thresholdNotMet_forSlotAssignment() {
         // Given: Event that hasn't met minimum speaker threshold
-        testEvent.setWorkflowState(EventWorkflowState.THRESHOLD_CHECK);
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
+        // Mock speaker pool to return 0 speakers (threshold not met)
+        when(speakerPoolRepository.countByEventIdAndStatus(any(UUID.class), any())).thenReturn(0L);
 
         // When/Then: Transition to SLOT_ASSIGNMENT should fail
         assertThatThrownBy(() ->
@@ -204,13 +174,16 @@ class EventWorkflowStateMachineTest {
         // Given: Event with unassigned slots
         testEvent.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(testEvent));
+        // Mock session repository: 5 total sessions, 3 with timing assigned
+        when(sessionRepository.countByEventId(any(UUID.class))).thenReturn(5L);
+        when(sessionRepository.countByEventIdAndStartTimeNotNull(any(UUID.class))).thenReturn(3L);
 
         // When/Then: Transition to AGENDA_FINALIZED should fail
         assertThatThrownBy(() ->
                 stateMachine.transitionToState(eventCode, EventWorkflowState.AGENDA_FINALIZED, organizerUsername)
         )
                 .isInstanceOf(WorkflowValidationException.class)
-                .hasMessageContaining("Not all slots assigned");
+                .hasMessageContaining("not all sessions have timing assigned");
 
         // Verify event was NOT saved
         verify(eventRepository, never()).save(any(Event.class));
@@ -274,11 +247,11 @@ class EventWorkflowStateMachineTest {
         // Update mock to return updated state
         testEvent.setWorkflowState(EventWorkflowState.TOPIC_SELECTION);
 
-        // When: Second transition to SPEAKER_BRAINSTORMING
-        Event afterSecond = stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_BRAINSTORMING, organizerUsername);
+        // When: Second transition to SPEAKER_IDENTIFICATION
+        Event afterSecond = stateMachine.transitionToState(eventCode, EventWorkflowState.SPEAKER_IDENTIFICATION, organizerUsername);
 
         // Then: Both transitions successful
-        assertThat(afterSecond.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(afterSecond.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         // Verify two domain events published (once per transition)
         verify(eventPublisher, times(2)).publish(any(EventWorkflowTransitionEvent.class));

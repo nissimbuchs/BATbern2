@@ -40,7 +40,7 @@ describe('PublicNavigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('BATbern')).toBeInTheDocument();
+    expect(screen.getByAltText('BATbern')).toBeInTheDocument();
   });
 
   it('should render navigation links', () => {

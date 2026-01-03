@@ -288,7 +288,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnSpeakerPool_when_eventHasSpeakers() throws Exception {
         // Given: Event with speakers in pool
-        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_BRAINSTORMING);
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         // Add speakers to pool
         Map<String, Object> speaker1 = new HashMap<>();
@@ -330,7 +330,7 @@ class SpeakerPoolWorkflowIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnEmptyList_when_noSpeakersInPool() throws Exception {
         // Given: Event with no speakers in pool
-        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_BRAINSTORMING);
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_IDENTIFICATION);
 
         // When: Get speaker pool
         mockMvc.perform(get("/api/v1/events/{eventCode}/speakers/pool", event.getEventCode()))

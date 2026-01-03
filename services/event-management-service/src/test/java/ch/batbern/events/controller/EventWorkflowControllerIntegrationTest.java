@@ -26,6 +26,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -118,17 +119,17 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.workflowState", is("TOPIC_SELECTION")));
 
-        // Transition 2: TOPIC_SELECTION → SPEAKER_BRAINSTORMING
+        // Transition 2: TOPIC_SELECTION → TOPIC_SELECTION (idempotent - should succeed)
         mockMvc.perform(put("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"targetState\": \"SPEAKER_BRAINSTORMING\"}"))
+                        .content("{\"targetState\": \"TOPIC_SELECTION\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.workflowState", is("SPEAKER_BRAINSTORMING")));
+                .andExpect(jsonPath("$.workflowState", is("TOPIC_SELECTION")));
 
         // Verify final state
         Event updatedEvent = eventRepository.findById(testEvent.getId()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.TOPIC_SELECTION);
     }
 
     /**
@@ -168,11 +169,11 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @Test
     @DisplayName("Should return 422 when invalid backward transition is attempted")
     void should_return422_when_invalidBackwardTransition_attempted() throws Exception {
-        // Given: Event in SPEAKER_BRAINSTORMING state
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        // Given: Event in SPEAKER_IDENTIFICATION state
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
-        // When: Attempt backward transition SPEAKER_BRAINSTORMING → CREATED
+        // When: Attempt backward transition SPEAKER_IDENTIFICATION → CREATED
         mockMvc.perform(put("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -189,44 +190,44 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
     @Test
     @DisplayName("Should return 422 when validation fails for transition (e.g., insufficient speakers)")
     void should_return422_when_validationFails_forTransition() throws Exception {
-        // Given: Event in TOPIC_SELECTION state (ready to transition to SPEAKER_OUTREACH)
-        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        // Given: Event in SPEAKER_IDENTIFICATION state without accepted speakers
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
-        // When: Attempt transition to SPEAKER_OUTREACH (requires minimum speakers identified)
+        // When: Attempt transition to SLOT_ASSIGNMENT (requires minimum threshold - at least 1 ACCEPTED speaker)
         mockMvc.perform(put("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"targetState\": \"SPEAKER_OUTREACH\"}"))
+                        .content("{\"targetState\": \"SLOT_ASSIGNMENT\"}"))
                 // Then: Should return 422 Unprocessable Entity (validation failure)
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.message", containsString("Insufficient speakers")))
+                .andExpect(jsonPath("$.message", containsString("threshold")))
                 .andExpect(jsonPath("$.details", notNullValue()));
 
         // Verify state unchanged in database
         Event unchangedEvent = eventRepository.findById(testEvent.getId()).orElseThrow();
-        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(unchangedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
-     * Test 3.3a: should_return422_when_validationFails_forQualityReview
-     * Additional validation test for quality review transition
+     * Test 3.3a: should_return422_when_validationFails_forSlotAssignment
+     * Test validation for transition to SLOT_ASSIGNMENT (requires minimum threshold)
      */
     @Test
-    @DisplayName("Should return 422 when validation fails for quality review (content not submitted)")
+    @DisplayName("Should return 422 when validation fails for slot assignment (threshold not met)")
     void should_return422_when_validationFails_forQualityReview() throws Exception {
-        // Given: Event in CONTENT_COLLECTION state
-        testEvent.setWorkflowState(EventWorkflowState.CONTENT_COLLECTION);
+        // Given: Event in SPEAKER_IDENTIFICATION state without accepted speakers
+        testEvent.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
         eventRepository.save(testEvent);
 
-        // When: Attempt transition to QUALITY_REVIEW (requires all content submitted)
+        // When: Attempt transition to SLOT_ASSIGNMENT (requires at least 1 ACCEPTED speaker)
         mockMvc.perform(put("/api/v1/events/{code}/workflow/transition", testEvent.getEventCode())
                         .with(user("john.doe").roles("ORGANIZER"))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"targetState\": \"QUALITY_REVIEW\"}"))
+                        .content("{\"targetState\": \"SLOT_ASSIGNMENT\"}"))
                 // Then: Should return 422 Unprocessable Entity
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.message", containsString("content submitted")));
+                .andExpect(jsonPath("$.message", containsString("threshold")));
     }
 
     /**
@@ -243,8 +244,8 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentState", is("CREATED")))
                 .andExpect(jsonPath("$.nextAvailableStates", notNullValue()))
-                .andExpect(jsonPath("$.nextAvailableStates", hasSize(1)))
-                .andExpect(jsonPath("$.nextAvailableStates[0]", is("TOPIC_SELECTION")))
+                .andExpect(jsonPath("$.nextAvailableStates", hasSize(2))) // TOPIC_SELECTION and SPEAKER_IDENTIFICATION
+                .andExpect(jsonPath("$.nextAvailableStates[*]", containsInAnyOrder("TOPIC_SELECTION", "SPEAKER_IDENTIFICATION")))
                 .andExpect(jsonPath("$.validationMessages", notNullValue()));
     }
 
@@ -265,7 +266,7 @@ public class EventWorkflowControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentState", is("TOPIC_SELECTION")))
                 .andExpect(jsonPath("$.nextAvailableStates", hasSize(1)))
-                .andExpect(jsonPath("$.nextAvailableStates[0]", is("SPEAKER_BRAINSTORMING")));
+                .andExpect(jsonPath("$.nextAvailableStates[0]", is("SPEAKER_IDENTIFICATION")));
     }
 
     /**

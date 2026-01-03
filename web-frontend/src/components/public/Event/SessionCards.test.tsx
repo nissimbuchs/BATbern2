@@ -3,12 +3,39 @@
  * Tests for session cards display and filtering functionality
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionCards } from './SessionCards';
 import type { Session } from '@/types/event.types';
 
+// Mock API clients
+vi.mock('@/services/companyApiClient', () => ({
+  companyApiClient: {
+    getCompany: vi.fn(() => Promise.resolve({ name: 'Test Company', logoUrl: null })),
+  },
+}));
+
 describe('SessionCards', () => {
+  let queryClient: QueryClient;
+
+  const renderWithProviders = (ui: React.ReactElement) => {
+    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  };
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
   const mockSessions: Session[] = [
     {
       sessionSlug: 'keynote-session',
@@ -60,7 +87,7 @@ describe('SessionCards', () => {
   ];
 
   it('should_displaySessionCards_when_sessionsProvided', () => {
-    render(<SessionCards sessions={mockSessions} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     expect(screen.getByText('Sessions')).toBeInTheDocument();
     expect(screen.getByText('Opening Keynote')).toBeInTheDocument();
@@ -68,7 +95,7 @@ describe('SessionCards', () => {
   });
 
   it('should_displaySessionDetails_when_rendered', () => {
-    render(<SessionCards sessions={mockSessions} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     // Check session descriptions
     expect(screen.getByText(/Welcome and introduction to the conference/i)).toBeInTheDocument();
@@ -86,14 +113,14 @@ describe('SessionCards', () => {
   });
 
   it('should_displaySpeakerNames_when_speakersAssigned', () => {
-    render(<SessionCards sessions={mockSessions} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     expect(screen.getByText(/Jane Smith/i)).toBeInTheDocument();
   });
 
   it('should_toggleToGridView_when_gridButtonClicked', () => {
-    const { container } = render(<SessionCards sessions={mockSessions} />);
+    const { container } = renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     const listButton = screen.getByLabelText('List view');
     fireEvent.click(listButton);
@@ -111,7 +138,7 @@ describe('SessionCards', () => {
   });
 
   it('should_toggleToListView_when_listButtonClicked', () => {
-    const { container } = render(<SessionCards sessions={mockSessions} />);
+    const { container } = renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     const listButton = screen.getByLabelText('List view');
     fireEvent.click(listButton);
@@ -122,14 +149,14 @@ describe('SessionCards', () => {
   });
 
   it('should_displayTopicFilters_when_topicsProvided', () => {
-    render(<SessionCards sessions={mockSessions} topics={mockTopics} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} topics={mockTopics} />);
 
     expect(screen.getByText('Sustainability')).toBeInTheDocument();
     expect(screen.getByText('Innovation')).toBeInTheDocument();
   });
 
   it('should_toggleTopicFilter_when_topicBadgeClicked', () => {
-    render(<SessionCards sessions={mockSessions} topics={mockTopics} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} topics={mockTopics} />);
 
     const sustainabilityBadge = screen.getByText('Sustainability');
     fireEvent.click(sustainabilityBadge);
@@ -143,14 +170,14 @@ describe('SessionCards', () => {
   });
 
   it('should_displaySessionType_when_rendered', () => {
-    render(<SessionCards sessions={mockSessions} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     expect(screen.getByText('keynote')).toBeInTheDocument();
     expect(screen.getByText('workshop')).toBeInTheDocument();
   });
 
   it('should_formatTime_when_sessionTimesProvided', () => {
-    render(<SessionCards sessions={mockSessions} />);
+    renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     // Check for formatted times (09:00 - 10:00 and 11:00 - 12:30)
     const timeElements = screen.getAllByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/);
@@ -158,7 +185,7 @@ describe('SessionCards', () => {
   });
 
   it('should_renderNull_when_noSessionsProvided', () => {
-    const { container } = render(<SessionCards sessions={[]} />);
+    const { container } = renderWithProviders(<SessionCards sessions={[]} />);
 
     expect(container.firstChild).toBeNull();
   });
@@ -171,13 +198,13 @@ describe('SessionCards', () => {
       },
     ];
 
-    render(<SessionCards sessions={sessionsWithoutSpeakers} />);
+    renderWithProviders(<SessionCards sessions={sessionsWithoutSpeakers} />);
 
     expect(screen.getByText(/Speaker TBA/i)).toBeInTheDocument();
   });
 
   it('should_useGridLayoutByDefault_when_rendered', () => {
-    const { container } = render(<SessionCards sessions={mockSessions} />);
+    const { container } = renderWithProviders(<SessionCards sessions={mockSessions} />);
 
     // Grid layout should be active by default
     const gridContainer = container.querySelector('.grid');

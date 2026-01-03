@@ -7,6 +7,8 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.BatchUpdateRequest;
 import ch.batbern.events.dto.CreateEventRequest;
 import ch.batbern.events.dto.CreateRegistrationResponse;
+import ch.batbern.events.dto.generated.BatchRegistrationRequest;
+import ch.batbern.events.dto.generated.BatchRegistrationResponse;
 import ch.batbern.events.dto.generated.CreateRegistrationRequest;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.dto.generated.topics.TopicSelectionResponse;
@@ -32,6 +34,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -40,6 +43,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -94,6 +98,8 @@ public class EventController {
     private final ch.batbern.events.service.RegistrationEmailService registrationEmailService;
     private final ch.batbern.events.service.TopicService topicService;
     private final ch.batbern.events.service.SpeakerPoolService speakerPoolService;
+    private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
+    private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
 
     /**
      * List/Search Events (AC1)
@@ -113,7 +119,8 @@ public class EventController {
     @Operation(
             summary = "List/Search Events",
             description = "Retrieve events with optional filtering, sorting, and pagination. "
-                    + "Uses MongoDB-style filter syntax for rich querying."
+                    + "Uses MongoDB-style filter syntax for rich querying. "
+                    + "Supports resource expansion via ?include parameter (e.g., ?include=registrations)"
     )
     public ResponseEntity<PaginatedResponse<EventResponse>> listEvents(
             @Parameter(description = "JSON filter object (e.g., {\"status\":\"published\"})")
@@ -126,17 +133,36 @@ public class EventController {
             @RequestParam(required = false) Integer page,
 
             @Parameter(description = "Items per page (default: 20, max: 100)")
-            @RequestParam(required = false) Integer limit
+            @RequestParam(required = false) Integer limit,
+
+            @Parameter(description = "Include archived events (default: false)")
+            @RequestParam(required = false, defaultValue = "false") boolean includeArchived,
+
+            @Parameter(description = "Comma-separated list of resources to include (e.g., registrations)")
+            @RequestParam(required = false) String include
     ) {
-        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}", filter, sort, page, limit);
+        log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, includeArchived: {}, include: {}",
+                filter, sort, page, limit, includeArchived, include);
 
         // Search events using EventSearchService
-        PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit);
+        PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit, includeArchived);
 
-        // Convert entities to DTOs
-        List<EventResponse> eventResponses = result.getData().stream()
-                .map(EventResponse::fromEntity)
-                .collect(Collectors.toList());
+        // Convert entities to DTOs with optional registration counts
+        List<EventResponse> eventResponses;
+        if (include != null && include.contains("registrations")) {
+            // Include actual registration counts from database
+            eventResponses = result.getData().stream()
+                    .map(event -> {
+                        long regCount = registrationRepository.countByEventId(event.getId());
+                        return EventResponse.fromEntity(event, regCount);
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            // Use default conversion (uses cached currentAttendeeCount)
+            eventResponses = result.getData().stream()
+                    .map(EventResponse::fromEntity)
+                    .collect(Collectors.toList());
+        }
 
         // Build response
         PaginatedResponse<EventResponse> response = PaginatedResponse.<EventResponse>builder()
@@ -260,6 +286,10 @@ public class EventController {
         if (event.getWorkflowState() != null) {
             response.put("workflowState", event.getWorkflowState().name());
         }
+        // Story 5.7 (BAT-11): Include currentPublishedPhase (uppercase per coding standards)
+        if (event.getCurrentPublishedPhase() != null) {
+            response.put("currentPublishedPhase", event.getCurrentPublishedPhase().toUpperCase());
+        }
         // Include audit fields
         response.put("createdAt", event.getCreatedAt());
         response.put("updatedAt", event.getUpdatedAt());
@@ -283,11 +313,17 @@ public class EventController {
                 case "venue":
                     response.put("venue", expandVenue(event));
                     break;
-                case "speakers":
-                    response.put("speakers", expandSpeakers(event));
-                    break;
                 case "sessions":
                     response.put("sessions", expandSessions(event));
+                    break;
+                case "registrations":
+                    // Override currentAttendeeCount with actual count from registrations table
+                    long registrationCount = registrationRepository.countByEventId(event.getId());
+                    response.put("currentAttendeeCount", (int) registrationCount);
+                    break;
+                case "metrics":
+                    // Add speaker metrics (confirmed count, materials status)
+                    expandMetrics(event, response);
                     break;
                 // Additional resources can be added here as needed
                 default:
@@ -311,12 +347,64 @@ public class EventController {
     }
 
     /**
-     * Expand speakers data for an event
-     * TODO: Replace with actual service call when Speaker Coordination Service is available
+     * Expand metrics data for an event (speaker KPIs)
+     *
+     * Calculates and adds speaker-related metrics to the response:
+     * - confirmedSpeakersCount: Number of speakers who accepted invitation (ACCEPTED or higher)
+     * - speakersWithCompleteInfoCount: Speakers who submitted materials
+     *   (CONTENT_SUBMITTED, QUALITY_REVIEWED, or CONFIRMED)
+     * - pendingMaterialsCount: Speakers who accepted but haven't submitted materials yet
+     * - maxSpeakerSlots: Max speaker slots based on event type configuration
+     *
+     * @param event The event entity
+     * @param response The response map to populate with metrics
      */
-    private java.util.List<Map<String, Object>> expandSpeakers(Event event) {
-        // Stub implementation - will be replaced with actual service call
-        return new java.util.ArrayList<>();
+    private void expandMetrics(Event event, Map<String, Object> response) {
+        UUID eventId = event.getId();
+
+        // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
+        long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED);
+        long contentSubmittedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
+        long qualityReviewedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED);
+        long slotAssignedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.SLOT_ASSIGNED);
+        long confirmedCount = speakerPoolRepository.countByEventIdAndStatus(
+                eventId, ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED);
+
+        // Total confirmed speakers (accepted or higher)
+        long totalConfirmedSpeakers = acceptedCount + contentSubmittedCount
+                + qualityReviewedCount + slotAssignedCount + confirmedCount;
+
+        // Speakers with complete info (submitted materials - CONTENT_SUBMITTED or higher)
+        long speakersWithCompleteInfo = contentSubmittedCount + qualityReviewedCount
+                + slotAssignedCount + confirmedCount;
+
+        // Pending materials = accepted but haven't submitted content yet
+        long pendingMaterials = acceptedCount;
+
+        // Get max speaker slots from event type configuration
+        Integer maxSpeakerSlots = null;
+        if (event.getEventType() != null) {
+            maxSpeakerSlots = eventTypeRepository.findByType(event.getEventType())
+                    .map(ch.batbern.events.entity.EventTypeConfiguration::getMaxSlots)
+                    .orElse(null);
+        }
+
+        // Add metrics to response
+        response.put("confirmedSpeakersCount", (int) totalConfirmedSpeakers);
+        response.put("speakersWithCompleteInfoCount", (int) speakersWithCompleteInfo);
+        response.put("pendingMaterialsCount", (int) pendingMaterials);
+        if (maxSpeakerSlots != null) {
+            response.put("maxSpeakerSlots", maxSpeakerSlots);
+        }
+
+        log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
+                        + "pending materials: {}, max slots: {}",
+                event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
+                pendingMaterials, maxSpeakerSlots);
     }
 
     /**
@@ -439,10 +527,11 @@ public class EventController {
 
         // Find the next event with active workflow states (V17: changed from status to workflowState)
         // Returns the event nearest to current date
+        // 9-State Model: NEWSLETTER_SENT and EVENT_READY consolidated into AGENDA_FINALIZED
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.AGENDA_PUBLISHED,
-                EventWorkflowState.NEWSLETTER_SENT,
-                EventWorkflowState.EVENT_READY
+                EventWorkflowState.AGENDA_FINALIZED,
+                EventWorkflowState.EVENT_LIVE
         );
         Event currentEvent = eventRepository
                 .findFirstByWorkflowStateInOrderByDateAsc(activeWorkflowStates)
@@ -988,6 +1077,14 @@ public class EventController {
                         "Event number " + request.getEventNumber() + " is already in use by event "
                         + existingEvent.get().getEventCode());
                 }
+
+                // Validate that the generated event code is not already in use by another event
+                String newEventCode = "BATbern" + request.getEventNumber();
+                Optional<Event> existingCodeEvent = eventRepository.findByEventCode(newEventCode);
+                if (existingCodeEvent.isPresent() && !existingCodeEvent.get().getId().equals(event.getId())) {
+                    throw new BusinessValidationException("Event code",
+                        "Generated event code " + newEventCode + " is already in use by another event");
+                }
             }
             event.setEventNumber(request.getEventNumber());
             // Regenerate eventCode when eventNumber changes
@@ -1173,35 +1270,223 @@ public class EventController {
     }
 
     /**
-     * List Event Registrations - Story 2.2a
+     * List Event Registrations - Story 2.2a, Story 3.3 (Pagination)
      *
-     * GET /api/v1/events/{eventCode}/registrations
+     * GET /api/v1/events/{eventCode}/registrations?page=1&limit=25
      *
      * @param eventCode Event code to list registrations for
-     * @return List of registrations enriched with user data
+     * @param page Page number (1-indexed, default: 1)
+     * @param limit Items per page (default: 25, max: 100)
+     * @return Paginated list of registrations enriched with user data
      */
     @GetMapping("/{eventCode}/registrations")
     @Operation(
             summary = "List Event Registrations",
-            description = "Retrieve all registrations for a specific event with enriched user data"
+            description = "Retrieve registrations for a specific event with "
+                    + "enriched user data, filtering, and pagination"
     )
-    public ResponseEntity<List<RegistrationResponse>> listRegistrations(@PathVariable String eventCode) {
-        log.debug("GET /api/v1/events/{}/registrations", eventCode);
+    public ResponseEntity<PaginatedResponse<RegistrationResponse>> listRegistrations(
+            @PathVariable String eventCode,
+            @Parameter(description = "Page number (1-indexed, default: 1)")
+            @RequestParam(required = false) Integer page,
+            @Parameter(description = "Items per page (default: 25, max: 100)")
+            @RequestParam(required = false) Integer limit,
+            @Parameter(description = "Filter by registration status (can specify multiple)")
+            @RequestParam(required = false) List<String> status,
+            @Parameter(description = "Search in attendee name or email")
+            @RequestParam(required = false) String search,
+            @Parameter(description = "Filter by company ID")
+            @RequestParam(required = false) String companyId
+    ) {
+        log.debug("GET /api/v1/events/{}/registrations - page: {}, limit: {}, status: {}, search: {}, companyId: {}",
+                eventCode, page, limit, status, search, companyId);
+
+        // Default pagination values
+        int pageNumber = (page != null && page > 0) ? page - 1 : 0; // Convert 1-indexed to 0-indexed
+        int pageSize = (limit != null && limit > 0) ? Math.min(limit, 100) : 25; // Default 25, max 100
 
         // Find event to get UUID
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Fetch registrations
-        List<Registration> registrations = registrationRepository.findByEventId(event.getId());
+        // Build specification for database-level filters (status only)
+        // Note: search and companyId require enriched user data, so they're applied in-memory
+        org.springframework.data.jpa.domain.Specification<Registration> spec =
+                ch.batbern.events.specification.RegistrationSpecification.buildSpecification(
+                        event.getId(),
+                        status,
+                        null // Username search handled in-memory with name/email search
+                );
+
+        // Fetch ALL matching registrations (we'll paginate after in-memory filtering)
+        // This is necessary because search/companyId filters require enriched user data
+        List<Registration> allRegistrations = registrationRepository.findAll(spec);
 
         // Enrich each registration with user data
-        List<RegistrationResponse> responses = registrations.stream()
+        List<RegistrationResponse> enrichedResponses = allRegistrations.stream()
                 .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
                 .map(registrationService::enrichRegistrationWithUserData)
                 .collect(Collectors.toList());
 
+        // Apply in-memory filters (search in name/email, filter by companyId)
+        List<RegistrationResponse> filteredResponses = enrichedResponses.stream()
+                .filter(response -> {
+                    // Filter by search term (name or email)
+                    if (search != null && !search.isEmpty()) {
+                        String searchLower = search.toLowerCase();
+                        boolean matchesUsername = response.getAttendeeUsername() != null
+                                && response.getAttendeeUsername().toLowerCase().contains(searchLower);
+                        boolean matchesFirstName = response.getAttendeeFirstName() != null
+                                && response.getAttendeeFirstName().toLowerCase().contains(searchLower);
+                        boolean matchesLastName = response.getAttendeeLastName() != null
+                                && response.getAttendeeLastName().toLowerCase().contains(searchLower);
+                        boolean matchesEmail = response.getAttendeeEmail() != null
+                                && response.getAttendeeEmail().toLowerCase().contains(searchLower);
+
+                        if (!matchesUsername && !matchesFirstName && !matchesLastName && !matchesEmail) {
+                            return false;
+                        }
+                    }
+
+                    // Filter by companyId
+                    if (companyId != null && !companyId.isEmpty()) {
+                        if (response.getAttendeeCompany() == null
+                                || !companyId.equals(response.getAttendeeCompany())) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+        // Apply pagination to filtered results
+        long totalItems = filteredResponses.size();
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        int startIndex = pageNumber * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, filteredResponses.size());
+
+        List<RegistrationResponse> paginatedResponses = filteredResponses.subList(
+                Math.min(startIndex, filteredResponses.size()),
+                Math.min(endIndex, filteredResponses.size())
+        );
+
+        // Build pagination metadata
+        ch.batbern.shared.api.PaginationMetadata paginationMetadata =
+                ch.batbern.shared.api.PaginationMetadata.builder()
+                        .page(pageNumber + 1) // Convert back to 1-indexed for response
+                        .limit(pageSize)
+                        .totalItems(totalItems)
+                        .totalPages(totalPages)
+                        .hasNext(pageNumber + 1 < totalPages)
+                        .hasPrev(pageNumber > 0)
+                        .build();
+
+        // Build paginated response
+        PaginatedResponse<RegistrationResponse> response = PaginatedResponse.<RegistrationResponse>builder()
+                .data(paginatedResponses)
+                .pagination(paginationMetadata)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * List User Registrations - Story BAT-15
+     *
+     * GET /api/v1/events/registrations?attendeeUsername={username}
+     *
+     * @param attendeeUsername Username to list registrations for
+     * @return List of registrations enriched with event data
+     */
+    @GetMapping("/registrations")
+    @Operation(
+            summary = "List User Registrations",
+            description = "Retrieve all registrations for a specific user across all events"
+    )
+    public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
+            @RequestParam String attendeeUsername) {
+        log.debug("GET /api/v1/events/registrations?attendeeUsername={}", attendeeUsername);
+
+        // Fetch registrations for this user
+        List<Registration> registrations = registrationRepository.findByAttendeeUsername(attendeeUsername);
+
+        // Fetch all events in one query to avoid N+1 (collect unique event IDs)
+        Set<UUID> eventIds = registrations.stream()
+                .map(Registration::getEventId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Event> eventsMap = eventRepository.findAllById(eventIds).stream()
+                .collect(Collectors.toMap(Event::getId, e -> e));
+
+        // Enrich each registration with event data
+        List<RegistrationResponse> responses = registrations.stream()
+                .map(reg -> {
+                    // Get event from map (avoids N+1)
+                    Event event = eventsMap.get(reg.getEventId());
+                    if (event != null) {
+                        reg.setEventCode(event.getEventCode()); // Set transient field
+                    }
+
+                    // Enrich with user data
+                    RegistrationResponse response = registrationService.enrichRegistrationWithUserData(reg);
+
+                    // Add event details to response
+                    if (event != null) {
+                        response.setEventTitle(event.getTitle());
+                        response.setEventDate(event.getDate() != null
+                                ? event.getDate().toString() : null);
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Create Batch Registrations - Story BAT-14
+     *
+     * POST /api/v1/events/batch_registrations
+     *
+     * Creates multiple event registrations for a single participant in a single transaction.
+     * Designed for historical data migration where participants attended multiple events.
+     *
+     * Features:
+     * - Creates or retrieves user by email (anonymous users with cognitoSync=false)
+     * - Creates registrations for all specified events
+     * - Idempotent: Skips duplicate registrations without error
+     * - Partial success: Some registrations may succeed while others fail
+     * - Transactional: All-or-nothing for database operations
+     *
+     * Authorization: Requires ORGANIZER role
+     *
+     * @param request Batch registration request with participant data and event list
+     * @return Batch registration response with detailed success/failure information
+     */
+    @PostMapping("/batch_registrations")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Create Batch Event Registrations",
+            description = "Create multiple event registrations for a single participant. "
+                    + "Designed for historical data migration. Returns partial success details. "
+                    + "Requires ORGANIZER role."
+    )
+    public ResponseEntity<BatchRegistrationResponse> createBatchRegistrations(
+            @Valid @RequestBody BatchRegistrationRequest request) {
+        log.debug("POST /api/v1/events/batch_registrations - Participant: {}, Events: {}",
+                request.getParticipantEmail(), request.getRegistrations().size());
+
+        BatchRegistrationResponse response = registrationService.createBatchRegistrations(request);
+
+        log.info("Batch registration completed - User: {}, Total: {}, Successful: {}, Failed: {}",
+                response.getUsername(),
+                response.getTotalRegistrations(),
+                response.getSuccessfulRegistrations(),
+                response.getFailedRegistrations().size());
+
+        return ResponseEntity.ok(response);
     }
 
     /**

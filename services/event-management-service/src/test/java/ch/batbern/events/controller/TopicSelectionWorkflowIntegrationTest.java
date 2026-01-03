@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for Topic Selection Workflow (Story 5.2 Task 3a).
  *
  * Tests verify AC14-16:
- * - AC14: Event state transition to SPEAKER_BRAINSTORMING when topic selected (topic selection complete)
+ * - AC14: Event state transition to SPEAKER_IDENTIFICATION when topic selected (topic selection complete)
  * - AC15: Speaker pool state transition when speaker added (tested in SpeakerPoolWorkflowTest)
  * - AC16: Validation ensures event is in valid state before topic selection
  *
@@ -64,7 +64,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
     /**
      * Test 3a.1: should_transitionToSpeakerBrainstorming_when_topicSelected
      * Verifies that selecting a topic triggers EventWorkflowStateMachine.transitionToState().
-     * Story 5.2 AC14: Event state transition to SPEAKER_BRAINSTORMING (topic selection complete)
+     * Story 5.2 AC14: Event state transition to SPEAKER_IDENTIFICATION (topic selection complete)
      */
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
@@ -83,9 +83,9 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .andDo(print())  // DEBUG: Print request/response
                 .andExpect(status().isOk());
 
-        // Verify: Event is now in SPEAKER_BRAINSTORMING state (topic selection complete)
+        // Verify: Event is now in SPEAKER_IDENTIFICATION state (topic selection complete)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -110,9 +110,9 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // Then: Verify state machine was called by checking the event state changed to SPEAKER_BRAINSTORMING
+        // Then: Verify state machine was called by checking the event state changed to SPEAKER_IDENTIFICATION
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
     }
 
     /**
@@ -140,7 +140,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
         // Then: Verify the workflow transition occurred (event publishing happens in state machine)
         Event updatedEvent = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
-        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_BRAINSTORMING);
+        assertThat(updatedEvent.getWorkflowState()).isEqualTo(EventWorkflowState.SPEAKER_IDENTIFICATION);
         assertThat(updatedEvent.getTopicCode()).isEqualTo(topic.getTopicCode());
     }
 
@@ -148,14 +148,15 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     /**
      * Test 3a.4: should_validateEventState_when_attemptingTopicSelection
-     * Verifies that event must be in CREATED or TOPIC_SELECTION state before allowing topic selection.
+     * Verifies that topic selection is only allowed in early workflow states.
      * Story 5.2 AC16: Validate event state before allowing topic selection
+     * Note: In 9-state model, topic selection allowed in CREATED, TOPIC_SELECTION, SPEAKER_IDENTIFICATION, ARCHIVED
      */
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_validateEventState_when_attemptingTopicSelection() throws Exception {
-        // Given: Event in SPEAKER_OUTREACH state (invalid for topic selection)
-        Event event = createTestEvent("BATbern56", EventWorkflowState.SPEAKER_OUTREACH);
+        // Given: Event in SLOT_ASSIGNMENT state (invalid for topic selection)
+        Event event = createTestEvent("BATbern56", EventWorkflowState.SLOT_ASSIGNMENT);
         Topic topic = createTestTopic("DevOps Best Practices");
 
         // When: Attempt to select topic for event in invalid state
@@ -294,21 +295,21 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     /**
      * Test: should_updateTopicId_when_changingTopicInSpeakerBrainstormingState
-     * Reproduces bug where topic change doesn't persist when event is already in SPEAKER_BRAINSTORMING.
+     * Reproduces bug where topic change doesn't persist when event is already in SPEAKER_IDENTIFICATION.
      *
      * Scenario:
-     * 1. Event is in SPEAKER_BRAINSTORMING state with Topic A assigned
+     * 1. Event is in SPEAKER_IDENTIFICATION state with Topic A assigned
      * 2. Organizer changes to Topic B
      * 3. Topic should be updated in database (not just in response)
      */
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_updateTopicId_when_changingTopicInSpeakerBrainstormingState() throws Exception {
-        // Given: Event in SPEAKER_BRAINSTORMING with initial topic
+        // Given: Event in SPEAKER_IDENTIFICATION with initial topic
         Topic initialTopic = createTestTopic("Cloud Architecture");
         Topic newTopic = createTestTopic("Microservices Patterns");
 
-        Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_BRAINSTORMING);
+        Event event = createTestEvent("BATbern98", EventWorkflowState.SPEAKER_IDENTIFICATION);
         event.setTopicCode(initialTopic.getTopicCode());
         event = eventRepository.save(event);
 
@@ -320,7 +321,7 @@ class TopicSelectionWorkflowIntegrationTest extends AbstractIntegrationTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.topicCode").value(newTopic.getTopicCode()))
-                .andExpect(jsonPath("$.workflowState").value("SPEAKER_BRAINSTORMING"));
+                .andExpect(jsonPath("$.workflowState").value("SPEAKER_IDENTIFICATION"));
 
         // Then: Verify topic was actually updated in database
         Event updatedEvent = eventRepository.findByEventCode("BATbern98")

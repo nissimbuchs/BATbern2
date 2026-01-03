@@ -334,19 +334,20 @@ public class AnonymousRegistrationE2ETest extends AbstractIntegrationTest {
                         .content(request2))
                 .andExpect(status().isCreated());
 
-        // List all registrations
+        // List all registrations - API returns paginated response
         mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].attendeeUsername").exists())
-                .andExpect(jsonPath("$[0].attendeeFirstName").exists())
-                .andExpect(jsonPath("$[0].attendeeLastName").exists())
-                .andExpect(jsonPath("$[0].attendeeEmail").exists())
-                .andExpect(jsonPath("$[1].attendeeUsername").exists())
-                .andExpect(jsonPath("$[1].attendeeFirstName").exists())
-                .andExpect(jsonPath("$[1].attendeeLastName").exists())
-                .andExpect(jsonPath("$[1].attendeeEmail").exists());
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data[0].attendeeUsername").exists())
+                .andExpect(jsonPath("$.data[0].attendeeFirstName").exists())
+                .andExpect(jsonPath("$.data[0].attendeeLastName").exists())
+                .andExpect(jsonPath("$.data[0].attendeeEmail").exists())
+                .andExpect(jsonPath("$.data[1].attendeeUsername").exists())
+                .andExpect(jsonPath("$.data[1].attendeeFirstName").exists())
+                .andExpect(jsonPath("$.data[1].attendeeLastName").exists())
+                .andExpect(jsonPath("$.data[1].attendeeEmail").exists());
     }
 }

@@ -49,37 +49,24 @@ export class NetworkStack extends cdk.Stack {
     this.cacheSecurityGroup = vpcConstruct.cacheSecurityGroup;
     this.lambdaTriggersSecurityGroup = vpcConstruct.lambdaTriggersSecurityGroup;
 
-    // Add VPC Endpoints for cost optimization (Priority 3)
-    // Gateway endpoints (free) - no additional cost
-    // Interface endpoints reduce NAT Gateway data transfer costs
+    // VPC Endpoints - Cost Optimization Decision
+    //
+    // Analysis: Interface endpoints cost significantly more than they save
+    // - Interface endpoints: $58.40/month (4 endpoints × 2 AZs × $0.01/hr × 730hr)
+    // - NAT Gateway data saved: ~$0.45/month (5 GB × $0.09/GB)
+    // - Net cost: -$57.95/month (endpoints cost 130× more than they save)
+    //
+    // Decision: Use only FREE gateway endpoints, rely on NAT Gateway for AWS API calls
+    // - Very low data transfer volumes (~5-10 GB/month) don't justify interface endpoint costs
+    // - NAT Gateway already required for general internet access
+    // - Marginal additional cost for AWS API traffic via NAT Gateway
+    //
+    // If traffic increases significantly (>100 GB/month to AWS services), reconsider interface endpoints
 
     // S3 Gateway Endpoint (FREE) - reduces NAT data transfer for ECR image pulls
+    // Gateway endpoints have no hourly charges, only benefit
     this.vpc.addGatewayEndpoint('S3Endpoint', {
       service: ec2.GatewayVpcEndpointAwsService.S3,
-    });
-
-    // ECR API Interface Endpoint - for Docker registry API calls
-    this.vpc.addInterfaceEndpoint('ECRApiEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.ECR,
-      privateDnsEnabled: true,
-    });
-
-    // ECR Docker Interface Endpoint - for Docker image layer pulls
-    this.vpc.addInterfaceEndpoint('ECRDockerEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
-      privateDnsEnabled: true,
-    });
-
-    // Secrets Manager Interface Endpoint - for ECS task secrets
-    this.vpc.addInterfaceEndpoint('SecretsManagerEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-      privateDnsEnabled: true,
-    });
-
-    // CloudWatch Logs Interface Endpoint - for application logging
-    this.vpc.addInterfaceEndpoint('CloudWatchLogsEndpoint', {
-      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
-      privateDnsEnabled: true,
     });
 
     // Apply tags to all resources

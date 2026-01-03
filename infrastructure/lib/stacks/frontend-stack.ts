@@ -108,7 +108,7 @@ function handler(event) {
       securityHeadersBehavior: {
         contentTypeOptions: { override: true },
         frameOptions: {
-          frameOption: cloudfront.HeadersFrameOption.DENY,
+          frameOption: cloudfront.HeadersFrameOption.SAMEORIGIN,
           override: true,
         },
         referrerPolicy: {
@@ -137,7 +137,7 @@ function handler(event) {
             "object-src 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'; " +
-            "frame-ancestors 'none';",
+            "frame-ancestors 'self';",
           override: true,
         },
       },

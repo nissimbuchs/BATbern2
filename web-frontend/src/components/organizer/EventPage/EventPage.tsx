@@ -7,7 +7,7 @@
  * - SpeakerOutreachPage (outreach tracking)
  *
  * Route: /organizer/events/:eventCode
- * URL params: ?tab=overview|speakers|venue|team|publishing|settings
+ * URL params: ?tab=overview|speakers|venue|participants|publishing|settings
  */
 
 import React, { useMemo } from 'react';
@@ -34,7 +34,7 @@ import {
   Dashboard as OverviewIcon,
   People as SpeakersIcon,
   LocationOn as VenueIcon,
-  Groups as TeamIcon,
+  PersonAdd as ParticipantsIcon,
   Publish as PublishIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
@@ -48,7 +48,7 @@ import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 import { EventOverviewTab } from './EventOverviewTab';
 import { EventSpeakersTab } from './EventSpeakersTab';
 import { EventVenueTab } from './EventVenueTab';
-import { EventTeamTab } from './EventTeamTab';
+import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
 import { EventForm } from '@/components/organizer/EventManagement';
@@ -58,7 +58,7 @@ const TABS = [
   { id: 'overview', labelKey: 'eventPage.tabs.overview', icon: <OverviewIcon /> },
   { id: 'speakers', labelKey: 'eventPage.tabs.speakers', icon: <SpeakersIcon /> },
   { id: 'venue', labelKey: 'eventPage.tabs.venue', icon: <VenueIcon /> },
-  { id: 'team', labelKey: 'eventPage.tabs.team', icon: <TeamIcon /> },
+  { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
 ] as const;
@@ -81,12 +81,12 @@ export const EventPage: React.FC = () => {
   // Get current tab from URL, default to 'overview'
   const currentTab = isValidTab(searchParams.get('tab')) ? searchParams.get('tab')! : 'overview';
 
-  // Fetch event data with resource expansion
+  // Fetch event data with resource expansion including registrations for accurate counts
   const {
     data: event,
     isLoading,
     error,
-  } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'team', 'workflow', 'metrics']);
+  } = useEvent(eventCode, ['venue', 'topics', 'sessions', 'workflow', 'metrics', 'registrations']);
 
   // Build breadcrumb items
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
@@ -179,8 +179,8 @@ export const EventPage: React.FC = () => {
         return <EventSpeakersTab eventCode={eventCode!} />;
       case 'venue':
         return <EventVenueTab event={event} />;
-      case 'team':
-        return <EventTeamTab event={event} eventCode={eventCode!} />;
+      case 'participants':
+        return <EventParticipantsTab event={event} />;
       case 'publishing':
         return <EventPublishingTab event={event} eventCode={eventCode!} />;
       case 'settings':
@@ -272,8 +272,14 @@ export const EventPage: React.FC = () => {
           mode="edit"
           event={event}
           onClose={closeEditModal}
-          onSuccess={() => {
+          onSuccess={(updatedEvent) => {
             closeEditModal();
+            // Redirect if eventCode changed (e.g., eventNumber 58 -> 998 regenerates BATbern58 -> BATbern998)
+            if (updatedEvent && updatedEvent.eventCode !== eventCode) {
+              navigate(
+                `/organizer/events/${updatedEvent.eventCode}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`
+              );
+            }
           }}
         />
       )}

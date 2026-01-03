@@ -153,7 +153,7 @@ public class EventWorkflowStateMachine {
     }
 
     /**
-     * Validates all speakers are confirmed (quality_reviewed AND slot_assigned)
+     * Validates all speakers are confirmed (quality_reviewed AND session.startTime exists)
      */
     private void validateAllSpeakersConfirmed(Event event) {
         long acceptedSpeakers = speakerPoolRepository
@@ -172,28 +172,25 @@ public class EventWorkflowStateMachine {
 }
 ```
 
-## Speaker Workflow Management (Per Speaker - Linear)
+## Speaker Workflow Management (Per Speaker - Parallel)
 
 ### State Diagram
 
 ```
 identified → contacted → ready → accepted/declined
                                     ↓ (if accepted)
-                            content_submitted
+                                content_submitted
                                     ↓
-                            quality_reviewed
+                                quality_reviewed
                                     ↓
-                               confirmed
+                                confirmed
+                    (auto-confirmed when quality_reviewed AND session.startTime exists)
 
-Alternative states:
-- overflow (backup speaker)
-- withdrew (speaker drops out after accepting)
-
-Slot assignment (orthogonal action):
-- Sets sessions.start_time (NOT a workflow state)
-- Can happen at any point after ACCEPTED
-- Auto-confirmation triggers when: quality_reviewed + slot assigned
+overflow (backup speaker)
+withdrew (speaker drops out after accepting)
 ```
+
+**Note:** Slot assignment is NOT a speaker state. It's tracked by whether the session has timing assigned (`session.startTime != null`). The speaker reaches CONFIRMED when they are quality_reviewed AND their session has timing.
 
 ### State Definitions
 
@@ -206,27 +203,28 @@ Slot assignment (orthogonal action):
 | **declined** | Speaker declined invitation | speaker_pool.status | Speaker not available |
 | **content_submitted** | Title/abstract submitted | speaker_pool.status | Presentation details received |
 | **quality_reviewed** | Content approved by moderator | speaker_pool.status | Abstract meets quality standards |
-| **confirmed** | Quality reviewed AND slot assigned | speaker_pool.status | Speaker fully confirmed, ready for publishing |
+| **confirmed** | Quality reviewed AND session timing assigned | speaker_pool.status | Auto-confirmed when quality_reviewed AND session.startTime exists. Speaker fully confirmed, ready for publishing |
 | **overflow** | Backup speaker (no slot available) | speaker_pool.status | Accepted but no slots left |
 | **withdrew** | Speaker dropped out after accepting | speaker_pool.status | Speaker cancelled commitment |
 
-**Note:** `slot_assigned` is NOT a state - it's an orthogonal action that sets `sessions.start_time`.
-
 ### Key Characteristics
 
-**Linear Workflow with Orthogonal Slot Assignment:**
-- **Linear states**: IDENTIFIED → CONTACTED → READY → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
-- **Slot assignment is orthogonal**: Sets `sessions.start_time`, doesn't change workflow state
-- **Three allowed flows**:
-  1. Quality first: ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → *[assign slot]* → CONFIRMED
-  2. Slot first: ACCEPTED → *[assign slot]* → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
-  3. Slot during: ACCEPTED → CONTENT_SUBMITTED → *[assign slot]* → QUALITY_REVIEWED → CONFIRMED
-- **Auto-confirmation**: When reaching QUALITY_REVIEWED state, if `sessions.start_time != null` → auto-confirm
+**Parallel Workflow:**
+- Quality review and slot timing assignment are **independent** and can happen in any order
+- Quality review updates `speaker_pool.status = 'quality_reviewed'`
+- Slot timing assignment sets `session.startTime` and `session.endTime` (NOT a speaker state)
+- `confirmed` state reached when BOTH complete (order doesn't matter):
+  - Speaker is `quality_reviewed` AND
+  - Session has timing (`session.startTime != null`)
+- Auto-confirmation is bidirectional:
+  - Quality review completion → checks if session has timing → auto-confirms
+  - Session timing assignment → checks if speaker is quality_reviewed → auto-confirms
 
 **Data Model:**
-- **speaker_pool**: Tracks workflow state (10 possible states - no SLOT_ASSIGNED state)
-- **sessions**: Stores presentation title/abstract and start_time (slot assignment)
+- **speaker_pool**: Tracks workflow state (9 possible states: identified, contacted, ready, accepted, declined, content_submitted, quality_reviewed, confirmed, overflow, withdrew)
+- **sessions**: Stores presentation details AND timing (startTime, endTime, room)
 - **session_users**: Junction table linking speaker (username) to session
+- **speaker_pool.session_id**: FK to sessions table (links speaker to their session/slot)
 
 ### Implementation
 
@@ -237,160 +235,133 @@ public class SpeakerWorkflowService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
+    private final SessionUserRepository sessionUserRepository;
+    private final WorkflowNotificationService notificationService;
+    private final DomainEventPublisher eventPublisher;
 
-    public void updateSpeakerWorkflowState(UUID speakerId, SpeakerWorkflowState newState, String organizerUsername) {
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-            .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + speakerId));
+    public void updateSpeakerWorkflowState(String poolId, String newState, String updatedBy) {
+        SpeakerPool speaker = speakerPoolRepository.findById(poolId)
+            .orElseThrow(() -> new EntityNotFoundException("Speaker not found in pool: " + poolId));
 
-        SpeakerWorkflowState currentState = speaker.getStatus();
+        String previousState = speaker.getStatus();
 
-        // Validate linear state transition
-        if (!isValidTransition(currentState, newState)) {
-            throw new IllegalStateException(
-                String.format("Invalid state transition: %s → %s", currentState, newState)
-            );
+        // Validate state transition
+        validateStateTransition(previousState, newState);
+
+        // Apply state-specific logic
+        switch (newState) {
+            case "contacted":
+                // Organizer recorded outreach
+                notificationService.recordOutreach(speaker);
+                break;
+
+            case "accepted":
+                // Check for overflow
+                checkForOverflow(speaker.getEventId());
+                break;
+
+            case "declined":
+                // Handle decline
+                handleSpeakerDecline(speaker);
+                break;
+
+            case "content_submitted":
+                // Content submitted, can now be reviewed
+                notificationService.notifyModeratorsOfPendingReview(speaker);
+                break;
+
+            case "quality_reviewed":
+                // Content approved, check if session has timing → auto-confirm
+                checkAndUpdateToConfirmed(speaker);
+                break;
+
+            case "confirmed":
+                // Auto-confirmed when quality_reviewed AND session.startTime exists
+                updateSessionUserConfirmation(speaker, true);
+                break;
+
+            case "withdrew":
+                // Speaker dropped out, promote from overflow if available
+                handleSpeakerWithdrawal(speaker);
+                break;
+
+            case "overflow":
+                // Speaker is backup (accepted but no slots)
+                notificationService.notifySpeakerOfOverflowStatus(speaker);
+                break;
         }
-
-        LOG.info("Transitioning speaker {} from {} to {} by organizer {}",
-                speakerId, currentState, newState, organizerUsername);
 
         // Update state
         speaker.setStatus(newState);
         speakerPoolRepository.save(speaker);
 
-        // Check for auto-confirmation when quality review completes
-        if (newState == SpeakerWorkflowState.QUALITY_REVIEWED) {
-            checkAndUpdateToConfirmed(speaker, organizerUsername);
-        }
+        // Publish workflow state change event
+        eventPublisher.publishEvent(new SpeakerWorkflowStateChangeEvent(
+            poolId, speaker.getEventId().toString(), previousState, newState, updatedBy
+        ));
 
-        // TODO: Publish SpeakerWorkflowStateChangeEvent to EventBridge
+        log.info("Speaker {} (pool ID: {}) moved from {} to {} by {}",
+                 speaker.getSpeakerName(), poolId, previousState, newState, updatedBy);
     }
 
     /**
-     * Check if speaker has slot assigned and auto-update to CONFIRMED if so.
+     * Checks if speaker has both quality_reviewed AND session timing assigned,
+     * and auto-updates to confirmed if so.
      *
-     * Simple linear workflow:
-     * - When speaker reaches QUALITY_REVIEWED state
-     * - AND they have a time slot assigned (session.startTime != null)
-     * - THEN auto-confirm them
+     * Parallel workflow: Either quality review or slot timing can happen first.
+     * When the second one completes, speaker is auto-confirmed.
      */
-    private void checkAndUpdateToConfirmed(SpeakerPool speaker, String organizerUsername) {
-        boolean hasSlotAssigned = hasTimeSlotAssigned(speaker);
-
-        if (hasSlotAssigned) {
-            LOG.info("Auto-confirming speaker {} - quality review complete and slot assigned",
-                    speaker.getId());
-
-            speaker.setStatus(SpeakerWorkflowState.CONFIRMED);
-            speakerPoolRepository.save(speaker);
-
-            LOG.info("Speaker {} auto-confirmed by system (triggered by organizer {})",
-                    speaker.getId(), organizerUsername);
-
-            // TODO: Publish SpeakerConfirmedEvent
-        } else {
-            LOG.debug("Speaker {} quality reviewed but no slot assigned yet - staying at QUALITY_REVIEWED",
-                    speaker.getId());
-        }
-    }
-
-    /**
-     * Check if speaker has been assigned a time slot.
-     * A slot is assigned if the speaker's session has a start_time set.
-     */
-    private boolean hasTimeSlotAssigned(SpeakerPool speaker) {
-        if (speaker.getSessionId() == null) {
-            return false;
-        }
-
-        return sessionRepository.findById(speaker.getSessionId())
+    private void checkAndUpdateToConfirmed(SpeakerPool speaker) {
+        boolean isQualityReviewed = "quality_reviewed".equals(speaker.getStatus());
+        boolean hasSessionTiming = speaker.getSessionId() != null &&
+            sessionRepository.findById(speaker.getSessionId())
                 .map(session -> session.getStartTime() != null)
                 .orElse(false);
-    }
 
-    /**
-     * Validate linear state transitions.
-     *
-     * Allowed transitions:
-     * - IDENTIFIED → CONTACTED, DECLINED
-     * - CONTACTED → READY, DECLINED
-     * - READY → ACCEPTED, DECLINED
-     * - ACCEPTED → CONTENT_SUBMITTED, DECLINED, WITHDREW, OVERFLOW
-     * - CONTENT_SUBMITTED → QUALITY_REVIEWED, DECLINED, WITHDREW
-     * - QUALITY_REVIEWED → CONFIRMED, DECLINED, WITHDREW
-     * - WITHDREW → ACCEPTED (re-acceptance)
-     * - OVERFLOW → ACCEPTED (slot opened)
-     * - DECLINED, CONFIRMED are terminal states
-     */
-    private boolean isValidTransition(SpeakerWorkflowState current, SpeakerWorkflowState next) {
-        if (current == next) return true; // Idempotent
+        if (isQualityReviewed && hasSessionTiming) {
+            // Auto-update to confirmed
+            speaker.setStatus("confirmed");
+            speakerPoolRepository.save(speaker);
 
-        return switch (current) {
-            case IDENTIFIED -> next == SpeakerWorkflowState.CONTACTED || next == SpeakerWorkflowState.DECLINED;
-            case CONTACTED -> next == SpeakerWorkflowState.READY || next == SpeakerWorkflowState.DECLINED;
-            case READY -> next == SpeakerWorkflowState.ACCEPTED || next == SpeakerWorkflowState.DECLINED;
-            case ACCEPTED -> next == SpeakerWorkflowState.CONTENT_SUBMITTED
-                || next == SpeakerWorkflowState.DECLINED
-                || next == SpeakerWorkflowState.WITHDREW
-                || next == SpeakerWorkflowState.OVERFLOW;
-            case CONTENT_SUBMITTED -> next == SpeakerWorkflowState.QUALITY_REVIEWED
-                || next == SpeakerWorkflowState.DECLINED
-                || next == SpeakerWorkflowState.WITHDREW;
-            case QUALITY_REVIEWED -> next == SpeakerWorkflowState.CONFIRMED
-                || next == SpeakerWorkflowState.DECLINED
-                || next == SpeakerWorkflowState.WITHDREW;
-            case WITHDREW -> next == SpeakerWorkflowState.ACCEPTED; // Re-acceptance
-            case OVERFLOW -> next == SpeakerWorkflowState.ACCEPTED; // Slot opened
-            case SLOT_ASSIGNED -> false; // Not used in linear model
-            case DECLINED, CONFIRMED -> false; // Terminal states
-            default -> false;
-        };
-    }
-}
-```
+            // Update session_users.is_confirmed
+            updateSessionUserConfirmation(speaker, true);
 
-### Slot Assignment Service (Orthogonal Action)
+            eventPublisher.publishEvent(new SpeakerConfirmedEvent(
+                speaker.getId().toString(),
+                speaker.getEventId().toString(),
+                speaker.getSpeakerName()
+            ));
 
-Slot assignment is handled separately and does NOT change speaker workflow state:
-
-```java
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class SlotAssignmentService {
-
-    private final SessionRepository sessionRepository;
-    private final SpeakerPoolRepository speakerPoolRepository;
-
-    /**
-     * Assign a speaker to a specific time slot.
-     *
-     * This is an orthogonal action that:
-     * - Links speaker to session (sets speaker.sessionId)
-     * - Does NOT change speaker workflow state
-     * - Auto-confirmation triggers when speaker reaches QUALITY_REVIEWED
-     */
-    public void assignSpeakerToSlot(String eventCode, UUID speakerId, UUID sessionId, String organizer) {
-        // Validate session has time slot
-        Session session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new NotFoundException("Session not found"));
-
-        if (session.getStartTime() == null) {
-            throw new IllegalStateException("Session has no time slot (start_time is null)");
+            log.info("Speaker {} auto-updated to confirmed (quality reviewed AND session timing assigned)",
+                     speaker.getSpeakerName());
         }
+    }
 
-        // Assign speaker to session (does NOT change workflow state)
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-            .orElseThrow(() -> new NotFoundException("Speaker not found"));
+    private boolean isContentQualityReviewed(SpeakerPool speaker) {
+        // Check if content was previously quality_reviewed
+        // (would be confirmed if it had been, but need to check session data)
+        return speaker.getSessionId() != null; // Simplified check
+    }
 
-        speaker.setSessionId(sessionId);
-        speakerPoolRepository.save(speaker);
+    private void updateSessionUserConfirmation(SpeakerPool speaker, boolean confirmed) {
+        if (speaker.getSessionId() != null) {
+            sessionUserRepository.updateIsConfirmed(speaker.getSessionId(), confirmed);
+        }
+    }
 
-        LOG.info("Assigned speaker {} to session {} (slot: {}) - speaker remains in state {}",
-                speakerId, sessionId, session.getStartTime(), speaker.getStatus());
+    private void checkForOverflow(UUID eventId) {
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new EntityNotFoundException("Event not found"));
 
-        // Note: If speaker is already QUALITY_REVIEWED, organizer should call
-        // speakerWorkflowService.updateSpeakerWorkflowState() to trigger auto-confirmation
+        int maxSlots = event.getSlotConfiguration().getMaxSlots();
+        long acceptedSpeakers = speakerPoolRepository
+            .countByEventIdAndStatus(eventId, "accepted");
+
+        if (acceptedSpeakers > maxSlots) {
+            eventPublisher.publishEvent(new SpeakerOverflowDetectedEvent(
+                eventId.toString(), acceptedSpeakers, maxSlots
+            ));
+        }
     }
 }
 ```
@@ -552,13 +523,9 @@ public class SlotAssignmentService {
             slot.setAssignedAt(Instant.now());
             slotRepository.save(slot);
 
-            // Update speaker workflow state
-            speakerWorkflowService.updateSpeakerWorkflowState(
-                assignment.getSessionId(),
-                assignment.getSpeakerId(),
-                SpeakerWorkflowState.SLOT_ASSIGNED,
-                assignment.getAssignedBy()
-            );
+            // Note: No speaker state update needed
+            // Slot assignment is tracked via session.startTime, not speaker state
+            // Speaker auto-confirmed to CONFIRMED when quality_reviewed AND session.startTime exists
         }
 
         log.info("Assigned {} speakers to slots for event {}", assignments.size(), eventId);

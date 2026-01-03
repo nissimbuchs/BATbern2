@@ -69,7 +69,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 .eventNumber(123)
                 .title("BATbern 2024")
                 .eventType(EventType.EVENING)
-                .workflowState(EventWorkflowState.SPEAKER_BRAINSTORMING)
+                .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
                 .date(Instant.now().plus(90, ChronoUnit.DAYS))
                 .registrationDeadline(Instant.now().plus(80, ChronoUnit.DAYS))
                 .venueName("Test Venue")
