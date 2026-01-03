@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
 import { useQueryClient } from '@tanstack/react-query';
@@ -47,6 +48,7 @@ import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPane
 import SpeakerOutreachDetailsDrawer from '@/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
+import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
 
 type ViewMode = 'kanban' | 'sessions';
 
@@ -88,13 +90,12 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   // Transform sessions for SpeakersSessionsTable
   const sessions: SessionUI[] = useMemo(() => {
     if (!event?.sessions) return [];
-    return event.sessions.map((session, index) => {
+    return event.sessions.map((session) => {
       const primarySpeaker =
         session.speakers?.find((s: SessionSpeaker) => s.speakerRole === 'PRIMARY_SPEAKER') ||
         session.speakers?.[0];
       return {
         ...session,
-        slotNumber: index + 1,
         speaker: primarySpeaker
           ? {
               speakerSlug: primarySpeaker.username,
@@ -138,12 +139,28 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   };
 
   // Session handlers
-  const handleViewDetails = (sessionId: string) => {
-    console.log('View details:', sessionId);
-  };
+  const handleSessionUpdate = async (sessionSlug: string, updates: SessionUpdateData) => {
+    // AC3: Save button triggers two API calls
+    // 1. PATCH for title/description/duration
+    if (updates.title || updates.description !== undefined || updates.durationMinutes) {
+      await sessionApiClient.updateSession(eventCode, sessionSlug, {
+        title: updates.title,
+        description: updates.description,
+        durationMinutes: updates.durationMinutes,
+      });
+    }
 
-  const handleEditSlot = (sessionId: string) => {
-    console.log('Edit slot:', sessionId);
+    // 2. PATCH for startTime/endTime (with conflict detection)
+    if (updates.startTime && updates.endTime) {
+      await slotAssignmentService.assignSessionTiming(eventCode, sessionSlug, {
+        startTime: updates.startTime,
+        endTime: updates.endTime,
+      });
+    }
+
+    // AC6: After successful save - refresh table with updated session data
+    // Errors (including 409 conflicts) propagate to modal for display
+    queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
   };
 
   const handleViewMaterials = (sessionId: string) => {
@@ -314,10 +331,9 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             <SpeakersSessionsTable
               sessions={sessions}
               eventCode={eventCode}
-              onViewDetails={handleViewDetails}
-              onEditSlot={handleEditSlot}
+              eventDate={event?.date || ''}
               onViewMaterials={handleViewMaterials}
-              onSessionUpdate={async () => {}}
+              onSessionUpdate={handleSessionUpdate}
             />
           </Paper>
         )}

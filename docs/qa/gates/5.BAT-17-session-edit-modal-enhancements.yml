@@ -1,0 +1,208 @@
+schema: 1
+story: 'BAT-17'
+story_title: 'Session Edit Modal Enhancements'
+gate: CONCERNS
+status_reason: 'Implementation complete with good code quality, but 3 failing unit tests must be investigated, integration tests missing for critical dual API call flow, and partial update rollback mechanism needed. All 6 ACs implemented.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-03T12:00:00Z'
+
+top_issues:
+  - severity: high
+    category: test_gap
+    description: '3 unit tests failing (story notes "edge cases related to HTML5 input validation constraints")'
+    refs:
+      - 'web-frontend/src/components/organizer/EventManagement/__tests__/SessionEditModal.test.tsx'
+    suggested_owner: dev
+    action_required: 'Investigate failing tests, fix or document why acceptable'
+
+  - severity: high
+    category: test_gap
+    description: 'No integration test for dual API call flow (PATCH /sessions/{slug} + PATCH /sessions/{slug}/timing)'
+    refs:
+      - 'web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx'
+    suggested_owner: dev
+    action_required: 'Add integration test verifying both API calls execute and testing partial failure scenario'
+
+  - severity: high
+    category: reliability
+    description: 'Partial update risk: No rollback if first API call succeeds but second fails (409 conflict)'
+    refs:
+      - 'web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx:143-169'
+    suggested_owner: dev
+    action_required: 'Implement transaction pattern, rollback mechanism, or document risk acceptance'
+
+  - severity: medium
+    category: test_gap
+    description: 'No manual QA performed for visual elements (AC5: button removal, AC6: table refresh)'
+    refs:
+      - 'web-frontend/src/components/organizer/EventManagement/SpeakersSessionsTable.tsx'
+    suggested_owner: qa
+    action_required: 'Execute manual QA test plan to verify button removal and post-save table refresh'
+
+  - severity: medium
+    category: accessibility
+    description: 'Missing focus management, keyboard navigation tests, and ARIA live region for conflict errors'
+    refs:
+      - 'web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx'
+    suggested_owner: dev
+    action_required: 'Implement focus management on modal open, add ARIA live region for 409 errors'
+
+waiver:
+  active: false
+
+# Extended fields
+quality_score: 70
+# Calculation: 100 - (20 × 0 FAILs) - (10 × 3 CONCERNS_issues) = 70
+# Note: Using simplified calculation; 3 high-severity issues treated as concerns-level impact
+
+expires: '2026-01-17T12:00:00Z'
+# Gate expires in 2 weeks; requires re-review if not addressed
+
+evidence:
+  tests_reviewed:
+    count: 15
+    passing: 12
+    failing: 3
+    coverage_percent: 80
+  risks_identified:
+    count: 5
+    high: 3
+    medium: 2
+    low: 0
+  trace:
+    ac_covered: [2, 3, 4]
+    # AC2: Time auto-calculation (excellently tested)
+    # AC3: Dual API calls (implementation complete, test gap)
+    # AC4: 409 conflict detection (excellently tested)
+    ac_gaps: [1, 5, 6]
+    # AC1: Modal fields rendering (no explicit test)
+    # AC5: Button removal (no tests, manual verification needed)
+    # AC6: Post-save behavior (no tests, manual verification needed)
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Input validation comprehensive, role-based access control enforced, SQL injection protected. Minor concerns: no explicit rate limiting, CSRF relies on framework defaults.'
+  performance:
+    status: CONCERNS
+    notes: 'Dual API call pattern adds latency (2 round-trips). No debouncing on time fields. No loading states for individual API calls. Recommend combined endpoint or optimization.'
+  reliability:
+    status: CONCERNS
+    notes: 'CRITICAL: Partial update risk if first API call succeeds but second fails (no rollback). No retry logic for transient failures. Good error handling for 409 conflicts.'
+  maintainability:
+    status: PASS
+    notes: 'Clean code structure, TypeScript type safety, good separation of concerns. Minor: magic numbers (15, 480) should be constants, complex logic needs inline comments.'
+  accessibility:
+    status: CONCERNS
+    notes: 'ARIA labels present, error messages in helperText. Missing: focus management, keyboard nav tests, ARIA live region for conflict errors.'
+
+recommendations:
+  immediate: # P0/P1 - Must fix before production
+    - action: 'Investigate and resolve 3 failing unit tests'
+      priority: P0
+      refs: ['web-frontend/src/components/organizer/EventManagement/__tests__/SessionEditModal.test.tsx']
+      estimated_effort: '1-2 hours'
+
+    - action: 'Add integration test for dual API call sequence and partial failure scenario'
+      priority: P0
+      refs: ['web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx']
+      estimated_effort: '2-3 hours'
+
+    - action: 'Implement rollback mechanism or transaction pattern for dual API calls, or document risk acceptance'
+      priority: P1
+      refs: ['web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx:143-169']
+      estimated_effort: '3-5 hours (implementation) or 30 min (documentation if accepting risk)'
+
+    - action: 'Execute manual QA test plan for AC5 (button removal) and AC6 (table refresh)'
+      priority: P1
+      refs: ['web-frontend/src/components/organizer/EventManagement/SpeakersSessionsTable.tsx']
+      estimated_effort: '1 hour (create test plan + execute)'
+
+  future: # P2/P3 - Can be addressed later or in tech debt backlog
+    - action: 'Add debouncing (150ms) to time field change handlers to reduce excessive re-renders'
+      priority: P2
+      refs: ['web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx:256-298']
+      estimated_effort: '30-60 minutes'
+
+    - action: 'Implement focus management (autofocus first field on modal open, restore focus on close)'
+      priority: P2
+      refs: ['web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx']
+      estimated_effort: '1-2 hours'
+
+    - action: 'Add ARIA live region for 409 conflict error announcements to improve screen reader UX'
+      priority: P2
+      refs: ['web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx:405-409']
+      estimated_effort: '1 hour'
+
+    - action: 'Extract magic numbers (15, 480) to configuration constants or environment variables'
+      priority: P3
+      refs: ['web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx:47-48']
+      estimated_effort: '30 minutes'
+
+    - action: 'Add inline comments for complex time calculation logic to improve maintainability'
+      priority: P3
+      refs: ['web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx:256-298']
+      estimated_effort: '30 minutes'
+
+    - action: 'Consider unified backend endpoint /sessions/{slug}/full-update to reduce latency (backend change)'
+      priority: P3
+      refs: ['services/event-management-service/src/main/java/ch/batbern/events/controller/SlotAssignmentController.java']
+      estimated_effort: '4-6 hours (backend + frontend changes)'
+
+# QA Review Metadata
+review_metadata:
+  review_type: comprehensive
+  auto_escalated: false
+  escalation_triggers_checked:
+    - auth_security_files: false
+    - no_tests_added: false
+    - diff_over_500_lines: false
+    - previous_gate_fail: false
+    - ac_count_over_5: true
+      # Note: 6 ACs triggered deep review (threshold is > 5)
+  files_reviewed:
+    - 'web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx'
+    - 'web-frontend/src/components/organizer/EventPage/EventSpeakersTab.tsx'
+    - 'web-frontend/src/components/organizer/EventManagement/SpeakersSessionsTable.tsx'
+    - 'web-frontend/src/services/api/sessionApiClient.ts'
+    - 'web-frontend/src/components/organizer/EventManagement/__tests__/SessionEditModal.test.tsx'
+    - 'services/event-management-service/src/main/java/ch/batbern/events/controller/SlotAssignmentController.java'
+  refactoring_performed:
+    - file: 'web-frontend/src/components/organizer/EventManagement/SessionEditModal.tsx'
+      change: 'Removed slotNumber reference in modal title (line 306)'
+      reason: 'slotNumber no longer populated after recent refactoring, causing "Slot 0" display bug'
+  standards_checked:
+    - 'docs/architecture/coding-standards.md'
+    - 'docs/architecture/tech-stack.md'
+    - 'docs/architecture/source-tree.md'
+  compliance:
+    coding_standards: true
+    project_structure: true
+    testing_strategy: false
+    # Testing strategy compliance: CONCERNS - missing integration/E2E tests for critical flows
+
+# Gate Transition Conditions
+gate_will_pass_when:
+  - 'All 15 unit tests passing (currently 12/15)'
+  - 'Integration test added for dual API call flow with partial failure coverage'
+  - 'Manual QA completed and documented for AC5/AC6'
+  - 'P0 items resolved (failing tests, integration test)'
+  - 'P1 items addressed or risk explicitly accepted with documented waiver'
+
+# Notes for Future Reviews
+qa_notes: |
+  This story demonstrates strong implementation fundamentals with excellent
+  time validation and conflict error handling. The dual API call pattern is
+  correctly implemented per AC3, but introduces reliability risk without a
+  rollback mechanism.
+
+  The 80% unit test coverage meets requirements, but test quality could be
+  improved with integration tests for the critical dual API call flow. The
+  3 failing tests are concerning and must be investigated as a blocker.
+
+  Code quality is good overall - clean architecture, TypeScript safety, and
+  proper separation of concerns. Minor refactoring completed during review
+  (slotNumber bug fix).
+
+  Recommend addressing P0/P1 items before marking story "Done". Gate will
+  escalate to PASS once all tests passing and critical gaps addressed.

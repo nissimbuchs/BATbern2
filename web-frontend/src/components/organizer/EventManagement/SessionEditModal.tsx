@@ -24,12 +24,14 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { AxiosError } from 'axios';
 import type { SessionUI } from '@/types/event.types';
 
 interface SessionEditModalProps {
   open: boolean;
   onClose: () => void;
   session: SessionUI | null;
+  eventDate: string; // ISO 8601 date for time conversion
   onSave: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
 }
 
@@ -37,14 +39,53 @@ export interface SessionUpdateData {
   title: string;
   description?: string;
   durationMinutes?: number;
+  startTime?: string; // ISO 8601 timestamp
+  endTime?: string; // ISO 8601 timestamp
+}
+
+interface SpeakerConflict {
+  speakerName: string;
+  sessionTitle: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface RoomConflict {
+  roomName: string;
+  sessionTitle: string;
+  startTime: string;
+  endTime: string;
 }
 
 const MAX_ABSTRACT_LENGTH = 1000;
+const MIN_SESSION_DURATION = 15; // minutes
+const MAX_SESSION_DURATION = 480; // 8 hours
+
+// Extract HH:mm from ISO 8601 timestamp
+const extractTimeFromISO = (isoString: string | null | undefined): string => {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    return date.toTimeString().substring(0, 5); // "14:30"
+  } catch {
+    return '';
+  }
+};
+
+// Combine event date + HH:mm time → ISO 8601 timestamp
+const combineEventDateAndTime = (eventDate: string, timeString: string): string => {
+  const date = new Date(eventDate);
+  const [hours, minutes] = timeString.split(':').map(Number);
+  date.setHours(hours, minutes, 0, 0);
+  return date.toISOString();
+};
 
 export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   open,
   onClose,
   session,
+  eventDate,
   onSave,
 }) => {
   const { t } = useTranslation('events');
@@ -52,10 +93,14 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
   const [duration, setDuration] = useState<number>(60); // Default 60 minutes
+  const [startTime, setStartTime] = useState<string>(''); // HH:mm format
+  const [endTime, setEndTime] = useState<string>(''); // HH:mm format
   const [errors, setErrors] = useState<{
     title?: string;
     abstract?: string;
     duration?: string;
+    startTime?: string;
+    endTime?: string;
   }>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -65,6 +110,12 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
     if (session) {
       setTitle(session.title || '');
       setAbstract(session.description || '');
+
+      // Extract times from session
+      const extractedStartTime = extractTimeFromISO(session.startTime);
+      const extractedEndTime = extractTimeFromISO(session.endTime);
+      setStartTime(extractedStartTime);
+      setEndTime(extractedEndTime);
 
       // Calculate duration from startTime and endTime if available
       if (session.startTime && session.endTime) {
@@ -96,11 +147,41 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       });
     }
 
-    if (duration <= 0 || duration > 480) {
-      // Max 8 hours
+    if (duration < MIN_SESSION_DURATION || duration > MAX_SESSION_DURATION) {
       newErrors.duration = t('sessionEdit.errors.invalidDuration', {
-        defaultValue: 'Duration must be between 1 and 480 minutes',
+        min: MIN_SESSION_DURATION,
+        max: MAX_SESSION_DURATION,
+        defaultValue: `Duration must be between ${MIN_SESSION_DURATION} and ${MAX_SESSION_DURATION} minutes`,
       });
+    }
+
+    // Time validation (if times are provided)
+    if (startTime && endTime) {
+      const [startHours, startMinutes] = startTime.split(':').map(Number);
+      const [endHours, endMinutes] = endTime.split(':').map(Number);
+      const startTotalMinutes = startHours * 60 + startMinutes;
+      const endTotalMinutes = endHours * 60 + endMinutes;
+
+      if (endTotalMinutes <= startTotalMinutes) {
+        newErrors.endTime = t('sessionEdit.errors.endTimeBeforeStart', {
+          defaultValue: 'End time must be after start time',
+        });
+      }
+
+      const calculatedDuration = endTotalMinutes - startTotalMinutes;
+      if (calculatedDuration < MIN_SESSION_DURATION) {
+        newErrors.duration = t('sessionEdit.errors.durationTooShort', {
+          min: MIN_SESSION_DURATION,
+          defaultValue: `Session duration must be at least ${MIN_SESSION_DURATION} minutes`,
+        });
+      }
+
+      if (calculatedDuration > MAX_SESSION_DURATION) {
+        newErrors.duration = t('sessionEdit.errors.durationTooLong', {
+          max: MAX_SESSION_DURATION,
+          defaultValue: `Session duration must be at most ${MAX_SESSION_DURATION} minutes`,
+        });
+      }
     }
 
     setErrors(newErrors);
@@ -116,18 +197,64 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
     setSaveError(null);
 
     try {
-      await onSave(session.sessionSlug, {
+      const updates: SessionUpdateData = {
         title: title.trim(),
         description: abstract.trim() || undefined,
         durationMinutes: duration,
-      });
+      };
+
+      // Include time updates if times are set
+      if (startTime && endTime) {
+        updates.startTime = combineEventDateAndTime(eventDate, startTime);
+        updates.endTime = combineEventDateAndTime(eventDate, endTime);
+      }
+
+      await onSave(session.sessionSlug, updates);
       onClose();
     } catch (error) {
-      setSaveError(
-        error instanceof Error
-          ? error.message
-          : t('sessionEdit.errors.saveFailed', 'Failed to save session')
-      );
+      // Handle 409 conflict errors (speaker/room conflicts)
+      if (error instanceof AxiosError && error.response?.status === 409) {
+        const conflictData = error.response.data;
+        const conflictMessages: string[] = [];
+
+        if (conflictData.speakerConflicts && conflictData.speakerConflicts.length > 0) {
+          conflictData.speakerConflicts.forEach((conflict: SpeakerConflict) => {
+            conflictMessages.push(
+              t('sessionEdit.errors.speakerConflict', {
+                speaker: conflict.speakerName,
+                session: conflict.sessionTitle,
+                time: `${conflict.startTime} - ${conflict.endTime}`,
+                defaultValue: `Speaker ${conflict.speakerName} is already scheduled for "${conflict.sessionTitle}" at ${conflict.startTime} - ${conflict.endTime}`,
+              })
+            );
+          });
+        }
+
+        if (conflictData.roomConflicts && conflictData.roomConflicts.length > 0) {
+          conflictData.roomConflicts.forEach((conflict: RoomConflict) => {
+            conflictMessages.push(
+              t('sessionEdit.errors.roomConflict', {
+                room: conflict.roomName,
+                session: conflict.sessionTitle,
+                time: `${conflict.startTime} - ${conflict.endTime}`,
+                defaultValue: `Room ${conflict.roomName} is already booked for "${conflict.sessionTitle}" at ${conflict.startTime} - ${conflict.endTime}`,
+              })
+            );
+          });
+        }
+
+        setSaveError(
+          conflictMessages.length > 0
+            ? conflictMessages.join('\n')
+            : t('sessionEdit.errors.timingConflict', 'Timing conflict detected')
+        );
+      } else {
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : t('sessionEdit.errors.saveFailed', 'Failed to save session')
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -139,16 +266,58 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
     }
   };
 
+  // Auto-calculation handlers per AC2
+  const handleStartTimeChange = (newStartTime: string) => {
+    setStartTime(newStartTime);
+    if (errors.startTime) {
+      setErrors({ ...errors, startTime: undefined });
+    }
+
+    // Auto-recalculate endTime based on current duration
+    if (newStartTime && duration > 0) {
+      const [hours, minutes] = newStartTime.split(':').map(Number);
+      const startTotalMinutes = hours * 60 + minutes;
+      const endTotalMinutes = startTotalMinutes + duration;
+      const endHours = Math.floor(endTotalMinutes / 60) % 24;
+      const endMinutes = endTotalMinutes % 60;
+      const calculatedEndTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+      setEndTime(calculatedEndTime);
+    }
+  };
+
+  const handleDurationChange = (newDuration: number) => {
+    setDuration(newDuration);
+    if (errors.duration) {
+      setErrors({ ...errors, duration: undefined });
+    }
+
+    // Auto-recalculate endTime based on current startTime
+    if (startTime && newDuration > 0) {
+      const [hours, minutes] = startTime.split(':').map(Number);
+      const startTotalMinutes = hours * 60 + minutes;
+      const endTotalMinutes = startTotalMinutes + newDuration;
+      const endHours = Math.floor(endTotalMinutes / 60) % 24;
+      const endMinutes = endTotalMinutes % 60;
+      const calculatedEndTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+      setEndTime(calculatedEndTime);
+    }
+  };
+
+  const handleEndTimeChange = (newEndTime: string) => {
+    setEndTime(newEndTime);
+    if (errors.endTime) {
+      setErrors({ ...errors, endTime: undefined });
+    }
+    // Note: Duration does NOT auto-update when endTime is manually changed (per AC2)
+  };
+
   if (!session) {
     return null;
   }
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {t('sessionEdit.title', 'Edit Session')} -{' '}
-        {t('speakers.slotLabel', { number: session.slotNumber || 0 })}
-      </DialogTitle>
+      <DialogTitle>{t('sessionEdit.title', 'Edit Session')}</DialogTitle>
 
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -205,17 +374,42 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
             label={t('sessionEdit.durationLabel', 'Duration (minutes)')}
             type="number"
             value={duration}
-            onChange={(e) => {
-              setDuration(Number(e.target.value));
-              if (errors.duration) {
-                setErrors({ ...errors, duration: undefined });
-              }
-            }}
+            onChange={(e) => handleDurationChange(Number(e.target.value))}
             error={!!errors.duration}
             helperText={errors.duration}
-            inputProps={{ min: 1, max: 480, step: 5 }}
+            inputProps={{ step: 5 }}
             fullWidth
             disabled={saving}
+          />
+
+          {/* Start Time */}
+          <TextField
+            label={t('sessionEdit.startTimeLabel', 'Start Time')}
+            type="time"
+            value={startTime}
+            onChange={(e) => handleStartTimeChange(e.target.value)}
+            error={!!errors.startTime}
+            helperText={errors.startTime}
+            fullWidth
+            disabled={saving}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+
+          {/* End Time */}
+          <TextField
+            label={t('sessionEdit.endTimeLabel', 'End Time')}
+            type="time"
+            value={endTime}
+            onChange={(e) => handleEndTimeChange(e.target.value)}
+            error={!!errors.endTime}
+            helperText={errors.endTime}
+            fullWidth
+            disabled={saving}
+            InputLabelProps={{
+              shrink: true,
+            }}
           />
 
           {/* Save Error */}
