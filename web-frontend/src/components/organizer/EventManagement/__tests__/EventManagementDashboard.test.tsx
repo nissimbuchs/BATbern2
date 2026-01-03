@@ -26,6 +26,8 @@ import {
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
+  useCriticalTasks,
+  useTeamActivity,
 } from '@/hooks/useEvents';
 import { useNotifications } from '@/hooks/useNotifications';
 import { taskService } from '@/services/taskService';
@@ -40,6 +42,8 @@ vi.mock('@/hooks/useEvents', () => ({
   useCreateEvent: vi.fn(),
   useUpdateEvent: vi.fn(),
   useDeleteEvent: vi.fn(),
+  useCriticalTasks: vi.fn(),
+  useTeamActivity: vi.fn(),
 }));
 
 // Mock useNotifications
@@ -77,10 +81,13 @@ vi.mock('@/stores/eventStore', () => ({
   })),
 }));
 
-// Mock useNotificationWebSocket
+// Mock useNotificationWebSocket - create stable function references to prevent infinite loops
+const mockUnsubscribe = vi.fn();
+const mockOnNotification = vi.fn(() => mockUnsubscribe);
+
 vi.mock('@/hooks/useNotificationWebSocket', () => ({
   useNotificationWebSocket: vi.fn(() => ({
-    onNotification: vi.fn(() => vi.fn()),
+    onNotification: mockOnNotification,
     isConnected: false,
   })),
 }));
@@ -93,9 +100,62 @@ vi.mock('@/services/taskService', () => ({
   },
 }));
 
-// Mock EventForm to prevent act() warnings
+// Mock child components to prevent rendering issues
 vi.mock('../EventForm', () => ({
   EventForm: () => null,
+}));
+
+vi.mock('../EventList', () => ({
+  EventList: ({ events }: any) => (
+    <div>
+      {events?.map((event: any) => (
+        <div key={event.eventCode}>{event.title}</div>
+      ))}
+      {events?.length === 0 && <div>No events found</div>}
+    </div>
+  ),
+}));
+
+vi.mock('../EventSearch', () => ({
+  EventSearch: () => null,
+}));
+
+vi.mock('../EventPagination', () => ({
+  EventPagination: () => null,
+}));
+
+vi.mock('../QuickActions', () => ({
+  QuickActions: ({ onNewEvent }: any) => (
+    <div>
+      <button onClick={onNewEvent}>New Event</button>
+    </div>
+  ),
+}));
+
+vi.mock('../Tasks/TaskWidget', () => ({
+  TaskWidget: () => <div>Critical Tasks</div>,
+}));
+
+vi.mock('../TeamActivityFeed', () => ({
+  TeamActivityFeed: ({ notifications }: any) => (
+    <div>
+      <div>Team Activity</div>
+      {notifications?.length > 0 && (
+        <div>
+          <div>John Doe</div>
+          <div>assigned speaker</div>
+        </div>
+      )}
+    </div>
+  ),
+}));
+
+vi.mock('@/components/shared/Event/EventBatchImportModal', () => ({
+  EventBatchImportModal: () => null,
+}));
+
+vi.mock('@/components/shared/Session/SessionBatchImportModal', () => ({
+  SessionBatchImportModal: () => null,
 }));
 
 describe('EventManagementDashboard Component', () => {
@@ -197,6 +257,21 @@ describe('EventManagementDashboard Component', () => {
     },
   ];
 
+  const mockTeamActivityData = [
+    {
+      id: 'activity-1',
+      eventCode: 'BATbern56',
+      actorUsername: 'john.doe',
+      actorDisplayName: 'John Doe',
+      actionType: 'speaker_assigned',
+      entityType: 'speaker',
+      entityId: 'speaker-1',
+      description: 'assigned speaker for topic AI trends',
+      timestamp: '2025-01-15T10:00:00Z',
+      metadata: {},
+    },
+  ];
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -247,6 +322,22 @@ describe('EventManagementDashboard Component', () => {
       isError: false,
       error: null,
     } as any);
+
+    vi.mocked(useCriticalTasks).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+    } as any);
+
+    vi.mocked(useTeamActivity).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: false,
+      error: null,
+    } as any);
   });
 
   describe('Initial Render', () => {
@@ -258,7 +349,7 @@ describe('EventManagementDashboard Component', () => {
         isError: false,
       } as any);
       vi.mocked(useNotifications).mockReturnValue({
-        data: mockNotificationsData,
+        data: { data: mockNotificationsData },
         isLoading: false,
         isSuccess: true,
         refetch: vi.fn(),
@@ -433,6 +524,12 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
+      vi.mocked(useNotifications).mockReturnValue({
+        data: { data: mockNotificationsData },
+        isLoading: false,
+        isSuccess: true,
+        refetch: vi.fn(),
+      } as any);
     });
 
     it('should_displayTeamActivitySection_when_activityExists', () => {
