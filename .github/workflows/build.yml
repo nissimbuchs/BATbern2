@@ -82,6 +82,7 @@ jobs:
     permissions:
       id-token: write  # Required for OIDC authentication
       contents: read   # Required for checkout
+      deployments: read  # Required for deployment tracking
     strategy:
       matrix:
         service:
