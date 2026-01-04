@@ -4,11 +4,11 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.ReviewRequest;
 import ch.batbern.events.dto.SpeakerContentResponse;
-import ch.batbern.events.dto.SpeakerStatusResponse;
-import ch.batbern.events.dto.StatusHistoryItem;
+import ch.batbern.events.dto.generated.speakers.SpeakerStatusResponse;
+import ch.batbern.events.dto.generated.speakers.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
-import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.dto.generated.speakers.UpdateStatusRequest;
 import ch.batbern.events.service.QualityReviewService;
 import ch.batbern.events.service.SpeakerContentSubmissionService;
 import ch.batbern.events.service.SpeakerStatusService;
@@ -60,28 +60,29 @@ public class SpeakerStatusController {
     /**
      * Update speaker status
      * Story 5.4 AC1-2: Manual status updates with workflow validation
+     * Story BAT-18: Migrated to use username instead of speakerId (ADR-003)
      *
-     * @param eventCode Event code
-     * @param speakerId Speaker pool ID
-     * @param request Update status request with new status and optional reason
-     * @return Updated speaker status response
+     * @param eventCode Event code (meaningful identifier)
+     * @param username Speaker username (meaningful identifier per ADR-003)
+     * @param request Update status request with new status and optional reason (generated DTO)
+     * @return Updated speaker status response (generated DTO)
      */
-    @PutMapping("/{speakerId}/status")
+    @PutMapping("/{username}/status")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SpeakerStatusResponse> updateStatus(
             @PathVariable String eventCode,
-            @PathVariable UUID speakerId,
+            @PathVariable String username,
             @Valid @RequestBody UpdateStatusRequest request) {
 
         log.info("PUT /api/v1/events/{}/speakers/{}/status - newStatus: {}",
-                eventCode, speakerId, request.getNewStatus());
+                eventCode, username, request.getNewStatus());
 
         // Extract organizer username from security context
         String organizerUsername = getCurrentUsername();
 
         SpeakerStatusResponse response = speakerStatusService.updateStatus(
                 eventCode,
-                speakerId,
+                username,
                 organizerUsername,
                 request
         );
@@ -92,20 +93,21 @@ public class SpeakerStatusController {
     /**
      * Get speaker status history
      * Story 5.4 AC15: Query status history timeline
+     * Story BAT-18: Migrated to use username instead of speakerId (ADR-003)
      *
-     * @param eventCode Event code
-     * @param speakerId Speaker pool ID
-     * @return List of status changes ordered by time descending
+     * @param eventCode Event code (meaningful identifier)
+     * @param username Speaker username (meaningful identifier per ADR-003)
+     * @return List of status changes ordered by time descending (generated DTOs)
      */
-    @GetMapping("/{speakerId}/status/history")
+    @GetMapping("/{username}/status/history")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<StatusHistoryItem>> getStatusHistory(
             @PathVariable String eventCode,
-            @PathVariable UUID speakerId) {
+            @PathVariable String username) {
 
-        log.info("GET /api/v1/events/{}/speakers/{}/status/history", eventCode, speakerId);
+        log.info("GET /api/v1/events/{}/speakers/{}/status/history", eventCode, username);
 
-        List<StatusHistoryItem> history = speakerStatusService.getStatusHistory(eventCode, speakerId);
+        List<StatusHistoryItem> history = speakerStatusService.getStatusHistory(eventCode, username);
 
         return ResponseEntity.ok(history);
     }

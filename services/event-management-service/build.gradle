@@ -176,6 +176,58 @@ task openApiGenerateTopics(type: org.openapitools.generator.gradle.plugin.tasks.
     ]
 }
 
+// OpenAPI Generator - Generate Speakers API DTOs (Story 2: Speakers API Migration - ADR-003/ADR-006)
+// This task generates DTOs from speakers-api.openapi.yml with username identifiers
+task openApiGenerateSpeakers(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+    generatorName = 'spring'
+    inputSpec = "$rootDir/docs/api/speakers-api.openapi.yml".toString()
+    outputDir = "$buildDir/generated-speakers".toString()
+    apiPackage = 'ch.batbern.events.api.generated.speakers'
+    modelPackage = 'ch.batbern.events.dto.generated.speakers'
+    validateSpec = false  // Skip validation for custom license fields
+
+    // Import mappings - use shared-kernel types instead of generating
+    importMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    // Type mappings - map OpenAPI schemas to shared-kernel classes
+    typeMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+
+    configOptions = [
+        dateLibrary: 'java8',
+        interfaceOnly: 'false',             // Generate POJOs for DTOs
+        skipDefaultInterface: 'true',
+        useTags: 'false',
+        useSpringBoot3: 'true',
+        documentationProvider: 'none',
+        openApiNullable: 'false',
+        hideGenerationTimestamp: 'true',
+        useBeanValidation: 'true',
+        performBeanValidation: 'true',
+        useOptional: 'false',
+        useJakartaEe: 'true',
+        generateBuilders: 'true'            // Generate builder pattern for DTOs (as requested)
+    ]
+
+    // Generate only models (DTOs), no API interfaces
+    globalProperties = [
+        models: '',
+        apis: 'false',
+        supportingFiles: 'ApiUtil.java'
+    ]
+
+    // Skip generation of shared-kernel types
+    schemaMappings = [
+        'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+    ]
+}
+
 // OpenAPI Generator - Generate User API client DTOs (Story 2.2a: Cross-service types)
 task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
     generatorName = 'spring'
@@ -225,7 +277,7 @@ task openApiGenerateUsersClient(type: org.openapitools.generator.gradle.plugin.t
 }
 
 // Make compileJava depend on all OpenAPI generation tasks
-compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics
+compileJava.dependsOn tasks.openApiGenerate, tasks.openApiGenerateUsersClient, tasks.openApiGenerateTopics, tasks.openApiGenerateSpeakers
 
 // Add generated sources to source sets
 sourceSets {
@@ -234,6 +286,7 @@ sourceSets {
             srcDir "$buildDir/generated/src/main/java"
             srcDir "$buildDir/generated-users-client/src/main/java"
             srcDir "$buildDir/generated-topics/src/main/java"
+            srcDir "$buildDir/generated-speakers/src/main/java"
         }
     }
 }
@@ -243,4 +296,5 @@ clean {
     delete "$buildDir/generated"
     delete "$buildDir/generated-users-client"
     delete "$buildDir/generated-topics"
+    delete "$buildDir/generated-speakers"
 }
