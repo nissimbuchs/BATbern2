@@ -87,14 +87,14 @@ commands:
         - CRITICAL - Fetch Linear issue and all sub-issues before review
         - Step 1 - Get parent issue with mcp__linear-server__get_issue(story-id)
         - Step 2 - List sub-issues with mcp__linear-server__list_issues(parentId=story-id)
-        - Step 3 - Parse ACs (label acceptance-criterion), Tasks (label task), Subtasks (label subtask)
+        - Step 3 - Parse ACs (label acceptance-criterion), Tasks (label task with subtasks in description)
         - Step 4 - Validate all AC sub-issues are status "Done"
-        - Step 5 - Validate all Task/Subtask sub-issues are status "Done"
+        - Step 5 - Validate all Task sub-issues are status "Done" (subtasks validated via task comments)
       review-execution:
         - Execute review-story task which includes all analysis and creates gate decision
         - Validate against Linear sub-issues (not local file checkboxes)
         - Check AC completion via Linear sub-issue status
-        - Check task completion via Linear sub-issue status
+        - Check task completion via Linear sub-issue status (subtasks validated via task comments showing completion)
       linear-sync-on-completion:
         - CRITICAL - Update Linear based on gate decision
         - If PASS - Update parent issue status to "Done" with mcp__linear-server__update_issue
