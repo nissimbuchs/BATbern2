@@ -623,3 +623,4 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      deployments: write  # Required for deployment tracking in called workflow
