@@ -20,9 +20,8 @@ public class TransitionStateRequest {
 
     @NotBlank(message = "Target state is required")
     @Pattern(
-        regexp = "CREATED|TOPIC_SELECTION|SPEAKER_BRAINSTORMING|SPEAKER_OUTREACH|SPEAKER_CONFIRMATION|"
-                 + "CONTENT_COLLECTION|QUALITY_REVIEW|THRESHOLD_CHECK|OVERFLOW_MANAGEMENT|SLOT_ASSIGNMENT|"
-                 + "AGENDA_PUBLISHED|AGENDA_FINALIZED|NEWSLETTER_SENT|EVENT_READY|PARTNER_MEETING_COMPLETE|ARCHIVED",
+        regexp = "CREATED|TOPIC_SELECTION|SPEAKER_IDENTIFICATION|SLOT_ASSIGNMENT|"
+                 + "AGENDA_PUBLISHED|AGENDA_FINALIZED|EVENT_LIVE|EVENT_COMPLETED|ARCHIVED",
         message = "Target state must be a valid EventWorkflowState"
     )
     private String targetState;

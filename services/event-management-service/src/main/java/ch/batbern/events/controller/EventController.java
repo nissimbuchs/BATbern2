@@ -682,6 +682,9 @@ public class EventController {
                 .orElseThrow(() -> new EventNotFoundException(
                     "Event not found with code: " + eventCode));
 
+        // Track original themeImageUploadId before updates (Story 2.5.3a bug fix)
+        String originalUploadId = event.getThemeImageUploadId();
+
         // Replace all fields
         event.setTitle(request.getTitle());
 
@@ -727,17 +730,26 @@ public class EventController {
         // Associate theme image if new uploadId provided (Story 2.5.3a)
         // Must be done after save to ensure event has persisted eventCode
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
-            associateThemeImage(updatedEvent, request.getThemeImageUploadId());
-            // Reload event to get updated themeImageUrl from database
-            updatedEvent = eventRepository.findByEventCode(updatedEvent.getEventCode())
-                    .orElseThrow(() -> new EventNotFoundException("Event not found after theme image association"));
+            // Only associate if uploadId has changed (avoid re-associating already associated images)
+            boolean uploadIdChanged = !request.getThemeImageUploadId().equals(originalUploadId);
+            if (uploadIdChanged) {
+                log.info("Theme image uploadId changed from {} to {} for event {}, associating new image",
+                        originalUploadId, request.getThemeImageUploadId(), eventCode);
+                associateThemeImage(updatedEvent, request.getThemeImageUploadId());
+                // Reload event to get updated themeImageUrl from database
+                updatedEvent = eventRepository.findByEventCode(updatedEvent.getEventCode())
+                        .orElseThrow(() -> new EventNotFoundException("Event not found after theme image association"));
 
-            // Manually evict cache after theme image association (Story 2.5.3a)
-            // The @CacheEvict on the method runs before associateThemeImage, so we need to evict again
-            Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
-            if (cache != null) {
-                cache.clear();
-                log.debug("Cache cleared after theme image association for event: {}", eventCode);
+                // Manually evict cache after theme image association (Story 2.5.3a)
+                // The @CacheEvict on the method runs before associateThemeImage, so we need to evict again
+                Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+                if (cache != null) {
+                    cache.clear();
+                    log.debug("Cache cleared after theme image association for event: {}", eventCode);
+                }
+            } else {
+                log.debug("Theme image uploadId unchanged ({}), skipping re-association for event {}",
+                        request.getThemeImageUploadId(), eventCode);
             }
         }
 
@@ -797,6 +809,9 @@ public class EventController {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
+        // Track original themeImageUploadId before updates (Story 2.5.3a bug fix)
+        String originalUploadId = event.getThemeImageUploadId();
+
         // Update only provided fields
         applyPatchUpdates(event, request);
 
@@ -807,11 +822,21 @@ public class EventController {
         // Check if themeImageUploadId was provided in the request (including null to clear it)
         if (request.getThemeImageUploadId() != null) {
             if (!request.getThemeImageUploadId().isBlank()) {
-                // Associate new theme image
-                associateThemeImage(patchedEvent, request.getThemeImageUploadId());
-                // Reload event to get updated themeImageUrl from database
-                patchedEvent = eventRepository.findByEventCode(patchedEvent.getEventCode())
-                        .orElseThrow(() -> new EventNotFoundException("Event not found after theme image association"));
+                // Only associate if uploadId has changed (avoid re-associating already associated images)
+                boolean uploadIdChanged = !request.getThemeImageUploadId().equals(originalUploadId);
+                if (uploadIdChanged) {
+                    // Associate new theme image
+                    log.info("Theme image uploadId changed from {} to {} for event {}, associating new image",
+                            originalUploadId, request.getThemeImageUploadId(), eventCode);
+                    associateThemeImage(patchedEvent, request.getThemeImageUploadId());
+                    // Reload event to get updated themeImageUrl from database
+                    patchedEvent = eventRepository.findByEventCode(patchedEvent.getEventCode())
+                            .orElseThrow(() -> new EventNotFoundException(
+                                    "Event not found after theme image association"));
+                } else {
+                    log.debug("Theme image uploadId unchanged ({}), skipping re-association for event {}",
+                            request.getThemeImageUploadId(), eventCode);
+                }
             } else {
                 // Clear theme image (blank/empty string means remove)
                 log.info("Clearing theme image for event: {}", eventCode);
