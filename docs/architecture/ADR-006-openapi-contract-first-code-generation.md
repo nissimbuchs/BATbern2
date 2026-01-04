@@ -684,7 +684,8 @@ Each service maintains an `OPENAPI-CODEGEN.md` file documenting:
 **For Learning Curve**:
 - Comprehensive OPENAPI-CODEGEN.md documentation per service
 - This ADR provides architecture-level guidance
-- Code examples in stories (e.g., Story 2.7)
+- **[OpenAPI DTO Migration Guide](../guides/openapi-dto-migration-guide.md)** provides step-by-step migration process
+- Code examples in stories (e.g., Story 2.7, BAT-17 Topics API Migration)
 
 **For Build Complexity**:
 - Standardized Gradle configuration across services
@@ -702,12 +703,20 @@ Each service maintains an `OPENAPI-CODEGEN.md` file documenting:
 
 ## References
 
+### Migration Guide
+
+**IMPORTANT**: For teams migrating existing APIs from manual DTOs to generated DTOs, see:
+- **[OpenAPI DTO Migration Guide](../guides/openapi-dto-migration-guide.md)** - Step-by-step migration process, field reconciliation, common pitfalls
+
+This ADR documents the **architectural patterns**. The migration guide provides the **practical step-by-step process**.
+
 ### Implementation Examples
 
 - **Backend Pattern**: `services/company-user-management-service/OPENAPI-CODEGEN.md`
 - **Gradle Config**: `services/company-user-management-service/build.gradle` (openApiGenerate task)
 - **Frontend Scripts**: `web-frontend/package.json` (generate:api-types scripts)
 - **Story 2.7**: Partner Coordination Service (comprehensive OpenAPI codegen example)
+- **Topics API Migration** (BAT-17): Complete reference implementation following migration guide
 
 ### OpenAPI Specifications
 
