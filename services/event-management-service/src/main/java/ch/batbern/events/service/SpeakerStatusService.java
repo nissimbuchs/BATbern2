@@ -5,11 +5,12 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.SpeakerStatusResponse;
-import ch.batbern.events.dto.StatusHistoryItem;
+import ch.batbern.events.dto.generated.speakers.SpeakerStatusResponse;
+import ch.batbern.events.dto.generated.speakers.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
-import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.dto.generated.speakers.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.mapper.SpeakerMapper;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
@@ -54,50 +55,57 @@ public class SpeakerStatusService {
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
     private final ApplicationEventPublisher eventPublisher;
+    private final SpeakerMapper speakerMapper;
 
     /**
      * Update speaker status with validation
      * Story 5.4 AC1-2: Manual status updates with workflow validation
+     * Story BAT-18: Migrated to use username instead of speakerId (ADR-003)
      * Cache eviction: Invalidates both status summary and history caches for the event
      *
-     * @param eventCode Event code
-     * @param speakerId Speaker pool ID
+     * @param eventCode Event code (meaningful identifier)
+     * @param username Speaker username (meaningful identifier per ADR-003)
      * @param organizerUsername Username of organizer making the change
-     * @param request Update request with new status and optional reason
-     * @return Status change response
+     * @param request Update request with new status and optional reason (generated DTO)
+     * @return Status change response (generated DTO)
      */
     @CacheEvict(value = {STATUS_SUMMARY_CACHE, STATUS_HISTORY_CACHE}, key = "#eventCode")
     public SpeakerStatusResponse updateStatus(
         String eventCode,
-        UUID speakerId,
+        String username,
         String organizerUsername,
         UpdateStatusRequest request
     ) {
         log.info("Updating speaker {} status to {} for event {} by {}",
-            speakerId, request.getNewStatus(), eventCode, organizerUsername);
+            username, request.getNewStatus(), eventCode, organizerUsername);
 
-        // Get speaker from pool
-        SpeakerPool speaker = speakerPoolRepository.findById(speakerId)
-                .orElseThrow(() -> new NotFoundException("Speaker not found: " + speakerId));
+        // Get event by code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+
+        // Get speaker from pool by event ID and username
+        SpeakerPool speaker = speakerPoolRepository.findByEventIdAndUsername(event.getId(), username)
+                .orElseThrow(() -> new NotFoundException("Speaker not found: " + username + " in event " + eventCode));
 
         // Get current status from speaker_pool entity (source of truth)
         SpeakerWorkflowState currentStatus = speaker.getStatus() != null
             ? speaker.getStatus()
             : SpeakerWorkflowState.IDENTIFIED;
 
+        // Convert generated DTO enum to shared enum (Story BAT-18)
+        SpeakerWorkflowState newStatus = SpeakerWorkflowState.valueOf(request.getNewStatus().name());
+
         // Validate state transition - Story 5.4 AC12
-        validator.validateTransition(currentStatus, request.getNewStatus());
+        validator.validateTransition(currentStatus, newStatus);
 
         // Update speaker_pool status column
-        speaker.setStatus(request.getNewStatus());
+        speaker.setStatus(newStatus);
 
         // Save updated speaker pool entry
         speakerPoolRepository.save(speaker);
 
         // Publish SpeakerAcceptedEvent if status changed to ACCEPTED (triggers workflow transition)
-        if (request.getNewStatus() == SpeakerWorkflowState.ACCEPTED) {
-            Event event = eventRepository.findById(speaker.getEventId())
-                    .orElseThrow(() -> new NotFoundException("Event not found: " + speaker.getEventId()));
+        if (newStatus == SpeakerWorkflowState.ACCEPTED) {
 
             SpeakerAcceptedEvent acceptedEvent = SpeakerAcceptedEvent.builder()
                     .eventId(event.getId())
@@ -115,44 +123,59 @@ public class SpeakerStatusService {
 
         // Create history record - Story 5.4 AC3-4
         SpeakerStatusHistory historyRecord = new SpeakerStatusHistory();
-        historyRecord.setSpeakerPoolId(speakerId);
+        historyRecord.setSpeakerPoolId(speaker.getId());  // Use speaker ID from entity
         // Session ID from speaker pool (null until content submitted)
         historyRecord.setSessionId(speaker.getSessionId());
         historyRecord.setEventId(speaker.getEventId()); // V29: Use eventId instead of eventCode
         historyRecord.setPreviousStatus(currentStatus);
-        historyRecord.setNewStatus(request.getNewStatus());
+        historyRecord.setNewStatus(newStatus);  // Use converted shared enum
         historyRecord.setChangedByUsername(organizerUsername);
         historyRecord.setChangeReason(request.getReason());
         historyRecord.setChangedAt(Instant.now());
 
         SpeakerStatusHistory saved = repository.save(historyRecord);
 
-        // Build response
-        return mapToResponse(saved);
+        // Build response using mapper (Story BAT-18: Use generated DTOs)
+        return speakerMapper.toSpeakerStatusResponse(
+                speaker,
+                eventCode,
+                currentStatus,
+                organizerUsername,
+                request.getReason()
+        );
     }
 
     /**
      * Get status change history for a speaker
      * Story 5.4 AC15: Query status history
+     * Story BAT-18: Migrated to use username instead of speakerId (ADR-003)
      * Cached for 60 seconds per event (Story 5.4 cache requirement)
      *
-     * @param eventCode Event code
-     * @param speakerId Speaker pool ID
-     * @return List of status changes ordered by time descending
+     * @param eventCode Event code (meaningful identifier)
+     * @param username Speaker username (meaningful identifier per ADR-003)
+     * @return List of status changes ordered by time descending (generated DTOs)
      */
     @Transactional(readOnly = true)
     @Cacheable(value = STATUS_HISTORY_CACHE, key = "#eventCode")
-    public List<StatusHistoryItem> getStatusHistory(String eventCode, UUID speakerId) {
-        log.debug("Fetching status history for speaker {} in event {}", speakerId, eventCode);
+    public List<StatusHistoryItem> getStatusHistory(String eventCode, String username) {
+        log.debug("Fetching status history for speaker {} in event {}", username, eventCode);
 
-        List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
+        // Get event by code
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
+
+        // Get speaker from pool by event ID and username
+        SpeakerPool speaker = speakerPoolRepository.findByEventIdAndUsername(event.getId(), username)
+                .orElseThrow(() -> new NotFoundException("Speaker not found: " + username + " in event " + eventCode));
+
+        List<SpeakerStatusHistory> history = repository.findBySpeakerPoolIdOrderByChangedAtDesc(speaker.getId());
 
         if (history.isEmpty()) {
-            throw new NotFoundException("No status history found for speaker: " + speakerId);
+            throw new NotFoundException("No status history found for speaker: " + username);
         }
 
         return history.stream()
-            .map(this::mapToHistoryItem)
+            .map(speakerMapper::toStatusHistoryDto)
             .collect(Collectors.toList());
     }
 
@@ -235,39 +258,6 @@ public class SpeakerStatusService {
         return response;
     }
 
-    /**
-     * Map entity to response DTO
-     * V29: Fetch eventCode from Event entity since history now stores eventId
-     */
-    private SpeakerStatusResponse mapToResponse(SpeakerStatusHistory history) {
-        SpeakerStatusResponse response = new SpeakerStatusResponse();
-        response.setSpeakerId(history.getSpeakerPoolId());
-
-        // V29: Look up eventCode from events table using eventId
-        String eventCode = eventRepository.findById(history.getEventId())
-            .map(Event::getEventCode)
-            .orElse("UNKNOWN");
-        response.setEventCode(eventCode);
-
-        response.setCurrentStatus(history.getNewStatus());
-        response.setPreviousStatus(history.getPreviousStatus());
-        response.setChangedByUsername(history.getChangedByUsername());
-        response.setChangeReason(history.getChangeReason());
-        response.setChangedAt(history.getChangedAt());
-        return response;
-    }
-
-    /**
-     * Map entity to history item DTO
-     */
-    private StatusHistoryItem mapToHistoryItem(SpeakerStatusHistory history) {
-        StatusHistoryItem item = new StatusHistoryItem();
-        item.setId(history.getId());
-        item.setPreviousStatus(history.getPreviousStatus());
-        item.setNewStatus(history.getNewStatus());
-        item.setChangedByUsername(history.getChangedByUsername());
-        item.setChangeReason(history.getChangeReason());
-        item.setChangedAt(history.getChangedAt());
-        return item;
-    }
+    // Manual mapping methods removed - Story BAT-18: Using SpeakerMapper instead
+    // See: ch.batbern.events.mapper.SpeakerMapper
 }

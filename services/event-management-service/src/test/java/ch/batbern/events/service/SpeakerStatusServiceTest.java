@@ -3,11 +3,13 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.dto.SpeakerStatusResponse;
+import ch.batbern.events.dto.generated.speakers.SpeakerStatusResponse;
+import ch.batbern.events.dto.generated.speakers.StatusHistoryItem;
 import ch.batbern.events.dto.StatusSummaryResponse;
-import ch.batbern.events.dto.UpdateStatusRequest;
+import ch.batbern.events.dto.generated.speakers.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.mapper.SpeakerMapper;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
@@ -46,6 +48,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class SpeakerStatusServiceTest {
 
+    private static final String TEST_SPEAKER_USERNAME = "jane.smith"; // Story BAT-18: Meaningful identifier
+
     @Mock
     private SpeakerStatusHistoryRepository repository;
 
@@ -64,16 +68,19 @@ public class SpeakerStatusServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private SpeakerMapper speakerMapper;
+
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, eventPublisher);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, eventPublisher, speakerMapper);
     }
 
     /**
      * AC1: should_updateSpeakerStatus_when_validTransitionProvided
-     * V29: Updated to mock Event entity for eventCode lookup
+     * BAT-18: Updated to use username instead of speakerId (ADR-003)
      */
     @Test
     @DisplayName("Should update speaker status when valid transition is provided")
@@ -81,12 +88,12 @@ public class SpeakerStatusServiceTest {
         // Given
         String eventCode = "BATbern998";
         UUID eventId = UUID.randomUUID();
-        UUID speakerId = UUID.randomUUID();
+        String username = TEST_SPEAKER_USERNAME;
         UUID sessionId = UUID.randomUUID();
         String organizerUsername = "organizer@example.com";
 
         UpdateStatusRequest request = new UpdateStatusRequest();
-        request.setNewStatus(SpeakerWorkflowState.CONTACTED);
+        request.setNewStatus(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
         Event event = new Event();
@@ -94,26 +101,39 @@ public class SpeakerStatusServiceTest {
         event.setEventCode(eventCode);
 
         SpeakerPool speaker = new SpeakerPool();
-        speaker.setId(speakerId);
+        speaker.setId(UUID.randomUUID());
+        speaker.setUsername(username);
         speaker.setSessionId(sessionId);
-        speaker.setEventId(eventId); // V29: Speaker now has eventId
+        speaker.setEventId(eventId);
 
-        when(speakerPoolRepository.findById(speakerId))
+        SpeakerStatusResponse expectedResponse = new SpeakerStatusResponse();
+        expectedResponse.setSpeakerUsername(username);
+        expectedResponse.setEventCode(eventCode);
+        expectedResponse.setCurrentStatus(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
+        expectedResponse.setPreviousStatus(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.IDENTIFIED);
+        expectedResponse.setChangedByUsername(organizerUsername);
+        expectedResponse.setChangeReason("Initial contact");
+
+        when(eventRepository.findByEventCode(eventCode))
+            .thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByEventIdAndUsername(eventId, username))
             .thenReturn(Optional.of(speaker));
-        when(eventRepository.findById(eventId))
-            .thenReturn(Optional.of(event)); // V29: Mock event lookup for eventCode in response
+        when(speakerPoolRepository.save(any(SpeakerPool.class)))
+            .thenReturn(speaker);
         when(repository.save(any(SpeakerStatusHistory.class)))
             .thenAnswer(invocation -> invocation.getArgument(0));
+        when(speakerMapper.toSpeakerStatusResponse(any(), any(), any(), any(), any()))
+            .thenReturn(expectedResponse);
 
         // When
-        SpeakerStatusResponse response = service.updateStatus(eventCode, speakerId, organizerUsername, request);
+        SpeakerStatusResponse response = service.updateStatus(eventCode, username, organizerUsername, request);
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getSpeakerId()).isEqualTo(speakerId);
+        assertThat(response.getSpeakerUsername()).isEqualTo(username);
         assertThat(response.getEventCode()).isEqualTo(eventCode);
-        assertThat(response.getCurrentStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
-        assertThat(response.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
+        assertThat(response.getCurrentStatus()).isEqualTo(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
+        assertThat(response.getPreviousStatus()).isEqualTo(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.IDENTIFIED);
         assertThat(response.getChangedByUsername()).isEqualTo(organizerUsername);
         assertThat(response.getChangeReason()).isEqualTo("Initial contact");
 
@@ -123,25 +143,33 @@ public class SpeakerStatusServiceTest {
 
     /**
      * AC1: should_throwNotFoundException_when_speakerNotFound
+     * BAT-18: Updated to use username instead of speakerId (ADR-003)
      */
     @Test
     @DisplayName("Should throw NotFoundException when speaker not found")
     void should_throwNotFoundException_when_speakerNotFound() {
         // Given
         String eventCode = "BATbern998";
-        UUID speakerId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        String username = TEST_SPEAKER_USERNAME;
         String organizerUsername = "organizer@example.com";
 
         UpdateStatusRequest request = new UpdateStatusRequest();
-        request.setNewStatus(SpeakerWorkflowState.CONTACTED);
+        request.setNewStatus(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
         request.setReason("Initial contact");
 
-        when(speakerPoolRepository.findById(speakerId))
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
+        when(eventRepository.findByEventCode(eventCode))
+            .thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByEventIdAndUsername(eventId, username))
             .thenReturn(Optional.empty());
 
         // When/Then
         assertThatThrownBy(() ->
-            service.updateStatus(eventCode, speakerId, organizerUsername, request)
+            service.updateStatus(eventCode, username, organizerUsername, request)
         ).isInstanceOf(NotFoundException.class)
          .hasMessageContaining("Speaker not found");
     }
@@ -203,7 +231,7 @@ public class SpeakerStatusServiceTest {
 
     /**
      * AC15: should_getStatusHistory_when_validSpeakerIdProvided
-     * V29: Updated to use eventId instead of eventCode
+     * BAT-18: Updated to use username instead of speakerId (ADR-003)
      */
     @Test
     @DisplayName("Should get status history when valid speaker ID is provided")
@@ -211,44 +239,79 @@ public class SpeakerStatusServiceTest {
         // Given
         String eventCode = "BATbern998";
         UUID eventId = UUID.randomUUID();
-        UUID speakerId = UUID.randomUUID();
+        UUID speakerPoolId = UUID.randomUUID();
+        String username = TEST_SPEAKER_USERNAME;
+
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerPoolId);
+        speaker.setUsername(username);
+        speaker.setEventId(eventId);
 
         SpeakerStatusHistory history = new SpeakerStatusHistory();
-        history.setSpeakerPoolId(speakerId);
-        history.setEventId(eventId); // V29: Changed from setEventCode to setEventId
+        history.setSpeakerPoolId(speakerPoolId);
+        history.setEventId(eventId);
         history.setPreviousStatus(SpeakerWorkflowState.IDENTIFIED);
         history.setNewStatus(SpeakerWorkflowState.CONTACTED);
 
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
+        StatusHistoryItem historyDto = new StatusHistoryItem();
+        historyDto.setNewStatus(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
+
+        when(eventRepository.findByEventCode(eventCode))
+            .thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByEventIdAndUsername(eventId, username))
+            .thenReturn(Optional.of(speaker));
+        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerPoolId))
             .thenReturn(List.of(history));
+        when(speakerMapper.toStatusHistoryDto(any(SpeakerStatusHistory.class)))
+            .thenReturn(historyDto);
 
         // When
-        var result = service.getStatusHistory(eventCode, speakerId);
+        var result = service.getStatusHistory(eventCode, username);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
+        assertThat(result.get(0).getNewStatus()).isEqualTo(ch.batbern.events.dto.generated.speakers.SpeakerWorkflowState.CONTACTED);
 
-        verify(repository).findBySpeakerPoolIdOrderByChangedAtDesc(speakerId);
+        verify(repository).findBySpeakerPoolIdOrderByChangedAtDesc(speakerPoolId);
     }
 
     /**
      * AC15: should_throwNotFoundException_when_noHistoryFound
+     * BAT-18: Updated to use username instead of speakerId (ADR-003)
      */
     @Test
     @DisplayName("Should throw NotFoundException when no history found")
     void should_throwNotFoundException_when_noHistoryFound() {
         // Given
         String eventCode = "BATbern998";
-        UUID speakerId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        UUID speakerPoolId = UUID.randomUUID();
+        String username = TEST_SPEAKER_USERNAME;
 
-        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerId))
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerPoolId);
+        speaker.setUsername(username);
+        speaker.setEventId(eventId);
+
+        when(eventRepository.findByEventCode(eventCode))
+            .thenReturn(Optional.of(event));
+        when(speakerPoolRepository.findByEventIdAndUsername(eventId, username))
+            .thenReturn(Optional.of(speaker));
+        when(repository.findBySpeakerPoolIdOrderByChangedAtDesc(speakerPoolId))
             .thenReturn(new ArrayList<>());
 
         // When/Then
         assertThatThrownBy(() ->
-            service.getStatusHistory(eventCode, speakerId)
+            service.getStatusHistory(eventCode, username)
         ).isInstanceOf(NotFoundException.class)
          .hasMessageContaining("No status history found");
     }
