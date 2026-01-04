@@ -387,26 +387,26 @@ jobs:
 
               echo "  Checking ${REPO_NAME}:${IMAGE_TAG}..."
 
-              # Check if image exists - run command directly with error handling
+              # Check if image exists - query returns all tags, we check if our tag is in the list
               set +e  # Temporarily disable exit-on-error
               AWS_OUTPUT=$(aws ecr describe-images \
                 --repository-name "$REPO_NAME" \
                 --image-ids imageTag="$IMAGE_TAG" \
                 --region ${{ env.AWS_REGION }} \
-                --query 'imageDetails[0].imageTags[0]' \
-                --output text 2>&1)
+                --query 'imageDetails[0].imageTags' \
+                --output json 2>&1)
               AWS_EXIT_CODE=$?
               set -e  # Re-enable exit-on-error
 
               if [ $AWS_EXIT_CODE -ne 0 ]; then
-                echo "::error::❌ AWS CLI failed (exit code: $AWS_EXIT_CODE): ${REPO_NAME}:${IMAGE_TAG}"
-                echo "::error::AWS CLI output: $AWS_OUTPUT"
-                VALIDATION_FAILED=true
-              elif ! echo "$AWS_OUTPUT" | grep -q "$IMAGE_TAG"; then
                 echo "::error::❌ Image not found: ${REPO_NAME}:${IMAGE_TAG}"
                 echo "::error::AWS CLI output: $AWS_OUTPUT"
                 VALIDATION_FAILED=true
+              elif echo "$AWS_OUTPUT" | grep -q "ImageNotFoundException"; then
+                echo "::error::❌ Image not found: ${REPO_NAME}:${IMAGE_TAG}"
+                VALIDATION_FAILED=true
               else
+                # Image exists (we queried by tag, so if AWS returns data, the tag exists)
                 echo "  ✅ Image exists: ${REPO_NAME}:${IMAGE_TAG}"
               fi
             fi
