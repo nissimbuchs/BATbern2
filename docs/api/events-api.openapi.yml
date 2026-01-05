@@ -3196,6 +3196,20 @@ components:
           description: |
             Event type (FULL_DAY, AFTERNOON, EVENING).
             Story 5.1: Event Type Definition
+        typicalStartTime:
+          type: string
+          format: time
+          description: |
+            Typical start time for this event type (from event_types table).
+            Combined with event date for display purposes.
+          example: "09:00"
+        typicalEndTime:
+          type: string
+          format: time
+          description: |
+            Typical end time for this event type (from event_types table).
+            Combined with event date for display purposes.
+          example: "16:00"
         workflowState:
           $ref: '#/components/schemas/EventWorkflowState'
           description: |
@@ -4140,6 +4154,8 @@ components:
         - breakSlots
         - lunchSlots
         - defaultCapacity
+        - typicalStartTime
+        - typicalEndTime
       properties:
         type:
           $ref: '#/components/schemas/EventType'

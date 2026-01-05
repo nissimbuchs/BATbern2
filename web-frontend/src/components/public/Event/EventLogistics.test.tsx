@@ -37,6 +37,8 @@ describe('EventLogistics', () => {
     currentAttendeeCount: 87,
     status: 'PUBLISHED',
     organizerId: 'org-1',
+    typicalStartTime: '16:00',
+    typicalEndTime: '19:00',
   };
 
   it('should render date correctly', () => {
@@ -49,8 +51,8 @@ describe('EventLogistics', () => {
     render(<EventLogistics event={mockEvent} />);
     expect(screen.getByText('Time')).toBeInTheDocument();
     // Time is displayed in the format "HH:MMh - HH:MMh"
-    // The component extracts time from the date field
-    expect(screen.getByText(/h - /)).toBeInTheDocument();
+    // The component uses typicalStartTime and typicalEndTime from event type
+    expect(screen.getByText('16:00h - 19:00h')).toBeInTheDocument();
   });
 
   it('should render location with venue name', () => {
@@ -74,6 +76,12 @@ describe('EventLogistics', () => {
     const eventWithoutAttendees = { ...mockEvent, currentAttendeeCount: undefined };
     render(<EventLogistics event={eventWithoutAttendees} />);
     expect(screen.getByText('0 / 120')).toBeInTheDocument();
+  });
+
+  it('should not render time section when typicalStartTime is missing', () => {
+    const eventWithoutTime = { ...mockEvent, typicalStartTime: undefined };
+    render(<EventLogistics event={eventWithoutTime} />);
+    expect(screen.queryByText('Time')).not.toBeInTheDocument();
   });
 
   it('should not render location section when venueName is missing', () => {

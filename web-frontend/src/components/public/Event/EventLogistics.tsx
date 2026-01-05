@@ -17,9 +17,9 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
   // Parse date string to Date object
   const eventDate = event.date ? new Date(event.date) : null;
 
-  // Extract time from date if available (assuming format includes time)
-  const startTime = eventDate ? format(eventDate, 'HH:mm') : null;
-  const endTime = '18:30'; // Default end time for now
+  // Use typicalStartTime and typicalEndTime from event type (not event.date hour)
+  const startTime = event.typicalStartTime || null;
+  const endTime = event.typicalEndTime || null;
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

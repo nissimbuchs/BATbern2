@@ -1322,6 +1322,20 @@ export interface components {
        */
       eventType?: components['schemas']['EventType'];
       /**
+       * Format: time
+       * @description Typical start time for this event type (from event_types table).
+       *     Combined with event date for display purposes.
+       * @example 09:00
+       */
+      typicalStartTime?: string;
+      /**
+       * Format: time
+       * @description Typical end time for this event type (from event_types table).
+       *     Combined with event date for display purposes.
+       * @example 16:00
+       */
+      typicalEndTime?: string;
+      /**
        * @description Current workflow state (16-step workflow).
        *     Story 5.1a: Event Workflow State Machine
        */
@@ -2066,13 +2080,13 @@ export interface components {
        * @description Typical start time for this event type
        * @example 09:00
        */
-      typicalStartTime?: string;
+      typicalStartTime: string;
       /**
        * Format: time
        * @description Typical end time for this event type
        * @example 17:00
        */
-      typicalEndTime?: string;
+      typicalEndTime: string;
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).

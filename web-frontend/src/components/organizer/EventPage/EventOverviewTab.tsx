@@ -76,7 +76,8 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const formattedDate = eventDate
     ? format(new Date(eventDate), 'EEEE, dd MMMM yyyy', { locale })
     : '-';
-  const formattedTime = eventDate ? format(new Date(eventDate), 'HH:mm', { locale }) : '-';
+  // Use typicalStartTime from event type (not event.date hour)
+  const formattedTime = event.typicalStartTime || '-';
 
   // Calculate capacity percentage
   const capacityPercent =

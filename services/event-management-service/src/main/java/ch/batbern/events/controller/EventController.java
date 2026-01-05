@@ -271,6 +271,16 @@ public class EventController {
         // Story 5.1: Include eventType if present
         if (event.getEventType() != null) {
             response.put("eventType", event.getEventType().getValue());
+
+            // Include typical start/end times from event type configuration
+            eventTypeRepository.findByType(event.getEventType()).ifPresent(eventTypeConfig -> {
+                if (eventTypeConfig.getTypicalStartTime() != null) {
+                    response.put("typicalStartTime", eventTypeConfig.getTypicalStartTime().toString());
+                }
+                if (eventTypeConfig.getTypicalEndTime() != null) {
+                    response.put("typicalEndTime", eventTypeConfig.getTypicalEndTime().toString());
+                }
+            });
         }
         // Story 2.5.3a: Include theme image fields if present
         if (event.getThemeImageUrl() != null) {
