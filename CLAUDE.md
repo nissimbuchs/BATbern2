@@ -532,3 +532,40 @@ These guides consolidate implementation patterns from across all BATbern microse
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
 - whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one
+## Personal Data & Security Guidelines
+
+**CRITICAL**: Never commit files containing real personal data (PII) to version control.
+
+### Data Handling Rules
+
+1. **CSV Files with Personal Data**: NEVER commit CSV files containing real names, emails, or other PII
+   - Use synthetic/anonymized test data for development
+   - Real participant data should only exist in secure databases
+   - CSV files in `apps/BATspa-old/` are blocked by `.gitignore`
+
+2. **Test Data Guidelines**:
+   - Use faker libraries to generate realistic but fake test data
+   - Anonymize production data before using in development/testing
+   - Never download production database dumps to local machines
+
+3. **GDPR Compliance**:
+   - Treat all participant data (names, emails, company associations) as PII
+   - Ensure data retention policies are followed
+   - Document data handling in privacy impact assessments
+
+4. **Security Incident Response**:
+   - If personal data is accidentally committed, follow the git history purge procedure:
+     1. Use `git filter-repo` to remove from all history
+     2. Force push to remote after creating backup branches
+     3. Contact GitHub Support to purge cached commits (90-day retention)
+     4. Add file patterns to `.gitignore` to prevent re-commit
+
+5. **Sensitive File Patterns**:
+   - `.env` files with credentials
+   - `*.csv` files in legacy application directories
+   - Database dumps (`.sql`, `.dump`)
+   - API keys and tokens
+
+### References
+- GitHub Guide: [Removing sensitive data](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository)
+- GDPR compliance documentation: `docs/compliance/gdpr-guidelines.md` (if exists)
