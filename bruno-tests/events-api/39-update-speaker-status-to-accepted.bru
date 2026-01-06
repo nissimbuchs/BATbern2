@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{speakerUsername}}/status
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
   body: json
   auth: bearer
 }
@@ -36,7 +36,7 @@ tests {
     const response = res.getBody();
     expect(response.currentStatus).to.equal('ACCEPTED');
     expect(response.previousStatus).to.equal('READY');
-    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+    expect(response.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
   });
 
   test("should trigger overflow detection if needed - Story 5.4 AC13", function() {

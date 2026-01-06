@@ -32,13 +32,13 @@ tests {
     const speaker = pool.find(s => s.id === bru.getVar("createdSpeakerPoolId"));
     expect(speaker).to.be.an('object');
     expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
-    expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
+    expect(speaker.assignedOrganizerId).to.equal(bru.getEnvVar("organizerUsername"));
     expect(speaker.status).to.equal('IDENTIFIED');
   });
 
   test("should show contact distribution - Story 5.2 AC12", function() {
     const pool = res.getBody();
-    const assignedToOrganizer = pool.filter(s => s.assignedOrganizerId === bru.getVar("organizerUsername"));
+    const assignedToOrganizer = pool.filter(s => s.assignedOrganizerId === bru.getEnvVar("organizerUsername"));
     expect(assignedToOrganizer.length).to.be.at.least(1);
   });
 }

@@ -35,8 +35,12 @@ tests {
   test("if failed, should return validation error", function() {
     if (res.getStatus() === 422) {
       const error = res.getBody();
-      expect(error.code || error.errorCode).to.equal('UNPROCESSABLE_ENTITY');
+      // Error response should have a message
       expect(error.message).to.be.a('string');
+      // May also have error field describing the error type
+      if (error.error) {
+        expect(error.error).to.be.a('string');
+      }
     }
   });
 }

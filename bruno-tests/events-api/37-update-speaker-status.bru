@@ -5,7 +5,7 @@ meta {
 }
 
 put {
-  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{speakerUsername}}/status
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
   body: json
   auth: bearer
 }
@@ -39,7 +39,7 @@ tests {
     expect(response.eventCode).to.equal(bru.getVar("createdEventCode"));
     expect(response.currentStatus).to.equal('CONTACTED');
     expect(response.previousStatus).to.equal('IDENTIFIED');
-    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+    expect(response.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
     expect(response.changeReason).to.equal('Initial contact via email - speaker expressed interest');
     expect(response.changedAt).to.be.a('string');
   });

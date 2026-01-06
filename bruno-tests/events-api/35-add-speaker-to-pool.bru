@@ -43,14 +43,12 @@ tests {
     expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
     expect(speaker.company).to.equal('Zühlke Engineering AG');
     expect(speaker.expertise).to.be.a('string');
-    expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
+    expect(speaker.assignedOrganizerId).to.equal(bru.getEnvVar("organizerUsername"));
     expect(speaker.status).to.equal('IDENTIFIED'); // Initial status per AC13, AC15
     expect(speaker.notes).to.be.a('string');
   });
 
   test("should save speaker pool ID for later tests", function() {
     bru.setVar("createdSpeakerPoolId", res.getBody().id);
-    // Save username for status update tests (ADR-003: endpoints use username, not UUID)
-    bru.setVar("speakerUsername", res.getBody().username || bru.getVar("testSpeakerUsername"));
   });
 }

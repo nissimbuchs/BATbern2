@@ -34,31 +34,22 @@ tests {
   test("should return 201 status", function() {
     expect(res.getStatus()).to.equal(201);
   });
-  
-  test("should return created registration with registrationCode and enriched user data (Story 2.2a: ADR-005)", function() {
-    const registration = res.getBody();
-  
-    // Enriched user data from User Management Service (ADR-004)
-    expect(registration.attendeeUsername).to.be.a('string');
-    expect(registration.attendeeFirstName).to.equal('Test');
-    expect(registration.attendeeLastName).to.equal('Attendee');
-    expect(registration.attendeeEmail).to.equal('test.attendee@example.com');
-  
-    // Registration details
-    expect(registration.eventCode).to.equal(bru.getVar("createdEventCode"));
-    expect(registration.status).to.equal('CONFIRMED'); // Story 4.1.5: Auto-set status
-    expect(registration.registrationDate).to.be.a('string'); // Story 4.1.5: Auto-set to now
-    expect(registration.createdAt).to.be.a('string');
-    expect(registration.updatedAt).to.be.a('string');
+
+  test("should return minimal confirmation response (Story 4.1.5c: Email confirmation flow)", function() {
+    const response = res.getBody();
+
+    // Minimal response for security - full data available after email confirmation
+    expect(response.message).to.be.a('string');
+    expect(response.message).to.include('Registration submitted');
+    expect(response.email).to.equal('test.attendee@example.com');
   });
-  
+
   test("should verify no UUID id field (Story 2.2a: ADR-003)", function() {
-    const registration = res.getBody();
-    expect(registration.id).to.be.undefined;
-    expect(registration.attendeeId).to.be.undefined;
+    const response = res.getBody();
+    expect(response.id).to.be.undefined;
   });
-  
-  test("should save registration code", function() {
-    bru.setVar("createdRegistrationCode", res.getBody().registrationCode);
+
+  test("should save email for later verification", function() {
+    bru.setVar("registeredEmail", res.getBody().email);
   });
 }

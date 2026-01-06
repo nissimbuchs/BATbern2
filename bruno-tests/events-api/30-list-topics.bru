@@ -38,14 +38,14 @@ tests {
     expect(response.pagination).to.be.an('object');
     expect(response.pagination.page).to.be.a('number');
     expect(response.pagination.limit).to.be.a('number');
-    expect(response.pagination.total).to.be.a('number');
+    expect(response.pagination.totalItems).to.be.a('number');
   });
 
   test("should return topics with required fields - Story 5.2 AC1, AC6", function() {
     const response = res.getBody();
     if (response.data.length > 0) {
       const topic = response.data[0];
-      expect(topic.id).to.be.a('string');
+      expect(topic.topicCode).to.be.a('string');
       expect(topic.title).to.be.a('string');
       expect(topic.category).to.be.a('string');
       expect(topic.stalenessScore).to.be.a('number');
