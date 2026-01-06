@@ -1,0 +1,49 @@
+meta {
+  name: Valid State Transition (CREATED → TOPIC_SELECTION)
+  type: http
+  seq: 2
+}
+
+docs {
+  Story 5.1a - AC19: Valid state transition
+
+  Test that event can transition from CREATED to TOPIC_SELECTION
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/transition
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "targetState": "TOPIC_SELECTION"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.workflowState: eq TOPIC_SELECTION
+}
+
+tests {
+  test("should return 200 status for valid transition", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should transition to TOPIC_SELECTION state", function() {
+    const event = res.getBody();
+    expect(event.workflowState).to.equal('TOPIC_SELECTION');
+  });
+
+  test("should return updated event with eventCode", function() {
+    const event = res.getBody();
+    expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
+    expect(event.title).to.be.a('string');
+  });
+}
