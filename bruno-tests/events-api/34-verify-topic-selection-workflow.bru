@@ -16,13 +16,13 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.workflowState: eq topic_selection
+  res.body.workflowState: eq TOPIC_SELECTION
 }
 
 tests {
   test("should return event with TOPIC_SELECTION workflow state - Story 5.2 AC14, AC16", function() {
     const event = res.getBody();
     expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
-    expect(event.workflowState).to.equal('topic_selection');
+    expect(event.workflowState).to.equal('TOPIC_SELECTION');
   });
 }

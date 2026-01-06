@@ -538,10 +538,10 @@ components:
       type: string
       description: Topic availability status
       enum:
-        - available
-        - caution
-        - unavailable
-      example: 'available'
+        - AVAILABLE
+        - CAUTION
+        - UNAVAILABLE
+      example: 'AVAILABLE'
 
     SimilarityScore:
       type: object

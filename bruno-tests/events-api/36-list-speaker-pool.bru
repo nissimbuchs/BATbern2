@@ -33,7 +33,7 @@ tests {
     expect(speaker).to.be.an('object');
     expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
     expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
-    expect(speaker.status).to.equal('identified');
+    expect(speaker.status).to.equal('IDENTIFIED');
   });
 
   test("should show contact distribution - Story 5.2 AC12", function() {

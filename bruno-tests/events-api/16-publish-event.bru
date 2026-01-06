@@ -27,7 +27,7 @@ tests {
   test("if successful, event should be published", function() {
     if (res.getStatus() === 200) {
       const event = res.getBody();
-      expect(event.status).to.be.oneOf(['published', 'registration_open']);
+      expect(event.status).to.be.oneOf(['PUBLISHED', 'REGISTRATION_OPEN']);
       expect(event.publishedAt).to.be.a('string');
     }
   });
@@ -35,7 +35,7 @@ tests {
   test("if failed, should return validation error", function() {
     if (res.getStatus() === 422) {
       const error = res.getBody();
-      expect(error.errorCode).to.equal('UNPROCESSABLE_ENTITY');
+      expect(error.code || error.errorCode).to.equal('UNPROCESSABLE_ENTITY');
       expect(error.message).to.be.a('string');
     }
   });
