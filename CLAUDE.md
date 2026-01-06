@@ -129,7 +129,7 @@ BATbern-main/
 
 1. **Shared Kernel First**: All shared types/events defined in `shared-kernel/`, published to Maven Local
 2. **Service Independence**: Each domain service is independently deployable
-3. **API Gateway Pattern**: All external requests go through API Gateway (port 8080)
+3. **API Gateway Pattern**: All external requests go through API Gateway (port depends on BASE_PORT given in the make)
 4. **Type Sharing**: Frontend generates TypeScript types from OpenAPI specs
 5. **Integration Tests**: Use real PostgreSQL via Testcontainers (never H2/in-memory)
 
@@ -149,13 +149,13 @@ make dev-native-up                                   # Start services natively (
 ./scripts/dev/sync-users-from-cognito.sh                                   # Sync users
 
 # Services available at:
-# - API Gateway: http://localhost:8080
-# - Company/User Management: http://localhost:8081
-# - Event Management: http://localhost:8082
-# - Speaker Coordination: http://localhost:8083
-# - Partner Coordination: http://localhost:8084
-# - Attendee Experience: http://localhost:8085
-# - Frontend: http://localhost:3000
+# - API Gateway: http://localhost:8000
+# - Company/User Management: http://localhost:8001
+# - Event Management: http://localhost:8002
+# - Speaker Coordination: http://localhost:8003
+# - Partner Coordination: http://localhost:8004
+# - Attendee Experience: http://localhost:8005
+# - Frontend: http://localhost:8100
 ```
 
 **Local Development Architecture**:

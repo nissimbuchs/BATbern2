@@ -50,12 +50,8 @@ tests {
     expect(body.data).to.be.an('array');
   });
 
-  test("should include our test company (Story 1.16.2: lookup by name)", function() {
-    const body = res.getBody();
-    const testCompanyName = bru.getEnvVar("testCompanyName");
-    const foundCompany = body.data.find(c => c.name === testCompanyName);
-    expect(foundCompany).to.exist;
-  });
+  // Note: Test company verification removed - with 600+ companies, it's not guaranteed
+  // to be on the first page. Company existence is verified by get-by-id and search tests.
 
   test("companies should NOT have id field (Story 1.16.2: removed redundant id)", function() {
     const body = res.getBody();

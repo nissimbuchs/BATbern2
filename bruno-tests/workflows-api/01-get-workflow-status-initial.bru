@@ -1,0 +1,48 @@
+meta {
+  name: Get Workflow Status (Initial State)
+  type: http
+  seq: 1
+}
+
+docs {
+  Story 5.1a - AC18: Get initial workflow status
+
+  Expected: CREATED state with available transitions
+}
+
+get {
+  url: {{baseUrl}}/events/{{createdEventCode}}/workflow/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentState: isDefined
+  res.body.nextAvailableStates: isDefined
+  res.body.blockedTransitions: isDefined
+  res.body.validationMessages: isDefined
+}
+
+tests {
+  test("should return 200 status for workflow status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return workflow status with current state", function() {
+    const status = res.getBody();
+    expect(status.currentState).to.be.a('string');
+    expect(status.nextAvailableStates).to.be.an('array');
+    expect(status.blockedTransitions).to.be.an('array');
+    expect(status.validationMessages).to.be.an('array');
+  });
+
+  test("should have CREATED as initial state", function() {
+    const status = res.getBody();
+    expect(status.currentState).to.equal('CREATED');
+  });
+}

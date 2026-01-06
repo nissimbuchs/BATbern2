@@ -31,16 +31,17 @@ echo "Email: $EMAIL"
 echo ""
 
 # Get Cognito configuration based on environment
+# NOTE: Development environment deleted - using staging Cognito for both staging and development
 if [ "$ENVIRONMENT" = "staging" ]; then
     AWS_PROFILE="batbern-staging"
     REGION="eu-central-1"
     USER_POOL_ID="eu-central-1_FtgfxgQRF"
     CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
 elif [ "$ENVIRONMENT" = "development" ]; then
-    AWS_PROFILE="batbern-dev"
+    AWS_PROFILE="batbern-staging"
     REGION="eu-central-1"
-    USER_POOL_ID="eu-central-1_camJHQhZ8"
-    CLIENT_ID="5h9421vo002bi7udjdu5orp7u3"
+    USER_POOL_ID="eu-central-1_FtgfxgQRF"
+    CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
 elif [ "$ENVIRONMENT" = "production" ]; then
     AWS_PROFILE="batbern-prod"
     REGION="eu-central-1"
