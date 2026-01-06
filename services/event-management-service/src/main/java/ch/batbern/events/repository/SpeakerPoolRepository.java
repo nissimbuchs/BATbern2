@@ -64,15 +64,4 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return optional speaker pool entry
      */
     java.util.Optional<SpeakerPool> findBySessionId(UUID sessionId);
-
-    /**
-     * Find speaker in pool by event ID and username (meaningful identifier).
-     *
-     * Story BAT-18: Speakers API Migration (ADR-003 meaningful identifiers)
-     *
-     * @param eventId the event ID
-     * @param username the speaker username
-     * @return optional speaker pool entry
-     */
-    java.util.Optional<SpeakerPool> findByEventIdAndUsername(UUID eventId, String username);
 }
