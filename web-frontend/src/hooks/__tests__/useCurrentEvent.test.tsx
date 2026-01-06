@@ -66,7 +66,7 @@ describe('useCurrentEvent Hook', () => {
 
     expect(result.current.data).toEqual(mockEvent);
     expect(eventApiClient.getCurrentEvent).toHaveBeenCalledWith({
-      expand: ['topics', 'venue', 'speakers', 'sessions'],
+      expand: ['topics', 'venue', 'speakers', 'sessions', 'registrations'],
     });
   });
 

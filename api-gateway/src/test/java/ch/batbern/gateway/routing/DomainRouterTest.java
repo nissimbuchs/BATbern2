@@ -113,6 +113,20 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Test 5.6: should_routeToCompanyService_when_publicOrganizersEndpointCalled
+    @Test
+    @DisplayName("should_routeToCompanyService_when_publicOrganizersEndpointCalled")
+    void should_routeToCompanyService_when_publicOrganizersEndpointCalled() {
+        // Given
+        String requestPath = "/api/v1/public/organizers";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("company-user-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {

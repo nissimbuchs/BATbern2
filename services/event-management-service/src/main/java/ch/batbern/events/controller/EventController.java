@@ -347,12 +347,13 @@ public class EventController {
      * TODO: Replace with actual service call when Company Management Service is available
      */
     private Map<String, Object> expandVenue(Event event) {
-        // Stub implementation - will be replaced with actual service call
+        // Use venue data stored directly on the Event entity
+        // In the future, this could be enhanced to fetch from a separate Venue service
         Map<String, Object> venue = new java.util.HashMap<>();
-        venue.put("id", "ven-001");
-        venue.put("name", "Bern Convention Center");
-        venue.put("capacity", 500);
-        venue.put("address", "Mingerstrasse 6, 3014 Bern");
+        venue.put("id", event.getEventCode()); // Use eventCode as venue identifier
+        venue.put("name", event.getVenueName());
+        venue.put("capacity", event.getVenueCapacity());
+        venue.put("address", event.getVenueAddress());
         return venue;
     }
 

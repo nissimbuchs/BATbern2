@@ -21,7 +21,7 @@ export const useCurrentEvent = (options?: { retry?: number | false }) => {
     queryKey: ['events', 'current'],
     queryFn: () =>
       eventApiClient.getCurrentEvent({
-        expand: ['topics', 'venue', 'speakers', 'sessions'],
+        expand: ['topics', 'venue', 'speakers', 'sessions', 'registrations'],
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes (event data doesn't change frequently)
     retry: options?.retry ?? 2, // Default to 2 retries, but allow override for testing
