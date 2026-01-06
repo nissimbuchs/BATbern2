@@ -50,7 +50,5 @@ tests {
 
   test("should save speaker pool ID for later tests", function() {
     bru.setVar("createdSpeakerPoolId", res.getBody().id);
-    // Save username for status update tests (ADR-003: endpoints use username, not UUID)
-    bru.setVar("speakerUsername", res.getBody().username || bru.getVar("testSpeakerUsername"));
   });
 }
