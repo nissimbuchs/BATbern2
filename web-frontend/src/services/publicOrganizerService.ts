@@ -13,7 +13,12 @@ import type { User } from '@/types/user.types';
  * @returns Promise<User[]> List of organizers with public information
  */
 export const getPublicOrganizers = async (): Promise<User[]> => {
-  const response = await apiClient.get<User[]>('/api/v1/public/organizers');
+  const response = await apiClient.get<User[]>('/public/organizers', {
+    headers: {
+      // Public endpoint - skip auth header (prevents 401 if expired token exists)
+      'Skip-Auth': 'true',
+    },
+  });
   return response.data;
 };
 
