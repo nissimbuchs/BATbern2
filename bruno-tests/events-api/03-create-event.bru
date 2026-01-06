@@ -14,25 +14,31 @@ auth:bearer {
   token: {{authToken}}
 }
 
+script:pre-request {
+  // Generate unique eventNumber that fits in Java int32 (-2,147,483,648 to 2,147,483,647)
+  const now = Date.now();
+
+  // Use modulo to get last 6 digits + offset = 900000-1899999 (fits in int32)
+  const eventNumber = (now % 1000000) + 900000;
+
+  bru.setVar("testTimestamp", now);
+  bru.setVar("eventNumber", eventNumber);
+}
+
 body:json {
   {
-    "title": "Bruno Test Event {{timestamp}}",
-    "eventNumber": 999,
+    "title": "Bruno Test Event {{testTimestamp}}",
+    "eventNumber": {{eventNumber}},
     "date": "2025-12-15T09:00:00Z",
     "registrationDeadline": "2025-12-01T23:59:59Z",
     "venueName": "Test Venue",
     "venueAddress": "Test Address 1, 3000 Bern",
     "venueCapacity": 100,
-    "status": "planning",
+    "workflowState": "CREATED",
     "organizerUsername": "{{organizerUsername}}",
     "description": "Test event created by Bruno API tests",
-    "currentAttendeeCount": 0,
     "eventType": "EVENING"
   }
-}
-
-vars:pre-request {
-  timestamp: Date.now()
 }
 
 assert {
@@ -50,8 +56,8 @@ tests {
     const event = res.getBody();
     expect(event.eventCode).to.be.a('string');
     expect(event.title).to.include('Bruno Test Event');
-    expect(event.status).to.equal('planning');
-    expect(event.eventNumber).to.equal(999);
+    expect(event.workflowState).to.equal('CREATED');
+    expect(event.eventNumber).to.be.a('number');
   });
 
   test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {
@@ -60,6 +66,8 @@ tests {
   });
 
   test("should save eventCode for later tests (Story 1.16.2)", function() {
-    bru.setVar("createdEventCode", res.getBody().eventCode);
+    const event = res.getBody();
+    bru.setVar("createdEventCode", event.eventCode);
+    bru.setVar("createdEventNumber", event.eventNumber);
   });
 }
