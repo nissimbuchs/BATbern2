@@ -731,6 +731,9 @@ public class EventController {
         if (request.getEventType() != null) {
             event.setEventType(ch.batbern.events.dto.generated.EventType.fromValue(request.getEventType()));
         }
+        if (request.getWorkflowState() != null) {
+            event.setWorkflowState(request.getWorkflowState());
+        }
 
         // Set theme image upload ID before save (Story 2.5.3a)
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
