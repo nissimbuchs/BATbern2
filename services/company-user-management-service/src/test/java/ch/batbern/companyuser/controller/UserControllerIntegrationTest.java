@@ -709,7 +709,8 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                     "email": "brand.new@example.com",
                     "firstName": "Brand",
                     "lastName": "New",
-                    "companyId": "GoogleZH"
+                    "companyId": "GoogleZH",
+                    "createIfMissing": true
                 }
                 """;
 
