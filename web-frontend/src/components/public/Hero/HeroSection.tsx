@@ -19,6 +19,8 @@ interface HeroSectionProps {
   ctaLink: string;
   /** Optional event code for inline registration (Story 4.1.5) */
   eventCode?: string;
+  /** Optional theme image URL - takes precedence over unicorn.studio background */
+  themeImageUrl?: string;
   unicornProjectId?: string;
   countdownTimer?: ReactNode;
 }
@@ -30,6 +32,7 @@ export const HeroSection = ({
   ctaText,
   ctaLink,
   eventCode,
+  themeImageUrl,
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
 }: HeroSectionProps) => {
@@ -78,8 +81,10 @@ export const HeroSection = ({
     };
   }
 
-  // Load Unicorn.studio script
+  // Load Unicorn.studio script only when no theme image is provided
   useEffect(() => {
+    if (themeImageUrl) return; // Skip unicorn.studio if we have a theme image
+
     const win = window as WindowWithUnicorn;
     if (!win.UnicornStudio) {
       win.UnicornStudio = { isInitialized: false, init: () => {} };
@@ -94,7 +99,7 @@ export const HeroSection = ({
       };
       (document.head || document.body).appendChild(script);
     }
-  }, []);
+  }, [themeImageUrl]);
 
   // Continuously track wizard bottom during animation
   useEffect(() => {
@@ -133,9 +138,17 @@ export const HeroSection = ({
       <section
         className={`relative w-full overflow-hidden transition-all duration-500 ease-in-out min-h-screen`}
       >
-        {/* Unicorn.studio Interactive Background - Scrolls with hero */}
+        {/* Background - Theme Image or Unicorn.studio Interactive Background */}
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">
-          <div data-us-project={unicornProjectId} style={{ width: '100%', height: '100%' }} />
+          {themeImageUrl ? (
+            <img
+              src={themeImageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div data-us-project={unicornProjectId} style={{ width: '100%', height: '100%' }} />
+          )}
         </div>
 
         {/* Content */}

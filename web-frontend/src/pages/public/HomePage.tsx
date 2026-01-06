@@ -140,6 +140,7 @@ const HomePage = () => {
         location={eventLocation}
         ctaLink={registerLink}
         eventCode={event.eventCode}
+        themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
       />
 

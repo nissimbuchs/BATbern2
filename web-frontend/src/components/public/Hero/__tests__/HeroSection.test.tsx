@@ -185,8 +185,37 @@ describe('HeroSection Component', () => {
     });
   });
 
-  describe('Unicorn.studio Background', () => {
-    test('should_renderUnicornProjectElement_when_componentMounted', () => {
+  describe('Background (Theme Image or Unicorn.studio)', () => {
+    test('should_renderThemeImage_when_themeImageUrlProvided', () => {
+      const { container } = renderWithRouter(
+        <HeroSection {...defaultProps} themeImageUrl="https://example.com/theme.jpg" />
+      );
+
+      const themeImage = container.querySelector('img[src="https://example.com/theme.jpg"]');
+      expect(themeImage).toBeInTheDocument();
+      expect(themeImage).toHaveClass('w-full', 'h-full', 'object-cover');
+    });
+
+    test('should_notRenderUnicornElement_when_themeImageUrlProvided', () => {
+      const { container } = renderWithRouter(
+        <HeroSection {...defaultProps} themeImageUrl="https://example.com/theme.jpg" />
+      );
+
+      const unicornElement = container.querySelector('[data-us-project]');
+      expect(unicornElement).not.toBeInTheDocument();
+    });
+
+    test('should_notLoadUnicornScript_when_themeImageUrlProvided', () => {
+      renderWithRouter(
+        <HeroSection {...defaultProps} themeImageUrl="https://example.com/theme.jpg" />
+      );
+
+      // Check that script was NOT added to document
+      const script = document.querySelector('script[src*="unicornStudio"]');
+      expect(script).not.toBeInTheDocument();
+    });
+
+    test('should_renderUnicornProjectElement_when_noThemeImageProvided', () => {
       const { container } = renderWithRouter(
         <HeroSection {...defaultProps} unicornProjectId="custom-project-id" />
       );
@@ -195,14 +224,14 @@ describe('HeroSection Component', () => {
       expect(unicornElement).toBeInTheDocument();
     });
 
-    test('should_useDefaultProjectId_when_notProvided', () => {
+    test('should_useDefaultProjectId_when_noThemeImageAndNoProjectIdProvided', () => {
       const { container } = renderWithRouter(<HeroSection {...defaultProps} />);
 
       const unicornElement = container.querySelector('[data-us-project="jfzsiwProJi81qvb7uKX"]');
       expect(unicornElement).toBeInTheDocument();
     });
 
-    test('should_loadUnicornScript_when_notAlreadyLoaded', () => {
+    test('should_loadUnicornScript_when_noThemeImageProvided', () => {
       renderWithRouter(<HeroSection {...defaultProps} />);
 
       // Check that script was added to document
