@@ -1,0 +1,70 @@
+meta {
+  name: Create Test Company for Partner
+  type: http
+  seq: 0
+}
+
+docs {
+  Creates a test company first (required before creating partner).
+  Company will be deleted at the end of the test suite.
+}
+
+post {
+  url: {{baseUrl}}/companies
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "brtest{{$randomInt}}",
+    "displayName": "Bruno Test Partner Co",
+    "industry": "Technology",
+    "website": "https://bruno-test-partner.example.com",
+    "description": "Test company for partner API tests - can be safely deleted"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.name: isDefined
+}
+
+script:post-response {
+  // Store company name for partner creation
+  if (res.getStatus() === 201) {
+    const company = res.getBody();
+    bru.setEnvVar("testPartnerCompanyName", company.name);
+    console.log("Created test company for partner:", company.name);
+  }
+}
+
+tests {
+  test("should create company successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created company with name", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('object');
+    expect(body.name).to.exist;
+    expect(body.name).to.be.a('string');
+    expect(body.name).to.include('brtest');
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

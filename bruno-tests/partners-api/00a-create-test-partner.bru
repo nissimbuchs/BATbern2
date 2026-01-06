@@ -1,0 +1,74 @@
+meta {
+  name: Create Test Partner
+  type: http
+  seq: 0.5
+}
+
+docs {
+  Creates a test partner using the company created in previous step.
+  Partner will be deleted at the end of the test suite.
+}
+
+post {
+  url: {{baseUrl}}/partners
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "companyName": "{{testPartnerCompanyName}}",
+    "partnershipLevel": "GOLD",
+    "partnershipStartDate": "2026-01-01",
+    "partnershipEndDate": "2026-12-31",
+    "isActive": true
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.companyName: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const partner = res.getBody();
+    console.log("Created test partner:", partner.companyName);
+  }
+}
+
+tests {
+  test("should create partner successfully", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created partner with company name", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('object');
+    expect(body.companyName).to.exist;
+    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+  });
+
+  test("should return partner with all fields", function() {
+    const body = res.getBody();
+    expect(body.partnershipLevel).to.equal('GOLD');
+    expect(body.partnershipStartDate).to.exist;
+    expect(body.partnershipEndDate).to.exist;
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}
