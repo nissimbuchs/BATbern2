@@ -65,6 +65,9 @@ class UserServiceTest {
     @Mock
     private ch.batbern.companyuser.service.UserResponseMapper responseMapper;
 
+    @Mock
+    private CompanyService companyService;
+
     private UserService userService;
 
     @BeforeEach
@@ -76,7 +79,8 @@ class UserServiceTest {
             searchService,
             securityContext,
             slugService,
-            responseMapper
+            responseMapper,
+            companyService
         );
     }
 
@@ -181,6 +185,12 @@ class UserServiceTest {
         when(slugService.generateUsername("New", "User")).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
+        ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
+                .name("techcorp")
+                .displayName("TechCorp")
+                .build();
+        when(companyService.getOrCreateCompany("TechCorp")).thenReturn(mockCompany);
+
         User createdUser = User.builder()
                 .id(UUID.randomUUID())
                 .username("new.user")
@@ -279,13 +289,19 @@ class UserServiceTest {
         when(slugService.generateUsername("New", "User")).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
+        ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
+                .name("companyx")
+                .displayName("CompanyX")
+                .build();
+        when(companyService.getOrCreateCompany("CompanyX")).thenReturn(mockCompany);
+
         User createdUser = User.builder()
                 .id(UUID.randomUUID())
                 .username("new.user")
                 .email("new@example.com")
                 .firstName("New")
                 .lastName("User")
-                .companyId("CompanyX")
+                .companyId("companyx")
                 .cognitoUserId("cognito-123")
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
@@ -303,7 +319,7 @@ class UserServiceTest {
         UserCreatedEvent event = eventCaptor.getValue();
         assertThat(event.getAggregateId()).isEqualTo("new.user");  // Story 1.16.2: username
         assertThat(event.getUsername()).isEqualTo("new.user");  // Story 1.16.2: username
-        assertThat(event.getCompanyId()).isEqualTo("CompanyX");  // Story 1.16.2: company name
+        assertThat(event.getCompanyId()).isEqualTo("companyx");  // Story 1.16.2: company name (slug)
         assertThat(event.getEmail()).isEqualTo("new@example.com");
         assertThat(event.getCognitoUserId()).isEqualTo("cognito-123");
     }

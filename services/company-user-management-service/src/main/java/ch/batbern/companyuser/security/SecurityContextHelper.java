@@ -69,6 +69,12 @@ public class SecurityContextHelper {
             // In test environment with @WithMockUser, use username
             User user = (User) authentication.getPrincipal();
             return user.getUsername();
+        } else if (authentication.getPrincipal() instanceof String
+                && "anonymousUser".equals(authentication.getPrincipal())) {
+            // Anonymous authentication - return "anonymous"
+            // This occurs for public endpoints (e.g., anonymous event registration)
+            // Spring Security's AnonymousAuthenticationFilter sets principal to "anonymousUser"
+            return "anonymous";
         } else {
             log.error("Unsupported principal type: {}", authentication.getPrincipal().getClass());
             throw new SecurityException("Unsupported authentication principal type");

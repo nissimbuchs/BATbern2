@@ -172,6 +172,65 @@ make dev-native-up                                   # Start services natively (
 docker-compose up -d   # All services in containers
 ```
 
+### Debugging and Logs
+
+**IMPORTANT**: This project uses **native development** (`make dev-native-up`), not Docker containers for services.
+
+**Service Log Locations** (Native Development):
+All service logs are written to `/tmp/batbern-1-*.log`:
+
+```bash
+# View service logs
+tail -f /tmp/batbern-1-api-gateway.log
+tail -f /tmp/batbern-1-company-user-management.log
+tail -f /tmp/batbern-1-event-management.log
+tail -f /tmp/batbern-1-speaker-coordination.log
+tail -f /tmp/batbern-1-partner-coordination.log
+tail -f /tmp/batbern-1-attendee-experience.log
+tail -f /tmp/batbern-1-web-frontend.log
+
+# Search for errors across all services
+grep -i "error\|exception" /tmp/batbern-1-*.log
+
+# Check specific service for recent errors
+grep -A 10 -B 5 "ERROR\|Exception" /tmp/batbern-1-event-management.log | tail -100
+
+# Monitor multiple services simultaneously
+tail -f /tmp/batbern-1-{api-gateway,event-management,company-user-management}.log
+```
+
+**Service Process Management**:
+```bash
+# Check running services
+make dev-native-status
+
+# Restart a specific service
+make dev-native-restart-service SERVICE=company-user-management
+
+# Stop all services
+make dev-native-down
+
+# View service PIDs
+cat /tmp/batbern-1-*.pid
+```
+
+**Common Debugging Patterns**:
+```bash
+# 1. Anonymous authentication errors (e.g., 401/500 on public endpoints)
+grep -i "anonymousUser\|SecurityException" /tmp/batbern-1-company-user-management.log
+
+# 2. Cross-service communication errors
+grep -i "UserApiClient\|CompanyApiClient" /tmp/batbern-1-event-management.log
+
+# 3. Database connection issues
+grep -i "HikariPool\|connection" /tmp/batbern-1-*.log
+
+# 4. API Gateway routing issues
+grep -i "routing\|proxying" /tmp/batbern-1-api-gateway.log
+```
+
+**Note**: Docker logs (`docker logs <container>`) are only relevant when running `docker-compose up` instead of native development.
+
 ### Testing Strategy (4-Layer E2E Framework)
 
 1. **Layer 1**: Shell scripts (`scripts/ci/*.sh`) - Infrastructure validation

@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -59,6 +60,15 @@ class CompanyServiceTest {
 
     @Mock
     private SecurityContextHelper securityContextHelper;
+
+    @Mock
+    private ch.batbern.shared.service.SlugGenerationService slugService;
+
+    @Mock
+    private GenericLogoService genericLogoService;
+
+    @Mock
+    private ch.batbern.companyuser.repository.LogoRepository logoRepository;
 
     @InjectMocks
     private CompanyService companyService;
@@ -582,5 +592,230 @@ class CompanyServiceTest {
         verify(searchService).invalidateCache();
         // Should NOT check existsByName when name hasn't changed
         verify(companyRepository, never()).existsByName(anyString());
+    }
+
+    // ==================== GET OR CREATE COMPANY TESTS ====================
+
+    @Test
+    @DisplayName("Test 4.25: should_createCompany_when_displayNameDoesNotExist")
+    void should_createCompany_when_displayNameDoesNotExist() {
+        // Given
+        String displayName = "Test Co";
+        String expectedSlug = "testco";
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company company = invocation.getArgument(0);
+            return Company.builder()
+                    .id(UUID.randomUUID())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .isVerified(false)
+                    .createdBy(company.getCreatedBy())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+        });
+
+        // When
+        Company result = companyService.getOrCreateCompany(displayName);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(expectedSlug);
+        assertThat(result.getDisplayName()).isEqualTo(displayName);
+        assertThat(result.getCreatedBy()).isEqualTo("test.user");
+
+        verify(slugService).generateCompanyName(displayName);
+        verify(companyRepository).findByName(expectedSlug);
+        verify(companyRepository).save(any(Company.class));
+        verify(eventPublisher).publish(any());
+    }
+
+    @Test
+    @DisplayName("Test 4.26: should_returnExistingCompany_when_slugAlreadyExists")
+    void should_returnExistingCompany_when_slugAlreadyExists() {
+        // Given
+        String displayName = "Test Co";
+        String expectedSlug = "testco";
+
+        Company existingTestCo = Company.builder()
+                .id(UUID.randomUUID())
+                .name(expectedSlug)
+                .displayName("Test Co")
+                .isVerified(false)
+                .createdBy("another.user")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.of(existingTestCo));
+
+        // When
+        Company result = companyService.getOrCreateCompany(displayName);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(expectedSlug);
+        assertThat(result.getDisplayName()).isEqualTo("Test Co");
+        assertThat(result.getCreatedBy()).isEqualTo("another.user");
+
+        verify(slugService).generateCompanyName(displayName);
+        verify(companyRepository).findByName(expectedSlug);
+        verify(companyRepository, never()).save(any(Company.class));
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    @DisplayName("Test 4.27: should_handleGermanCharacters_when_convertingToSlug")
+    void should_handleGermanCharacters_when_convertingToSlug() {
+        // Given
+        String displayName = "Müller & Söhne AG";
+        String expectedSlug = "muellersoehn"; // 12 chars max, German chars converted
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company company = invocation.getArgument(0);
+            return Company.builder()
+                    .id(UUID.randomUUID())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .isVerified(false)
+                    .createdBy(company.getCreatedBy())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+        });
+
+        // When
+        Company result = companyService.getOrCreateCompany(displayName);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(expectedSlug);
+        assertThat(result.getDisplayName()).isEqualTo(displayName);
+
+        verify(slugService).generateCompanyName(displayName);
+        verify(companyRepository).save(argThat(company ->
+            company.getName().equals(expectedSlug)
+                && company.getDisplayName().equals(displayName)
+        ));
+    }
+
+    @Test
+    @DisplayName("Test 4.28: should_addNumericSuffix_when_slugCollisionOccurs")
+    void should_addNumericSuffix_when_slugCollisionOccurs() {
+        // Given
+        String displayName = "Test Co";
+        String expectedSlug = "testco";
+        String collisionSlug = "testco-2";
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(slugService.ensureUniqueSlug(eq(expectedSlug), any())).thenReturn(collisionSlug);
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company company = invocation.getArgument(0);
+            return Company.builder()
+                    .id(UUID.randomUUID())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .isVerified(false)
+                    .createdBy(company.getCreatedBy())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+        });
+
+        // When
+        Company result = companyService.getOrCreateCompany(displayName);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getName()).isEqualTo(collisionSlug);
+        assertThat(result.getDisplayName()).isEqualTo(displayName);
+
+        verify(slugService).ensureUniqueSlug(eq(expectedSlug), any());
+        verify(companyRepository).save(argThat(company ->
+            company.getName().equals(collisionSlug)
+        ));
+    }
+
+    @Test
+    @DisplayName("Test 4.29: should_setAnonymousCreator_when_noUserContext")
+    void should_setAnonymousCreator_when_noUserContext() {
+        // Given
+        String displayName = "Test Co";
+        String expectedSlug = "testco";
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
+        when(securityContextHelper.getCurrentUsername()).thenReturn(null);
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company company = invocation.getArgument(0);
+            return Company.builder()
+                    .id(UUID.randomUUID())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .isVerified(false)
+                    .createdBy(company.getCreatedBy())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+        });
+
+        // When
+        Company result = companyService.getOrCreateCompany(displayName);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCreatedBy()).isEqualTo("anonymous");
+
+        verify(slugService).generateCompanyName(displayName);
+        verify(companyRepository).save(argThat(company ->
+            company.getCreatedBy().equals("anonymous")
+        ));
+    }
+
+    @Test
+    @DisplayName("Test 4.30: should_publishCompanyCreatedEvent_when_creatingNewCompany")
+    void should_publishCompanyCreatedEvent_when_creatingNewCompany() {
+        // Given
+        String displayName = "Test Co";
+        String expectedSlug = "testco";
+
+        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
+        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
+        when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
+        when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
+            Company company = invocation.getArgument(0);
+            return Company.builder()
+                    .id(UUID.randomUUID())
+                    .name(company.getName())
+                    .displayName(company.getDisplayName())
+                    .isVerified(false)
+                    .createdBy(company.getCreatedBy())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+        });
+
+        // When
+        companyService.getOrCreateCompany(displayName);
+
+        // Then
+        verify(slugService).generateCompanyName(displayName);
+        verify(eventPublisher).publish(argThat(event ->
+            event.getEventType().equals("CompanyCreated")
+        ));
     }
 }
