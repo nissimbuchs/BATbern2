@@ -39,8 +39,11 @@ tests {
     expect(response.id).to.be.a('string');
     expect(response.taskName).to.equal('Test Ad-Hoc Task');
     expect(response.triggerState).to.equal('topic_selection');
-    expect(response.assignedOrganizerUsername).to.equal('{{testUsername}}');
+    expect(response.assignedOrganizerUsername).to.equal(bru.getEnvVar('testUsername'));
     expect(response.notes).to.equal('Test task notes');
-    expect(response.status).to.equal('pending');
+    expect(response.status).to.equal('todo');
+
+    // Save task ID for subsequent tests
+    bru.setVar('testTaskId', response.id);
   });
 }

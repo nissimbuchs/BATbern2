@@ -1,0 +1,57 @@
+meta {
+  name: Create Test Event for Tasks API
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  // Generate unique eventNumber that fits in Java int32
+  const now = Date.now();
+  const eventNumber = (now % 1000000) + 900000;
+
+  bru.setVar("testTimestamp", now);
+  bru.setVar("eventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Tasks API Test Event {{testTimestamp}}",
+    "eventNumber": {{eventNumber}},
+    "date": "2025-12-15T09:00:00Z",
+    "registrationDeadline": "2025-12-01T23:59:59Z",
+    "venueName": "Test Venue",
+    "venueAddress": "Test Address 1, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Test event for tasks API tests",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("should create event for tasks API tests", function() {
+    expect(res.getStatus()).to.equal(201);
+    const event = res.getBody();
+    expect(event.eventCode).to.be.a('string');
+
+    // Set testEventCode for subsequent tasks-api tests
+    bru.setVar("testEventCode", event.eventCode);
+    bru.setVar("testEventNumber", event.eventNumber);
+  });
+}
