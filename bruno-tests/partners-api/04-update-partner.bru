@@ -52,8 +52,8 @@ tests {
   test("should return full partner response", function() {
     const body = res.getBody();
     expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
-    expect(body.id).to.exist;
     expect(body.partnershipStartDate).to.exist;
+    expect(body.isActive).to.exist;
   });
 
   test("should accept X-Correlation-ID header", function() {

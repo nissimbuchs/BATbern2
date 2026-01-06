@@ -36,8 +36,8 @@ tests {
     const body = res.getBody();
     expect(body.metadata).to.be.an('object');
     expect(body.metadata.page).to.be.a('number');
-    expect(body.metadata.size).to.be.a('number');
-    expect(body.metadata.totalElements).to.be.a('number');
+    expect(body.metadata.limit).to.be.a('number');
+    expect(body.metadata.totalItems).to.be.a('number');
   });
 
   test("should return array of partners", function() {

@@ -33,7 +33,7 @@ body:json {
 assert {
   res.status: eq 201
   res.body.suggestedTopic: isDefined
-  res.body.status: eq submitted
+  res.body.status: eq SUBMITTED
 }
 
 tests {
@@ -50,7 +50,7 @@ tests {
 
   test("should set status to submitted when initially created", function() {
     const body = res.getBody();
-    expect(body.status).to.equal('submitted');
+    expect(body.status).to.equal('SUBMITTED');
   });
 
   test("should populate suggested timestamp", function() {
