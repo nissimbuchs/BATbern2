@@ -1,0 +1,67 @@
+meta {
+  name: Get or Create Company - German Characters
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/companies:get-or-create
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "displayName": "Müller & Söhne AG"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.name: isDefined
+  res.body.displayName: eq Müller & Söhne AG
+}
+
+script:post-response {
+  // Store company name for cleanup
+  if (res.getStatus() === 200) {
+    const company = res.getBody();
+    bru.setEnvVar("germanCharsCompanyName", company.name);
+    console.log("Created/retrieved German company with name:", company.name);
+  }
+}
+
+tests {
+  test("should convert German characters to ASCII (ADR-003)", function() {
+    const body = res.getBody();
+    expect(res.getStatus()).to.equal(200);
+    expect(body.name).to.exist;
+
+    // "Müller & Söhne AG" → "muellersoehn" (ü→ue, ö→oe, remove & and AG, truncate to 12 chars)
+    expect(body.name).to.equal('muellersoehn');
+    console.log("German characters converted:", body.displayName, "→", body.name);
+  });
+
+  test("should preserve original displayName", function() {
+    const body = res.getBody();
+    expect(body.displayName).to.equal('Müller & Söhne AG');
+  });
+
+  test("should comply with slug constraints (ADR-003)", function() {
+    const body = res.getBody();
+    expect(body.name).to.match(/^[a-z0-9-]+$/); // Only lowercase alphanumeric and hyphens
+    expect(body.name.length).to.be.at.most(12); // Max 12 characters
+  });
+
+  test("should not contain special characters in slug", function() {
+    const body = res.getBody();
+    expect(body.name).to.not.match(/[äöüß&]/); // No German chars or special chars
+  });
+}
