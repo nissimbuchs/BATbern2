@@ -132,8 +132,17 @@ jobs:
 
           # Ensure the base commit is available in the local checkout
           if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
-            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
-            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch more history..."
+            # Fetch more commits from develop branch (can't fetch by SHA directly)
+            git fetch --deepen=100 origin develop 2>/dev/null || echo "::warning::Could not deepen history"
+
+            # Check again if base commit is now available
+            if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+              echo "::warning::Base commit $BASE_SHA still not found after deepening history"
+              echo "::warning::This may happen if the commit is very old or on a different branch"
+            else
+              echo "✅ Successfully fetched base commit"
+            fi
           fi
 
           # Get list of changed files
@@ -322,8 +331,17 @@ jobs:
 
           # Ensure the base commit is available in the local checkout
           if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
-            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
-            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch more history..."
+            # Fetch more commits from develop branch (can't fetch by SHA directly)
+            git fetch --deepen=100 origin develop 2>/dev/null || echo "::warning::Could not deepen history"
+
+            # Check again if base commit is now available
+            if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+              echo "::warning::Base commit $BASE_SHA still not found after deepening history"
+              echo "::warning::This may happen if the commit is very old or on a different branch"
+            else
+              echo "✅ Successfully fetched base commit"
+            fi
           fi
 
           # Get list of changed files
@@ -448,8 +466,17 @@ jobs:
 
           # Ensure the base commit is available in the local checkout
           if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
-            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
-            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch more history..."
+            # Fetch more commits from develop branch (can't fetch by SHA directly)
+            git fetch --deepen=100 origin develop 2>/dev/null || echo "::warning::Could not deepen history"
+
+            # Check again if base commit is now available
+            if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+              echo "::warning::Base commit $BASE_SHA still not found after deepening history"
+              echo "::warning::This may happen if the commit is very old or on a different branch"
+            else
+              echo "✅ Successfully fetched base commit"
+            fi
           fi
 
           # Get list of changed files
