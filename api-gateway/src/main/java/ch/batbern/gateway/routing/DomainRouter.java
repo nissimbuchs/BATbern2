@@ -79,7 +79,8 @@ public class DomainRouter {
             return "attendee-experience-service";
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
-                || cleanPath.startsWith("/api/v1/logos")) {
+                || cleanPath.startsWith("/api/v1/logos")
+                || cleanPath.startsWith("/api/v1/public")) {
             return "company-user-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);
