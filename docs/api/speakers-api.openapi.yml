@@ -261,7 +261,7 @@ paths:
         '400':
           description: Bad request - validation errors
 
-  /events/{eventCode}/speakers/{username}/status:
+  /events/{eventCode}/speakers/{speakerId}/status:
     put:
       tags:
         - Speaker Status
@@ -288,14 +288,13 @@ paths:
           schema:
             type: string
             example: BATbern56
-        - name: username
+        - name: speakerId
           in: path
           required: true
-          description: Speaker username (ADR-003 meaningful ID from User entity)
+          description: Speaker pool ID (UUID)
           schema:
             type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: john.doe
+            format: uuid
       requestBody:
         required: true
         content:
@@ -332,7 +331,7 @@ paths:
         '403':
           description: Forbidden - requires ORGANIZER role
 
-  /events/{eventCode}/speakers/{username}/status/history:
+  /events/{eventCode}/speakers/{speakerId}/status/history:
     get:
       tags:
         - Speaker Status
@@ -352,14 +351,13 @@ paths:
           schema:
             type: string
             example: BATbern56
-        - name: username
+        - name: speakerId
           in: path
           required: true
-          description: Speaker username (ADR-003 meaningful ID from User entity)
+          description: Speaker pool ID (UUID)
           schema:
             type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: john.doe
+            format: uuid
       responses:
         '200':
           description: Status history retrieved successfully
@@ -425,7 +423,7 @@ paths:
           description: Forbidden - requires ORGANIZER role
 
   # Speaker Outreach Tracking (Story 5.3)
-  /events/{eventCode}/speakers/{username}/outreach:
+  /events/{eventCode}/speakers/{speakerId}/outreach:
     get:
       tags:
         - Speaker Outreach
@@ -444,14 +442,13 @@ paths:
           schema:
             type: string
             example: BATbern56
-        - name: username
+        - name: speakerId
           in: path
           required: true
-          description: Speaker username (ADR-003 meaningful ID from User entity)
+          description: Speaker pool ID (UUID)
           schema:
             type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: john.doe
+            format: uuid
       responses:
         '200':
           description: Outreach history retrieved successfully
@@ -490,14 +487,13 @@ paths:
           schema:
             type: string
             example: BATbern56
-        - name: username
+        - name: speakerId
           in: path
           required: true
-          description: Speaker username (ADR-003 meaningful ID from User entity)
+          description: Speaker pool ID (UUID)
           schema:
             type: string
-            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-            example: john.doe
+            format: uuid
       requestBody:
         required: true
         content:
@@ -797,11 +793,10 @@ components:
       type: object
       description: Response after status update (Story 5.4)
       properties:
-        speakerUsername:
+        speakerId:
           type: string
-          description: Speaker username (ADR-003 meaningful ID from User entity)
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          example: john.doe
+          format: uuid
+          description: Speaker pool ID
         eventCode:
           type: string
           description: Event code (ADR-003)
@@ -813,7 +808,7 @@ components:
         changedByUsername:
           type: string
           description: Organizer who made the change
-          example: admin.user
+          example: john.doe
         changeReason:
           type: string
           description: Reason for the change
@@ -946,8 +941,7 @@ components:
       description: Record of outreach/contact attempt with a speaker
       required:
         - id
-        - eventCode
-        - speakerUsername
+        - speakerPoolId
         - contactDate
         - contactMethod
         - organizerUsername
@@ -956,16 +950,11 @@ components:
         id:
           type: string
           format: uuid
-          description: Outreach record ID (internal identifier)
-        eventCode:
+          description: Outreach record ID
+        speakerPoolId:
           type: string
-          description: Event code (ADR-003)
-          example: BATbern56
-        speakerUsername:
-          type: string
-          description: Speaker username (ADR-003 meaningful ID from User entity)
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-          example: john.doe
+          format: uuid
+          description: Speaker pool entry ID
         contactDate:
           type: string
           format: date-time
@@ -979,7 +968,7 @@ components:
         organizerUsername:
           type: string
           description: Username of organizer who made contact
-          example: admin.user
+          example: john.doe
         createdAt:
           type: string
           format: date-time

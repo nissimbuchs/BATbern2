@@ -82,7 +82,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/{username}/status': {
+  '/events/{eventCode}/speakers/{speakerId}/status': {
     parameters: {
       query?: never;
       header?: never;
@@ -110,7 +110,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/{username}/status/history': {
+  '/events/{eventCode}/speakers/{speakerId}/status/history': {
     parameters: {
       query?: never;
       header?: never;
@@ -158,7 +158,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/{username}/outreach': {
+  '/events/{eventCode}/speakers/{speakerId}/outreach': {
     parameters: {
       query?: never;
       header?: never;
@@ -399,10 +399,10 @@ export interface components {
     /** @description Response after status update (Story 5.4) */
     SpeakerStatusResponse: {
       /**
-       * @description Speaker username (ADR-003 meaningful ID from User entity)
-       * @example john.doe
+       * Format: uuid
+       * @description Speaker pool ID
        */
-      speakerUsername?: string;
+      speakerId?: string;
       /**
        * @description Event code (ADR-003)
        * @example BATbern56
@@ -412,7 +412,7 @@ export interface components {
       previousStatus?: components['schemas']['SpeakerWorkflowState'];
       /**
        * @description Organizer who made the change
-       * @example admin.user
+       * @example john.doe
        */
       changedByUsername?: string;
       /**
@@ -558,19 +558,14 @@ export interface components {
     OutreachHistory: {
       /**
        * Format: uuid
-       * @description Outreach record ID (internal identifier)
+       * @description Outreach record ID
        */
       id: string;
       /**
-       * @description Event code (ADR-003)
-       * @example BATbern56
+       * Format: uuid
+       * @description Speaker pool entry ID
        */
-      eventCode: string;
-      /**
-       * @description Speaker username (ADR-003 meaningful ID from User entity)
-       * @example john.doe
-       */
-      speakerUsername: string;
+      speakerPoolId: string;
       /**
        * Format: date-time
        * @description When the contact was made
@@ -581,7 +576,7 @@ export interface components {
       notes?: string;
       /**
        * @description Username of organizer who made contact
-       * @example admin.user
+       * @example john.doe
        */
       organizerUsername: string;
       /**
@@ -843,8 +838,8 @@ export interface operations {
       path: {
         /** @description Event code (ADR-003) */
         eventCode: string;
-        /** @description Speaker username (ADR-003 meaningful ID from User entity) */
-        username: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
       };
       cookie?: never;
     };
@@ -913,8 +908,8 @@ export interface operations {
       path: {
         /** @description Event code (ADR-003) */
         eventCode: string;
-        /** @description Speaker username (ADR-003 meaningful ID from User entity) */
-        username: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
       };
       cookie?: never;
     };
@@ -1007,8 +1002,8 @@ export interface operations {
       path: {
         /** @description Event code (ADR-003) */
         eventCode: string;
-        /** @description Speaker username (ADR-003 meaningful ID from User entity) */
-        username: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
       };
       cookie?: never;
     };
@@ -1055,8 +1050,8 @@ export interface operations {
       path: {
         /** @description Event code (ADR-003) */
         eventCode: string;
-        /** @description Speaker username (ADR-003 meaningful ID from User entity) */
-        username: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
       };
       cookie?: never;
     };
