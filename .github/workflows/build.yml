@@ -130,6 +130,12 @@ jobs:
             echo "📊 Change detection: $BASE_SHA → $HEAD_SHA"
           fi
 
+          # Ensure the base commit is available in the local checkout
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
+            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
+          fi
+
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
 
@@ -314,6 +320,12 @@ jobs:
 
           echo "Comparing $BASE_SHA...$HEAD_SHA"
 
+          # Ensure the base commit is available in the local checkout
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
+            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
+          fi
+
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
 
@@ -432,6 +444,12 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
+          fi
+
+          # Ensure the base commit is available in the local checkout
+          if ! git cat-file -e "$BASE_SHA" 2>/dev/null; then
+            echo "⚠️  Base commit $BASE_SHA not in local checkout, attempting to fetch..."
+            git fetch origin "$BASE_SHA" --depth=1 2>/dev/null || echo "::warning::Could not fetch base commit"
           fi
 
           # Get list of changed files
