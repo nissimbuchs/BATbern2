@@ -136,6 +136,8 @@ public class SecurityConfig {
                         // Story 4.1.5: Public company search for registration autocomplete
                         .requestMatchers(HttpMethod.GET, "/api/v1/companies/search").permitAll()
 
+                        // Public organizers endpoint for About page
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
 
                         // All other requests require authentication
                         .anyRequest().authenticated()

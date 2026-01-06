@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/public/ui/card';
 import { OrganizerDisplay } from '@/components/public/About/OrganizerDisplay';
 import { InfiniteMarquee } from '@/components/public/Testimonials/InfiniteMarquee';
 import { PartnerShowcaseCard } from '@/components/public/Partners';
-import { useUserList } from '@/hooks/useUserManagement';
+import { usePublicOrganizers } from '@/hooks/usePublicOrganizers';
 import { usePublicPartners } from '@/hooks/usePublicPartners';
 import { useTranslation } from 'react-i18next';
 import { FileText, Loader2 } from 'lucide-react';
@@ -16,13 +16,8 @@ import { FileText, Loader2 } from 'lucide-react';
 const AboutPage = () => {
   const { t } = useTranslation('about');
 
-  // Fetch organizers
-  const { data: organizersData, isLoading } = useUserList({
-    filters: { role: ['ORGANIZER'] },
-    pagination: { page: 1, limit: 100 },
-  });
-
-  const organizers = organizersData?.data || [];
+  // Fetch organizers (public endpoint - no auth required)
+  const { data: organizers = [], isLoading } = usePublicOrganizers();
 
   // Fetch partners
   const { data: partnersData } = usePublicPartners();

@@ -71,6 +71,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Public organizers endpoint for About page
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Public user profile endpoint (GET only for service-to-service calls from localhost)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
                 .anyRequest().authenticated() // Require authentication but accept any authenticated user
@@ -104,6 +106,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Public organizers endpoint for About page
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Service-to-service: Allow user profile lookups from VPC internal network
@@ -144,6 +148,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
+                // Public organizers endpoint for About page
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Test environment: Enforce authentication for all user endpoints
