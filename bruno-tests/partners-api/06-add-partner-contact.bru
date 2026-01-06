@@ -25,7 +25,7 @@ headers {
 body:json {
   {
     "username": "{{testContactUsername}}",
-    "contactRole": "billing",
+    "contactRole": "BILLING",
     "isPrimary": false
   }
 }
@@ -47,7 +47,7 @@ tests {
 
   test("should set contact role", function() {
     const body = res.getBody();
-    expect(body.contactRole).to.equal('billing');
+    expect(body.contactRole).to.equal('BILLING');
     expect(body.isPrimary).to.equal(false);
   });
 
