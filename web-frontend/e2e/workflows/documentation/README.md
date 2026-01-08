@@ -29,12 +29,14 @@ documentation/
 ## Prerequisites
 
 1. **Backend services running**:
+
    ```bash
    cd /Users/nissim/dev/bat/BATbern-feature
    make dev-native-up
    ```
 
 2. **Frontend running**:
+
    ```bash
    cd web-frontend
    npm run dev
@@ -82,6 +84,7 @@ npx playwright codegen http://localhost:3000/organizer/events
 ```
 
 Then:
+
 1. Perform the complete workflow manually
 2. Save the generated code
 3. Extract UI selectors and actions
@@ -96,15 +99,16 @@ All test data is centralized in `test-data.config.ts`. To change test data:
 3. Run tests with updated data
 
 Example:
+
 ```typescript
 // Change event type from EVENING to FULL_DAY
-eventType: 'FULL_DAY'  // Will create event with 8-12 speakers
+eventType: 'FULL_DAY'; // Will create event with 8-12 speakers
 
 // Change topics
 topics: [
   'Sustainable Building Materials',
-  'Urban Planning Innovations',  // New topic
-]
+  'Urban Planning Innovations', // New topic
+];
 ```
 
 ## Screenshot Output
@@ -130,21 +134,25 @@ docs/user-guide/assets/screenshots/workflow/
 ## Development Workflow
 
 ### Phase 1: Record Workflow (Complete)
+
 ✅ Test infrastructure created
 ✅ Helpers and page objects scaffolded
 ✅ Playwright configuration updated
 
 ### Phase 2: Record Actual Workflow (Next)
+
 🔄 User performs workflow with Playwright Inspector
 🔄 Extract screens and actions from recording
 🔄 Validate with user
 
 ### Phase 3: Implement Tests
+
 - Fill in page object methods from recording
 - Add screenshot capture at each step
 - Verify workflow state transitions
 
 ### Phase 4: Update User Guide
+
 - Reference screenshots in markdown files
 - Create screenshot index
 - Verify documentation accuracy
@@ -156,6 +164,7 @@ docs/user-guide/assets/screenshots/workflow/
 **Problem**: `AUTH_TOKEN environment variable is required`
 
 **Solution**:
+
 ```bash
 ./scripts/auth/get-token.sh staging your-email@example.com
 export AUTH_TOKEN=$(cat .auth-token)
@@ -166,6 +175,7 @@ export AUTH_TOKEN=$(cat .auth-token)
 **Problem**: Test fails because companies/topics don't exist
 
 **Solution**:
+
 - Ensure seed data is loaded in database
 - Check `make dev-native-up` completed successfully
 - Verify `/api/v1/companies` returns data
@@ -175,6 +185,7 @@ export AUTH_TOKEN=$(cat .auth-token)
 **Problem**: Screenshots directory empty
 
 **Solution**:
+
 - Check directory exists: `docs/user-guide/assets/screenshots/workflow/`
 - Check test actually ran (not skipped)
 - Review test output for errors
@@ -184,6 +195,7 @@ export AUTH_TOKEN=$(cat .auth-token)
 **Problem**: Tests sometimes fail randomly
 
 **Solution**:
+
 - Increase timeouts in test
 - Add explicit waits for elements
 - Check for loading spinners before capturing screenshots
@@ -193,6 +205,7 @@ export AUTH_TOKEN=$(cat .auth-token)
 ### Updating Screenshots
 
 After UI changes:
+
 ```bash
 # Clean old screenshots
 rm -rf docs/user-guide/assets/screenshots/workflow/*
@@ -215,6 +228,7 @@ Edit `test-data.config.ts` and re-run tests.
 ## Contributing
 
 When modifying these tests:
+
 1. **UI-First**: Always use frontend UI for workflow actions (no API shortcuts)
 2. **Centralized Data**: Put test data in `test-data.config.ts`, not in test files
 3. **Clear Screenshots**: Use descriptive names (01-event-dashboard.png, not screenshot1.png)
