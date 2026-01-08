@@ -1,7 +1,7 @@
 # E2E Screenshot Workflow - Master Plan & Status
 
-**Last Updated**: 2026-01-08 (Late Night Session - Phase B Complete with Kanban)
-**Current Status**: Phase A + B (with Kanban Drag-Drop) - 100% Complete ✅ (Ready for Phase C)
+**Last Updated**: 2026-01-08 (Late Night Session - Shell Script Renamed for Phase C)
+**Current Status**: Phase A + B Complete ✅ | Phase C Ready (Script Updated)
 
 ---
 
@@ -237,25 +237,40 @@ await capturer(page, 'topic-selection-confirmed', {
   - Event code format fixed (BATbern prefix) ✅
   - ~15 screenshots captured
 
-- [ ] **Phase C**: Quality/Kanban (Lines 124-183)
-  - Drag speakers through workflow
-  - Use fixed drag-drop code
+- [ ] **Phase B.5**: Content Submission (Lines 189-237) ⏳ **IN PROGRESS**
+  - Switch to Sessions view
+  - Go to Publish tab
+  - Click "Publish Topic" button 🔑
+  - Return to Speakers tab
+  - For each speaker (Nissim, Balti, Andreas):
+    - Select real speaker from database
+    - Fill presentation title
+    - Fill presentation abstract
+    - Submit speaker content
+  - ~10 screenshots
+
+- [ ] **Phase C**: Quality Review (Lines 238-246)
+  - Go to Publish tab
+  - Click "Publish Speakers" button 🔑
+  - Return to Speakers tab
+  - Approve 3 presentations (Nissim, Balti, Andreas)
+  - ~6 screenshots
+
+- [ ] **Phase D**: Slot Assignment & Publish Agenda (Lines 247-254)
+  - Manage slot assignments
+  - Assign speakers to time slots
+  - Publish agenda
   - 6-8 screenshots
 
-- [ ] **Phase D**: Content Assignment (Lines 193-241)
-  - Submit 3 presentations
-  - Approve content
-  - 10-12 screenshots
+- [ ] **Phase E**: Archival (Lines 255-261)
+  - Edit event status to "Archiviert"
+  - Override workflow validation
+  - 3-4 screenshots
 
-- [ ] **Phase E**: Publishing (Lines 184-249)
-  - Progressive publishing
-  - Slot assignments
-  - 8-10 screenshots
-
-- [ ] **Phase F**: Archival (Lines 250-260)
-  - Archive event
-  - Delete/cleanup
-  - 3-5 screenshots
+- [ ] **Phase F**: Cleanup (Lines 262-265)
+  - Delete event
+  - Verify cleanup
+  - 2-3 screenshots
 
 ### User Guide Integration
 - [ ] Add screenshots to workflow documentation
@@ -285,11 +300,11 @@ cd web-frontend
 # Set environment variables
 export AUTH_TOKEN=$(jq -r '.idToken' ~/.batbern/development.json)
 
-# Run Phase A + B tests
-./run-phases-a-b-autologin.sh
+# Run Phase A + B + C tests
+./run-phases-a-b-c-autologin.sh
 
 # Or with UI mode for debugging
-./run-phases-a-b-autologin.sh --ui
+./run-phases-a-b-c-autologin.sh --ui
 ```
 
 ### Debug Event Creation Issue
@@ -421,29 +436,31 @@ src/components/
 | Test ID Migration | ✅ Complete | 100% | N/A |
 | **Phase A** | ✅ Complete | 100% | 12/12 |
 | **Phase B** | ✅ Complete | 100% | 11/11 |
-| Phase C | ⏳ Ready | 0% | 0/8 |
-| Phase D | ⏳ Ready | 0% | 0/12 |
-| Phase E | ⏳ Ready | 0% | 0/10 |
-| Phase F | ⏳ Ready | 0% | 0/5 |
+| Phase B.5 | ⏳ In Progress | 0% | 0/10 |
+| Phase C | ⏳ Ready | 0% | 0/6 |
+| Phase D | ⏳ Ready | 0% | 0/8 |
+| Phase E | ⏳ Ready | 0% | 0/4 |
+| Phase F | ⏳ Ready | 0% | 0/3 |
 
-**Overall**: ~60% complete (infrastructure + auth + Phase A + B complete, ready for Phase C)
+**Overall**: ~50% complete (infrastructure + auth + Phase A + B complete, Phase B.5 in progress)
 
 ---
 
 ## 🎯 Next Session Priorities
 
-### Priority 1: Implement Phase C (Kanban/Quality) ✅ **READY**
-1. Review Phase C workflow (lines 124-183 in playwright-recording.ts)
-2. Extract kanban drag-and-drop actions
-3. Create test steps for dragging speakers through workflow
-4. Use fixed drag-drop code from recording
-5. Capture 6-8 screenshots
+### Priority 1: Implement Phase B.5 (Content Submission) ⏳ **IN PROGRESS**
+1. Add test IDs to publish buttons and speaker content form
+2. Review workflow (lines 189-237 in playwright-recording.ts)
+3. Implement publish topic action
+4. Implement speaker content submission (3 speakers)
+5. Capture ~10 screenshots
 
-### Priority 2: Implement Phase D (Content Assignment)
-1. Copy Phase B pattern
-2. Implement content submission steps
-3. Capture 10-12 screenshots
-4. Test and validate
+### Priority 2: Implement Phase C (Quality Review)
+1. Add test IDs to approve buttons
+2. Review workflow (lines 238-246 in playwright-recording.ts)
+3. Implement publish speakers action
+4. Implement content approval (3 presentations)
+5. Capture ~6 screenshots
 
 ---
 
@@ -517,10 +534,10 @@ src/components/
    - Ensures Phase B can access testEventCode from Phase A
    - Tests run in order and share state
 
-4. ✅ Created run-phases-a-b-autologin.sh test runner
-   - Renamed from run-phase-a-autologin.sh
-   - Uses regex `-g "Phase (A|B)"` to run both phases
-   - Updated output paths for Phase B screenshots
+4. ✅ Created run-phases-a-b-c-autologin.sh test runner
+   - Renamed from run-phases-a-b-autologin.sh (2026-01-08 Late Night)
+   - Uses regex `-g "Phase (A|B|C)"` to run all three phases
+   - Updated output paths for Phase A, B, and C screenshots
 
 **Files Modified** (4):
 - `test-data.config.ts` - Added speakerOutreach array with 5 interactions
@@ -625,16 +642,40 @@ src/components/
 **Phase B Status**: ✅ 100% COMPLETE
 **Next**: Implement Phase C (Quality Control & Content Submission)
 
+### 2026-01-08 Late Night Session Part 3 - Shell Script Renamed for Phase C ✅
+
+**Script Preparation for Phase C**:
+
+1. ✅ **Renamed Test Runner Script**
+   - File: `run-phases-a-b-autologin.sh` → `run-phases-a-b-c-autologin.sh`
+   - Updated regex pattern: `-g "Phase (A|B)"` → `-g "Phase (A|B|C)"`
+   - Updated all console output to mention Phase C
+   - Updated log filename: `/tmp/phase-a-b-test-run.log` → `/tmp/phase-a-b-c-test-run.log`
+   - Added Phase C screenshot path: `phase-c-quality/`
+   - Script is now ready to run all three phases
+
+2. ✅ **Updated Master Plan Documentation**
+   - Updated "How to Run" section with new script name
+   - Updated "References" section with new script path
+   - Updated session notes to document rename
+
+**Files Modified** (2):
+- `run-phases-a-b-autologin.sh` → `run-phases-a-b-c-autologin.sh` (renamed + updated)
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated documentation
+
+**Result**: Test runner script is now ready for Phase C implementation
+**Next Step**: Implement Phase C test code in `complete-event-workflow.spec.ts`
+
 ---
 
 ## 🔗 References
 
 - **Workflow Recording**: `docs/playwright-recording.ts`
 - **Test Spec**: `web-frontend/e2e/workflows/documentation/complete-event-workflow.spec.ts`
-- **Test Runner**: `web-frontend/run-phase-a-autologin.sh`
+- **Test Runner**: `web-frontend/run-phases-a-b-c-autologin.sh`
 - **Original Plan**: `docs/plans/e2e-screenshot-workflow-plan.md` (archived)
 
 ---
 
-**Last Updated**: End of 2026-01-08 Late Night Session (Phase B Complete)
-**Next Action**: Implement Phase C (Kanban/Quality)
+**Last Updated**: 2026-01-08 Late Night Session (Shell Script Renamed for Phase C)
+**Next Action**: Implement Phase C (Quality Control & Content Assignment)

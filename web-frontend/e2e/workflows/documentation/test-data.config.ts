@@ -135,28 +135,34 @@ export const testConfig = {
    * Presentation Details
    * Used when submitting speaker content
    * Based on actual recording (only 3 speakers got content submitted)
+   *
+   * IMPORTANT: speakerIndex maps to testConfig.speakerCandidates array:
+   * - Index 0 = Nissim (ELCA, AI)
+   * - Index 1 = Balti (Galenica, AI)
+   * - Index 2 = Andreas (Mobiliar, AI)
+   * - Index 3 = Daniel (BKW, AI)
    */
   presentations: [
     {
       title: 'Presentation of Nissim',
       abstract: 'Description of Presentation',
-      speakerIndex: 0, // Nissim
-      speakerSearchTerm: 'Nissim', // Bruno Linder from seed data
+      speakerIndex: 0, // Nissim (first speaker in brainstorm) → Nissim Buchs (actual speaker)
+      speakerSearchTerm: null, // No search needed, auto-mapped to Nissim Buchs
       actualSpeakerName: 'Nissim Buchs',
     },
     {
       title: 'Präsi von Balti',
       abstract: 'Seine Beschreibung',
-      speakerIndex: 1, // Balti (auto-assigned to Baltisar Oswald)
+      speakerIndex: 1, // Balti (second speaker in brainstorm) → Baltisar Oswald (auto-assigned)
       speakerSearchTerm: null, // No search needed, auto-mapped
       actualSpeakerName: 'Baltisar Oswald',
     },
     {
       title: 'Talk von Andreas',
       abstract: 'Seine Beschreibung',
-      speakerIndex: 2, // Andreas
-      speakerSearchTerm: 'and', // Andreas Spichiger from seed data
-      actualSpeakerName: 'Andreas Spichiger',
+      speakerIndex: 2, // Andreas (brainstormed) → Andreas Spichiger (actual speaker)
+      speakerSearchTerm: 'and', // Search term from recording line 216
+      actualSpeakerName: 'Andreas Spichiger', // From recording line 217
     },
   ],
 

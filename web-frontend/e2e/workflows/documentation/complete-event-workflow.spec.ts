@@ -24,7 +24,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { testConfig } from './test-data.config';
+import { testConfig, getPresentation } from './test-data.config';
 import { createSequentialCapturer } from './helpers/screenshot-helpers';
 import { cleanupAfterTests, cleanupBeforeScreenshots } from './helpers/cleanup-helpers';
 import { EventWorkflowPage } from './page-objects/EventWorkflowPage';
@@ -559,18 +559,249 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
   });
 
   /**
-   * Phase C: Quality Control (Steps 7-8)
-   * - Content Quality Review
-   * - Minimum Threshold Validation
-   *
-   * This test case will be implemented after recording the workflow
+   * Phase B.5: Content Submission (Recording lines 189-237)
+   * - Switch to Sessions view
+   * - Publish Topic
+   * - Submit speaker content (3 speakers: Nissim, Balti, Andreas)
+   * - Fill presentation title and abstract
    */
-  test('Phase C: Quality Control (Steps 7-8)', async () => {
+  test('Phase B.5: Content Submission', async ({ page }) => {
     test.setTimeout(10 * 60 * 1000);
 
-    console.log('\n📋 Phase C: Quality Control\n');
-    console.log('⏭️  Phase C implementation pending workflow recording');
-    test.skip();
+    console.log('\n📋 Phase B.5: Content Submission\n');
+
+    const capturer = createSequentialCapturer('phase-b5-content', 1);
+
+    try {
+      // Verify we have an event code from Phase A
+      expect(testEventCode).toBeTruthy();
+      console.log(`Using event code: ${testEventCode}`);
+
+      // STEP 1: Navigate directly to Publishing tab (recording lines 189-190)
+      console.log('📍 Step 1: Navigate to Publishing tab');
+      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}?tab=publishing`);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'publish-tab-before-topic', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 2: Click "Publish Topic" button (recording line 191)
+      console.log('📍 Step 2: Publish topic');
+      await page.getByTestId('publish-topic-button').click();
+      await page.waitForTimeout(1000); // Wait for publish to complete
+
+      await capturer(page, 'topic-published', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 3: Return to Speakers tab (recording line 192)
+      console.log('📍 Step 3: Return to Speakers tab');
+      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.waitForTimeout(1000); // Wait for tab switch and data load
+
+      await capturer(page, 'speakers-tab-after-publish-topic', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 4: Submit content for each speaker (recording lines 199-237)
+      for (let i = 0; i < testConfig.presentations.length; i++) {
+        const presentation = getPresentation(i);
+        const speakerCandidate = testConfig.speakerCandidates[presentation.speakerIndex];
+
+        console.log(
+          `\n📍 Step 4.${i + 1}: Submit content for ${speakerCandidate.firstName} (${presentation.actualSpeakerName})`
+        );
+
+        // Click speaker card using the brainstormed speaker name (as it appears in kanban)
+        // Cards show format: "N Nissim ELCA AI", "B Balti Galenica AI", etc.
+        const cardPattern = new RegExp(
+          `${speakerCandidate.firstName.charAt(0)} ${speakerCandidate.firstName}.*${speakerCandidate.company}`,
+          'i'
+        );
+        console.log(`  🔍 Looking for speaker card matching: ${cardPattern}`);
+
+        try {
+          const speakerCard = page.getByRole('button', { name: cardPattern });
+          await speakerCard.waitFor({ state: 'visible', timeout: 5000 });
+          await speakerCard.click();
+          await page.waitForTimeout(1000); // Wait for drawer to open
+        } catch (error) {
+          console.error(`  ❌ Failed to find speaker card for ${speakerCandidate.firstName}`);
+          console.error(`  Card pattern: ${cardPattern}`);
+
+          // Capture current page state for debugging
+          await page.screenshot({
+            path: `docs/user-guide/assets/screenshots/workflow/phase-b5-content/DEBUG-speaker-${i + 1}-not-found-${Date.now()}.png`,
+            fullPage: true,
+          });
+
+          throw error;
+        }
+
+        await capturer(page, `content-submission-drawer-${i + 1}-opened`, {
+          fullPage: false,
+        });
+
+        // Fill speaker search if needed
+        if (presentation.speakerSearchTerm) {
+          console.log(`  🔍 Searching for speaker: ${presentation.speakerSearchTerm}`);
+          const searchField = page.getByTestId('speaker-search-field');
+          await searchField.click();
+          await searchField.fill(presentation.speakerSearchTerm);
+          await page.waitForTimeout(1000); // Wait for autocomplete
+
+          // Select first result
+          await page.getByText(presentation.actualSpeakerName).first().click();
+          await page.waitForTimeout(500);
+
+          await capturer(page, `content-submission-${i + 1}-speaker-selected`, {
+            fullPage: false,
+          });
+        } else {
+          console.log(`  ✓ Speaker auto-mapped to ${presentation.actualSpeakerName}`);
+        }
+
+        // Fill presentation title
+        console.log(`  📝 Filling title: ${presentation.title}`);
+        await page.getByTestId('presentation-title-field').click();
+        await page.getByTestId('presentation-title-field').fill(presentation.title);
+
+        // Fill presentation abstract
+        console.log(`  📝 Filling abstract: ${presentation.abstract}`);
+        await page.getByTestId('presentation-abstract-field').click();
+        await page.getByTestId('presentation-abstract-field').fill(presentation.abstract);
+
+        await capturer(page, `content-submission-${i + 1}-filled`, {
+          fullPage: false,
+        });
+
+        // Submit content
+        console.log('  ✅ Submitting content');
+        await page.getByTestId('submit-speaker-content-button').click();
+
+        // Wait for drawer to close completely before proceeding
+        await page.waitForTimeout(2000); // Wait for submission + drawer close animation
+
+        // Ensure we're back on the Speakers tab with kanban view visible
+        await page.waitForLoadState('networkidle');
+
+        await capturer(page, `content-submitted-${i + 1}`, {
+          scrollToTop: true,
+          fullPage: false,
+        });
+
+        console.log(`  ✅ Content submitted for ${speakerCandidate.firstName}`);
+      }
+
+      console.log('\n✅ Phase B.5 Complete: All speaker content submitted');
+    } catch (error) {
+      console.error('❌ Phase B.5 failed:', error);
+
+      // Capture error screenshot
+      await page.screenshot({
+        path: `docs/user-guide/assets/screenshots/workflow/phase-b5-content/ERROR-${Date.now()}.png`,
+        fullPage: true,
+      });
+
+      throw error;
+    }
+  });
+
+  /**
+   * Phase C: Quality Review (Recording lines 238-246)
+   * - Publish Speakers
+   * - Approve presentations (3 speakers)
+   */
+  test('Phase C: Quality Review', async ({ page }) => {
+    test.setTimeout(10 * 60 * 1000);
+
+    console.log('\n📋 Phase C: Quality Review\n');
+
+    const capturer = createSequentialCapturer('phase-c-quality', 1);
+
+    try {
+      // Verify we have an event code from Phase A
+      expect(testEventCode).toBeTruthy();
+      console.log(`Using event code: ${testEventCode}`);
+
+      // Navigate to event detail page
+      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+      await page.waitForLoadState('networkidle');
+
+      // STEP 1: Navigate to Publish tab (recording line 238)
+      console.log('📍 Step 1: Navigate to Publish tab');
+      await page.getByRole('tab', { name: /Veröffentlichung|Publishing/i }).click();
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'publish-tab-before-speakers', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 2: Click "Publish Speakers" button (recording line 239)
+      console.log('📍 Step 2: Publish speakers');
+      await page.getByTestId('publish-speakers-button').click();
+      await page.waitForTimeout(1000); // Wait for publish to complete
+
+      await capturer(page, 'speakers-published', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 3: Return to Speakers tab (recording line 240)
+      console.log('📍 Step 3: Return to Speakers tab');
+      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'speakers-tab-after-publish', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // STEP 4: Approve each presentation (recording lines 241-246)
+      for (let i = 0; i < testConfig.presentations.length; i++) {
+        const presentation = getPresentation(i);
+        console.log(`\n📍 Step 4.${i + 1}: Approve ${presentation.title}`);
+
+        // Click presentation card to open quality review drawer
+        const presentationCard = page.getByRole('button', {
+          name: new RegExp(presentation.title),
+        });
+        await presentationCard.click();
+        await page.waitForTimeout(500);
+
+        await capturer(page, `quality-review-${i + 1}-opened`, {
+          fullPage: false,
+        });
+
+        // Click approve button
+        console.log('  ✅ Approving content');
+        await page.getByTestId('approve-content-button').click();
+        await page.waitForTimeout(1500); // Wait for approval + drawer close
+
+        await capturer(page, `content-approved-${i + 1}`, {
+          scrollToTop: true,
+          fullPage: false,
+        });
+      }
+
+      console.log('\n✅ Phase C Complete: All presentations approved');
+    } catch (error) {
+      console.error('❌ Phase C failed:', error);
+
+      // Capture error screenshot
+      await page.screenshot({
+        path: `docs/user-guide/assets/screenshots/workflow/phase-c-quality/ERROR-${Date.now()}.png`,
+        fullPage: true,
+      });
+
+      throw error;
+    }
   });
 
   /**
