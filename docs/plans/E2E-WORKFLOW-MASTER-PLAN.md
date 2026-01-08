@@ -1,7 +1,7 @@
 # E2E Screenshot Workflow - Master Plan & Status
 
-**Last Updated**: 2026-01-08 (Late Night Session - Shell Script Renamed for Phase C)
-**Current Status**: Phase A + B Complete ✅ | Phase C Ready (Script Updated)
+**Last Updated**: 2026-01-08 (Late Night Session - Phase B.5 + C Complete)
+**Current Status**: Phase A + B + B.5 + C Complete ✅ (4/7 phases done, ~57% complete)
 
 ---
 
@@ -235,26 +235,31 @@ await capturer(page, 'topic-selection-confirmed', {
   - StatusChangeDialog confirmation after each drag ✅
   - Test IDs added for language independence ✅
   - Event code format fixed (BATbern prefix) ✅
-  - ~15 screenshots captured
+  - 15 screenshots captured
 
-- [ ] **Phase B.5**: Content Submission (Lines 189-237) ⏳ **IN PROGRESS**
-  - Switch to Sessions view
-  - Go to Publish tab
+- [x] **Phase B.5**: Content Submission (Lines 189-237) ✅ **COMPLETE**
+  - Navigate directly to Publishing tab (URL-based navigation)
   - Click "Publish Topic" button 🔑
   - Return to Speakers tab
   - For each speaker (Nissim, Balti, Andreas):
-    - Select real speaker from database
+    - Click speaker card (using brainstormed name pattern)
+    - Select real speaker from database (auto-mapped or searched)
     - Fill presentation title
     - Fill presentation abstract
     - Submit speaker content
-  - ~10 screenshots
+  - Test IDs added: `presentation-title-field`, `presentation-abstract-field`, `submit-speaker-content-button`, `speaker-search-field`
+  - 14 screenshots captured ✅
 
-- [ ] **Phase C**: Quality Review (Lines 238-246)
-  - Go to Publish tab
+- [x] **Phase C**: Quality Review (Lines 238-246) ✅ **COMPLETE**
+  - Navigate to Publish tab
   - Click "Publish Speakers" button 🔑
   - Return to Speakers tab
-  - Approve 3 presentations (Nissim, Balti, Andreas)
-  - ~6 screenshots
+  - For each presentation (3 speakers):
+    - Click presentation card (by title)
+    - Review content in drawer
+    - Click approve button
+  - Test IDs added: `approve-content-button`
+  - 9 screenshots captured ✅
 
 - [ ] **Phase D**: Slot Assignment & Publish Agenda (Lines 247-254)
   - Manage slot assignments
@@ -435,32 +440,37 @@ src/components/
 | Auth Migration | ✅ Complete | 100% | N/A |
 | Test ID Migration | ✅ Complete | 100% | N/A |
 | **Phase A** | ✅ Complete | 100% | 12/12 |
-| **Phase B** | ✅ Complete | 100% | 11/11 |
-| Phase B.5 | ⏳ In Progress | 0% | 0/10 |
-| Phase C | ⏳ Ready | 0% | 0/6 |
+| **Phase B** | ✅ Complete | 100% | 15/15 |
+| **Phase B.5** | ✅ Complete | 100% | 14/14 |
+| **Phase C** | ✅ Complete | 100% | 9/9 |
 | Phase D | ⏳ Ready | 0% | 0/8 |
 | Phase E | ⏳ Ready | 0% | 0/4 |
 | Phase F | ⏳ Ready | 0% | 0/3 |
 
-**Overall**: ~50% complete (infrastructure + auth + Phase A + B complete, Phase B.5 in progress)
+**Overall**: ~57% complete (infrastructure + auth + Phase A + B + B.5 + C complete, ready for Phase D)
 
 ---
 
 ## 🎯 Next Session Priorities
 
-### Priority 1: Implement Phase B.5 (Content Submission) ⏳ **IN PROGRESS**
-1. Add test IDs to publish buttons and speaker content form
-2. Review workflow (lines 189-237 in playwright-recording.ts)
-3. Implement publish topic action
-4. Implement speaker content submission (3 speakers)
-5. Capture ~10 screenshots
+### Priority 1: Implement Phase D (Slot Assignment & Publish Agenda) ✅ **READY**
+1. Add test IDs to slot assignment components
+2. Review workflow (lines 247-254 in playwright-recording.ts)
+3. Implement slot assignment drag-and-drop
+4. Implement publish agenda action
+5. Capture ~8 screenshots
 
-### Priority 2: Implement Phase C (Quality Review)
-1. Add test IDs to approve buttons
-2. Review workflow (lines 238-246 in playwright-recording.ts)
-3. Implement publish speakers action
-4. Implement content approval (3 presentations)
-5. Capture ~6 screenshots
+### Priority 2: Implement Phase E (Archival)
+1. Review workflow (lines 255-261 in playwright-recording.ts)
+2. Implement event status change to "Archiviert"
+3. Implement workflow validation override
+4. Capture ~4 screenshots
+
+### Priority 3: Implement Phase F (Cleanup)
+1. Review workflow (lines 262-265 in playwright-recording.ts)
+2. Implement event deletion
+3. Verify cleanup works
+4. Capture ~3 screenshots
 
 ---
 
@@ -666,6 +676,77 @@ src/components/
 **Result**: Test runner script is now ready for Phase C implementation
 **Next Step**: Implement Phase C test code in `complete-event-workflow.spec.ts`
 
+### 2026-01-08 Late Night Session Part 4 - Phase B.5 + C Complete ✅
+
+**Phase B.5: Content Submission Implementation**:
+
+1. ✅ **Added Test IDs to Components** (4 components updated)
+   - `ContentSubmissionDrawer.tsx`: `presentation-title-field`, `presentation-abstract-field`, `submit-speaker-content-button`
+   - `UserAutocomplete.tsx`: Added `data-testid` prop support for search field
+   - `QualityReviewDrawer.tsx`: `approve-content-button`
+   - Publishing buttons already had test IDs (from `PublishingControls.tsx`)
+
+2. ✅ **Fixed Test Data Configuration**
+   - Corrected `speakerIndex` mapping (both Nissim and Balti had index 1)
+   - Fixed to: Nissim=0, Balti=1, Andreas=2
+   - Added documentation comments explaining index mapping
+
+3. ✅ **Implemented Phase B.5 Test Code** (~140 lines)
+   - Direct navigation to Publishing tab via URL (`?tab=publishing`)
+   - Click "Publish Topic" button
+   - Return to Speakers tab
+   - Loop through 3 speakers:
+     - Find speaker card using brainstormed name pattern
+     - Open content submission drawer
+     - Search for speaker (if needed) or use auto-mapped speaker
+     - Fill presentation title and abstract
+     - Submit content
+   - Added error handling with debug screenshots
+   - Wait for drawer close animation before proceeding to next speaker
+
+**Phase C: Quality Review Implementation**:
+
+1. ✅ **Implemented Phase C Test Code** (~80 lines)
+   - Navigate to Publish tab
+   - Click "Publish Speakers" button
+   - Return to Speakers tab
+   - Loop through 3 presentations:
+     - Find presentation card by title
+     - Open quality review drawer
+     - Click approve button
+     - Wait for drawer close
+   - Captured 9 screenshots
+
+**Technical Improvements**:
+- Fixed speaker card selection after content submission (increased wait times)
+- Used `speakerCandidate` lookup for card pattern matching
+- Added visibility checks before clicking cards
+- Improved error messages with debug context
+
+**Files Modified** (6):
+- `complete-event-workflow.spec.ts` - Added Phase B.5 and C implementations
+- `test-data.config.ts` - Fixed speaker indices, added documentation
+- `ContentSubmissionDrawer.tsx` - Added 3 test IDs
+- `UserAutocomplete.tsx` - Added data-testid support
+- `QualityReviewDrawer.tsx` - Added approve button test ID
+- `run-phases-a-b-c-autologin.sh` - Updated regex to include B\.5
+
+**Screenshots Captured**:
+- Phase B.5: 14 screenshots (content submission flow)
+- Phase C: 9 screenshots (quality review flow)
+- Total new screenshots: 23
+
+**Test Execution**:
+```bash
+cd web-frontend
+./run-phases-a-b-c-autologin.sh  # Runs Phase A, B, B.5, and C
+```
+
+**Phase B.5 Status**: ✅ 100% COMPLETE (14/14 screenshots)
+**Phase C Status**: ✅ 100% COMPLETE (9/9 screenshots)
+**Overall Progress**: 57% complete (4/7 phases done)
+**Next**: Implement Phase D (Slot Assignment & Publish Agenda)
+
 ---
 
 ## 🔗 References
@@ -677,5 +758,5 @@ src/components/
 
 ---
 
-**Last Updated**: 2026-01-08 Late Night Session (Shell Script Renamed for Phase C)
-**Next Action**: Implement Phase C (Quality Control & Content Assignment)
+**Last Updated**: 2026-01-08 Late Night Session (Phase B.5 + C Complete)
+**Next Action**: Implement Phase D (Slot Assignment & Publish Agenda)
