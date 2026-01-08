@@ -117,6 +117,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           value={speakerName}
           onChange={(e) => setSpeakerName(e.target.value)}
           disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-name-field' }}
         />
 
         <TextField
@@ -126,6 +127,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           value={company}
           onChange={(e) => setCompany(e.target.value)}
           disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-company-field' }}
         />
 
         <TextField
@@ -135,6 +137,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           value={expertise}
           onChange={(e) => setExpertise(e.target.value)}
           disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-expertise-field' }}
         />
 
         <OrganizerSelect
@@ -147,6 +150,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           disabled={addSpeakerMutation.isPending}
           includeUnassigned={true}
           includeAllOption={false}
+          data-testid="speaker-organizer-select"
         />
 
         <TextField
@@ -158,6 +162,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-notes-field' }}
         />
 
         <Button
@@ -166,6 +171,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           color="primary"
           startIcon={<AddIcon />}
           disabled={!speakerName.trim() || addSpeakerMutation.isPending}
+          data-testid="add-to-pool-button"
         >
           {addSpeakerMutation.isPending
             ? t('speakerBrainstorm.form.adding', 'Adding...')
@@ -279,13 +285,14 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       {/* Action Buttons */}
       {onContinue && (
         <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-          <Button variant="outlined" onClick={() => onContinue()}>
+          <Button variant="outlined" onClick={() => onContinue()} data-testid="skip-for-now-button">
             {t('speakerBrainstorm.actions.skipForNow', 'Skip for Now')}
           </Button>
           <Button
             variant="contained"
             onClick={() => onContinue()}
             disabled={!speakerPool || speakerPool.length === 0}
+            data-testid="proceed-to-outreach-button"
           >
             {t('speakerBrainstorm.actions.continue', 'Continue to Outreach')}
           </Button>

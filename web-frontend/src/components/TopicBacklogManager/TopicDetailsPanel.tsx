@@ -278,6 +278,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
                 fullWidth
                 onClick={handleSelectTopic}
                 disabled={selectTopicMutation.isPending || deleteTopicMutation.isPending}
+                data-testid="confirm-topic-selection-button"
               >
                 {selectTopicMutation.isPending
                   ? t('topicBacklog.details.selecting', 'Selecting...')
