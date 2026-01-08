@@ -93,6 +93,45 @@ export const testConfig = {
   ],
 
   /**
+   * Speaker Outreach Tracking
+   * Records contact interactions with speakers
+   * Based on recording lines 90-123
+   * Note: Nissim is contacted twice (first via Telefon, then Persönlich)
+   */
+  speakerOutreach: [
+    {
+      displayName: 'N Nissim ELCA AI',
+      contactMethod: 'Telefon' as const,
+      notes: 'Hab mit ihm gesprochen. er überlegt es sich,',
+      speakerIndex: 0,
+    },
+    {
+      displayName: 'B Balti Galenica AI',
+      contactMethod: 'Persönlich' as const,
+      notes: 'Ja, ich machs',
+      speakerIndex: 1,
+    },
+    {
+      displayName: 'A Andreas Mobiliar AI',
+      contactMethod: 'E-Mail' as const,
+      notes: 'Hab mal ein eMail gesendet.\nSeine antwort war:\nIpsum larum lirum',
+      speakerIndex: 2,
+    },
+    {
+      displayName: 'D Daniel BKW AI',
+      contactMethod: 'Persönlich' as const,
+      notes: 'OK.',
+      speakerIndex: 3,
+    },
+    {
+      displayName: 'N Nissim ELCA AI',
+      contactMethod: 'Persönlich' as const,
+      notes: 'OK. Er machts',
+      speakerIndex: 0, // Same speaker as first interaction
+    },
+  ],
+
+  /**
    * Presentation Details
    * Used when submitting speaker content
    * Based on actual recording (only 3 speakers got content submitted)

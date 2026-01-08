@@ -1,7 +1,7 @@
 # E2E Screenshot Workflow - Master Plan & Status
 
-**Last Updated**: 2026-01-08 (Late Evening Session)
-**Current Status**: Phase A - 100% Complete ✅ (Screenshot quality issues FIXED, ready for Phase B)
+**Last Updated**: 2026-01-08 (Late Night Session - Phase B Complete with Kanban)
+**Current Status**: Phase A + B (with Kanban Drag-Drop) - 100% Complete ✅ (Ready for Phase C)
 
 ---
 
@@ -226,11 +226,16 @@ await capturer(page, 'topic-selection-confirmed', {
 - [x] Fix OrganizerSelect scrolling bug
 - [x] Validate cleanup works
 
-### Phases B-F - Implementation (READY TO START)
-- [ ] **Phase B**: Speaker Outreach (Lines 40-123)
-  - Contact 4 speakers
-  - Track notes
-  - 8-10 screenshots
+### Phases B-F - Implementation (IN PROGRESS)
+- [x] **Phase B**: Speaker Outreach & Kanban (Lines 90-169) ✅ **COMPLETE**
+  - Contact 5 interactions (4 speakers, Nissim contacted twice)
+  - Track contact method and notes
+  - Drag speakers CONTACTED → READY (4 speakers) ✅
+  - Drag speakers READY → ACCEPTED (4 speakers) ✅
+  - StatusChangeDialog confirmation after each drag ✅
+  - Test IDs added for language independence ✅
+  - Event code format fixed (BATbern prefix) ✅
+  - ~15 screenshots captured
 
 - [ ] **Phase C**: Quality/Kanban (Lines 124-183)
   - Drag speakers through workflow
@@ -273,18 +278,18 @@ cd web-frontend && npm run dev
 ./scripts/auth/get-token.sh development nissim@buchs.be <password>
 ```
 
-### Run Test
+### Run Tests
 ```bash
 cd web-frontend
 
 # Set environment variables
 export AUTH_TOKEN=$(jq -r '.idToken' ~/.batbern/development.json)
 
-# Run Phase A test
-./run-phase-a-autologin.sh
+# Run Phase A + B tests
+./run-phases-a-b-autologin.sh
 
 # Or with UI mode for debugging
-./run-phase-a-autologin.sh --ui
+./run-phases-a-b-autologin.sh --ui
 ```
 
 ### Debug Event Creation Issue
@@ -415,29 +420,29 @@ src/components/
 | Auth Migration | ✅ Complete | 100% | N/A |
 | Test ID Migration | ✅ Complete | 100% | N/A |
 | **Phase A** | ✅ Complete | 100% | 12/12 |
-| Phase B | ⏳ Ready | 0% | 0/10 |
+| **Phase B** | ✅ Complete | 100% | 11/11 |
 | Phase C | ⏳ Ready | 0% | 0/8 |
 | Phase D | ⏳ Ready | 0% | 0/12 |
 | Phase E | ⏳ Ready | 0% | 0/10 |
 | Phase F | ⏳ Ready | 0% | 0/5 |
 
-**Overall**: ~50% complete (infrastructure + auth + Phase A complete, ready for Phase B)
+**Overall**: ~60% complete (infrastructure + auth + Phase A + B complete, ready for Phase C)
 
 ---
 
 ## 🎯 Next Session Priorities
 
-### Priority 1: Implement Phase B (READY TO START)
-1. Review Phase B workflow (lines 40-123 in playwright-recording.ts)
-2. Extract speaker outreach actions
-3. Create test steps for contacting 4 speakers
-4. Add note tracking functionality
-5. Capture 8-10 screenshots
+### Priority 1: Implement Phase C (Kanban/Quality) ✅ **READY**
+1. Review Phase C workflow (lines 124-183 in playwright-recording.ts)
+2. Extract kanban drag-and-drop actions
+3. Create test steps for dragging speakers through workflow
+4. Use fixed drag-drop code from recording
+5. Capture 6-8 screenshots
 
-### Priority 2: Implement Phase C (Kanban)
-1. Copy Phase A pattern
-2. Implement speaker outreach steps
-3. Capture 8-10 screenshots
+### Priority 2: Implement Phase D (Content Assignment)
+1. Copy Phase B pattern
+2. Implement content submission steps
+3. Capture 10-12 screenshots
 4. Test and validate
 
 ---
@@ -491,7 +496,57 @@ src/components/
 - `OrganizerSelect.tsx` - Fixed memo dependencies (2 locations)
 - `E2E-WORKFLOW-MASTER-PLAN.md` - Updated status to Phase A complete
 
-**Phase A Status**: ✅ 100% COMPLETE - Ready for Phase B
+**Phase A Status**: ✅ 100% COMPLETE
+
+### 2026-01-08 Late Night Session - Phase B Complete ✅
+
+**Major Achievement**: Phase B (Speaker Outreach) fully implemented and tested
+
+**Implementation Details**:
+1. ✅ Added `speakerOutreach` configuration to test-data.config.ts
+   - 5 contact interactions (Nissim contacted twice as in recording)
+   - Each interaction has displayName, contactMethod, notes, speakerIndex
+
+2. ✅ Implemented Phase B test in complete-event-workflow.spec.ts
+   - Navigates to event outreach view
+   - Contacts each speaker using speakerPage.contactSpeaker() method
+   - Captures 11 screenshots (before/after each contact + final state)
+   - Follows exact recording workflow (lines 90-123)
+
+3. ✅ Updated test suite to use `.serial` mode
+   - Ensures Phase B can access testEventCode from Phase A
+   - Tests run in order and share state
+
+4. ✅ Created run-phases-a-b-autologin.sh test runner
+   - Renamed from run-phase-a-autologin.sh
+   - Uses regex `-g "Phase (A|B)"` to run both phases
+   - Updated output paths for Phase B screenshots
+
+**Files Modified** (4):
+- `test-data.config.ts` - Added speakerOutreach array with 5 interactions
+- `complete-event-workflow.spec.ts` - Implemented Phase B test, added .serial
+- `run-phases-a-b-autologin.sh` - Updated runner for Phase A + B
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated status to Phase B complete
+
+**Phase B Workflow Implemented**:
+```
+1. Navigate to event outreach view (speakers visible as cards)
+2. For each speaker contact:
+   - Click speaker card → opens contact dialog
+   - Select contact method (Telefon/E-Mail/Persönlich)
+   - Fill notes field
+   - Click "Als kontaktiert markieren"
+   - Click backdrop to close dialog
+3. Verify all 5 contacts recorded
+4. Capture 11 screenshots
+```
+
+**Screenshot Count**: 11 total
+- 01: outreach-view-initial
+- 02-11: before-contact-speaker-{1-5} + after-contact-speaker-{1-5}
+- 11: all-speakers-contacted (final state)
+
+**Next Steps**: Ready for Phase C (Kanban/Quality)
 
 **Critical Bugs Fixed (3 total):**
 
@@ -517,6 +572,59 @@ src/components/
 **Test Status**: ✅ READY - All blocking bugs resolved
 **Next**: Run `./run-phase-a-autologin.sh --ui` to verify complete Phase A
 
+### 2026-01-08 Late Night Session Part 2 - Phase B Kanban Complete ✅
+
+**Major Achievement**: Phase B Kanban drag-and-drop fully implemented
+
+**Implementation Details**:
+
+1. ✅ **Added Test IDs to Kanban Components**
+   - `StatusChangeDialog.tsx` - Added test IDs:
+     - `data-testid="status-change-dialog"` on Dialog
+     - `data-testid="status-change-reason"` on reason TextField
+     - `data-testid="status-change-cancel"` on cancel button
+     - `data-testid="status-change-confirm"` on confirm button
+
+   - `SpeakerStatusLanes.tsx` - Added test IDs:
+     - `data-testid="status-lane-{status}"` on each lane Paper (e.g., `status-lane-ready`)
+     - `data-testid="status-lane-heading-{status}"` on Typography headings
+
+2. ✅ **Implemented Drag-and-Drop for Phase B**
+   - Step 3: Drag 4 speakers from CONTACTED → READY
+   - Step 4: Drag 4 speakers from READY → ACCEPTED
+   - Manual mouse events using boundingBox (more reliable than dragTo with dnd-kit)
+   - StatusChangeDialog confirmation after each drag
+   - Comprehensive error handling and logging
+
+3. ✅ **Fixed Event Code Format**
+   - Changed from `BAT-{number}` to `BATbern{number}` format
+   - Removed unnecessary URL conversions
+   - Cleanup now works correctly
+
+4. ✅ **Replaced Translated Text with Test IDs**
+   - ❌ Before: `page.getByRole('heading', { name: /Ready|Bereit/i })`
+   - ✅ After: `page.getByTestId('status-lane-ready')`
+   - All kanban column references now language-independent
+
+**Files Modified** (3):
+- `StatusChangeDialog.tsx` - Added 4 test identifiers
+- `SpeakerStatusLanes.tsx` - Added lane test identifiers
+- `complete-event-workflow.spec.ts` - Implemented drag-drop with error handling
+
+**Technical Details**:
+- Drag-and-drop uses `page.mouse.move()`, `page.mouse.down()`, `page.mouse.up()`
+- `boundingBox()` provides element coordinates for precise mouse movements
+- Each drag waits for card visibility before attempting
+- Modal confirmation uses test identifier for reliability
+- Success/failure logging for each drag operation
+
+**Phase B Screenshots**: ~15 captured
+- Contact interactions (before/after each)
+- Kanban states (after READY, after ACCEPTED)
+
+**Phase B Status**: ✅ 100% COMPLETE
+**Next**: Implement Phase C (Quality Control & Content Submission)
+
 ---
 
 ## 🔗 References
@@ -528,5 +636,5 @@ src/components/
 
 ---
 
-**Last Updated**: End of 2026-01-08 session
-**Next Action**: Debug event creation validation error
+**Last Updated**: End of 2026-01-08 Late Night Session (Phase B Complete)
+**Next Action**: Implement Phase C (Kanban/Quality)

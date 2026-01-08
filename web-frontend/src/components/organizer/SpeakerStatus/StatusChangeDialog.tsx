@@ -77,7 +77,13 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleCancel} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleCancel}
+      maxWidth="sm"
+      fullWidth
+      data-testid="status-change-dialog"
+    >
       <DialogTitle>{t('organizer:speakerStatus.changeStatus')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2 }}>
@@ -100,13 +106,20 @@ export const StatusChangeDialog: React.FC<StatusChangeDialogProps> = ({
             error || t('organizer:speakerStatus.reasonHelperText', { max: MAX_REASON_LENGTH })
           }
           placeholder={t('organizer:speakerStatus.reasonPlaceholder')}
+          data-testid="status-change-reason"
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleCancel} color="secondary">
+        <Button onClick={handleCancel} color="secondary" data-testid="status-change-cancel">
           {t('organizer:speakerStatus.cancelChange')}
         </Button>
-        <Button onClick={handleConfirm} variant="contained" color="primary" disabled={!!error}>
+        <Button
+          onClick={handleConfirm}
+          variant="contained"
+          color="primary"
+          disabled={!!error}
+          data-testid="status-change-confirm"
+        >
           {t('organizer:speakerStatus.confirmChange')}
         </Button>
       </DialogActions>

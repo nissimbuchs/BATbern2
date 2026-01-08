@@ -16,7 +16,7 @@
  * - Advancing workflow states via API (use frontend UI)
  */
 
-const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 export interface SeedData {
   companies: Company[];

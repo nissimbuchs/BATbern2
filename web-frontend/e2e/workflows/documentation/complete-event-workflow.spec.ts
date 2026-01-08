@@ -26,7 +26,6 @@
 import { test, expect } from '@playwright/test';
 import { testConfig } from './test-data.config';
 import { createSequentialCapturer } from './helpers/screenshot-helpers';
-import { getSeedData } from './helpers/api-helpers';
 import { cleanupAfterTests, cleanupBeforeScreenshots } from './helpers/cleanup-helpers';
 import { EventWorkflowPage } from './page-objects/EventWorkflowPage';
 import { SpeakerManagementPage } from './page-objects/SpeakerManagementPage';
@@ -38,12 +37,11 @@ import { PublishingPage } from './page-objects/PublishingPage';
 
 /**
  * Test Suite: Complete Event Workflow
+ * Using .serial to run tests in order and share state between phases
  */
-test.describe('Complete Event Workflow with Documentation Screenshots', () => {
+test.describe.serial('Complete Event Workflow with Documentation Screenshots', () => {
   let authToken: string;
   let testEventCode: string;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let seedData: Record<string, unknown> | null;
 
   /**
    * Setup: Clean old screenshots
@@ -64,16 +62,8 @@ test.describe('Complete Event Workflow with Documentation Screenshots', () => {
     // Get authentication token from environment (optional for autologin)
     authToken = process.env.AUTH_TOKEN || '';
 
-    // Try to fetch seed data (optional - Phase A doesn't need it)
-    try {
-      if (authToken) {
-        seedData = await getSeedData(authToken);
-        console.log('✓ Seed data loaded');
-      }
-    } catch {
-      console.log('⚠️  Seed data not available (not needed for Phase A)');
-      seedData = null;
-    }
+    // Seed data not currently used - speakers/topics created directly via UI
+    // If needed in future, can use: await getSeedData(authToken)
 
     console.log('\n✅ Setup complete\n');
   });
@@ -192,8 +182,8 @@ test.describe('Complete Event Workflow with Documentation Screenshots', () => {
       // Submit event creation form
       await eventPage.submitEventForm();
 
-      // Store event code for cleanup
-      testEventCode = `BAT-${uniqueEventNumber}`;
+      // Store event code for cleanup (backend format: BATbernXXXX)
+      testEventCode = `BATbern${uniqueEventNumber}`;
 
       // After creation, modal closes and we're back on dashboard
       console.log(`    → Waiting for event creation to complete...`);
@@ -230,8 +220,7 @@ test.describe('Complete Event Workflow with Documentation Screenshots', () => {
       console.log(`    ✓ Event created: ${testEventCode}, back on dashboard`);
 
       // Navigate directly to the event detail page
-      const eventCodeUrl = testEventCode.replace('BAT-', 'BATbern'); // BAT-1203 → BATbern1203 (backend format)
-      const eventUrl = `http://localhost:8100/organizer/events/${eventCodeUrl}`;
+      const eventUrl = `http://localhost:8100/organizer/events/${testEventCode}`;
       console.log(`    → Navigating to event detail page: ${eventUrl}`);
       await page.goto(eventUrl);
       await page.waitForLoadState('networkidle');
@@ -328,19 +317,245 @@ test.describe('Complete Event Workflow with Documentation Screenshots', () => {
   });
 
   /**
-   * Phase B: Outreach (Steps 4-6)
-   * - Speaker Outreach Tracking
-   * - Speaker Status Management
-   * - Content Collection
+   * Phase B: Speaker Outreach & Kanban Management (Steps 4-6)
+   * - Speaker Outreach Tracking (contact 5 speakers with notes)
+   * - Kanban Workflow: Drag speakers from CONTACTED → READY
+   * - Kanban Workflow: Drag speakers from READY → ACCEPTED
    *
-   * This test case will be implemented after recording the workflow
+   * Based on recording lines 90-169
    */
-  test('Phase B: Speaker Outreach (Steps 4-6)', async () => {
+  test('Phase B: Speaker Outreach (Steps 4-6)', async ({ page }) => {
     test.setTimeout(10 * 60 * 1000);
 
     console.log('\n📋 Phase B: Speaker Outreach\n');
-    console.log('⏭️  Phase B implementation pending workflow recording');
-    test.skip();
+
+    const capturer = createSequentialCapturer('phase-b-outreach', 1);
+    const speakerPage = new SpeakerManagementPage(page);
+
+    try {
+      // ========================================
+      // Step 1: Navigate to event outreach view
+      // ========================================
+      console.log('  → Step 1: Navigate to Event Outreach View');
+
+      // NOTE: Even with .serial, Playwright creates a fresh page context for each test
+      // Navigate directly to speakers tab with URL parameters
+      const eventUrl = `http://localhost:8100/organizer/events/${testEventCode}?tab=speakers&view=kanban`;
+      console.log(`    → Navigating to event speakers tab: ${eventUrl}`);
+      await page.goto(eventUrl);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1500);
+
+      // Verify speaker cards are visible (we should be in outreach phase from Phase A)
+      await expect(page.locator('text=/N.*Nissim.*ELCA/i').first()).toBeVisible({ timeout: 10000 });
+      await capturer(page, 'outreach-view-ready', { scrollToTop: true });
+      console.log('    ✓ Outreach view loaded with speaker cards visible');
+
+      // ========================================
+      // Step 2: Contact Speakers (5 interactions)
+      // ========================================
+      console.log('  → Step 2: Contact Speakers');
+
+      // Iterate through each outreach interaction
+      for (let i = 0; i < testConfig.speakerOutreach.length; i++) {
+        const contact = testConfig.speakerOutreach[i];
+        console.log(
+          `    → Contacting speaker ${i + 1}/${testConfig.speakerOutreach.length}: ${contact.displayName}`
+        );
+
+        // Capture before opening dialog
+        await capturer(page, `before-contact-speaker-${i + 1}`, { scrollToTop: true });
+
+        // Use page object method to contact speaker
+        await speakerPage.contactSpeaker(contact.displayName, contact.contactMethod, contact.notes);
+
+        // Capture after contact recorded
+        await page.waitForTimeout(500); // Wait for dialog to close
+        await capturer(page, `after-contact-speaker-${i + 1}`, { scrollToTop: true });
+
+        console.log(
+          `    ✓ Speaker ${i + 1} contacted via ${contact.contactMethod}: ${contact.notes.substring(0, 30)}...`
+        );
+      }
+
+      console.log(`    ✓ All ${testConfig.speakerOutreach.length} speaker contacts recorded`);
+
+      // ========================================
+      // Step 3: Drag Speakers from CONTACTED to READY
+      // ========================================
+      console.log('  → Step 3: Move Speakers to READY');
+
+      // Wait for kanban board to be ready
+      await page.waitForTimeout(1000);
+      await capturer(page, 'kanban-contacted-state', { scrollToTop: true });
+
+      // Get the READY column locator using test identifier
+      const readyColumn = page.getByTestId('status-lane-ready');
+
+      // Drag each speaker from CONTACTED to READY
+      const speakersToMove = [
+        { name: 'N Nissim ELCA AI', label: 'Nissim' },
+        { name: 'B Balti Galenica AI', label: 'Balti' },
+        { name: 'A Andreas Mobiliar AI', label: 'Andreas' },
+        { name: 'D Daniel BKW AI', label: 'Daniel' },
+      ];
+
+      for (const speaker of speakersToMove) {
+        console.log(`    → Dragging ${speaker.label} to READY`);
+        const speakerCard = page.getByRole('button', { name: speaker.name });
+
+        // Wait for card to be visible and stable
+        await expect(speakerCard).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(500); // Let card settle
+
+        // Manual drag using mouse events (more reliable with dnd-kit)
+        const cardBox = await speakerCard.boundingBox();
+        const columnBox = await readyColumn.boundingBox();
+
+        if (!cardBox) {
+          console.error(`      ✗ Failed to get boundingBox for ${speaker.label} - card not found`);
+          continue;
+        }
+        if (!columnBox) {
+          console.error(`      ✗ Failed to get boundingBox for READY column`);
+          continue;
+        }
+
+        // Start drag from center of card
+        await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+        await page.mouse.down();
+        await page.waitForTimeout(100);
+
+        // Move to center of target column
+        await page.mouse.move(
+          columnBox.x + columnBox.width / 2,
+          columnBox.y + columnBox.height / 2,
+          {
+            steps: 10,
+          }
+        );
+        await page.waitForTimeout(100);
+
+        // Drop
+        await page.mouse.up();
+        await page.waitForTimeout(300);
+
+        // After drop, StatusChangeDialog opens asking for optional reason
+        // Wait for modal and confirm (leave reason field empty)
+        const confirmButton = page.getByTestId('status-change-confirm');
+        if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await confirmButton.click();
+          await page.waitForTimeout(800);
+        }
+
+        console.log(`      ✓ ${speaker.label} moved to READY`);
+      }
+
+      // Wait longer for all drag operations to settle
+      await page.waitForTimeout(2000);
+      await capturer(page, 'all-speakers-ready', { scrollToTop: true });
+      console.log('    ✓ All speakers moved to READY');
+
+      // ========================================
+      // Step 4: Drag Speakers from READY to ACCEPTED
+      // ========================================
+      console.log('  → Step 4: Move Speakers to ACCEPTED');
+
+      // After screenshot scrolls to top, wait and scroll back to kanban board
+      await page.waitForTimeout(1000);
+
+      // Verify READY column is visible (to ensure we're looking at the kanban)
+      const readyColumnCheck = page.getByTestId('status-lane-ready');
+      await expect(readyColumnCheck).toBeVisible({ timeout: 5000 });
+
+      // Get the ACCEPTED column locator using test identifier
+      const acceptedColumn = page.getByTestId('status-lane-accepted');
+
+      // Verify ACCEPTED column exists before starting
+      await expect(acceptedColumn).toBeVisible({ timeout: 5000 });
+      console.log('    → ACCEPTED column found, starting drag operations');
+
+      // Verify first speaker card is still visible in READY column
+      const firstSpeakerCheck = page.getByRole('button', { name: speakersToMove[0].name });
+      await expect(firstSpeakerCheck).toBeVisible({ timeout: 5000 });
+      console.log(`    → First speaker (${speakersToMove[0].label}) confirmed visible in READY`);
+
+      // Take a screenshot before starting Step 4 drags
+      await capturer(page, 'before-drag-to-accepted');
+
+      // Drag each speaker from READY to ACCEPTED with manual mouse events
+      for (const speaker of speakersToMove) {
+        console.log(`    → Dragging ${speaker.label} to ACCEPTED`);
+
+        // Wait for the card to be stable in READY column
+        await page.waitForTimeout(500);
+
+        const speakerCard = page.getByRole('button', { name: speaker.name });
+
+        // Ensure card is visible and stable before dragging
+        await expect(speakerCard).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(500); // Let card settle
+
+        // Manual drag using mouse events
+        const cardBox = await speakerCard.boundingBox();
+        const columnBox = await acceptedColumn.boundingBox();
+
+        if (!cardBox) {
+          console.error(`      ✗ Failed to get boundingBox for ${speaker.label} - card not found`);
+          continue;
+        }
+        if (!columnBox) {
+          console.error(`      ✗ Failed to get boundingBox for ACCEPTED column`);
+          continue;
+        }
+
+        // Start drag from center of card
+        await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+        await page.mouse.down();
+        await page.waitForTimeout(100);
+
+        // Move to center of target column
+        await page.mouse.move(
+          columnBox.x + columnBox.width / 2,
+          columnBox.y + columnBox.height / 2,
+          {
+            steps: 10,
+          }
+        );
+        await page.waitForTimeout(100);
+
+        // Drop
+        await page.mouse.up();
+        await page.waitForTimeout(300);
+
+        // After drop, StatusChangeDialog opens asking for optional reason
+        // Wait for modal and confirm (leave reason field empty)
+        const confirmButton = page.getByTestId('status-change-confirm');
+        if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await confirmButton.click();
+          await page.waitForTimeout(800);
+        }
+
+        console.log(`      ✓ ${speaker.label} moved to ACCEPTED`);
+      }
+
+      // Wait for all final updates to complete
+      await page.waitForTimeout(2000);
+      await capturer(page, 'all-speakers-accepted', { scrollToTop: true });
+      console.log('    ✓ All speakers moved to ACCEPTED');
+
+      console.log('\n✅ Phase B Complete\n');
+    } catch (error) {
+      console.error('\n❌ Phase B Failed:', error);
+
+      // Capture error screenshot
+      await page.screenshot({
+        path: `docs/user-guide/assets/screenshots/workflow/phase-b-outreach/ERROR-${Date.now()}.png`,
+        fullPage: true,
+      });
+
+      throw error;
+    }
   });
 
   /**
