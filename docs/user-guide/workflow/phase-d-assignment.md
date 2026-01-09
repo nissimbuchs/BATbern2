@@ -25,15 +25,35 @@ Click **Manage Slot Assignments** to open the assignment interface.
 
 ![Slot Assignment Page](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
 
+Before auto-assignment:
+
+![Before Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-04-before-auto-assign.png)
+
 Use the **Auto-Assign** feature to automatically assign presentations to available slots.
 
 ![Auto-Assign Modal](../assets/screenshots/workflow/phase-d-publishing/d-05-auto-assign-modal-opened.png)
 
+After auto-assignment completes:
+
+![After Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-06-after-auto-assign.png)
+
+Return to event page:
+
+![Back to Event Page](../assets/screenshots/workflow/phase-d-publishing/d-07-back-to-event-page.png)
+
 ### Publishing the Agenda
 
-After assigning all sessions to slots, publish the agenda from the Publishing tab.
+After assigning all sessions to slots, navigate to the Publishing tab.
 
-![Publish Agenda](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
+![Publishing Tab](../assets/screenshots/workflow/phase-d-publishing/d-08-publishing-tab-loaded.png)
+
+Before publishing the agenda:
+
+![Before Publish Agenda](../assets/screenshots/workflow/phase-d-publishing/d-09-before-publish-agenda.png)
+
+Click **Publish Agenda** to make the schedule public:
+
+![Agenda Published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
 
 ## Step 9: Assign Speakers to Time Slots
 

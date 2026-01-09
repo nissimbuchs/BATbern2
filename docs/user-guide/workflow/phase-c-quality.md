@@ -21,6 +21,14 @@ Before reviewing content, publish the speakers from the Publishing tab.
 
 ![Publishing Tab Before Speakers](../assets/screenshots/workflow/phase-c-quality/c-01-publish-tab-before-speakers.png)
 
+After publishing speakers:
+
+![Speakers Published](../assets/screenshots/workflow/phase-c-quality/c-02-speakers-published.png)
+
+Return to the Speakers tab to begin content review:
+
+![Speakers Tab After Publish](../assets/screenshots/workflow/phase-c-quality/c-03-speakers-tab-after-publish.png)
+
 ## Step 7: Content Quality Review
 
 <span class="feature-status implemented">Implemented</span>

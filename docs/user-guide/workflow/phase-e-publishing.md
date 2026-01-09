@@ -39,9 +39,11 @@ Archive events after:
 
 From the event dashboard, open the event you want to archive and navigate to the Overview tab.
 
-![Event Edit Modal](../assets/screenshots/workflow/phase-e-archival/e-02-edit-modal-opened.png)
+![Overview Tab Before Archival](../assets/screenshots/workflow/phase-e-archival/e-01-overview-tab-before-archival.png)
 
 Click the edit button to open the event configuration modal.
+
+![Event Edit Modal](../assets/screenshots/workflow/phase-e-archival/e-02-edit-modal-opened.png)
 
 </div>
 
@@ -51,9 +53,13 @@ Click the edit button to open the event configuration modal.
 
 In the edit modal, locate the status dropdown and select **ARCHIVED**.
 
+![Status Dropdown Opened](../assets/screenshots/workflow/phase-e-archival/e-03-status-dropdown-opened.png)
+
 ![Status Changed to Archived](../assets/screenshots/workflow/phase-e-archival/e-04-status-changed-to-archived.png)
 
 The system will initially show a validation error if the event hasn't completed all workflow steps.
+
+![Validation Error Shown](../assets/screenshots/workflow/phase-e-archival/e-05-validation-error-shown.png)
 
 </div>
 
@@ -74,6 +80,8 @@ This allows archival regardless of workflow state, useful for cancelled events o
 **Save and Verify**
 
 Save the changes and verify the event now shows the ARCHIVED badge.
+
+![Event Archived Successfully](../assets/screenshots/workflow/phase-e-archival/e-07-event-archived-successfully.png)
 
 ![Archived Badge Visible](../assets/screenshots/workflow/phase-e-archival/e-08-archived-badge-visible.png)
 

@@ -80,13 +80,22 @@ Customize as needed, then click **Send**.
 
 **Log Contact**
 
+Before contacting a speaker:
+
+![Before Contact](../assets/screenshots/workflow/phase-b-outreach/b-02-before-contact-speaker-1.png)
+
 After sending, speaker status updates:
 - Status: IDENTIFIED → **CONTACTED**
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
 
-<!-- TODO: Add contact history log screenshot (element-level capture) -->
+![After Contact](../assets/screenshots/workflow/phase-b-outreach/b-03-after-contact-speaker-1.png)
+
 *The contact history log displays a chronological timeline of all interactions with a speaker: timestamp, contact method (Email Sent, Phone Call, etc.), subject line or summary, current status (CONTACTED, INTERESTED, etc.), and next scheduled action with date.*
+
+After contacting all speakers, the Kanban board shows them in the "Contacted" column:
+
+![Kanban Contacted State](../assets/screenshots/workflow/phase-b-outreach/b-12-kanban-contacted-state.png)
 
 </div>
 
@@ -94,7 +103,11 @@ After sending, speaker status updates:
 
 **Track Responses**
 
-When speakers respond, update their status on the Kanban board. Drag speaker cards from "Contacted" to "Accepted" as they confirm participation.
+When speakers respond, update their status on the Kanban board. Drag speaker cards from "Contacted" to "Ready" as they show interest.
+
+![All Speakers Ready](../assets/screenshots/workflow/phase-b-outreach/b-13-all-speakers-ready.png)
+
+Then drag from "Ready" to "Accepted" as they confirm participation.
 
 ![Before Moving to Accepted](../assets/screenshots/workflow/phase-b-outreach/b-14-before-drag-to-accepted.png)
 

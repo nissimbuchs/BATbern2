@@ -109,7 +109,6 @@ In the event creation/edit form, select the appropriate type:
 
 Set event date and registration windows:
 
-<!-- TODO: Add timeline configuration screenshot (element-level capture) -->
 *The timeline configuration form includes event date, event time (start and end), registration opening date, and registration closing date. Validation ensures logical sequencing: Registration Opens < Registration Closes < Event Date.*
 
 Validation ensures logical timeline: Opens < Closes < Event Date
@@ -121,7 +120,6 @@ Validation ensures logical timeline: Opens < Closes < Event Date
 
 Enter venue details:
 
-<!-- TODO: Add venue information screenshot (element-level capture) -->
 *The venue information form collects venue name, street address, city, canton (dropdown for Swiss cantons), and postal code. City is a required field.*
 
 </div>
@@ -129,6 +127,10 @@ Enter venue details:
 <div class="step" data-step="4">
 
 **Save Configuration**
+
+After filling all required fields, the form should look like this:
+
+![Event Form Filled](../assets/screenshots/workflow/phase-a-setup/a-04-event-form-filled.png)
 
 Click **Save & Continue to Step 2**.
 
@@ -257,7 +259,6 @@ Interactive heat map opens showing historical data.
 
 Hover over cells to see details:
 
-<!-- TODO: Add heat map tooltip screenshot (element-level capture) -->
 *Hovering over a heat map cell reveals detailed statistics: number of presentations, speakers (including panel sessions), average audience rating, and average attendance. Click on a year cell to view individual presentation details.*
 
 Click year to see presentation details.
@@ -267,10 +268,15 @@ Click year to see presentation details.
 
 **Select Topics**
 
+Open the topic selection interface:
+
+![Topic Selection Interface](../assets/screenshots/workflow/phase-a-setup/a-16-topic-selection-opened.png)
+
 Click topics to add to your event:
 
-<!-- TODO: Add selected topics checklist screenshot (element-level capture) -->
 *The selected topics checklist shows your current topic selections with a progress indicator (e.g., "4 of 8 required"). Each selected topic displays with a checkmark and a [Remove] button. An [+ Add Another Topic] button allows adding more topics until the minimum requirement is met.*
+
+![Topic Selected from Heatmap](../assets/screenshots/workflow/phase-a-setup/a-18-topic-selected-from-heatmap.png)
 
 Add minimum required for your event type.
 </div>
@@ -293,6 +299,8 @@ Ensure topic diversity:
 
 Click **Confirm Topic Selection**.
 
+![Topic Selection Confirmed](../assets/screenshots/workflow/phase-a-setup/a-19-topic-selection-confirmed.png)
+
 Event state advances to: **TOPIC_SELECTED**
 </div>
 
@@ -300,7 +308,6 @@ Event state advances to: **TOPIC_SELECTED**
 
 **Aim for Variety**:
 
-<!-- TODO: Add topic balance summary screenshot (element-level capture) -->
 *The topic balance indicator shows examples of good vs. poor topic distribution. Good balance includes diverse categories (Sustainability, Technology, Urban & Regional, Heritage). Poor balance concentrates all topics in a single category (e.g., all Technology topics like BIM, Smart Buildings, Digital Twins).*
 
 **Consider Event Type**:
@@ -358,7 +365,6 @@ Identify potential speakers for each selected topic, creating a pool of candidat
 
 In Step 3, choose a topic to brainstorm speakers:
 
-<!-- TODO: Add topic speaker status overview screenshot (element-level capture) -->
 *The topic speaker status overview displays all selected topics with their current speaker candidate count. Topics are shown with visual indicators: ✅ for topics with adequate candidates (3+), ⚠️ for topics with insufficient candidates (0-2). Click any topic to add speaker candidates.*
 
 Click topic to add speaker candidates.
@@ -383,6 +389,8 @@ Candidate is created with status: **IDENTIFIED**
 
 Add 2-3 candidates per topic. After adding candidates, the topic displays the candidate list showing names, expertise match level, and contact information, with an option to add more candidates.
 
+![All Speakers Added](../assets/screenshots/workflow/phase-a-setup/a-21-all-speakers-added.png)
+
 </div>
 
 <div class="step" data-step="4">
@@ -398,6 +406,8 @@ View all candidates across topics. The Speaker Candidate Summary displays: Total
 **Confirm Brainstorming Complete**
 
 Once minimum candidates identified, click **Complete Brainstorming**.
+
+![Proceed to Outreach](../assets/screenshots/workflow/phase-a-setup/a-22-proceed-to-outreach.png)
 
 Event state advances to: **SPEAKERS_IDENTIFIED**
 
