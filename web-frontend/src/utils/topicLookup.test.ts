@@ -121,7 +121,7 @@ describe('topicLookup', () => {
         createdDate: '2025-12-15',
         lastUsedDate: null,
         colorZone: 'green',
-        status: 'available',
+        status: 'AVAILABLE',
       };
 
       vi.mocked(topicService.getTopics).mockResolvedValue(mockEmptyResponse);
@@ -157,7 +157,7 @@ describe('topicLookup', () => {
         createdDate: '2025-12-15',
         lastUsedDate: null,
         colorZone: 'green',
-        status: 'available',
+        status: 'AVAILABLE',
       };
 
       vi.mocked(topicService.getTopics).mockResolvedValue(mockEmptyResponse);
