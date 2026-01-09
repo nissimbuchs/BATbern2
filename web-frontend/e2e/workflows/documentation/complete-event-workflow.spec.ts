@@ -189,6 +189,9 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         delay: 1000,
       });
 
+      // Event type dropdown screenshot captured during fillEventForm
+      // Other element screenshots (timeline, venue) can be added later if needed
+
       // Submit event creation form
       await eventPage.submitEventForm();
 
@@ -383,6 +386,54 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForTimeout(500);
       await capturer(page, 'topic-selected-from-heatmap');
 
+      // TEMPORARILY DISABLED - Element screenshots (tooltip, checklist, balance indicator)
+      /*
+      // Capture heat map detail tooltip (hover over a cell)
+      console.log('    → Capturing heat map tooltip detail');
+      try {
+        const heatmapCell = page.locator('[data-testid^="heat-map-cell"]').first();
+        await heatmapCell.hover();
+        await page.waitForTimeout(500); // Wait for tooltip to appear
+        await capturer.element(
+          page,
+          '[role="tooltip"]',
+          'heat-map-tooltip-detail',
+          { delay: 200 }
+        );
+        console.log('    ✓ Heat map tooltip screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture heat map tooltip, skipping:', error.message);
+      }
+
+      // Capture selected topics checklist
+      console.log('    → Capturing selected topics checklist');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="selected-topics-list"]',
+          'selected-topics-checklist',
+          { delay: 300 }
+        );
+        console.log('    ✓ Selected topics checklist screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture selected topics checklist, skipping:', error.message);
+      }
+
+      // Capture topic balance indicator
+      console.log('    → Capturing topic balance indicator');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="topic-balance-indicator"]',
+          'topic-balance-summary',
+          { delay: 300 }
+        );
+        console.log('    ✓ Topic balance indicator screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture topic balance indicator, skipping:', error.message);
+      }
+      */
+
       // Confirm selection
       await topicPage.confirmSelection();
       await page.waitForLoadState('networkidle');
@@ -519,6 +570,30 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         console.log(
           `    ✓ Speaker ${i + 1} contacted via ${contact.contactMethod}: ${contact.notes.substring(0, 30)}...`
         );
+
+        // TEMPORARILY DISABLED - Element screenshot
+        /*
+        // Capture contact history log for first speaker (as documentation example)
+        if (i === 0) {
+          console.log('    → Capturing contact history timeline');
+          try {
+            // Click to open speaker card detail/history if available
+            const speakerCard = page.locator(`text=/.*${contact.displayName}.i`).first();
+            await speakerCard.scrollIntoViewIfNeeded();
+
+            // Try to find and capture contact history section
+            await capturer.element(
+              page,
+              '[data-testid="contact-history-timeline"]',
+              'contact-history-log',
+              { delay: 300 }
+            );
+            console.log('    ✓ Contact history log screenshot captured');
+          } catch (error) {
+            console.log('    ⚠️  Could not capture contact history log, skipping:', error.message);
+          }
+        }
+        */
       }
 
       console.log(`    ✓ All ${testConfig.speakerOutreach.length} speaker contacts recorded`);
