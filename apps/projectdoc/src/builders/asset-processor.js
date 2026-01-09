@@ -84,25 +84,64 @@ class AssetProcessor {
   updateAssetReferences(htmlContent, documentPath) {
     let updatedContent = htmlContent;
 
-    // Update image references
-    this.processedAssets.forEach((asset, originalPath) => {
-      const patterns = [
-        // Markdown image syntax: ![alt](path)
-        new RegExp(`!\\[([^\\]]*)\\]\\(\\s*${this.escapeRegExp(originalPath)}\\s*\\)`, 'g'),
-        // HTML img tags
-        new RegExp(`<img[^>]*src=['"]\\s*${this.escapeRegExp(originalPath)}\\s*['"][^>]*>`, 'g'),
-        // CSS url() references
-        new RegExp(`url\\(['"]?\\s*${this.escapeRegExp(originalPath)}\\s*['"]?\\)`, 'g'),
-        // Direct href links
-        new RegExp(`href=['"]\\s*${this.escapeRegExp(originalPath)}\\s*['"]`, 'g')
-      ];
+    // Get the directory of the document (for resolving relative paths)
+    const documentDir = path.dirname(documentPath);
 
-      patterns.forEach(pattern => {
-        updatedContent = updatedContent.replace(pattern, (match) => {
-          return match.replace(originalPath, asset.publicPath);
-        });
-      });
-    });
+    // Match all image src attributes and resolve them
+    updatedContent = updatedContent.replace(
+      /<img([^>]+)src=['"]([^'"]+)['"]([^>]*)>/gi,
+      (match, before, src, after) => {
+        // Skip external URLs and data URIs
+        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+          return match;
+        }
+
+        // Resolve relative path to absolute from docs root
+        let resolvedPath = src;
+        if (src.startsWith('../') || src.startsWith('./') || !src.startsWith('/')) {
+          resolvedPath = path.normalize(path.join(documentDir, src));
+          // Ensure forward slashes for consistency
+          resolvedPath = resolvedPath.split(path.sep).join('/');
+        }
+
+        // Find matching asset in processed assets
+        const asset = this.processedAssets.get(resolvedPath);
+        if (asset) {
+          return `<img${before}src="${asset.publicPath}"${after}>`;
+        }
+
+        // If not found, return original (will be handled as relative path)
+        return match;
+      }
+    );
+
+    // Also handle background images in style attributes
+    updatedContent = updatedContent.replace(
+      /url\(['"]?([^'"()]+)['"]?\)/gi,
+      (match, url) => {
+        // Skip external URLs and data URIs
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+          return match;
+        }
+
+        // Resolve relative path to absolute from docs root
+        let resolvedPath = url;
+        if (url.startsWith('../') || url.startsWith('./') || !url.startsWith('/')) {
+          resolvedPath = path.normalize(path.join(documentDir, url));
+          // Ensure forward slashes for consistency
+          resolvedPath = resolvedPath.split(path.sep).join('/');
+        }
+
+        // Find matching asset in processed assets
+        const asset = this.processedAssets.get(resolvedPath);
+        if (asset) {
+          return `url('${asset.publicPath}')`;
+        }
+
+        // If not found, return original
+        return match;
+      }
+    );
 
     return updatedContent;
   }
