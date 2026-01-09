@@ -12,25 +12,30 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 ## Platform Status
 
-| Epic | Status | Progress | Key Features |
-|------|--------|----------|--------------|
-| **Epic 1: Foundation** | ✅ Complete | 100% | Infrastructure, Authentication, API Gateway, Monitoring |
-| **Epic 2: Entity CRUD** | ✅ Complete | 100% | Company, User, Event, Partner Management |
-| **Epic 3: Data Migration** | 🔄 In Progress | 33% | Historical data import |
-| **Epic 4: Public Website** | 🔄 In Progress | ~85% | Landing pages, Registration flow |
-| **Epic 5: Organizer Workflows** | 🔄 In Progress | 70% | Event workflow, Speaker workflow, Task system (Phases A-E implemented) |
+| Epic                            | Status         | Progress | Key Features                                                           |
+| ------------------------------- | -------------- | -------- | ---------------------------------------------------------------------- |
+| **Epic 1: Foundation**          | ✅ Complete    | 100%     | Infrastructure, Authentication, API Gateway, Monitoring                |
+| **Epic 2: Entity CRUD**         | ✅ Complete    | 100%     | Company, User, Event, Partner Management                               |
+| **Epic 3: Data Migration**      | 🔄 In Progress | 33%      | Historical data import                                                 |
+| **Epic 4: Public Website**      | 🔄 In Progress | ~85%     | Landing pages, Registration flow                                       |
+| **Epic 5: Organizer Workflows** | 🔄 In Progress | 70%      | Event workflow, Speaker workflow, Task system (Phases A-E implemented) |
 
 ## Quick Navigation
 
 ### 🚀 Getting Started
+
 New to BATbern? Start here:
+
+- 🎥 **[Video Tutorial (12 min, Deutsch)](assets/videos/workflow/event-workflow-schulung-de.mp4)** - Complete workflow demonstration from event creation to archival
 - [Platform Overview](getting-started/README.md) - Understand the BATbern platform
 - [Login & Authentication](getting-started/login.md) - Access your organizer account
 - [Dashboard Navigation](getting-started/dashboard.md) - Navigate the organizer interface
 - [UI Conventions](getting-started/navigation.md) - Common patterns and shortcuts
 
 ### 📊 Entity Management
+
 Manage core platform entities:
+
 - [Companies](entity-management/companies.md) <span class="feature-status implemented">Implemented</span>
   - Swiss UID validation, logo upload, search/autocomplete
 - [Users](entity-management/users.md) <span class="feature-status implemented">Implemented</span>
@@ -43,36 +48,45 @@ Manage core platform entities:
   - Profile management, per-speaker workflow state tracking
 
 ### 🔄 Workflow System
+
 Three independent workflow systems for event management:
 
 **[Workflow Overview](workflow/README.md)** - Understanding the 3 workflow systems
 
 **Phase A: Setup** <span class="feature-status implemented">Implemented</span>
+
 - [Event Configuration](workflow/phase-a-setup.md) - Event creation, topic selection with heat map, speaker brainstorming
 - Event states: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
 
 **Phase B: Outreach** <span class="feature-status implemented">Implemented</span>
+
 - [Speaker Engagement](workflow/phase-b-outreach.md) - Kanban board, outreach tracking, content collection
 - Speaker states: identified → contacted → accepted → content_submitted
 
 **Phase C: Quality** <span class="feature-status implemented">Implemented</span>
+
 - [Content Review](workflow/phase-c-quality.md) - Quality review workflow, content approval
 - Speaker states: content_submitted → quality_reviewed
 
 **Phase D: Assignment & Publishing** <span class="feature-status implemented">Implemented</span>
+
 - [Slot Assignment & Agenda Publishing](workflow/phase-d-assignment.md) - Auto-assign to slots, publish agenda
 - Event states: SLOT_ASSIGNMENT → AGENDA_PUBLISHED
 - Speaker states: quality_reviewed + session.startTime → confirmed
 
 **Phase E: Archival** <span class="feature-status implemented">Implemented</span>
+
 - [Event Archival](workflow/phase-e-publishing.md) - Archive completed events, preserve historical data
 - Event state: Any state → ARCHIVED
 
 **Phase F: Tasks** <span class="feature-status planned">Planned</span>
+
 - [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions)
 
 ### ✨ Advanced Features
+
 Powerful tools for organizers:
+
 - [Topic Heat Map](features/heat-maps.md) <span class="feature-status implemented">Implemented</span>
   - 20+ years historical visualization
 - [Notification System](features/notifications.md) <span class="feature-status planned">Planned</span>
@@ -83,13 +97,16 @@ Powerful tools for organizers:
   - Event metrics, speaker engagement
 
 ### 🔧 Troubleshooting
+
 Common issues and solutions:
+
 - [Authentication Issues](troubleshooting/authentication.md)
 - [File Upload Errors](troubleshooting/uploads.md)
 - [Workflow Blockers](troubleshooting/workflow.md)
 - [Common Error Messages](troubleshooting/README.md)
 
 ### 📚 Reference
+
 - [Glossary](appendix/glossary.md) - Platform terminology
 - [Keyboard Shortcuts](appendix/keyboard-shortcuts.md) - Quick commands
 - [Feature Status](appendix/feature-status.md) - Implementation roadmap
@@ -106,6 +123,7 @@ Throughout this documentation, you'll see feature status badges indicating imple
 ## Documentation Conventions
 
 ### Icons
+
 - 🚀 Getting Started
 - 📊 Entity Management
 - 🔄 Workflow Steps
@@ -114,12 +132,14 @@ Throughout this documentation, you'll see feature status badges indicating imple
 - 📚 Reference
 
 ### Code Examples
+
 ```bash
 # Authentication token retrieval
 ./scripts/auth/get-token.sh staging your-email@example.com
 ```
 
 ### Workflow Phases
+
 Workflow documentation uses color-coded phases:
 
 <div class="workflow-phase phase-a">
