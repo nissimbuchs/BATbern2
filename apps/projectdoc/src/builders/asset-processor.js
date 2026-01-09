@@ -26,7 +26,8 @@ class AssetProcessor {
         '**/*.pdf',
         '**/*.html',
         '**/*.css',
-        '**/*.js'
+        '**/*.js',
+        '**/*.mp4'
       ];
 
       const allAssets = [];
