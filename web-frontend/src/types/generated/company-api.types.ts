@@ -233,6 +233,44 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/companies:get-or-create': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Get or create company by display name
+     * @description Gets an existing company or creates a new one from a display name.
+     *
+     *     **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
+     *
+     *     **Story**: Anonymous user registration (ADR-005) - allows creating companies during anonymous registration.
+     *
+     *     **Idempotency**: Safe to call multiple times - returns existing company if name slug already exists.
+     *
+     *     **Slug Generation**:
+     *     - Converts display name to lowercase alphanumeric slug (max 12 chars)
+     *     - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+     *     - Handles German characters: ä→ae, ö→oe, ü→ue, ß→ss
+     *     - Adds numeric suffix if slug collision occurs (e.g., "testco-2")
+     *
+     *     **Authentication**: Supports both authenticated and anonymous contexts
+     *
+     *     **Events Published**: CompanyCreatedEvent (only if new company created)
+     *
+     *     **Performance**: <200ms (P95)
+     */
+    post: operations['getOrCreateCompany'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -386,6 +424,17 @@ export interface components {
        * @example abc123-def456
        */
       logoUploadId?: string;
+    };
+    /**
+     * @description Request to get or create a company by display name.
+     *     The system will generate a slug from the display name and either return the existing company or create a new one.
+     */
+    GetOrCreateCompanyRequest: {
+      /**
+       * @description Full company display name (will be converted to slug for company.name)
+       * @example Test Co
+       */
+      displayName: string;
     };
     UIDValidationResponse: {
       /** @example true */
@@ -776,6 +825,32 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getOrCreateCompany: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GetOrCreateCompanyRequest'];
+      };
+    };
+    responses: {
+      /** @description Company retrieved or created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
       500: components['responses']['InternalServerError'];
     };
   };
