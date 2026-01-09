@@ -6,7 +6,7 @@
 
 **Complete Workflow Demonstration** (12 minutes, German with subtitles):
 
-📹 **[Event-Workflow Schulungsvideo (Deutsch)](../assets/videos/workflow/event-workflow-schulung-de.mp4)**
+📹 **[Event-Workflow Schulungsvideo (Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)**
 
 This screencast demonstrates the complete event lifecycle from creation to archival, showing all workflow phases in action:
 
