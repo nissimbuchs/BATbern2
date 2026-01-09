@@ -1,8 +1,8 @@
 # Implementation Plan: E2E Workflow Test with Screenshot Capture for User Guide
 
-**Status**: Phase 1 Complete ✅ | Phase 2 In Progress 🔄
+**Status**: Phases 1-4 Complete ✅ | Phase 5 In Progress 🔄
 
-**Last Updated**: 2026-01-08
+**Last Updated**: 2026-01-09
 
 ---
 
@@ -13,44 +13,81 @@
 **Completed**: 2026-01-08
 
 **Files Created** (10):
-1. ✅ `web-frontend/e2e/workflows/documentation/complete-event-workflow.spec.ts` - Main test spec (skeleton)
+1. ✅ `web-frontend/e2e/workflows/documentation/complete-event-workflow.spec.ts` - Main test spec
 2. ✅ `web-frontend/e2e/workflows/documentation/test-data.config.ts` - Centralized test data
 3. ✅ `web-frontend/e2e/workflows/documentation/helpers/api-helpers.ts` - API utilities (read-only)
-4. ✅ `web-frontend/e2e/workflows/documentation/helpers/screenshot-helpers.ts` - Screenshot capture
+4. ✅ `web-frontend/e2e/workflows/documentation/helpers/screenshot-helpers.ts` - Screenshot capture with phase prefixes
 5. ✅ `web-frontend/e2e/workflows/documentation/helpers/cleanup-helpers.ts` - Cleanup utilities
-6. ✅ `web-frontend/e2e/workflows/documentation/page-objects/EventWorkflowPage.ts` - Event POM (skeleton)
-7. ✅ `web-frontend/e2e/workflows/documentation/page-objects/SpeakerManagementPage.ts` - Speaker POM (skeleton)
-8. ✅ `web-frontend/e2e/workflows/documentation/page-objects/PublishingPage.ts` - Publishing POM (skeleton)
-9. ✅ `web-frontend/e2e/workflows/documentation/page-objects/TopicSelectionPage.ts` - Topic POM (skeleton)
+6. ✅ `web-frontend/e2e/workflows/documentation/page-objects/EventWorkflowPage.ts` - Event POM
+7. ✅ `web-frontend/e2e/workflows/documentation/page-objects/SpeakerManagementPage.ts` - Speaker POM
+8. ✅ `web-frontend/e2e/workflows/documentation/page-objects/PublishingPage.ts` - Publishing POM
+9. ✅ `web-frontend/e2e/workflows/documentation/page-objects/TopicSelectionPage.ts` - Topic POM
 10. ✅ `web-frontend/e2e/workflows/documentation/README.md` - Documentation
 
 **Files Modified** (2):
 1. ✅ `web-frontend/playwright.config.ts` - Added documentation-screenshots project
 2. ✅ `web-frontend/package.json` - Added `test:e2e:docs` and `test:e2e:docs:ui` scripts
 
-### 🔄 Phase 2: Workflow Discovery & Recording - IN PROGRESS
+### ✅ Phase 2: Workflow Discovery & Recording - COMPLETE
 
-**Status**: Awaiting user workflow recording
+**Completed**: 2026-01-09
 
-**Next Steps**:
-1. User starts backend services: `make dev-native-up`
-2. User starts frontend: `cd web-frontend && npm run dev`
-3. User starts Playwright Inspector: `npx playwright codegen http://localhost:3000/organizer/events`
-4. User performs complete event workflow
-5. Extract screens and selectors from generated code
-6. Validate workflow with user
+**Recording Sessions**:
+1. ✅ Phase A: Event Setup (creation, task assignment, topic selection, speaker brainstorming)
+2. ✅ Phase B: Speaker Outreach (Kanban board workflow)
+3. ✅ Phase B.5: Content Submission (topic/speaker publishing, content forms)
+4. ✅ Phase C: Quality Review (speaker publishing, quality review drawer)
+5. ✅ Phase D: Slot Assignment & Publishing (sessions view, auto-assign, publish agenda)
+6. ✅ Phase E: Archival (edit modal, status change, validation override)
 
-### ⏳ Phase 3: Workflow Test Implementation - PENDING
+**Output**: Complete workflow understanding documented in test spec
 
-**Status**: Waiting for Phase 2 recording completion
+### ✅ Phase 3: Workflow Test Implementation - COMPLETE
 
-### ⏳ Phase 4: User Guide Integration - PENDING
+**Completed**: 2026-01-09
 
-**Status**: Waiting for Phase 3 test implementation
+**Test Phases Implemented**:
+1. ✅ Phase A: Event Setup (~20 screenshots)
+2. ✅ Phase B: Speaker Outreach (~15 screenshots)
+3. ✅ Phase B.5: Content Submission (~6 screenshots)
+4. ✅ Phase C: Quality Review (~6 screenshots)
+5. ✅ Phase D: Slot Assignment & Publishing (~10 screenshots)
+6. ✅ Phase E: Archival (~8 screenshots)
 
-### ⏳ Phase 5: Documentation & Polish - PENDING
+**Total Screenshots**: 77 screenshots captured across 6 phases
 
-**Status**: Final phase
+**Test Runner**: `run-phases-a-b-c-d-e-autologin.sh` - Automated test execution with screenshot extraction
+
+**Screenshot Naming**: Phase-prefixed format (a-01-, b-02-, b5-01-, c-01-, d-01-, e-01-)
+
+### ✅ Phase 4: User Guide Integration - COMPLETE
+
+**Completed**: 2026-01-09
+
+**Strategy**: Curated, value-added screenshots only (~24 of 77 total)
+
+**Files Updated** (6):
+1. ✅ `docs/user-guide/workflow/phase-a-setup.md` - Added 6 key screenshots
+2. ✅ `docs/user-guide/workflow/phase-b-outreach.md` - Added 4 screenshots + 3 for Phase B.5
+3. ✅ `docs/user-guide/workflow/phase-c-quality.md` - Added 3 screenshots
+4. ✅ `docs/user-guide/workflow/phase-d-assignment.md` - Added 4 screenshots, updated to match implementation
+5. ✅ `docs/user-guide/workflow/phase-e-publishing.md` - Restructured with archival section + 4 screenshots
+6. ✅ `docs/user-guide/appendix/screenshot-index.md` - Complete screenshot catalog
+
+**Documentation Updates**:
+- Updated status tags from "planned" to "implemented" where applicable
+- Replaced theoretical content with actual workflow steps
+- Removed unimplemented features from main documentation
+- Added practical troubleshooting based on actual implementation
+
+### 🔄 Phase 5: Documentation & Polish - IN PROGRESS
+
+**Status**: Final cleanup and documentation updates
+
+**Remaining Tasks**:
+1. ⏳ Update this plan document (in progress)
+2. ⏳ Update `web-frontend/e2e/workflows/documentation/README.md`
+3. ⏳ Final review and commit
 
 ---
 

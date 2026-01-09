@@ -4,7 +4,7 @@
 
 <div class="workflow-phase phase-c">
 <strong>Phase C: Quality Control</strong><br>
-Status: <span class="feature-status planned">Planned</span><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1-2 weeks<br>
 State Transitions: CONTENT_COLLECTED → QUALITY_REVIEWED
 </div>
@@ -15,9 +15,15 @@ Phase C ensures submitted content meets quality standards before public release.
 
 **Key Deliverable**: Approved content meeting 80% quality threshold
 
+### Publishing Speakers
+
+Before reviewing content, publish the speakers from the Publishing tab.
+
+![Publishing Tab Before Speakers](../assets/screenshots/workflow/phase-c-quality/c-01-publish-tab-before-speakers.png)
+
 ## Step 7: Content Quality Review
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 ### Purpose
 
@@ -58,18 +64,10 @@ Systematically review speaker content to ensure presentations meet BATbern quali
 
 **Open Review Queue**
 
-Navigate to Step 7 content review dashboard:
+Navigate to the Speakers tab after publishing speakers. Open the quality review drawer for each presentation.
 
-```
-Content Review Queue
-────────────────────────────────────────
-Awaiting Review: 10 submissions
-Approved: 0
-Needs Revision: 0
+![Quality Review Drawer](../assets/screenshots/workflow/phase-c-quality/c-04-quality-review-1-opened.png)
 
-Next to Review:
-[Hans Müller - Sustainable Materials] [Review]
-```
 </div>
 
 <div class="step" data-step="2">
@@ -116,6 +114,10 @@ theory and practice. Well-suited for target audience.]
 <div class="step" data-step="3">
 
 **Make Decision**
+
+After reviewing the content, approve it to confirm the speaker.
+
+![Content Approved](../assets/screenshots/workflow/phase-c-quality/c-05-content-approved-1.png)
 
 **Approve** (score ≥ 3.5):
 - Speaker status: CONTENT_SUBMITTED → **CONFIRMED**

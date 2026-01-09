@@ -70,7 +70,7 @@ If you're new to the platform, we recommend starting with:
 ## Related Sections
 
 - **[Entity Management](../entity-management/)** - Managing companies, users, events, partners, and speakers
-- **[16-Step Workflow](../workflow/)** - How features integrate into the event management process
+- **[Workflow System](../workflow/)** - How features integrate into the 3 workflow systems
 - **[Troubleshooting](../troubleshooting/)** - Solutions for common feature-related issues
 
 ---

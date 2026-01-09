@@ -1,19 +1,116 @@
-# Phase E: Publishing (Steps 11-12)
+# Phase E: Archival & Publishing
 
-> Progressively publish agenda and handle last-minute changes
+> Archive completed events and manage publication workflows
 
 <div class="workflow-phase phase-e">
-<strong>Phase E: Publishing</strong><br>
-Status: <span class="feature-status planned">Planned</span><br>
-Duration: 2-4 weeks<br>
-State Transitions: SLOTS_ASSIGNED → PUBLISHED → FINALIZED
+<strong>Phase E: Archival & Publishing</strong><br>
+Archival Status: <span class="feature-status implemented">Implemented</span><br>
+Publishing Status: <span class="feature-status planned">Planned</span><br>
+State Transitions: AGENDA_PUBLISHED → ARCHIVED
 </div>
 
 ## Overview
 
-Phase E makes the event public by progressively releasing information, then locks the final agenda while handling any last-minute speaker dropouts.
+Phase E currently supports event archival for completed events. Future enhancements will include progressive publishing workflows and dropout handling.
 
-**Key Deliverable**: Public agenda with confirmed speakers and finalized schedule
+**Key Deliverable**: Archived events with preserved historical data
+
+## Event Archival (Implemented)
+
+<span class="feature-status implemented">Implemented</span>
+
+### Purpose
+
+Archive completed events to preserve historical data and free up the active event list for current planning.
+
+### When to Archive
+
+Archive events after:
+- Event has concluded
+- Post-event follow-up completed
+- Attendee feedback collected
+- All financial transactions settled
+
+### How to Archive an Event
+
+<div class="step" data-step="1">
+
+**Navigate to Event Overview**
+
+From the event dashboard, open the event you want to archive and navigate to the Overview tab.
+
+![Event Edit Modal](../assets/screenshots/workflow/phase-e-archival/e-02-edit-modal-opened.png)
+
+Click the edit button to open the event configuration modal.
+
+</div>
+
+<div class="step" data-step="2">
+
+**Change Status to ARCHIVED**
+
+In the edit modal, locate the status dropdown and select **ARCHIVED**.
+
+![Status Changed to Archived](../assets/screenshots/workflow/phase-e-archival/e-04-status-changed-to-archived.png)
+
+The system will initially show a validation error if the event hasn't completed all workflow steps.
+
+</div>
+
+<div class="step" data-step="3">
+
+**Override Workflow Validation**
+
+To archive an event that hasn't completed all workflow steps, check the **Override Workflow Validation** checkbox.
+
+![Override Checkbox Checked](../assets/screenshots/workflow/phase-e-archival/e-06-override-checkbox-checked.png)
+
+This allows archival regardless of workflow state, useful for cancelled events or special circumstances.
+
+</div>
+
+<div class="step" data-step="4">
+
+**Save and Verify**
+
+Save the changes and verify the event now shows the ARCHIVED badge.
+
+![Archived Badge Visible](../assets/screenshots/workflow/phase-e-archival/e-08-archived-badge-visible.png)
+
+Archived events are:
+- Moved to archived events section
+- Preserved for historical reference
+- Excluded from active event workflows
+- Available for reporting and analytics
+
+Event state: AGENDA_PUBLISHED → **ARCHIVED**
+
+</div>
+
+### Archival Best Practices
+
+**When to Archive**:
+- Immediately after post-event activities complete
+- Typically 1-2 weeks after event date
+- After attendee feedback window closes
+
+**What Gets Preserved**:
+- Complete event configuration
+- All speaker and presentation data
+- Slot assignments and schedule
+- Participant lists and attendance records
+- Quality reviews and ratings
+
+**Archival vs. Deletion**:
+- ✅ Archive: Preserves all data, supports historical analysis
+- ❌ Delete: Permanent removal, loses historical context
+- Prefer archival to maintain 20+ year event history
+
+---
+
+## Future Enhancements
+
+The following features are planned for future releases:
 
 ## Step 11: Progressive Publishing
 
@@ -465,70 +562,66 @@ Anna
 
 ## Phase E Completion
 
-### Success Criteria
+### Success Criteria (Archival)
 
-- ✅ Event fully published in progressive stages
-- ✅ All speakers reconfirmed
-- ✅ Dropouts resolved (if any)
-- ✅ Agenda finalized and locked
-- ✅ Event state = **FINALIZED**
+- ✅ Event has concluded
+- ✅ Post-event activities completed
+- ✅ Event status changed to ARCHIVED
+- ✅ Historical data preserved
+- ✅ Event state = **ARCHIVED**
 
 ### What Happens Next
 
-**Phase F: Communication** begins:
-- Newsletter distribution
-- Moderator assignments
-- Final logistics (catering, etc.)
-- Post-event archival preparation
-
-See [Phase F: Communication →](phase-f-communication.md) to continue.
+After archival:
+- Event removed from active workflows
+- Data available for historical reporting
+- Heat map data updated with event statistics
+- Event serves as reference for future planning
 
 ## Troubleshooting Phase E
 
-### "Speaker drops out after finalization"
+### "Cannot archive - workflow validation error"
 
-**Problem**: Speaker withdraws with <3 days notice.
-
-**Solution**:
-- No time for replacement
-- Options: Cancel session or extend another session
-- Communicate prominently to attendees
-- Offer apology and alternative value (extra networking, longer Q&A)
-
-### "Multiple speakers need schedule changes"
-
-**Problem**: 2+ speakers request time slot changes after publishing.
+**Problem**: System prevents archiving because workflow steps incomplete.
 
 **Solution**:
-- Evaluate impact (minor vs. major changes)
-- Allow changes only if <2 weeks before event
-- After 2 weeks, changes only for emergencies
-- Communicate any changes immediately
+- Check **Override Workflow Validation** checkbox in edit modal
+- This allows archival for cancelled events or special cases
+- Verify all important data is preserved before archiving
 
-### "Printed materials already produced with old agenda"
+### "Archived event still appears in active list"
 
-**Problem**: Dropout occurs after programs printed.
+**Problem**: Event shows ARCHIVED badge but remains in active events.
 
 **Solution**:
-- Insert errata sheet in programs
-- Display corrected schedule on venue screens
-- Staff announce change at event opening
-- Update digital agenda prominently
+- Refresh the page to update the event list
+- Check that status was saved correctly (re-open edit modal)
+- Clear browser cache if issue persists
+- Verify event state in database if problem continues
+
+### "Need to un-archive an event"
+
+**Problem**: Event was archived prematurely or by mistake.
+
+**Solution**:
+- Re-open the event edit modal
+- Change status back to appropriate workflow state (e.g., AGENDA_PUBLISHED)
+- Uncheck override validation if needed
+- Save changes to restore event to active status
 
 ## Related Topics
 
 - [Phase D: Assignment →](phase-d-assignment.md) - Previous phase
-- [Phase F: Communication →](phase-f-communication.md) - Next phase
-- [Event Management →](../entity-management/events.md) - Event publishing
+- [Event Management →](../entity-management/events.md) - Event configuration and status
+- [Screenshot Index →](../appendix/screenshot-index.md) - All workflow screenshots
 
 ## API Reference
 
 ```
-POST /api/events/{id}/workflow/step-11      Complete Step 11 (Publishing)
-POST /api/events/{id}/workflow/step-12      Complete Step 12 (Finalization)
-POST /api/events/{id}/publish               Publish event stages
-PUT  /api/events/{id}/finalize              Lock final agenda
-POST /api/speakers/{id}/reconfirm           Send reconfirmation request
+PUT  /api/events/{id}/status                Update event status (including ARCHIVED)
+GET  /api/events?status=ARCHIVED            List archived events
+GET  /api/events/{id}/history               Get event workflow history
+POST /api/events/{id}/restore               Restore archived event to active status
 ```
 
 See [API Documentation](../../api/) for complete specifications.

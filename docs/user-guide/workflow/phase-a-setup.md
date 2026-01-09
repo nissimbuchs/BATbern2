@@ -23,6 +23,16 @@ Phase A establishes the foundation for your event. You'll define the event forma
 
 Define the event format which determines timeline, session count, and speaker requirements.
 
+### Accessing Event Creation
+
+Navigate to the Events dashboard and click **Create Event**.
+
+![Event Dashboard](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
+
+The event creation modal will open with the event configuration form.
+
+![Event Creation Modal](../assets/screenshots/workflow/phase-a-setup/a-02-event-creation-modal.png)
+
 ### Acceptance Criteria
 
 - ✅ Event type selected (Full-Day, Afternoon, or Evening)
@@ -152,6 +162,16 @@ Click **Save & Continue to Step 2**.
 Event state advances to: **CREATED** (ready for topic selection)
 </div>
 
+### Assigning Tasks to Organizers
+
+After creating the event, you can assign tasks to team members to distribute the workload.
+
+![Task Assignment](../assets/screenshots/workflow/phase-a-setup/a-07-edit-modal-tasks-tab-initial.png)
+
+Access the task list to view and manage assigned tasks.
+
+![Task List View](../assets/screenshots/workflow/phase-a-setup/a-13-task-list-my-tasks-filter.png)
+
 ## Step 2: Topic Selection with Heat Map
 
 <span class="feature-status implemented">Implemented</span>
@@ -266,6 +286,9 @@ Topics are organized into categories:
 In Step 2 of the workflow, click **View Topic Heat Map**.
 
 Interactive heat map opens showing historical data.
+
+![Topic Heat Map](../assets/screenshots/workflow/phase-a-setup/a-16-topic-heatmap.png)
+
 </div>
 
 <div class="step" data-step="2">
@@ -415,7 +438,11 @@ Click topic to add speaker candidates.
 
 **Add Candidate**
 
-Click **+ Add Speaker Candidate**:
+Click **+ Add Speaker Candidate** to open the brainstorming form.
+
+![Speaker Brainstorming Form](../assets/screenshots/workflow/phase-a-setup/a-19-speaker-brainstorming-form.png)
+
+Fill in the candidate details:
 
 ```
 Add Speaker Candidate

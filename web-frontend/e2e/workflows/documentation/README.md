@@ -1,12 +1,14 @@
 # Documentation Workflow E2E Tests
 
+**Status**: Complete ✅ | 77 Screenshots Captured | All Phases Implemented
+
 This directory contains E2E tests that capture comprehensive screenshots of the complete event management workflow for user guide documentation.
 
 ## Purpose
 
-1. **Documentation**: Capture screenshots for user guide
-2. **Validation**: Verify complete workflow works end-to-end
-3. **Regression Testing**: Ensure UI changes don't break workflow
+1. **Documentation**: Capture 77 screenshots across 6 workflow phases for user guide
+2. **Validation**: Verify complete workflow (CREATED → ARCHIVED) works end-to-end
+3. **Regression Testing**: Ensure UI changes don't break organizer workflow
 
 ## Directory Structure
 
@@ -52,19 +54,36 @@ documentation/
 
 ## Running the Tests
 
-### Option 1: Run Complete Workflow
+### Quick Start (Recommended)
+
+Use the automated test runner that handles authentication and screenshot extraction:
 
 ```bash
 cd web-frontend
 
-# Run all phases
+# Run all phases A-E with auto-login
+./run-phases-a-b-c-d-e-autologin.sh
+```
+
+This script:
+- Automatically logs in using stored credentials
+- Runs all 6 workflow phases sequentially
+- Captures 77 screenshots with phase-prefixed naming (a-01-, b-02-, etc.)
+- Outputs screenshots to `docs/user-guide/assets/screenshots/workflow/`
+
+### Manual Test Execution
+
+```bash
+cd web-frontend
+
+# Run all phases manually
 npm run test:e2e:docs
 
 # Run with UI for debugging
 npm run test:e2e:docs:ui
 ```
 
-### Option 2: Run Specific Phase
+### Run Specific Phases
 
 ```bash
 # Run only Phase A (Setup)
@@ -72,23 +91,19 @@ npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "
 
 # Run only Phase B (Outreach)
 npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "Phase B"
+
+# Run Phase B.5 (Content Submission)
+npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "Phase B.5"
+
+# Run Phase C (Quality Review)
+npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "Phase C"
+
+# Run Phase D (Slot Assignment & Publishing)
+npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "Phase D"
+
+# Run Phase E (Archival)
+npx playwright test workflows/documentation/complete-event-workflow.spec.ts -g "Phase E"
 ```
-
-### Option 3: Record Workflow First
-
-Before implementing the test, record the actual workflow:
-
-```bash
-cd web-frontend
-npx playwright codegen http://localhost:3000/organizer/events
-```
-
-Then:
-
-1. Perform the complete workflow manually
-2. Save the generated code
-3. Extract UI selectors and actions
-4. Adapt into test with screenshot capture
 
 ## Test Data Configuration
 
@@ -113,49 +128,88 @@ topics: [
 
 ## Screenshot Output
 
-Screenshots are automatically organized by workflow phase:
+**Total Screenshots**: 77 screenshots across 6 workflow phases
+
+Screenshots are automatically organized with phase-prefixed naming:
 
 ```
 docs/user-guide/assets/screenshots/workflow/
-├── phase-a-setup/
-│   ├── 01-event-dashboard.png
-│   ├── 02-create-event-button.png
-│   ├── 03-event-form.png
+├── phase-a-setup/ (~20 screenshots)
+│   ├── a-01-event-dashboard.png
+│   ├── a-02-event-creation-modal.png
+│   ├── a-07-edit-modal-tasks-tab-initial.png
+│   ├── a-13-task-list-my-tasks-filter.png
+│   ├── a-16-topic-heatmap.png
+│   ├── a-19-speaker-brainstorming-form.png
 │   └── ...
-├── phase-b-outreach/
-│   ├── 01-speaker-dashboard.png
+├── phase-b-outreach/ (~15 screenshots)
+│   ├── b-01-outreach-view-ready.png
+│   ├── b-02-before-contact-speaker-1.png
+│   ├── b-03-after-contact-speaker-1.png
+│   ├── b-15-all-speakers-accepted.png
 │   └── ...
-├── phase-c-quality/
-├── phase-d-assignment/
-├── phase-e-publishing/
-└── phase-f-communication/
+├── phase-b5-content-submission/ (~6 screenshots)
+│   ├── b5-01-publish-tab-before-topic.png
+│   ├── b5-04-content-submission-drawer-1-opened.png
+│   ├── b5-06-content-submitted-1.png
+│   └── ...
+├── phase-c-quality/ (~6 screenshots)
+│   ├── c-01-publish-tab-before-speakers.png
+│   ├── c-04-quality-review-1-opened.png
+│   ├── c-05-content-approved-1.png
+│   └── ...
+├── phase-d-publishing/ (~10 screenshots)
+│   ├── d-02-sessions-view-loaded.png
+│   ├── d-03-slot-assignment-page-loaded.png
+│   ├── d-05-auto-assign-modal-opened.png
+│   ├── d-10-agenda-published.png
+│   └── ...
+└── phase-e-archival/ (~8 screenshots)
+    ├── e-02-edit-modal-opened.png
+    ├── e-04-status-changed-to-archived.png
+    ├── e-06-override-checkbox-checked.png
+    ├── e-08-archived-badge-visible.png
+    └── ...
 ```
 
-## Development Workflow
+**Screenshot Index**: See `docs/user-guide/appendix/screenshot-index.md` for complete catalog
 
-### Phase 1: Record Workflow (Complete)
+## Implementation Status
 
-✅ Test infrastructure created
-✅ Helpers and page objects scaffolded
-✅ Playwright configuration updated
+### ✅ Phase 1: Test Infrastructure Setup - COMPLETE
 
-### Phase 2: Record Actual Workflow (Next)
+**Completed**: 2026-01-08
 
-🔄 User performs workflow with Playwright Inspector
-🔄 Extract screens and actions from recording
-🔄 Validate with user
+- Test infrastructure created
+- Helpers and page objects implemented
+- Playwright configuration updated
+- Test runner script created
 
-### Phase 3: Implement Tests
+### ✅ Phase 2: Workflow Recording - COMPLETE
 
-- Fill in page object methods from recording
-- Add screenshot capture at each step
-- Verify workflow state transitions
+**Completed**: 2026-01-09
 
-### Phase 4: Update User Guide
+- All 6 workflow phases recorded
+- UI selectors extracted
+- Workflow validated
 
-- Reference screenshots in markdown files
-- Create screenshot index
-- Verify documentation accuracy
+### ✅ Phase 3: Test Implementation - COMPLETE
+
+**Completed**: 2026-01-09
+
+- All phases implemented (A, B, B.5, C, D, E)
+- 77 screenshots captured
+- Phase-prefixed naming system implemented
+- Test runner automated
+
+### ✅ Phase 4: User Guide Integration - COMPLETE
+
+**Completed**: 2026-01-09
+
+- 24 high-value screenshots integrated into user guide
+- 5 workflow phase documents updated
+- Screenshot index created
+- Documentation aligned with implementation
 
 ## Troubleshooting
 

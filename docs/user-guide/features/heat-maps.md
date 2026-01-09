@@ -40,9 +40,11 @@ The heat map uses a color-coded matrix where warmer colors (red, orange) indicat
 
 ### Accessing the Heat Map
 
-1. Navigate to **Dashboard → Topic Selection** (or Workflow Step 2)
+1. Navigate to **Topic Selection** in Phase A (Setup) workflow
 2. Click **"View Topic Heat Map"** button in the Topic Backlog section
 3. The heat map overlay will display over your current view
+
+![Topic Heat Map](../assets/screenshots/workflow/phase-a-setup/a-16-topic-heatmap.png)
 
 ### Understanding the Visualization
 
@@ -221,7 +223,7 @@ The heat map supports interactive filtering:
 
 ## Related Features
 
-- **[Topic Backlog Management](../workflow/phase-a-setup.md#step-2-topic-selection)** - Where heat map integrates into workflow
+- **[Topic Backlog Management](../workflow/phase-a-setup.md#topic-selection)** - Where heat map integrates into workflow
 - **[Event Management](../entity-management/events.md)** - Historical event data source
 - **[Analytics Dashboard](analytics.md)** - Additional event performance metrics `[PLANNED]`
 

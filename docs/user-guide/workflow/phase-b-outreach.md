@@ -50,24 +50,11 @@ Systematically contact speaker candidates and track communication history to ens
 
 Navigate to Step 4 in the workflow.
 
-Outreach dashboard displays all candidates by status:
+Outreach dashboard displays all candidates in a Kanban board by status.
 
-```
-Speaker Outreach Dashboard
-────────────────────────────────────────────
+![Outreach View](../assets/screenshots/workflow/phase-b-outreach/b-01-outreach-view-ready.png)
 
-IDENTIFIED (24)     CONTACTED (0)     INTERESTED (0)
-┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-│ Hans Müller    │  │                │  │                │
-│ Anna Schmidt   │  │                │  │                │
-│ Peter Weber    │  │                │  │                │
-│ [21 more...]   │  │                │  │                │
-└────────────────┘  └────────────────┘  └────────────────┘
-
-CONTENT_SUBMITTED (0)     CONFIRMED (0)     DROPOUT (0)
-```
-
-Kanban-style board (planned) will support drag-and-drop status updates.
+The Kanban board supports drag-and-drop to update speaker status as you contact them and receive responses.
 </div>
 
 <div class="step" data-step="2">
@@ -150,16 +137,14 @@ Next action: Follow-up on 2025-02-18 if no response
 
 **Track Responses**
 
-When speakers respond, manually update status or system auto-detects reply:
+When speakers respond, update their status on the Kanban board. Drag speaker cards from "Contacted" to "Accepted" as they confirm participation.
 
-```
-Hans Müller replied (2025-02-16 09:45):
-"Yes, I'm interested! Please send content guidelines."
+![Before Moving to Accepted](../assets/screenshots/workflow/phase-b-outreach/b-14-before-drag-to-accepted.png)
 
-[Mark as INTERESTED] [Request Content]
-```
+After all confirmations, your outreach board shows speakers in the Accepted column.
 
-Click **Mark as INTERESTED** to advance status.
+![All Speakers Accepted](../assets/screenshots/workflow/phase-b-outreach/b-15-all-speakers-accepted.png)
+
 </div>
 
 <div class="step" data-step="6">
@@ -519,9 +504,21 @@ Collect detailed presentation content from speakers to enable quality review and
 
 ### Content Submission Portal
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
-Speakers receive unique submission link:
+Before collecting content, publish the topic from the Publishing tab.
+
+![Publishing Tab Before Topic](../assets/screenshots/workflow/phase-b5-content/b5-01-publish-tab-before-topic.png)
+
+After publishing the topic, organizers can submit content on behalf of speakers using the content submission drawer.
+
+![Content Submission Drawer](../assets/screenshots/workflow/phase-b5-content/b5-04-content-submission-drawer-1-opened.png)
+
+Fill in the presentation details and submit.
+
+![Content Form Filled](../assets/screenshots/workflow/phase-b5-content/b5-05-content-submission-1-filled.png)
+
+Speakers can also receive unique submission links:
 
 ```
 https://batbern.ch/submit-content/{token}

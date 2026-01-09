@@ -29,7 +29,7 @@ Colors convey meaning consistently:
 | **Blue (#2C5F7C)** | Primary actions, Organizer role | Save buttons, active navigation |
 | **Light Blue (#4A90B8)** | Speaker role, secondary info | Speaker badges, links |
 | **Orange (#E67E22)** | Partner role, accents | Partner tier badges, warnings |
-| **Green (#27AE60)** | Success, completion | Completed workflow states, success messages |
+| **Green (#27AE60)** | Success, completion | Successful state transitions, success messages |
 | **Yellow (#F39C12)** | Pending, in-progress | Pending status, draft states |
 | **Red (#E74C3C)** | Errors, failed states | Validation errors, failed operations |
 
@@ -43,7 +43,7 @@ The interface adapts based on your role:
 
 **As an Organizer, you see**:
 - ✅ Full entity management (Companies, Users, Events, Partners, Speakers)
-- ✅ 16-step workflow interface
+- ✅ Event workflow management interface
 - ✅ Advanced analytics and reports
 - ✅ Partner coordination tools
 
@@ -387,8 +387,8 @@ On mobile/tablet:
 ## What's Next?
 
 - [Entity Management →](../entity-management/README.md) - Start managing entities
-- [16-Step Workflow →](../workflow/README.md) - Master the event workflow
-- [Keyboard Shortcuts →](../appendix/keyboard-shortcuts.md) - Speed up your workflow
+- [Workflow System →](../workflow/README.md) - Master the 3 workflow systems
+- [Keyboard Shortcuts →](../appendix/keyboard-shortcuts.md) - Speed up navigation
 
 ## Related Topics
 
