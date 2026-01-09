@@ -176,7 +176,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.title").value("Cloud Native"))
                 .andExpect(jsonPath("$.category").value("technical"))
                 .andExpect(jsonPath("$.stalenessScore").value(85))
-                .andExpect(jsonPath("$.status").value("available"));
+                .andExpect(jsonPath("$.status").value("AVAILABLE"));
     }
 
     // ==================== AC4 Tests: Similarity Score Calculation ====================
@@ -298,7 +298,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.category").value("technical"))
                 // AC8: New topics have max staleness score (100 = safe to use)
                 .andExpect(jsonPath("$.stalenessScore").value(100))
-                .andExpect(jsonPath("$.status").value("available"));
+                .andExpect(jsonPath("$.status").value("AVAILABLE"));
     }
 
     /**
@@ -351,7 +351,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Kubernetes Best Practices"))
                 .andExpect(jsonPath("$.stalenessScore").value(100))
-                .andExpect(jsonPath("$.status").value("available"));
+                .andExpect(jsonPath("$.status").value("AVAILABLE"));
     }
 
     // ==================== AC2 Tests: Usage History ====================
