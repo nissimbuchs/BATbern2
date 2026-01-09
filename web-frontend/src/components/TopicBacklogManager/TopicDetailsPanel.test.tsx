@@ -39,7 +39,7 @@ const mockTopic: Topic = {
   createdDate: '2023-01-01',
   similarityScores: [],
   colorZone: 'green',
-  status: 'available',
+  status: 'AVAILABLE',
 };
 
 describe('TopicDetailsPanel', () => {
@@ -135,7 +135,7 @@ describe('TopicDetailsPanel', () => {
           createdDate: '2023-01-01',
           description: 'Similar',
           colorZone: 'green',
-          status: 'available',
+          status: 'AVAILABLE',
         },
       ],
       isLoading: false,

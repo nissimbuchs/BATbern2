@@ -24,7 +24,7 @@ const mockTopics: Topic[] = [
     createdDate: '2023-01-01',
     description: 'Test',
     colorZone: 'green',
-    status: 'available',
+    status: 'AVAILABLE',
   },
   {
     topicCode: 'leadership',
@@ -37,7 +37,7 @@ const mockTopics: Topic[] = [
     createdDate: '2023-02-01',
     description: 'Test',
     colorZone: 'yellow',
-    status: 'caution',
+    status: 'CAUTION',
   },
 ];
 
