@@ -33,6 +33,35 @@ test('test', async ({ page }) => {
   await page.getByText('Datei hier ablegen oder').click();
   await page.getByTestId('file-dropzone').setInputFiles('ChatGPT Image 4. Jan. 2026, 21_01_32.png');
   await page.getByRole('button', { name: 'Speichern & Erstellen' }).click();
+
+// Assign tasks
+import { test, expect } from '@playwright/test';
+
+  await page.getByText('#BATbern1001Demo Event04 Feb').click();
+  await page.getByRole('button', { name: 'Bearbeiten' }).click();
+  await page.getByRole('tab', { name: 'Tasks' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Venue BookingAssign ToAssign' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Nissim Buchs' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Partner Meeting' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Daniel Kühni' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Moderator AssignmentAssign' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Andreas Grütter' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Topic' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Speaker' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Final' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.locator('li:nth-child(7) > .MuiStack-root > .MuiFormControl-root > .MuiInputBase-root > .MuiSelect-select').click();
+  await page.getByRole('option', { name: 'Nissim Buchs' }).click();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.getByTestId('tasks-button').click();
+  await page.getByRole('combobox', { name: 'Filter Meine Aufgaben' }).click();
+  await page.getByRole('option', { name: 'Alle Aufgaben' }).click();
+  await page.getByRole('link', { name: 'Veranstaltungen' }).click();
+
+  // assign topic
+
   await page.getByRole('button', { name: 'Select topic for Demo BATbern' }).click();
   await page.getByRole('button', { name: 'Heatmap' }).click();
   await page.locator('div:nth-child(20) > div:nth-child(9)').click();

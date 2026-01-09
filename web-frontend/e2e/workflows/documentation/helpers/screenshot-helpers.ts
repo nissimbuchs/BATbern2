@@ -63,9 +63,16 @@ export function buildScreenshotPath(options: ScreenshotOptions): string {
     fs.mkdirSync(phaseDir, { recursive: true });
   }
 
-  // Format: 01-event-dashboard.png, 02-topic-selection.png, etc.
+  // Extract phase prefix from phase directory name (e.g., "phase-a-setup" -> "a")
+  // Supports: phase-a-setup, phase-b-outreach, phase-b5-content, etc.
+  const phaseMatch = phase.match(/^phase-([a-z0-9]+)/i);
+  const phasePrefix = phaseMatch ? phaseMatch[1] : '';
+
+  // Format: a-01-event-dashboard.png, b-02-outreach-view-ready.png, etc.
   const sequenceStr = sequence.toString().padStart(2, '0');
-  const fileName = `${sequenceStr}-${name}.png`;
+  const fileName = phasePrefix
+    ? `${phasePrefix}-${sequenceStr}-${name}.png`
+    : `${sequenceStr}-${name}.png`;
 
   return path.join(phaseDir, fileName);
 }
