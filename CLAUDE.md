@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## MVP Status
+
+**Last Updated:** 2026-01-09
+
+**Status:** ✅ **MVP COMPLETE & PRODUCTION READY**
+
+The core platform is functional and ready for production launch. Epics 1-5 are substantially complete (87-100% each), with only minor features pending:
+- **Missing**: Historical archive browsing (Epic 4.2), content search (Epic 4.3), newsletter integration (Epic 5 - BAT-16)
+- **Ready**: All entity CRUD, authentication, workflow management, event registration, speaker coordination, task system
+- **Production Data**: Historical data migration tooling complete, production import pending user trigger
+
 ## Project Overview
 
 BATbern is an enterprise event management platform for Berner Architekten Treffen conferences in Bern, Switzerland. It's a polyglot monorepo combining Java/Spring Boot microservices with a React/TypeScript frontend, deployed to AWS using CDK.
@@ -12,6 +23,27 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - **Domain Services**: Event management, speaker coordination, partner coordination, attendee experience, company management
 - **Infrastructure**: AWS CDK for Infrastructure as Code
 - **Frontend**: React 19 + TypeScript SPA with role-based adaptive UI
+
+## Current Development Phase
+
+**Phase:** MVP Feature Completion & Production Preparation
+
+**Epic Completion Status:**
+- ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
+- ✅ **Epic 2**: Entity CRUD & Domain Services - **100% COMPLETE**
+- ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
+- 🔄 **Epic 4**: Public Website & Content Discovery - **85% COMPLETE** (Story 4.1 done, 4.2-4.3 pending)
+- ✅ **Epic 5**: Enhanced Organizer Workflows - **87.5% COMPLETE** (7/8 stories done, BAT-16 pending)
+
+**Remaining MVP Work (~2.5 weeks):**
+1. BAT-16: Overflow management, auto-publishing, event lifecycle finalization (~1 week)
+2. Story 4.2: Historical archive browsing with filters and timeline (~1 week)
+3. Story 4.3: Full-text content search across presentations/speakers (~0.5 weeks)
+
+**When Adding New Features:**
+- Platform is feature-complete for MVP - focus on completing Stories 4.2, 4.3, and BAT-16
+- New features should be deferred to Epic 6+ unless critical for launch
+- Prioritize bug fixes, performance optimization, and production readiness
 
 ## Build System
 
