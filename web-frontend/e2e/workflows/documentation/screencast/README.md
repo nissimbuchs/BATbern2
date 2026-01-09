@@ -71,30 +71,44 @@ ffmpeg -i ~/Downloads/elevenlabs_*.mp3 -c:a aac -b:a 128k narration-raw-de.m4a
 
 Detaillierte Anleitungen für alle Optionen: **siehe `VOICE-GENERATION-GUIDE.md`**
 
-### Schritt 3: Untertitel erstellen (SRT)
+### Schritt 3: Untertitel automatisch generieren (SRT)
 
-Erstellen Sie die Datei `subtitles-de.srt` mit folgendem Format:
+**Automatische Generierung** (Empfohlen):
+
+Die SRT-Datei kann automatisch aus `timing-config.ts` und `NARRATION-MAPPING.md` generiert werden:
+
+```bash
+cd /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentation/screencast/scripts
+npx ts-node generate-subtitles.ts
+```
+
+Das Skript:
+
+- Liest die exakten Timings aus `timing-config.ts`
+- Extrahiert den deutschen Text aus `NARRATION-MAPPING.md`
+- Entfernt Emotions-Marker (`[excited]`, `[playful]`, etc.)
+- Teilt lange Texte in lesbare Untertitel-Chunks auf
+- Generiert `subtitles-de.srt` mit 117 Einträgen (~12 Minuten)
+
+**Manuelle Erstellung** (falls Anpassungen nötig):
+
+Format:
 
 ```srt
 1
-00:00:00,000 --> 00:00:05,000
-Willkommen zur BATbern Event-Management-Plattform.
+00:00:00,000 --> 00:00:10,333
+Willkommen zur BATbern Event-Management-Plattform!
 
 2
-00:00:05,500 --> 00:00:10,000
-In diesem Tutorial durchlaufen wir den kompletten Event-Lebenszyklus.
-
-3
-00:00:10,500 --> 00:00:15,000
-Von der ersten Erstellung bis zur Archivierung.
+00:00:10,333 --> 00:00:20,666
+Heute zeige ich Ihnen, wie man ein Event plant, ohne dabei den Verstand zu verlieren.
 ```
 
 **Timing-Tipps**:
 
 - Schauen Sie das Video an und notieren Sie Zeitstempel
-- Hören Sie die Narration und synchronisieren Sie
-- Max. 42 Zeichen pro Zeile für gute Lesbarkeit
-- 3-7 Sekunden pro Untertitel
+- Max. 120 Zeichen pro Untertitel für gute Lesbarkeit
+- UTF-8 Encoding für deutsche Umlaute (ä, ö, ü, ß)
 
 ### Schritt 4: Video + Audio + Untertitel kombinieren
 

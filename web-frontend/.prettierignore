@@ -30,3 +30,4 @@ web-frontend/public/assets/**/*.pdf
 *.py
 *.mp4
 *.webm
+*.srt
