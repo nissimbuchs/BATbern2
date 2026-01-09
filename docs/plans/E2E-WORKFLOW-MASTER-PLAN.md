@@ -1,7 +1,7 @@
 # E2E Screenshot Workflow - Master Plan & Status
 
-**Last Updated**: 2026-01-08 (Late Night Session - Phase B.5 + C Complete)
-**Current Status**: Phase A + B + B.5 + C Complete ✅ (4/7 phases done, ~57% complete)
+**Last Updated**: 2026-01-08 (Late Night Session - Phase A + B + B.5 + C + D Complete)
+**Current Status**: Phase A + B + B.5 + C + D Complete ✅ (5/6 phases done, ~80% complete)
 
 ---
 
@@ -261,21 +261,22 @@ await capturer(page, 'topic-selection-confirmed', {
   - Test IDs added: `approve-content-button`
   - 9 screenshots captured ✅
 
-- [ ] **Phase D**: Slot Assignment & Publish Agenda (Lines 247-254)
-  - Manage slot assignments
-  - Assign speakers to time slots
-  - Publish agenda
-  - 6-8 screenshots
+- [x] **Phase D**: Slot Assignment & Publish Agenda (Lines 247-254) ✅ **COMPLETE**
+  - Navigate to Sessions view
+  - Open Slot Assignment page
+  - Click Auto-Assign button (instead of manual drag-and-drop)
+  - Confirm auto-assignment in modal
+  - Return to event page
+  - Navigate to Publishing tab
+  - Click "Publish Agenda" button
+  - Test IDs added: `sessions-view-toggle`, `manage-slot-assignments-button`, `auto-assign-button`, `auto-assign-modal`, `auto-assign-confirm`
+  - 10 screenshots captured ✅
+  - Uses `skipNetworkIdle` option for Publishing tab (has unicorn.studio iframe)
 
-- [ ] **Phase E**: Archival (Lines 255-261)
+- [ ] **Phase E**: Archival & Cleanup (Lines 255-265)
   - Edit event status to "Archiviert"
   - Override workflow validation
-  - 3-4 screenshots
-
-- [ ] **Phase F**: Cleanup (Lines 262-265)
-  - Delete event
-  - Verify cleanup
-  - 2-3 screenshots
+  - ~3 screenshots
 
 ### User Guide Integration
 - [ ] Add screenshots to workflow documentation
@@ -305,11 +306,11 @@ cd web-frontend
 # Set environment variables
 export AUTH_TOKEN=$(jq -r '.idToken' ~/.batbern/development.json)
 
-# Run Phase A + B + C tests
-./run-phases-a-b-c-autologin.sh
+# Run Phase A + B + C + D tests
+./run-phases-a-b-c-d-autologin.sh
 
 # Or with UI mode for debugging
-./run-phases-a-b-c-autologin.sh --ui
+./run-phases-a-b-c-d-autologin.sh --ui
 ```
 
 ### Debug Event Creation Issue
@@ -443,11 +444,10 @@ src/components/
 | **Phase B** | ✅ Complete | 100% | 15/15 |
 | **Phase B.5** | ✅ Complete | 100% | 14/14 |
 | **Phase C** | ✅ Complete | 100% | 9/9 |
-| Phase D | ⏳ Ready | 0% | 0/8 |
-| Phase E | ⏳ Ready | 0% | 0/4 |
-| Phase F | ⏳ Ready | 0% | 0/3 |
+| **Phase D** | ✅ Complete | 100% | 10/10 |
+| Phase E | ⏳ Ready | 0% | 0/3 |
 
-**Overall**: ~57% complete (infrastructure + auth + Phase A + B + B.5 + C complete, ready for Phase D)
+**Overall**: ~80% complete (infrastructure + auth + Phase A + B + B.5 + C + D complete, ready for Phase E)
 
 ---
 
@@ -676,6 +676,30 @@ src/components/
 **Result**: Test runner script is now ready for Phase C implementation
 **Next Step**: Implement Phase C test code in `complete-event-workflow.spec.ts`
 
+### 2026-01-08 Late Night Session Part 5 - Shell Script Renamed for Phase D ✅
+
+**Script Preparation for Phase D**:
+
+1. ✅ **Renamed Test Runner Script**
+   - File: `run-phases-a-b-c-autologin.sh` → `run-phases-a-b-c-d-autologin.sh`
+   - Updated regex pattern: `-g "Phase (A|B|B\.5|C)"` → `-g "Phase (A|B|B\.5|C|D)"`
+   - Updated all console output to mention Phase D
+   - Updated log filename: `/tmp/phase-a-b-c-test-run.log` → `/tmp/phase-a-b-c-d-test-run.log`
+   - Added Phase D screenshot path: `phase-d-publishing/`
+   - Script is now ready to run all four phases
+
+2. ✅ **Updated Master Plan Documentation**
+   - Updated "How to Run" section with new script name
+   - Updated "References" section with new script path
+   - Updated session notes to document rename
+
+**Files Modified** (2):
+- `run-phases-a-b-c-autologin.sh` → `run-phases-a-b-c-d-autologin.sh` (renamed + updated)
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated documentation
+
+**Result**: Test runner script is now ready for Phase D implementation
+**Next Step**: Implement Phase D test code in `complete-event-workflow.spec.ts`
+
 ### 2026-01-08 Late Night Session Part 4 - Phase B.5 + C Complete ✅
 
 **Phase B.5: Content Submission Implementation**:
@@ -747,16 +771,79 @@ cd web-frontend
 **Overall Progress**: 57% complete (4/7 phases done)
 **Next**: Implement Phase D (Slot Assignment & Publish Agenda)
 
+### 2026-01-08 Late Night Session Part 6 - Phase D Complete ✅
+
+**Phase D: Slot Assignment & Publish Agenda Implementation**:
+
+1. ✅ **Added Test IDs to Components** (2 components updated)
+   - `EventSpeakersTab.tsx`: `sessions-view-toggle` (Sessions view toggle button)
+   - `EventSpeakersTab.tsx`: `manage-slot-assignments-button` (Manage Slot Assignments button)
+   - `DragDropSlotAssignment.tsx`: `auto-assign-button` (Auto-Assign quick action button)
+   - `DragDropSlotAssignment.tsx`: `auto-assign-modal`, `auto-assign-confirm`, `auto-assign-cancel` (Modal controls)
+   - `publish-agenda-button` test ID already exists on PublishingControls
+
+2. ✅ **Implemented Phase D Test Code** (~150 lines)
+   - Step 1: Navigate to Speakers tab → Switch to Sessions view
+   - Step 2: Click "Manage Slot Assignments" button → Opens slot assignment page
+   - Step 3: Click "Auto-Assign" button → Opens confirmation modal → Confirm
+   - Step 4: Return to event page (using "Back to Event" button)
+   - Step 5: Navigate to Publishing tab
+   - Step 6: Click "Publish Agenda" button
+   - Added error handling with debug screenshots
+   - **Changed Approach**: Using auto-assign instead of drag-and-drop (simpler, more reliable)
+
+3. ✅ **Updated Test Runner Script**
+   - Script already renamed to `run-phases-a-b-c-d-autologin.sh` in Part 5
+   - Regex pattern already includes Phase D: `-g "Phase (A|B|B\.5|C|D)"`
+   - Log file path already updated: `/tmp/phase-a-b-c-d-test-run.log`
+   - Screenshot path already added: `phase-d-publishing/`
+
+**Technical Pattern Used**:
+- **Auto-Assign Instead of Drag-and-Drop**: Simpler and more reliable than manual drag
+- Modal confirmation pattern for destructive actions
+- Test IDs for language-independent element selection
+- Dual fallback for "Back to Event" button (text match + direct navigation)
+
+**Files Modified** (3):
+- `EventSpeakersTab.tsx` - Added 2 test IDs for view toggle and manage button
+- `DragDropSlotAssignment.tsx` - Added 4 test IDs for auto-assign button and modal
+- `complete-event-workflow.spec.ts` - Implemented Phase D test (~150 lines)
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated documentation
+
+**Screenshots Captured**: 10 total
+- 01: speakers-tab-initial
+- 02: sessions-view-loaded
+- 03: slot-assignment-page-loaded
+- 04: before-auto-assign
+- 05: auto-assign-modal-opened
+- 06: after-auto-assign
+- 07: back-to-event-page
+- 08: publishing-tab-loaded
+- 09: before-publish-agenda
+- 10: agenda-published
+
+**Technical Solution**: Added `skipNetworkIdle` option to screenshot helper to handle Publishing tab's unicorn.studio iframe that prevents networkidle state.
+
+**Test Execution**:
+```bash
+cd web-frontend
+./run-phases-a-b-c-d-autologin.sh  # Runs Phase A, B, B.5, C, and D
+```
+
+**Phase D Status**: ✅ 100% COMPLETE (10/10 screenshots)
+**Overall Progress**: 80% complete (5/6 phases done)
+**Next**: Implement Phase E (Archival)
+
 ---
 
 ## 🔗 References
 
 - **Workflow Recording**: `docs/playwright-recording.ts`
 - **Test Spec**: `web-frontend/e2e/workflows/documentation/complete-event-workflow.spec.ts`
-- **Test Runner**: `web-frontend/run-phases-a-b-c-autologin.sh`
+- **Test Runner**: `web-frontend/run-phases-a-b-c-d-autologin.sh`
 - **Original Plan**: `docs/plans/e2e-screenshot-workflow-plan.md` (archived)
 
 ---
 
-**Last Updated**: 2026-01-08 Late Night Session (Phase B.5 + C Complete)
-**Next Action**: Implement Phase D (Slot Assignment & Publish Agenda)
+**Last Updated**: 2026-01-08 Late Night Session Part 6 (Phase D Complete)
+**Next Action**: Implement Phase E (Archival)

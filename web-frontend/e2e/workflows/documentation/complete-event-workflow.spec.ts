@@ -805,18 +805,195 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
   });
 
   /**
-   * Phase D: Slot Assignment (Steps 9-10)
-   * - Overflow Management (if applicable)
-   * - Drag-and-Drop Slot Assignment
+   * Phase D: Slot Assignment & Publish Agenda
+   * - Navigate to Sessions view
+   * - Open Slot Assignment page
+   * - Drag speaker to time slot
+   * - Publish Agenda
    *
-   * This test case will be implemented after recording the workflow
+   * Based on recording lines 247-254
    */
-  test('Phase D: Slot Assignment (Steps 9-10)', async () => {
+  test('Phase D: Slot Assignment & Publish Agenda', async ({ page }) => {
     test.setTimeout(10 * 60 * 1000);
 
-    console.log('\n📋 Phase D: Slot Assignment\n');
-    console.log('⏭️  Phase D implementation pending workflow recording');
-    test.skip();
+    console.log('\n📋 Phase D: Slot Assignment & Publish Agenda\n');
+
+    const capturer = createSequentialCapturer('phase-d-publishing', 1);
+
+    try {
+      // Navigate to event page (should already be there from Phase C)
+      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+      await page.waitForTimeout(1000);
+
+      // ========================================
+      // STEP 1: Navigate to Speakers Tab and Switch to Sessions View
+      // ========================================
+      console.log('📍 Step 1: Navigate to Sessions view');
+
+      // Click Speakers tab (should already be there, but ensure)
+      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'speakers-tab-initial', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // Click "Sessions view" toggle button
+      console.log('  → Switching to Sessions view');
+      await page.getByTestId('sessions-view-toggle').click();
+      await page.waitForTimeout(1000);
+
+      await capturer(page, 'sessions-view-loaded', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      console.log('  ✓ Sessions view loaded');
+
+      // ========================================
+      // STEP 2: Open Slot Assignment Page
+      // ========================================
+      console.log('📍 Step 2: Open Slot Assignment page');
+
+      // Click "Manage Slot Assignments" button
+      await page.getByTestId('manage-slot-assignments-button').click();
+      await page.waitForTimeout(1500);
+
+      await capturer(page, 'slot-assignment-page-loaded', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      console.log('  ✓ Slot Assignment page opened');
+
+      // ========================================
+      // STEP 3: Auto-Assign Speakers to Time Slots
+      // ========================================
+      console.log('📍 Step 3: Auto-assign speakers to time slots');
+
+      // Wait for page to load
+      await page.waitForTimeout(1000);
+
+      await capturer(page, 'before-auto-assign', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // Click Auto-Assign button on the right panel
+      console.log('  → Clicking Auto-Assign button');
+      const autoAssignButton = page.getByTestId('auto-assign-button');
+      await expect(autoAssignButton).toBeVisible({ timeout: 5000 });
+      await autoAssignButton.click();
+      await page.waitForTimeout(500);
+
+      // Wait for confirmation modal to appear
+      const autoAssignModal = page.getByTestId('auto-assign-modal');
+      await expect(autoAssignModal).toBeVisible({ timeout: 3000 });
+
+      await capturer(page, 'auto-assign-modal-opened', {
+        fullPage: false,
+      });
+
+      // Click Confirm button in modal
+      console.log('  → Confirming auto-assignment');
+      const confirmButton = page.getByTestId('auto-assign-confirm');
+      await confirmButton.click();
+      await page.waitForTimeout(3000); // Wait for auto-assignment to complete and data to refresh
+
+      console.log('  ✓ Speakers auto-assigned to slots');
+
+      await capturer(page, 'after-auto-assign', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      // ========================================
+      // STEP 4: Return to Event Page
+      // ========================================
+      console.log('📍 Step 4: Return to event page');
+
+      // Click "Back to Event" button (using German text from recording)
+      const backButton = page.getByRole('button', {
+        name: /Zurück zur Veranstaltung|Back to Event/i,
+      });
+      if (await backButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await backButton.click();
+        await page.waitForTimeout(2000); // Increased wait for page load
+      } else {
+        // Alternative: navigate directly
+        await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+        await page.waitForTimeout(2000); // Increased wait for page load
+      }
+
+      // Wait for Overview tab to be visible (ensures page loaded)
+      await expect(page.getByRole('tab', { name: /Übersicht|Overview/i })).toBeVisible({
+        timeout: 5000,
+      });
+
+      await capturer(page, 'back-to-event-page', {
+        scrollToTop: true,
+        fullPage: false,
+      });
+
+      console.log('  ✓ Returned to event page');
+
+      // ========================================
+      // STEP 5: Navigate to Publishing Tab
+      // ========================================
+      console.log('📍 Step 5: Navigate to Publishing tab');
+
+      await page.getByRole('tab', { name: /Veröffentlichung|Publishing/i }).click();
+      await page.waitForTimeout(3000); // Wait for publishing data to load
+
+      // Wait for publish agenda button to be visible (ensures publishing tab loaded)
+      await expect(page.getByTestId('publish-agenda-button')).toBeVisible({ timeout: 10000 });
+
+      // Publishing tab has unicorn.studio iframe that continuously loads
+      // Use skipNetworkIdle to avoid waiting for networkidle
+      await capturer(page, 'publishing-tab-loaded', {
+        scrollToTop: true,
+        fullPage: false,
+        skipNetworkIdle: true,
+      });
+
+      console.log('  ✓ Publishing tab loaded');
+
+      // ========================================
+      // STEP 6: Publish Agenda
+      // ========================================
+      console.log('📍 Step 6: Publish Agenda');
+
+      await capturer(page, 'before-publish-agenda', {
+        scrollToTop: true,
+        fullPage: false,
+        skipNetworkIdle: true,
+      });
+
+      // Click "Publish Agenda" button (same pattern as publish speakers)
+      await page.getByTestId('publish-agenda-button').click();
+      await page.waitForTimeout(2000); // Wait for publish to complete
+
+      await capturer(page, 'agenda-published', {
+        scrollToTop: true,
+        fullPage: false,
+        skipNetworkIdle: true,
+      });
+
+      console.log('  ✓ Agenda published');
+
+      console.log('\n✅ Phase D Complete: Slot assignment and agenda published');
+    } catch (error) {
+      console.error('❌ Phase D failed:', error);
+
+      // Capture error screenshot
+      await page.screenshot({
+        path: `docs/user-guide/assets/screenshots/workflow/phase-d-publishing/ERROR-${Date.now()}.png`,
+        fullPage: true,
+      });
+
+      throw error;
+    }
   });
 
   /**
@@ -831,23 +1008,6 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
 
     console.log('\n📋 Phase E: Progressive Publishing\n');
     console.log('⏭️  Phase E implementation pending workflow recording');
-    test.skip();
-  });
-
-  /**
-   * Phase F: Communication & Archival (Steps 13-16)
-   * - Newsletter Distribution (if implemented)
-   * - Moderator Assignment (if implemented)
-   * - Catering Coordination (if implemented)
-   * - Event Archival
-   *
-   * This test case will be implemented after recording the workflow
-   */
-  test('Phase F: Communication & Archival (Steps 13-16)', async () => {
-    test.setTimeout(10 * 60 * 1000);
-
-    console.log('\n📋 Phase F: Communication & Archival\n');
-    console.log('⏭️  Phase F implementation pending workflow recording');
     test.skip();
   });
 });

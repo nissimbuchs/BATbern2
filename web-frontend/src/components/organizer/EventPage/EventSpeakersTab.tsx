@@ -305,7 +305,11 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               <KanbanIcon sx={{ mr: 1 }} />
               {t('events:eventPage.speakers.kanban', 'Kanban')}
             </ToggleButton>
-            <ToggleButton value="sessions" aria-label="Sessions view">
+            <ToggleButton
+              value="sessions"
+              aria-label="Sessions view"
+              data-testid="sessions-view-toggle"
+            >
               <SessionsIcon sx={{ mr: 1 }} />
               {t('events:eventPage.speakers.sessions', 'Sessions')}
             </ToggleButton>
@@ -347,6 +351,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               variant="contained"
               startIcon={<SlotAssignmentIcon />}
               onClick={handleManageSlotAssignments}
+              data-testid="manage-slot-assignments-button"
             >
               {t('events:speakers.manageSlotAssignments', 'Slot Assignment')}
             </Button>

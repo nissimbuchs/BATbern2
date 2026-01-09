@@ -34,6 +34,9 @@ export interface ScreenshotOptions {
 
   /** Scroll modal content to top before capturing (default: false) */
   scrollModal?: boolean;
+
+  /** Skip waiting for networkidle (useful for pages with continuous network activity like iframes) */
+  skipNetworkIdle?: boolean;
 }
 
 /**
@@ -138,11 +141,17 @@ export async function captureWorkflowScreenshot(
   const delay = options.delay ?? 500;
   const scrollToTopFirst = options.scrollToTop ?? false;
   const scrollModalFirst = options.scrollModal ?? false;
+  const skipNetworkIdle = options.skipNetworkIdle ?? false;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Wait for page to be fully loaded
-      await page.waitForLoadState('networkidle', { timeout: 5000 });
+      // Wait for page to be fully loaded (skip if page has continuous network activity)
+      if (!skipNetworkIdle) {
+        await page.waitForLoadState('networkidle', { timeout: 5000 });
+      } else {
+        // Just wait for DOM to be ready, don't wait for network
+        await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+      }
 
       // Scroll to top if requested
       if (scrollToTopFirst) {
