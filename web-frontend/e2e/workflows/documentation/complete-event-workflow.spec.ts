@@ -171,6 +171,8 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         venueName: testConfig.event.venue.name,
         venueAddress: testConfig.event.venue.address,
         // venueImagePath: testConfig.event.venueImagePath  // Skip image upload for now
+      }, {
+        captureDropdownScreenshot: capturer.element.bind(capturer)
       });
 
       await page.waitForTimeout(800); // Wait for form to settle
@@ -179,6 +181,9 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         fullPage: false,
         delay: 1000,
       });
+
+      // Event type dropdown screenshot captured during fillEventForm
+      // Other element screenshots (timeline, venue) can be added later if needed
 
       // Submit event creation form
       await eventPage.submitEventForm();
@@ -283,8 +288,8 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         await assigneeSelect.click();
         await page.waitForTimeout(400);
 
-        // Select the assignee from dropdown
-        await page.getByRole('option', { name: assignee }).click();
+        // Select the assignee from dropdown (use .first() to handle duplicates)
+        await page.getByRole('option', { name: assignee }).first().click();
         await page.waitForTimeout(400);
 
         // Capture screenshot after each assignment (every 2 tasks to reduce screenshot count)
@@ -374,6 +379,54 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForTimeout(500);
       await capturer(page, 'topic-selected-from-heatmap');
 
+      // TEMPORARILY DISABLED - Element screenshots (tooltip, checklist, balance indicator)
+      /*
+      // Capture heat map detail tooltip (hover over a cell)
+      console.log('    → Capturing heat map tooltip detail');
+      try {
+        const heatmapCell = page.locator('[data-testid^="heat-map-cell"]').first();
+        await heatmapCell.hover();
+        await page.waitForTimeout(500); // Wait for tooltip to appear
+        await capturer.element(
+          page,
+          '[role="tooltip"]',
+          'heat-map-tooltip-detail',
+          { delay: 200 }
+        );
+        console.log('    ✓ Heat map tooltip screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture heat map tooltip, skipping:', error.message);
+      }
+
+      // Capture selected topics checklist
+      console.log('    → Capturing selected topics checklist');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="selected-topics-list"]',
+          'selected-topics-checklist',
+          { delay: 300 }
+        );
+        console.log('    ✓ Selected topics checklist screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture selected topics checklist, skipping:', error.message);
+      }
+
+      // Capture topic balance indicator
+      console.log('    → Capturing topic balance indicator');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="topic-balance-indicator"]',
+          'topic-balance-summary',
+          { delay: 300 }
+        );
+        console.log('    ✓ Topic balance indicator screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture topic balance indicator, skipping:', error.message);
+      }
+      */
+
       // Confirm selection
       await topicPage.confirmSelection();
       await page.waitForLoadState('networkidle');
@@ -407,6 +460,23 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForTimeout(1000); // Wait for all speakers to be added
       await capturer(page, 'all-speakers-added', { scrollToTop: true });
       console.log(`    ✓ All ${candidates.length} speakers added to pool`);
+
+      // TEMPORARILY DISABLED - Element screenshot
+      /*
+      // Capture speaker status overview for the topic
+      console.log('    → Capturing speaker status overview');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="topic-speaker-summary"]',
+          'topic-speaker-status-overview',
+          { delay: 300 }
+        );
+        console.log('    ✓ Speaker status overview screenshot captured');
+      } catch (error) {
+        console.log('    ⚠️  Could not capture speaker status overview, skipping:', error.message);
+      }
+      */
 
       // Proceed to outreach phase
       await expect(speakerPage.proceedToOutreachButton).toBeVisible({ timeout: 5000 });
@@ -493,6 +563,30 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         console.log(
           `    ✓ Speaker ${i + 1} contacted via ${contact.contactMethod}: ${contact.notes.substring(0, 30)}...`
         );
+
+        // TEMPORARILY DISABLED - Element screenshot
+        /*
+        // Capture contact history log for first speaker (as documentation example)
+        if (i === 0) {
+          console.log('    → Capturing contact history timeline');
+          try {
+            // Click to open speaker card detail/history if available
+            const speakerCard = page.locator(`text=/.*${contact.displayName}.i`).first();
+            await speakerCard.scrollIntoViewIfNeeded();
+
+            // Try to find and capture contact history section
+            await capturer.element(
+              page,
+              '[data-testid="contact-history-timeline"]',
+              'contact-history-log',
+              { delay: 300 }
+            );
+            console.log('    ✓ Contact history log screenshot captured');
+          } catch (error) {
+            console.log('    ⚠️  Could not capture contact history log, skipping:', error.message);
+          }
+        }
+        */
       }
 
       console.log(`    ✓ All ${testConfig.speakerOutreach.length} speaker contacts recorded`);
@@ -813,6 +907,20 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
         });
 
         console.log(`  ✅ Content submitted for ${speakerCandidate.firstName}`);
+      }
+
+      // Capture content submission progress tracker
+      console.log('  → Capturing content submission progress dashboard');
+      try {
+        await capturer.element(
+          page,
+          '[data-testid="content-progress-dashboard"]',
+          'content-submission-tracker',
+          { delay: 300 }
+        );
+        console.log('  ✓ Content submission progress dashboard screenshot captured');
+      } catch (error) {
+        console.log('  ⚠️  Could not capture content progress dashboard, skipping:', error.message);
       }
 
       console.log('\n✅ Phase B.5 Complete: All speaker content submitted');

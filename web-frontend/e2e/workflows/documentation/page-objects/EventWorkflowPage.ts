@@ -12,6 +12,7 @@
  */
 
 import { Page, Locator } from '@playwright/test';
+import type { ScreenshotOptions } from '../helpers/screenshot-helpers.js';
 
 export class EventWorkflowPage {
   readonly page: Page;
@@ -164,17 +165,27 @@ export class EventWorkflowPage {
   /**
    * Fills the event creation form
    */
-  async fillEventForm(eventData: {
-    eventNumber: number;
-    title: string;
-    description: string;
-    date: string;
-    registrationDeadline: string;
-    eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY';
-    venueName: string;
-    venueAddress: string;
-    venueImagePath?: string;
-  }): Promise<void> {
+  async fillEventForm(
+    eventData: {
+      eventNumber: number;
+      title: string;
+      description: string;
+      date: string;
+      registrationDeadline: string;
+      eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY';
+      venueName: string;
+      venueAddress: string;
+      venueImagePath?: string;
+    },
+    options?: {
+      captureDropdownScreenshot?: (
+        page: Page,
+        selector: string,
+        name: string,
+        options?: Partial<ScreenshotOptions>
+      ) => Promise<string>;
+    }
+  ): Promise<void> {
     // Fill basic event details
     console.log('    → Filling event number');
     await this.eventNumberField.fill(eventData.eventNumber.toString());
@@ -189,7 +200,7 @@ export class EventWorkflowPage {
 
     // Select event type
     console.log('    → Selecting event type:', eventData.eventType);
-    await this.selectEventType(eventData.eventType);
+    await this.selectEventType(eventData.eventType, options?.captureDropdownScreenshot);
     console.log('    → Event type selected');
 
     // Fill venue details
@@ -210,7 +221,15 @@ export class EventWorkflowPage {
    * Selects event type (Evening, Afternoon, Full Day)
    * Uses data-testid for stable selection instead of text matching
    */
-  async selectEventType(eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY'): Promise<void> {
+  async selectEventType(
+    eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY',
+    captureDropdownScreenshot?: (
+      page: Page,
+      selector: string,
+      name: string,
+      options?: Partial<ScreenshotOptions>
+    ) => Promise<string>
+  ): Promise<void> {
     console.log(`      → Selecting event type: ${eventType}`);
 
     // Click the event type selector dropdown (uses data-testid from EventTypeSelector.tsx)
@@ -218,6 +237,22 @@ export class EventWorkflowPage {
     await selector.waitFor({ state: 'visible', timeout: 5000 });
     await selector.click();
     await this.page.waitForTimeout(500); // Wait for dropdown menu to fully open
+
+    // Capture screenshot of opened dropdown if capturer provided
+    if (captureDropdownScreenshot) {
+      try {
+        console.log('      → Capturing event type dropdown screenshot');
+        await captureDropdownScreenshot(
+          this.page,
+          '[role="listbox"], [role="menu"], .MuiMenu-paper',
+          'event-type-dropdown-open',
+          { delay: 300 }
+        );
+        console.log('      ✓ Event type dropdown screenshot captured');
+      } catch (error) {
+        console.log('      ⚠️  Could not capture dropdown screenshot:', error.message);
+      }
+    }
 
     // Select the MenuItem by its data-value attribute (more reliable than text matching)
     // MUI Select renders MenuItems with data-value matching the value prop

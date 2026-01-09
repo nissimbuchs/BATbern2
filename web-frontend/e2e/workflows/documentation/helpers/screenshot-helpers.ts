@@ -203,6 +203,67 @@ export async function captureWorkflowScreenshot(
 }
 
 /**
+ * Capture a specific UI element (component-level screenshot)
+ *
+ * This function captures a screenshot of a specific element rather than the full page.
+ * Useful for replacing ASCII wireframes with targeted component screenshots.
+ *
+ * @param page - Playwright Page object
+ * @param selector - CSS selector for the element to capture
+ * @param options - Screenshot configuration
+ * @returns Path to the captured screenshot
+ */
+export async function captureUIElement(
+  page: Page,
+  selector: string,
+  options: ScreenshotOptions
+): Promise<string> {
+  const maxRetries = options.maxRetries ?? 3;
+  const delay = options.delay ?? 500;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Locate the element
+      const element = page.locator(selector).first();
+
+      // Wait for element to be visible
+      await element.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Wait for animations to complete
+      if (delay > 0) {
+        await page.waitForTimeout(delay);
+      }
+
+      // Hide dynamic content
+      await hideDynamicContent(page);
+
+      // Build path and capture element screenshot
+      const screenshotPath = buildScreenshotPath(options);
+      await element.screenshot({
+        path: screenshotPath,
+        animations: 'disabled',
+      });
+
+      console.log(`✅ Element screenshot captured: ${path.basename(screenshotPath)}`);
+      return screenshotPath;
+    } catch (error) {
+      if (attempt === maxRetries - 1) {
+        console.error(
+          `❌ Failed to capture element screenshot after ${maxRetries} attempts:`,
+          error
+        );
+        throw error;
+      }
+
+      console.warn(`⚠️  Element screenshot attempt ${attempt + 1} failed, retrying...`);
+      await page.waitForTimeout(1000); // Wait before retry
+    }
+  }
+
+  throw new Error('Element screenshot capture failed after all retries');
+}
+
+/**
  * Captures a screenshot of a modal dialog
  * Waits for modal to be visible before capturing
  * Automatically scrolls modal content to top
@@ -262,6 +323,33 @@ export function createSequentialCapturer(phase: string, startSequence: number = 
   capturer.getCurrentSequence = (): number => currentSequence;
   capturer.resetSequence = (newStart: number = 1): void => {
     currentSequence = newStart;
+  };
+
+  /**
+   * Capture a specific UI element (component-level screenshot)
+   *
+   * Usage:
+   * ```typescript
+   * const capturer = createSequentialCapturer('phase-a-setup', 1);
+   * await capturer.element(page, '[name="eventType"]', 'event-type-dropdown', { delay: 300 });
+   * ```
+   */
+  capturer.element = async (
+    page: Page,
+    selector: string,
+    name: string,
+    customOptions: Partial<ScreenshotOptions> = {}
+  ): Promise<string> => {
+    const fullOptions: ScreenshotOptions = {
+      phase,
+      sequence: currentSequence++,
+      name,
+      fullPage: false,
+      maxRetries: 3,
+      delay: 500,
+      ...customOptions,
+    };
+    return await captureUIElement(page, selector, fullOptions);
   };
 
   return capturer;

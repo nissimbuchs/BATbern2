@@ -61,17 +61,8 @@ The Kanban board supports drag-and-drop to update speaker status as you contact 
 
 **Select Candidates to Contact**
 
-Select high-priority candidates for initial wave:
+Select high-priority candidates for initial wave. The candidate selection interface displays checkboxes for each candidate with their priority level (High/Medium/Low), a "Select All" option, and a [Send Invitation Email] button to send bulk invitations to selected candidates.
 
-```
-☐ Select All
-☑ Hans Müller (High Priority)
-☑ Anna Schmidt (High Priority)
-☑ Peter Weber (High Priority)
-☐ Lisa Meier (Medium Priority)
-
-[Send Invitation Email]
-```
 </div>
 
 <div class="step" data-step="3">
@@ -80,36 +71,7 @@ Select high-priority candidates for initial wave:
 
 Click **Send Invitation Email**.
 
-Email template opens with pre-filled content:
-
-```
-To: hans.mueller@example.com
-Subject: Invitation to speak at BATbern 2025
-
-Dear Hans,
-
-We are planning BATbern 2025 (Full-Day Conference on March 15, 2025)
-and would like to invite you to present on "Sustainable Building Materials".
-
-Event Details:
-- Date: March 15, 2025
-- Type: Full-Day Conference
-- Location: Kursaal Bern
-- Expected Audience: 300-400 architects
-
-Your presentation would be 45 minutes (30 min talk + 15 min Q&A).
-
-Based on your expertise and previous presentations, we believe you would
-provide valuable insights to our audience.
-
-Are you interested? Please respond by February 28, 2025.
-
-Best regards,
-Anna Schmidt
-BATbern Organizer
-
-[Edit Email] [Send] [Cancel]
-```
+The email template editor opens with pre-filled content including: recipient email, subject line ("Invitation to speak at BATbern [Year]"), personalized greeting, event overview (date, type, location, expected audience), presentation format (duration and Q&A allocation), invitation rationale based on speaker expertise, response deadline, organizer signature, and action buttons ([Edit Email] [Send] [Cancel]) to review, modify, and send the invitation.
 
 Customize as needed, then click **Send**.
 </div>
@@ -123,14 +85,9 @@ After sending, speaker status updates:
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
 
-```
-Contact History - Hans Müller
-────────────────────────────────────────
-2025-02-15 14:23 | Email Sent
-Subject: "Invitation to speak at BATbern 2025"
-Status: CONTACTED
-Next action: Follow-up on 2025-02-18 if no response
-```
+<!-- TODO: Add contact history log screenshot (element-level capture) -->
+*The contact history log displays a chronological timeline of all interactions with a speaker: timestamp, contact method (Email Sent, Phone Call, etc.), subject line or summary, current status (CONTACTED, INTERESTED, etc.), and next scheduled action with date.*
+
 </div>
 
 <div class="step" data-step="5">
@@ -151,50 +108,15 @@ After all confirmations, your outreach board shows speakers in the Accepted colu
 
 **Send Follow-Ups**
 
-For non-responders after 3-5 days, send reminder:
+For non-responders after 3-5 days, send reminder. The system displays candidates needing follow-up with their contact date and days since initial contact. A [Send Follow-Up Reminder] button sends a polite follow-up email with a subject line referencing the original invitation, a brief reminder of the opportunity, and an updated response deadline.
 
-```
-Candidates needing follow-up (3):
-────────────────────────────────────────
-Anna Schmidt | Contacted 5 days ago | No response
-Peter Weber | Contacted 4 days ago | No response
-Lisa Meier | Contacted 6 days ago | No response
-
-[Send Follow-Up Reminder]
-```
-
-Follow-up email template:
-
-```
-Subject: Re: Invitation to speak at BATbern 2025
-
-Hi Anna,
-
-I wanted to follow up on my invitation to present at BATbern 2025
-on March 15.
-
-Are you available and interested? Please let me know by March 1
-so we can finalize our speaker lineup.
-
-Thanks,
-Anna Schmidt
-```
 </div>
 
 <div class="step" data-step="7">
 
 **Handle Declines**
 
-If speaker declines, mark as **DROPOUT** and move to backup:
-
-```
-Anna Schmidt declined (2025-02-20):
-Reason: "Schedule conflict - traveling that week"
-
-[Mark as DROPOUT] [Contact Backup Candidate]
-```
-
-System suggests next priority candidate from same topic.
+If speaker declines, the system displays the decline notification with date, reason (if provided), and action buttons: [Mark as DROPOUT] to update their status, and [Contact Backup Candidate] to initiate outreach to the next priority candidate from the same topic.
 </div>
 
 <div class="step" data-step="8">
@@ -210,20 +132,7 @@ Event state advances to: **OUTREACH_INITIATED**
 
 <span class="feature-status planned">Planned</span>
 
-Track outreach effectiveness:
-
-```
-Outreach Metrics - BATbern 2025
-────────────────────────────────────────
-Contacted: 20 candidates
-Interested: 14 (70% response rate) ✅
-Declined: 4 (20%)
-No Response: 2 (10%)
-
-Average Response Time: 2.3 days
-Fastest Response: 4 hours (Hans Müller)
-Slowest Response: 7 days (Peter Weber)
-```
+Track outreach effectiveness. The Outreach Metrics dashboard displays: total candidates contacted, interested count with response rate percentage, declined count and percentage, no-response count and percentage, average response time in days, fastest and slowest response times with speaker names for reference.
 
 ## Step 5: Speaker Status Management
 
@@ -273,26 +182,8 @@ graph LR
 
 **Monitor Status Board**
 
-View speaker pipeline:
+The speaker pipeline displays INTERESTED speakers in a grouped view showing speaker name, assigned topic, and a [Request Content] action button for each. Summary metrics show counts for Content Guidelines Sent, Awaiting Content, and Content Received. A [Send Bulk Reminder] button allows sending reminder emails to all speakers awaiting content submission.
 
-```
-Speaker Status Pipeline - BATbern 2025
-────────────────────────────────────────────────────────────
-
-INTERESTED (14 speakers)
-┌──────────────────────────────────┐
-│ Hans Müller - Sustainable Materials  │ [Request Content]
-│ Peter Weber - Digital Transform      │ [Request Content]
-│ Lisa Meier - Urban Planning          │ [Request Content]
-│ ... 11 more                          │
-└──────────────────────────────────┘
-
-Content Guidelines Sent: 14
-Awaiting Content: 14
-Content Received: 0
-
-[Send Bulk Reminder]
-```
 </div>
 
 <div class="step" data-step="2">

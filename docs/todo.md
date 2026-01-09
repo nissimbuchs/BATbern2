@@ -11,7 +11,7 @@
 - company detail has no breadcrumb
 - user management has no breadcrumb
 - company logos on list does not show, but on detail shows. again the origin problem?
-
+- clean up all tasks and notifications when an event is archived
 
 ## Documentation & Website
 - [ ] Think on a migration strategy, to smoothly transition from the current website to the new one
