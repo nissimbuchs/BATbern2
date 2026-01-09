@@ -207,20 +207,6 @@
             </div>
             {{/unless}}
 
-            <!-- Table of Contents -->
-            {{#if tableOfContents}}
-            <div class="toc-container" id="tocContainer">
-                <div class="toc-header">
-                    <h2 class="toc-title">Table of Contents</h2>
-                    <button class="toc-toggle" id="tocToggle" aria-label="Toggle table of contents">
-                        <span class="toc-toggle-icon">▼</span>
-                    </button>
-                </div>
-                <div class="toc-content" id="tocContent">
-                    {{renderToc tableOfContents}}
-                </div>
-            </div>
-            {{/if}}
 
             <!-- Document Content -->
             <div class="document-content">
@@ -275,6 +261,31 @@
     <button class="back-to-top" id="backToTop" aria-label="Back to top">
         ↑
     </button>
+
+    <!-- Floating Action Button for TOC -->
+    {{#if tableOfContents}}
+    <button class="toc-fab" id="tocFab" aria-label="Show table of contents" title="Table of Contents">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <span class="toc-badge">{{tocCount}}</span>
+    </button>
+
+    <!-- TOC Drawer Overlay -->
+    <div class="toc-overlay" id="tocOverlay">
+        <div class="toc-drawer" id="tocDrawer">
+            <div class="toc-drawer-header">
+                <h2>Table of Contents</h2>
+                <button class="toc-close" id="tocClose" aria-label="Close table of contents">×</button>
+            </div>
+            <div class="toc-drawer-content">
+                {{renderToc tableOfContents}}
+            </div>
+        </div>
+    </div>
+    {{/if}}
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>

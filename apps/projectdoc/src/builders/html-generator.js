@@ -178,6 +178,7 @@ class HtmlGenerator {
         content,
         metadata,
         tableOfContents,
+        tocCount: tableOfContents ? this.countTocItems(tableOfContents) : 0,
         category,
         navigation,
         breadcrumbs,
@@ -517,6 +518,25 @@ class HtmlGenerator {
       const docDate = new Date(doc.metadata.lastModified);
       return !latest || docDate > latest ? docDate : latest;
     }, null);
+  }
+
+  /**
+   * Count total number of TOC items (including nested)
+   * @param {Array} toc - Table of contents array
+   * @returns {number} Total count of TOC items
+   */
+  countTocItems(toc) {
+    let count = 0;
+    function countRecursive(items) {
+      items.forEach(item => {
+        count++;
+        if (item.children && item.children.length > 0) {
+          countRecursive(item.children);
+        }
+      });
+    }
+    countRecursive(toc);
+    return count;
   }
 
   /**
