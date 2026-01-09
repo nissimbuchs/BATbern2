@@ -162,7 +162,7 @@ export const testConfig = {
       abstract: 'Seine Beschreibung',
       speakerIndex: 2, // Andreas (brainstormed) → Andreas Spichiger (actual speaker)
       speakerSearchTerm: 'and', // Search term from recording line 216
-      actualSpeakerName: 'Andreas Spichiger', // From recording line 217
+      actualSpeakerName: 'Andreas Grütter', // From recording line 217
     },
   ],
 
