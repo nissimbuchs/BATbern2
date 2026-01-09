@@ -1,0 +1,71 @@
+[excited] Willkommen zur BATbern Event-Management-Plattform. In diesem umfassenden Tutorial durchlaufen wir den kompletten Event-Lebenszyklus, von der ersten Erstellung bis zur abschliessenden Archivierung eines Events. [pause] Sie sehen in diesem Video alle wichtigen Schritte, die ein Organisator durchführt, um ein Berner Architekten Treffen zu planen und durchzuführen.
+
+[short pause] Wir beginnen am Event-Dashboard. Hier sehen Sie die Übersicht aller bevorstehenden und vergangenen Veranstaltungen. Die Authentifizierung erfolgt über AWS Cognito und ist bereits durchgeführt. Sie sehen oben rechts Ihren Benutzernamen und haben Zugriff auf alle Funktionen als Organisator.
+
+[pause] Jetzt erstellen wir ein neues Event. Klicken Sie auf den Button "Neue Veranstaltung" oben rechts. Es öffnet sich ein modales Formular mit allen wichtigen Feldern. Wir geben folgende Informationen ein.
+
+[short pause] Event-Nummer. Eine eindeutige Kennung für dieses Event. Das System verwendet intern das Format "BATbern" gefolgt von der Nummer. Dies dient der Identifikation in der Datenbank und in URLs.
+
+[short pause] Titel. Ein aussagekräftiger Name für die Veranstaltung, den die Teilnehmer auf der öffentlichen Website sehen werden.
+
+[short pause] Beschreibung. Eine kurze Erläuterung des Event-Themas. Diese Information hilft Interessenten bei der Anmeldung.
+
+[short pause] Event-Typ. Wählen Sie zwischen drei Formaten: [pause] Abend für Feierabend-Events, Nachmittag für Nachmittagsveranstaltungen, oder Ganztag für ganztägige Konferenzen. Dies beeinflusst die Zeitplanung und Slot-Verwaltung.
+
+[short pause] Datum und Anmeldefrist. Das Event-Datum legt fest, wann die Veranstaltung stattfindet. Die Anmeldefrist ist wichtig für die Teilnehmer-Verwaltung.
+
+[short pause] Veranstaltungsort. Name und Adresse des Veranstaltungsortes. Diese Informationen werden auf der öffentlichen Website angezeigt.
+
+[pause] Wir klicken auf "Speichern" und das Event wird erstellt. Das System kehrt automatisch zum Dashboard zurück, wo Sie das neue Event in der Liste sehen können.
+
+[pause] Nach der Event-Erstellung navigieren wir zur Event-Detailseite. Hier können wir Aufgaben an Teammitglieder zuweisen. Klicken Sie auf "Bearbeiten" um das Event-Formular erneut zu öffnen.
+
+[short pause] Wechseln Sie zum Tab "Aufgaben". Hier sehen Sie eine vordefinierte Liste von Standard-Aufgaben, die bei jedem Event anfallen. Für jede Aufgabe wählen wir einen verantwortlichen Organisator aus dem Dropdown-Menü. Dies stellt sicher, dass alle wichtigen Tätigkeiten klar zugeordnet sind und nichts vergessen wird.
+
+[pause] Nach der Zuweisung klicken wir auf "Speichern". Das System speichert alle Aufgaben und kehrt zur Event-Detailseite zurück.
+
+[pause] Um die Aufgaben zu überprüfen, navigieren wir zur Aufgabenliste. Zunächst sehen Sie die Standard-Filterung "Meine Aufgaben", die nur Ihre eigenen Aufgaben anzeigt. Wir ändern den Filter auf "Alle Aufgaben", um alle Zuweisungen zu sehen. Dies gibt einen Überblick über die Verantwortlichkeiten im gesamten Team.
+
+[pause] Zurück auf der Event-Detailseite beginnen wir mit der inhaltlichen Planung. Der erste Schritt ist die Themenauswahl. Klicken Sie auf "Thema auswählen".
+
+[short pause] Es öffnet sich eine Ansicht mit verschiedenen Themen-Kategorien. Die Standardansicht zeigt eine Liste, aber wir nutzen die Heat Map für eine bessere Übersicht.
+
+[curious] Die Heat Map ist eine Zwei-Dimensionale Matrix, die Themen nach ihrer Popularität und Aktualität visualisiert. [excited] Helle Farben zeigen beliebte Themen, dunklere weniger häufig gewählte. [pause] Dies hilft bei der strategischen Themenplanung basierend auf den Interessen der Teilnehmer.
+
+[short pause] Wir wählen ein Thema aus der Heat Map, indem wir auf eine Zelle klicken. Das System markiert die Auswahl und zeigt Details an. Nach der Bestätigung speichert das System das gewählte Thema und öffnet automatisch die Referenten-Brainstorming-Ansicht.
+
+[pause] Jetzt sammeln wir potenzielle Referenten für das gewählte Thema. In dieser Phase erstellen wir einen Pool von Kandidaten, die wir später kontaktieren werden. Wir fügen vier Referenten-Kandidaten hinzu. Dies gibt uns ausreichend Optionen für die Kontaktaufnahme, falls nicht alle zusagen.
+
+[pause] Nach dem Hinzufügen aller Kandidaten klicken wir auf "Weiter zur Kontaktierung". Das System wechselt automatisch zur Kanban-Ansicht, wo wir den Kontaktstatus verfolgen können.
+
+[short pause] Wir befinden uns jetzt in der Referenten-Kontaktierungs-Phase. Das Kanban-Board zeigt mehrere Spalten, die den Workflow abbilden. Diese Visualisierung gibt einen schnellen Überblick über den Fortschritt der Referenten-Gewinnung.
+
+[pause] Jetzt kontaktieren wir systematisch alle Referenten-Kandidaten. Für jeden Kandidaten klicken wir auf die Karte und öffnen den Kontakt-Dialog. Diese Dokumentation ist wichtig für die Nachverfolgung und für andere Teammitglieder, die den Status einsehen müssen.
+
+[pause] Nachdem wir positive Rückmeldungen erhalten haben, verschieben wir Referenten durch den Workflow. Wir nutzen Drag-and-Drop, um Karten zwischen den Spalten zu verschieben. Wir verschieben vier Referenten in die "READY"-Spalte.
+
+[short pause] Im nächsten Schritt verschieben wir Referenten von "READY" zu "ACCEPTED". Alle vier READY-Referenten werden zu ACCEPTED verschoben.
+
+[pause] Bevor Referenten ihre Inhalte einreichen können, müssen wir das Thema veröffentlichen. Wir navigieren zum Tab "Veröffentlichung" und klicken auf "Thema veröffentlichen". Im unteren Bereich ist ein Preview des Events auf der öffentlichen Seite ersichtlich.
+
+[pause] Zurück im Referenten-Tab reichen wir nun für jeden Referenten die Präsentations-Inhalte ein. Wir wiederholen diesen Prozess für alle drei Referenten mit zugesagten Präsentationen.
+
+[pause] Nach der Inhaltseinreichung folgt die Qualitätsprüfung. Da wir jetzt die Inhalte haben, können wir die Referenten veröffentlichen. Wir klicken auf "Referenten veröffentlichen". [satisfied] Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Thema ersichtlich.
+
+[pause] Zurück im Referenten-Tab prüfen und genehmigen wir nun jede eingereichte Präsentation. Wir genehmigen alle drei Präsentationen.
+
+[pause] Für die Slot-Zuweisung wechseln wir zur Sessions-Ansicht. Klicken Sie auf "Slot-Zuweisungen verwalten".
+
+[short pause] Für eine schnelle initiale Planung nutzen wir die Auto-Assign-Funktion. Das System führt die automatische Zuweisung durch. Durch Drag-und-Drop ist hier auch eine manuelle Zuweisung möglich.
+
+[short pause] Nach der Slot-Zuweisung klicken wir auf "Zurück zur Veranstaltung".
+
+[pause] Der finale Schritt ist die Agenda-Veröffentlichung. Klicken Sie auf "Agenda veröffentlichen". [satisfied] Der Event ist jetzt vollständig geplant und öffentlich inklusive detaillierter Agenda zugänglich.
+
+[pause] Nach der Durchführung des Events archivieren wir es für die Historie. Wechseln Sie zum Tab "Übersicht" und klicken Sie auf "Bearbeiten".
+
+[short pause] Im Formular wählen Sie "ARCHIVIERT" als Status.
+
+[short pause] Für Test-Zwecke können Sie die Workflow-Validierung überschreiben. Aktivieren Sie die Checkbox "Workflow-Validierung überschreiben" und klicken Sie auf "Speichern".
+
+[pause] Damit ist der vollständige Event-Workflow abgeschlossen. [satisfied] Vielen Dank für Ihre Aufmerksamkeit.

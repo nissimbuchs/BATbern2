@@ -49,15 +49,11 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
 
   const validateReason = (reason: string): boolean => {
     if (reason.length < MIN_REASON_LENGTH) {
-      setReasonError(
-        t('publishing.versionControl.reasonTooShort', { min: MIN_REASON_LENGTH })
-      );
+      setReasonError(t('publishing.versionControl.reasonTooShort', { min: MIN_REASON_LENGTH }));
       return false;
     }
     if (reason.length > MAX_REASON_LENGTH) {
-      setReasonError(
-        t('publishing.versionControl.reasonTooLong', { max: MAX_REASON_LENGTH })
-      );
+      setReasonError(t('publishing.versionControl.reasonTooLong', { max: MAX_REASON_LENGTH }));
       return false;
     }
     setReasonError('');
@@ -143,7 +139,8 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
     ? [...versionHistory].sort((a, b) => b.versionNumber - a.versionNumber)
     : [];
 
-  const isReasonValid = rollbackReason.length >= MIN_REASON_LENGTH && rollbackReason.length <= MAX_REASON_LENGTH;
+  const isReasonValid =
+    rollbackReason.length >= MIN_REASON_LENGTH && rollbackReason.length <= MAX_REASON_LENGTH;
 
   return (
     <Paper sx={{ p: 2 }}>
@@ -173,7 +170,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                 <TableRow key={version.id} data-testid={`version-row-${version.versionNumber}`}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {t('publishing.versionControl.versionNumber', { number: version.versionNumber })}
+                      {t('publishing.versionControl.versionNumber', {
+                        number: version.versionNumber,
+                      })}
                       {version.isCurrent && (
                         <Chip
                           label={t('publishing.versionControl.current')}
@@ -209,7 +208,9 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                         onClick={() => handleRollbackClick(version)}
                         disabled={isRollingBack}
                         data-testid={`rollback-button-${version.versionNumber}`}
-                        aria-label={t('publishing.versionControl.rollbackToVersion', { version: version.versionNumber })}
+                        aria-label={t('publishing.versionControl.rollbackToVersion', {
+                          version: version.versionNumber,
+                        })}
                       >
                         {t('publishing.versionControl.rollback')}
                       </Button>
@@ -255,16 +256,20 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                 data-testid="rollback-version-details"
               >
                 <Typography variant="body2">
-                  <strong>{t('publishing.versionControl.version')}:</strong> {selectedVersion.versionNumber}
+                  <strong>{t('publishing.versionControl.version')}:</strong>{' '}
+                  {selectedVersion.versionNumber}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>{t('publishing.versionControl.phase')}:</strong> {selectedVersion.publishedPhase}
+                  <strong>{t('publishing.versionControl.phase')}:</strong>{' '}
+                  {selectedVersion.publishedPhase}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>{t('publishing.versionControl.published')}:</strong> {formatDate(selectedVersion.publishedAt)}
+                  <strong>{t('publishing.versionControl.published')}:</strong>{' '}
+                  {formatDate(selectedVersion.publishedAt)}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>{t('publishing.versionControl.publisher')}:</strong> {selectedVersion.publishedBy}
+                  <strong>{t('publishing.versionControl.publisher')}:</strong>{' '}
+                  {selectedVersion.publishedBy}
                 </Typography>
               </Box>
 
@@ -283,7 +288,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
                   t('publishing.versionControl.reasonHelperText', {
                     current: rollbackReason.length,
                     min: MIN_REASON_LENGTH,
-                    max: MAX_REASON_LENGTH
+                    max: MAX_REASON_LENGTH,
                   })
                 }
                 sx={{ mt: 2 }}
