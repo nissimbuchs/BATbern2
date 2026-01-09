@@ -1,7 +1,15 @@
 meta {
-  name: Unauthorized Request (401)
+  name: Public Partner Showcase (200)
   type: http
   seq: 16
+}
+
+docs {
+  GET /partners is intentionally public for homepage partner showcase.
+  This test verifies that unauthenticated users can view partners.
+
+  Security Note: Only GET /partners is public. All other partner endpoints
+  (POST, PATCH, DELETE, /contacts, /votes, /suggestions) require authentication.
 }
 
 get {
@@ -18,23 +26,23 @@ headers {
 }
 
 assert {
-  res.status: eq 401
+  res.status: eq 200
+  res.body.data: isArray
 }
 
 tests {
-  test("should return 401 status when no JWT token provided", function() {
-    expect(res.getStatus()).to.equal(401);
+  test("should return 200 status for public endpoint", function() {
+    expect(res.getStatus()).to.equal(200);
   });
 
-  test("should have CORS headers even on error", function() {
+  test("should return partner list data", function() {
+    const body = res.getBody();
+    expect(body.data).to.be.an('array');
+    expect(body.metadata).to.be.an('object');
+  });
+
+  test("should have CORS headers", function() {
     const corsHeader = res.getHeader('access-control-allow-origin');
     expect(corsHeader).to.exist;
-  });
-
-  test("should return WWW-Authenticate header", function() {
-    const wwwAuth = res.getHeader('www-authenticate');
-    if (wwwAuth) {
-      expect(wwwAuth).to.include('Bearer');
-    }
   });
 }

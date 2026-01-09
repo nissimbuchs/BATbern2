@@ -244,6 +244,52 @@ public class SlugGenerationService {
      * @param text The text to process
      * @return Text with German characters replaced
      */
+    /**
+     * Generates a company name (slug) from display name.
+     * ADR-003: Meaningful IDs - company name serves as ID (max 12 chars, alphanumeric only)
+     *
+     * Rules:
+     * - Converts to lowercase
+     * - Removes spaces and special characters
+     * - Converts German characters
+     * - Truncates to 12 characters max
+     *
+     * Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+     *
+     * @param displayName The full company display name
+     * @return A short alphanumeric slug (1-12 chars)
+     * @throws IllegalArgumentException if displayName is null/empty
+     */
+    public String generateCompanyName(String displayName) {
+        if (displayName == null || displayName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Display name cannot be null or empty");
+        }
+
+        // Convert to lowercase and trim
+        String slug = displayName.toLowerCase().trim();
+
+        // Replace German characters
+        slug = replaceGermanCharacters(slug);
+
+        // Normalize to remove accents
+        slug = Normalizer.normalize(slug, Normalizer.Form.NFD);
+        slug = slug.replaceAll("\\p{M}", "");
+
+        // Remove all non-alphanumeric characters (including spaces)
+        slug = slug.replaceAll("[^a-z0-9]", "");
+
+        // Truncate to 12 characters (database constraint)
+        if (slug.length() > 12) {
+            slug = slug.substring(0, 12);
+        }
+
+        if (slug.isEmpty()) {
+            throw new IllegalArgumentException("Display name must contain at least one alphanumeric character");
+        }
+
+        return slug;
+    }
+
     private String replaceGermanCharacters(String text) {
         return text
             .replace("ä", "ae")

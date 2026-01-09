@@ -36,7 +36,7 @@ tests {
     const response = res.getBody();
     expect(response.currentStatus).to.equal('READY');
     expect(response.previousStatus).to.equal('CONTACTED');
-    expect(response.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+    expect(response.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
   });
 
   test("should validate transition CONTACTED → READY - Story 5.4 AC12", function() {

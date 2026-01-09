@@ -1,0 +1,27 @@
+meta {
+  name: Cleanup Test Event
+  type: http
+  seq: 99
+}
+
+delete {
+  url: {{baseUrl}}/events/{{testEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should delete test event - Story 5.5 cleanup", function() {
+    // Accept both 204 (deleted) and 404 (already deleted)
+    const status = res.getStatus();
+    expect([204, 404]).to.include(status);
+  });
+}

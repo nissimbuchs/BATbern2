@@ -544,17 +544,52 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Table of contents toggle
-  const tocToggle = document.getElementById('tocToggle');
-  const tocContent = document.getElementById('tocContent');
+  // Table of contents drawer
+  const tocFab = document.getElementById('tocFab');
+  const tocOverlay = document.getElementById('tocOverlay');
+  const tocDrawer = document.getElementById('tocDrawer');
+  const tocClose = document.getElementById('tocClose');
 
-  if (tocToggle && tocContent) {
-    tocToggle.addEventListener('click', function() {
-      tocContent.style.display = tocContent.style.display === 'none' ? 'block' : 'none';
-      const icon = tocToggle.querySelector('.toc-toggle-icon');
-      if (icon) {
-        icon.textContent = tocContent.style.display === 'none' ? '▶' : '▼';
+  if (tocFab && tocOverlay && tocDrawer) {
+    // Open drawer when FAB is clicked
+    tocFab.addEventListener('click', function() {
+      tocOverlay.classList.add('visible');
+      document.body.style.overflow = 'hidden'; // Prevent background scroll
+    });
+
+    // Close drawer when close button is clicked
+    if (tocClose) {
+      tocClose.addEventListener('click', function() {
+        tocOverlay.classList.remove('visible');
+        document.body.style.overflow = ''; // Restore scroll
+      });
+    }
+
+    // Close drawer when clicking outside (on overlay backdrop)
+    tocOverlay.addEventListener('click', function(e) {
+      if (e.target === tocOverlay) {
+        tocOverlay.classList.remove('visible');
+        document.body.style.overflow = '';
       }
+    });
+
+    // Close drawer on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && tocOverlay.classList.contains('visible')) {
+        tocOverlay.classList.remove('visible');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Close drawer after clicking TOC link (with slight delay for smooth scroll)
+    const tocLinks = tocDrawer.querySelectorAll('.toc-link');
+    tocLinks.forEach(function(link) {
+      link.addEventListener('click', function() {
+        setTimeout(function() {
+          tocOverlay.classList.remove('visible');
+          document.body.style.overflow = '';
+        }, 300);
+      });
     });
   }
 

@@ -3,7 +3,7 @@
 # Validates API contracts match OpenAPI specifications
 set -e
 
-ENVIRONMENT=${1:-"staging"}
+ENVIRONMENT=${1:-"development"}
 AUTH_TOKEN=${2:-""}
 
 # Color output
@@ -77,11 +77,12 @@ skipped=0
 
 # Test collection directories
 collections=(
-    #"file-upload-api"
-    #"companies-api"
-    #"users-api"
+    "file-upload-api"
+    "companies-api"
+    "users-api"
     "events-api"
-    #"partners-api"
+    "partners-api"
+    "tasks-api"
 )
 
 # Run tests for each collection

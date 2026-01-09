@@ -37,7 +37,7 @@ tests {
     expect(latestTransition.id).to.be.a('string');
     expect(latestTransition.previousStatus).to.be.a('string');
     expect(latestTransition.newStatus).to.be.a('string');
-    expect(latestTransition.changedByUsername).to.equal(bru.getVar("organizerUsername"));
+    expect(latestTransition.changedByUsername).to.equal(bru.getEnvVar("organizerUsername"));
     expect(latestTransition.changeReason).to.be.a('string');
     expect(latestTransition.changedAt).to.be.a('string');
   });

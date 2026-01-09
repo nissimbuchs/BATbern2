@@ -39,6 +39,9 @@ yarn-error.log
 testem.log
 /typings
 
+# E2E test error screenshots
+**/screenshots/**/ERROR-*.png
+
 # Obsolete/archived files
 *.OBSOLETE_*
 **/OBSOLETE_*

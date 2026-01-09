@@ -63,8 +63,8 @@ elif [ "$ENVIRONMENT" = "production" ]; then
     export E2E_AWS_REGION="eu-central-1"
 else
     export TEST_ENV="development"
-    export E2E_BASE_URL="http://localhost:3000"
-    export E2E_API_URL="http://localhost:8080"
+    export E2E_BASE_URL="http://localhost:8100"
+    export E2E_API_URL="http://localhost:8000"
     export E2E_AWS_REGION="eu-central-1"
 fi
 

@@ -619,8 +619,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         {/* Tabs - Story 5.5 Phase 6 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
-            <Tab label={t('tabs.info', 'Info')} />
-            <Tab label={t('tabs.tasks', 'Tasks')} disabled={mode === 'create'} />
+            <Tab label={t('tabs.info', 'Info')} data-testid="info-tab" />
+            <Tab
+              label={t('tabs.tasks', 'Tasks')}
+              disabled={mode === 'create'}
+              data-testid="tasks-tab"
+            />
           </Tabs>
         </Box>
 
@@ -783,7 +787,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 render={({ field }) => (
                   <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
                     <InputLabel>{t('form.status')}</InputLabel>
-                    <Select {...field} label={t('form.status')}>
+                    <Select {...field} label={t('form.status')} data-testid="event-status-select">
                       <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
                       <MenuItem value="TOPIC_SELECTION">
                         {t('workflow.states.topic_selection')}
@@ -829,6 +833,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     <Checkbox
                       checked={overrideValidation}
                       onChange={(e) => setOverrideValidation(e.target.checked)}
+                      data-testid="override-workflow-validation-checkbox"
                     />
                   }
                   label="Override workflow validation (allows any state transition)"
@@ -942,7 +947,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               {t('form.saveDraft')}
             </Button>
           )}
-          <Button onClick={handleSaveClick} variant="contained" color="primary">
+          <Button
+            onClick={handleSaveClick}
+            variant="contained"
+            color="primary"
+            data-testid="save-event-button"
+          >
             {mode === 'create' ? t('form.saveCreate') : t('form.save')}
           </Button>
         </DialogActions>

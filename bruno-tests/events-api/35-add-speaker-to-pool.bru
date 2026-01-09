@@ -28,7 +28,7 @@ assert {
   res.status: eq 201
   res.body.id: isDefined
   res.body.speakerName: isDefined
-  res.body.status: eq identified
+  res.body.status: eq IDENTIFIED
 }
 
 tests {
@@ -43,8 +43,8 @@ tests {
     expect(speaker.speakerName).to.equal('Dr. Maria Schmidt');
     expect(speaker.company).to.equal('Zühlke Engineering AG');
     expect(speaker.expertise).to.be.a('string');
-    expect(speaker.assignedOrganizerId).to.equal(bru.getVar("organizerUsername"));
-    expect(speaker.status).to.equal('identified'); // Initial status per AC13, AC15
+    expect(speaker.assignedOrganizerId).to.equal(bru.getEnvVar("organizerUsername"));
+    expect(speaker.status).to.equal('IDENTIFIED'); // Initial status per AC13, AC15
     expect(speaker.notes).to.be.a('string');
   });
 

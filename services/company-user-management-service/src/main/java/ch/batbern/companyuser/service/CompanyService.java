@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -47,6 +48,7 @@ public class CompanyService {
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
     private final GenericLogoService genericLogoService;
+    private final ch.batbern.shared.service.SlugGenerationService slugService;
 
     /**
      * Creates a new company with validation
@@ -131,6 +133,68 @@ public class CompanyService {
 
         log.info("Company created successfully: {}", savedCompany.getId());
         return mapToResponse(savedCompany);
+    }
+
+    /**
+     * Get existing company or create new one from display name.
+     * ADR-003: Uses display name to generate meaningful company name (slug).
+     * Used for anonymous user registration where company might not exist yet.
+     *
+     * @param displayName Full company display name (e.g., "Test Co")
+     * @return Existing or newly created company
+     */
+    public Company getOrCreateCompany(String displayName) {
+        log.debug("Get-or-create company for display name: {}", displayName);
+
+        // Generate company name (slug) from display name
+        // "Test Co" → "testco" (max 12 chars, alphanumeric only)
+        String companyName = slugService.generateCompanyName(displayName);
+
+        // Try to find by generated name first
+        String finalCompanyName = companyName;
+        Optional<Company> existing = companyRepository.findByName(finalCompanyName);
+
+        if (existing.isPresent()) {
+            log.debug("Company found by name: {}", finalCompanyName);
+            return existing.get();
+        }
+
+        // Ensure unique name with numeric suffix if needed
+        companyName = slugService.ensureUniqueSlug(companyName, companyRepository::existsByName);
+
+        // Create new company
+        log.info("Creating new company: {} (display: {})", companyName, displayName);
+
+        String currentUsername = securityContextHelper.getCurrentUsername();
+
+        Company company = Company.builder()
+                .name(companyName)  // Short slug (e.g., "testco")
+                .displayName(displayName)  // Full name (e.g., "Test Co")
+                .isVerified(false)
+                .createdBy(currentUsername != null ? currentUsername : "anonymous")
+                .build();
+
+        Company savedCompany = companyRepository.save(company);
+
+        // Publish domain event
+        CompanyCreatedEvent event = new CompanyCreatedEvent(
+            savedCompany.getName(),
+            savedCompany.getName(),
+            savedCompany.getDisplayName(),
+            savedCompany.getSwissUID(),
+            savedCompany.getWebsite(),
+            savedCompany.getIndustry(),
+            savedCompany.getDescription(),
+            savedCompany.getCreatedBy(),
+            savedCompany.getCreatedAt(),
+            savedCompany.getCreatedBy()
+        );
+        eventPublisher.publish(event);
+
+        log.info("Company created: {} (name: {}, display: {})",
+                 savedCompany.getId(), savedCompany.getName(), savedCompany.getDisplayName());
+
+        return savedCompany;
     }
 
     /**

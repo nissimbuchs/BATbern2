@@ -43,6 +43,7 @@ public class UserService {
     private final SecurityContextHelper securityContext;
     private final SlugGenerationService slugService;
     private final UserResponseMapper responseMapper;
+    private final CompanyService companyService;
 
     /**
      * Get current authenticated user
@@ -538,13 +539,22 @@ public class UserService {
         String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
         String username = slugService.ensureUniqueUsername(baseUsername, userRepository::existsByUsername);
 
+        // Get or create company if display name provided (for anonymous registrations)
+        String companyId = null;
+        if (request.getCompanyId() != null && !request.getCompanyId().trim().isEmpty()) {
+            // Treat companyId as display name and get/create company
+            ch.batbern.companyuser.domain.Company company = companyService.getOrCreateCompany(request.getCompanyId());
+            companyId = company.getName();  // Use the generated slug as companyId
+            log.debug("Associated user with company: {} (display: {})", companyId, company.getDisplayName());
+        }
+
         User user = User.builder()
                 .cognitoUserId(cognitoUserId)
                 .email(request.getEmail())
                 .username(username)  // Story 1.16.2: Generated username
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .companyId(request.getCompanyId())  // Story 1.16.2: company name
+                .companyId(companyId)  // Story 1.16.2: company name (slug)
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
 

@@ -451,6 +451,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                           <Grid size={3.33} key={room}>
                             <Paper
                               data-testid={slotId}
+                              data-slot-time={time}
+                              data-slot-room={room}
                               draggable={!!assignedSession}
                               onDragStart={
                                 assignedSession ? handleDragStart(assignedSession) : undefined
@@ -541,6 +543,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 startIcon={<AutoAwesome />}
                 onClick={() => setAutoAssignModalOpen(true)}
                 sx={{ mb: 2 }}
+                data-testid="auto-assign-button"
               >
                 {t('slotAssignment.actions.autoAssign')}
               </Button>
@@ -587,13 +590,17 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       />
 
       {/* Auto-Assign Modal */}
-      <Dialog open={autoAssignModalOpen} onClose={() => setAutoAssignModalOpen(false)}>
+      <Dialog
+        open={autoAssignModalOpen}
+        onClose={() => setAutoAssignModalOpen(false)}
+        data-testid="auto-assign-modal"
+      >
         <DialogTitle>{t('slotAssignment.modals.autoAssign.title')}</DialogTitle>
         <DialogContent>
           <Typography>{t('slotAssignment.modals.autoAssign.message')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAutoAssignModalOpen(false)}>
+          <Button onClick={() => setAutoAssignModalOpen(false)} data-testid="auto-assign-cancel">
             {t('slotAssignment.actions.cancel')}
           </Button>
           <Button
@@ -610,6 +617,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                 console.error('Failed to auto-assign:', err);
               }
             }}
+            data-testid="auto-assign-confirm"
           >
             {t('slotAssignment.actions.confirm')}
           </Button>

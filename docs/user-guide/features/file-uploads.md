@@ -309,7 +309,7 @@ sequenceDiagram
 ## Related Features
 
 - **[Company Management](../entity-management/companies.md#logo-upload)** - Company logo upload workflow
-- **[Speaker Materials](../workflow/phase-b-outreach.md#step-6-content-collection)** - Speaker content collection
+- **[Speaker Materials](../workflow/phase-b-outreach.md#content-collection)** - Speaker content collection
 - **[Upload Troubleshooting](../troubleshooting/uploads.md)** - Detailed error resolution
 
 ## Technical Details

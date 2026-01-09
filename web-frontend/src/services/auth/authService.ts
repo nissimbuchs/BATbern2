@@ -263,14 +263,18 @@ class AuthService {
       const tokens = session.tokens;
 
       if (!tokens?.idToken) {
+        console.debug('[authService] No idToken found in session');
         return null;
       }
 
       return this.extractUserContextFromToken(
         tokens.idToken.payload as unknown as CognitoTokenClaims
       );
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_error) {
+    } catch (error) {
+      console.debug(
+        '[authService] getCurrentUser failed:',
+        error instanceof Error ? error.message : String(error)
+      );
       return null;
     }
   }

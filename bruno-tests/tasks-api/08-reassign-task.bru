@@ -33,7 +33,7 @@ tests {
 
   test("should update assigned organizer - Story 5.5 AC27", function() {
     const response = res.getBody();
-    expect(response.assignedOrganizerUsername).to.equal('{{testOrganizerUsername}}');
+    expect(response.assignedOrganizerUsername).to.equal(bru.getEnvVar('testOrganizerUsername'));
   });
 
   test("should preserve other task fields - Story 5.5 AC27", function() {

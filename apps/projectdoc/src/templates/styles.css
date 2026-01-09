@@ -389,75 +389,203 @@
   color: var(--text-primary);
 }
 
-/* Table of Contents */
-.toc-container {
-  background: var(--surface-color);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  margin-bottom: var(--space-8);
+/* ============================================
+   Floating Action Button (FAB) for TOC
+   ============================================ */
+
+.toc-fab {
+  position: fixed;
+  bottom: calc(var(--space-6) + 70px); /* Above back-to-top button */
+  right: var(--space-6);
+  width: 3.5rem;
+  height: 3.5rem;
+  background: var(--secondary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toc-fab:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.toc-fab:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.toc-fab .toc-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================
+   TOC Drawer Overlay
+   ============================================ */
+
+.toc-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: none;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.toc-overlay.visible {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================
+   TOC Drawer (Slide-in Panel)
+   ============================================ */
+
+.toc-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 90%;
+  max-width: 400px;
+  height: 100vh;
+  background: var(--card);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.toc-header {
+.toc-overlay.visible .toc-drawer {
+  transform: translateX(0);
+}
+
+.toc-drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border);
   background: var(--background-color);
-  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
-.toc-title {
-  font-size: var(--text-lg);
-  font-weight: 600;
+.toc-drawer-header h2 {
   margin: 0;
+  font-size: var(--text-xl);
+  color: var(--text-primary);
 }
 
-.toc-toggle {
+.toc-close {
   background: none;
   border: none;
-  cursor: pointer;
-  padding: var(--space-2);
+  font-size: 2rem;
   color: var(--text-muted);
-  transition: transform var(--transition-fast);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s ease;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.toc-content {
-  padding: var(--space-4);
+.toc-close:hover {
+  color: var(--text-primary);
 }
 
-.toc-list {
+.toc-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+/* ============================================
+   TOC List Styling (inside drawer)
+   ============================================ */
+
+.toc-drawer .toc-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.toc-item {
+.toc-drawer .toc-item {
   margin-bottom: var(--space-2);
 }
 
-.toc-link {
+.toc-drawer .toc-link {
+  display: block;
   color: var(--text-secondary);
   text-decoration: none;
   font-size: var(--text-sm);
   line-height: 1.5;
-  transition: color var(--transition-fast);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
 }
 
-.toc-link:hover {
+.toc-drawer .toc-link:hover {
   color: var(--primary-color);
+  background: var(--muted);
 }
 
-.toc-level-1 .toc-link {
+.toc-drawer .toc-level-1 {
   font-weight: 500;
 }
 
-.toc-level-2 .toc-link {
-  padding-left: var(--space-4);
+.toc-drawer .toc-level-2 {
+  padding-left: var(--space-6);
 }
 
-.toc-level-3 .toc-link {
-  padding-left: var(--space-8);
+.toc-drawer .toc-level-3 {
+  padding-left: calc(var(--space-6) * 2);
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+
+@media (max-width: 768px) {
+  .toc-drawer {
+    width: 100%;
+    max-width: none;
+  }
+
+  .toc-fab {
+    width: 3rem;
+    height: 3rem;
+    bottom: calc(var(--space-4) + 60px);
+    right: var(--space-4);
+  }
 }
 
 /* Document Content */

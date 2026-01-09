@@ -2,9 +2,13 @@
 
 ## Overview
 
-This guide helps resolve issues with the 16-step event workflow, including state transitions, validation errors, and blocked progression. The workflow governs event progression from creation through completion.
+This guide helps resolve issues with the BATbern workflow system, including state transitions, validation errors, and blocked progression. BATbern uses **three independent workflow systems**:
 
-See [16-Step Workflow Documentation](../workflow/) for complete workflow details.
+1. **Event Workflow** - 9-state lifecycle (CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED)
+2. **Speaker Workflow** - Per-speaker states (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed)
+3. **Task System** - Configurable tasks triggered by event state transitions
+
+See [Workflow System Documentation](../workflow/) for complete workflow details.
 
 ## Quick Diagnosis
 
@@ -13,12 +17,12 @@ Can you view the workflow?
 │
 ├─ NO → [Access/Permission Issues](#cant-access-workflow)
 │
-└─ YES → Can you click "Advance to Next Step"?
+└─ YES → Can you transition event state?
     │
-    ├─ NO (button disabled) → [Validation Errors](#validation-errors-blocking-advancement)
+    ├─ NO (button disabled) → [Validation Errors](#validation-errors-blocking-state-transitions)
     ├─ NO (button missing) → [Permission Issues](#insufficient-permissions)
     │
-    └─ YES → Does step advance?
+    └─ YES → Does state transition succeed?
         │
         ├─ NO (error message) → [Transition Failed](#transition-failed-errors)
         ├─ NO (no response) → [System Issue](#system-not-responding)
@@ -57,9 +61,7 @@ Can you view the workflow?
 **Check Role Permissions**:
 ```
 1. Go to Settings → Profile → View Role
-2. Verify you have one of:
-   - ORGANIZER (assigned to event)
-   - ADMIN (full access)
+2. Verify you have ORGANIZER role assigned to this event
 3. If wrong role, contact admin to update
 ```
 
@@ -77,14 +79,13 @@ Can you view the workflow?
 
 ### Insufficient Permissions
 
-**Symptom**: Can view workflow but "Advance to Next Step" button missing or disabled with "Permission denied" tooltip
+**Symptom**: Can view workflow but state transition buttons missing or disabled with "Permission denied" tooltip
 
 **Cause**: You don't have edit permission for this event
 
-**Who Can Advance Workflow**:
-- **ADMIN** role → Can advance any event
-- **ORGANIZER** role → Can advance only events where they're assigned
-- **SPEAKER** or **ATTENDEE** → Cannot advance workflow (read-only access)
+**Who Can Manage Workflow**:
+- **ORGANIZER** role → Can manage only events where they're assigned
+- **SPEAKER** or **ATTENDEE** → Cannot manage workflow (read-only access)
 
 **Solutions**:
 
@@ -111,88 +112,95 @@ Can you view the workflow?
 
 ## Validation Errors
 
-### Validation Errors Blocking Advancement
+### Validation Errors Blocking State Transitions
 
-**Symptom**: "Advance to Next Step" button disabled with red error messages above
+**Symptom**: State transition button disabled with red error messages above
 
-**Cause**: Required criteria for current step not met
+**Cause**: Required criteria for current state not met
 
-**Common Validations by Step**:
+**Common Validations by Event State**:
 
-#### Step 2: Topic Selection
+#### CREATED → TOPIC_SELECTION
 ```
 Validation: Must have selected event topic(s)
 Error: "At least one topic must be selected"
 
 Solution:
-1. Go to Topic Backlog section
-2. Select 1-4 topics for the event
-3. Click "Save Topic Selection"
-4. Error should clear, advance button enabled
+1. Go to Phase A → Topic Selection
+2. Click "View Topic Heat Map" to review historical coverage
+3. Select 1-4 topics for the event
+4. Click "Save Topic Selection"
+5. Event automatically transitions to TOPIC_SELECTION state
 ```
 
-#### Step 3: Speaker Brainstorming
+#### TOPIC_SELECTION → SPEAKER_IDENTIFICATION
 ```
-Validation: Must have identified speakers (minimum threshold)
-Error: "Minimum 8 speakers required (current: 5)"
+Validation: Must have identified speaker candidates (minimum threshold)
+Error: "Minimum 8 speaker candidates required (current: 5)"
 
 Solution:
-1. Go to Speaker Brainstorming section
-2. Add more speakers:
+1. Go to Phase A → Speaker Brainstorming
+2. Add more speaker candidates:
    - Search existing speaker database
    - Or add new speaker profiles
-3. Save each speaker addition
-4. Once threshold reached, advance button enabled
+3. Each speaker added starts in "identified" state
+4. Once threshold reached, event can transition to SPEAKER_IDENTIFICATION
 
-Tip: Threshold is configurable per event (default: 8-10 speakers)
+Tip: Threshold is configurable per event type (default: 10 for full-day, 6 for afternoon, 4 for evening)
 ```
 
-#### Step 6: Content Collection
+#### SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
 ```
-Validation: All invited speakers must have submitted content
-Error: "3 speakers have not submitted materials"
+Validation: Minimum confirmed speakers with quality-reviewed content
+Error: "Insufficient confirmed speakers: 7/10 required"
 
 Solution:
-1. View list of pending speakers
+1. Review speaker workflow progress in Phase B Kanban board
 2. For each speaker:
-   - Send reminder (click "Send Reminder" button)
-   - Or manually upload on their behalf
-   - Or mark as "Withdrawn" if not participating
-3. When all speakers addressed, advance button enabled
+   - Contact speakers: identified → contacted → accepted
+   - Collect content: accepted → content_submitted
+   - Review quality (Phase C): content_submitted → quality_reviewed
+3. Speakers auto-confirm when quality_reviewed AND session.startTime exists
+4. Once minimum confirmed speakers reached, can transition to SLOT_ASSIGNMENT
 
-Override Option (Admin only):
-- Click "Override Validation" checkbox
-- Provide reason (e.g., "Waiting for 1 speaker, proceeding anyway")
-- Advance with incomplete content (not recommended)
+Note: Minimum is 10 confirmed speakers for full-day events, 6 for afternoon, 4 for evening
 ```
 
-#### Step 8: Quality Threshold
+#### SLOT_ASSIGNMENT → AGENDA_PUBLISHED
 ```
-Validation: Minimum number of quality-approved speakers
-Error: "Threshold not met: 7/10 speakers approved"
+Validation: All confirmed speakers assigned to time slots
+Error: "4 confirmed speakers not assigned to slots"
 
 Solution:
-1. Review pending speakers in Quality Review queue
-2. For each speaker:
-   - Approve (if content meets standards)
-   - Request revisions (if minor issues)
-   - Reject (if significant problems)
-3. Once 10 speakers approved, advance button enabled
-
-Note: Threshold is 10 speakers for full-day events, 6 for afternoon, 4 for evening
-```
-
-#### Step 10: Slot Assignment
-```
-Validation: All approved speakers assigned to time slots
-Error: "4 speakers not assigned to slots"
-
-Solution:
-1. Go to Slot Assignment view
-2. Drag unassigned speakers to available slots
+1. Go to Phase D → Slot Assignment
+2. Drag confirmed speakers to available time slots
 3. Resolve any conflicts (double-booking, speaker unavailability)
-4. Save slot assignments
-5. Advance button enabled when all assigned
+4. System auto-saves slot assignments
+5. Click "Publish Agenda" when all confirmed speakers assigned
+6. Event transitions to AGENDA_PUBLISHED state
+```
+
+#### Speaker-Specific Validations
+```
+Validation: Speaker cannot reach "confirmed" state
+Error: Speaker stuck at "quality_reviewed" or has slot but not confirmed
+
+Cause: Confirmation requires BOTH conditions:
+- Speaker status = quality_reviewed
+- Session has startTime (slot assigned)
+
+Solution:
+1. If quality_reviewed but no slot:
+   - Go to Phase D → Slot Assignment
+   - Assign speaker to time slot
+   - Speaker auto-confirms when slot saved
+
+2. If has slot but not quality_reviewed:
+   - Go to Phase C → Quality Review
+   - Review and approve speaker content
+   - Speaker auto-confirms when approved
+
+Note: Order doesn't matter - whichever completes second triggers auto-confirmation
 ```
 
 ---
@@ -201,39 +209,38 @@ Solution:
 
 **Symptom**: Generic validation error without specific details
 
-**Common Missing Fields by Step**:
+**Common Missing Fields by Event State**:
 
-| Step | Common Missing Fields |
-|------|-----------------------|
-| 1 - Event Setup | Event type, date, venue, capacity |
-| 2 - Topic Selection | At least one topic selected |
-| 4 - Outreach Initiated | Invitation email template configured |
-| 6 - Content Collection | Speaker submission deadline set |
-| 11 - Topic Publishing | Event description (public-facing) |
-| 12 - Speaker Publishing | All speaker bios complete |
+| Event State | Common Missing Fields |
+|-------------|-----------------------|
+| CREATED | Event type, date, venue, capacity |
+| TOPIC_SELECTION | At least one topic selected |
+| SPEAKER_IDENTIFICATION | Minimum speaker candidates identified |
+| SLOT_ASSIGNMENT | All confirmed speakers assigned to slots |
+| AGENDA_PUBLISHED | Event description (public-facing), all speaker bios complete |
 
 **Solutions**:
 
-**Step 1: Identify Missing Field**
+**Identify Missing Field**:
 ```
-1. Scroll through workflow step page
+1. Review validation error message carefully
 2. Look for red border or asterisk (*) on fields
-3. Red error text usually below field
-4. Hover over disabled "Advance" button for hint
+3. Red error text usually indicates specific issue
+4. Hover over disabled transition button for hint
 ```
 
-**Step 2: Complete Required Fields**
+**Complete Required Fields**:
 ```
-1. Fill in highlighted fields
-2. Click "Save" or "Update" button
+1. Fill in highlighted fields or complete required actions
+2. Click "Save" or "Update" button if editing entity
 3. Verify red errors disappear
-4. Advance button should enable
+4. State transition button should enable
 ```
 
 **If Still Can't Identify Missing Field**:
 ```
 1. Open browser console (F12 → Console)
-2. Click "Advance" button
+2. Click state transition button
 3. Console may show detailed validation errors
 4. Screenshot and send to support if unclear
 ```
@@ -244,7 +251,7 @@ Solution:
 
 ### Transition Failed Errors
 
-**Symptom**: Click "Advance", loading spinner, then error "Failed to advance workflow" or similar
+**Symptom**: Click state transition button, loading spinner, then error "Failed to transition event state" or similar
 
 **Possible Causes**:
 1. Concurrent edit conflict (someone else modified event)
@@ -256,7 +263,7 @@ Solution:
 
 **Immediate Retry**:
 ```
-1. Click "Advance" button again (may be temporary glitch)
+1. Click state transition button again (may be temporary glitch)
 2. If error persists, proceed to next step
 ```
 
@@ -265,7 +272,7 @@ Solution:
 1. Refresh page (F5 or Ctrl+R)
 2. Verify all your changes are still saved
 3. Review validation errors (may have changed)
-4. Try advancing again
+4. Try transition again
 ```
 
 **Check for Concurrent Edits**:
@@ -292,7 +299,7 @@ If error mentions "timeout" or "network":
 
 ### System Not Responding
 
-**Symptom**: Click "Advance", spinner shows indefinitely, no error or success
+**Symptom**: Click state transition button, spinner shows indefinitely, no error or success
 
 **Possible Causes**:
 1. Network timeout (slow connection)
@@ -311,9 +318,9 @@ If error mentions "timeout" or "network":
 
 **Cancel and Retry**:
 ```
-1. Refresh page (do NOT click "Advance" again while spinning)
-2. Check if step advanced despite no confirmation
-3. If still at same step, click "Advance" again
+1. Refresh page (do NOT click transition button again while spinning)
+2. Check if state transitioned despite no confirmation
+3. If still at same state, click transition button again
 ```
 
 **Browser Issue**:
@@ -348,9 +355,10 @@ If error mentions "timeout" or "network":
 **Verify Save Behavior**:
 ```
 Platform save patterns:
-- Entity edits (companies, speakers): Manual save required (click "Save" button)
-- Workflow advancement: Automatic save (no button needed)
-- Drag-and-drop actions (slot assignment): Auto-save after 2 seconds
+- Entity edits (companies, speakers, events): Manual save required (click "Save" button)
+- Event state transitions: Automatic save (no separate save button)
+- Speaker state updates: Immediate save when changed (Kanban drag-and-drop)
+- Slot assignments: Auto-save after 2 seconds
 
 If you edited entity, ensure you clicked "Save" before navigating away.
 ```
@@ -381,14 +389,14 @@ If "Failed to save":
 
 ---
 
-### Missing Speakers/Topics After Advancing
+### Missing Speakers/Topics After State Transition
 
-**Symptom**: Advanced to next step, but speakers or topics that were added are now missing
+**Symptom**: Transitioned event state, but speakers or topics that were added are now missing
 
 **Possible Causes**:
 1. Transition validation removed incomplete records
 2. Filter hiding records
-3. Status change moved items to different view
+3. Speaker state change moved items to different Kanban column
 4. Accidental deletion by another organizer
 
 **Solutions**:
@@ -401,15 +409,15 @@ If "Failed to save":
 4. Expand date range to "All Time"
 ```
 
-**Check Status-Based Views**:
+**Check Speaker State Columns (Kanban Board)**:
 ```
-Speakers may move between views based on workflow step:
-- Step 3: All speakers in "Brainstorming" list
-- Step 4: Moves to "Invited" status
-- Step 6: Moves to "Content Submitted" status
-- Step 8: Moves to "Approved" or "Rejected" status
+Speakers move between Kanban columns based on their individual workflow state:
+- Phase A (Setup): Speakers in "Identified" column
+- Phase B (Outreach): Moves to "Contacted", "Accepted", "Content Submitted" columns
+- Phase C (Quality): Moves to "Quality Reviewed" column
+- Phase D (Assignment): Confirmed speakers visible in slot assignment view
 
-Solution: Click through different status tabs to find speakers.
+Solution: Click through different phase views (A-D) to find speakers in their current state.
 ```
 
 **Check Archived/Deleted**:
@@ -423,64 +431,70 @@ Solution: Click through different status tabs to find speakers.
 
 ## Workflow State Issues
 
-### Can't Go Back to Previous Step
+### Can't Revert to Previous Event State
 
-**Symptom**: Want to revert to earlier step, but no "Go Back" or "Revert" option
+**Symptom**: Want to revert to earlier event state, but no "Revert State" option
 
-**By Design**: Workflow is one-directional by default (forward only) to maintain data integrity
+**By Design**: Event workflow is one-directional by default (forward only) to maintain data integrity
 
 **Solutions**:
 
-**Admin Override** (ADMIN role only):
+**Manual State Override** (Organizer with override permission):
 ```
-1. Event → Workflow → Settings (gear icon)
-2. Click "Revert to Previous Step" button
-3. Select target step (dropdown)
+1. Event → Edit Event modal
+2. Check "Override workflow validation" checkbox (if available)
+3. Select desired state from "Event State" dropdown
 4. Provide reason (required for audit trail)
-5. Confirm reversion
-6. Event reverts to selected step, but data from later steps is preserved (hidden)
+5. Click "Save Changes"
+6. Event reverts to selected state, but data from later states is preserved
+
+Note: This is typically only needed for cancelled/rescheduled events
 ```
 
-**Correct Data Without Reverting**:
+**Correct Data Without Reverting Event State**:
 ```
-Most data can be edited at any step:
-- Speakers: Edit profiles, change status at any time
-- Topics: Can add/remove even after publishing (requires re-publish)
-- Content: Upload new versions, speakers can revise
+Most data can be edited without reverting event state:
+- Speakers: Can update individual speaker states at any time (Kanban drag-and-drop)
+- Topics: Can add/remove even after AGENDA_PUBLISHED (requires re-publish)
+- Content: Upload new versions, speakers can revise submissions
+- Slots: Can reassign speakers even after publishing
 
-Only actual "step number" is locked forward.
+Only the high-level event state is locked forward. Speaker states are independent.
 ```
 
-**If You Must Revert** (Non-Admin):
+**Special Case: Speaker Workflow Reversal**:
 ```
-1. Email admin with:
-   - Event number
-   - Current step and desired step
-   - Reason for reversion
-   - Confirmation you understand data implications
-2. Admin will review and revert if justified
+Individual speakers CAN move backwards through states:
+- confirmed → quality_reviewed (remove slot assignment)
+- quality_reviewed → content_submitted (request revisions)
+- accepted → contacted (speaker withdrew, re-contacting)
+
+This is done via:
+1. Phase B Kanban board: Drag speaker to earlier column
+2. Phase C Quality drawer: Click "Request Revisions" instead of "Approve"
+3. Phase D Slot assignment: Remove speaker from slot (auto-updates state)
 ```
 
 ---
 
-### Event Stuck in Status
+### Event Stuck in State
 
-**Symptom**: Event shows "IN_PROGRESS" or specific step status but workflow UI won't load or shows errors
+**Symptom**: Event shows specific state but workflow UI won't load or shows errors, or can't transition to next state
 
 **Possible Causes**:
 1. Database state corruption
-2. Event in transition (workflow updating)
-3. Feature flag disabled for event
-4. Event archived but status not updated
+2. Event in transition (state updating)
+3. Validation criteria not met but error not displayed
+4. Event archived but state not updated
 
 **Solutions**:
 
-**Check Event Status**:
+**Check Event State**:
 ```
 1. Go to Dashboard → Events → [Event]
-2. Look at "Status" field (top-right)
-3. Check "Current Step" field
-4. If mismatch (e.g., Status says "Completed" but step says "6"), data inconsistency exists
+2. Look at "Event State" badge (top-right)
+3. Verify state matches expected workflow position
+4. Check for validation errors preventing next transition
 ```
 
 **Verify Not Archived**:
@@ -492,21 +506,37 @@ Only actual "step number" is locked forward.
 
 **Force Refresh Event State**:
 ```
-ADMIN only:
-1. Event → Settings → Advanced
-2. Click "Recalculate Workflow State" button
-3. System re-evaluates event against workflow rules
-4. May fix state inconsistencies
+Use Edit modal override:
+1. Event → Edit Event
+2. Check "Override workflow validation" checkbox
+3. System allows manual state selection
+4. Select correct state if corrupted
+5. Provide reason in notes
+6. Save changes
+
+Warning: Only use if state is genuinely incorrect. Most "stuck" issues are validation failures.
+```
+
+**Check Speaker State Blocking Event Transition**:
+```
+Event may be stuck if speaker states prevent progression:
+1. SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT requires minimum confirmed speakers
+2. Go to Phase B/C to review speaker workflow progress
+3. Check how many speakers are in each state:
+   - identified, contacted, accepted, content_submitted, quality_reviewed, confirmed
+4. Ensure minimum threshold of confirmed speakers reached
+5. Event can only progress when speaker requirements met
 ```
 
 **If Still Stuck**:
 ```
 Contact support with:
 - Event number
-- Current status and step
-- Screenshot of workflow UI
+- Current event state (badge text)
+- Screenshot of validation errors
 - Browser console errors (F12 → Console)
 - Recent actions taken before getting stuck
+- Speaker state counts (how many in each state)
 ```
 
 ---
@@ -515,13 +545,14 @@ Contact support with:
 
 | Error Code | Message | Cause | Solution |
 |------------|---------|-------|----------|
-| `WF_001` | "Validation failed: Required fields missing" | Incomplete step data | Complete highlighted fields, then advance |
-| `WF_002` | "Transition not allowed from current state" | Invalid state transition | Refresh page, verify current step, contact support if repeats |
-| `WF_003` | "Minimum threshold not met" | Not enough speakers/topics/etc. | Add more items to meet threshold, or request admin override |
-| `WF_004` | "Permission denied: Insufficient role" | User lacks workflow edit permission | Contact admin to add you as organizer or promote role |
-| `WF_005` | "Concurrent modification detected" | Another user edited event | Refresh page, re-apply changes, advance again |
-| `WF_006` | "Deadline passed: Cannot advance" | Past configured deadline for step | Contact admin to extend deadline or override |
-| `WF_007` | "Event finalized: Workflow locked" | Event marked as completed | Contact admin to unlock event if changes needed |
+| `WF_001` | "Validation failed: Required criteria not met" | Missing topics, insufficient speakers, or other state requirements | Complete required actions for current state, then transition |
+| `WF_002` | "Transition not allowed from current state" | Invalid state transition (e.g., CREATED → SLOT_ASSIGNMENT) | States must progress sequentially. Verify current state, contact support if state corrupted |
+| `WF_003` | "Minimum confirmed speakers not met" | Not enough speakers in confirmed state | Review Phase B/C to move more speakers through workflow (identified → confirmed) |
+| `WF_004` | "Permission denied: Insufficient role" | User lacks event management permission | Contact admin to add you as organizer for this event |
+| `WF_005` | "Concurrent modification detected" | Another user edited event | Refresh page, re-apply changes, attempt transition again |
+| `WF_006` | "Cannot transition: Missing slot assignments" | Confirmed speakers not assigned to time slots | Go to Phase D → Slot Assignment, assign all confirmed speakers |
+| `WF_007` | "Event archived: State transitions locked" | Event in ARCHIVED state | Unarchive event if changes needed, or create new event |
+| `WF_008` | "Speaker cannot reach confirmed state" | Speaker quality not reviewed OR no slot assigned | Ensure BOTH quality_reviewed AND session.startTime exist (order doesn't matter) |
 
 ---
 
@@ -532,44 +563,52 @@ Contact support with:
 1. **Save Frequently**
    - Don't accumulate many changes before saving
    - Look for auto-save indicators ("Saving..." / "Saved ✓")
-   - Manual save after each entity edit
+   - Manual save after each entity edit (events, speakers, companies)
+   - State transitions and speaker state updates auto-save
 
 2. **Communicate with Team**
    - Use "Currently Editing" status to avoid conflicts
-   - Assign specific steps to specific organizers
-   - Don't have multiple people advancing workflow simultaneously
+   - Assign specific workflow phases to specific organizers
+   - Coordinate event state transitions (only one person should trigger)
+   - Speaker state updates can happen in parallel
 
-3. **Validate Before Advancing**
-   - Review checklist for each step (provided in workflow UI)
-   - Verify counts (speakers, topics, slots, etc.)
+3. **Validate Before Transitioning**
+   - Review validation criteria for current state (shown in error messages)
+   - Verify counts (speakers in each state, topics selected, slots filled)
+   - Ensure speaker workflow progress aligns with event state requirements
    - Test any email templates before sending to speakers
 
-4. **Understand Deadlines**
-   - Note deadlines for each step (visible in workflow header)
-   - Set calendar reminders 2-3 days before deadline
-   - Request deadline extension from admin if running behind
+4. **Understand State Dependencies**
+   - Event states progress sequentially: CREATED → TOPIC_SELECTION → ... → ARCHIVED
+   - Speaker states progress independently and in parallel
+   - Event can only advance when sufficient speakers reach required states
+   - Quality review and slot assignment can happen in any order
 
 ### Workflow Best Practices
 
-1. **Plan Ahead**
-   - Review entire workflow at event start (know what's coming)
-   - Identify potential bottlenecks (speaker outreach, content collection)
-   - Allocate sufficient time for each phase
+1. **Understand the 3 Workflow Systems**
+   - Event Workflow: High-level event lifecycle (9 states, sequential)
+   - Speaker Workflow: Per-speaker progression (parallel, independent)
+   - Task System: Configurable tasks triggered by event state changes
+   - Each system operates independently but they coordinate
 
-2. **Track Progress**
-   - Use workflow dashboard to monitor overall progress
-   - Check completion % for each step
-   - Address blockers early (don't wait until deadline)
+2. **Plan Phase Transitions**
+   - Review state transition requirements before attempting
+   - Identify potential bottlenecks (minimum confirmed speakers, slot availability)
+   - Allocate sufficient time for speaker workflow progression
+   - Remember: Event state blocked until speakers reach required states
 
-3. **Document Decisions**
-   - Use Notes field (available at each step)
-   - Explain why you made specific choices (topic selection, speaker rejection)
-   - Helps future organizers understand rationale
+3. **Track Speaker Progress**
+   - Use Phase B Kanban board to monitor speaker workflow states
+   - Check speaker distribution across states (identified, contacted, accepted, etc.)
+   - Address blockers early (stuck in contacted, waiting for content)
+   - Parallel quality review and slot assignment for efficiency
 
-4. **Test Transitions**
-   - When approaching new step, review requirements in advance
-   - Prepare data/content before attempting advance
-   - Don't advance "just to see what happens" (can't easily revert)
+4. **Document Decisions**
+   - Use Notes field in event edit modal
+   - Explain specific choices (topic selection rationale, speaker rejection reasons)
+   - Record why you used workflow override (if needed)
+   - Helps future organizers understand historical decisions
 
 ---
 
@@ -578,19 +617,21 @@ Contact support with:
 ### Before Contacting Support
 
 1. Review error messages carefully (specific details often provided)
-2. Check [Workflow Documentation](../workflow/) for step-specific guidance
+2. Check [Workflow Documentation](../workflow/) for state-specific guidance
 3. Try browser refresh and cache clear
 4. Verify your role and event assignment
+5. Check speaker state distribution (may be blocking event transition)
 
 ### Contact Support
 
 **Email**: support@batbern.ch
 
 **Include**:
-- Event number and current workflow step
+- Event number and current event state
+- Speaker state distribution (how many in each state)
 - Error message screenshot (exact text)
 - Browser console log (F12 → Console → screenshot)
-- What you were trying to do
+- What you were trying to do (state transition, speaker update, etc.)
 - Steps already tried
 - Urgency (if event deadline approaching)
 
@@ -603,13 +644,13 @@ Contact support with:
 
 ## Related Resources
 
-- **[16-Step Workflow Overview](../workflow/)** - Complete workflow documentation
-- **[Phase A: Setup](../workflow/phase-a-setup.md)** - Steps 1-3 details
-- **[Phase B: Outreach](../workflow/phase-b-outreach.md)** - Steps 4-6 details
-- **[Phase C: Quality](../workflow/phase-c-quality.md)** - Steps 7-8 details
-- **[Phase D: Assignment](../workflow/phase-d-assignment.md)** - Steps 9-10 details
-- **[Phase E: Publishing](../workflow/phase-e-publishing.md)** - Steps 11-12 details
-- **[Phase F: Communication](../workflow/phase-f-communication.md)** - Steps 13-16 details
+- **[Workflow System Overview](../workflow/)** - Complete 3-workflow-system documentation
+- **[Phase A: Setup](../workflow/phase-a-setup.md)** - Event states: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
+- **[Phase B: Outreach](../workflow/phase-b-outreach.md)** - Speaker states: identified → contacted → accepted → content_submitted
+- **[Phase C: Quality](../workflow/phase-c-quality.md)** - Speaker state: content_submitted → quality_reviewed
+- **[Phase D: Assignment](../workflow/phase-d-assignment.md)** - Event states: SLOT_ASSIGNMENT → AGENDA_PUBLISHED, Speaker auto-confirmation
+- **[Phase E: Archival](../workflow/phase-e-publishing.md)** - Event state: Any state → ARCHIVED
+- **[Event Management](../entity-management/events.md)** - Event workflow states reference
 - **[Troubleshooting Overview](README.md)** - Other common issues
 
 ---

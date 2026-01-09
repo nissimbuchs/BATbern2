@@ -4,7 +4,7 @@
 
 ## Welcome
 
-Welcome to the BATbern Organizer Guide. This documentation provides complete coverage of all features available to event organizers, from basic entity management to the sophisticated 16-step workflow for planning and executing successful architecture conferences in Bern, Switzerland.
+Welcome to the BATbern Organizer Guide. This documentation provides complete coverage of all features available to event organizers, from basic entity management to the 3 workflow systems (Event, Speaker, Task) for planning and executing successful architecture conferences in Bern, Switzerland.
 
 **Target Audience**: Event organizers and coordinators responsible for planning, executing, and managing BATbern conferences.
 
@@ -18,7 +18,7 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 | **Epic 2: Entity CRUD** | ✅ Complete | 100% | Company, User, Event, Partner Management |
 | **Epic 3: Data Migration** | 🔄 In Progress | 33% | Historical data import |
 | **Epic 4: Public Website** | 🔄 In Progress | ~85% | Landing pages, Registration flow |
-| **Epic 5: Organizer Workflows** | 🔄 In Progress | 25% | 16-step event workflow (Phase A complete) |
+| **Epic 5: Organizer Workflows** | 🔄 In Progress | 70% | Event workflow, Speaker workflow, Task system (Phases A-E implemented) |
 
 ## Quick Navigation
 
@@ -34,34 +34,42 @@ Manage core platform entities:
 - [Companies](entity-management/companies.md) <span class="feature-status implemented">Implemented</span>
   - Swiss UID validation, logo upload, search/autocomplete
 - [Users](entity-management/users.md) <span class="feature-status implemented">Implemented</span>
-  - 4 roles (Admin, Organizer, Speaker, Attendee), GDPR compliance
+  - 3 roles (Organizer, Speaker, Attendee), GDPR compliance
 - [Events](entity-management/events.md) <span class="feature-status implemented">Implemented</span>
   - Full-day, afternoon, evening formats, timeline management
 - [Partners](entity-management/partners.md) <span class="feature-status implemented">Implemented</span>
   - Directory with tier badges, meeting coordination
-- [Speakers](entity-management/speakers.md) <span class="feature-status in-progress">In Progress</span>
-  - Profile management, status tracking
+- [Speakers](entity-management/speakers.md) <span class="feature-status implemented">Implemented</span>
+  - Profile management, per-speaker workflow state tracking
 
-### 🔄 16-Step Workflow
-Complete event lifecycle management:
+### 🔄 Workflow System
+Three independent workflow systems for event management:
+
+**[Workflow Overview](workflow/README.md)** - Understanding the 3 workflow systems
 
 **Phase A: Setup** <span class="feature-status implemented">Implemented</span>
-- [Step 1-3: Event Setup](workflow/phase-a-setup.md) - Event type, topic selection with heat map, speaker brainstorming
+- [Event Configuration](workflow/phase-a-setup.md) - Event creation, topic selection with heat map, speaker brainstorming
+- Event states: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
 
-**Phase B: Outreach** <span class="feature-status in-progress">In Progress</span>
-- [Step 4-6: Speaker Outreach](workflow/phase-b-outreach.md) - Outreach tracking, status management, content collection
+**Phase B: Outreach** <span class="feature-status implemented">Implemented</span>
+- [Speaker Engagement](workflow/phase-b-outreach.md) - Kanban board, outreach tracking, content collection
+- Speaker states: identified → contacted → accepted → content_submitted
 
-**Phase C: Quality Control** <span class="feature-status planned">Planned</span>
-- [Step 7-8: Quality Review](workflow/phase-c-quality.md) - Review workflow, minimum threshold validation
+**Phase C: Quality** <span class="feature-status implemented">Implemented</span>
+- [Content Review](workflow/phase-c-quality.md) - Quality review workflow, content approval
+- Speaker states: content_submitted → quality_reviewed
 
-**Phase D: Assignment** <span class="feature-status planned">Planned</span>
-- [Step 9-10: Slot Assignment](workflow/phase-d-assignment.md) - Overflow voting, drag-and-drop assignment
+**Phase D: Assignment & Publishing** <span class="feature-status implemented">Implemented</span>
+- [Slot Assignment & Agenda Publishing](workflow/phase-d-assignment.md) - Auto-assign to slots, publish agenda
+- Event states: SLOT_ASSIGNMENT → AGENDA_PUBLISHED
+- Speaker states: quality_reviewed + session.startTime → confirmed
 
-**Phase E: Publishing** <span class="feature-status planned">Planned</span>
-- [Step 11-12: Progressive Publishing](workflow/phase-e-publishing.md) - Topic → Speakers → Agenda, finalization
+**Phase E: Archival** <span class="feature-status implemented">Implemented</span>
+- [Event Archival](workflow/phase-e-publishing.md) - Archive completed events, preserve historical data
+- Event state: Any state → ARCHIVED
 
-**Phase F: Communication** <span class="feature-status planned">Planned</span>
-- [Step 13-16: Post-Event](workflow/phase-f-communication.md) - Newsletters, moderation, catering, archival
+**Phase F: Tasks** <span class="feature-status planned">Planned</span>
+- [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions)
 
 ### ✨ Advanced Features
 Powerful tools for organizers:

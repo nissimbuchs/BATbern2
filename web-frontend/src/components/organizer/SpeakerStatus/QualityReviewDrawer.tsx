@@ -319,6 +319,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
                   reviewMutation.isPending ? <CircularProgress size={20} /> : <ThumbUpIcon />
                 }
                 fullWidth
+                data-testid="approve-content-button"
               >
                 {reviewMutation.isPending
                   ? t('qualityReview.approving')

@@ -638,7 +638,7 @@ Or:
 
 - **[File Uploads Feature Guide](../features/file-uploads.md)** - Complete upload documentation
 - **[Company Management](../entity-management/companies.md#logo-upload)** - Logo upload workflow
-- **[Speaker Materials](../workflow/phase-b-outreach.md#step-6-content-collection)** - Presentation upload
+- **[Speaker Materials](../workflow/phase-b-outreach.md#content-collection)** - Presentation upload
 - **[Troubleshooting Overview](README.md)** - Other common issues
 
 ---

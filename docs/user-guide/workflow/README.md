@@ -1,413 +1,429 @@
-# 16-Step Workflow
+# BATbern Workflow System
 
-> Complete event lifecycle management from concept to archival
-
-<span class="feature-status in-progress">In Progress</span> - Phase A Complete (25%)
+> Event lifecycle management through state machines and task coordination
 
 ## Overview
 
-The **16-Step Workflow** is BATbern's systematic approach to planning and executing successful architecture conferences. This workflow guides organizers through every stage of the event lifecycle, from initial topic selection through post-event archival.
+BATbern uses **three independent workflow systems** to manage event planning and execution:
 
-## Workflow Philosophy
+1. **Event Workflow** - 9-state lifecycle for high-level event progression
+2. **Speaker Workflow** - Per-speaker state management with parallel progression
+3. **Task System** - Configurable assignable tasks (newsletters, catering, etc.)
 
-The 16-step workflow embodies best practices learned from 20+ years of organizing BATbern conferences:
+**Key Insight**: The original "16-step linear workflow" was a misconception. The actual implementation uses state machines with flexible parallel progression and separate task management.
 
-- **Structured but Flexible** - Clear steps with room for adaptation
-- **Quality-Focused** - Multiple review gates ensure high-quality content
-- **Speaker-Centric** - Respectful of speaker time and expertise
-- **Data-Driven** - Historical data informs topic selection
-- **Transparent** - All stakeholders understand current progress
+---
 
-## Workflow Phases
+## 1. Event Workflow (9 States)
 
-The 16 steps are organized into 6 logical phases:
+The **Event Workflow** tracks the high-level lifecycle of each event from creation to archival.
 
-### Phase A: Setup <span class="feature-status implemented">Implemented</span>
-
-<div class="workflow-phase phase-a">
-
-**Steps 1-3: Event Configuration**
-
-Define event structure, select topics using historical data, and brainstorm potential speakers.
-
-**Duration**: 1-2 weeks
-**Key Deliverable**: Event created with topics and speaker candidates identified
-
-[Learn more →](phase-a-setup.md)
-</div>
-
-### Phase B: Outreach <span class="feature-status in-progress">In Progress</span>
-
-<div class="workflow-phase phase-b">
-
-**Steps 4-6: Speaker Engagement**
-
-Contact speakers, track status through outreach, and collect presentation content.
-
-**Duration**: 4-6 weeks
-**Key Deliverable**: Confirmed speakers with submitted content
-
-[Learn more →](phase-b-outreach.md)
-</div>
-
-### Phase C: Quality Control <span class="feature-status planned">Planned</span>
-
-<div class="workflow-phase phase-c">
-
-**Steps 7-8: Content Review**
-
-Review speaker content quality and validate minimum threshold requirements.
-
-**Duration**: 1-2 weeks
-**Key Deliverable**: Approved content meeting quality standards
-
-[Learn more →](phase-c-quality.md)
-</div>
-
-### Phase D: Assignment <span class="feature-status planned">Planned</span>
-
-<div class="workflow-phase phase-d">
-
-**Steps 9-10: Slot Assignment**
-
-Handle overflow situations with voting and assign speakers to specific time slots.
-
-**Duration**: 1 week
-**Key Deliverable**: Complete event schedule with assigned speakers
-
-[Learn more →](phase-d-assignment.md)
-</div>
-
-### Phase E: Publishing <span class="feature-status planned">Planned</span>
-
-<div class="workflow-phase phase-e">
-
-**Steps 11-12: Public Release**
-
-Progressively publish event information and finalize agenda handling last-minute changes.
-
-**Duration**: 2-4 weeks
-**Key Deliverable**: Public agenda with confirmed speakers and schedule
-
-[Learn more →](phase-e-publishing.md)
-</div>
-
-### Phase F: Communication <span class="feature-status planned">Planned</span>
-
-<div class="workflow-phase phase-f">
-
-**Steps 13-16: Execution & Archival**
-
-Send newsletters, assign moderators, coordinate catering, and archive event data.
-
-**Duration**: 2-4 weeks
-**Key Deliverable**: Executed event with archived historical data
-
-[Learn more →](phase-f-communication.md)
-</div>
-
-## Complete Step Listing
-
-| Step | Name | Phase | Status |
-|------|------|-------|--------|
-| 1 | Event Type Definition | A | ✅ Implemented |
-| 2 | Topic Selection with Heat Map | A | ✅ Implemented |
-| 3 | Speaker Brainstorming | A | ✅ Implemented |
-| 4 | Speaker Outreach Tracking | B | ✅ Implemented |
-| 5 | Speaker Status Management | B | 🔄 In Progress |
-| 6 | Speaker Content Collection | B | 🔄 In Progress |
-| 7 | Content Quality Review | C | 📋 Planned |
-| 8 | Minimum Threshold Validation | C | 📋 Planned |
-| 9 | Overflow Management with Voting | D | 📋 Planned |
-| 10 | Drag-and-Drop Slot Assignment | D | 📋 Planned |
-| 11 | Progressive Publishing | E | 📋 Planned |
-| 12 | Finalization with Dropout Handling | E | 📋 Planned |
-| 13 | Newsletter Distribution | F | 📋 Planned |
-| 14 | Moderator Assignment | F | 📋 Planned |
-| 15 | Catering Coordination | F | 📋 Planned |
-| 16 | Event Archival | F | 📋 Planned |
-
-## Event Workflow State Machine
-
-<span class="feature-status implemented">Implemented</span>
-
-Events transition through defined states as they progress through the workflow:
-
-```mermaid
-graph LR
-    A[CREATED] --> B[TOPIC_SELECTED]
-    B --> C[SPEAKERS_IDENTIFIED]
-    C --> D[OUTREACH_INITIATED]
-    D --> E[CONTENT_COLLECTED]
-    E --> F[QUALITY_REVIEWED]
-    F --> G[SLOTS_ASSIGNED]
-    G --> H[PUBLISHED]
-    H --> I[FINALIZED]
-    I --> J[EXECUTED]
-    J --> K[ARCHIVED]
-```
-
-### State Mapping to Phases
-
-| Workflow State | Completed Through |
-|----------------|-------------------|
-| **CREATED** | Event creation (not in workflow) |
-| **TOPIC_SELECTED** | Phase A, Step 2 |
-| **SPEAKERS_IDENTIFIED** | Phase A, Step 3 |
-| **OUTREACH_INITIATED** | Phase B, Step 4 |
-| **CONTENT_COLLECTED** | Phase B, Step 6 |
-| **QUALITY_REVIEWED** | Phase C, Step 8 |
-| **SLOTS_ASSIGNED** | Phase D, Step 10 |
-| **PUBLISHED** | Phase E, Step 11 |
-| **FINALIZED** | Phase E, Step 12 |
-| **EXECUTED** | Manual transition (event day) |
-| **ARCHIVED** | Phase F, Step 16 |
-
-## Speaker Workflow State Machine
-
-<span class="feature-status implemented">Implemented</span>
-
-Speakers also transition through states:
-
-```mermaid
-graph LR
-    A[IDENTIFIED] --> B[CONTACTED]
-    B --> C[INTERESTED]
-    C --> D[CONTENT_SUBMITTED]
-    D --> E[CONFIRMED]
-    E --> F[PUBLISHED]
-    E --> G[DROPOUT]
-```
-
-Speakers can become **DROPOUT** at any stage if they withdraw participation.
-
-## Starting the Workflow
-
-<div class="step" data-step="1">
-
-**Create Event**
-
-First, create an event record via [Entity Management → Events](../entity-management/events.md).
-
-Event is created with state: **CREATED**
-</div>
-
-<div class="step" data-step="2">
-
-**Navigate to Workflow**
-
-From the event list, click **Start Workflow** or open the event detail page and click **Workflow** tab.
-</div>
-
-<div class="step" data-step="3">
-
-**Begin Phase A**
-
-Workflow starts at **Step 1: Event Type Definition**.
-
-Follow each step sequentially, completing acceptance criteria before advancing.
-</div>
-
-## Workflow Navigation
-
-### Dashboard Workflow Widget
-
-Active events show workflow status on the dashboard:
+### State Progression
 
 ```
-┌────────────────────────────────────────┐
-│ BATbern 2025 Workflow                  │
-│ [SPEAKERS_IDENTIFIED] Step 3 of 16     │
-├────────────────────────────────────────┤
-│ Phase A: Setup                    ✅   │
-│ ├─ 1. Event Type Definition       ✅   │
-│ ├─ 2. Topic Selection             ✅   │
-│ └─ 3. Speaker Brainstorming       ✅   │
-│                                        │
-│ Phase B: Outreach                 🔄   │
-│ ├─ 4. Outreach Tracking           ⏳  │
-│ ├─ 5. Status Management           ⬜  │
-│ └─ 6. Content Collection          ⬜  │
-├────────────────────────────────────────┤
-│ [Continue to Step 4]                   │
-└────────────────────────────────────────┘
+CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
+AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 ```
 
-Click **Continue to Step 4** to advance to the next step.
+### State Definitions
 
-### Step View
+| State | Description | When Reached | Exit Condition |
+|-------|-------------|--------------|----------------|
+| **CREATED** | Event created, ready for setup | Event creation form submitted | Topic selected |
+| **TOPIC_SELECTION** | Topics selected, ready for speakers | Minimum 1 topic selected | Minimum speakers in pool |
+| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled |
+| **SLOT_ASSIGNMENT** | Assigning speakers to time slots | All confirmed speakers assigned | Agenda published |
+| **AGENDA_PUBLISHED** | Public agenda, accepting registrations | Publish agenda action | Manual finalization (2 weeks before) |
+| **AGENDA_FINALIZED** | Agenda locked for printing | Finalize agenda action | Event day arrives |
+| **EVENT_LIVE** | Event currently happening | Event day | Manual transition after event |
+| **EVENT_COMPLETED** | Event finished, post-processing | Post-event trigger | Manual archival |
+| **ARCHIVED** | Event archived for history | Archival action | Terminal state |
 
-Each step shows:
+### Workflow Phases (User Guide Organization)
 
-- **Step Number & Name** - Current step identifier
-- **Acceptance Criteria** - Requirements to complete step
-- **Actions** - Interactive controls for step tasks
-- **Progress Indicator** - Visual progress bar
-- **Help Text** - Guidance and best practices
+For documentation purposes, we organize the 9 states into user-friendly phases:
 
-### Navigation Controls
+**Phase A: Setup** <span class="feature-status implemented">Implemented</span>
+- States: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
+- Actions: Create event, select topics, brainstorm speaker candidates
+- [Learn more →](phase-a-setup.md)
 
-- **Previous Step** - Review completed steps (read-only)
-- **Next Step** - Advance after completing criteria (enabled when ready)
-- **Save Progress** - Save without advancing (draft state)
-- **Back to Dashboard** - Return to event dashboard
+**Phase B: Outreach** <span class="feature-status implemented">Implemented</span>
+- States: SPEAKER_IDENTIFICATION (speakers moving through their own workflow)
+- Actions: Contact speakers, track responses, collect content submissions
+- [Learn more →](phase-b-outreach.md)
 
-## Workflow Checkpoints
+**Phase C: Quality** <span class="feature-status implemented">Implemented</span>
+- States: SPEAKER_IDENTIFICATION (quality review happening in speaker workflow)
+- Actions: Review submitted content, approve/request revisions
+- [Learn more →](phase-c-quality.md)
 
-The workflow includes quality gates where progress pauses until criteria are met:
+**Phase D: Assignment** <span class="feature-status implemented">Implemented</span>
+- States: SLOT_ASSIGNMENT → AGENDA_PUBLISHED
+- Actions: Assign presentations to time slots, publish agenda
+- [Learn more →](phase-d-assignment.md)
 
-### Checkpoint 1: Phase A Complete
+**Phase E: Archival** <span class="feature-status implemented">Implemented</span>
+- States: Any state → ARCHIVED
+- Actions: Archive completed event, preserve historical data
+- [Learn more →](phase-e-publishing.md)
 
-**Before Phase B**:
-- ✅ Event type defined (Full-Day, Afternoon, or Evening)
-- ✅ Topics selected (minimum based on event type)
-- ✅ Speaker candidates identified (at least 2× needed speakers)
+**Phase F: Communication** <span class="feature-status planned">Planned</span>
+- States: Tasks triggered at various event states
+- Actions: Send newsletters, assign moderators, coordinate logistics
+- [Learn more →](phase-f-communication.md)
 
-### Checkpoint 2: Phase B Complete
+---
 
-**Before Phase C**:
-- ✅ All speakers contacted
-- ✅ Minimum speaker confirmations received
-- ✅ All confirmed speakers submitted content
+## 2. Speaker Workflow (Per-Speaker State Machine)
 
-### Checkpoint 3: Phase C Complete
+**Critical Concept**: Each speaker progresses through their own workflow **independently and in parallel**. Quality review and slot assignment can happen in any order.
 
-**Before Phase D**:
-- ✅ All content reviewed by organizers
-- ✅ Quality threshold met (80%+ approval rate)
-- ✅ Revisions completed for rejected content
+### State Progression
 
-### Checkpoint 4: Phase D Complete
+```
+identified → contacted → ready → accepted/declined
+                                    ↓ (if accepted)
+                                content_submitted
+                                    ↓
+                                quality_reviewed
+                                    ↓
+                                confirmed
+                    (auto-confirmed when quality_reviewed AND session.startTime exists)
 
-**Before Phase E**:
-- ✅ Overflow resolved (if applicable)
-- ✅ All sessions assigned to time slots
-- ✅ No scheduling conflicts detected
+Special states:
+- overflow (backup speaker - accepted but no slots)
+- withdrew (speaker drops out after accepting)
+```
 
-### Checkpoint 5: Phase E Complete
+### State Definitions
 
-**Before Phase F**:
-- ✅ Agenda published publicly
-- ✅ All speakers confirmed (no pending dropouts)
-- ✅ Finalization complete
+| State | Description | How to Reach |
+|-------|-------------|--------------|
+| **identified** | Added to speaker pool | Brainstormed in Phase A |
+| **contacted** | Organizer recorded outreach | Mark as contacted in Kanban board |
+| **ready** | Speaker ready to accept/decline | Speaker receives invitation |
+| **accepted** | Speaker accepted invitation | Speaker accepts or organizer marks accepted |
+| **declined** | Speaker declined invitation | Speaker declines or organizer marks declined |
+| **content_submitted** | Title/abstract submitted | Speaker submits via content form |
+| **quality_reviewed** | Content approved by organizer | Organizer approves in quality review drawer |
+| **confirmed** | Ready for publication | Auto-set when quality_reviewed AND session has timing |
+| **overflow** | Backup (no slot available) | Accepted when all slots filled |
+| **withdrew** | Dropped out after accepting | Speaker cancels after acceptance |
 
-## Workflow Flexibility
+### Parallel Workflow Feature
 
-While the 16 steps provide structure, organizers have flexibility:
+**Quality review and slot assignment are independent:**
+- Scenario 1: Quality review first → slot assigned later → auto-confirms when slot assigned
+- Scenario 2: Slot assigned first → quality review later → auto-confirms when quality approved
+- Order doesn't matter: Confirmation happens when BOTH complete
 
-### Parallel Tasks
+**Data Storage:**
+- **speaker_pool table**: Tracks speaker workflow state
+- **sessions table**: Stores presentation details and timing (startTime, endTime, room)
+- **session_users table**: Links speakers to sessions
+- Session timing (startTime exists) triggers auto-confirmation check
 
-Some steps can be done in parallel:
-- **Phase B**: Outreach can continue while collecting content from early responders
-- **Phase F**: Newsletter drafting can begin while moderators are being assigned
+---
 
-### Skip Conditions
+## 3. Task System
 
-Some steps may be skipped based on event type:
-- **Small Events** (Evening lectures) may skip Step 9 (Overflow Voting)
-- **Single-Track Events** may simplify Step 10 (Slot Assignment)
+**Key Principle**: Tasks are NOT workflow states. They are assignable work items with due dates that organizers complete during event planning.
 
-### Rollback Support
+### Task Types
 
-<span class="feature-status planned">Planned</span>
+**Default System Tasks (7):**
+1. **Venue Booking** - Triggered: TOPIC_SELECTION, Due: 90 days before event
+2. **Partner Meeting** - Triggered: TOPIC_SELECTION, Due: event day
+3. **Moderator Assignment** - Triggered: TOPIC_SELECTION, Due: 14 days before event
+4. **Newsletter: Topic** - Triggered: TOPIC_SELECTION, Due: immediately
+5. **Newsletter: Speakers** - Triggered: AGENDA_PUBLISHED, Due: 30 days before event
+6. **Newsletter: Final** - Triggered: AGENDA_FINALIZED, Due: 14 days before event
+7. **Catering** - Triggered: AGENDA_FINALIZED, Due: 30 days before event
 
-If issues arise, organizers can roll back to previous phases:
-- **Rollback from Phase C → B**: If content quality issues require more speakers
-- **Rollback from Phase E → D**: If major speaker dropout requires rescheduling
+**Custom Tasks:**
+Organizers can create custom tasks with:
+- Custom task name
+- Trigger state (which event state creates the task)
+- Due date (immediate, relative to event date, or absolute date)
+- Assigned organizer
 
-Rollback preserves historical data while allowing corrections.
+### Task Dashboard
+
+Tasks appear in the task list with three statuses:
+- **TODO**: Not started (overdue highlighted in red)
+- **IN_PROGRESS**: Currently working on
+- **COMPLETED**: Finished with completion notes
+
+### Task Auto-Creation
+
+Tasks are automatically created when the event transitions to their trigger state:
+- Event reaches TOPIC_SELECTION → creates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
+- Event reaches AGENDA_PUBLISHED → creates Newsletter: Speakers task
+- Event reaches AGENDA_FINALIZED → creates Newsletter: Final, Catering tasks
+
+---
+
+## Workflow Architecture Benefits
+
+### Clear Separation of Concerns
+
+**Event State**: High-level event lifecycle progression
+- Example: "Where is the event in its planning lifecycle?"
+- Answer: TOPIC_SELECTION, AGENDA_PUBLISHED, etc.
+
+**Speaker State**: Individual speaker progress
+- Example: "Is this speaker ready to present?"
+- Answer: Each speaker has their own state (accepted, quality_reviewed, confirmed, etc.)
+
+**Tasks**: Actionable work items
+- Example: "What do I need to do today?"
+- Answer: Task list shows assigned tasks with due dates
+
+### Parallel Progression
+
+**Event progresses while speakers progress independently:**
+- Event can be in SPEAKER_IDENTIFICATION state
+- Speaker A is "identified", Speaker B is "contacted", Speaker C is "content_submitted"
+- All happening simultaneously
+
+**Quality review and slot assignment are flexible:**
+- No rigid order - whichever completes first
+- Auto-confirmation when both complete
+- Supports real-world workflow variations
+
+### Task Flexibility
+
+**Tasks are triggered by events but managed separately:**
+- Newsletter can be drafted before event reaches AGENDA_PUBLISHED
+- Moderator assignment doesn't block event progression
+- Custom tasks for organization-specific needs
+
+---
+
+## How to Use the Workflow System
+
+### Starting a New Event
+
+1. **Create Event** (Entity Management → Events)
+   - Event state: CREATED
+   - No tasks yet
+
+2. **Select Topics** (Phase A → Step 2)
+   - Event state: CREATED → TOPIC_SELECTION
+   - Auto-creates: Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
+
+3. **Identify Speakers** (Phase A → Step 3)
+   - Event state: TOPIC_SELECTION → SPEAKER_IDENTIFICATION
+   - Speakers created in "identified" state
+
+### Managing Speaker Outreach
+
+4. **Contact Speakers** (Phase B)
+   - Event state: Still SPEAKER_IDENTIFICATION
+   - Update speaker states individually: identified → contacted → accepted
+   - Some speakers at "contacted", others at "accepted", others still "identified"
+
+5. **Collect Content** (Phase B)
+   - Event state: Still SPEAKER_IDENTIFICATION
+   - Speakers submit content: accepted → content_submitted
+
+### Quality and Assignment
+
+6. **Review Content** (Phase C)
+   - Event state: Still SPEAKER_IDENTIFICATION
+   - Review each speaker: content_submitted → quality_reviewed
+   - Can happen before OR after slot assignment
+
+7. **Assign Slots** (Phase D)
+   - Event state: SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT
+   - Assign presentations to time slots (sets session.startTime)
+   - Speakers auto-confirm when quality_reviewed AND session.startTime exists
+
+### Publishing and Execution
+
+8. **Publish Agenda** (Phase D)
+   - Event state: SLOT_ASSIGNMENT → AGENDA_PUBLISHED
+   - Auto-creates: Newsletter: Speakers task
+   - Public agenda visible to attendees
+
+9. **Finalize Agenda** (Phase E)
+   - Event state: AGENDA_PUBLISHED → AGENDA_FINALIZED
+   - Auto-creates: Newsletter: Final, Catering tasks
+   - Agenda locked for printing
+
+10. **Archive Event** (Phase E)
+    - Event state: Any state → ARCHIVED
+    - Historical data preserved
+    - Event removed from active workflows
+
+### Managing Tasks
+
+**View Tasks**: Navigate to Task List
+- Filter by status (TODO, IN_PROGRESS, COMPLETED)
+- Filter by assigned organizer ("My Tasks" / "All Tasks")
+- Sort by due date (overdue highlighted)
+
+**Complete Task**:
+- Click task → Update status to IN_PROGRESS
+- Add completion notes
+- Mark as COMPLETED when done
+
+**Create Custom Task**:
+- Click "Create Task"
+- Enter task name, trigger state, due date
+- Assign to organizer
+- Save
+
+---
 
 ## Best Practices
 
-### Start Early
+### Event Workflow
 
-**Recommended Lead Times**:
-- **Full-Day Conference**: 3-4 months before event
-- **Afternoon Workshop**: 6-8 weeks before event
-- **Evening Lecture**: 4-6 weeks before event
+**Don't Rush State Transitions**:
+- Each state has entry/exit criteria
+- Ensure criteria met before advancing
+- System validates transitions automatically
 
-Starting early provides buffer for unexpected delays.
+**Use Override Sparingly**:
+- Workflow validation can be overridden for special cases
+- Only use for cancelled events or exceptional circumstances
+- Document reason in event notes
 
-### Maintain Communication
+### Speaker Workflow
 
-- Send regular updates to speakers (weekly during Phase B)
-- Respond to speaker questions within 24-48 hours
-- Keep stakeholders informed of progress
+**Update States Promptly**:
+- Mark speakers as "contacted" immediately after outreach
+- Update to "accepted"/"declined" as responses come in
+- Keeps Kanban board accurate
 
-### Use Historical Data
+**Parallel Quality Review and Slot Assignment**:
+- Review content as soon as submitted (don't wait for all speakers)
+- Assign slots whenever ready (don't wait for all quality reviews)
+- System auto-confirms when both complete
 
-The **Topic Heat Map** (Step 2) leverages 20+ years of historical data:
-- Popular topics appear in dark blue (frequent)
-- Rare topics appear in light blue (infrequent)
-- Helps avoid topic fatigue and identify emerging trends
-
-See [Phase A: Setup](phase-a-setup.md) for heat map usage.
-
-### Track Metrics
-
-<span class="feature-status planned">Planned</span>
-
-Monitor key metrics throughout workflow:
-- **Speaker Response Rate**: % of contacted speakers who respond
-- **Content Approval Rate**: % of submitted content approved first time
-- **Dropout Rate**: % of confirmed speakers who withdraw
-- **On-Time Completion**: % of steps completed by target date
-
-## Troubleshooting Workflow
-
-### "Stuck at Step X - Can't advance"
-
-**Problem**: Acceptance criteria not met.
-
-**Solution**:
-- Review acceptance criteria checklist
-- Complete missing requirements
-- Contact support if criteria unclear
-
-### "Speaker dropped out after finalization"
-
-**Problem**: Speaker withdrew after Phase E complete.
-
-**Solution**:
-- See [Phase E: Dropout Handling](phase-e-publishing.md#handling-dropouts)
-- Options: Find replacement, reassign session, cancel session
+**Handle Dropouts Quickly**:
+- Mark speaker as "withdrew" immediately
+- Promote overflow speaker if available
 - Update published agenda promptly
 
-### "Not enough speaker confirmations"
+### Task Management
 
-**Problem**: Below minimum threshold for event type.
+**Assign Tasks Early**:
+- Assign tasks to specific organizers when created
+- Clear ownership prevents work falling through cracks
+
+**Set Realistic Due Dates**:
+- Use relative due dates (e.g., "14 days before event")
+- Adjust dates if timeline changes
+- Add buffer for unexpected delays
+
+**Track Progress**:
+- Review task list daily during active planning
+- Update status as work progresses
+- Add completion notes for historical reference
+
+---
+
+## Workflow States Reference
+
+### Complete Event State List
+
+1. **CREATED** - Event created
+2. **TOPIC_SELECTION** - Topics selected
+3. **SPEAKER_IDENTIFICATION** - Building speaker pool
+4. **SLOT_ASSIGNMENT** - Assigning to time slots
+5. **AGENDA_PUBLISHED** - Public agenda live
+6. **AGENDA_FINALIZED** - Agenda locked
+7. **EVENT_LIVE** - Event happening now
+8. **EVENT_COMPLETED** - Event finished
+9. **ARCHIVED** - Historical record
+
+### Complete Speaker State List
+
+1. **identified** - In speaker pool
+2. **contacted** - Outreach recorded
+3. **ready** - Ready to accept/decline
+4. **accepted** - Committed to presenting
+5. **declined** - Not available
+6. **content_submitted** - Content received
+7. **quality_reviewed** - Content approved
+8. **confirmed** - Ready for publication
+9. **overflow** - Backup speaker
+10. **withdrew** - Cancelled after accepting
+
+---
+
+## Troubleshooting
+
+### "Event stuck in SPEAKER_IDENTIFICATION"
+
+**Problem**: Can't advance to SLOT_ASSIGNMENT.
 
 **Solution**:
-- Extend outreach to additional candidates (Step 3)
-- Adjust event timeline if needed
-- Consider downgrading event type (Full-Day → Afternoon)
+- Check if minimum speakers are confirmed
+- Verify all slots have confirmed speakers assigned
+- System validates speaker count before allowing transition
 
-See [Troubleshooting Workflow Issues](../troubleshooting/workflow.md) for more solutions.
+### "Speaker not auto-confirming"
 
-## Workflow Automation
+**Problem**: Speaker has quality_reviewed AND slot assigned but still not confirmed.
 
-<span class="feature-status planned">Planned</span>
+**Solution**:
+- Check session.startTime is set (not just session created)
+- Verify speaker status is exactly "quality_reviewed"
+- Check speaker_pool.session_id links to correct session
 
-Future automation features:
+### "Tasks not auto-creating"
 
-- **Auto-Reminders**: Automatic email reminders to speakers at key deadlines
-- **Smart Scheduling**: AI-suggested slot assignments based on speaker preferences
-- **Conflict Detection**: Automatic detection of speaker double-bookings
-- **Progress Notifications**: Alert organizers when checkpoints are reached
+**Problem**: Event transitioned to TOPIC_SELECTION but no tasks created.
 
-## Related Topics
+**Solution**:
+- Check task templates exist (7 default templates)
+- Verify templates have correct trigger_state
+- Review application event logs for errors
 
-- [Event Management →](../entity-management/events.md) - Create and manage events
+### "Can't archive event"
+
+**Problem**: Workflow validation prevents archival.
+
+**Solution**:
+- Check override validation checkbox in edit modal
+- Allows archival for cancelled events or special cases
+- Documents that normal workflow wasn't completed
+
+---
+
+## Related Documentation
+
+### Architecture
+
+- [Workflow State Machines →](../../architecture/06a-workflow-state-machines.md) - Technical implementation details
+- [Backend Architecture →](../../architecture/06-backend-architecture.md) - Overall system design
+
+### User Guide
+
+- [Phase A: Setup →](phase-a-setup.md) - Event creation and configuration
+- [Phase B: Outreach →](phase-b-outreach.md) - Speaker engagement
+- [Phase C: Quality →](phase-c-quality.md) - Content review
+- [Phase D: Assignment →](phase-d-assignment.md) - Slot assignment and publishing
+- [Phase E: Archival →](phase-e-publishing.md) - Event archival
+
+### Entity Management
+
+- [Event Management →](../entity-management/events.md) - Create and configure events
 - [Speaker Management →](../entity-management/speakers.md) - Speaker profiles and status
-- [Topic Heat Map →](../features/heat-maps.md) - Historical topic visualization
+- [Task Management →](../entity-management/tasks.md) - Task assignment and tracking
+
+---
 
 ## What's Next?
 
-Choose a phase to explore:
+**Choose your starting point:**
 
-1. **[Phase A: Setup →](phase-a-setup.md)** - Start here for new events
-2. **[Phase B: Outreach →](phase-b-outreach.md)** - Engage speakers
-3. **[Phase C: Quality →](phase-c-quality.md)** - Review content
-4. **[Phase D: Assignment →](phase-d-assignment.md)** - Schedule sessions
-5. **[Phase E: Publishing →](phase-e-publishing.md)** - Publish agenda
-6. **[Phase F: Communication →](phase-f-communication.md)** - Execute and archive
+1. **New Event**: Start with [Phase A: Setup →](phase-a-setup.md)
+2. **Speaker Outreach**: Continue with [Phase B: Outreach →](phase-b-outreach.md)
+3. **Content Review**: Proceed to [Phase C: Quality →](phase-c-quality.md)
+4. **Publishing**: Move to [Phase D: Assignment →](phase-d-assignment.md)
+5. **Archival**: Complete with [Phase E: Archival →](phase-e-publishing.md)
