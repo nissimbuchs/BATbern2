@@ -1114,17 +1114,150 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
   });
 
   /**
-   * Phase E: Progressive Publishing (Steps 11-12)
-   * - Progressive Publishing (4 phases)
-   * - Finalization with Dropout Handling
-   *
-   * This test case will be implemented after recording the workflow
+   * Phase E: Archival (Workflow completion)
+   * - Navigate to Overview tab
+   * - Edit event status to ARCHIVED
+   * - Override workflow validation
+   * - Save changes
    */
-  test('Phase E: Progressive Publishing (Steps 11-12)', async () => {
-    test.setTimeout(10 * 60 * 1000);
+  test('Phase E: Archival (Event archival)', async ({ page }) => {
+    test.setTimeout(5 * 60 * 1000);
 
-    console.log('\n📋 Phase E: Progressive Publishing\n');
-    console.log('⏭️  Phase E implementation pending workflow recording');
-    test.skip();
+    console.log('\n📋 Phase E: Archival\n');
+
+    const capturer = createSequentialCapturer('phase-e-archival', 1);
+
+    try {
+      // Navigate to event page first
+      console.log('Navigating to event page...');
+      await page.goto(`http://localhost:8100/organizer/events/${testEventCode}`);
+      await page.waitForTimeout(2000); // Wait for page load
+
+      // Step 1: Navigate to Overview tab
+      console.log('Step 1: Navigate to Overview tab');
+      await page.getByRole('tab', { name: /Übersicht|Overview/i }).click();
+      await page.waitForTimeout(1000);
+
+      await capturer(page, 'overview-tab-before-archival', {
+        scrollToTop: true,
+      });
+      console.log('  ✓ On Overview tab');
+
+      // Step 2: Click Edit button to open EventForm modal
+      console.log('\nStep 2: Open event edit modal');
+      const editButton = page.getByTestId('edit-event-button');
+      await editButton.waitFor({ state: 'visible', timeout: 5000 });
+      await editButton.click();
+      await page.waitForTimeout(1500); // Wait for modal animation
+
+      // Verify modal is open
+      const modalTitle = page
+        .locator('.MuiDialog-root')
+        .getByText(/Veranstaltung bearbeiten|Edit Event/i);
+      await modalTitle.waitFor({ state: 'visible', timeout: 5000 });
+
+      await capturer(page, 'edit-modal-opened', {
+        scrollModal: true,
+        fullPage: false,
+        delay: 500,
+      });
+      console.log('  ✓ Edit modal opened');
+
+      // Step 3: Change status to ARCHIVED
+      console.log('\nStep 3: Change status to ARCHIVED');
+      const statusSelect = page.getByTestId('event-status-select');
+      await statusSelect.waitFor({ state: 'visible', timeout: 5000 });
+      await statusSelect.click();
+      await page.waitForTimeout(500); // Wait for dropdown to open
+
+      await capturer(page, 'status-dropdown-opened', {
+        fullPage: false,
+        delay: 300,
+      });
+      console.log('  ✓ Status dropdown opened');
+
+      // Select ARCHIVED option
+      await page.getByRole('option', { name: /Archiviert|Archived/i }).click();
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'status-changed-to-archived', {
+        scrollModal: true,
+        fullPage: false,
+        delay: 500,
+      });
+      console.log('  ✓ Status changed to ARCHIVED');
+
+      // Step 4: Click Save button (will trigger validation error)
+      console.log('\nStep 4: Click Save button (expect validation error)');
+      const saveButton = page.getByTestId('save-event-button');
+      await saveButton.click();
+      await page.waitForTimeout(1500); // Wait for validation error
+
+      // Modal should remain open due to validation error
+      await modalTitle.waitFor({ state: 'visible', timeout: 3000 });
+
+      await capturer(page, 'validation-error-shown', {
+        scrollModal: true,
+        fullPage: false,
+        delay: 500,
+      });
+      console.log('  ✓ Validation error triggered (as expected)');
+
+      // Step 5: Check "Override workflow validation" checkbox
+      console.log('\nStep 5: Enable workflow validation override');
+      const overrideCheckbox = page.getByTestId('override-workflow-validation-checkbox');
+      await overrideCheckbox.waitFor({ state: 'visible', timeout: 5000 });
+      await overrideCheckbox.check();
+      await page.waitForTimeout(500);
+
+      await capturer(page, 'override-checkbox-checked', {
+        scrollModal: true,
+        fullPage: false,
+        delay: 500,
+      });
+      console.log('  ✓ Override checkbox enabled');
+
+      // Step 6: Click Save button again (should succeed now)
+      console.log('\nStep 6: Save with override (should succeed)');
+      await saveButton.click();
+      await page.waitForTimeout(2000); // Wait for save and modal close
+
+      // Verify modal is closed
+      const modalClosed = await page
+        .locator('.MuiDialog-root')
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
+      if (modalClosed) {
+        console.log('  ⚠️  Modal still visible, waiting longer...');
+        await page.waitForTimeout(2000);
+      }
+
+      await capturer(page, 'event-archived-successfully', {
+        scrollToTop: true,
+        delay: 1000,
+      });
+      console.log('  ✓ Event archived successfully');
+
+      // Verify ARCHIVED badge is visible on event page
+      const archivedBadge = page.locator('text=/Archiviert|Archived/i').first();
+      await archivedBadge.waitFor({ state: 'visible', timeout: 5000 });
+
+      await capturer(page, 'archived-badge-visible', {
+        scrollToTop: true,
+      });
+      console.log('  ✓ ARCHIVED badge visible');
+
+      console.log('\n✅ Phase E Complete: Event archived successfully');
+    } catch (error) {
+      console.error('❌ Phase E failed:', error);
+
+      // Capture error screenshot
+      await page.screenshot({
+        path: `docs/user-guide/assets/screenshots/workflow/phase-e-archival/ERROR-${Date.now()}.png`,
+        fullPage: true,
+      });
+
+      throw error;
+    }
   });
 });

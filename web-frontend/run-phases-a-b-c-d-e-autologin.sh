@@ -1,11 +1,11 @@
 #!/bin/bash
-# Phase A + B + C + D test runner with autologin support
+# Phase A + B + C + D + E test runner with autologin support
 # Autologin handles authentication - no password needed!
 
 set -e
 
-echo "🎬 Phase A + B + C + D Test Runner (Autologin)"
-echo "================================================"
+echo "🎬 Phase A + B + C + D + E Test Runner (Autologin)"
+echo "===================================================="
 echo ""
 
 # Parse arguments
@@ -79,8 +79,8 @@ fi
 echo "✅ Frontend is running"
 echo ""
 
-# Run Phase A + B + C + D tests
-echo "🧪 Running Phase A + B + C + D tests (serial execution)..."
+# Run Phase A + B + C + D + E tests
+echo "🧪 Running Phase A + B + C + D + E tests (serial execution)..."
 if [ "$UI_MODE" = true ]; then
   echo "   👀 Opening browser in UI mode - you can watch the test execute"
 else
@@ -91,10 +91,10 @@ echo ""
 cd /Users/nissim/dev/bat/BATbern-feature/web-frontend
 
 # Build playwright command
-# Note: Using -g to match "Phase A", "Phase B", "Phase B.5", "Phase C", and "Phase D"
+# Note: Using -g to match "Phase A", "Phase B", "Phase B.5", "Phase C", "Phase D", and "Phase E"
 PLAYWRIGHT_CMD="npx playwright test \
   workflows/documentation/complete-event-workflow.spec.ts \
-  -g \"Phase (A|B|B\.5|C|D)\" \
+  -g \"Phase (A|B|B\.5|C|D|E)\" \
   --project=documentation-screenshots"
 
 if [ "$UI_MODE" = true ]; then
@@ -105,7 +105,7 @@ fi
 PLAYWRIGHT_CMD="$PLAYWRIGHT_CMD $@"
 
 # Run test and capture output
-eval "$PLAYWRIGHT_CMD" 2>&1 | tee /tmp/phase-a-b-c-d-test-run.log
+eval "$PLAYWRIGHT_CMD" 2>&1 | tee /tmp/phase-a-b-c-d-e-test-run.log
 
 TEST_RESULT=${PIPESTATUS[0]}
 
@@ -113,26 +113,27 @@ echo ""
 echo "════════════════════════════════════════"
 
 if [ $TEST_RESULT -eq 0 ]; then
-  echo "✅ Phase A + B + C + D tests PASSED!"
+  echo "✅ Phase A + B + C + D + E tests PASSED!"
   echo ""
   echo "📸 Screenshots captured in:"
   echo "   Phase A: docs/user-guide/assets/screenshots/workflow/phase-a-setup/"
   echo "   Phase B: docs/user-guide/assets/screenshots/workflow/phase-b-outreach/"
   echo "   Phase C: docs/user-guide/assets/screenshots/workflow/phase-c-quality/"
   echo "   Phase D: docs/user-guide/assets/screenshots/workflow/phase-d-publishing/"
+  echo "   Phase E: docs/user-guide/assets/screenshots/workflow/phase-e-archival/"
   echo ""
   echo "To view screenshots:"
   echo "   open ../docs/user-guide/assets/screenshots/workflow/"
 else
-  echo "❌ Phase A + B + C + D tests FAILED"
+  echo "❌ Phase A + B + C + D + E tests FAILED"
   echo ""
-  echo "Full output saved to: /tmp/phase-a-b-c-d-test-run.log"
+  echo "Full output saved to: /tmp/phase-a-b-c-d-e-test-run.log"
   echo ""
   echo "Check error screenshot:"
   echo "   ls -lrt test-results/**/test-failed-*.png | tail -1"
   echo ""
   echo "Quick error check:"
-  echo "   grep -A 5 'Error:' /tmp/phase-a-b-c-d-test-run.log | tail -20"
+  echo "   grep -A 5 'Error:' /tmp/phase-a-b-c-d-e-test-run.log | tail -20"
 fi
 
 echo "════════════════════════════════════════"

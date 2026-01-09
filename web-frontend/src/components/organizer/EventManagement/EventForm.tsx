@@ -787,7 +787,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                 render={({ field }) => (
                   <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
                     <InputLabel>{t('form.status')}</InputLabel>
-                    <Select {...field} label={t('form.status')}>
+                    <Select {...field} label={t('form.status')} data-testid="event-status-select">
                       <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
                       <MenuItem value="TOPIC_SELECTION">
                         {t('workflow.states.topic_selection')}
@@ -833,6 +833,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     <Checkbox
                       checked={overrideValidation}
                       onChange={(e) => setOverrideValidation(e.target.checked)}
+                      data-testid="override-workflow-validation-checkbox"
                     />
                   }
                   label="Override workflow validation (allows any state transition)"

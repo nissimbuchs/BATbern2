@@ -1,7 +1,7 @@
 # E2E Screenshot Workflow - Master Plan & Status
 
-**Last Updated**: 2026-01-08 (Late Night Session - Phase A + B + B.5 + C + D Complete)
-**Current Status**: Phase A + B + B.5 + C + D Complete ✅ (5/6 phases done, ~80% complete)
+**Last Updated**: 2026-01-09 (Phase E Complete)
+**Current Status**: Phase A + B + B.5 + C + D + E Complete ✅ (6/6 phases done, 100% complete)
 
 ---
 
@@ -283,10 +283,13 @@ await capturer(page, 'topic-selection-confirmed', {
   - 10 screenshots captured ✅
   - Uses `skipNetworkIdle` option for Publishing tab (has unicorn.studio iframe)
 
-- [ ] **Phase E**: Archival & Cleanup (Lines 255-265)
-  - Edit event status to "Archiviert"
+- [x] **Phase E**: Archival (Lines 284-290) ✅ **COMPLETE**
+  - Navigate to Overview tab
+  - Edit event status to "ARCHIVED"
   - Override workflow validation
-  - ~3 screenshots
+  - Save changes
+  - Test IDs added: `event-status-select`, `override-workflow-validation-checkbox`
+  - 8 screenshots captured ✅
 
 ### User Guide Integration
 - [ ] Add screenshots to workflow documentation
@@ -316,11 +319,11 @@ cd web-frontend
 # Set environment variables
 export AUTH_TOKEN=$(jq -r '.idToken' ~/.batbern/development.json)
 
-# Run Phase A + B + C + D tests
-./run-phases-a-b-c-d-autologin.sh
+# Run Phase A + B + C + D + E tests
+./run-phases-a-b-c-d-e-autologin.sh
 
 # Or with UI mode for debugging
-./run-phases-a-b-c-d-autologin.sh --ui
+./run-phases-a-b-c-d-e-autologin.sh --ui
 ```
 
 ### Debug Event Creation Issue
@@ -455,32 +458,38 @@ src/components/
 | **Phase B.5** | ✅ Complete | 100% | 14/14 |
 | **Phase C** | ✅ Complete | 100% | 9/9 |
 | **Phase D** | ✅ Complete | 100% | 10/10 |
-| Phase E | ⏳ Ready | 0% | 0/3 |
+| **Phase E** | ✅ Complete | 100% | 8/8 |
 
-**Overall**: ~80% complete (infrastructure + auth + Phase A + B + B.5 + C + D complete, ready for Phase E)
+**Overall**: 100% complete (all phases A through E complete)
 
 ---
 
 ## 🎯 Next Session Priorities
 
-### Priority 1: Implement Phase D (Slot Assignment & Publish Agenda) ✅ **READY**
-1. Add test IDs to slot assignment components
-2. Review workflow (lines 247-254 in playwright-recording.ts)
-3. Implement slot assignment drag-and-drop
-4. Implement publish agenda action
-5. Capture ~8 screenshots
+### ✅ All Core Phases Complete!
 
-### Priority 2: Implement Phase E (Archival)
-1. Review workflow (lines 255-261 in playwright-recording.ts)
-2. Implement event status change to "Archiviert"
-3. Implement workflow validation override
-4. Capture ~4 screenshots
+All phases (A through E) are now complete. The E2E workflow test captures the complete BATbern event management lifecycle from creation to archival.
 
-### Priority 3: Implement Phase F (Cleanup)
-1. Review workflow (lines 262-265 in playwright-recording.ts)
-2. Implement event deletion
-3. Verify cleanup works
-4. Capture ~3 screenshots
+**Total Screenshots**: 76 screenshots captured across all phases:
+- Phase A (Setup): 20 screenshots
+- Phase B (Outreach): 15 screenshots
+- Phase B.5 (Content Submission): 14 screenshots
+- Phase C (Quality Review): 9 screenshots
+- Phase D (Publishing): 10 screenshots
+- Phase E (Archival): 8 screenshots
+
+### Optional Future Enhancements
+
+1. **User Guide Integration**
+   - Add screenshots to workflow documentation
+   - Create screenshot index
+   - Write workflow narratives
+
+2. **Phase F (Event Deletion)** - Optional cleanup test
+   - Navigate to Settings tab
+   - Click "Delete Event" button
+   - Confirm deletion
+   - Verify event removed from list
 
 ---
 
@@ -895,14 +904,72 @@ cd web-frontend
 
 ---
 
+### 2026-01-09 Session - Phase E Complete ✅
+
+**Phase E: Archival Implementation**:
+
+1. ✅ **Renamed Test Runner Script**
+   - File: `run-phases-a-b-c-d-autologin.sh` → `run-phases-a-b-c-d-e-autologin.sh`
+   - Updated regex pattern: `-g "Phase (A|B|B\.5|C|D)"` → `-g "Phase (A|B|B\.5|C|D|E)"`
+   - Updated log file: `/tmp/phase-a-b-c-d-test-run.log` → `/tmp/phase-a-b-c-d-e-test-run.log`
+   - Added Phase E screenshot path: `phase-e-archival/`
+
+2. ✅ **Added Test IDs to Components** (1 component updated)
+   - `EventForm.tsx`: `event-status-select` (Status Select field)
+   - `EventForm.tsx`: `override-workflow-validation-checkbox` (Override checkbox)
+
+3. ✅ **Implemented Phase E Test Code** (~130 lines)
+   - Step 1: Navigate to Overview tab
+   - Step 2: Click Edit button → Opens EventForm modal
+   - Step 3: Change status to ARCHIVED
+   - Step 4: Click Save → Validation error (expected)
+   - Step 5: Enable "Override workflow validation" checkbox
+   - Step 6: Click Save → Success
+   - Verify ARCHIVED badge visible on event page
+   - Added error handling with debug screenshots
+
+**Technical Pattern Used**:
+- Language-independent selectors using test IDs
+- Expected validation error handling (save fails first time)
+- Override checkbox enables successful save
+- Modal state verification after save
+
+**Files Modified** (3):
+- `run-phases-a-b-c-d-autologin.sh` → `run-phases-a-b-c-d-e-autologin.sh` (renamed + updated)
+- `EventForm.tsx` - Added 2 test IDs for status select and override checkbox
+- `complete-event-workflow.spec.ts` - Implemented Phase E test (~130 lines)
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated documentation
+
+**Screenshots Captured**: 8 total
+- 01: overview-tab-before-archival
+- 02: edit-modal-opened
+- 03: status-dropdown-opened
+- 04: status-changed-to-archived
+- 05: validation-error-shown
+- 06: override-checkbox-checked
+- 07: event-archived-successfully
+- 08: archived-badge-visible
+
+**Test Execution**:
+```bash
+cd web-frontend
+./run-phases-a-b-c-d-e-autologin.sh  # Runs all phases A through E
+```
+
+**Phase E Status**: ✅ 100% COMPLETE (8/8 screenshots)
+**Overall Progress**: 100% complete (all 6 phases A-E complete)
+**Next**: Optional Phase F (Event Deletion) or User Guide integration
+
+---
+
 ## 🔗 References
 
 - **Workflow Recording**: `docs/playwright-recording.ts`
 - **Test Spec**: `web-frontend/e2e/workflows/documentation/complete-event-workflow.spec.ts`
-- **Test Runner**: `web-frontend/run-phases-a-b-c-d-autologin.sh`
+- **Test Runner**: `web-frontend/run-phases-a-b-c-d-e-autologin.sh`
 - **Original Plan**: `docs/plans/e2e-screenshot-workflow-plan.md` (archived)
 
 ---
 
-**Last Updated**: 2026-01-08 Late Night Session Part 6 (Phase D Complete)
-**Next Action**: Implement Phase E (Archival)
+**Last Updated**: 2026-01-09 (Phase E Complete)
+**Status**: All phases A through E complete (100%)
