@@ -82,15 +82,16 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
   });
 
   /**
-   * Phase A: Event Setup (Steps 1-3)
+   * Phase A: Event Setup (Steps 1-5)
    * - Login
    * - Event Creation & Configuration
+   * - Task Assignment to Organizers (NEW - added per user request)
    * - Topic Selection via Heat Map
    * - Speaker Brainstorming (add candidates to pool)
    *
-   * Based on recording lines 1-56
+   * Based on recording lines 1-117 (event creation 1-37, task assignment 38-61, topic/speakers 62-117)
    */
-  test('Phase A: Event Setup (Steps 1-3)', async ({ page }) => {
+  test('Phase A: Event Setup (Steps 1-5)', async ({ page }) => {
     test.setTimeout(10 * 60 * 1000); // 10 minute timeout
 
     console.log('\n📋 Phase A: Event Setup\n');
@@ -219,6 +220,11 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       });
       console.log(`    ✓ Event created: ${testEventCode}, back on dashboard`);
 
+      // ========================================
+      // Step 3: Assign Tasks to Organizers (Added per user request)
+      // ========================================
+      console.log('  → Step 3: Assign Tasks to Organizers');
+
       // Navigate directly to the event detail page
       const eventUrl = `http://localhost:8100/organizer/events/${testEventCode}`;
       console.log(`    → Navigating to event detail page: ${eventUrl}`);
@@ -226,15 +232,126 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1500); // Wait for components to mount
 
-      // Verify event detail page loaded and find topic selection button
-      console.log(`    → Looking for topic selection button...`);
+      // Capture event detail page initial state
+      await capturer(page, 'event-detail-page-initial', { scrollToTop: true });
+      console.log(`    ✓ Event detail page loaded`);
+
+      // Click Edit button
+      console.log('    → Clicking Edit button');
+      const editButton = page.getByTestId('edit-event-button');
+      await editButton.click();
+      await page.waitForTimeout(500);
+
+      // Wait for modal to open
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+      await page.waitForTimeout(500); // Wait for modal animation
+      await capturer(page, 'edit-modal-info-tab', { fullPage: false, scrollModal: true });
+      console.log('    ✓ Edit modal opened on Info tab');
+
+      // Click Tasks tab
+      console.log('    → Clicking Tasks tab');
+      const tasksTab = page.getByTestId('tasks-tab');
+      await tasksTab.click();
+      await page.waitForTimeout(800); // Wait for tab switch and data load
+
+      // Capture Tasks tab initial state
+      await capturer(page, 'edit-modal-tasks-tab-initial', { fullPage: false, scrollModal: true });
+      console.log('    ✓ Tasks tab loaded');
+
+      // Define task assignments based on the recording (lines 43-56 of playwright-recording.ts)
+      const taskAssignments = [
+        { taskName: 'Venue Booking', assignee: 'Nissim Buchs' },
+        { taskName: 'Partner Meeting', assignee: 'Daniel Kühni' },
+        { taskName: 'Moderator Assignment', assignee: 'Andreas Grütter' },
+        { taskName: 'Newsletter: Topic', assignee: 'Baltisar Oswald' },
+        { taskName: 'Newsletter: Speaker', assignee: 'Baltisar Oswald' },
+        { taskName: 'Newsletter: Final', assignee: 'Baltisar Oswald' },
+        // 7th task assignment - need to identify by position if name not unique
+      ];
+
+      // Assign each task
+      for (let i = 0; i < taskAssignments.length; i++) {
+        const { taskName, assignee } = taskAssignments[i];
+        console.log(`    → Assigning "${taskName}" to ${assignee}`);
+
+        // Find the listitem with the task name and its combobox
+        const taskRow = page.getByRole('listitem').filter({ hasText: taskName });
+
+        // Find the combobox within that listitem
+        const assigneeSelect = taskRow.getByRole('combobox');
+        await assigneeSelect.scrollIntoViewIfNeeded();
+        await assigneeSelect.click();
+        await page.waitForTimeout(400);
+
+        // Select the assignee from dropdown
+        await page.getByRole('option', { name: assignee }).click();
+        await page.waitForTimeout(400);
+
+        // Capture screenshot after each assignment (every 2 tasks to reduce screenshot count)
+        if (i % 2 === 1 || i === taskAssignments.length - 1) {
+          await capturer(page, `tasks-assigned-${Math.ceil((i + 1) / 2)}`, {
+            fullPage: false,
+            scrollModal: true,
+          });
+        }
+      }
+
+      // Capture final state with all tasks assigned
+      await capturer(page, 'all-tasks-assigned', { fullPage: false, scrollModal: true });
+      console.log(`    ✓ All ${taskAssignments.length} tasks assigned`);
+
+      // Click Save button
+      console.log('    → Saving task assignments');
+      const saveButton = page.getByTestId('save-event-button');
+      await saveButton.click();
+      await page.waitForTimeout(1500); // Wait for save to complete
+
+      // Wait for modal to close
+      await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5000 });
+      await capturer(page, 'event-detail-after-task-assignment', { scrollToTop: true });
+      console.log('    ✓ Tasks saved, modal closed');
+
+      // Navigate to task list to verify tasks were created
+      console.log('    → Navigating to task list');
+      const tasksButton = page.getByTestId('tasks-button');
+      await tasksButton.click();
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000); // Wait for task list to load
+
+      // Capture task list with default filter ("Meine Aufgaben" - My Tasks)
+      await capturer(page, 'task-list-my-tasks-filter', { scrollToTop: true, fullPage: false });
+      console.log('    ✓ Task list loaded with "My Tasks" filter');
+
+      // Change filter to "Alle Aufgaben" (All Tasks)
+      console.log('    → Changing filter to "All Tasks"');
+      const filterCombobox = page.getByRole('combobox', {
+        name: /Filter.*Meine Aufgaben|My Tasks/i,
+      });
+      await filterCombobox.click();
+      await page.waitForTimeout(400);
+
+      // Select "Alle Aufgaben" option
+      await page.getByRole('option', { name: /Alle Aufgaben|All Tasks/i }).click();
+      await page.waitForTimeout(1000); // Wait for list to refresh
+
+      // Capture task list with "All Tasks" filter
+      await capturer(page, 'task-list-all-tasks-filter', { scrollToTop: true, fullPage: false });
+      console.log('    ✓ Filter changed to "All Tasks"');
+
+      // Navigate back to event detail page directly
+      console.log(`    → Navigating back to event detail page`);
+      await page.goto(eventUrl);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000);
+
+      // Verify we're back on event detail page with topic selection button
+      console.log(`    → Verifying topic selection button is available...`);
       const topicButton = page.getByTestId('select-topic-button');
 
       // Scroll the button into view (it's at the bottom of the page)
       await topicButton.scrollIntoViewIfNeeded({ timeout: 10000 });
       await expect(topicButton).toBeVisible({ timeout: 5000 });
-      await capturer(page, 'event-detail-page-opened');
-      console.log(`    ✓ Event detail page opened with topic selection button visible`);
+      console.log(`    ✓ Event detail page ready for topic selection`);
 
       // ========================================
       // Step 4: Topic Selection via Heat Map

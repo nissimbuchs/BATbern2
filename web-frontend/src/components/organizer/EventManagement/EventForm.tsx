@@ -619,8 +619,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         {/* Tabs - Story 5.5 Phase 6 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
-            <Tab label={t('tabs.info', 'Info')} />
-            <Tab label={t('tabs.tasks', 'Tasks')} disabled={mode === 'create'} />
+            <Tab label={t('tabs.info', 'Info')} data-testid="info-tab" />
+            <Tab
+              label={t('tabs.tasks', 'Tasks')}
+              disabled={mode === 'create'}
+              data-testid="tasks-tab"
+            />
           </Tabs>
         </Box>
 
@@ -942,7 +946,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               {t('form.saveDraft')}
             </Button>
           )}
-          <Button onClick={handleSaveClick} variant="contained" color="primary">
+          <Button
+            onClick={handleSaveClick}
+            variant="contained"
+            color="primary"
+            data-testid="save-event-button"
+          >
             {mode === 'create' ? t('form.saveCreate') : t('form.save')}
           </Button>
         </DialogActions>

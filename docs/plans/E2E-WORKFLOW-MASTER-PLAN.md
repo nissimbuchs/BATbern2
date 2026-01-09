@@ -88,19 +88,29 @@ Migrated from fragile German text selectors to stable `data-testid` attributes:
 3. ✅ Click "Neue Veranstaltung" button
 4. ✅ Fill event form (all fields)
 5. ✅ Select event type using `data-testid="event-type-selector"`
-6. ✅ Topic selection opens
-7. ✅ Heatmap view works
-8. ✅ Topic selected from heatmap
-9. ✅ Topic confirmed
-10. ✅ Speaker form visible
-11. ✅ OrganizerSelect dropdown working (scrolling bug FIXED)
-12. ✅ Event successfully created (validation working)
+6. ✅ Event successfully created (validation working)
+7. ✅ **Task Assignment** (NEW - 2026-01-09):
+   - Navigate to event detail page
+   - Click Edit button (`data-testid="edit-event-button"`)
+   - Switch to Tasks tab (`data-testid="tasks-tab"`)
+   - Assign 6 tasks to organizers (Venue, Partner Meeting, Moderator, 3× Newsletter)
+   - Save assignments (`data-testid="save-event-button"`)
+   - Navigate to task list (`data-testid="tasks-button"`)
+   - View tasks with "My Tasks" filter (default)
+   - Change filter to "All Tasks" (combobox filter)
+   - Navigate back to event detail page
+8. ✅ Topic selection opens
+9. ✅ Heatmap view works
+10. ✅ Topic selected from heatmap
+11. ✅ Topic confirmed
+12. ✅ Speaker form visible
+13. ✅ OrganizerSelect dropdown working (scrolling bug FIXED)
 
 **Fixed Issues This Session**:
 - ✅ OrganizerSelect infinite scrolling bug (memo dependency fix)
 - ✅ Event creation validation (was actually working, master plan was outdated)
 
-**Screenshots Captured**: 12+ (complete Phase A workflow)
+**Screenshots Captured**: 20+ (complete Phase A workflow including task assignment and task list verification)
 
 ---
 
@@ -391,9 +401,9 @@ web-frontend/
 src/components/
 ├── organizer/
 │   ├── EventPage/
-│   │   └── EventOverviewTab.tsx            # ✅ ADDED: Test IDs
+│   │   └── EventOverviewTab.tsx            # ✅ ADDED: Test IDs (edit-event-button)
 │   ├── EventManagement/
-│   │   └── EventForm.tsx
+│   │   └── EventForm.tsx                   # ✅ ADDED: Test IDs (tasks-tab, save-event-button)
 │   ├── EventTypeSelector/
 │   │   └── EventTypeSelector.tsx           # ✅ ADDED: Test IDs
 │   └── SpeakerBrainstormingPanel/
@@ -440,7 +450,7 @@ src/components/
 | Recording | ✅ Complete | 100% | N/A |
 | Auth Migration | ✅ Complete | 100% | N/A |
 | Test ID Migration | ✅ Complete | 100% | N/A |
-| **Phase A** | ✅ Complete | 100% | 12/12 |
+| **Phase A** | ✅ Complete | 100% | 20/20 (includes task assignment + task list) |
 | **Phase B** | ✅ Complete | 100% | 15/15 |
 | **Phase B.5** | ✅ Complete | 100% | 14/14 |
 | **Phase C** | ✅ Complete | 100% | 9/9 |
@@ -770,6 +780,55 @@ cd web-frontend
 **Phase C Status**: ✅ 100% COMPLETE (9/9 screenshots)
 **Overall Progress**: 57% complete (4/7 phases done)
 **Next**: Implement Phase D (Slot Assignment & Publish Agenda)
+
+### 2026-01-09 Session - Phase A Extended with Task Assignment ✅
+
+**User Request**: Extend Phase A to capture screenshots of assigning tasks after event creation
+
+**Implementation**:
+1. ✅ **Added Test IDs** (3 components):
+   - `EventOverviewTab.tsx`: `edit-event-button` (Edit button)
+   - `EventForm.tsx`: `tasks-tab` (Tasks tab), `save-event-button` (Save button)
+   - Existing: OrganizerSelect already has test ID support from previous work
+
+2. ✅ **Implemented Task Assignment Workflow** (~130 lines):
+   - Navigate to event detail page after creation
+   - Click Edit button to open EventForm modal
+   - Switch to Tasks tab
+   - Assign 6 tasks to organizers using combobox selectors
+   - Save assignments and verify modal closes
+   - Navigate to task list page (`tasks-button`)
+   - View with "My Tasks" filter (default)
+   - Change filter to "All Tasks" to see all created tasks
+   - Navigate back to event detail page
+   - Capture ~8 new screenshots during workflow
+
+**Technical Pattern**:
+- Uses role-based selectors: `getByRole('listitem').filter({ hasText: taskName })`
+- Finds combobox within each task row for assignment
+- Captures screenshots every 2 assignments to reduce count
+- Waits for modal close before proceeding to topic selection
+
+**Files Modified** (3):
+- `EventOverviewTab.tsx` - Added Edit button test ID
+- `EventForm.tsx` - Added Tasks tab and Save button test IDs
+- `complete-event-workflow.spec.ts` - Implemented Step 3 (Task Assignment) in Phase A
+- `E2E-WORKFLOW-MASTER-PLAN.md` - Updated documentation
+
+**Screenshots Added**: ~8 new screenshots
+- event-detail-page-initial
+- edit-modal-info-tab
+- edit-modal-tasks-tab-initial
+- tasks-assigned-1, tasks-assigned-2, tasks-assigned-3
+- all-tasks-assigned
+- event-detail-after-task-assignment
+- task-list-my-tasks-filter
+- task-list-all-tasks-filter
+
+**Phase A Status**: ✅ Still 100% COMPLETE (now includes task assignment)
+**Next**: User can run `./run-phases-a-b-c-d-autologin.sh` to test the extended workflow
+
+---
 
 ### 2026-01-08 Late Night Session Part 6 - Phase D Complete ✅
 

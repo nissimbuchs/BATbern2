@@ -186,7 +186,12 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               <Typography variant="h6">
                 {t('eventPage.overview.eventDetails', 'Event Details')}
               </Typography>
-              <Button size="small" startIcon={<EditIcon />} onClick={handleEditDetails}>
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={handleEditDetails}
+                data-testid="edit-event-button"
+              >
                 {t('common.edit', 'Edit')}
               </Button>
             </Stack>
