@@ -161,19 +161,22 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       const uniqueEventNumber = testConfig.event.eventNumber + Math.floor(Math.random() * 1000);
       console.log(`    → Creating event #${uniqueEventNumber}`);
 
-      await eventPage.fillEventForm({
-        eventNumber: uniqueEventNumber,
-        title: testConfig.event.title,
-        description: testConfig.event.description,
-        date: testConfig.event.date,
-        registrationDeadline: testConfig.event.registrationDeadline,
-        eventType: testConfig.event.eventType as 'EVENING' | 'AFTERNOON' | 'FULL_DAY',
-        venueName: testConfig.event.venue.name,
-        venueAddress: testConfig.event.venue.address,
-        // venueImagePath: testConfig.event.venueImagePath  // Skip image upload for now
-      }, {
-        captureDropdownScreenshot: capturer.element.bind(capturer)
-      });
+      await eventPage.fillEventForm(
+        {
+          eventNumber: uniqueEventNumber,
+          title: testConfig.event.title,
+          description: testConfig.event.description,
+          date: testConfig.event.date,
+          registrationDeadline: testConfig.event.registrationDeadline,
+          eventType: testConfig.event.eventType as 'EVENING' | 'AFTERNOON' | 'FULL_DAY',
+          venueName: testConfig.event.venue.name,
+          venueAddress: testConfig.event.venue.address,
+          // venueImagePath: testConfig.event.venueImagePath  // Skip image upload for now
+        },
+        {
+          captureDropdownScreenshot: capturer.element.bind(capturer),
+        }
+      );
 
       await page.waitForTimeout(800); // Wait for form to settle
       await capturer(page, 'event-form-filled', {
