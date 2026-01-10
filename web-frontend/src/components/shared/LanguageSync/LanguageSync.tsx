@@ -28,20 +28,33 @@ export const LanguageSync: React.FC = () => {
         // Extract language preference
         const userLanguage = profile.preferences?.language;
 
-        if (userLanguage && userLanguage !== i18n.language) {
-          console.log('[LanguageSync] Syncing user language preference:', userLanguage);
-
-          // Update localStorage
-          localStorage.setItem('batbern-language', userLanguage);
-
-          // Update i18n
-          await i18n.changeLanguage(userLanguage);
-
-          // Update document lang attribute
-          document.documentElement.lang = userLanguage;
-
-          console.log('[LanguageSync] Language synchronized successfully');
+        if (!userLanguage) {
+          console.log('[LanguageSync] No language preference found in user profile');
+          return;
         }
+
+        if (userLanguage === i18n.language) {
+          return; // Already in sync
+        }
+
+        console.log(
+          '[LanguageSync] Syncing user language preference:',
+          userLanguage,
+          '(current:',
+          i18n.language,
+          ')'
+        );
+
+        // Update localStorage
+        localStorage.setItem('batbern-language', userLanguage);
+
+        // Update i18n
+        await i18n.changeLanguage(userLanguage);
+
+        // Update document lang attribute
+        document.documentElement.lang = userLanguage;
+
+        console.log('[LanguageSync] Language synchronized successfully to:', userLanguage);
       } catch (error) {
         console.error('[LanguageSync] Failed to sync language preference:', error);
         // Don't throw - fallback to browser/localStorage language
