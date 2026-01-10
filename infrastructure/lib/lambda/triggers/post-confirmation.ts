@@ -156,8 +156,16 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 }
 
 /**
- * Create user in database with ON CONFLICT handling for idempotency
+ * Create user in database with email-based matching for historical participants
  * Story 1.2.3: Extract user profile data from custom:preferences JSON per ADR-001
+ * ADR-005: Auto-link historical participants when they create Cognito accounts
+ *
+ * Logic:
+ * 1. Check if user with email exists (historical participant or duplicate registration)
+ * 2. If exists and no Cognito ID -> UPDATE to link historical participant
+ * 3. If exists and same Cognito ID -> Idempotent (Lambda retry)
+ * 4. If exists and different Cognito ID -> Error (email conflict)
+ * 5. If not exists -> INSERT new user
  */
 async function createUser(
   cognitoId: string,
@@ -172,16 +180,74 @@ async function createUser(
   const language = preferences.language || 'de';
   const username = generateUsername(firstName, lastName);
 
-  // Handle username collision with retry mechanism
-  let finalUsername = username;
-  let attempt = 0;
-  const maxAttempts = 10;
+  const client = await getDbClient();
+  try {
+    await client.query('BEGIN');
 
-  const queries = [
-    // Insert user with ON CONFLICT DO NOTHING for idempotency on cognito_user_id
-    {
-      query: `
-        INSERT INTO user_profiles (
+    // STEP 1: Check if user with this email already exists (historical participant or duplicate)
+    const existingUserResult = await client.query(
+      `SELECT id, cognito_user_id, username, first_name, last_name, is_active
+       FROM user_profiles
+       WHERE email = $1`,
+      [email]
+    );
+
+    let userId: string | null = null;
+
+    if (existingUserResult.rows.length > 0) {
+      const existingUser = existingUserResult.rows[0];
+
+      // STEP 2a: Existing user found - check Cognito ID status
+      if (existingUser.cognito_user_id === null || existingUser.cognito_user_id === '') {
+        // Historical participant registering for first time - LINK to Cognito account
+        await client.query(
+          `UPDATE user_profiles
+           SET cognito_user_id = $1,
+               first_name = COALESCE(NULLIF(first_name, ''), $2),
+               last_name = COALESCE(NULLIF(last_name, ''), $3),
+               pref_language = COALESCE(pref_language, $4),
+               is_active = true,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $5`,
+          [cognitoId, firstName, lastName, language, existingUser.id]
+        );
+
+        userId = existingUser.id;
+        console.log('Linked existing historical participant to Cognito account', {
+          userId,
+          cognitoId,
+          email,
+          existingUsername: existingUser.username,
+          hadFirstName: !!existingUser.first_name,
+          hadLastName: !!existingUser.last_name,
+        });
+
+        // Publish metric for historical participant linking
+        await publishMetric('HistoricalParticipantLinked', 1, 'Count');
+      } else if (existingUser.cognito_user_id === cognitoId) {
+        // Idempotent: Same Cognito ID already linked (Lambda retry)
+        userId = existingUser.id;
+        console.log('User already linked (idempotent - Lambda retry)', {
+          userId,
+          cognitoId,
+          email,
+        });
+      } else {
+        // Email conflict: Different Cognito user already registered with same email
+        // This should never happen if Cognito is configured correctly, but handle defensively
+        await client.query('ROLLBACK');
+        const errorMsg = `Email ${email} already registered to different Cognito user: ${existingUser.cognito_user_id}`;
+        console.error('Email conflict detected', {
+          email,
+          newCognitoId: cognitoId,
+          existingCognitoId: existingUser.cognito_user_id,
+        });
+        throw new Error(errorMsg);
+      }
+    } else {
+      // STEP 2b: No existing user - INSERT new record
+      const insertResult = await client.query(
+        `INSERT INTO user_profiles (
           cognito_user_id,
           email,
           username,
@@ -194,64 +260,43 @@ async function createUser(
           updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (cognito_user_id) DO NOTHING
-        RETURNING id
-      `,
-      params: [
-        cognitoId,
-        email,
-        finalUsername,
-        firstName,
-        lastName,
-        language,
-        preferences.notifications?.email ?? true,
-      ],
-    },
-  ];
+        RETURNING id`,
+        [
+          cognitoId,
+          email,
+          username,
+          firstName,
+          lastName,
+          language,
+          preferences.notifications?.email ?? true,
+        ]
+      );
 
-  try {
-    const results = await executeTransaction(queries);
-    const userResult = results[0];
+      userId = insertResult.rows[0].id;
+      console.log('New user created in database', { userId, cognitoId, email, username });
 
-    // Check if user was created (or already existed)
-    let userId: string | null = null;
-
-    if (userResult.rows.length > 0) {
-      // User was newly created
-      userId = userResult.rows[0].id;
-      console.log('User created in database', { userId, cognitoId, email });
-    } else {
-      // User already exists (idempotent behavior)
-      console.log('User already exists in database (idempotent)', { cognitoId, email });
-
-      // Query to get existing user ID
-      const client = await getDbClient();
-      try {
-        const existingUserResult = await client.query(
-          'SELECT id FROM user_profiles WHERE cognito_user_id = $1',
-          [cognitoId]
-        );
-        if (existingUserResult.rows.length > 0) {
-          userId = existingUserResult.rows[0].id;
-        }
-      } finally {
-        client.release();
-      }
+      // Publish metric for new user creation
+      await publishMetric('NewUserCreated', 1, 'Count');
     }
 
-    // Assign initial role if user was created
+    await client.query('COMMIT');
+
+    // STEP 3: Assign initial role (idempotent in assignUserRole)
     if (userId) {
       await assignUserRole(userId, role);
     }
 
     return userId;
   } catch (error) {
-    console.error('Failed to create user in database', {
+    await client.query('ROLLBACK');
+    console.error('Failed to create/link user in database', {
       cognitoId,
       email,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     throw error;
+  } finally {
+    client.release();
   }
 }
 
