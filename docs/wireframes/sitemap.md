@@ -210,13 +210,15 @@ Main Navigation Bar/Menu ✅ [EXISTS]
 ├── Integration Settings
 └── ⤴ Event Detail/Edit Screen
 
-🎯 Historical Archive ✅ [EXISTS]
-│   Story: 1.18-historical-archive
-│   File: story-1.18-historical-archive.md
-├── → Event Detail (read-only)
+🎯🌐 Historical Archive ✅ [EXISTS]
+│   Story: 4.2-archive-browsing (updated modern wireframe)
+│   File: story-4.2-archive-browsing-modern.md
+│   Roles: Organizer (admin view), Public (browse view)
+├── → Archive Event Detail Page (content-focused)
 ├── → Content Detail/Edit Screen ✅
-├── Filter & Search
-└── ⤴ Event Management Dashboard
+├── Filter & Search (time period + topics)
+├── Infinite Scroll
+└── ⤴ Event Management Dashboard / Public Navigation
 ```
 
 ### 4.3 Content Management
