@@ -25,6 +25,7 @@ import io.micrometer.core.annotation.Timed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -128,6 +129,9 @@ public class UserController {
      * AC3: List users (admin/organizer only)
      * GET /api/v1/users?filter={}&role={}&company={}&page={}&limit={}
      *
+     * Performance optimized: Uses database-level pagination with JOIN FETCH
+     * to avoid N+1 query problem and only loads requested page.
+     *
      * @param filter Advanced JSON filter (Task 14)
      * @param role Filter by role
      * @param company Filter by company ID
@@ -150,35 +154,26 @@ public class UserController {
         log.debug("UserController Listing users with filters: role={}, company={}, search={}, page={}, limit={}",
                 role, company, search, page, limit);
 
-        List<UserResponse> allUsers = userService.listUsers(role, company, search, filter);
-
-        // Convert 1-based page to 0-based index for calculation
+        // Convert 1-based page to 0-based for service layer
         int pageIndex = Math.max(0, page - 1);
 
-        // Calculate pagination
-        int total = allUsers.size();
-        int totalPages = (int) Math.ceil((double) total / limit);
-        int startIndex = pageIndex * limit;
-        int endIndex = Math.min(startIndex + limit, total);
-
-        // Slice the data to the requested page
-        List<UserResponse> pageData = (startIndex < total)
-            ? allUsers.subList(startIndex, endIndex)
-            : List.of();
+        // Use optimized paginated service method
+        Page<UserResponse> usersPage = userService.listUsersPaginated(
+                role, company, search, filter, pageIndex, limit);
 
         // Build pagination metadata (using 1-based page numbers)
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
             new ch.batbern.shared.api.PaginationMetadata();
-        paginationMetadata.setPage(page);
+        paginationMetadata.setPage(page);  // 1-based for API
         paginationMetadata.setLimit(limit);
-        paginationMetadata.setTotalItems((long) total);
-        paginationMetadata.setTotalPages(totalPages);
-        paginationMetadata.setHasNext(page < totalPages);
-        paginationMetadata.setHasPrev(page > 1);
+        paginationMetadata.setTotalItems(usersPage.getTotalElements());
+        paginationMetadata.setTotalPages(usersPage.getTotalPages());
+        paginationMetadata.setHasNext(usersPage.hasNext());
+        paginationMetadata.setHasPrev(usersPage.hasPrevious());
 
         // Use generated PaginatedUserResponse
         PaginatedUserResponse response = new PaginatedUserResponse();
-        response.setData(pageData);  // CRITICAL: Return paginated data, not all users
+        response.setData(usersPage.getContent());
         response.setPagination(paginationMetadata);
 
         return ResponseEntity.ok(response);

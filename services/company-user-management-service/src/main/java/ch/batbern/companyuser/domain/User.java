@@ -120,8 +120,11 @@ public class User {
     /**
      * User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
      * Stored in separate role_assignments table
+     *
+     * Performance: LAZY fetch to avoid N+1 queries
+     * Use repository methods with JOIN FETCH when roles are needed
      */
-    @ElementCollection(fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "role_assignments", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     @Enumerated(EnumType.STRING)
