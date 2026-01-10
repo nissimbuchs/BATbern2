@@ -50,7 +50,7 @@ describe('RegistrationStep1 Component', () => {
   it('should_renderStep1Fields_when_componentMounted', async () => {
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -71,7 +71,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -95,7 +95,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -119,7 +119,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -143,7 +143,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -169,7 +169,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -191,7 +191,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -213,7 +213,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -236,7 +236,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -262,7 +262,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -293,7 +293,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
@@ -315,7 +315,7 @@ describe('RegistrationStep1 Component', () => {
 
     await act(async () => {
       render(
-        <FormWrapper onContinue={mockOnContinue}>
+        <FormWrapper>
           <RegistrationStep1 onContinue={mockOnContinue} />
         </FormWrapper>
       );
