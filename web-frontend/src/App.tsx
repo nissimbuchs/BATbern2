@@ -25,6 +25,7 @@ import { RegistrationWizard } from '@components/auth/RegistrationWizard';
 import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
+import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
 import theme from '@/theme';
 
 // Create React Query client
@@ -182,6 +183,8 @@ function App() {
         <ThemeProvider theme={theme}>
           <Router>
             <NavigationSetup>
+              {/* Sync user language preferences after authentication */}
+              <LanguageSync />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
