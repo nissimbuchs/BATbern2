@@ -21,7 +21,7 @@
  * 5. Run: npx playwright test e2e/organizer/event-type-selection.spec.ts
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
@@ -82,22 +82,6 @@ interface EventSlotConfigurationResponse {
   typicalEndTime?: string;
 }
 
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
-
 test.describe('Event Type Selection (Story 5.1)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/organizer/events');
@@ -114,12 +98,12 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       // Wait for EventForm modal to open
       await expect(page.locator('[role="dialog"]')).toBeVisible();
 
-      // Verify EventTypeSelector component exists
+      // Verify EventTypeSelector component exists and is a MUI Select
       const eventTypeSelector = page.locator('[data-testid="event-type-selector"]');
       await expect(eventTypeSelector).toBeVisible();
 
-      // Verify it's a dropdown/select component
-      await expect(eventTypeSelector).toHaveAttribute('role', 'combobox');
+      // Verify it's a MUI Select component by checking for MuiSelect-root class
+      await expect(eventTypeSelector).toHaveClass(/MuiSelect-root/);
     });
 
     test('should show all three event types in dropdown', async ({ page }) => {
