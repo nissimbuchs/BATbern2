@@ -34,6 +34,12 @@ export interface EcsServiceAlarmsProps {
   readonly serviceName: string;
 
   /**
+   * Display name for the service (used in alarm descriptions)
+   * Must be a literal string, not a CDK token
+   */
+  readonly serviceDisplayName: string;
+
+  /**
    * SNS topic for alarm notifications
    */
   readonly alarmTopic: sns.ITopic;
@@ -68,18 +74,16 @@ export class EcsServiceAlarms extends Construct {
     // Create CloudWatch alarm action
     const alarmAction = new cloudwatch_actions.SnsAction(props.alarmTopic);
 
-    // Extract service name without stack prefix for better alarm names
-    const serviceShortName = props.serviceName
-      .replace(`BATbern-${props.environment}-`, '')
-      .replace(/-Service.*$/, '');
+    // Use serviceDisplayName for alarm names and descriptions (guaranteed to be a literal string)
+    const serviceDisplayName = props.serviceDisplayName;
 
     // Alarm 1: High Memory Utilization
     const memoryUtilizationAlarm = new cloudwatch.Alarm(
       this,
       'HighMemoryUtilization',
       {
-        alarmName: `batbern-${props.environment}-${serviceShortName}-High-Memory`,
-        alarmDescription: `${serviceShortName} memory utilization exceeds ${thresholds.memoryUtilization}% (average over 5 minutes)`,
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-High-Memory`,
+        alarmDescription: `${serviceDisplayName} memory utilization exceeds ${thresholds.memoryUtilization}% (average over 5 minutes)`,
         metric: new cloudwatch.Metric({
           namespace: 'AWS/ECS',
           metricName: 'MemoryUtilization',
@@ -127,8 +131,8 @@ export class EcsServiceAlarms extends Construct {
     });
 
     const oomKillAlarm = new cloudwatch.Alarm(this, 'OOMKillDetection', {
-      alarmName: `batbern-${props.environment}-${serviceShortName}-OOM-Kills`,
-      alarmDescription: `${serviceShortName} experienced OOM kill (exit code 137) - memory limit reached`,
+      alarmName: `batbern-${props.environment}-${serviceDisplayName}-OOM-Kills`,
+      alarmDescription: `${serviceDisplayName} experienced OOM kill (exit code 137) - memory limit reached`,
       metric: new cloudwatch.Metric({
         namespace: 'BATbern/ECS',
         metricName: 'OOMKills',
@@ -152,8 +156,8 @@ export class EcsServiceAlarms extends Construct {
       this,
       'HighTaskFailureRate',
       {
-        alarmName: `batbern-${props.environment}-${serviceShortName}-Task-Failures`,
-        alarmDescription: `${serviceShortName} experiencing abnormal task restarts (>${thresholds.taskFailureCount} failures per 15 minutes)`,
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-Task-Failures`,
+        alarmDescription: `${serviceDisplayName} experiencing abnormal task restarts (>${thresholds.taskFailureCount} failures per 15 minutes)`,
         metric: new cloudwatch.Metric({
           namespace: 'AWS/ECS',
           metricName: 'TaskCount',
@@ -178,13 +182,13 @@ export class EcsServiceAlarms extends Construct {
       this,
       'EventBridgePublishingFailures',
       {
-        alarmName: `batbern-${props.environment}-${serviceShortName}-EventBridge-Failures`,
-        alarmDescription: `${serviceShortName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-EventBridge-Failures`,
+        alarmDescription: `${serviceDisplayName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
         metric: new cloudwatch.Metric({
           namespace: 'BATbern/EventBridge',
           metricName: 'PublishingFailures',
           dimensionsMap: {
-            ServiceName: serviceShortName,
+            ServiceName: serviceDisplayName,
           },
           statistic: 'Sum',
           period: cdk.Duration.minutes(5),
@@ -206,7 +210,7 @@ export class EcsServiceAlarms extends Construct {
         taskFailureAlarm.alarmName,
         eventBridgeFailuresAlarm.alarmName,
       ].join(','),
-      description: `CloudWatch alarm names for ${serviceShortName} monitoring`,
+      description: `CloudWatch alarm names for ${serviceDisplayName} monitoring`,
     });
   }
 }

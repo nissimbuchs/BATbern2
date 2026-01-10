@@ -94,6 +94,7 @@ export class EventManagementStack extends cdk.Stack {
         environment: envName,
         clusterName: props.cluster.clusterName,
         serviceName: this.service.serviceName,
+        serviceDisplayName: 'EventManagement',
         alarmTopic: props.alarmTopic,
         thresholds: {
           memoryUtilization: 80,

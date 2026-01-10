@@ -286,6 +286,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         environment: envName,
         clusterName: props.cluster.clusterName,
         serviceName: this.service.service.serviceName,
+        serviceDisplayName: 'ApiGatewayService',
         alarmTopic: props.alarmTopic,
         thresholds: {
           memoryUtilization: 80,

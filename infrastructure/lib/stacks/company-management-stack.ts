@@ -104,6 +104,7 @@ export class CompanyManagementStack extends cdk.Stack {
         environment: envName,
         clusterName: props.cluster.clusterName,
         serviceName: this.service.serviceName,
+        serviceDisplayName: 'CompanyManagement',
         alarmTopic: props.alarmTopic,
         thresholds: {
           memoryUtilization: 80,

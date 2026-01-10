@@ -77,6 +77,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         environment: envName,
         clusterName: props.cluster.clusterName,
         serviceName: this.service.serviceName,
+        serviceDisplayName: 'PartnerCoordination',
         alarmTopic: props.alarmTopic,
         thresholds: {
           memoryUtilization: 80,
