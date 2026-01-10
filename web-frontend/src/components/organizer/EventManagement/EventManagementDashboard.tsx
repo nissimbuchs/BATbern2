@@ -201,6 +201,7 @@ export const EventManagementDashboard: React.FC = () => {
               <Paper sx={{ p: 3 }}>
                 <TeamActivityFeed
                   notifications={notificationsData?.data || []}
+                  totalNotifications={notificationsData?.pagination?.totalItems}
                   isLoading={isLoadingNotifications}
                   onReload={() => refetchNotifications()}
                   limit={5}

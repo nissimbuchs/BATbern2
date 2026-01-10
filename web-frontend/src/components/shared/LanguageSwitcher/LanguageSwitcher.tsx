@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, MenuItem, Box, SelectChangeEvent } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
+import { updateUserPreferences } from '../../../services/api/userApi';
 
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
@@ -11,6 +12,14 @@ const LanguageSwitcher: React.FC = () => {
     await i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
+
+    // Persist to API (backend is ready, Story 2.6)
+    try {
+      await updateUserPreferences({ language: newLang });
+    } catch (error) {
+      console.error('Failed to persist language preference:', error);
+      // Continue anyway - localStorage update was successful
+    }
   };
 
   return (

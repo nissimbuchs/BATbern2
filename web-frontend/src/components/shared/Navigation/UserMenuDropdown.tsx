@@ -18,7 +18,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import { UserContext } from '../../../types/auth';
-// import apiClient from '../../../services/api/apiClient'; // TODO: Re-enable when backend is ready
+import { updateUserPreferences } from '../../../services/api/userApi';
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -89,15 +89,14 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
 
-    // TODO: Re-enable when backend API is ready
-    // Persist to API
-    // try {
-    //   await apiClient.put('/api/v1/users/me/preferences', {
-    //     language: newLang,
-    //   });
-    // } catch (error) {
-    //   console.error('Failed to persist language preference:', error);
-    // }
+    // Persist to API (backend is ready, Story 2.6)
+    try {
+      await updateUserPreferences({ language: newLang });
+      console.log('[UserMenuDropdown] Language preference persisted to backend:', newLang);
+    } catch (error) {
+      console.error('[UserMenuDropdown] Failed to persist language preference:', error);
+      // Continue anyway - localStorage update was successful
+    }
 
     // Notify parent
     onLanguageChange(newLang);

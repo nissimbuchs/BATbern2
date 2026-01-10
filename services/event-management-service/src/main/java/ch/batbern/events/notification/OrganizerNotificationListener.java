@@ -95,6 +95,9 @@ public class OrganizerNotificationListener {
      * Create in-app notification record (no email sending)
      */
     private void createInAppNotification(DomainEvent<?> event, String organizerUsername) {
+        // Extract event code first
+        String eventCode = extractEventCode(event);
+
         // Build notification metadata
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("eventId", event.getEventId());
@@ -102,11 +105,14 @@ public class OrganizerNotificationListener {
         metadata.put("aggregateId", event.getAggregateId() != null ? event.getAggregateId().toString() : null);
         metadata.put("userId", event.getUserId());
         metadata.put("occurredAt", event.getOccurredAt());
+        if (eventCode != null) {
+            metadata.put("eventCode", eventCode);
+        }
 
         // Create notification record
         Notification notification = Notification.builder()
                 .recipientUsername(organizerUsername)
-                .eventCode(extractEventCode(event))  // Extract event code if available
+                .eventCode(eventCode)  // Event code for filtering
                 .notificationType(event.getEventType())
                 .channel("IN_APP")  // In-app only, no email
                 .priority(determinePriority(event.getEventType()))
@@ -124,10 +130,28 @@ public class OrganizerNotificationListener {
 
     /**
      * Extract event code from domain event if available
+     * Uses reflection to access eventCode field from specific event types
      */
     private String extractEventCode(DomainEvent<?> event) {
-        // Try to extract eventCode from metadata or reflection
-        // For now, return null (can be enhanced later with specific event handling)
+        // Try to extract eventCode from metadata first
+        if (event.getMetadata() != null && event.getMetadata().containsKey("eventCode")) {
+            return event.getMetadata().get("eventCode");
+        }
+
+        // Use reflection to extract eventCode from specific event types
+        // (EventCreatedEvent, EventPublishedEvent, etc. all have eventCode field)
+        try {
+            java.lang.reflect.Field eventCodeField = event.getClass().getDeclaredField("eventCode");
+            eventCodeField.setAccessible(true);
+            Object eventCodeValue = eventCodeField.get(event);
+            if (eventCodeValue instanceof String) {
+                return (String) eventCodeValue;
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // Event doesn't have eventCode field (e.g., non-event domain events)
+            log.trace("Event {} doesn't have eventCode field", event.getEventType());
+        }
+
         return null;
     }
 
@@ -162,31 +186,60 @@ public class OrganizerNotificationListener {
      */
     private String buildSubject(DomainEvent<?> event) {
         String eventName = event.getEventName();
-        String aggregateType = event.getAggregateType();
+        String formattedEventName = formatEventName(eventName);
 
-        return String.format("%s: %s", aggregateType, formatEventName(eventName));
+        // Get event code for context
+        String eventCode = extractEventCode(event);
+        if (eventCode != null) {
+            return String.format("%s - %s", eventCode, formattedEventName);
+        }
+
+        return formattedEventName;
     }
 
     /**
      * Build notification body from domain event
      */
     private String buildBody(DomainEvent<?> event) {
-        StringBuilder body = new StringBuilder();
+        // Note: DomainEvent.getUserId() returns username (misleading name)
+        // All events pass username to parent constructor
+        String username = event.getUserId() != null && !event.getUserId().isEmpty()
+            ? event.getUserId()
+            : "System";
 
-        body.append("Event: ").append(formatEventName(event.getEventName())).append("\n");
-        body.append("Type: ").append(event.getEventType()).append("\n");
+        // Build user-friendly message based on event type
+        String eventType = event.getEventType();
+        String eventCode = extractEventCode(event);
 
-        if (event.getUserId() != null) {
-            body.append("Triggered by: ").append(event.getUserId()).append("\n");
+        // Create contextual message based on event type
+        if (eventType.contains("Published")) {
+            return String.format("%s published%s",
+                username,
+                eventCode != null ? " event " + eventCode : " an event");
+        } else if (eventType.contains("Created")) {
+            return String.format("%s created%s",
+                username,
+                eventCode != null ? " event " + eventCode : " a new event");
+        } else if (eventType.contains("Updated")) {
+            return String.format("%s updated%s",
+                username,
+                eventCode != null ? " event " + eventCode : " an event");
+        } else if (eventType.contains("Deleted")) {
+            return String.format("%s deleted%s",
+                username,
+                eventCode != null ? " event " + eventCode : " an event");
+        } else if (eventType.contains("Speaker")) {
+            return String.format("%s - Speaker workflow activity",
+                eventCode != null ? eventCode : "Event");
+        } else if (eventType.contains("Task")) {
+            return String.format("%s - Task activity",
+                eventCode != null ? eventCode : "Event");
+        } else {
+            // Generic fallback
+            return String.format("%s - %s",
+                username,
+                formatEventName(event.getEventName()));
         }
-
-        body.append("Occurred at: ").append(event.getOccurredAt()).append("\n");
-
-        if (event.getAggregateId() != null) {
-            body.append("Aggregate ID: ").append(event.getAggregateId()).append("\n");
-        }
-
-        return body.toString();
     }
 
     /**

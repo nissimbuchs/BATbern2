@@ -105,11 +105,15 @@ async function globalSetup() {
           isAuthenticated: true,
         };
         localStorage.setItem('auth', JSON.stringify(authState));
+
+        // Set language to English for E2E tests (user default might be German)
+        localStorage.setItem('batbern-language', 'en');
       },
       { idToken, accessToken, refreshToken }
     );
 
     console.log('[Global Setup] ✓ Auth token injected into localStorage (Amplify V6 format)');
+    console.log('[Global Setup] ✓ Language set to English for E2E tests');
 
     // Save the storage state to be reused in tests
     await context.storageState({ path: '.playwright-auth-state.json' });

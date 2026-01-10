@@ -22,6 +22,6 @@ export interface LogoutResponse {
  * @returns Logout confirmation
  */
 export const logout = async (refreshToken: string): Promise<LogoutResponse> => {
-  const response = await apiClient.post<LogoutResponse>('/api/v1/auth/logout', { refreshToken });
+  const response = await apiClient.post<LogoutResponse>('/auth/logout', { refreshToken });
   return response.data;
 };

@@ -630,7 +630,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventCreatedEvent domainEvent = new EventCreatedEvent(
                     savedEvent.getId(),           // Internal UUID
                     savedEvent.getEventCode(),    // Public business identifier
@@ -772,7 +772,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventUpdatedEvent domainEvent = new EventUpdatedEvent(
                     updatedEvent.getId(),           // Internal UUID
                     updatedEvent.getEventCode(),    // Public business identifier
@@ -873,7 +873,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventUpdatedEvent domainEvent = new EventUpdatedEvent(
                     patchedEvent.getId(),           // Internal UUID
                     patchedEvent.getEventCode(),    // Public business identifier
@@ -1031,7 +1031,7 @@ public class EventController {
         EventWorkflowState previousWorkflowState = event.getWorkflowState();
 
         // Transition to AGENDA_PUBLISHED workflow state
-        String userId = securityContextHelper.getCurrentUserId();
+        String userId = securityContextHelper.getCurrentUsername();
         Event publishedEvent = eventWorkflowStateMachine.transitionToState(
                 eventCode,
                 EventWorkflowState.AGENDA_PUBLISHED,
@@ -1836,7 +1836,7 @@ public class EventController {
         String topicCode = request.getTopicCode();
 
         // Get current user from security context
-        String organizerUsername = securityContextHelper.getCurrentUserId();
+        String organizerUsername = securityContextHelper.getCurrentUsername();
 
         // Select topic for event (calls workflow state machine)
         // ADR-003: Pass topicCode directly instead of UUID
