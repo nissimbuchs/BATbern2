@@ -60,7 +60,7 @@ tests {
       expect(body.uploadUrl).to.match(/s3|minio/i); // S3 or MinIO
       expect(body.fileId).to.exist;
       expect(body.s3Key).to.exist;
-      expect(body.s3Key).to.include('/profile-pictures/');
+      expect(body.s3Key).to.include('profile-pictures/'); // S3 keys don't have leading slash
       expect(body.fileExtension).to.equal('png');
       expect(body.expiresInMinutes).to.equal(15);
     }

@@ -50,41 +50,19 @@ Systematically contact speaker candidates and track communication history to ens
 
 Navigate to Step 4 in the workflow.
 
-Outreach dashboard displays all candidates by status:
+Outreach dashboard displays all candidates in a Kanban board by status.
 
-```
-Speaker Outreach Dashboard
-────────────────────────────────────────────
+![Outreach View](../assets/screenshots/workflow/phase-b-outreach/b-01-outreach-view-ready.png)
 
-IDENTIFIED (24)     CONTACTED (0)     INTERESTED (0)
-┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-│ Hans Müller    │  │                │  │                │
-│ Anna Schmidt   │  │                │  │                │
-│ Peter Weber    │  │                │  │                │
-│ [21 more...]   │  │                │  │                │
-└────────────────┘  └────────────────┘  └────────────────┘
-
-CONTENT_SUBMITTED (0)     CONFIRMED (0)     DROPOUT (0)
-```
-
-Kanban-style board (planned) will support drag-and-drop status updates.
+The Kanban board supports drag-and-drop to update speaker status as you contact them and receive responses.
 </div>
 
 <div class="step" data-step="2">
 
 **Select Candidates to Contact**
 
-Select high-priority candidates for initial wave:
+Select high-priority candidates for initial wave. The candidate selection interface displays checkboxes for each candidate with their priority level (High/Medium/Low), a "Select All" option, and a [Send Invitation Email] button to send bulk invitations to selected candidates.
 
-```
-☐ Select All
-☑ Hans Müller (High Priority)
-☑ Anna Schmidt (High Priority)
-☑ Peter Weber (High Priority)
-☐ Lisa Meier (Medium Priority)
-
-[Send Invitation Email]
-```
 </div>
 
 <div class="step" data-step="3">
@@ -93,36 +71,7 @@ Select high-priority candidates for initial wave:
 
 Click **Send Invitation Email**.
 
-Email template opens with pre-filled content:
-
-```
-To: hans.mueller@example.com
-Subject: Invitation to speak at BATbern 2025
-
-Dear Hans,
-
-We are planning BATbern 2025 (Full-Day Conference on March 15, 2025)
-and would like to invite you to present on "Sustainable Building Materials".
-
-Event Details:
-- Date: March 15, 2025
-- Type: Full-Day Conference
-- Location: Kursaal Bern
-- Expected Audience: 300-400 architects
-
-Your presentation would be 45 minutes (30 min talk + 15 min Q&A).
-
-Based on your expertise and previous presentations, we believe you would
-provide valuable insights to our audience.
-
-Are you interested? Please respond by February 28, 2025.
-
-Best regards,
-Anna Schmidt
-BATbern Organizer
-
-[Edit Email] [Send] [Cancel]
-```
+The email template editor opens with pre-filled content including: recipient email, subject line ("Invitation to speak at BATbern [Year]"), personalized greeting, event overview (date, type, location, expected audience), presentation format (duration and Q&A allocation), invitation rationale based on speaker expertise, response deadline, organizer signature, and action buttons ([Edit Email] [Send] [Cancel]) to review, modify, and send the invitation.
 
 Customize as needed, then click **Send**.
 </div>
@@ -131,85 +80,56 @@ Customize as needed, then click **Send**.
 
 **Log Contact**
 
+Before contacting a speaker:
+
+![Before Contact](../assets/screenshots/workflow/phase-b-outreach/b-02-before-contact-speaker-1.png)
+
 After sending, speaker status updates:
 - Status: IDENTIFIED → **CONTACTED**
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
 
-```
-Contact History - Hans Müller
-────────────────────────────────────────
-2025-02-15 14:23 | Email Sent
-Subject: "Invitation to speak at BATbern 2025"
-Status: CONTACTED
-Next action: Follow-up on 2025-02-18 if no response
-```
+![After Contact](../assets/screenshots/workflow/phase-b-outreach/b-03-after-contact-speaker-1.png)
+
+*The contact history log displays a chronological timeline of all interactions with a speaker: timestamp, contact method (Email Sent, Phone Call, etc.), subject line or summary, current status (CONTACTED, INTERESTED, etc.), and next scheduled action with date.*
+
+After contacting all speakers, the Kanban board shows them in the "Contacted" column:
+
+![Kanban Contacted State](../assets/screenshots/workflow/phase-b-outreach/b-12-kanban-contacted-state.png)
+
 </div>
 
 <div class="step" data-step="5">
 
 **Track Responses**
 
-When speakers respond, manually update status or system auto-detects reply:
+When speakers respond, update their status on the Kanban board. Drag speaker cards from "Contacted" to "Ready" as they show interest.
 
-```
-Hans Müller replied (2025-02-16 09:45):
-"Yes, I'm interested! Please send content guidelines."
+![All Speakers Ready](../assets/screenshots/workflow/phase-b-outreach/b-13-all-speakers-ready.png)
 
-[Mark as INTERESTED] [Request Content]
-```
+Then drag from "Ready" to "Accepted" as they confirm participation.
 
-Click **Mark as INTERESTED** to advance status.
+![Before Moving to Accepted](../assets/screenshots/workflow/phase-b-outreach/b-14-before-drag-to-accepted.png)
+
+After all confirmations, your outreach board shows speakers in the Accepted column.
+
+![All Speakers Accepted](../assets/screenshots/workflow/phase-b-outreach/b-15-all-speakers-accepted.png)
+
 </div>
 
 <div class="step" data-step="6">
 
 **Send Follow-Ups**
 
-For non-responders after 3-5 days, send reminder:
+For non-responders after 3-5 days, send reminder. The system displays candidates needing follow-up with their contact date and days since initial contact. A [Send Follow-Up Reminder] button sends a polite follow-up email with a subject line referencing the original invitation, a brief reminder of the opportunity, and an updated response deadline.
 
-```
-Candidates needing follow-up (3):
-────────────────────────────────────────
-Anna Schmidt | Contacted 5 days ago | No response
-Peter Weber | Contacted 4 days ago | No response
-Lisa Meier | Contacted 6 days ago | No response
-
-[Send Follow-Up Reminder]
-```
-
-Follow-up email template:
-
-```
-Subject: Re: Invitation to speak at BATbern 2025
-
-Hi Anna,
-
-I wanted to follow up on my invitation to present at BATbern 2025
-on March 15.
-
-Are you available and interested? Please let me know by March 1
-so we can finalize our speaker lineup.
-
-Thanks,
-Anna Schmidt
-```
 </div>
 
 <div class="step" data-step="7">
 
 **Handle Declines**
 
-If speaker declines, mark as **DROPOUT** and move to backup:
-
-```
-Anna Schmidt declined (2025-02-20):
-Reason: "Schedule conflict - traveling that week"
-
-[Mark as DROPOUT] [Contact Backup Candidate]
-```
-
-System suggests next priority candidate from same topic.
+If speaker declines, the system displays the decline notification with date, reason (if provided), and action buttons: [Mark as DROPOUT] to update their status, and [Contact Backup Candidate] to initiate outreach to the next priority candidate from the same topic.
 </div>
 
 <div class="step" data-step="8">
@@ -225,20 +145,7 @@ Event state advances to: **OUTREACH_INITIATED**
 
 <span class="feature-status planned">Planned</span>
 
-Track outreach effectiveness:
-
-```
-Outreach Metrics - BATbern 2025
-────────────────────────────────────────
-Contacted: 20 candidates
-Interested: 14 (70% response rate) ✅
-Declined: 4 (20%)
-No Response: 2 (10%)
-
-Average Response Time: 2.3 days
-Fastest Response: 4 hours (Hans Müller)
-Slowest Response: 7 days (Peter Weber)
-```
+Track outreach effectiveness. The Outreach Metrics dashboard displays: total candidates contacted, interested count with response rate percentage, declined count and percentage, no-response count and percentage, average response time in days, fastest and slowest response times with speaker names for reference.
 
 ## Step 5: Speaker Status Management
 
@@ -288,26 +195,8 @@ graph LR
 
 **Monitor Status Board**
 
-View speaker pipeline:
+The speaker pipeline displays INTERESTED speakers in a grouped view showing speaker name, assigned topic, and a [Request Content] action button for each. Summary metrics show counts for Content Guidelines Sent, Awaiting Content, and Content Received. A [Send Bulk Reminder] button allows sending reminder emails to all speakers awaiting content submission.
 
-```
-Speaker Status Pipeline - BATbern 2025
-────────────────────────────────────────────────────────────
-
-INTERESTED (14 speakers)
-┌──────────────────────────────────┐
-│ Hans Müller - Sustainable Materials  │ [Request Content]
-│ Peter Weber - Digital Transform      │ [Request Content]
-│ Lisa Meier - Urban Planning          │ [Request Content]
-│ ... 11 more                          │
-└──────────────────────────────────┘
-
-Content Guidelines Sent: 14
-Awaiting Content: 14
-Content Received: 0
-
-[Send Bulk Reminder]
-```
 </div>
 
 <div class="step" data-step="2">
@@ -519,9 +408,21 @@ Collect detailed presentation content from speakers to enable quality review and
 
 ### Content Submission Portal
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
-Speakers receive unique submission link:
+Before collecting content, publish the topic from the Publishing tab.
+
+![Publishing Tab Before Topic](../assets/screenshots/workflow/phase-b5-content/b5-01-publish-tab-before-topic.png)
+
+After publishing the topic, organizers can submit content on behalf of speakers using the content submission drawer.
+
+![Content Submission Drawer](../assets/screenshots/workflow/phase-b5-content/b5-04-content-submission-drawer-1-opened.png)
+
+Fill in the presentation details and submit.
+
+![Content Form Filled](../assets/screenshots/workflow/phase-b5-content/b5-05-content-submission-1-filled.png)
+
+Speakers can also receive unique submission links:
 
 ```
 https://batbern.ch/submit-content/{token}

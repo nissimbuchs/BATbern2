@@ -35,7 +35,7 @@ describe('TopicFilterPanel', () => {
   it('should display current filter values', () => {
     render(
       <TopicFilterPanel
-        filters={{ category: 'technical', status: 'available' }}
+        filters={{ category: 'technical', status: 'AVAILABLE' }}
         onFilterChange={vi.fn()}
       />
     );

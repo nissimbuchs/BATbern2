@@ -12,7 +12,7 @@ As an organizer, you can:
 
 - ✅ **Manage Entities**: Create and edit companies, users, events, partners, and speakers
 - ✅ **Plan Events**: Define event types, select topics, and coordinate speakers
-- ✅ **Track Workflows**: Follow the 16-step workflow from concept to execution
+- ✅ **Track Workflows**: Manage event lifecycle through 3 independent workflow systems
 - ✅ **Coordinate Partners**: Manage partner relationships and meeting schedules
 - ✅ **Analyze Data**: Visualize historical trends with topic heat maps
 - ✅ **Generate Reports**: Track event metrics and speaker engagement
@@ -28,16 +28,15 @@ BATbern follows a **microservices architecture** with:
 
 ## User Roles
 
-BATbern supports 4 distinct roles:
+BATbern supports 3 distinct roles:
 
 | Role | Access Level | Typical Responsibilities |
 |------|--------------|-------------------------|
-| **Admin** | Full system access | System configuration, user management, all operations |
-| **Organizer** | Event planning & coordination | Plan events, manage speakers, coordinate partners |
+| **Organizer** | Event planning & coordination | Plan events, manage speakers, coordinate partners, manage all entities |
 | **Speaker** | Speaker profile management | Update profile, submit content, manage session assignments |
 | **Attendee** | Public registration | Register for events, view schedules, access materials |
 
-**You are an Organizer** - you have elevated permissions for event planning and coordination.
+**You are an Organizer** - you have full permissions for event planning, coordination, and entity management.
 
 ## Quick Start Checklist
 
@@ -61,8 +60,8 @@ Understand how to create and manage companies, users, events, and partners. See 
 
 <div class="step" data-step="4">
 
-### Learn the 16-Step Workflow
-Master the complete event lifecycle from topic selection to post-event archival. See [16-Step Workflow](../workflow/README.md).
+### Learn the Workflow System
+Master the 3 workflow systems: Event lifecycle (9 states), Speaker coordination (per-speaker progression), and Task management. See [Workflow System](../workflow/README.md).
 </div>
 
 ## Platform Environments
@@ -93,10 +92,17 @@ Topics are subject areas for conference sessions (e.g., "Sustainable Building Ma
 - Assigned to speakers during outreach
 - Used to structure the event agenda
 
-### Workflow States
-The platform tracks event and speaker progress through defined states:
-- **Event States**: CREATED → TOPIC_SELECTED → SPEAKERS_IDENTIFIED → ... → ARCHIVED
-- **Speaker States**: IDENTIFIED → CONTACTED → INTERESTED → ... → CONFIRMED
+### Workflow Systems
+The platform uses 3 independent workflow systems:
+
+**Event Workflow (9 states)**:
+- CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+
+**Speaker Workflow (per-speaker, parallel)**:
+- identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed
+
+**Task System**:
+- Configurable tasks (newsletters, catering, venue booking) triggered by event state transitions
 
 ### Partners
 Organizations that collaborate with BATbern:

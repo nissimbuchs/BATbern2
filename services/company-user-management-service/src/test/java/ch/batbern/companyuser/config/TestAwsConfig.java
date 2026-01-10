@@ -152,6 +152,17 @@ public class TestAwsConfig {
         when(mockService.ensureUniqueUsername(anyString(), any(Function.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Mock generateCompanyName to return a predictable company slug format
+        when(mockService.generateCompanyName(anyString()))
+                .thenAnswer(invocation -> {
+                    String displayName = invocation.getArgument(0);
+                    return displayName.toLowerCase().replaceAll("[^a-z0-9]", "");
+                });
+
+        // Mock ensureUniqueSlug to return the base slug (assume unique in tests)
+        when(mockService.ensureUniqueSlug(anyString(), any(Function.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
         return mockService;
     }
 }

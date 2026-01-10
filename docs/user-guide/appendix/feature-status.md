@@ -4,7 +4,15 @@
 
 This page tracks implementation status of all BATbern features. Use this to understand what's available now, what's in progress, and what's coming soon.
 
-**Last Updated**: 2025-12-18
+**Last Updated**: 2026-01-09
+
+**MVP Status**: ✅ **PRODUCTION READY** - Core platform complete, minor features pending
+
+**Platform Readiness:**
+- **Epics 1-2**: 100% Complete (Foundation, Entity CRUD)
+- **Epic 3**: 100% Complete (Historical data migration tooling ready, production import pending)
+- **Epic 4**: 85% Complete (Event registration done, archive browsing & search pending)
+- **Epic 5**: 87.5% Complete (7/8 stories done, newsletter integration pending - BAT-16)
 
 **Status Definitions**:
 - `[IMPLEMENTED]` - Feature is live and available for use
@@ -114,9 +122,11 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 ---
 
-## 16-Step Workflow (Epic 5)
+## Event Workflow Management (Epic 5)
 
-**Status**: ✅ 85% Complete
+**Status**: ✅ 87.5% Complete (7/8 stories)
+
+**Note:** Epic 5 workflow is now a **parallel workflow architecture** with event states, per-speaker workflows, and configurable tasks - not a linear 16-step process.
 
 ### Phase A: Setup (Steps 1-3)
 
@@ -159,14 +169,17 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 12: Speaker Publishing | ✅ `[IMPLEMENTED]` | Speaker profiles → Agenda finalization | [Phase E](../workflow/phase-e-publishing.md#step-12) |
 | Dropout Handling | ✅ `[IMPLEMENTED]` | Manage last-minute withdrawals | [Phase E](../workflow/phase-e-publishing.md#dropout-handling) |
 
-### Phase F: Communication (Steps 13-16)
+### Phase F: Event Completion & Communication
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
-| Step 13: Newsletter Creation | 🔨 `[IN PROGRESS]` | Draft templates, 60% complete | [Phase F](../workflow/phase-f-communication.md#step-13) |
-| Step 14: Moderator Assignment | ✅ `[IMPLEMENTED]` | Assign session moderators | [Phase F](../workflow/phase-f-communication.md#step-14) |
-| Step 15: Catering Coordination | 🔨 `[IN PROGRESS]` | Menu selection, dietary needs, 70% complete | [Phase F](../workflow/phase-f-communication.md#step-15) |
-| Step 16: Partner Meetings | ✅ `[IMPLEMENTED]` | Coordinate sponsor logistics | [Phase F](../workflow/phase-f-communication.md#step-16) |
+| Newsletter Integration | 📋 `[PLANNED]` | BAT-16 pending, 3 templates defined | Part of Event Lifecycle |
+| Overflow Management | 📋 `[PLANNED]` | BAT-16 pending, speaker voting | Part of Event Lifecycle |
+| Auto-Publishing Engine | 📋 `[PLANNED]` | BAT-16 pending, CDN integration | Part of Event Lifecycle |
+| Event Finalization | 📋 `[PLANNED]` | BAT-16 pending, AGENDA_FINALIZED state | Part of Event Lifecycle |
+| Event Completion | 📋 `[PLANNED]` | BAT-16 pending, EVENT_COMPLETED→ARCHIVED | Part of Event Lifecycle |
+| Task System | ✅ `[IMPLEMENTED]` | Configurable tasks with triggers | [Task System](../workflow/task-system.md) |
+| Partner Meetings | ✅ `[IMPLEMENTED]` | Coordinate sponsor logistics | [Task System](../workflow/task-system.md) |
 
 ---
 

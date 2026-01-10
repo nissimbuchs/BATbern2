@@ -560,11 +560,11 @@ class SecurityContextHelperTest {
     }
 
     /**
-     * Test 10.22: should_throwException_when_unsupportedPrincipalType_getCurrentUsername
-     * Verify error handling for unknown principal types
+     * Test 10.22: should_returnAnonymous_when_unsupportedPrincipalType_getCurrentUsername
+     * Story 4.1.5: Fallback to "anonymous" for unknown principal types in public endpoints
      */
     @Test
-    void should_throwException_when_unsupportedPrincipalType_getCurrentUsername() {
+    void should_returnAnonymous_when_unsupportedPrincipalType_getCurrentUsername() {
         // Given
         String unsupportedPrincipal = "unsupported-principal";
 
@@ -576,10 +576,11 @@ class SecurityContextHelperTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         SecurityContextHolder.setContext(securityContext);
 
-        // When/Then
-        assertThatThrownBy(() -> securityContextHelper.getCurrentUsername())
-                .isInstanceOf(SecurityException.class)
-                .hasMessageContaining("Unsupported authentication principal type");
+        // When
+        String username = securityContextHelper.getCurrentUsername();
+
+        // Then
+        assertThat(username).isEqualTo("anonymous");
     }
 
     /**

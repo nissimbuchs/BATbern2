@@ -1,0 +1,294 @@
+import { test, expect } from '@playwright/test';
+
+test('test', async ({ page }) => {
+  await page.goto('http://localhost:8100/');
+  await page.getByRole('link', { name: 'Anmelden' }).click();
+  await page.getByRole('textbox', { name: 'E-Mail-Adresse' }).click();
+  await page.getByRole('textbox', { name: 'E-Mail-Adresse' }).fill('nissim@buchs.be');
+  await page.getByRole('textbox', { name: 'E-Mail-Adresse' }).press('Tab');
+  await page.getByRole('button', { name: 'close' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Passwort' }).fill('***');
+  await page.getByRole('checkbox', { name: 'Angemeldet bleiben' }).check();
+  await page.getByRole('button', { name: 'Anmelden' }).click();
+  await page.goto('http://localhost:8100/organizer/events?includeArchived=false');
+  await page.getByRole('button', { name: 'Neue Veranstaltung' }).click();
+  await page.getByRole('spinbutton', { name: 'Veranstaltungsnummer' }).click();
+  await page.getByRole('spinbutton', { name: 'Veranstaltungsnummer' }).fill('942');
+  await page.getByRole('spinbutton', { name: 'Veranstaltungsnummer' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Titel' }).fill('Demo BATbern Event');
+  await page.getByRole('textbox', { name: 'Titel' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Beschreibung' }).fill('Demo Event for the Userguide');
+  await page.getByRole('textbox', { name: 'Beschreibung' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Veranstaltungsdatum' }).fill('2042-02-04');
+  await page.getByRole('textbox', { name: 'Veranstaltungsdatum' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Anmeldefrist' }).fill('2024-01-02');
+  await page.getByRole('textbox', { name: 'Anmeldefrist' }).press('Tab');
+  await page.getByText('-8 Slots • 45 min each').click();
+  await page.getByText('Abend3-4 Slots • 45 min each').click();
+  await page.getByRole('textbox', { name: 'Veranstaltungsort', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Veranstaltungsort', exact: true }).fill('Zentrum Paul Klee');
+  await page.getByRole('textbox', { name: 'Veranstaltungsort', exact: true }).press('Tab');
+  await page.getByRole('textbox', { name: 'Adresse des Veranstaltungsorts' }).fill('Monument im Fruchtland, 3000 Bern');
+  await page.locator('.MuiSvgIcon-root.MuiSvgIcon-fontSizeMedium.css-1911vtu-MuiSvgIcon-root > path').click();
+  await page.getByText('Datei hier ablegen oder').click();
+  await page.getByTestId('file-dropzone').setInputFiles('ChatGPT Image 4. Jan. 2026, 21_01_32.png');
+  await page.getByRole('button', { name: 'Speichern & Erstellen' }).click();
+
+// Assign tasks
+import { test, expect } from '@playwright/test';
+
+  await page.getByText('#BATbern1001Demo Event04 Feb').click();
+  await page.getByRole('button', { name: 'Bearbeiten' }).click();
+  await page.getByRole('tab', { name: 'Tasks' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Venue BookingAssign ToAssign' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Nissim Buchs' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Partner Meeting' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Daniel Kühni' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Moderator AssignmentAssign' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Andreas Grütter' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Topic' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Speaker' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.getByRole('listitem').filter({ hasText: 'Newsletter: Final' }).getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.locator('li:nth-child(7) > .MuiStack-root > .MuiFormControl-root > .MuiInputBase-root > .MuiSelect-select').click();
+  await page.getByRole('option', { name: 'Nissim Buchs' }).click();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.getByTestId('tasks-button').click();
+  await page.getByRole('combobox', { name: 'Filter Meine Aufgaben' }).click();
+  await page.getByRole('option', { name: 'Alle Aufgaben' }).click();
+  await page.getByRole('link', { name: 'Veranstaltungen' }).click();
+
+  // assign topic
+
+  await page.getByRole('button', { name: 'Select topic for Demo BATbern' }).click();
+  await page.getByRole('button', { name: 'Heatmap' }).click();
+  await page.locator('div:nth-child(20) > div:nth-child(9)').click();
+  await page.getByRole('button', { name: 'Für Veranstaltung auswählen' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Alpha');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Shift+Tab');
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Bernhard');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).fill('');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Shift+Tab');
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Nissim');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).fill('ELCA');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).fill('AI');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).press('Tab');
+  await page.locator('form').getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Andreas Grütter' }).click();
+  await page.getByRole('button', { name: 'Zum Pool hinzufügen' }).click();
+  await page.getByRole('button', { name: 'Weiter zur Kontaktierung' }).click();
+  await page.getByRole('button', { name: 'Add Speakers' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Balti');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).fill('Galenica');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).fill('AI');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).press('Tab');
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Baltisar Oswald' }).click();
+  await page.getByRole('button', { name: 'Zum Pool hinzufügen' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Andreas');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).fill('Mobiliar');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).fill('AI');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).press('Tab');
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Andreas Grütter' }).click();
+  await page.getByRole('button', { name: 'Zum Pool hinzufügen' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).click();
+  await page.getByRole('textbox', { name: 'Referent Name' }).fill('Daniel');
+  await page.getByRole('textbox', { name: 'Referent Name' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).fill('BKW');
+  await page.getByRole('textbox', { name: 'Unternehmen' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).fill('AI');
+  await page.getByRole('textbox', { name: 'Fachgebiet' }).press('Tab');
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Daniel Kühni' }).click();
+  await page.getByRole('button', { name: 'Zum Pool hinzufügen' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'N Nissim ELCA AI' }).click();
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Telefon' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).fill('Hab mit ihm gesprochen. er überlegt es sich,');
+  await page.getByRole('button', { name: 'Als kontaktiert markieren' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'B Balti Galenica AI' }).click();
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Persönlich' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).fill('Ja, ich machs');
+  await page.getByRole('button', { name: 'Als kontaktiert markieren' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'A Andreas Mobiliar AI' }).click();
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'E-Mail' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).fill('Hab mal ein eMail gesendet.\nSeine antwort war:\nIpsum larum lirum');
+  await page.getByRole('button', { name: 'Als kontaktiert markieren' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'D Daniel BKW AI' }).click();
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Persönlich' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).fill('OK.');
+  await page.getByRole('button', { name: 'Als kontaktiert markieren' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'N Nissim ELCA AI' }).click();
+  await page.getByRole('combobox').click();
+  await page.getByRole('option', { name: 'Persönlich' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).click();
+  await page.getByRole('textbox', { name: 'Notizen' }).fill('OK. Er machts');
+  await page.getByRole('button', { name: 'Als kontaktiert markieren' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+
+  // DRAG AND DROP: Move speakers from CONTACTED to READY
+  // Wait for kanban board to be ready
+  await page.waitForTimeout(1000);
+
+  // Drag Nissim from CONTACTED to READY
+  const nissimCard = page.getByRole('button', { name: 'N Nissim ELCA AI' });
+  const readyColumn = page.getByRole('heading', { name: /Ready|Bereit/i }).locator('..');
+  await nissimCard.dragTo(readyColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Balti from CONTACTED to READY
+  const baltiCard = page.getByRole('button', { name: 'B Balti Galenica AI' });
+  await baltiCard.dragTo(readyColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Andreas from CONTACTED to READY
+  const andreasCard = page.getByRole('button', { name: 'A Andreas Mobiliar AI' });
+  await andreasCard.dragTo(readyColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Daniel from CONTACTED to READY
+  const danielCard = page.getByRole('button', { name: 'D Daniel BKW AI' });
+  await danielCard.dragTo(readyColumn);
+  await page.waitForTimeout(500);
+
+  // DRAG AND DROP: Move speakers from READY to ACCEPTED
+  // Find the ACCEPTED column
+  const acceptedColumn = page.getByRole('heading', { name: /Accepted|Akzeptiert/i }).locator('..');
+
+  // Drag Nissim from READY to ACCEPTED
+  await nissimCard.dragTo(acceptedColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Balti from READY to ACCEPTED
+  await baltiCard.dragTo(acceptedColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Andreas from READY to ACCEPTED
+  await andreasCard.dragTo(acceptedColumn);
+  await page.waitForTimeout(500);
+
+  // Drag Daniel from READY to ACCEPTED
+  await danielCard.dragTo(acceptedColumn);
+  await page.waitForTimeout(500);
+  await page.getByRole('button', { name: 'B Balti Galenica AI' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await expect(page.locator('div').filter({ hasText: /^NNissimELCAAI$/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'B Balti Galenica AI' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await expect(page.getByLabel('Status ändern')).toContainText('Status ändern');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await page.getByRole('button', { name: 'A Andreas Mobiliar AI' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await expect(page.locator('#main-content')).toContainText('AAndreasMobiliarAI');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await expect(page.locator('#main-content')).toContainText('DDanielBKWAI');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await page.getByRole('button', { name: 'N Nissim ELCA AI' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await expect(page.locator('#main-content')).toContainText('NNissimELCAAI');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await page.getByRole('button', { name: 'B Balti Galenica AI' }).click();
+  await page.locator('.MuiBackdrop-root').click();
+  await page.getByRole('button', { name: 'Sessions view' }).click();
+  await page.getByRole('tab', { name: 'Veröffentlichung' }).click();
+  await page.getByTestId('publish-topic-button').click();
+  await page.getByRole('tab', { name: 'Referenten' }).click();
+  await expect(page.locator('#main-content')).toContainText('BBaltiGalenicaAI');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await expect(page.locator('#main-content')).toContainText('AAndreasMobiliarAI');
+  await page.getByRole('button', { name: 'Status ändern' }).click();
+  await page.getByRole('tab', { name: 'Veröffentlichung' }).click();
+  await page.getByRole('tab', { name: 'Referenten' }).click();
+  await page.getByRole('button', { name: 'N Nissim ELCA AI' }).click();
+  await page.getByRole('combobox', { name: 'Sprecher suchen' }).click();
+  await page.getByRole('combobox', { name: 'Sprecher suchen' }).fill('Bruno');
+  await page.getByText('Bruno Linder').click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).fill('Presentation of Nissim');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Präsentationszusammenfassung' }).fill('Description of Presentation');
+  await page.getByRole('button', { name: 'Sprecher-Inhalt einreichen' }).click();
+  await page.getByRole('button', { name: 'B Balti Galenica AI' }).click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).fill('Präsi von Balti');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Präsentationszusammenfassung' }).fill('Seine Beschreibung');
+  await page.getByRole('button', { name: 'Sprecher-Inhalt einreichen' }).click();
+  await page.getByRole('button', { name: 'A Andreas Mobiliar AI' }).click();
+  await page.getByRole('combobox', { name: 'Sprecher suchen' }).click();
+  await page.getByRole('combobox', { name: 'Sprecher suchen' }).fill('and');
+  await page.getByText('Andreas Spichiger').click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).fill('Talk von Adreas');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Präsentationszusammenfassung' }).press('Shift+Tab');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowLeft');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowLeft');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowLeft');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowLeft');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowRight');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('ArrowLeft');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).click();
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).fill('Talk von Andreas');
+  await page.getByRole('textbox', { name: 'Präsentationstitel' }).press('Tab');
+  await page.getByRole('textbox', { name: 'Präsentationszusammenfassung' }).fill('Seine Beschreibung');
+  await page.getByRole('button', { name: 'Sprecher-Inhalt einreichen' }).click();
+  await page.getByRole('tab', { name: 'Veröffentlichung' }).click();
+  await page.getByTestId('publish-speakers-button').click();
+  await page.getByRole('tab', { name: 'Referenten' }).click();
+  await page.getByRole('button', { name: 'Presentation of Nissim Bruno' }).click();
+  await page.getByRole('button', { name: 'Genehmigen' }).click();
+  await page.getByRole('button', { name: 'Präsi von Balti Baltisar' }).click();
+  await page.getByRole('button', { name: 'Genehmigen' }).click();
+  await page.getByRole('button', { name: 'Talk von Andreas Andreas' }).click();
+  await page.getByRole('button', { name: 'Genehmigen' }).click();
+  await page.getByRole('button', { name: 'Sessions view' }).click();
+  await page.getByRole('button', { name: 'Slot-Zuweisungen verwalten' }).click();
+  await page.getByRole('article', { name: 'Speaker: Bruno Linder' }).getByTestId('drag-handle').click();
+  await page.getByRole('button', { name: 'Zurück zur Veranstaltung', exact: true }).click();
+  await page.getByRole('tab', { name: 'Referenten' }).click();
+  await page.getByRole('button', { name: 'Sessions view' }).click();
+  await page.getByRole('tab', { name: 'Veröffentlichung' }).click();
+  await page.getByTestId('publish-agenda-button').click();
+  await page.getByRole('tab', { name: 'Übersicht' }).click();
+  await page.getByRole('button', { name: 'Bearbeiten' }).click();
+  await page.getByRole('combobox', { name: 'Slot-Zuweisung' }).click();
+  await page.getByRole('option', { name: 'Archiviert' }).click();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.getByRole('checkbox', { name: 'Override workflow validation' }).check();
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await page.getByRole('tab', { name: 'Einstellungen' }).click();
+  await page.getByRole('button', { name: 'Delete Event' }).click();
+  await page.getByRole('button', { name: 'Yes, Delete Event' }).click();
+});

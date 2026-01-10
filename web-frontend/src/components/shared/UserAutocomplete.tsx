@@ -28,6 +28,7 @@ interface UserAutocompleteProps {
   label?: string;
   role?: string; // Filter by role (e.g., 'SPEAKER')
   inputRef?: React.Ref<HTMLInputElement>;
+  'data-testid'?: string; // Test ID for E2E tests
 }
 
 export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
@@ -38,6 +39,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   label,
   role,
   inputRef,
+  'data-testid': testId,
 }) => {
   const { t } = useTranslation('common');
   const [inputValue, setInputValue] = useState('');
@@ -113,6 +115,10 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
           error={!!error}
           helperText={error}
           inputRef={inputRef}
+          inputProps={{
+            ...params.inputProps,
+            'data-testid': testId,
+          }}
           InputProps={{
             ...params.InputProps,
             endAdornment: (

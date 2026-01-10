@@ -186,7 +186,12 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
               <Typography variant="h6">
                 {t('eventPage.overview.eventDetails', 'Event Details')}
               </Typography>
-              <Button size="small" startIcon={<EditIcon />} onClick={handleEditDetails}>
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={handleEditDetails}
+                data-testid="edit-event-button"
+              >
                 {t('common.edit', 'Edit')}
               </Button>
             </Stack>
@@ -363,13 +368,28 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           {t('eventPage.overview.quickActions', 'Quick Actions')}
         </Typography>
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-          <Button variant="outlined" startIcon={<TopicIcon />} onClick={handleSelectTopic}>
+          <Button
+            variant="outlined"
+            startIcon={<TopicIcon />}
+            onClick={handleSelectTopic}
+            data-testid="select-topic-button"
+          >
             {t('eventPage.overview.selectTopic', 'Select Topic')}
           </Button>
-          <Button variant="outlined" startIcon={<EmailIcon />} onClick={handleSendNotification}>
+          <Button
+            variant="outlined"
+            startIcon={<EmailIcon />}
+            onClick={handleSendNotification}
+            data-testid="send-notification-button"
+          >
             {t('eventPage.overview.sendNotification', 'Send Notification')}
           </Button>
-          <Button variant="outlined" startIcon={<PreviewIcon />} onClick={handlePreviewPublic}>
+          <Button
+            variant="outlined"
+            startIcon={<PreviewIcon />}
+            onClick={handlePreviewPublic}
+            data-testid="preview-public-button"
+          >
             {t('eventPage.overview.previewPublic', 'Preview Public Page')}
           </Button>
           <Button variant="outlined" startIcon={<TimelineIcon />} onClick={handleViewTimeline}>

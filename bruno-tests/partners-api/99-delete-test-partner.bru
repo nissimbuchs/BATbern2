@@ -1,0 +1,47 @@
+meta {
+  name: Delete Test Partner
+  type: http
+  seq: 99
+}
+
+docs {
+  Cleanup step 1: Deletes the test partner created at the start of the test suite.
+  Company will be deleted in the next step.
+}
+
+delete {
+  url: {{baseUrl}}/partners/{{testPartnerCompanyName}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+script:post-response {
+  if (res.getStatus() === 204) {
+    console.log("Successfully deleted test partner:", bru.getEnvVar("testPartnerCompanyName"));
+  }
+}
+
+tests {
+  test("should delete partner successfully", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should have CORS headers", function() {
+    const headers = res.getHeaders();
+    const corsHeader = headers['access-control-allow-origin'];
+    expect(corsHeader).to.exist;
+  });
+}

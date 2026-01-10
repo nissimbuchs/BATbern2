@@ -83,51 +83,72 @@ Complete the speaker creation form:
 
 Click **Save** to create the speaker profile.
 
-Speaker is created with initial status: **IDENTIFIED**
+Speaker is created with initial status: **identified**
+
+Note: Speakers created outside workflow (via Speakers menu) start in "identified" state. Speakers added during Phase A workflow automatically link to the event.
 </div>
 
 ## Speaker Status States
 
 <span class="feature-status implemented">Implemented</span>
 
-Speakers progress through defined status states managed by the **16-step workflow**.
+Each speaker progresses through their **own independent workflow** in parallel with other speakers. The speaker workflow operates independently from the event workflow, allowing flexible coordination.
 
 ### Status Flow
 
 ```mermaid
 graph LR
-    A[IDENTIFIED] --> B[CONTACTED]
-    B --> C[INTERESTED]
-    C --> D[CONTENT_SUBMITTED]
-    D --> E[CONFIRMED]
-    E --> F[PUBLISHED]
-    E --> G[DROPOUT]
+    A[identified] --> B[contacted]
+    B --> C[ready]
+    C --> D[accepted]
+    C --> E[declined]
+    D --> F[content_submitted]
+    F --> G[quality_reviewed]
+    G --> H[confirmed]
+    D --> I[overflow]
+    D --> J[withdrew]
 ```
 
 ### Status Descriptions
 
 | Status | Description | Organizer Actions |
 |--------|-------------|-------------------|
-| **IDENTIFIED** | Potential speaker brainstormed | Send initial outreach |
-| **CONTACTED** | Outreach email sent | Await response |
-| **INTERESTED** | Speaker expressed interest | Provide content guidelines |
-| **CONTENT_SUBMITTED** | Speaker submitted presentation details | Review content quality |
-| **CONFIRMED** | Speaker confirmed for event | Assign time slot |
-| **PUBLISHED** | Speaker visible on public agenda | Monitor for changes |
-| **DROPOUT** | Speaker withdrew participation | Find replacement |
+| **identified** | Potential speaker brainstormed in Phase A | Send initial outreach |
+| **contacted** | Outreach email sent, awaiting response | Follow up if no response |
+| **ready** | Speaker ready to accept/decline invitation | Get acceptance confirmation |
+| **accepted** | Speaker committed to presenting | Collect content submission |
+| **declined** | Speaker not available | Contact backup speaker |
+| **content_submitted** | Speaker submitted presentation details | Review content quality (Phase C) |
+| **quality_reviewed** | Content approved by organizer | Assign time slot (Phase D) |
+| **confirmed** | Quality reviewed AND slot assigned | Ready for agenda publication |
+| **overflow** | Accepted but no slot available | Backup speaker for dropouts |
+| **withdrew** | Speaker dropped out after accepting | Find replacement speaker |
+
+### Critical: Auto-Confirmation
+
+Speakers reach **confirmed** status automatically when **BOTH** conditions are met (in any order):
+1. Speaker status = `quality_reviewed` (content approved in Phase C)
+2. Session has `startTime` (slot assigned in Phase D)
+
+**This means**:
+- Quality review first → slot assigned later → auto-confirms when slot saved
+- Slot assigned first → quality review later → auto-confirms when quality approved
+- Order doesn't matter - confirmation happens when both complete
 
 ### Status Transitions
 
-Status advances through workflow phases:
+Speaker workflow progresses through phases:
 
-- **Phase A: Setup** - IDENTIFIED
-- **Phase B: Outreach** - IDENTIFIED → CONTACTED → INTERESTED → CONTENT_SUBMITTED
-- **Phase C: Quality** - Review content at CONTENT_SUBMITTED
-- **Phase D: Assignment** - CONTENT_SUBMITTED → CONFIRMED (after slot assignment)
-- **Phase E: Publishing** - CONFIRMED → PUBLISHED
-- **Any Phase** - Any status → DROPOUT (if speaker withdraws)
+- **Phase A: Setup** - identified (speakers brainstormed)
+- **Phase B: Outreach** - identified → contacted → ready → accepted/declined
+- **Phase B: Content Collection** - accepted → content_submitted
+- **Phase C: Quality Review** - content_submitted → quality_reviewed
+- **Phase D: Assignment** - quality_reviewed + slot → **confirmed** (automatic)
+- **Any Phase** - accepted → withdrew (if speaker drops out)
 
-See [16-Step Workflow](../workflow/README.md) for complete workflow documentation.
+**Parallel Progression**: All speakers move through states independently. Event can have speakers in different states simultaneously (e.g., Speaker A is "contacted", Speaker B is "content_submitted", Speaker C is "confirmed").
+
+See [Workflow System Documentation](../workflow/README.md) for complete details on the 3 workflow systems.
 
 ## Content Collection
 
@@ -168,7 +189,7 @@ Error: Abstract must be 1000 characters or less
 
 ### Content Review
 
-Content is reviewed during **Phase C: Quality Control**:
+Content is reviewed during **Phase C: Quality Review**:
 
 1. **Organizer reviews content** for:
    - Relevance to event theme
@@ -177,13 +198,15 @@ Content is reviewed during **Phase C: Quality Control**:
    - Audience fit
 
 2. **Feedback provided** if revisions needed:
+   - Organizer clicks "Request Revisions" in quality drawer
    - Speaker receives comments
    - Speaker revises and resubmits
-   - Status remains CONTENT_SUBMITTED until approved
+   - Status remains content_submitted until approved
 
 3. **Content approved**:
-   - Status advances to CONFIRMED
-   - Speaker ready for slot assignment
+   - Organizer clicks "Approve" in quality drawer
+   - Status advances to quality_reviewed
+   - Speaker auto-confirms when slot also assigned (in either order)
 
 See [Phase C: Quality Review](../workflow/phase-c-quality.md) for details.
 
@@ -200,18 +223,30 @@ Contact History - Hans Müller
 ────────────────────────────────────
 2025-02-15 14:23 | Email Sent
 Subject: "Invitation to speak at BATbern 2025"
-Status: CONTACTED
+Status: contacted
 
 2025-02-18 09:45 | Response Received
 "Yes, interested in presenting on sustainable materials"
-Status: INTERESTED
+Status: ready
 
-2025-02-20 16:30 | Content Reminder Sent
+2025-02-19 10:15 | Acceptance Confirmed
+Speaker accepted invitation
+Status: accepted
+
+2025-02-20 16:30 | Content Request Sent
 Subject: "Content submission deadline: March 1"
 
 2025-02-28 11:15 | Content Received
 Title: "Innovations in Sustainable Building Materials"
-Status: CONTENT_SUBMITTED
+Status: content_submitted
+
+2025-03-02 14:30 | Quality Review Completed
+Content approved by organizer
+Status: quality_reviewed
+
+2025-03-05 09:00 | Slot Assigned
+Assigned to 10:00-10:45 AM slot
+Status: confirmed (auto-confirmed)
 ```
 
 ### Outreach Templates
@@ -354,8 +389,9 @@ Click **📝 Edit** icon in speaker row.
 
 Update speaker information. Note:
 - Email cannot be changed (linked to user account)
-- Status should be changed through workflow (not manually)
+- Status should be changed through workflow UI (Phase B Kanban, Phase C Quality drawer)
 - Content can be edited at any time
+- Manual status override available via "Override workflow validation" checkbox (use sparingly)
 
 </div>
 
@@ -374,9 +410,11 @@ If a speaker withdraws participation:
 
 <div class="step" data-step="1">
 
-**Mark as Dropout**
+**Mark as Withdrew**
 
-Change speaker status to **DROPOUT**.
+Change speaker status to **withdrew** via:
+- Phase B Kanban board: Drag speaker to "Withdrew" column
+- Or speaker edit modal with workflow override
 </div>
 
 <div class="step" data-step="2">
@@ -412,7 +450,7 @@ If event already published:
 
 </div>
 
-See [Phase E: Finalization](../workflow/phase-e-publishing.md) for dropout handling.
+See [Phase B: Outreach](../workflow/phase-b-outreach.md) for speaker state management and dropout handling.
 
 ## Searching Speakers
 
@@ -430,11 +468,11 @@ Searches across:
 ### Filter by Status
 
 ```
-status:CONFIRMED
+status:confirmed
 ```
 
 ```
-status:CONTACTED,INTERESTED
+status:contacted,accepted
 ```
 
 ### Filter by Topic
@@ -445,7 +483,7 @@ topic:Sustainable Building
 
 ## Common Issues
 
-### "Speaker stuck in CONTACTED status"
+### "Speaker stuck in contacted status"
 
 **Problem**: Speaker contacted but no response received.
 
@@ -453,7 +491,7 @@ topic:Sustainable Building
 - Send follow-up reminder (after 3-5 days)
 - Try alternative contact method (phone instead of email)
 - Move to backup speaker if deadline approaching
-- Update status to DROPOUT if no response after 2 reminders
+- Update status to declined if no response after 2 reminders (via Kanban drag-and-drop)
 
 ### "Content exceeds 1000 characters"
 
@@ -470,10 +508,11 @@ topic:Sustainable Building
 **Problem**: Confirmed speaker can't attend assigned time slot.
 
 **Solution**:
-- Check if alternative slot available
-- Swap with another speaker if possible
-- If no alternatives, may need to mark as DROPOUT
+- Check if alternative slot available in Phase D
+- Swap with another speaker if possible (drag-and-drop slot reassignment)
+- If no alternatives, may need to mark as withdrew
 - Communicate changes promptly
+- Update published agenda if event already in AGENDA_PUBLISHED state
 
 ## Related Topics
 

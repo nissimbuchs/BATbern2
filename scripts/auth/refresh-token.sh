@@ -69,10 +69,11 @@ if [ "$ENVIRONMENT" = "staging" ]; then
     REGION="eu-central-1"
     AWS_PROFILE="batbern-staging"
     USER_POOL_NAME="batbern-staging-user-pool"
+# Get configuration based on environment. we now only have staging environment for auth also on development
 elif [ "$ENVIRONMENT" = "development" ]; then
     REGION="eu-central-1"
-    AWS_PROFILE="batbern-dev"
-    USER_POOL_NAME="batbern-development-user-pool"
+    AWS_PROFILE="batbern-staging"
+    USER_POOL_NAME="batbern-staging-user-pool"
 else
     echo -e "${RED}ERROR: Environment $ENVIRONMENT not supported yet${NC}"
     exit 1

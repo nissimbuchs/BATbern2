@@ -28,7 +28,7 @@ tests {
     const event = res.getBody();
     expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
     expect(event.title).to.be.a('string');
-    expect(event.status).to.be.a('string');
+    expect(event.workflowState).to.be.a('string');
     expect(event.eventNumber).to.be.a('number');
     expect(event.date).to.be.a('string');
   });

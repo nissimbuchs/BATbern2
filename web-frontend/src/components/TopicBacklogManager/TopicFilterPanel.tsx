@@ -35,7 +35,7 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
 
   const handleStatusChange = (event: SelectChangeEvent<string>) => {
     onFilterChange({
-      status: (event.target.value as 'available' | 'caution' | 'unavailable') || undefined,
+      status: (event.target.value as 'AVAILABLE' | 'CAUTION' | 'UNAVAILABLE') || undefined,
     });
   };
 
@@ -90,13 +90,13 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
             <MenuItem value="">
               <em>{t('topicBacklog.filters.allStatuses', 'All Statuses')}</em>
             </MenuItem>
-            <MenuItem value="available">
+            <MenuItem value="AVAILABLE">
               {t('topicBacklog.filters.statuses.available', 'Available (Green)')}
             </MenuItem>
-            <MenuItem value="caution">
+            <MenuItem value="CAUTION">
               {t('topicBacklog.filters.statuses.caution', 'Use with Caution (Yellow)')}
             </MenuItem>
-            <MenuItem value="unavailable">
+            <MenuItem value="UNAVAILABLE">
               {t('topicBacklog.filters.statuses.unavailable', 'Too Recent (Red)')}
             </MenuItem>
           </Select>

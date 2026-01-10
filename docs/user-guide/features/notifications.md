@@ -213,8 +213,8 @@ Access 30-day history:
 ### Avoiding Notification Overload
 
 1. **Use Digests for Non-Urgent Events**
-   - Switch to daily digest during early planning phases
-   - Use immediate notifications only during active workflow phases (Steps 4-12)
+   - Switch to daily digest during early planning phases (CREATED, TOPIC_SELECTION states)
+   - Use immediate notifications during active phases (Phase B outreach, Phase C quality review, Phase D assignment)
 
 2. **Leverage Quiet Hours**
    - Set quiet hours to match your schedule (e.g., 6 PM - 8 AM)

@@ -60,6 +60,9 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
   });
 
   // Use prop organizers if provided, otherwise transform from API
+  // CRITICAL: Must depend on organizersData.data (not organizersData) to prevent infinite re-renders
+  // The organizersData object itself is a new reference on every render, but organizersData.data
+  // only changes when the actual data changes, preventing unnecessary recalculations
   const organizers: Organizer[] = React.useMemo(() => {
     if (organizersProp) return organizersProp;
     if (!organizersData?.data) return [];
@@ -67,7 +70,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
       id: user.id, // id field IS the username (e.g., "john.doe")
       name: `${user.firstName} ${user.lastName}`.trim() || user.id,
     }));
-  }, [organizersProp, organizersData]);
+  }, [organizersProp, organizersData?.data]); // Fixed: organizersData -> organizersData?.data
 
   const labelText = label || t('organizer.select', 'Select Organizer');
 
@@ -109,12 +112,24 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
     });
 
     return items;
-  }, [isLoading, includeAllOption, includeUnassigned, organizers, t]);
+  }, [isLoading, includeAllOption, includeUnassigned, organizers]); // FIXED: Removed 't' - i18next creates new ref on every render
+
+  // Extract data-testid from formControlProps to avoid duplication
+  const { 'data-testid': testId, ...restFormControlProps } = formControlProps as Record<
+    string,
+    unknown
+  >;
 
   return (
-    <FormControl size={size} disabled={disabled || isLoading} {...formControlProps}>
+    <FormControl size={size} disabled={disabled || isLoading} {...restFormControlProps}>
       <InputLabel>{labelText}</InputLabel>
-      <Select value={value || ''} onChange={(e) => onChange(e.target.value)} label={labelText}>
+      <Select
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        label={labelText}
+        data-testid={testId}
+        // DON'T use inputProps for test-id - it applies to hidden native input!
+      >
         {menuItems}
       </Select>
     </FormControl>
@@ -136,7 +151,7 @@ export const useOrganizers = () => {
       id: user.id, // id field IS the username (e.g., "john.doe")
       name: `${user.firstName} ${user.lastName}`.trim() || user.id,
     }));
-  }, [organizersData]);
+  }, [organizersData?.data]); // Fixed: organizersData -> organizersData?.data
 
   return { organizers, isLoading };
 };

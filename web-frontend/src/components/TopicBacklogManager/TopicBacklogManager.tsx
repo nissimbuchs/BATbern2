@@ -187,11 +187,19 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           aria-label={t('topicBacklog.viewMode.label', 'View mode')}
           size="small"
         >
-          <ToggleButton value="heatMap" aria-label={t('topicBacklog.viewMode.heatMap', 'Heat Map')}>
+          <ToggleButton
+            value="heatMap"
+            aria-label={t('topicBacklog.viewMode.heatMap', 'Heat Map')}
+            data-testid="view-mode-heatmap"
+          >
             <HeatMapIcon sx={{ mr: 0.5 }} />
             {t('topicBacklog.viewMode.heatMap', 'Heat Map')}
           </ToggleButton>
-          <ToggleButton value="list" aria-label={t('topicBacklog.viewMode.list', 'List')}>
+          <ToggleButton
+            value="list"
+            aria-label={t('topicBacklog.viewMode.list', 'List')}
+            data-testid="view-mode-list"
+          >
             <ListIcon sx={{ mr: 0.5 }} />
             {t('topicBacklog.viewMode.list', 'List')}
           </ToggleButton>

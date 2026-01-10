@@ -18,8 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +54,7 @@ public class SpeakerStatusController {
     private final SpeakerStatusService speakerStatusService;
     private final SpeakerContentSubmissionService contentSubmissionService;
     private final QualityReviewService qualityReviewService;
+    private final ch.batbern.events.security.SecurityContextHelper securityContextHelper;
 
     /**
      * Update speaker status
@@ -247,10 +246,7 @@ public class SpeakerStatusController {
      * Extract current username from Spring Security context
      */
     private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getName() != null) {
-            return authentication.getName();
-        }
-        return "system";  // Fallback for tests
+        // Use SecurityContextHelper to extract username from JWT custom:username claim (ADR-001)
+        return securityContextHelper.getCurrentUsername();
     }
 }

@@ -1,448 +1,228 @@
 # Phase D: Assignment (Steps 9-10)
 
-> Handle overflow and assign speakers to time slots
+> Assign speakers to time slots and publish the agenda
 
 <div class="workflow-phase phase-d">
 <strong>Phase D: Assignment</strong><br>
-Status: <span class="feature-status planned">Planned</span><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1 week<br>
-State Transitions: QUALITY_REVIEWED → SLOTS_ASSIGNED
+State Transitions: QUALITY_REVIEWED → SLOTS_ASSIGNED → AGENDA_PUBLISHED
 </div>
 
 ## Overview
 
-Phase D resolves any speaker overflow situations and assigns approved speakers to specific time slots, creating the event schedule.
+Phase D assigns approved speakers to specific time slots and publishes the finalized agenda.
 
-**Key Deliverable**: Complete event schedule with no conflicts
+**Key Deliverable**: Published event agenda with complete schedule
 
-## Step 9: Overflow Management with Voting
+### Slot Assignment
 
-<span class="feature-status planned">Planned</span>
+Navigate to the Speakers tab and switch to Sessions view to manage slot assignments.
+
+![Sessions View](../assets/screenshots/workflow/phase-d-publishing/d-02-sessions-view-loaded.png)
+
+Click **Manage Slot Assignments** to open the assignment interface.
+
+![Slot Assignment Page](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
+
+Before auto-assignment:
+
+![Before Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-04-before-auto-assign.png)
+
+Use the **Auto-Assign** feature to automatically assign presentations to available slots.
+
+![Auto-Assign Modal](../assets/screenshots/workflow/phase-d-publishing/d-05-auto-assign-modal-opened.png)
+
+After auto-assignment completes:
+
+![After Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-06-after-auto-assign.png)
+
+Return to event page:
+
+![Back to Event Page](../assets/screenshots/workflow/phase-d-publishing/d-07-back-to-event-page.png)
+
+### Publishing the Agenda
+
+After assigning all sessions to slots, navigate to the Publishing tab.
+
+![Publishing Tab](../assets/screenshots/workflow/phase-d-publishing/d-08-publishing-tab-loaded.png)
+
+Before publishing the agenda:
+
+![Before Publish Agenda](../assets/screenshots/workflow/phase-d-publishing/d-09-before-publish-agenda.png)
+
+Click **Publish Agenda** to make the schedule public:
+
+![Agenda Published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
+
+## Step 9: Assign Speakers to Time Slots
+
+<span class="feature-status implemented">Implemented</span>
 
 ### Purpose
 
-When more speakers are approved than available slots, use voting to select the best presentations.
-
-### When Overflow Occurs
-
-**Example**:
-```
-Event: Full-Day Conference
-Available Slots: 12
-Approved Speakers: 14
-Overflow: 2 speakers
-```
-
-**Scenarios**:
-- More interest than expected
-- All backup candidates also approved
-- Additional speakers volunteered late
+Assign approved presentations to available event time slots using the auto-assign feature.
 
 ### Acceptance Criteria
 
-- ✅ Overflow situation identified (approved speakers > slots)
-- ✅ Voting conducted among organizers
-- ✅ Top-ranked speakers selected to fill slots
-- ✅ Overflow speakers notified (added to waitlist)
+- ✅ All approved presentations assigned to slots
+- ✅ Schedule conflicts resolved automatically
+- ✅ Event ready for agenda publication
 
-### How to Complete
+### How to Use Auto-Assign
+
+The system automatically assigns presentations to available slots, balancing the schedule and avoiding conflicts.
 
 <div class="step" data-step="1">
 
-**Identify Overflow**
+**Open Slot Assignment Interface**
 
-System detects overflow automatically:
+From the Speakers tab, switch to Sessions view and click **Manage Slot Assignments**.
 
-```
-Overflow Detection - BATbern 2025
-────────────────────────────────────────
-Available Slots: 12
-Approved Speakers: 14
-Overflow: 2 speakers ⚠️
+The slot assignment page shows all available time slots and unassigned presentations.
 
-Action Required: Vote to select top 12 speakers
-
-[Start Voting Process]
-```
 </div>
 
 <div class="step" data-step="2">
 
-**Initiate Voting**
+**Use Auto-Assign Feature**
 
-Organizers vote on all approved speakers:
+Click **Auto-Assign** to open the automatic assignment modal.
 
-```
-Speaker Selection Voting
-────────────────────────────────────────
-Instructions: Rank speakers 1-5 based on:
-- Content quality
-- Topic relevance
-- Audience appeal
-- Speaker reputation
+The system will:
+- Distribute presentations across available time slots
+- Balance topics across parallel tracks (if applicable)
+- Avoid scheduling conflicts
+- Optimize for speaker preferences (if configured)
 
-Speakers:
-1. Hans Müller - Sustainable Materials
-   Quality: 4.5/5 | Topic: High Demand
-   [Rate: ●●●●●] 5
+Review the proposed assignments and confirm.
 
-2. Anna Schmidt - Digital Transformation
-   Quality: 4.2/5 | Topic: Medium Demand
-   [Rate: ●●●●○] 4
-
-... (14 total)
-
-[Submit Votes]
-```
 </div>
 
 <div class="step" data-step="3">
 
-**Calculate Results**
+**Manual Adjustments** (Optional)
 
-System aggregates votes:
+After auto-assignment, you can manually adjust the schedule:
+- Drag presentations to different slots
+- Swap presentations between tracks
+- Adjust timing to accommodate speaker constraints
 
-```
-Voting Results
-────────────────────────────────────────
-Voters: 3 organizers
+All changes are validated to prevent conflicts.
 
-Top 12 Selected:
-1. Hans Müller (avg 4.8)          ✅ SELECTED
-2. Peter Weber (avg 4.7)           ✅ SELECTED
-3. Anna Schmidt (avg 4.5)          ✅ SELECTED
-...
-12. Martin Fischer (avg 4.0)       ✅ SELECTED
-
-──────────────────────────────────────
-Overflow (Waitlist):
-13. Sophie Keller (avg 3.9)        ⏸️ WAITLIST
-14. Lisa Meier (avg 3.8)           ⏸️ WAITLIST
-
-[Confirm Selection] [Adjust Manually]
-```
 </div>
 
 <div class="step" data-step="4">
-
-**Notify Overflow Speakers**
-
-Send notification to waitlisted speakers:
-
-```
-To: sophie.keller@example.com
-Subject: BATbern 2025 - Waitlist Status
-
-Hi Sophie,
-
-Thank you for your excellent submission for BATbern 2025!
-
-Due to high speaker interest, we've placed your presentation
-"Circular Economy in Construction" on our waitlist.
-
-If a confirmed speaker withdraws, we'll contact you immediately
-to offer the slot (deadline: 2 weeks before event).
-
-We'd love to have you present at a future BATbern event.
-
-Best regards,
-Anna Schmidt
-```
-</div>
-
-<div class="step" data-step="5">
-
-**Complete Overflow Management**
-
-Click **Finalize Speaker Selection**
-
-Proceed to Step 10 (Slot Assignment)
-</div>
-
-### Voting Criteria
-
-**Content Quality** (from Phase C review):
-- Use quality scores as baseline
-- Consider reviewer notes
-
-**Topic Balance**:
-- Ensure coverage across all categories
-- Avoid too many similar presentations
-
-**Speaker Diversity**:
-- Mix of companies (not 5 speakers from same firm)
-- Range of experience levels
-- Geographic diversity
-
-**Practical Considerations**:
-- Speaker availability constraints
-- Special requirements (equipment, time preferences)
-- Previous BATbern participation
-
-## Step 10: Drag-and-Drop Slot Assignment
-
-<span class="feature-status planned">Planned</span>
-
-### Purpose
-
-Assign selected speakers to specific event time slots, creating the final schedule.
-
-### Acceptance Criteria
-
-- ✅ All selected speakers assigned to slots
-- ✅ No scheduling conflicts detected
-- ✅ Speaker availability constraints respected
-- ✅ Parallel tracks balanced (if applicable)
-
-### Scheduling Interface
-
-```
-BATbern 2025 Schedule Builder - March 15, 2025
-════════════════════════════════════════════════
-
-Track A                  | Track B
-────────────────────────────────────────────────
-09:00-09:45             | 09:00-09:45
-[Drop speaker here]      | [Drop speaker here]
-
-10:00-10:45             | 10:00-10:45
-[Hans Müller]           | [Drop speaker here]
-Sustainable Materials    |
-
-11:00-11:45             | 11:00-11:45
-[Drop speaker here]      | [Anna Schmidt]
-                        | Digital Transform
-
-12:00-13:00  LUNCH BREAK
-────────────────────────────────────────────────
-13:00-13:45             | 13:00-13:45
-[Peter Weber]           | [Drop speaker here]
-Urban Planning           |
-
-Available Speakers (6):
-──────────────────────────────────────
-[Drag to slot]
-Martin Fischer | Lisa Meier | Thomas Berg
-Sophie Weber | Maria Klein | David Roth
-```
-
-### How to Complete
-
-<div class="step" data-step="1">
-
-**Open Schedule Builder**
-
-Navigate to Step 10 scheduling interface.
-
-Timeline shows all event slots.
-</div>
-
-<div class="step" data-step="2">
-
-**Drag Speakers to Slots**
-
-Click and drag speaker cards to time slots:
-
-```
-[Hans Müller - Sustainable Materials]
-   ↓ (dragging)
-[09:00-09:45 Track A] ← (drop target highlighted)
-```
-
-Speaker assigned to slot, card removes from "Available" list.
-</div>
-
-<div class="step" data-step="3">
-
-**Resolve Conflicts**
-
-System detects conflicts:
-
-```
-⚠️ Conflict Detected
-
-Martin Fischer is assigned to:
-- 13:00-13:45 Track A (Urban Planning Workshop)
-- 13:00-13:45 Track B (Panel Discussion)
-
-A speaker cannot be in two slots simultaneously.
-
-[Remove from Track B] [Remove from Track A]
-```
-</div>
-
-<div class="step" data-step="4">
-
-**Respect Availability Constraints**
-
-System warns of availability issues:
-
-```
-⚠️ Availability Warning
-
-Anna Schmidt marked "Not available after 15:00"
-
-You're assigning her to 16:00-16:45 Track A.
-
-[Assign Anyway] [Choose Different Slot]
-```
-</div>
-
-<div class="step" data-step="5">
-
-**Balance Parallel Tracks**
-
-For multi-track events, balance topics:
-
-```
-Track Balance Analysis
-────────────────────────────────────────
-Track A: 4 Technology, 2 Sustainability
-Track B: 1 Technology, 5 Sustainability
-
-⚠️ Imbalance detected. Consider redistributing
-topics for better attendee choice.
-
-[Auto-Balance] [Ignore] [Manual Adjust]
-```
-</div>
-
-<div class="step" data-step="6">
-
-**Add Breaks and Special Sessions**
-
-Insert non-speaker slots:
-
-```
-[+ Add Special Slot]
-
-Type:
-[▼ Coffee Break]
-   Coffee Break
-   Lunch Break
-   Networking Reception
-   Opening Remarks
-   Closing Remarks
-
-Time:
-[⏰ 10:45] to [⏰ 11:00]
-
-[Add]
-```
-</div>
-
-<div class="step" data-step="7">
-
-**Review Complete Schedule**
-
-View final schedule in list format:
-
-```
-Final Schedule - BATbern 2025
-════════════════════════════════════════════════
-
-09:00-09:45
-Track A: Hans Müller - Sustainable Materials
-Track B: Anna Schmidt - Digital Transformation
-
-10:00-10:45
-Track A: Peter Weber - Urban Planning
-Track B: Martin Fischer - Heritage Reuse
-
-10:45-11:00  ☕ Coffee Break
-
-11:00-11:45
-Track A: Lisa Meier - Materials Innovation
-Track B: Sophie Weber - Smart Buildings
-
-[Continue viewing...]
-
-Total Sessions: 12
-Total Duration: 8 hours
-Conflicts: 0 ✅
-
-[Export Schedule] [Publish to Phase E]
-```
-</div>
-
-<div class="step" data-step="8">
 
 **Complete Slot Assignment**
 
-Click **Finalize Schedule**
+Once satisfied with the schedule, save the assignments.
 
 Event state: QUALITY_REVIEWED → **SLOTS_ASSIGNED**
 
-Phase D complete! ✅ Ready for Phase E (Publishing)
 </div>
 
-### Scheduling Best Practices
+## Step 10: Publish the Agenda
 
-**Prime Time Slots** (first sessions after breaks):
-- Assign popular/high-demand topics
-- Use experienced speakers (strong stage presence)
+<span class="feature-status implemented">Implemented</span>
 
-**Parallel Track Strategy**:
-- Don't schedule similar topics simultaneously
-- Balance technical vs. practical across tracks
-- Consider attendee personas (beginners vs. experts)
+### Purpose
 
-**Speaker Preferences**:
-- Ask speakers for time preferences during outreach
-- Avoid early morning for international speakers (jet lag)
-- Respect "cannot present after lunch" requests (energy levels)
+Make the finalized event agenda publicly available to attendees and stakeholders.
 
-**Buffer Time**:
-- Include 15-minute breaks between sessions
-- Allows speaker transitions and attendee movement
-- Prevents cascading delays
+### How to Publish
+
+<div class="step" data-step="1">
+
+**Navigate to Publishing Tab**
+
+From the event management interface, open the Publishing tab.
+
+This tab shows all publishable content for the event (topics, speakers, agenda).
+
+</div>
+
+<div class="step" data-step="2">
+
+**Publish Agenda**
+
+Click **Publish Agenda** to make the schedule publicly visible.
+
+The agenda publication includes:
+- Complete session schedule with time slots
+- Speaker assignments for each session
+- Session titles and descriptions
+- Track information (for multi-track events)
+
+</div>
+
+<div class="step" data-step="3">
+
+**Verify Publication**
+
+Check that the agenda appears on the public event page.
+
+Attendees can now view:
+- Full event schedule
+- Session details
+- Speaker information
+- Track assignments
+
+Event state: SLOTS_ASSIGNED → **AGENDA_PUBLISHED**
+
+Phase D complete! ✅
+
+</div>
 
 ## Phase D Completion
 
 ### Success Criteria
 
-- ✅ Overflow resolved (if applicable)
-- ✅ All selected speakers assigned to slots
-- ✅ Zero scheduling conflicts
-- ✅ Event state = **SLOTS_ASSIGNED**
+- ✅ All approved presentations assigned to time slots
+- ✅ Schedule conflicts resolved
+- ✅ Agenda published successfully
+- ✅ Event state = **AGENDA_PUBLISHED**
 
 ### What Happens Next
 
-**Phase E: Publishing** begins:
-- Progressive agenda publication
-- Dropout handling procedures
-- Public event page goes live
+**Phase E: Archival** (post-event):
+- Event archival process
+- Historical data preservation
+- Reporting and analytics
 
-See [Phase E: Publishing →](phase-e-publishing.md) to continue.
+See [Phase E: Publishing →](phase-e-publishing.md) for archival procedures.
 
 ## Troubleshooting Phase D
 
-### "Cannot resolve overflow - tied votes"
+### "Auto-assign fails with scheduling conflicts"
 
-**Problem**: Multiple speakers have identical vote averages.
-
-**Solution**:
-- Use quality scores (Phase C) as tiebreaker
-- Senior organizer makes final call
-- Consider expanding slots by 1 (13 instead of 12)
-
-### "Speaker availability conflicts with all slots"
-
-**Problem**: Speaker cannot attend any available time slot.
+**Problem**: Auto-assign cannot find valid assignment for all presentations.
 
 **Solution**:
-- Mark as DROPOUT (unavoidable conflict)
-- Promote waitlist speaker
-- Adjust schedule if speaker is critical
+- Check for over-booking (more presentations than available slots)
+- Review speaker availability constraints that may conflict
+- Manually assign problematic presentations first, then auto-assign remainder
+- Consider adding more time slots or removing lower-priority presentations
 
-### "Parallel tracks extremely imbalanced"
+### "Cannot publish agenda - missing slot assignments"
 
-**Problem**: One track much more popular than other.
+**Problem**: Agenda publication blocked due to unassigned presentations.
 
 **Solution**:
-- Use auto-balance feature
-- Manually redistribute topics
-- Consider single-track format if balance impossible
+- Return to slot assignment interface
+- Ensure all approved presentations have time slots
+- Use auto-assign to fill remaining slots
+- Verify all assignments saved before attempting publication
+
+### "Published agenda shows incorrect schedule"
+
+**Problem**: Public agenda doesn't match assigned slots.
+
+**Solution**:
+- Clear browser cache and refresh event page
+- Verify assignments were saved correctly in slot management
+- Re-publish agenda from Publishing tab
+- Check that no manual edits were lost during save
 
 ## Related Topics
 
@@ -453,11 +233,12 @@ See [Phase E: Publishing →](phase-e-publishing.md) to continue.
 ## API Reference
 
 ```
-POST /api/events/{id}/workflow/step-9        Complete Step 9 (Overflow Mgmt)
-POST /api/events/{id}/workflow/step-10       Complete Step 10 (Slot Assignment)
-POST /api/events/{id}/voting                 Submit speaker votes
-PUT  /api/events/{id}/sessions/{sid}/assign  Assign speaker to slot
-GET  /api/events/{id}/schedule/conflicts     Check scheduling conflicts
+POST /api/events/{id}/workflow/step-9         Complete Step 9 (Slot Assignment)
+POST /api/events/{id}/workflow/step-10        Complete Step 10 (Publish Agenda)
+POST /api/events/{id}/sessions/auto-assign    Auto-assign presentations to slots
+PUT  /api/events/{id}/sessions/{sid}/assign   Manually assign presentation to slot
+GET  /api/events/{id}/schedule                 Get current schedule
+POST /api/events/{id}/agenda/publish           Publish agenda
 ```
 
 See [API Documentation](../../api/) for complete specifications.

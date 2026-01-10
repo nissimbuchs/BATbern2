@@ -16,7 +16,7 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.id: eq {{createdTopicId}}
+  res.body.topicCode: eq {{createdTopicId}}
   res.body.stalenessScore: isDefined
 }
 
@@ -27,7 +27,7 @@ tests {
 
   test("should return topic with detailed metrics - Story 5.2 AC2, AC6", function() {
     const topic = res.getBody();
-    expect(topic.id).to.equal(bru.getVar("createdTopicId"));
+    expect(topic.topicCode).to.equal(bru.getVar("createdTopicId"));
     expect(topic.title).to.be.a('string');
     expect(topic.description).to.be.a('string');
     expect(topic.category).to.be.a('string');

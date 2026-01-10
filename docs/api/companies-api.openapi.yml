@@ -646,6 +646,79 @@ paths:
       security:
         - BearerAuth: []
 
+  /companies:get-or-create:
+    post:
+      tags:
+        - Companies
+      summary: Get or create company by display name
+      description: |
+        Gets an existing company or creates a new one from a display name.
+
+        **ADR-003**: Uses slug generation to create meaningful company name (ID) from display name.
+
+        **Story**: Anonymous user registration (ADR-005) - allows creating companies during anonymous registration.
+
+        **Idempotency**: Safe to call multiple times - returns existing company if name slug already exists.
+
+        **Slug Generation**:
+        - Converts display name to lowercase alphanumeric slug (max 12 chars)
+        - Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+        - Handles German characters: ä→ae, ö→oe, ü→ue, ß→ss
+        - Adds numeric suffix if slug collision occurs (e.g., "testco-2")
+
+        **Authentication**: Supports both authenticated and anonymous contexts
+
+        **Events Published**: CompanyCreatedEvent (only if new company created)
+
+        **Performance**: <200ms (P95)
+
+      operationId: getOrCreateCompany
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetOrCreateCompanyRequest'
+            examples:
+              basicCompany:
+                summary: Get or create company from display name
+                value:
+                  displayName: Test Co
+              germanCompany:
+                summary: Company with German characters
+                value:
+                  displayName: Müller & Söhne AG
+      responses:
+        '200':
+          description: Company retrieved or created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                existingCompany:
+                  summary: Existing company returned
+                  value:
+                    name: testco
+                    displayName: Test Co
+                    isVerified: false
+                    createdAt: 2025-01-01T10:00:00Z
+                    updatedAt: 2025-01-01T10:00:00Z
+                    createdBy: john.doe
+                newCompany:
+                  summary: New company created
+                  value:
+                    name: testco
+                    displayName: Test Co
+                    isVerified: false
+                    createdAt: 2025-01-15T10:00:00Z
+                    updatedAt: 2025-01-15T10:00:00Z
+                    createdBy: anonymous
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   # Logo upload endpoints removed - Story 1.16.3: Generic File Upload Service
   # Use the generic file upload API instead:
   # 1. POST /api/v1/logos/presigned-url - Generate upload URL
@@ -855,6 +928,21 @@ components:
           type: string
           description: Upload ID from three-phase upload (set to empty string to remove logo)
           example: abc123-def456
+
+    GetOrCreateCompanyRequest:
+      type: object
+      description: |
+        Request to get or create a company by display name.
+        The system will generate a slug from the display name and either return the existing company or create a new one.
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+          description: Full company display name (will be converted to slug for company.name)
+          minLength: 1
+          maxLength: 255
+          example: Test Co
 
     UIDValidationResponse:
       type: object

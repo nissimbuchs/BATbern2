@@ -61,7 +61,7 @@ The main content area displays:
 - **Dashboard Home**: Event cards and quick actions
 - **Entity Lists**: Paginated tables with search/filter
 - **Entity Details**: Forms and detailed views
-- **Workflow Views**: Specialized interfaces for 16-step workflow
+- **Workflow Views**: Specialized interfaces for event workflow system
 
 ## Dashboard Home
 
@@ -76,10 +76,10 @@ After logging in, you'll see the **Dashboard Home** with:
 Displays:
 - Event name (e.g., "BATbern 2025")
 - Event type badge (Full-Day / Afternoon / Evening)
-- Current workflow state (e.g., "TOPIC_SELECTED")
+- Current event state (e.g., "TOPIC_SELECTION")
 - Days until event
 - Quick actions:
-  - **Continue Workflow** → Jump to next workflow step
+  - **Continue Workflow** → Jump to current workflow phase
   - **View Details** → See full event information
   - **Edit** → Modify event properties
 </div>
@@ -120,7 +120,7 @@ All entity tables support:
 
 | Event Name | Type | Date | State | Speakers | Actions |
 |------------|------|------|-------|----------|---------|
-| BATbern 2025 | Full-Day | 2025-03-15 | SPEAKERS_IDENTIFIED | 8 | View • Edit • Delete |
+| BATbern 2025 | Full-Day | 2025-03-15 | SPEAKER_IDENTIFICATION | 8 | View • Edit • Delete |
 | BATbern 2024 | Afternoon | 2024-03-20 | ARCHIVED | 6 | View |
 
 **Actions**:
@@ -206,7 +206,7 @@ The dashboard adapts to different screen sizes:
 
 ## Workflow-Specific Views
 
-The 16-step workflow includes specialized interfaces:
+The workflow system includes specialized interfaces:
 
 ### Topic Heat Map
 
@@ -221,23 +221,25 @@ See [Topic Heat Map Feature](../features/heat-maps.md) for details.
 
 ### Speaker Outreach Tracker
 
-<span class="feature-status in-progress">In Progress</span>
+<span class="feature-status implemented">Implemented</span>
 
 Track speaker contacts and status:
-- Kanban-style board (IDENTIFIED → CONTACTED → INTERESTED → CONFIRMED)
-- Drag-and-drop status updates
+- Kanban-style board (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed)
+- Drag-and-drop status updates between columns
 - Contact history and notes
+- Parallel speaker workflow (each speaker progresses independently)
 
 See [Phase B: Outreach](../workflow/phase-b-outreach.md) for details.
 
 ### Slot Assignment Interface
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 Drag-and-drop speakers to event slots:
-- Visual timeline
+- Visual timeline with time slots
 - Speaker availability indicators
-- Conflict detection
+- Conflict detection (double-booking prevention)
+- Auto-confirmation when quality_reviewed speakers assigned to slots
 
 See [Phase D: Assignment](../workflow/phase-d-assignment.md) for details.
 
@@ -280,7 +282,7 @@ See [API Documentation](../../api/) for details.
 
 - [UI Conventions →](navigation.md) - Learn common patterns and shortcuts
 - [Entity Management →](../entity-management/README.md) - Start managing entities
-- [16-Step Workflow →](../workflow/README.md) - Master the event workflow
+- [Workflow System →](../workflow/README.md) - Master the 3 workflow systems
 
 ## Related Topics
 

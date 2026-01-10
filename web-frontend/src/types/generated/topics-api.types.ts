@@ -284,10 +284,10 @@ export interface components {
     TopicColorZone: 'red' | 'yellow' | 'green' | 'gray';
     /**
      * @description Topic availability status
-     * @example available
+     * @example AVAILABLE
      * @enum {string}
      */
-    TopicStatus: 'available' | 'caution' | 'unavailable';
+    TopicStatus: 'AVAILABLE' | 'CAUTION' | 'UNAVAILABLE';
     /** @description Cosine similarity score to another topic */
     SimilarityScore: {
       /**

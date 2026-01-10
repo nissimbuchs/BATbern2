@@ -4,7 +4,7 @@
 
 <div class="workflow-phase phase-c">
 <strong>Phase C: Quality Control</strong><br>
-Status: <span class="feature-status planned">Planned</span><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1-2 weeks<br>
 State Transitions: CONTENT_COLLECTED → QUALITY_REVIEWED
 </div>
@@ -15,9 +15,23 @@ Phase C ensures submitted content meets quality standards before public release.
 
 **Key Deliverable**: Approved content meeting 80% quality threshold
 
+### Publishing Speakers
+
+Before reviewing content, publish the speakers from the Publishing tab.
+
+![Publishing Tab Before Speakers](../assets/screenshots/workflow/phase-c-quality/c-01-publish-tab-before-speakers.png)
+
+After publishing speakers:
+
+![Speakers Published](../assets/screenshots/workflow/phase-c-quality/c-02-speakers-published.png)
+
+Return to the Speakers tab to begin content review:
+
+![Speakers Tab After Publish](../assets/screenshots/workflow/phase-c-quality/c-03-speakers-tab-after-publish.png)
+
 ## Step 7: Content Quality Review
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 ### Purpose
 
@@ -58,64 +72,27 @@ Systematically review speaker content to ensure presentations meet BATbern quali
 
 **Open Review Queue**
 
-Navigate to Step 7 content review dashboard:
+Navigate to the Speakers tab after publishing speakers. Open the quality review drawer for each presentation.
 
-```
-Content Review Queue
-────────────────────────────────────────
-Awaiting Review: 10 submissions
-Approved: 0
-Needs Revision: 0
+![Quality Review Drawer](../assets/screenshots/workflow/phase-c-quality/c-04-quality-review-1-opened.png)
 
-Next to Review:
-[Hans Müller - Sustainable Materials] [Review]
-```
 </div>
 
 <div class="step" data-step="2">
 
 **Review Submission**
 
-View speaker content with scoring interface:
+The content review interface displays: speaker name and topic, presentation title, abstract with character count, numbered learning objectives, quality scores for Relevance, Clarity, Originality, and Completeness (1-5 scale with visual indicators), calculated overall score (out of 5.0) with quality rating (EXCELLENT/GOOD/FAIR/POOR), optional reviewer notes field for feedback, and action buttons ([Approve] [Request Revision] [Reject]) to make the final decision.
 
-```
-Review: Hans Müller - Sustainable Materials
-────────────────────────────────────────
-
-Title: "Innovations in Sustainable Building Materials"
-
-Abstract: (287 characters)
-"This session explores recent innovations in sustainable building
-materials, including bio-based composites, recycled aggregates, and
-low-carbon alternatives. We'll examine real project applications,
-lifecycle assessment methodologies, and selection criteria for
-modern architecture practice."
-
-Learning Objectives:
-1. Understand key sustainable material categories
-2. Evaluate material lifecycle impacts
-3. Apply selection criteria to projects
-4. Identify emerging material technologies
-
-Quality Scores:
-Relevance:    [●●●●●] 5 / 5
-Clarity:      [●●●●○] 4 / 5
-Originality:  [●●●●○] 4 / 5
-Completeness: [●●●●●] 5 / 5
-
-Overall: 4.5 / 5.0 ✅ EXCELLENT
-
-Reviewer Notes: (optional)
-[Strong content with clear objectives. Good mix of
-theory and practice. Well-suited for target audience.]
-
-[Approve] [Request Revision] [Reject]
-```
 </div>
 
 <div class="step" data-step="3">
 
 **Make Decision**
+
+After reviewing the content, approve it to confirm the speaker.
+
+![Content Approved](../assets/screenshots/workflow/phase-c-quality/c-05-content-approved-1.png)
 
 **Approve** (score ≥ 3.5):
 - Speaker status: CONTENT_SUBMITTED → **CONFIRMED**
@@ -136,32 +113,8 @@ theory and practice. Well-suited for target audience.]
 
 **Send Revision Request** (if needed)
 
-```
-To: peter.weber@example.com
-Subject: Content Revision Needed - BATbern 2025
+The revision request email includes: recipient email and subject line, personalized greeting, thanking the speaker for their submission, specific feedback organized by quality criterion (e.g., Relevance, Clarity) with scores and actionable improvement suggestions, concrete examples showing "before → after" transformations for clarity, revision deadline, secure revision link with authentication token, and organizer signature.
 
-Hi Peter,
-
-Thank you for your submission. We'd like to request some revisions
-to strengthen your presentation:
-
-Relevance (3/5):
-- Abstract focuses too much on general theory
-- Please add specific project examples
-- Connect concepts to Swiss architecture context
-
-Clarity (2/5):
-- Learning objectives too vague
-- Objective #1: "Understand BIM" → "Apply BIM Level 2 to design phase"
-- Objective #2: "Learn about digital twins" → "Evaluate digital twin ROI"
-
-Please revise and resubmit by March 5, 2025.
-
-Revision link: https://batbern.ch/submit-content/{token}
-
-Thanks,
-Anna
-```
 </div>
 
 <div class="step" data-step="5">
@@ -243,26 +196,8 @@ Options:
 
 **View Threshold Dashboard**
 
-```
-Quality Threshold Validation - BATbern 2025
-────────────────────────────────────────────
+The Quality Threshold Validation dashboard displays: target speaker count, approved count with percentage (✅ PASS if ≥80%, ❌ FAIL if <80%), needs-revision count with percentage, rejected count, topic-level breakdown showing approved speakers per topic with status indicators (✅ sufficient, ⚠️ insufficient), overall status determination (THRESHOLD MET/NOT MET), and action button ([Proceed to Phase D] if threshold met, or [Review Options] if threshold not met).
 
-Target Speakers: 12
-Approved: 10 (83.3%) ✅ PASS
-Needs Revision: 2 (16.7%)
-Rejected: 0
-
-By Topic:
-✅ Sustainable Materials: 3 speakers
-✅ Digital Transformation: 2 speakers
-✅ Urban Planning: 2 speakers
-✅ Heritage Reuse: 2 speakers
-⚠️ Materials Innovation: 1 speaker (need 2)
-
-Overall Status: ✅ THRESHOLD MET
-
-[Proceed to Phase D]
-```
 </div>
 
 <div class="step" data-step="2">
@@ -271,14 +206,7 @@ Overall Status: ✅ THRESHOLD MET
 
 If threshold NOT met:
 
-**Option 1: Activate Backup Candidates**
-```
-Backup Candidates Available:
-- Sophie Keller (Materials Innovation, High Priority)
-- Martin Fischer (Heritage Reuse, Medium Priority)
-
-[Contact Backup Candidates]
-```
+**Option 1: Activate Backup Candidates** - The system displays available backup candidates with their topic specialization and priority level, along with a [Contact Backup Candidates] button to initiate outreach.
 
 **Option 2: Request Expedited Revisions**
 ```

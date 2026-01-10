@@ -23,6 +23,16 @@ Phase A establishes the foundation for your event. You'll define the event forma
 
 Define the event format which determines timeline, session count, and speaker requirements.
 
+### Accessing Event Creation
+
+Navigate to the Events dashboard and click **Create Event**.
+
+![Event Dashboard](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
+
+The event creation modal will open with the event configuration form.
+
+![Event Creation Modal](../assets/screenshots/workflow/phase-a-setup/a-02-event-creation-modal.png)
+
 ### Acceptance Criteria
 
 - ✅ Event type selected (Full-Day, Afternoon, or Evening)
@@ -87,13 +97,10 @@ Choose the appropriate format for your conference:
 
 In the event creation/edit form, select the appropriate type:
 
-```
-Event Type *
-[▼ Select type...              ]
-   Full-Day Conference
-   Afternoon Workshop
-   Evening Lecture
-```
+![Event Type Dropdown](../assets/screenshots/workflow/phase-a-setup/a-03-event-type-dropdown-open.png)
+
+*The event type dropdown offers three conference formats: Full-Day Conference (8+ hours with multiple sessions), Afternoon Workshop (3-4 hours focused session), and Evening Lecture (2-3 hours single topic).*
+
 </div>
 
 <div class="step" data-step="2">
@@ -102,19 +109,7 @@ Event Type *
 
 Set event date and registration windows:
 
-```
-Event Date *
-[📅 2025-03-15]
-
-Event Time *
-[⏰ 09:00] to [⏰ 18:00]
-
-Registration Opens *
-[📅 2025-01-15]
-
-Registration Closes *
-[📅 2025-03-10]
-```
+*The timeline configuration form includes event date, event time (start and end), registration opening date, and registration closing date. Validation ensures logical sequencing: Registration Opens < Registration Closes < Event Date.*
 
 Validation ensures logical timeline: Opens < Closes < Event Date
 </div>
@@ -125,32 +120,32 @@ Validation ensures logical timeline: Opens < Closes < Event Date
 
 Enter venue details:
 
-```
-Venue Name
-[Kursaal Bern]
+*The venue information form collects venue name, street address, city, canton (dropdown for Swiss cantons), and postal code. City is a required field.*
 
-Address
-[Kornhausstrasse 3]
-
-City *
-[Bern]
-
-Canton
-[▼ BE]
-
-Postal Code
-[3013]
-```
 </div>
 
 <div class="step" data-step="4">
 
 **Save Configuration**
 
+After filling all required fields, the form should look like this:
+
+![Event Form Filled](../assets/screenshots/workflow/phase-a-setup/a-04-event-form-filled.png)
+
 Click **Save & Continue to Step 2**.
 
 Event state advances to: **CREATED** (ready for topic selection)
 </div>
+
+### Assigning Tasks to Organizers
+
+After creating the event, you can assign tasks to team members to distribute the workload.
+
+![Task Assignment](../assets/screenshots/workflow/phase-a-setup/a-08-edit-modal-tasks-tab-initial.png)
+
+Access the task list to view and manage assigned tasks.
+
+![Task List View](../assets/screenshots/workflow/phase-a-setup/a-14-task-list-my-tasks-filter.png)
 
 ## Step 2: Topic Selection with Heat Map
 
@@ -177,22 +172,9 @@ The **Topic Heat Map** visualizes 20+ years of BATbern conference history, showi
 
 #### How the Heat Map Works
 
-```
-Topic Heat Map (2000-2025)
+![Topic Heat Map Overview](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
 
-Topic                        | 2000 | 2005 | 2010 | 2015 | 2020 | 2025
-─────────────────────────────────────────────────────────────────────
-Sustainable Building         | ████ | ████ | ████ | ████ | ████ | ⬜
-Digital Transformation       | ⬜   | ░░░░ | ████ | ████ | ████ | ⬜
-Urban Planning               | ████ | ████ | ░░░░ | ████ | ░░░░ | ⬜
-Heritage Preservation        | ░░░░ | ████ | ████ | ░░░░ | ░░░░ | ⬜
-Materials Innovation         | ⬜   | ⬜   | ░░░░ | ████ | ████ | ⬜
-
-Legend:
-████ Dark Blue - Presented frequently (4+ times in period)
-░░░░ Light Blue - Presented occasionally (1-3 times)
-⬜ White - Not presented (0 times)
-```
+*The Topic Heat Map visualizes historical topic coverage across 20+ years of BATbern conferences. Topics are organized by category (rows) and time periods (columns). Color intensity indicates presentation frequency: dark blue for frequently presented topics (4+ times), light blue for occasional topics (1-3 times), and white for topics never or rarely presented.*
 
 **Color Coding**:
 - **Dark Blue**: Frequent topic (presented 4+ times in 5-year period)
@@ -266,6 +248,9 @@ Topics are organized into categories:
 In Step 2 of the workflow, click **View Topic Heat Map**.
 
 Interactive heat map opens showing historical data.
+
+![Topic Heat Map](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
+
 </div>
 
 <div class="step" data-step="2">
@@ -274,14 +259,7 @@ Interactive heat map opens showing historical data.
 
 Hover over cells to see details:
 
-```
-Sustainable Building - 2020
-────────────────────────────
-Presentations: 6
-Speakers: 8 (2 panels)
-Average Rating: 4.7/5
-Attendance: 245 avg
-```
+*Hovering over a heat map cell reveals detailed statistics: number of presentations, speakers (including panel sessions), average audience rating, and average attendance. Click on a year cell to view individual presentation details.*
 
 Click year to see presentation details.
 </div>
@@ -290,18 +268,15 @@ Click year to see presentation details.
 
 **Select Topics**
 
+Open the topic selection interface:
+
+![Topic Selection Interface](../assets/screenshots/workflow/phase-a-setup/a-16-topic-selection-opened.png)
+
 Click topics to add to your event:
 
-```
-Selected Topics (4 of 8 required)
-──────────────────────────────────
-✅ Sustainable Building Materials    [Remove]
-✅ Digital Transformation            [Remove]
-✅ Urban Planning Innovations        [Remove]
-✅ Heritage Adaptive Reuse           [Remove]
+*The selected topics checklist shows your current topic selections with a progress indicator (e.g., "4 of 8 required"). Each selected topic displays with a checkmark and a [Remove] button. An [+ Add Another Topic] button allows adding more topics until the minimum requirement is met.*
 
-[+ Add Another Topic]
-```
+![Topic Selected from Heatmap](../assets/screenshots/workflow/phase-a-setup/a-18-topic-selected-from-heatmap.png)
 
 Add minimum required for your event type.
 </div>
@@ -324,25 +299,16 @@ Ensure topic diversity:
 
 Click **Confirm Topic Selection**.
 
+![Topic Selection Confirmed](../assets/screenshots/workflow/phase-a-setup/a-19-topic-selection-confirmed.png)
+
 Event state advances to: **TOPIC_SELECTED**
 </div>
 
 ### Topic Selection Tips
 
 **Aim for Variety**:
-```
-✅ Good Balance:
-- Sustainable Materials (Sustainability)
-- Digital Transformation (Technology)
-- Urban Planning (Urban & Regional)
-- Heritage Reuse (Heritage)
 
-❌ Poor Balance:
-- BIM Implementation (Technology)
-- Smart Buildings (Technology)
-- Digital Twins (Technology)
-- Computational Design (Technology)
-```
+*The topic balance indicator shows examples of good vs. poor topic distribution. Good balance includes diverse categories (Sustainability, Technology, Urban & Regional, Heritage). Poor balance concentrates all topics in a single category (e.g., all Technology topics like BIM, Smart Buildings, Digital Twins).*
 
 **Consider Event Type**:
 - **Full-Day**: Mix of broad appeal and specialized topics
@@ -399,14 +365,7 @@ Identify potential speakers for each selected topic, creating a pool of candidat
 
 In Step 3, choose a topic to brainstorm speakers:
 
-```
-Topics for BATbern 2025
-───────────────────────────────────
-[📋 Sustainable Materials]     0 speakers ⚠️
-[📋 Digital Transformation]    3 speakers ✅
-[📋 Urban Planning]            2 speakers ⚠️
-[📋 Heritage Reuse]            0 speakers ⚠️
-```
+*The topic speaker status overview displays all selected topics with their current speaker candidate count. Topics are shown with visual indicators: ✅ for topics with adequate candidates (3+), ⚠️ for topics with insufficient candidates (0-2). Click any topic to add speaker candidates.*
 
 Click topic to add speaker candidates.
 </div>
@@ -415,36 +374,11 @@ Click topic to add speaker candidates.
 
 **Add Candidate**
 
-Click **+ Add Speaker Candidate**:
+Click **+ Add Speaker Candidate** to open the brainstorming form.
 
-```
-Add Speaker Candidate
-────────────────────────────────────
-First Name *
-[Hans]
+![Speaker Brainstorming Form](../assets/screenshots/workflow/phase-a-setup/a-20-speaker-brainstorming-form.png)
 
-Last Name *
-[Müller]
-
-Email *
-[hans.mueller@example.com]
-
-Company
-[🔍 Müller Architekten AG     ] (autocomplete)
-
-Expertise Match
-[▼ High]  High | Medium | Low
-
-Notes (optional)
-[Presented on sustainable materials at ETH 2023.
-Strong technical background, engaging presenter.]
-
-Source
-[▼ Past Speaker]
-   Past Speaker | Company Referral | Industry Expert | Internal
-
-[Cancel]  [Add Candidate]
-```
+*The speaker brainstorming form collects candidate information: First Name, Last Name, Email (required fields), Company (with autocomplete search), Expertise Match (High/Medium/Low dropdown), Notes (optional, for recording speaker background or presentation history), and Source (Past Speaker, Company Referral, Industry Expert, or Internal). Candidates are created with status IDENTIFIED.*
 
 Candidate is created with status: **IDENTIFIED**
 </div>
@@ -453,46 +387,18 @@ Candidate is created with status: **IDENTIFIED**
 
 **Repeat for All Topics**
 
-Add 2-3 candidates per topic:
+Add 2-3 candidates per topic. After adding candidates, the topic displays the candidate list showing names, expertise match level, and contact information, with an option to add more candidates.
 
-```
-Sustainable Materials (3 candidates ✅)
-────────────────────────────────────
-Hans Müller | High Match | hans.mueller@example.com
-Anna Schmidt | Medium Match | anna.schmidt@example.com
-Peter Weber | High Match | peter.weber@example.com
+![All Speakers Added](../assets/screenshots/workflow/phase-a-setup/a-21-all-speakers-added.png)
 
-[+ Add Candidate]
-```
 </div>
 
 <div class="step" data-step="4">
 
 **Review Candidate Pool**
 
-View all candidates across topics:
+View all candidates across topics. The Speaker Candidate Summary displays: Total Candidates count, Speakers Needed count, Candidate-to-Speaker Ratio (✅ if 2:1 or better), breakdown by Company (highlighting over-representation from single companies), breakdown by Experience/Match Level (High/Medium/Low), and Diversity Warnings (alerts when too many candidates come from the same company).
 
-```
-Speaker Candidate Summary
-────────────────────────────────────
-Total Candidates: 24
-Speakers Needed: 12
-Ratio: 2:1 ✅
-
-By Company:
-- Müller Architekten AG: 3
-- Schmidt & Partner: 2
-- [Other companies]: 19
-
-By Experience:
-- High Match: 16
-- Medium Match: 6
-- Low Match: 2
-
-Warnings:
-⚠️ 3 candidates from same company (Müller Architekten AG)
-   → Consider diversity
-```
 </div>
 
 <div class="step" data-step="5">
@@ -500,6 +406,8 @@ Warnings:
 **Confirm Brainstorming Complete**
 
 Once minimum candidates identified, click **Complete Brainstorming**.
+
+![Proceed to Outreach](../assets/screenshots/workflow/phase-a-setup/a-22-proceed-to-outreach.png)
 
 Event state advances to: **SPEAKERS_IDENTIFIED**
 

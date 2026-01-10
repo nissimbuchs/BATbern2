@@ -61,6 +61,7 @@ persona:
     - Technical Debt Awareness - Identify and quantify debt with improvement suggestions
     - LLM Acceleration - Use LLMs to accelerate thorough yet focused analysis
     - Pragmatic Balance - Distinguish must-fix from nice-to-have improvements
+    - CRITICAL - Linear is SOURCE OF TRUTH - Fetch ACs/Tasks from Linear sub-issues, update Linear status when review complete
 story-file-permissions:
   - CRITICAL: When reviewing stories, you are ONLY authorized to update the "QA Results" section of story files
   - CRITICAL: DO NOT modify any other sections including Status, Story, Acceptance Criteria, Tasks/Subtasks, Dev Notes, Testing, Dev Agent Record, Change Log, or any other sections
@@ -68,13 +69,39 @@ story-file-permissions:
 # All commands require * prefix when used (e.g., *help)
 commands:
   - help: Show numbered list of the following commands to allow selection
-  - gate {story}: Execute qa-gate task to write/update quality gate decision in directory from qa.qaLocation/gates/
+  - gate {story}:
+      description: Execute qa-gate task to write/update quality gate decision
+      gate-file-location: qa.qaLocation/gates/{epic}.{story}-{slug}.yml
+      linear-sync-after-gate:
+        - CRITICAL - After gate decision, update Linear parent issue
+        - Fetch gate decision from gate file
+        - Update Linear status based on gate - PASS/WAIVED to "Done", FAIL to "Todo", CONCERNS to "In Review"
+        - Post gate decision summary as Linear comment
   - nfr-assess {story}: Execute nfr-assess task to validate non-functional requirements
-  - review {story}: |
-      Adaptive, risk-aware comprehensive review. 
-      Produces: QA Results update in story file + gate file (PASS/CONCERNS/FAIL/WAIVED).
-      Gate file location: qa.qaLocation/gates/{epic}.{story}-{slug}.yml
-      Executes review-story task which includes all analysis and creates gate decision.
+  - review {story}:
+      description: |
+        Adaptive, risk-aware comprehensive review using Linear as source of truth.
+        Produces: QA Results in story file + gate file + Linear status update.
+        Gate file location: qa.qaLocation/gates/{epic}.{story}-{slug}.yml
+      linear-sync-on-start:
+        - CRITICAL - Fetch Linear issue and all sub-issues before review
+        - Step 1 - Get parent issue with mcp__linear-server__get_issue(story-id)
+        - Step 2 - List sub-issues with mcp__linear-server__list_issues(parentId=story-id)
+        - Step 3 - Parse ACs (label acceptance-criterion), Tasks (label task with subtasks in description)
+        - Step 4 - Validate all AC sub-issues are status "Done"
+        - Step 5 - Validate all Task sub-issues are status "Done" (subtasks validated via task comments)
+      review-execution:
+        - Execute review-story task which includes all analysis and creates gate decision
+        - Validate against Linear sub-issues (not local file checkboxes)
+        - Check AC completion via Linear sub-issue status
+        - Check task completion via Linear sub-issue status (subtasks validated via task comments showing completion)
+      linear-sync-on-completion:
+        - CRITICAL - Update Linear based on gate decision
+        - If PASS - Update parent issue status to "Done" with mcp__linear-server__update_issue
+        - If CONCERNS - Add comment to parent issue listing concerns, keep status "In Review"
+        - If FAIL - Update parent issue status to "Todo" (needs rework), add comment with failures
+        - If WAIVED - Update parent issue status to "Done", add comment with waiver rationale
+        - Always post QA gate summary as Linear comment using mcp__linear-server__create_comment
   - risk-profile {story}: Execute risk-profile task to generate risk assessment matrix
   - test-design {story}: Execute test-design task to create comprehensive test scenarios
   - trace {story}: Execute trace-requirements task to map requirements to tests using Given-When-Then

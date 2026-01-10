@@ -39,7 +39,7 @@ tests {
 
   test("should have partnership details", function() {
     const body = res.getBody();
-    expect(body.id).to.exist;
+    expect(body.companyName).to.exist;
     expect(body.partnershipLevel).to.be.oneOf(['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'STRATEGIC']);
     expect(body.partnershipStartDate).to.exist;
     expect(body.isActive).to.be.a('boolean');

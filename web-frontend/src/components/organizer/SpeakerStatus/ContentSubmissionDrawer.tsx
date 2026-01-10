@@ -279,6 +279,7 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
                   label={t('speakerContent.form.username')}
                   role="SPEAKER"
                   disabled={submitContentMutation.isPending}
+                  data-testid="speaker-search-field"
                 />
 
                 {/* Selected User Display */}
@@ -343,6 +344,7 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
               required
               fullWidth
               disabled={submitContentMutation.isPending}
+              inputProps={{ 'data-testid': 'presentation-title-field' }}
             />
 
             {/* Presentation Abstract */}
@@ -360,6 +362,7 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
               rows={6}
               fullWidth
               disabled={submitContentMutation.isPending}
+              inputProps={{ 'data-testid': 'presentation-abstract-field' }}
             />
           </Box>
         </Box>
@@ -387,6 +390,7 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
             onClick={handleSubmit}
             disabled={submitContentMutation.isPending || isAbstractTooLong}
             startIcon={submitContentMutation.isPending ? <CircularProgress size={20} /> : null}
+            data-testid="submit-speaker-content-button"
           >
             {submitContentMutation.isPending
               ? t('speakerContent.submitting')

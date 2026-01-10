@@ -195,12 +195,16 @@ class MarkdownProcessor {
       // Process the markdown content
       const htmlContent = this.md.render(processedContent);
 
+      // Strip duplicate title and description from content
+      // (they're displayed in the content header section of the template)
+      const strippedContent = this.stripDuplicateHeaderElements(htmlContent);
+
       // Generate table of contents
       const toc = this.generateTableOfContents(htmlContent);
 
       return {
         metadata,
-        content: htmlContent,
+        content: strippedContent,
         tableOfContents: toc,
         rawContent: content
       };
@@ -208,6 +212,31 @@ class MarkdownProcessor {
       console.error(`Error processing file ${filePath}:`, error);
       throw error;
     }
+  }
+
+  stripDuplicateHeaderElements(htmlContent) {
+    // Use cheerio to parse and manipulate HTML
+    const $ = cheerio.load(htmlContent);
+
+    // Find and remove the first h1 element
+    const firstH1 = $('h1').first();
+    if (firstH1.length > 0) {
+      firstH1.remove();
+    }
+
+    // Find and remove the first blockquote (description) or first paragraph after title
+    const firstBlockquote = $('blockquote').first();
+    if (firstBlockquote.length > 0) {
+      firstBlockquote.remove();
+    } else {
+      // If no blockquote, remove first paragraph (it's likely the description)
+      const firstParagraph = $('p').first();
+      if (firstParagraph.length > 0) {
+        firstParagraph.remove();
+      }
+    }
+
+    return $.html();
   }
 
   extractMetadata(content, relativePath, stats) {
@@ -248,9 +277,14 @@ class MarkdownProcessor {
 
     // Extract description from content
     let description = '';
-    const descriptionMatch = content.match(/^##?\s+[^#\n]*\n\n([^#\n]+)/);
+    // Match either a paragraph or blockquote after the title
+    const descriptionMatch = content.match(/^##?\s+[^#\n]*\n+(?:>\s*)?([^#\n]+)/);
     if (descriptionMatch) {
-      description = descriptionMatch[1].replace(/\*\*|__/g, '').substring(0, 200);
+      description = descriptionMatch[1]
+        .replace(/^\s*>\s*/g, '') // Remove blockquote marker
+        .replace(/\*\*|__/g, '')  // Remove bold/emphasis markers
+        .trim()
+        .substring(0, 200);
     }
 
     // Extract epic/story information if applicable

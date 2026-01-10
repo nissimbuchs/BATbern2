@@ -1,44 +1,43 @@
 
 ✨ New Features:
-* Epic 5 Event management workflow
-- workflow state event engine implemented. started on 16 step organizer workflow. speaker workflow deferred to ewpic 6 (Andy might do it)
-- step 1: 5.1 event type done: you can edit the thre event types Ganztages, Nachmittags und Abend-BATbern and assign it to an event
-- step 2: 5.2 event topic backlog: all old events have now a topic assigned. you can now assign a topic to a new event and will see a nice heatmap of all tpics from the past.
-- step 3: 5.3 speaker brainstorming: you can add speakers you want to reach out to and define which organizer reaches out, ad notes on the status.
 
-* Epic 3 Historical Data Migration
-- import of companies with logo, speakers with portraits and events work. only session import missing now
+* ✅ Epic 5 Event/Speaker and Publication management workflow DONE
+- workflow state event engine implemented. 9 step organizer workflow. 11-step speaker workflow organizer view. 4-step publication workflow
+- speaker workflow for speaker himself deferred to Epic 6 (Andy might do it)
 
-* Epic 4 Public website
-- Hero page implemented. view of historical events and sessions missing.
+* 🔄 Epic 4 Public website IN PROGRESS
+- All implemented. Hero, timetable, speakers, partners
+- registration via eMail confirmation working
+- View of historical events and sessions missing.
 - updated PROD: https://batbern.ch with a "coming soon..." teaser
 
-* Epic 2 on crud for main entities is now fully implemented.
-- 2.6 user can now edit his profile, and ORGANIZER can now edit profile of any user
-- 2.7/2.8 implemented partner coordination crud
-- 1.14/2.5.1 Company management fully working
-- 1.14-2/2.5.2 User management interface for organizers now fully working
-- 1.15.1a/2.5.3 First simple event management works. Organizer dashboard now shows current events
+* ✅ Epic 3 Historical Data Migration DONE
+- import of all historical date (events, sessions, speakers, participants, companies)
 
-* Epic 1 now fully implemented.
+* ✅ Epic 2 CRUD for main entities DONE
+- user can now edit his profile, and ORGANIZER can now edit profile of any user
+- Partner coordination crud
+- Company management fully working
+- User management interface for organizers now fully working
+
+* ✅ Epic 1 Foundation now fully implemented.
 - 1.2 Login/Password reset/Create account with eMail verification fully working
-- 1.1/1.3/1.4 AWS Infrastructure for dev/staging/prod, CI/CD with github-actions
+- 1.1/1.3/1.4 AWS Infrastructure for staging/prod, CI/CD with github-actions
 - 1.6 Local dev with make dev-native-up/down
 
 🚀 Next steps:
-- Epic 3: Import sessions
-- Epic 5: Speaker status management
-- Update event detail/edit to show/manage registrations
+- Epic 4: Show and search Archive on public portal
+- Epic 5: Upload Speaker Material (slides) and decide if its stored in slide-share or locally.
+- Epic 5: Implement Newsletter and Notifications to users (newsletter functionality TBD. use our old on Hostpoint, use meetup or build it)
 
 🐛 Bug Fixes:
 - see todo.md
 
 ⚡ Open topics:
-- We still have not solved and implemented notifications. per service or one for all
-- Refactor so that Company and Event are using the generated types from openapi in the backend and frontend
+- Refactor so that all services are using the generated types from openapi in the frontend AND backend
 - RateLimits are still set very narrow
 
 📝 Notes:
 - Report issues on github https://github.com/nissimbuchs/BATbern2/issues
 
-Last updated: 2025-12-17
+Last updated: 2026-01-09

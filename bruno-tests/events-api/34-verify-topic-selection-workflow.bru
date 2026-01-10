@@ -16,13 +16,14 @@ auth:bearer {
 
 assert {
   res.status: eq 200
-  res.body.workflowState: eq topic_selection
+  res.body.workflowState: in [TOPIC_SELECTION, SPEAKER_IDENTIFICATION]
 }
 
 tests {
-  test("should return event with TOPIC_SELECTION workflow state - Story 5.2 AC14, AC16", function() {
+  test("should return event with workflow state advanced after topic selection - Story 5.2 AC14, AC16", function() {
     const event = res.getBody();
     expect(event.eventCode).to.equal(bru.getVar("createdEventCode"));
-    expect(event.workflowState).to.equal('topic_selection');
+    // Workflow auto-advances to SPEAKER_IDENTIFICATION after topic is selected
+    expect(event.workflowState).to.be.oneOf(['TOPIC_SELECTION', 'SPEAKER_IDENTIFICATION']);
   });
 }

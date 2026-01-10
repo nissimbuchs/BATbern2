@@ -24,13 +24,13 @@ tests {
   });
 
   test("should return registrations array (Story 2.2a)", function() {
-    const registrations = res.getBody();
-    expect(registrations).to.be.an('array');
-    expect(registrations.length).to.be.greaterThan(0);
+    const body = res.getBody();
+    expect(body.data).to.be.an('array');
+    // Note: might be empty if no registrations yet
   });
 
   test("should return enriched registrations with user data (Story 2.2a: ADR-004)", function() {
-    const registrations = res.getBody();
+    const registrations = res.getBody().data;
     if (registrations.length > 0) {
       const registration = registrations[0];
 

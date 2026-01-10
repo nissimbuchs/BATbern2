@@ -36,7 +36,7 @@ BATbern supports 4 distinct roles:
 **Permissions**:
 - ✅ Create and manage events
 - ✅ CRUD all entities (companies, users, events, partners, speakers)
-- ✅ Execute 16-step workflow
+- ✅ Manage event workflow (9 event states, per-speaker workflow, tasks)
 - ✅ Coordinate speaker outreach
 - ✅ Manage partner relationships
 - ✅ View analytics and reports
@@ -172,7 +172,7 @@ Promote "Hans Müller" from SPEAKER to ORGANIZER?
 
 This will grant additional permissions:
 - Create and manage events
-- Execute 16-step workflow
+- Manage event workflow system
 - Manage all entities
 
 [Cancel]           [Promote]

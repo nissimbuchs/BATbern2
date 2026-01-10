@@ -124,49 +124,48 @@ Click **Save** to create the event.
 Event is created with initial state: **CREATED**
 
 Success message: "Event 'BATbern 2025' created successfully. Ready to begin workflow."
+
+![Event Dashboard](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
+
 </div>
 
 ## Event Workflow States
 
 <span class="feature-status implemented">Implemented</span>
 
-Events progress through defined workflow states managed by the **16-step workflow**.
+Events progress through a **9-state workflow** that tracks the high-level event lifecycle.
 
 ### State Machine Overview
 
 ```mermaid
 graph LR
-    A[CREATED] --> B[TOPIC_SELECTED]
-    B --> C[SPEAKERS_IDENTIFIED]
-    C --> D[OUTREACH_INITIATED]
-    D --> E[CONTENT_COLLECTED]
-    E --> F[QUALITY_REVIEWED]
-    F --> G[SLOTS_ASSIGNED]
-    G --> H[PUBLISHED]
-    H --> I[FINALIZED]
-    I --> J[EXECUTED]
-    J --> K[ARCHIVED]
+    A[CREATED] --> B[TOPIC_SELECTION]
+    B --> C[SPEAKER_IDENTIFICATION]
+    C --> D[SLOT_ASSIGNMENT]
+    D --> E[AGENDA_PUBLISHED]
+    E --> F[AGENDA_FINALIZED]
+    F --> G[EVENT_LIVE]
+    G --> H[EVENT_COMPLETED]
+    H --> I[ARCHIVED]
 ```
 
 ### State Descriptions
 
-| State | Description | Typical Duration |
-|-------|-------------|------------------|
-| **CREATED** | Event record created | - |
-| **TOPIC_SELECTED** | Topics chosen using heat map | Week 1 |
-| **SPEAKERS_IDENTIFIED** | Potential speakers brainstormed | Week 1-2 |
-| **OUTREACH_INITIATED** | Speaker outreach begun | Week 2-4 |
-| **CONTENT_COLLECTED** | Speaker content submitted | Week 4-8 |
-| **QUALITY_REVIEWED** | Content reviewed by organizers | Week 8-9 |
-| **SLOTS_ASSIGNED** | Speakers assigned to time slots | Week 9-10 |
-| **PUBLISHED** | Agenda published publicly | Week 10-12 |
-| **FINALIZED** | Final agenda locked | Week 12 |
-| **EXECUTED** | Event has occurred | Event day |
-| **ARCHIVED** | Event archived for historical reference | Post-event |
+| State | Description | How Reached |
+|-------|-------------|-------------|
+| **CREATED** | Event record created | Event creation form submitted |
+| **TOPIC_SELECTION** | Topics chosen using heat map | Minimum 1 topic selected |
+| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Minimum speaker candidates identified |
+| **SLOT_ASSIGNMENT** | Assigning speakers to time slots | All confirmed speakers assigned |
+| **AGENDA_PUBLISHED** | Public agenda live, accepting registrations | Publish agenda action |
+| **AGENDA_FINALIZED** | Agenda locked for printing | Manual finalization (2 weeks before) |
+| **EVENT_LIVE** | Event currently happening | Event day arrives |
+| **EVENT_COMPLETED** | Event finished, post-processing | Manual transition after event |
+| **ARCHIVED** | Event archived for historical reference | Manual archival action |
 
-States can only transition forward (one-way) to maintain data integrity.
+**Note**: Speakers progress through their own independent workflow (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed) in parallel with the event workflow.
 
-See [16-Step Workflow](../workflow/README.md) for complete workflow documentation.
+See [Workflow System](../workflow/README.md) for complete workflow documentation.
 
 ## Event Timeline Management
 
@@ -251,14 +250,15 @@ Each session has:
 
 ### Managing Sessions
 
-Sessions are created during the 16-step workflow:
+Sessions are managed throughout the workflow:
 
-1. **Phase A**: Topics selected (becomes session topics)
-2. **Phase B**: Speakers assigned to topics
-3. **Phase D**: Sessions assigned to time slots
-4. **Phase E**: Sessions published to public agenda
+1. **Phase A (Setup)**: Topics selected (becomes session topics), speakers brainstormed
+2. **Phase B (Outreach)**: Speakers contacted and accept invitations
+3. **Phase B (Content)**: Speakers submit presentation titles and content
+4. **Phase C (Quality)**: Content reviewed and approved
+5. **Phase D (Assignment)**: Sessions assigned to time slots, agenda published
 
-See [Phase E: Publishing](../workflow/phase-e-publishing.md) for session management details.
+See [Phase D: Assignment](../workflow/phase-d-assignment.md) for session slot assignment details.
 
 ## Event Speakers
 
@@ -280,17 +280,22 @@ Event: BATbern 2025
 
 <span class="feature-status implemented">Implemented</span>
 
-Track speaker engagement throughout workflow:
+Each speaker progresses through their own workflow independently:
 
 | Status | Description | Next Action |
 |--------|-------------|-------------|
-| **IDENTIFIED** | Potential speaker brainstormed | Contact speaker |
-| **CONTACTED** | Initial outreach sent | Await response |
-| **INTERESTED** | Speaker expressed interest | Collect content |
-| **CONTENT_SUBMITTED** | Speaker provided content | Review content |
-| **CONFIRMED** | Speaker confirmed for event | Assign time slot |
-| **PUBLISHED** | Speaker visible on public agenda | - |
-| **DROPOUT** | Speaker withdrew | Find replacement |
+| **identified** | Potential speaker brainstormed | Contact speaker |
+| **contacted** | Initial outreach recorded | Await response |
+| **ready** | Speaker ready to accept/decline | Get acceptance |
+| **accepted** | Speaker committed to presenting | Collect content |
+| **declined** | Speaker not available | Contact backup |
+| **content_submitted** | Presentation details submitted | Review quality |
+| **quality_reviewed** | Content approved by organizer | Assign time slot |
+| **confirmed** | Quality reviewed AND slot assigned | Ready for publication |
+| **overflow** | Accepted but no slot available | Backup speaker |
+| **withdrew** | Speaker dropped out after accepting | Find replacement |
+
+**Note**: Speakers reach **confirmed** automatically when both quality_reviewed AND session.startTime exist (can happen in any order).
 
 See [Phase B: Outreach](../workflow/phase-b-outreach.md) for speaker tracking details.
 
@@ -504,13 +509,15 @@ Click **Continue Workflow** to jump to the current workflow step.
 **Problem**: Event not progressing through workflow.
 
 **Solution**:
-- Click **Continue Workflow** on event card
-- Follow 16-step workflow to advance state
-- See [Workflow Overview](../workflow/README.md)
+- Navigate to the event in Phase A workflow
+- Select topics to advance to TOPIC_SELECTION state
+- Add speaker candidates to reach SPEAKER_IDENTIFICATION
+- See [Workflow System](../workflow/README.md)
 
 ## Related Topics
 
-- [16-Step Workflow →](../workflow/README.md) - Complete event lifecycle
+- [Workflow System →](../workflow/README.md) - 9-state event workflow, per-speaker workflow, task system
+- [Phase A: Setup →](../workflow/phase-a-setup.md) - Event creation and initial configuration
 - [Speaker Management →](speakers.md) - Manage event speakers
 - [Partner Management →](partners.md) - Coordinate event partners
 - [Topic Heat Map →](../features/heat-maps.md) - Select event topics
