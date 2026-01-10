@@ -48,7 +48,7 @@ export class EventManagementStack extends cdk.Stack {
         componentTag: 'EventManagement-Service',
         routePattern: '/api/v1/events',
         cpu: 256,
-        memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 46% utilization)
+        memoryLimitMiB: 1024, // Increased from 512 MB to fix OOM crash (exit code 137, 2026-01-10)
         additionalEnvironment: {
           JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
           // S3 configuration for event theme images (Story 2.5.3a)
@@ -79,6 +79,11 @@ export class EventManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Override desiredCount for Event Management specifically (2 tasks for HA)
+    // This addresses OOM stability issues and ensures zero-downtime deployments
+    const cfnService = this.service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('DesiredCount', 2);
 
     // Grant S3 permissions for event theme images (Story 2.5.3a)
     if (props.contentBucket) {
