@@ -20,7 +20,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const TEST_ORGANIZER_EMAIL = `organizer-${Date.now()}@batbern.ch`;
 const TEST_PASSWORD = 'TestPassword123!';
 
@@ -50,7 +50,7 @@ async function navigateToEventDashboard(page: Page): Promise<void> {
 
 test.describe('Event Management Frontend - Dashboard Display', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test('should_displayEventDashboard_when_navigated', async ({ page }) => {
@@ -219,7 +219,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     expect(url.searchParams.get('year')).toBe('2025');
 
     // Navigate away and back to verify persistence
-    await page.goto(`${BASE_URL}/organizer/dashboard`);
+    await page.goto(`${BASE_URL}/organizer/events`);
     await page.goBack();
 
     // Verify filters are still applied from URL
@@ -236,7 +236,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
 test.describe('Event Management Frontend - Create Event Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToEventDashboard(page);
   });
 
@@ -408,7 +408,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
 test.describe('Event Management Frontend - Edit Event Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToEventDashboard(page);
   });
 
@@ -590,7 +590,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
 test.describe('Event Management Frontend - Workflow Visualization', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToEventDashboard(page);
   });
 
@@ -693,7 +693,7 @@ test.describe('Event Management Frontend - Verify RED Phase', () => {
     // This test group verifies that all above tests FAIL because components aren't implemented yet
     // This is the RED phase of TDD - tests should fail with meaningful error messages
 
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToEventDashboard(page);
 
     // Verify expected failure: Dashboard components don't exist yet

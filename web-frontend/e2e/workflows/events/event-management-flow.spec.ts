@@ -26,7 +26,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 const TEST_ORGANIZER_EMAIL = `organizer-${Date.now()}@batbern.ch`;
 const TEST_PASSWORD = 'TestPassword123!';
@@ -122,7 +122,7 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     await page.close();
   });
 
@@ -215,7 +215,7 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     testEvent = await createTestEvent(authToken);
     await page.close();
   });
@@ -304,7 +304,7 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     await page.close();
   });
 
@@ -400,7 +400,7 @@ test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     await page.close();
   });
 
@@ -466,7 +466,7 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     testEvent = await createTestEvent(authToken);
     await page.close();
   });
@@ -538,7 +538,7 @@ test.describe('Events API Consolidation - Wireframe Migration (AC17)', () => {
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await loginAsOrganizer(page);
+    authToken = await page.goto('/organizer/events');
     await page.close();
   });
 

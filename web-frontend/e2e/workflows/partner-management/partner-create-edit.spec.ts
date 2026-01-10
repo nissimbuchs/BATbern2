@@ -22,7 +22,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 // Test data
@@ -117,7 +117,7 @@ async function deleteCompanyViaAPI(authToken: string, companyName: string): Prom
 
 test.describe('Partner Create/Edit Modal - E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test('AC1, AC8: Create partnership workflow - full flow', async ({ page }) => {

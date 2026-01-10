@@ -21,7 +21,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 /**
@@ -37,7 +37,7 @@ async function loginAsOrganizer(page: Page) {
   await page.click('button[type="submit"]');
 
   // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/dashboard`);
+  await page.waitForURL(`${BASE_URL}/organizer/events`);
 }
 
 // Type definitions for Story 5.2 API responses
@@ -51,7 +51,7 @@ interface SpeakerPoolResponse {
  * Helper: Create a test event
  */
 async function createTestEvent(page: Page): Promise<string> {
-  await page.goto(`${BASE_URL}/organizer/dashboard`);
+  await page.goto(`${BASE_URL}/organizer/events`);
   await page.click('button:has-text("New Event")');
 
   // Fill event form
@@ -78,7 +78,7 @@ async function createTestEvent(page: Page): Promise<string> {
 
 test.describe('Speaker Brainstorming Panel (Story 5.2)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test.describe('AC9: Speaker Pool Management', () => {
