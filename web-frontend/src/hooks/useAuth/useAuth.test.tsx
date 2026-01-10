@@ -6,7 +6,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuth } from './useAuth';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { LoginCredentials } from '@/types/auth';
+import React from 'react';
 
 // Mock auth service
 vi.mock('@services/auth/authService', () => ({
@@ -25,16 +27,23 @@ import { authService } from '@services/auth/authService';
 
 const mockAuthService = vi.mocked(authService);
 
+// Wrapper component for tests
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <AuthProvider>{children}</AuthProvider>
+);
+
 describe('useAuth Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default mock behavior
     mockAuthService.getCurrentUser.mockResolvedValue(null);
+    mockAuthService.signOut.mockResolvedValue();
+    mockAuthService.isTokenExpired.mockReturnValue(false);
   });
 
   it('should_returnAuthenticationState_when_hookInitialized', async () => {
     // Test 9.13: should_returnAuthenticationState_when_hookInitialized
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isAuthenticated).toBe(false);
@@ -50,7 +59,12 @@ describe('useAuth Hook', () => {
 
   it('should_updateAuthenticationState_when_userSignsIn', async () => {
     // Test 9.14: should_updateAuthenticationState_when_userSignsIn
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     const credentials: LoginCredentials = {
       email: 'test@batbern.ch',
@@ -95,7 +109,12 @@ describe('useAuth Hook', () => {
 
   it('should_clearAuthenticationState_when_userSignsOut', async () => {
     // Test 9.15: should_clearAuthenticationState_when_userSignsOut
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     await act(async () => {
       await result.current.signOut();
@@ -110,7 +129,12 @@ describe('useAuth Hook', () => {
 
   it('should_handleAuthenticationError_when_signInFails', async () => {
     // Test 9.16: should_handleAuthenticationError_when_signInFails
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     const invalidCredentials: LoginCredentials = {
       email: 'invalid@example.com',
@@ -139,7 +163,12 @@ describe('useAuth Hook', () => {
 
   it('should_automaticallyRefreshToken_when_tokenNearExpiration', async () => {
     // Test 9.17: should_automaticallyRefreshToken_when_tokenNearExpiration
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     // Mock successful token refresh
     mockAuthService.refreshToken.mockResolvedValue({
@@ -160,7 +189,12 @@ describe('useAuth Hook', () => {
 
   it('should_provideUserRoleAccess_when_userAuthenticated', async () => {
     // Test 9.18: should_provideUserRoleAccess_when_userAuthenticated
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     await waitFor(() => {
       expect(result.current.hasRole).toBeDefined();
@@ -171,7 +205,12 @@ describe('useAuth Hook', () => {
 
   it('should_clearError_when_clearErrorCalled', async () => {
     // Test 9.19: should_clearError_when_clearErrorCalled
-    const { result } = renderHook(() => useAuth());
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initialization to complete
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
 
     await act(async () => {
       result.current.clearError();
@@ -205,7 +244,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -240,7 +279,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -274,7 +313,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -308,7 +347,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -342,7 +381,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -352,7 +391,7 @@ describe('useAuth Hook', () => {
     it('should_returnFalse_when_noUser', async () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -364,7 +403,7 @@ describe('useAuth Hook', () => {
     it('should_allowPublicPaths_when_notAuthenticated', async () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -379,7 +418,7 @@ describe('useAuth Hook', () => {
     it('should_denyProtectedPaths_when_notAuthenticated', async () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -411,7 +450,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -446,7 +485,7 @@ describe('useAuth Hook', () => {
         accessToken: 'token',
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 
@@ -461,7 +500,7 @@ describe('useAuth Hook', () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
       mockAuthService.isTokenExpired.mockReturnValue(true);
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -472,7 +511,7 @@ describe('useAuth Hook', () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
       mockAuthService.isTokenExpired.mockReturnValue(false);
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -486,7 +525,7 @@ describe('useAuth Hook', () => {
         success: true,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -505,7 +544,7 @@ describe('useAuth Hook', () => {
     it('should_handleSignUpError_when_signUpFails', async () => {
       mockAuthService.signUp.mockRejectedValue(new Error('Sign up failed'));
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -527,7 +566,7 @@ describe('useAuth Hook', () => {
     it('should_handleSignInException_when_networkError', async () => {
       mockAuthService.signIn.mockRejectedValue(new Error('Network error'));
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -567,7 +606,7 @@ describe('useAuth Hook', () => {
       });
       mockAuthService.signOut.mockRejectedValue(new Error('Sign out failed'));
 
-      const { result } = renderHook(() => useAuth());
+      const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
 

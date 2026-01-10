@@ -41,7 +41,7 @@ describe('User API', () => {
         },
       };
 
-      mockAxios.onGet('/api/v1/users/me').reply(200, mockResponse);
+      mockAxios.onGet('/users/me').reply(200, mockResponse);
 
       const result = await getUserProfile();
 
@@ -67,12 +67,10 @@ describe('User API', () => {
         },
       };
 
-      mockAxios
-        .onGet('/api/v1/users/me', { params: { include: 'roles,preferences' } })
-        .reply((config) => {
-          expect(config.params?.include).toBe('roles,preferences');
-          return [200, mockResponse];
-        });
+      mockAxios.onGet('/users/me', { params: { include: 'roles,preferences' } }).reply((config) => {
+        expect(config.params?.include).toBe('roles,preferences');
+        return [200, mockResponse];
+      });
 
       const result = await getUserProfile(['roles', 'preferences']);
 
@@ -80,13 +78,13 @@ describe('User API', () => {
     });
 
     it('should_throwError_when_userNotFound', async () => {
-      mockAxios.onGet('/api/v1/users/me').reply(404, { message: 'User not found' });
+      mockAxios.onGet('/users/me').reply(404, { message: 'User not found' });
 
       await expect(getUserProfile()).rejects.toThrow();
     });
 
     it('should_throwError_when_unauthorized', async () => {
-      mockAxios.onGet('/api/v1/users/me').reply(401, { message: 'Unauthorized' });
+      mockAxios.onGet('/users/me').reply(401, { message: 'Unauthorized' });
 
       await expect(getUserProfile()).rejects.toThrow();
     });
@@ -106,7 +104,7 @@ describe('User API', () => {
         },
       };
 
-      mockAxios.onPut('/api/v1/users/me/preferences', { language: 'en' }).reply((config) => {
+      mockAxios.onPut('/users/me/preferences', { language: 'en' }).reply((config) => {
         expect(JSON.parse(config.data)).toEqual({ language: 'en' });
         return [200, mockResponse];
       });
@@ -137,7 +135,7 @@ describe('User API', () => {
         },
       };
 
-      mockAxios.onPut('/api/v1/users/me/preferences', request).reply(200, mockResponse);
+      mockAxios.onPut('/users/me/preferences', request).reply(200, mockResponse);
 
       const result = await updateUserPreferences(request);
 
@@ -158,7 +156,7 @@ describe('User API', () => {
         },
       };
 
-      mockAxios.onPut('/api/v1/users/me/preferences', { theme: 'dark' }).reply(200, mockResponse);
+      mockAxios.onPut('/users/me/preferences', { theme: 'dark' }).reply(200, mockResponse);
 
       const result = await updateUserPreferences({ theme: 'dark' });
 
@@ -167,7 +165,7 @@ describe('User API', () => {
     });
 
     it('should_throwError_when_invalidLanguageProvided', async () => {
-      mockAxios.onPut('/api/v1/users/me/preferences').reply(400, {
+      mockAxios.onPut('/users/me/preferences').reply(400, {
         message: 'Invalid language code',
       });
 

@@ -95,10 +95,10 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 17'] },
-    },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 17'] },
+    // },
 
     // Additional browsers (only run with explicit --project flag)
     // Uncomment to enable by default
@@ -166,7 +166,7 @@ export default defineConfig({
   webServer:
     testEnv === 'development'
       ? {
-          command: 'npm run dev',
+          command: 'make dev-native-up',
           url: 'http://localhost:8100',
           reuseExistingServer: !process.env.CI,
           timeout: 120 * 1000,

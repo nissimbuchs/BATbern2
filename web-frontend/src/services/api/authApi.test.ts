@@ -26,13 +26,11 @@ describe('Auth API', () => {
         success: true,
       };
 
-      mockAxios
-        .onPost('/api/v1/auth/logout', { refreshToken: 'refresh-token-123' })
-        .reply((config) => {
-          const data = JSON.parse(config.data);
-          expect(data.refreshToken).toBe('refresh-token-123');
-          return [200, mockResponse];
-        });
+      mockAxios.onPost('/auth/logout', { refreshToken: 'refresh-token-123' }).reply((config) => {
+        const data = JSON.parse(config.data);
+        expect(data.refreshToken).toBe('refresh-token-123');
+        return [200, mockResponse];
+      });
 
       const result = await logout('refresh-token-123');
 
@@ -41,7 +39,7 @@ describe('Auth API', () => {
     });
 
     it('should_throwError_when_invalidRefreshTokenProvided', async () => {
-      mockAxios.onPost('/api/v1/auth/logout').reply(400, {
+      mockAxios.onPost('/auth/logout').reply(400, {
         message: 'Invalid refresh token',
       });
 
@@ -49,7 +47,7 @@ describe('Auth API', () => {
     });
 
     it('should_throwError_when_unauthorized', async () => {
-      mockAxios.onPost('/api/v1/auth/logout').reply(401, {
+      mockAxios.onPost('/auth/logout').reply(401, {
         message: 'Unauthorized',
       });
 
@@ -57,7 +55,7 @@ describe('Auth API', () => {
     });
 
     it('should_throwError_when_serverError', async () => {
-      mockAxios.onPost('/api/v1/auth/logout').reply(500, {
+      mockAxios.onPost('/auth/logout').reply(500, {
         message: 'Internal server error',
       });
 
