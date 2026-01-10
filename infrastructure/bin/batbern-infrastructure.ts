@@ -245,6 +245,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPoolClient: cognitoStack.userPoolClient,
     contentBucket: storageStack.contentBucket,
     cloudFrontDistribution: storageStack.distribution,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
     tags: config.tags,
@@ -254,6 +255,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(cicdStack);
   eventManagementStack.addDependency(cognitoStack);
   eventManagementStack.addDependency(storageStack);
+  eventManagementStack.addDependency(monitoringStack);
 
   // 10b. Speaker Coordination Service
   speakerCoordinationStack = new SpeakerCoordinationStack(app, `${stackPrefix}-SpeakerCoordination`, {
@@ -265,6 +267,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern Speaker Coordination Service - ${config.envName}`,
     tags: config.tags,
@@ -273,6 +276,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   speakerCoordinationStack.addDependency(databaseStack);
   speakerCoordinationStack.addDependency(cicdStack);
   speakerCoordinationStack.addDependency(cognitoStack);
+  speakerCoordinationStack.addDependency(monitoringStack);
 
   // 10c. Partner Coordination Service
   partnerCoordinationStack = new PartnerCoordinationStack(app, `${stackPrefix}-PartnerCoordination`, {
@@ -285,6 +289,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
     eventBus: eventBusStack.eventBus,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern Partner Coordination Service - ${config.envName}`,
     tags: config.tags,
@@ -294,6 +299,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(cicdStack);
   partnerCoordinationStack.addDependency(cognitoStack);
   partnerCoordinationStack.addDependency(eventBusStack);
+  partnerCoordinationStack.addDependency(monitoringStack);
 
   // 10d. Attendee Experience Service
   attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
@@ -305,6 +311,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern Attendee Experience Service - ${config.envName}`,
     tags: config.tags,
@@ -313,6 +320,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   attendeeExperienceStack.addDependency(databaseStack);
   attendeeExperienceStack.addDependency(cicdStack);
   attendeeExperienceStack.addDependency(cognitoStack);
+  attendeeExperienceStack.addDependency(monitoringStack);
 
   // 10e. Company & User Management Service (Consolidated)
   // Handles both /api/v1/companies and /api/v1/users endpoints
@@ -329,6 +337,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     contentBucket: storageStack.contentBucket,
     cloudFrontDistribution: storageStack.distribution,
     eventBus: eventBusStack.eventBus,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern Company & User Management Service (Consolidated) - ${config.envName}`,
     tags: config.tags,
@@ -339,6 +348,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   companyManagementStack.addDependency(cognitoStack);
   companyManagementStack.addDependency(storageStack);
   companyManagementStack.addDependency(eventBusStack);
+  companyManagementStack.addDependency(monitoringStack);
 
   // 10f. API Gateway Service (Spring Boot)
   // Uses Service Connect DNS names for microservice communication (no ALB URLs needed)
@@ -351,6 +361,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     databaseSecret: databaseStack.databaseSecret,
     userPool: cognitoStack.userPool,
     userPoolClient: cognitoStack.userPoolClient,
+    alarmTopic: monitoringStack.alarmTopic,
     env,
     description: `BATbern API Gateway Service (Spring Boot) - ${config.envName}`,
     tags: config.tags,
@@ -359,6 +370,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   apiGatewayServiceStack.addDependency(databaseStack);
   apiGatewayServiceStack.addDependency(cicdStack);
   apiGatewayServiceStack.addDependency(cognitoStack);
+  apiGatewayServiceStack.addDependency(monitoringStack);
   // No microservice dependencies - uses Service Connect for runtime discovery
 }
 

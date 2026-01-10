@@ -95,15 +95,28 @@ public class SpeakerContentSubmissionService {
 
         // 3. Create session with title and description (AC7)
         // Generate session slug from title (URL-friendly)
-        String sessionSlug = presentationTitle
+        String baseSlug = presentationTitle
                 .toLowerCase()
                 .replaceAll("[^a-z0-9\\s-]", "")  // Remove special chars
                 .replaceAll("\\s+", "-")           // Replace spaces with hyphens
                 .replaceAll("-+", "-")             // Remove duplicate hyphens
                 .replaceAll("^-|-$", "");          // Trim hyphens from start/end
 
-        if (sessionSlug.length() > 200) {
-            sessionSlug = sessionSlug.substring(0, 200);
+        if (baseSlug.length() > 200) {
+            baseSlug = baseSlug.substring(0, 200);
+        }
+
+        // Handle slug collisions by appending counter (e.g., "aaa-1", "aaa-2")
+        // Note: session_slug is globally unique across all events (not scoped to event_id)
+        String sessionSlug = baseSlug;
+        int counter = 1;
+        while (sessionRepository.existsBySessionSlug(sessionSlug)) {
+            sessionSlug = baseSlug + "-" + counter;
+            counter++;
+            // Safety check to prevent infinite loops
+            if (counter > 1000) {
+                throw new IllegalStateException("Unable to generate unique session slug after 1000 attempts");
+            }
         }
 
         Session session = Session.builder()

@@ -3,6 +3,12 @@ package ch.batbern.shared.events;
 import ch.batbern.shared.utils.LoggingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.bulkhead.BulkheadRegistry;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,7 +26,7 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsResultEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 @Component
 public class EventBridgeEventPublisher implements DomainEventPublisher {
@@ -31,6 +37,11 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
     private final EventBridgeAsyncClient eventBridgeClient;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher springEventPublisher;
+
+    // Resilience4j components for fault tolerance
+    private final CircuitBreaker circuitBreaker;
+    private final Bulkhead bulkhead;
+    private final Retry retry;
 
     @Value("${aws.eventbridge.bus-name:batbern-events}")
     private String eventBusName;
@@ -46,10 +57,23 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
 
     public EventBridgeEventPublisher(EventBridgeAsyncClient eventBridgeClient,
                                     @Qualifier("eventBridgeObjectMapper") ObjectMapper objectMapper,
-                                    ApplicationEventPublisher springEventPublisher) {
+                                    ApplicationEventPublisher springEventPublisher,
+                                    CircuitBreakerRegistry circuitBreakerRegistry,
+                                    BulkheadRegistry bulkheadRegistry,
+                                    RetryRegistry retryRegistry) {
         this.eventBridgeClient = eventBridgeClient;
         this.objectMapper = objectMapper;
         this.springEventPublisher = springEventPublisher;
+
+        // Initialize Resilience4j components
+        this.circuitBreaker = circuitBreakerRegistry.circuitBreaker("eventBridgePublisher");
+        this.bulkhead = bulkheadRegistry.bulkhead("eventBridgePublisher");
+        this.retry = retryRegistry.retry("eventBridgePublisher");
+
+        // Log circuit breaker state changes
+        this.circuitBreaker.getEventPublisher()
+            .onStateTransition(event -> LOGGER.warn("Circuit breaker state transition: {}", event))
+            .onFailureRateExceeded(event -> LOGGER.error("Circuit breaker failure rate exceeded: {}", event));
     }
 
     @Override
@@ -66,25 +90,45 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
             // Continue with EventBridge publishing even if local publishing fails
         }
 
-        // Then, publish to EventBridge for cross-service communication
-        try {
+        // Fire-and-forget async publish to EventBridge with Resilience4j patterns
+        // This eliminates the blocking .get(5, TimeUnit.SECONDS) that caused OOM crashes
+        publishAsyncWithResilience(event)
+            .exceptionally(throwable -> {
+                LOGGER.error("Async event publishing failed: {} (will be retried by Resilience4j)",
+                        event.getEventType(), throwable);
+                // Don't throw - fire-and-forget means we log but don't block the caller
+                return null;
+            });
+    }
+
+    /**
+     * Publishes event asynchronously with Resilience4j circuit breaker, bulkhead, and retry patterns.
+     * This method is fire-and-forget and never blocks the calling thread.
+     */
+    private CompletableFuture<Void> publishAsyncWithResilience(DomainEvent<?> event) {
+        Supplier<CompletableFuture<PutEventsResponse>> publishSupplier = () -> {
             PutEventsRequestEntry entry = createEventBridgeEntry(event);
             PutEventsRequest request = PutEventsRequest.builder()
                 .entries(entry)
                 .build();
 
-            CompletableFuture<PutEventsResponse> future = eventBridgeClient.putEvents(request);
-            PutEventsResponse response = future.get(5, TimeUnit.SECONDS);
+            return eventBridgeClient.putEvents(request);
+        };
 
-            if (response.failedEntryCount() > 0) {
-                handleFailedEntries(response.entries(), List.of(event));
-            }
+        // Apply Resilience4j patterns: Retry -> CircuitBreaker -> Bulkhead
+        Supplier<CompletableFuture<PutEventsResponse>> decoratedSupplier =
+            Bulkhead.decorateSupplier(bulkhead,
+                CircuitBreaker.decorateSupplier(circuitBreaker,
+                    Retry.decorateSupplier(retry, publishSupplier)));
 
-            logSuccessfulPublish(event);
-        } catch (Exception e) {
-            LOGGER.error("Failed to publish event: {}", event.getEventType(), e);
-            throw new RuntimeException("Event publishing failed", e);
-        }
+        return decoratedSupplier.get()
+            .thenAccept(response -> {
+                if (response.failedEntryCount() > 0) {
+                    handleFailedEntries(response.entries(), List.of(event));
+                } else {
+                    logSuccessfulPublish(event);
+                }
+            });
     }
 
     @Override
@@ -116,14 +160,29 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
         }
 
         // Split into batches if necessary (EventBridge has a limit of 10 entries per request)
+        // Process all batches concurrently with CompletableFuture.allOf() for non-blocking
+        List<CompletableFuture<Void>> batchFutures = new java.util.ArrayList<>();
+
         for (int i = 0; i < events.size(); i += MAX_BATCH_SIZE) {
             List<? extends DomainEvent<?>> batch = events.subList(i, Math.min(i + MAX_BATCH_SIZE, events.size()));
-            publishSingleBatch(batch);
+            batchFutures.add(publishSingleBatchAsync(batch));
         }
+
+        // Fire-and-forget: don't block waiting for completion
+        CompletableFuture.allOf(batchFutures.toArray(new CompletableFuture[0]))
+            .thenRun(() -> LOGGER.info("Published {} events in {} batches", events.size(), batchFutures.size()))
+            .exceptionally(throwable -> {
+                LOGGER.error("Batch publishing failed for {} events", events.size(), throwable);
+                return null;
+            });
     }
 
-    private void publishSingleBatch(List<? extends DomainEvent<?>> batch) {
-        try {
+    /**
+     * Publishes a single batch asynchronously with Resilience4j patterns.
+     * This method is non-blocking and returns immediately.
+     */
+    private CompletableFuture<Void> publishSingleBatchAsync(List<? extends DomainEvent<?>> batch) {
+        Supplier<CompletableFuture<PutEventsResponse>> publishSupplier = () -> {
             List<PutEventsRequestEntry> entries = batch.stream()
                 .map(this::createEventBridgeEntry)
                 .toList();
@@ -132,51 +191,37 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
                 .entries(entries)
                 .build();
 
-            CompletableFuture<PutEventsResponse> future = eventBridgeClient.putEvents(request);
-            PutEventsResponse response = future.get(5, TimeUnit.SECONDS);
+            return eventBridgeClient.putEvents(request);
+        };
 
-            if (response.failedEntryCount() > 0) {
-                handleFailedEntries(response.entries(), batch);
-            }
+        // Apply Resilience4j patterns: Retry -> CircuitBreaker -> Bulkhead
+        Supplier<CompletableFuture<PutEventsResponse>> decoratedSupplier =
+            Bulkhead.decorateSupplier(bulkhead,
+                CircuitBreaker.decorateSupplier(circuitBreaker,
+                    Retry.decorateSupplier(retry, publishSupplier)));
 
-            LOGGER.info("Published batch of {} events", batch.size());
-        } catch (Exception e) {
-            LOGGER.error("Failed to publish batch of {} events", batch.size(), e);
-            throw new RuntimeException("Batch event publishing failed", e);
-        }
+        return decoratedSupplier.get()
+            .thenAccept(response -> {
+                if (response.failedEntryCount() > 0) {
+                    handleFailedEntries(response.entries(), batch);
+                } else {
+                    LOGGER.info("Published batch of {} events", batch.size());
+                }
+            });
     }
 
+    /**
+     * @deprecated Use {@link #publish(DomainEvent)} instead. Retry logic is now handled
+     * automatically by Resilience4j (configured in application-shared.yml).
+     * This method now delegates to publish() for backward compatibility.
+     */
+    @Deprecated(since = "2026-01-10", forRemoval = true)
     @Override
     public void publishWithRetry(DomainEvent<?> event, int maxRetries) {
-        int attempts = 0;
-        Exception lastException = null;
-
-        while (attempts < maxRetries) {
-            try {
-                publish(event);
-                return; // Success
-            } catch (Exception e) {
-                lastException = e;
-                attempts++;
-
-                if (attempts < maxRetries) {
-                    long delay = retryDelayMs * (long) Math.pow(2, attempts - 1); // Exponential backoff
-                    LOGGER.warn("Publish attempt {} failed for event {}, retrying in {} ms",
-                        attempts, event.getEventType(), delay);
-
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Retry interrupted", ie);
-                    }
-                }
-            }
-        }
-
-        LOGGER.error("Failed to publish event {} after {} attempts",
-            event.getEventType(), maxRetries, lastException);
-        throw new RuntimeException("Event publishing failed after " + maxRetries + " attempts", lastException);
+        LOGGER.warn("publishWithRetry() is deprecated. Use publish() instead - "
+                + "retry is now automatic via Resilience4j (configured retries: {})", defaultMaxRetries);
+        // Delegate to new publish() method which has built-in retry via Resilience4j
+        publish(event);
     }
 
     @Override
@@ -206,28 +251,29 @@ public class EventBridgeEventPublisher implements DomainEventPublisher {
 
     @Override
     public void ensureEventBusExists(String eventBusName) {
-        try {
-            // Check if event bus exists
-            DescribeEventBusRequest describeRequest = DescribeEventBusRequest.builder()
-                .name(eventBusName)
-                .build();
+        // Check if event bus exists (async, non-blocking)
+        DescribeEventBusRequest describeRequest = DescribeEventBusRequest.builder()
+            .name(eventBusName)
+            .build();
 
-            eventBridgeClient.describeEventBus(describeRequest).get(5, TimeUnit.SECONDS);
-            LOGGER.info("Event bus '{}' exists", eventBusName);
-        } catch (Exception e) {
-            // Event bus doesn't exist, create it
-            try {
+        eventBridgeClient.describeEventBus(describeRequest)
+            .thenAccept(response -> LOGGER.info("Event bus '{}' exists", eventBusName))
+            .exceptionally(throwable -> {
+                // Event bus doesn't exist, create it
+                LOGGER.info("Event bus '{}' not found, creating it", eventBusName);
                 CreateEventBusRequest createRequest = CreateEventBusRequest.builder()
                     .name(eventBusName)
                     .build();
 
-                eventBridgeClient.createEventBus(createRequest).get(5, TimeUnit.SECONDS);
-                LOGGER.info("Created event bus '{}'", eventBusName);
-            } catch (Exception createException) {
-                LOGGER.error("Failed to create event bus '{}'", eventBusName, createException);
-                throw new RuntimeException("Failed to ensure event bus exists", createException);
-            }
-        }
+                eventBridgeClient.createEventBus(createRequest)
+                    .thenAccept(response -> LOGGER.info("Created event bus '{}'", eventBusName))
+                    .exceptionally(createException -> {
+                        LOGGER.error("Failed to create event bus '{}'", eventBusName, createException);
+                        return null;
+                    });
+
+                return null;
+            });
     }
 
     @Override

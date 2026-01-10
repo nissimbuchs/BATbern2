@@ -52,6 +52,16 @@ dependencies {
     implementation 'software.amazon.awssdk:ses' // Email service (Story 2.2a Task B12)
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
 
+    // Resilience4j for circuit breaker, bulkhead, and retry patterns
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.3.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
+
+    // ThreadFactoryBuilder for bounded thread pools
+    implementation 'com.google.guava:guava:33.0.0-jre'
+
     // Jakarta Mail for email MIME message creation (Story 2.2a Task B12)
     implementation 'org.eclipse.angus:angus-mail:2.0.3'
     implementation 'jakarta.mail:jakarta.mail-api:2.1.3'

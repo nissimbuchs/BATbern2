@@ -1,0 +1,212 @@
+import * as cdk from 'aws-cdk-lib';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import { Construct } from 'constructs';
+
+/**
+ * CloudWatch Alarms for ECS Service Monitoring
+ *
+ * Platform Stability Improvements (Phase 3)
+ * Monitors memory pressure, OOM kills, task failures, and EventBridge publishing
+ *
+ * Alarms:
+ * - High memory utilization (80% threshold)
+ * - OOM kill detection (exit code 137)
+ * - Task failure rate (abnormal restarts)
+ * - EventBridge publishing failures
+ */
+export interface EcsServiceAlarmsProps {
+  /**
+   * Environment name (development, staging, production)
+   */
+  readonly environment: string;
+
+  /**
+   * ECS cluster name
+   */
+  readonly clusterName: string;
+
+  /**
+   * ECS service name
+   */
+  readonly serviceName: string;
+
+  /**
+   * SNS topic for alarm notifications
+   */
+  readonly alarmTopic: sns.ITopic;
+
+  /**
+   * Optional: Custom alarm thresholds
+   */
+  readonly thresholds?: {
+    readonly memoryUtilization?: number;
+    readonly oomKillCount?: number;
+    readonly taskFailureCount?: number;
+    readonly eventBridgePublishingFailures?: number;
+  };
+}
+
+export class EcsServiceAlarms extends Construct {
+  constructor(scope: Construct, id: string, props: EcsServiceAlarmsProps) {
+    super(scope, id);
+
+    // Default thresholds - stricter for production
+    const isProduction = props.environment === 'production';
+    const thresholds = {
+      memoryUtilization: props.thresholds?.memoryUtilization ?? 80,
+      oomKillCount: props.thresholds?.oomKillCount ?? (isProduction ? 1 : 3),
+      taskFailureCount:
+        props.thresholds?.taskFailureCount ?? (isProduction ? 2 : 5),
+      eventBridgePublishingFailures:
+        props.thresholds?.eventBridgePublishingFailures ??
+        (isProduction ? 5 : 10),
+    };
+
+    // Create CloudWatch alarm action
+    const alarmAction = new cloudwatch_actions.SnsAction(props.alarmTopic);
+
+    // Extract service name without stack prefix for better alarm names
+    const serviceShortName = props.serviceName
+      .replace(`BATbern-${props.environment}-`, '')
+      .replace(/-Service.*$/, '');
+
+    // Alarm 1: High Memory Utilization
+    const memoryUtilizationAlarm = new cloudwatch.Alarm(
+      this,
+      'HighMemoryUtilization',
+      {
+        alarmName: `batbern-${props.environment}-${serviceShortName}-High-Memory`,
+        alarmDescription: `${serviceShortName} memory utilization exceeds ${thresholds.memoryUtilization}% (average over 5 minutes)`,
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/ECS',
+          metricName: 'MemoryUtilization',
+          dimensionsMap: {
+            ServiceName: props.serviceName,
+            ClusterName: props.clusterName,
+          },
+          statistic: 'Average',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: thresholds.memoryUtilization,
+        evaluationPeriods: 1,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    memoryUtilizationAlarm.addAlarmAction(alarmAction);
+
+    // Alarm 2: OOM Kill Detection (exit code 137)
+    // Create metric filter for Container Insights logs
+    const logGroupName = `/aws/ecs/containerinsights/${props.clusterName}/performance`;
+
+    // Check if log group exists, create metric filter only if it does
+    const oomMetricFilter = new logs.MetricFilter(this, 'OOMKillMetricFilter', {
+      logGroup: logs.LogGroup.fromLogGroupName(
+        this,
+        'ContainerInsightsLogGroup',
+        logGroupName
+      ),
+      metricNamespace: 'BATbern/ECS',
+      metricName: 'OOMKills',
+      filterPattern: logs.FilterPattern.allTerms(
+        props.serviceName,
+        'exit',
+        'code',
+        '137'
+      ),
+      metricValue: '1',
+      defaultValue: 0,
+      dimensions: {
+        ServiceName: props.serviceName,
+        ClusterName: props.clusterName,
+      },
+    });
+
+    const oomKillAlarm = new cloudwatch.Alarm(this, 'OOMKillDetection', {
+      alarmName: `batbern-${props.environment}-${serviceShortName}-OOM-Kills`,
+      alarmDescription: `${serviceShortName} experienced OOM kill (exit code 137) - memory limit reached`,
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/ECS',
+        metricName: 'OOMKills',
+        dimensionsMap: {
+          ServiceName: props.serviceName,
+          ClusterName: props.clusterName,
+        },
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: thresholds.oomKillCount,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    oomKillAlarm.addAlarmAction(alarmAction);
+    oomKillAlarm.node.addDependency(oomMetricFilter);
+
+    // Alarm 3: Task Failure Rate (abnormal task stops)
+    const taskFailureAlarm = new cloudwatch.Alarm(
+      this,
+      'HighTaskFailureRate',
+      {
+        alarmName: `batbern-${props.environment}-${serviceShortName}-Task-Failures`,
+        alarmDescription: `${serviceShortName} experiencing abnormal task restarts (>${thresholds.taskFailureCount} failures per 15 minutes)`,
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/ECS',
+          metricName: 'TaskCount',
+          dimensionsMap: {
+            ServiceName: props.serviceName,
+            ClusterName: props.clusterName,
+          },
+          statistic: 'SampleCount',
+          period: cdk.Duration.minutes(15),
+        }),
+        threshold: thresholds.taskFailureCount,
+        evaluationPeriods: 1,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    taskFailureAlarm.addAlarmAction(alarmAction);
+
+    // Alarm 4: EventBridge Publishing Failures
+    const eventBridgeFailuresAlarm = new cloudwatch.Alarm(
+      this,
+      'EventBridgePublishingFailures',
+      {
+        alarmName: `batbern-${props.environment}-${serviceShortName}-EventBridge-Failures`,
+        alarmDescription: `${serviceShortName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
+        metric: new cloudwatch.Metric({
+          namespace: 'BATbern/EventBridge',
+          metricName: 'PublishingFailures',
+          dimensionsMap: {
+            ServiceName: serviceShortName,
+          },
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: thresholds.eventBridgePublishingFailures,
+        evaluationPeriods: 1,
+        comparisonOperator:
+          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    eventBridgeFailuresAlarm.addAlarmAction(alarmAction);
+
+    // Output alarm names for reference
+    new cdk.CfnOutput(this, 'AlarmNames', {
+      value: [
+        memoryUtilizationAlarm.alarmName,
+        oomKillAlarm.alarmName,
+        taskFailureAlarm.alarmName,
+        eventBridgeFailuresAlarm.alarmName,
+      ].join(','),
+      description: `CloudWatch alarm names for ${serviceShortName} monitoring`,
+    });
+  }
+}

@@ -6,10 +6,12 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
+import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
 
 export interface EventManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -22,6 +24,7 @@ export interface EventManagementStackProps extends cdk.StackProps {
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
+  alarmTopic?: sns.ITopic;
 }
 
 /**
@@ -48,7 +51,7 @@ export class EventManagementStack extends cdk.Stack {
         componentTag: 'EventManagement-Service',
         routePattern: '/api/v1/events',
         cpu: 256,
-        memoryLimitMiB: 512, // Reduced from 1024 MB (Priority 4: ECS Right-Sizing - was at 46% utilization)
+        memoryLimitMiB: 1024, // Increased from 512 MB to fix OOM crash (exit code 137, 2026-01-10)
         additionalEnvironment: {
           JPA_DDL_AUTO: 'none', // Let Flyway handle all schema management
           // S3 configuration for event theme images (Story 2.5.3a)
@@ -79,6 +82,27 @@ export class EventManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Override desiredCount for Event Management specifically (2 tasks for HA)
+    // This addresses OOM stability issues and ensures zero-downtime deployments
+    const cfnService = this.service.node.defaultChild as ecs.CfnService;
+    cfnService.addPropertyOverride('DesiredCount', 2);
+
+    // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
+    if (props.alarmTopic) {
+      new EcsServiceAlarms(this, 'ServiceAlarms', {
+        environment: envName,
+        clusterName: props.cluster.clusterName,
+        serviceName: this.service.serviceName,
+        alarmTopic: props.alarmTopic,
+        thresholds: {
+          memoryUtilization: 80,
+          oomKillCount: envName === 'production' ? 1 : 3,
+          taskFailureCount: envName === 'production' ? 2 : 5,
+          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
+        },
+      });
+    }
 
     // Grant S3 permissions for event theme images (Story 2.5.3a)
     if (props.contentBucket) {

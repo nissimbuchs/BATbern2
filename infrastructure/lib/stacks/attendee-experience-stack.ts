@@ -4,9 +4,11 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
+import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
 
 export interface AttendeeExperienceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -17,6 +19,7 @@ export interface AttendeeExperienceStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  alarmTopic?: sns.ITopic;
 }
 
 /**
@@ -55,5 +58,21 @@ export class AttendeeExperienceStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
+    if (props.alarmTopic) {
+      new EcsServiceAlarms(this, 'ServiceAlarms', {
+        environment: envName,
+        clusterName: props.cluster.clusterName,
+        serviceName: this.service.serviceName,
+        alarmTopic: props.alarmTopic,
+        thresholds: {
+          memoryUtilization: 80,
+          oomKillCount: envName === 'production' ? 1 : 3,
+          taskFailureCount: envName === 'production' ? 2 : 5,
+          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
+        },
+      });
+    }
   }
 }

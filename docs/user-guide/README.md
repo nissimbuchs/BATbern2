@@ -23,14 +23,19 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 ## Quick Navigation
 
 ### 🚀 Getting Started
+
 New to BATbern? Start here:
+
+- 🎥 **[Video Tutorial (12 min, Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)** - Complete workflow demonstration from event creation to archival
 - [Platform Overview](getting-started/README.md) - Understand the BATbern platform
 - [Login & Authentication](getting-started/login.md) - Access your organizer account
 - [Dashboard Navigation](getting-started/dashboard.md) - Navigate the organizer interface
 - [UI Conventions](getting-started/navigation.md) - Common patterns and shortcuts
 
 ### 📊 Entity Management
+
 Manage core platform entities:
+
 - [Companies](entity-management/companies.md) <span class="feature-status implemented">Implemented</span>
   - Swiss UID validation, logo upload, search/autocomplete
 - [Users](entity-management/users.md) <span class="feature-status implemented">Implemented</span>
@@ -72,7 +77,9 @@ Three independent workflow systems for event management:
 - [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions)
 
 ### ✨ Advanced Features
+
 Powerful tools for organizers:
+
 - [Topic Heat Map](features/heat-maps.md) <span class="feature-status implemented">Implemented</span>
   - 20+ years historical visualization
 - [Notification System](features/notifications.md) <span class="feature-status planned">Planned</span>
@@ -83,13 +90,16 @@ Powerful tools for organizers:
   - Event metrics, speaker engagement
 
 ### 🔧 Troubleshooting
+
 Common issues and solutions:
+
 - [Authentication Issues](troubleshooting/authentication.md)
 - [File Upload Errors](troubleshooting/uploads.md)
 - [Workflow Blockers](troubleshooting/workflow.md)
 - [Common Error Messages](troubleshooting/README.md)
 
 ### 📚 Reference
+
 - [Glossary](appendix/glossary.md) - Platform terminology
 - [Keyboard Shortcuts](appendix/keyboard-shortcuts.md) - Quick commands
 - [Feature Status](appendix/feature-status.md) - Implementation roadmap
@@ -106,6 +116,7 @@ Throughout this documentation, you'll see feature status badges indicating imple
 ## Documentation Conventions
 
 ### Icons
+
 - 🚀 Getting Started
 - 📊 Entity Management
 - 🔄 Workflow Steps
@@ -114,12 +125,14 @@ Throughout this documentation, you'll see feature status badges indicating imple
 - 📚 Reference
 
 ### Code Examples
+
 ```bash
 # Authentication token retrieval
 ./scripts/auth/get-token.sh staging your-email@example.com
 ```
 
 ### Workflow Phases
+
 Workflow documentation uses color-coded phases:
 
 <div class="workflow-phase phase-a">

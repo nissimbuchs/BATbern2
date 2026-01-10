@@ -2,6 +2,24 @@
 
 > Event lifecycle management through state machines and task coordination
 
+## 🎥 Video Tutorial
+
+**Complete Workflow Demonstration** (12 minutes, German with subtitles):
+
+📹 **[Event-Workflow Schulungsvideo (Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)**
+
+This screencast demonstrates the complete event lifecycle from creation to archival, showing all workflow phases in action:
+
+- Phase A: Event setup, topic selection, speaker brainstorming
+- Phase B: Speaker outreach with Kanban board
+- Phase C: Quality review and content approval
+- Phase D: Slot assignment and agenda publishing
+- Phase E: Event archival
+
+**Features**: Full HD (1920x1080), German narration with toggleable subtitles, 36 workflow steps demonstrated in real-time.
+
+---
+
 ## Overview
 
 BATbern uses **three independent workflow systems** to manage event planning and execution:
@@ -27,48 +45,54 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 
 ### State Definitions
 
-| State | Description | When Reached | Exit Condition |
-|-------|-------------|--------------|----------------|
-| **CREATED** | Event created, ready for setup | Event creation form submitted | Topic selected |
-| **TOPIC_SELECTION** | Topics selected, ready for speakers | Minimum 1 topic selected | Minimum speakers in pool |
-| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled |
-| **SLOT_ASSIGNMENT** | Assigning speakers to time slots | All confirmed speakers assigned | Agenda published |
-| **AGENDA_PUBLISHED** | Public agenda, accepting registrations | Publish agenda action | Manual finalization (2 weeks before) |
-| **AGENDA_FINALIZED** | Agenda locked for printing | Finalize agenda action | Event day arrives |
-| **EVENT_LIVE** | Event currently happening | Event day | Manual transition after event |
-| **EVENT_COMPLETED** | Event finished, post-processing | Post-event trigger | Manual archival |
-| **ARCHIVED** | Event archived for history | Archival action | Terminal state |
+| State                      | Description                             | When Reached                      | Exit Condition                       |
+| -------------------------- | --------------------------------------- | --------------------------------- | ------------------------------------ |
+| **CREATED**                | Event created, ready for setup          | Event creation form submitted     | Topic selected                       |
+| **TOPIC_SELECTION**        | Topics selected, ready for speakers     | Minimum 1 topic selected          | Minimum speakers in pool             |
+| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled                     |
+| **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | All confirmed speakers assigned   | Agenda published                     |
+| **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action             | Manual finalization (2 weeks before) |
+| **AGENDA_FINALIZED**       | Agenda locked for printing              | Finalize agenda action            | Event day arrives                    |
+| **EVENT_LIVE**             | Event currently happening               | Event day                         | Manual transition after event        |
+| **EVENT_COMPLETED**        | Event finished, post-processing         | Post-event trigger                | Manual archival                      |
+| **ARCHIVED**               | Event archived for history              | Archival action                   | Terminal state                       |
 
 ### Workflow Phases (User Guide Organization)
 
 For documentation purposes, we organize the 9 states into user-friendly phases:
 
 **Phase A: Setup** <span class="feature-status implemented">Implemented</span>
+
 - States: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION
 - Actions: Create event, select topics, brainstorm speaker candidates
 - [Learn more →](phase-a-setup.md)
 
 **Phase B: Outreach** <span class="feature-status implemented">Implemented</span>
+
 - States: SPEAKER_IDENTIFICATION (speakers moving through their own workflow)
 - Actions: Contact speakers, track responses, collect content submissions
 - [Learn more →](phase-b-outreach.md)
 
 **Phase C: Quality** <span class="feature-status implemented">Implemented</span>
+
 - States: SPEAKER_IDENTIFICATION (quality review happening in speaker workflow)
 - Actions: Review submitted content, approve/request revisions
 - [Learn more →](phase-c-quality.md)
 
 **Phase D: Assignment** <span class="feature-status implemented">Implemented</span>
+
 - States: SLOT_ASSIGNMENT → AGENDA_PUBLISHED
 - Actions: Assign presentations to time slots, publish agenda
 - [Learn more →](phase-d-assignment.md)
 
 **Phase E: Archival** <span class="feature-status implemented">Implemented</span>
+
 - States: Any state → ARCHIVED
 - Actions: Archive completed event, preserve historical data
 - [Learn more →](phase-e-publishing.md)
 
 **Phase F: Communication** <span class="feature-status planned">Planned</span>
+
 - States: Tasks triggered at various event states
 - Actions: Send newsletters, assign moderators, coordinate logistics
 - [Learn more →](phase-f-communication.md)
@@ -98,27 +122,29 @@ Special states:
 
 ### State Definitions
 
-| State | Description | How to Reach |
-|-------|-------------|--------------|
-| **identified** | Added to speaker pool | Brainstormed in Phase A |
-| **contacted** | Organizer recorded outreach | Mark as contacted in Kanban board |
-| **ready** | Speaker ready to accept/decline | Speaker receives invitation |
-| **accepted** | Speaker accepted invitation | Speaker accepts or organizer marks accepted |
-| **declined** | Speaker declined invitation | Speaker declines or organizer marks declined |
-| **content_submitted** | Title/abstract submitted | Speaker submits via content form |
-| **quality_reviewed** | Content approved by organizer | Organizer approves in quality review drawer |
-| **confirmed** | Ready for publication | Auto-set when quality_reviewed AND session has timing |
-| **overflow** | Backup (no slot available) | Accepted when all slots filled |
-| **withdrew** | Dropped out after accepting | Speaker cancels after acceptance |
+| State                 | Description                     | How to Reach                                          |
+| --------------------- | ------------------------------- | ----------------------------------------------------- |
+| **identified**        | Added to speaker pool           | Brainstormed in Phase A                               |
+| **contacted**         | Organizer recorded outreach     | Mark as contacted in Kanban board                     |
+| **ready**             | Speaker ready to accept/decline | Speaker receives invitation                           |
+| **accepted**          | Speaker accepted invitation     | Speaker accepts or organizer marks accepted           |
+| **declined**          | Speaker declined invitation     | Speaker declines or organizer marks declined          |
+| **content_submitted** | Title/abstract submitted        | Speaker submits via content form                      |
+| **quality_reviewed**  | Content approved by organizer   | Organizer approves in quality review drawer           |
+| **confirmed**         | Ready for publication           | Auto-set when quality_reviewed AND session has timing |
+| **overflow**          | Backup (no slot available)      | Accepted when all slots filled                        |
+| **withdrew**          | Dropped out after accepting     | Speaker cancels after acceptance                      |
 
 ### Parallel Workflow Feature
 
 **Quality review and slot assignment are independent:**
+
 - Scenario 1: Quality review first → slot assigned later → auto-confirms when slot assigned
 - Scenario 2: Slot assigned first → quality review later → auto-confirms when quality approved
 - Order doesn't matter: Confirmation happens when BOTH complete
 
 **Data Storage:**
+
 - **speaker_pool table**: Tracks speaker workflow state
 - **sessions table**: Stores presentation details and timing (startTime, endTime, room)
 - **session_users table**: Links speakers to sessions
@@ -133,6 +159,7 @@ Special states:
 ### Task Types
 
 **Default System Tasks (7):**
+
 1. **Venue Booking** - Triggered: TOPIC_SELECTION, Due: 90 days before event
 2. **Partner Meeting** - Triggered: TOPIC_SELECTION, Due: event day
 3. **Moderator Assignment** - Triggered: TOPIC_SELECTION, Due: 14 days before event
@@ -143,6 +170,7 @@ Special states:
 
 **Custom Tasks:**
 Organizers can create custom tasks with:
+
 - Custom task name
 - Trigger state (which event state creates the task)
 - Due date (immediate, relative to event date, or absolute date)
@@ -151,6 +179,7 @@ Organizers can create custom tasks with:
 ### Task Dashboard
 
 Tasks appear in the task list with three statuses:
+
 - **TODO**: Not started (overdue highlighted in red)
 - **IN_PROGRESS**: Currently working on
 - **COMPLETED**: Finished with completion notes
@@ -158,6 +187,7 @@ Tasks appear in the task list with three statuses:
 ### Task Auto-Creation
 
 Tasks are automatically created when the event transitions to their trigger state:
+
 - Event reaches TOPIC_SELECTION → creates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
 - Event reaches AGENDA_PUBLISHED → creates Newsletter: Speakers task
 - Event reaches AGENDA_FINALIZED → creates Newsletter: Final, Catering tasks
@@ -169,25 +199,30 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Clear Separation of Concerns
 
 **Event State**: High-level event lifecycle progression
+
 - Example: "Where is the event in its planning lifecycle?"
 - Answer: TOPIC_SELECTION, AGENDA_PUBLISHED, etc.
 
 **Speaker State**: Individual speaker progress
+
 - Example: "Is this speaker ready to present?"
 - Answer: Each speaker has their own state (accepted, quality_reviewed, confirmed, etc.)
 
 **Tasks**: Actionable work items
+
 - Example: "What do I need to do today?"
 - Answer: Task list shows assigned tasks with due dates
 
 ### Parallel Progression
 
 **Event progresses while speakers progress independently:**
+
 - Event can be in SPEAKER_IDENTIFICATION state
 - Speaker A is "identified", Speaker B is "contacted", Speaker C is "content_submitted"
 - All happening simultaneously
 
 **Quality review and slot assignment are flexible:**
+
 - No rigid order - whichever completes first
 - Auto-confirmation when both complete
 - Supports real-world workflow variations
@@ -195,6 +230,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Task Flexibility
 
 **Tasks are triggered by events but managed separately:**
+
 - Newsletter can be drafted before event reaches AGENDA_PUBLISHED
 - Moderator assignment doesn't block event progression
 - Custom tasks for organization-specific needs
@@ -260,16 +296,19 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Managing Tasks
 
 **View Tasks**: Navigate to Task List
+
 - Filter by status (TODO, IN_PROGRESS, COMPLETED)
 - Filter by assigned organizer ("My Tasks" / "All Tasks")
 - Sort by due date (overdue highlighted)
 
 **Complete Task**:
+
 - Click task → Update status to IN_PROGRESS
 - Add completion notes
 - Mark as COMPLETED when done
 
 **Create Custom Task**:
+
 - Click "Create Task"
 - Enter task name, trigger state, due date
 - Assign to organizer
@@ -282,11 +321,13 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Event Workflow
 
 **Don't Rush State Transitions**:
+
 - Each state has entry/exit criteria
 - Ensure criteria met before advancing
 - System validates transitions automatically
 
 **Use Override Sparingly**:
+
 - Workflow validation can be overridden for special cases
 - Only use for cancelled events or exceptional circumstances
 - Document reason in event notes
@@ -294,16 +335,19 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Speaker Workflow
 
 **Update States Promptly**:
+
 - Mark speakers as "contacted" immediately after outreach
 - Update to "accepted"/"declined" as responses come in
 - Keeps Kanban board accurate
 
 **Parallel Quality Review and Slot Assignment**:
+
 - Review content as soon as submitted (don't wait for all speakers)
 - Assign slots whenever ready (don't wait for all quality reviews)
 - System auto-confirms when both complete
 
 **Handle Dropouts Quickly**:
+
 - Mark speaker as "withdrew" immediately
 - Promote overflow speaker if available
 - Update published agenda promptly
@@ -311,15 +355,18 @@ Tasks are automatically created when the event transitions to their trigger stat
 ### Task Management
 
 **Assign Tasks Early**:
+
 - Assign tasks to specific organizers when created
 - Clear ownership prevents work falling through cracks
 
 **Set Realistic Due Dates**:
+
 - Use relative due dates (e.g., "14 days before event")
 - Adjust dates if timeline changes
 - Add buffer for unexpected delays
 
 **Track Progress**:
+
 - Review task list daily during active planning
 - Update status as work progresses
 - Add completion notes for historical reference
@@ -362,6 +409,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 **Problem**: Can't advance to SLOT_ASSIGNMENT.
 
 **Solution**:
+
 - Check if minimum speakers are confirmed
 - Verify all slots have confirmed speakers assigned
 - System validates speaker count before allowing transition
@@ -371,6 +419,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 **Problem**: Speaker has quality_reviewed AND slot assigned but still not confirmed.
 
 **Solution**:
+
 - Check session.startTime is set (not just session created)
 - Verify speaker status is exactly "quality_reviewed"
 - Check speaker_pool.session_id links to correct session
@@ -380,6 +429,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 **Problem**: Event transitioned to TOPIC_SELECTION but no tasks created.
 
 **Solution**:
+
 - Check task templates exist (7 default templates)
 - Verify templates have correct trigger_state
 - Review application event logs for errors
@@ -389,6 +439,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 **Problem**: Workflow validation prevents archival.
 
 **Solution**:
+
 - Check override validation checkbox in edit modal
 - Allows archival for cancelled events or special cases
 - Documents that normal workflow wasn't completed
