@@ -122,10 +122,8 @@ class NotificationWebSocketClient {
       webSocketFactory: () => {
         return new SockJS(`${getWebSocketUrl()}/ws`) as WebSocket;
       },
-      debug: (str: string) => {
-        if (import.meta.env.DEV) {
-          console.log('STOMP Debug:', str);
-        }
+      debug: () => {
+        // STOMP debug logging disabled - enable console.log if needed for debugging
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
@@ -211,7 +209,6 @@ class NotificationWebSocketClient {
    * Handle successful connection
    */
   private onConnected(): void {
-    console.log('WebSocket connected successfully');
     this.updateConnectionState(ConnectionState.CONNECTED);
 
     if (!this.client || !this.username) {
@@ -225,16 +222,12 @@ class NotificationWebSocketClient {
     });
 
     this._subscriptionId = subscription.id;
-    console.log(
-      `Subscribed to notification topic: ${topic} (subscription: ${this._subscriptionId})`
-    );
   }
 
   /**
    * Handle disconnection
    */
   private onDisconnected(): void {
-    console.log('WebSocket disconnected');
     this._subscriptionId = null;
 
     if (this.connectionState === ConnectionState.CONNECTED) {
