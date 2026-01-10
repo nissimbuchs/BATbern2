@@ -40,6 +40,13 @@ export interface EcsServiceAlarmsProps {
   readonly serviceDisplayName: string;
 
   /**
+   * Whether Container Insights is enabled on the ECS cluster
+   * OOM kill detection requires Container Insights log group
+   * @default false
+   */
+  readonly containerInsightsEnabled?: boolean;
+
+  /**
    * SNS topic for alarm notifications
    */
   readonly alarmTopic: sns.ITopic;
@@ -104,52 +111,57 @@ export class EcsServiceAlarms extends Construct {
     memoryUtilizationAlarm.addAlarmAction(alarmAction);
 
     // Alarm 2: OOM Kill Detection (exit code 137)
-    // Create metric filter for Container Insights logs
-    const logGroupName = `/aws/ecs/containerinsights/${props.clusterName}/performance`;
+    // IMPORTANT: Only create if Container Insights is enabled
+    // Container Insights creates the log group /aws/ecs/containerinsights/${clusterName}/performance
+    // This log group does NOT exist if Container Insights is disabled (e.g., staging environment)
+    let oomKillAlarm: cloudwatch.Alarm | undefined;
 
-    // Check if log group exists, create metric filter only if it does
-    const oomMetricFilter = new logs.MetricFilter(this, 'OOMKillMetricFilter', {
-      logGroup: logs.LogGroup.fromLogGroupName(
-        this,
-        'ContainerInsightsLogGroup',
-        logGroupName
-      ),
-      metricNamespace: 'BATbern/ECS',
-      metricName: 'OOMKills',
-      filterPattern: logs.FilterPattern.allTerms(
-        props.serviceName,
-        'exit',
-        'code',
-        '137'
-      ),
-      metricValue: '1',
-      defaultValue: 0,
-      dimensions: {
-        ServiceName: props.serviceName,
-        ClusterName: props.clusterName,
-      },
-    });
+    if (props.containerInsightsEnabled) {
+      const logGroupName = `/aws/ecs/containerinsights/${props.clusterName}/performance`;
 
-    const oomKillAlarm = new cloudwatch.Alarm(this, 'OOMKillDetection', {
-      alarmName: `batbern-${props.environment}-${serviceDisplayName}-OOM-Kills`,
-      alarmDescription: `${serviceDisplayName} experienced OOM kill (exit code 137) - memory limit reached`,
-      metric: new cloudwatch.Metric({
-        namespace: 'BATbern/ECS',
+      const oomMetricFilter = new logs.MetricFilter(this, 'OOMKillMetricFilter', {
+        logGroup: logs.LogGroup.fromLogGroupName(
+          this,
+          'ContainerInsightsLogGroup',
+          logGroupName
+        ),
+        metricNamespace: 'BATbern/ECS',
         metricName: 'OOMKills',
-        dimensionsMap: {
+        filterPattern: logs.FilterPattern.allTerms(
+          props.serviceName,
+          'exit',
+          'code',
+          '137'
+        ),
+        metricValue: '1',
+        defaultValue: 0,
+        dimensions: {
           ServiceName: props.serviceName,
           ClusterName: props.clusterName,
         },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: thresholds.oomKillCount,
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-    oomKillAlarm.addAlarmAction(alarmAction);
-    oomKillAlarm.node.addDependency(oomMetricFilter);
+      });
+
+      oomKillAlarm = new cloudwatch.Alarm(this, 'OOMKillDetection', {
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-OOM-Kills`,
+        alarmDescription: `${serviceDisplayName} experienced OOM kill (exit code 137) - memory limit reached`,
+        metric: new cloudwatch.Metric({
+          namespace: 'BATbern/ECS',
+          metricName: 'OOMKills',
+          dimensionsMap: {
+            ServiceName: props.serviceName,
+            ClusterName: props.clusterName,
+          },
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: thresholds.oomKillCount,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+      oomKillAlarm.addAlarmAction(alarmAction);
+      oomKillAlarm.node.addDependency(oomMetricFilter);
+    }
 
     // Alarm 3: Task Failure Rate (abnormal task stops)
     const taskFailureAlarm = new cloudwatch.Alarm(
@@ -203,13 +215,15 @@ export class EcsServiceAlarms extends Construct {
     eventBridgeFailuresAlarm.addAlarmAction(alarmAction);
 
     // Output alarm names for reference
+    const alarmNames = [
+      memoryUtilizationAlarm.alarmName,
+      ...(oomKillAlarm ? [oomKillAlarm.alarmName] : []),
+      taskFailureAlarm.alarmName,
+      eventBridgeFailuresAlarm.alarmName,
+    ];
+
     new cdk.CfnOutput(this, 'AlarmNames', {
-      value: [
-        memoryUtilizationAlarm.alarmName,
-        oomKillAlarm.alarmName,
-        taskFailureAlarm.alarmName,
-        eventBridgeFailuresAlarm.alarmName,
-      ].join(','),
+      value: alarmNames.join(','),
       description: `CloudWatch alarm names for ${serviceDisplayName} monitoring`,
     });
   }
