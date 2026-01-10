@@ -13,6 +13,29 @@ aws:
       max-interval: 10000
       multiplier: 2.0
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventBridgePublisher:
+        slidingWindowSize: 50
+        failureRateThreshold: 60          # Open after 60% failures
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 5
+
+  bulkhead:
+    instances:
+      eventBridgePublisher:
+        maxConcurrentCalls: 50            # Limit concurrent publishes
+        maxWaitDuration: 100ms
+
+  retry:
+    instances:
+      eventBridgePublisher:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
 logging:
   level:
     ch.batbern.shared: DEBUG

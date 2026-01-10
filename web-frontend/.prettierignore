@@ -21,3 +21,13 @@ package-lock.json
 release-notes.txt
 web-frontend/public/assets/**/*.pdf
 *.pdf
+
+# Screencast audio and script files
+*.mp3
+*.m4a
+*.aiff
+*.txt
+*.py
+*.mp4
+*.webm
+*.srt

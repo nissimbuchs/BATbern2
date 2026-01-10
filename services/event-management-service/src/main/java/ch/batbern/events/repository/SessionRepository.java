@@ -32,6 +32,12 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     boolean existsBySessionSlug(String sessionSlug);
 
     /**
+     * Check if a session slug already exists within a specific event
+     * Story 5.5: For collision detection during content submission (allows duplicate slugs across events)
+     */
+    boolean existsByEventIdAndSessionSlug(UUID eventId, String sessionSlug);
+
+    /**
      * Find all sessions for a specific event
      */
     List<Session> findByEventId(UUID eventId);

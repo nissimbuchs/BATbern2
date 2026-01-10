@@ -35,7 +35,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ContextConfiguration(classes = {
     ch.batbern.shared.config.EventBridgeConfig.class,
     ch.batbern.shared.events.EventBridgeEventPublisher.class,
-    ch.batbern.shared.config.TestEventBridgeConfig.class
+    ch.batbern.shared.config.TestEventBridgeConfig.class,
+    ch.batbern.shared.config.TestResilience4jConfig.class
 })
 @TestPropertySource(properties = {
     "aws.eventbridge.bus-name=batbern-test-events",

@@ -229,23 +229,38 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
   }
 
   // Add severity label based on alarm name
-  if (alarm.AlarmName.includes('availability') || alarm.AlarmName.includes('high-errors')) {
+  // Platform Stability Improvements (Phase 3): OOM kills are critical
+  if (alarm.AlarmName.includes('OOM-Kills') || alarm.AlarmName.includes('availability') || alarm.AlarmName.includes('high-errors')) {
     labels.push('severity:critical');
-  } else if (alarm.AlarmName.includes('high-latency') || alarm.AlarmName.includes('high-cpu')) {
+  } else if (alarm.AlarmName.includes('high-latency') || alarm.AlarmName.includes('high-cpu') || alarm.AlarmName.includes('High-Memory') || alarm.AlarmName.includes('Task-Failures')) {
     labels.push('severity:high');
-  } else if (alarm.AlarmName.includes('budget') || alarm.AlarmName.includes('high-memory')) {
+  } else if (alarm.AlarmName.includes('budget') || alarm.AlarmName.includes('EventBridge-Failures')) {
     labels.push('severity:medium');
   } else {
     labels.push('severity:low');
   }
 
   // Add component label
+  // Platform Stability Improvements (Phase 3): ECS service alarms
   if (alarm.AlarmName.includes('database')) {
     labels.push('component:database');
   } else if (alarm.AlarmName.includes('api')) {
     labels.push('component:api');
+  } else if (alarm.AlarmName.includes('High-Memory') || alarm.AlarmName.includes('OOM-Kills') || alarm.AlarmName.includes('Task-Failures') || alarm.AlarmName.includes('EventBridge-Failures')) {
+    labels.push('component:ecs');
   } else {
     labels.push('component:infrastructure');
+  }
+
+  // Platform Stability Improvements (Phase 3): Add service attribution label
+  // Extract service name from alarm (e.g., "batbern-staging-EventManagement-High-Memory" → "service:event-management")
+  const serviceMatch = alarm.AlarmName.match(/-(EventManagement|SpeakerCoordination|PartnerCoordination|AttendeeExperience|CompanyManagement|ApiGatewayService)-/);
+  if (serviceMatch) {
+    const serviceName = serviceMatch[1]
+      .replace(/([A-Z])/g, '-$1')
+      .toLowerCase()
+      .substring(1);
+    labels.push(`service:${serviceName}`);
   }
 
   return labels;

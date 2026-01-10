@@ -21,6 +21,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:docs": "playwright test --project=documentation-screenshots",
     "test:e2e:docs:ui": "playwright test --project=documentation-screenshots --ui",
+    "test:e2e:screencast": "playwright test --project=screencast-training",
+    "test:e2e:screencast:headed": "playwright test --project=screencast-training --headed",
     "lint": "eslint src --report-unused-disable-directives --max-warnings 50",
     "lint:ci": "eslint src --report-unused-disable-directives --max-warnings 50",
     "lint:fix": "eslint src --fix",

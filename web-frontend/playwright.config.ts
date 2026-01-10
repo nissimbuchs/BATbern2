@@ -129,6 +129,33 @@ export default defineConfig({
       testMatch: /workflows\/documentation\/.*.spec.ts/, // Only run documentation tests
       retries: 0, // No retries - fail fast for debugging
     },
+
+    /* Screencast training video project - Continuous recording for German training video */
+    {
+      name: 'screencast-training',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 1920, height: 1080 }, // Full HD viewport
+        deviceScaleFactor: 1, // No zoom distortion
+        isMobile: false,
+        hasTouch: false,
+        video: {
+          mode: 'on', // ALWAYS record video for screencast
+          size: { width: 1920, height: 1080 }, // Full HD video recording (matches viewport)
+        },
+        screenshot: 'off', // No screenshots needed (video only)
+        storageState: '.playwright-auth-state.json',
+        launchOptions: {
+          slowMo: 500, // Slow down actions for clarity in video
+          args: [
+            '--window-size=1920,1080', // Force window size
+            '--force-device-scale-factor=1', // Prevent DPI scaling
+          ],
+        },
+      },
+      testMatch: /screencast-event-workflow.spec.ts/, // Only run screencast test
+      retries: 0, // No retries - want one clean recording
+    },
   ],
 
   /* Run your local dev server before starting the tests (development only) */
