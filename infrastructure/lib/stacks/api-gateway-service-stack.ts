@@ -6,9 +6,11 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createContainerImage } from '../utils/container-image-helper';
+import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
 
 export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -19,6 +21,7 @@ export interface ApiGatewayServiceStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  alarmTopic?: sns.ITopic;
   // Note: Service URLs not needed - API Gateway uses Service Connect DNS names
   // (e.g., http://event-management:8080) configured in environment variables below
 }
@@ -276,6 +279,22 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       scaleInCooldown: cdk.Duration.seconds(60),
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
+
+    // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
+    if (props.alarmTopic) {
+      new EcsServiceAlarms(this, 'ServiceAlarms', {
+        environment: envName,
+        clusterName: props.cluster.clusterName,
+        serviceName: this.service.service.serviceName,
+        alarmTopic: props.alarmTopic,
+        thresholds: {
+          memoryUtilization: 80,
+          oomKillCount: envName === 'production' ? 1 : 3,
+          taskFailureCount: envName === 'production' ? 2 : 5,
+          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
+        },
+      });
+    }
 
     this.apiGatewayUrl = `http://${this.service.loadBalancer.loadBalancerDnsName}`;
 

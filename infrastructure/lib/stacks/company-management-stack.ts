@@ -8,9 +8,11 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { createDomainService } from '../constructs/domain-service-construct';
+import { EcsServiceAlarms } from '../constructs/ecs-service-alarms';
 
 export interface CompanyManagementStackProps extends cdk.StackProps {
   config: EnvironmentConfig;
@@ -25,6 +27,7 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
   eventBus?: events.IEventBus;
+  alarmTopic?: sns.ITopic;
 }
 
 /**
@@ -94,6 +97,22 @@ export class CompanyManagementStack extends cdk.Stack {
     });
 
     this.service = domainService.service;
+
+    // Platform Stability Improvements (Phase 3): Add ECS Service Alarms
+    if (props.alarmTopic) {
+      new EcsServiceAlarms(this, 'ServiceAlarms', {
+        environment: envName,
+        clusterName: props.cluster.clusterName,
+        serviceName: this.service.serviceName,
+        alarmTopic: props.alarmTopic,
+        thresholds: {
+          memoryUtilization: 80,
+          oomKillCount: envName === 'production' ? 1 : 3,
+          taskFailureCount: envName === 'production' ? 2 : 5,
+          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
+        },
+      });
+    }
 
     // Grant S3 permissions for company logos and user profile pictures
     if (props.contentBucket) {
