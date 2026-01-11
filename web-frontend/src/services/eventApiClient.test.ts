@@ -579,27 +579,27 @@ describe('Event API Client (RED Phase)', () => {
         const options = { sort: '-date' };
 
         // Should sort by date descending (newest first)
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_sortByOldest_when_sortIsDate', async () => {
         const options = { sort: 'date' };
 
         // Should sort by date ascending (oldest first)
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_sortByMostAttended_when_sortIsMinusAttendance', async () => {
         const options = { sort: '-attendance' };
 
         // Should sort by attendance descending
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_useDefaultSort_when_sortNotProvided', async () => {
@@ -615,45 +615,45 @@ describe('Event API Client (RED Phase)', () => {
         const options = { expand: ['topics'] };
 
         // Should add ?include=topics parameter
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_expandSessions_when_includeSessions', async () => {
         const options = { expand: ['sessions'] };
 
         // Should add ?include=sessions parameter
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_expandSpeakers_when_includeSpeakers', async () => {
         const options = { expand: ['speakers'] };
 
         // Should add ?include=speakers parameter
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_expandMultipleResources_when_includeTopicsSessionsSpeakers', async () => {
         const options = { expand: ['topics', 'sessions', 'speakers'] };
 
         // Should add ?include=topics,sessions,speakers parameter
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_NOT_addInclude_when_expandArrayEmpty', async () => {
         const options = { expand: [] };
 
         // Should not add include parameter when empty
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
     });
 
@@ -767,9 +767,9 @@ describe('Event API Client (RED Phase)', () => {
         const options = { expand: ['topics', 'sessions', 'speakers', 'venue'] };
 
         // Should join with commas: ?include=topics,sessions,speakers,venue
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
       });
 
       it('should_handleSpacesInSearch_when_searchTextHasSpaces', async () => {

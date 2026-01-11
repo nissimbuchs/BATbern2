@@ -27,7 +27,14 @@ interface FilterSidebarProps {
 
 type TimePeriod = 'all' | 'last5y' | '2020-2024' | '2015-2019' | '2010-2014' | 'before2010';
 
-const TIME_PERIODS: TimePeriod[] = ['all', 'last5y', '2020-2024', '2015-2019', '2010-2014', 'before2010'];
+const TIME_PERIODS: TimePeriod[] = [
+  'all',
+  'last5y',
+  '2020-2024',
+  '2015-2019',
+  '2010-2014',
+  'before2010',
+];
 
 const SORT_OPTIONS = [
   { value: '-date', label: 'archive.sort.newest' },
@@ -85,7 +92,12 @@ export function FilterSidebar({
     (filters.search && filters.search.length > 0 ? 1 : 0);
 
   return (
-    <aside className="space-y-6" role="complementary" aria-label="Event filters" data-testid="filter-sidebar">
+    <aside
+      className="space-y-6"
+      role="complementary"
+      aria-label="Event filters"
+      data-testid="filter-sidebar"
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -119,13 +131,18 @@ export function FilterSidebar({
 
       {/* Time Period */}
       <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">{t('archive.filters.timePeriod')}</h3>
+        <h3 className="text-sm font-medium text-gray-900 mb-2">
+          {t('archive.filters.timePeriod')}
+        </h3>
         <div className="space-y-1">
           {TIME_PERIODS.map((period) => {
             const isActive = filters.timePeriod === period;
-            const translationKey = period === 'all' ? 'archive.filters.all' :
-                                 period === 'last5y' ? 'archive.filters.last5years' :
-                                 `archive.filters.${period}`;
+            const translationKey =
+              period === 'all'
+                ? 'archive.filters.all'
+                : period === 'last5y'
+                  ? 'archive.filters.last5years'
+                  : `archive.filters.${period}`;
 
             return (
               <button

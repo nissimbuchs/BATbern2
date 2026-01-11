@@ -264,10 +264,7 @@ describe('ArchivePage Component', () => {
       await user.click(listViewButton);
 
       await waitFor(() => {
-        expect(screen.getByTestId('event-card-BAT2024')).toHaveAttribute(
-          'data-view-mode',
-          'list'
-        );
+        expect(screen.getByTestId('event-card-BAT2024')).toHaveAttribute('data-view-mode', 'list');
       });
 
       // Unmount and remount (simulate page reload)

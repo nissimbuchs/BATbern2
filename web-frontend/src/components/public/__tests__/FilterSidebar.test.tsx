@@ -152,7 +152,9 @@ describe('FilterSidebar Component', () => {
         timePeriod: '2020-2024',
       };
 
-      render(<FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />);
+      render(
+        <FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />
+      );
 
       const allEventsOption = screen.getByText('All Events');
       await user.click(allEventsOption);
@@ -205,7 +207,9 @@ describe('FilterSidebar Component', () => {
       const onFilterChange = vi.fn();
 
       // Use stateful wrapper to simulate controlled component behavior
-      const { rerender } = render(<FilterSidebar {...defaultProps} onFilterChange={onFilterChange} />);
+      const { rerender } = render(
+        <FilterSidebar {...defaultProps} onFilterChange={onFilterChange} />
+      );
 
       const cloudCheckbox = screen.getByLabelText(/Cloud Architecture/i);
       await user.click(cloudCheckbox);
@@ -245,7 +249,9 @@ describe('FilterSidebar Component', () => {
         topics: ['cloud'],
       };
 
-      render(<FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />);
+      render(
+        <FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />
+      );
 
       const cloudCheckbox = screen.getByLabelText(/Cloud Architecture/i);
       expect(cloudCheckbox).toBeChecked();
@@ -320,7 +326,9 @@ describe('FilterSidebar Component', () => {
         search: 'Cloud',
       };
 
-      render(<FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />);
+      render(
+        <FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />
+      );
 
       const searchInput = screen.getByPlaceholderText('Search events...');
       expect(searchInput).toHaveValue('Cloud');
@@ -347,7 +355,9 @@ describe('FilterSidebar Component', () => {
         search: 'Cloud',
       };
 
-      render(<FilterSidebar {...defaultProps} filters={activeFilters} onClearFilters={onClearFilters} />);
+      render(
+        <FilterSidebar {...defaultProps} filters={activeFilters} onClearFilters={onClearFilters} />
+      );
 
       const clearButton = screen.getByText('Clear All Filters');
       await user.click(clearButton);
@@ -425,7 +435,6 @@ describe('FilterSidebar Component', () => {
 
       expect(onSortChange).toHaveBeenCalledWith('-attendance');
     });
-
   });
 
   describe('Active Filter Indicators', () => {
@@ -483,7 +492,9 @@ describe('FilterSidebar Component', () => {
       const user = userEvent.setup();
       const onFilterChange = vi.fn();
 
-      const { rerender } = render(<FilterSidebar {...defaultProps} onFilterChange={onFilterChange} />);
+      const { rerender } = render(
+        <FilterSidebar {...defaultProps} onFilterChange={onFilterChange} />
+      );
 
       const firstCheckbox = screen.getAllByRole('checkbox')[0];
 

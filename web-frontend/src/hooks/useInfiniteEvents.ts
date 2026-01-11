@@ -66,11 +66,10 @@ export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '
   return useInfiniteQuery({
     queryKey: ['events', 'archive', filters, sort],
     queryFn: ({ pageParam = 1 }) =>
-      eventApiClient.getEvents(
-        { page: pageParam, limit: 20 },
-        eventFilters,
-        { expand: ['topics', 'sessions', 'speakers'], sort }
-      ),
+      eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
+        expand: ['topics', 'sessions', 'speakers'],
+        sort,
+      }),
     getNextPageParam: (lastPage) => {
       const { page, pages } = lastPage.pagination;
       return page < pages ? page + 1 : undefined;

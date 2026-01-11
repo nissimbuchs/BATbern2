@@ -40,7 +40,12 @@ describe('EventCard Component', () => {
     eventCode: 'BAT2024',
     title: 'BATbern 2024: Cloud Architecture',
     date: '2024-12-15T00:00:00Z',
-    topic: 'Cloud Architecture',
+    topic: {
+      code: 'cloud',
+      name: 'Cloud Architecture',
+      description: 'Cloud computing patterns',
+      category: 'technical',
+    },
     workflowState: 'COMPLETED',
     venueName: 'Kornhausforum',
     themeImageUrl: 'https://cdn.batbern.ch/2024/theme.jpg',
@@ -281,9 +286,7 @@ describe('EventCard Component', () => {
       renderWithRouter(<EventCard event={eventWithLongTitle} viewMode="grid" />);
 
       // Title should be truncated or wrapped properly
-      expect(
-        screen.getByText(/BATbern 2024: A Very Long Conference Title/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/BATbern 2024: A Very Long Conference Title/i)).toBeInTheDocument();
     });
 
     test('should_handleMultipleSpeakersPerSession_when_coPresenting', () => {
@@ -324,7 +327,9 @@ describe('EventCard Component', () => {
       const { container } = renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
       // Should use semantic HTML elements
-      expect(container.querySelector('article') || container.querySelector('div')).toBeInTheDocument();
+      expect(
+        container.querySelector('article') || container.querySelector('div')
+      ).toBeInTheDocument();
     });
   });
 

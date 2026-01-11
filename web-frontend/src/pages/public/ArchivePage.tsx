@@ -118,8 +118,8 @@ export default function ArchivePage() {
   const pageTitle = filters.search
     ? `Search Results: ${filters.search}`
     : totalCount > 0
-    ? `${totalCount} Historical Events`
-    : 'Historical Events Archive';
+      ? `${totalCount} Historical Events`
+      : 'Historical Events Archive';
   const pageDescription = `Browse ${totalCount > 0 ? totalCount : '54+'} BATbern conference events spanning 20+ years. Filter by time period, topics, and search presentations.`;
 
   return (
@@ -240,10 +240,12 @@ export default function ArchivePage() {
                     {events.map((event) => (
                       <EventCard
                         key={event.eventCode}
-                        event={{
-                          ...event,
-                          sessions: event.sessions ?? undefined,
-                        } as EventDetailUI}
+                        event={
+                          {
+                            ...event,
+                            sessions: event.sessions ?? undefined,
+                          } as EventDetailUI
+                        }
                         viewMode={viewMode}
                       />
                     ))}

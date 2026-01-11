@@ -124,7 +124,7 @@ describe('useInfiniteEvents Hook', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenCalledWith(
         { page: 1, limit: 20 },
-        {},
+        { includeArchived: true, workflowState: ['ARCHIVED'] },
         { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
       );
     });
@@ -203,7 +203,7 @@ describe('useInfiniteEvents Hook', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenCalledWith(
         { page: 2, limit: 20 },
-        {},
+        { includeArchived: true, workflowState: ['ARCHIVED'] },
         { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
       );
     });
@@ -336,7 +336,12 @@ describe('useInfiniteEvents Hook', () => {
       await waitFor(() => {
         expect(eventApiClient.getEvents).toHaveBeenCalledWith(
           { page: 1, limit: 20 },
-          expect.objectContaining(filters),
+          expect.objectContaining({
+            includeArchived: true,
+            workflowState: ['ARCHIVED'],
+            year: 2020,
+            search: 'Architecture',
+          }),
           { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
         );
       });
@@ -372,7 +377,11 @@ describe('useInfiniteEvents Hook', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
         { page: 1, limit: 20 },
-        expect.objectContaining(newFilters),
+        expect.objectContaining({
+          includeArchived: true,
+          workflowState: ['ARCHIVED'],
+          search: '',
+        }),
         { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
       );
     });
@@ -426,7 +435,7 @@ describe('useInfiniteEvents Hook', () => {
       await waitFor(() => {
         expect(eventApiClient.getEvents).toHaveBeenCalledWith(
           { page: 1, limit: 20 },
-          {},
+          { includeArchived: true, workflowState: ['ARCHIVED'] },
           expect.objectContaining({
             expand: ['topics', 'sessions', 'speakers'],
             sort: '-date',
@@ -438,13 +447,10 @@ describe('useInfiniteEvents Hook', () => {
     test('should_refetch_when_sortChanges', async () => {
       vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
 
-      const { rerender } = renderHook(
-        ({ sort }: { sort: string }) => useInfiniteEvents({}, sort),
-        {
-          wrapper,
-          initialProps: { sort: '-date' },
-        }
-      );
+      const { rerender } = renderHook(({ sort }: { sort: string }) => useInfiniteEvents({}, sort), {
+        wrapper,
+        initialProps: { sort: '-date' },
+      });
 
       await waitFor(() => {
         expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
@@ -459,7 +465,7 @@ describe('useInfiniteEvents Hook', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
         { page: 1, limit: 20 },
-        {},
+        { includeArchived: true, workflowState: ['ARCHIVED'] },
         expect.objectContaining({ sort: 'date' })
       );
     });
