@@ -398,7 +398,19 @@
     "progressive": "Progressiv",
     "immediate": "Sofort",
     "currentPhase": "Aktuelle Phase",
-    "timeline": "Zeitplan",
+    "timeline": {
+      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "topic": "Thema",
+      "speakers": "Referenten",
+      "agenda": "Agenda",
+      "updates": "Aktualisierungen",
+      "now": "Jetzt",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}",
+      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
+      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
+      "days": "{{count}} Tage"
+    },
     "qualityChecks": "Qualitätsprüfungen",
     "configure": "Veröffentlichung konfigurieren",
     "republish": "Neu veröffentlichen",
@@ -488,19 +500,6 @@
         "refreshPreview": "Vorschau aktualisieren",
         "eventContentPreview": "Veranstaltungsinhalts-Vorschau"
       }
-    },
-    "timeline": {
-      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
-      "topic": "Thema",
-      "speakers": "Referenten",
-      "agenda": "Agenda",
-      "updates": "Aktualisierungen",
-      "now": "Jetzt",
-      "publishedOn": "Veröffentlicht am {{date}}",
-      "scheduled": "Geplant: {{date}}",
-      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
-      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
-      "days": "{{count}} Tage"
     },
     "versionControl": {
       "title": "Versionsverlauf",
@@ -712,6 +711,11 @@
         "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
         "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
         "saveFailed": "Session konnte nicht gespeichert werden"
+      }
+    },
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Sie sind bereits für diese Veranstaltung registriert."
       }
     }
   },

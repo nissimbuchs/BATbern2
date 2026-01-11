@@ -195,7 +195,10 @@ function App() {
                     path="/events/:eventCode/confirm-registration"
                     element={<ConfirmRegistrationPage />}
                   />
-                  <Route path="/cancel-registration" element={<CancelRegistrationPage />} />
+                  <Route
+                    path="/events/:eventCode/cancel-registration"
+                    element={<CancelRegistrationPage />}
+                  />
                   <Route
                     path="/registration-confirmation/:confirmationCode"
                     element={<RegistrationConfirmationPage />}

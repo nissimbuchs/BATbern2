@@ -164,22 +164,16 @@ export const RegistrationWizard = ({
       setRegistrationSuccess(true);
       setIsSubmitting(false);
     } catch (err) {
-      // Check if this is a duplicate registration (409 Conflict)
+      // Handle duplicate registration (409 Conflict)
+      // Backend returns 409 only for confirmed/cancelled registrations
+      // For pending registrations, backend returns 200 OK (reuses existing)
       if (err instanceof Error && err.message.includes('already registered')) {
-        // Treat duplicate as success - user is already registered
-        sessionStorage.setItem(
-          'pendingRegistration',
-          JSON.stringify({
-            email: formData.email,
-            eventCode: eventCode,
-            timestamp: Date.now(),
-            expiresAt: Date.now() + 48 * 60 * 60 * 1000, // 48 hours (matches token validity)
+        // User is already confirmed - show error message
+        setError(
+          t('public.registration.errors.alreadyRegistered', {
+            defaultValue: 'You are already registered for this event.',
           })
         );
-
-        // Show success message
-        setRegisteredEmail(formData.email);
-        setRegistrationSuccess(true);
         setIsSubmitting(false);
       } else {
         // Other errors: show error message

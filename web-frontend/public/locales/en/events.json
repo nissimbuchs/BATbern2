@@ -408,7 +408,19 @@
     "progressive": "Progressive",
     "immediate": "Immediate",
     "currentPhase": "Current Phase",
-    "timeline": "Timeline",
+    "timeline": {
+      "phasesPublished": "{{completed}} of {{total}} phases published ({{percent}}%)",
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates",
+      "now": "Now",
+      "publishedOn": "Published on {{date}}",
+      "scheduled": "Scheduled: {{date}}",
+      "autoPublishIn": "Auto-publish in {{days}} days",
+      "autoPublishScheduled": "Auto-publish scheduled",
+      "days": "{{count}} days"
+    },
     "qualityChecks": "Quality Checks",
     "configure": "Configure Publishing",
     "republish": "Republish",
@@ -498,19 +510,6 @@
         "refreshPreview": "Refresh preview",
         "eventContentPreview": "Event content preview"
       }
-    },
-    "timeline": {
-      "phasesPublished": "{{completed}} of {{total}} phases published ({{percent}}%)",
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates",
-      "now": "Now",
-      "publishedOn": "Published on {{date}}",
-      "scheduled": "Scheduled: {{date}}",
-      "autoPublishIn": "Auto-publish in {{days}} days",
-      "autoPublishScheduled": "Auto-publish scheduled",
-      "days": "{{count}} days"
     },
     "versionControl": {
       "title": "Version History",
@@ -722,6 +721,11 @@
         "abstractTooLong": "Abstract must be {{max}} characters or less",
         "invalidDuration": "Duration must be between 1 and 480 minutes",
         "saveFailed": "Failed to save session"
+      }
+    },
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "You are already registered for this event."
       }
     }
   },

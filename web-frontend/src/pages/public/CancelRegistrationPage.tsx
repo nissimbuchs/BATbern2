@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, Link, Navigate } from 'react-router-dom';
+import { useSearchParams, useParams, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
@@ -19,9 +19,9 @@ type CancellationState = 'loading' | 'success' | 'error';
 
 const CancelRegistrationPage = () => {
   const { t } = useTranslation('registration');
+  const { eventCode } = useParams<{ eventCode: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const eventCode = searchParams.get('event');
 
   const [state, setState] = useState<CancellationState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,13 +35,13 @@ const CancelRegistrationPage = () => {
 
     const cancelRegistration = async () => {
       try {
-        const response = await eventApiClient.cancelRegistration(eventCode, token);
+        const response = await eventApiClient.cancelRegistration(eventCode!, token);
 
         if (response.status === 'CANCELLED') {
           setState('success');
 
           // Clear token from URL (security best practice)
-          window.history.replaceState({}, '', '/cancel-registration');
+          window.history.replaceState({}, '', `/events/${eventCode}/cancel-registration`);
         }
       } catch (error: unknown) {
         setState('error');
