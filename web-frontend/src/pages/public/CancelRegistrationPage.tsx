@@ -6,7 +6,7 @@
  * Supports German and English languages.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useParams, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -25,6 +25,7 @@ const CancelRegistrationPage = () => {
 
   const [state, setState] = useState<CancellationState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const hasAttemptedCancellation = useRef(false);
 
   useEffect(() => {
     if (!token || !eventCode) {
@@ -32,6 +33,12 @@ const CancelRegistrationPage = () => {
       setErrorMessage(t('cancellation.error.errors.invalid'));
       return;
     }
+
+    // Prevent double execution in React Strict Mode (development)
+    if (hasAttemptedCancellation.current) {
+      return;
+    }
+    hasAttemptedCancellation.current = true;
 
     const cancelRegistration = async () => {
       try {
