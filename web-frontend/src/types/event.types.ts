@@ -219,12 +219,12 @@ export interface EventFilters {
   workflowState?: string[];
   year?: number;
   search?: string;
+  topicCode?: string[]; // Filter by topic code(s)
   includeArchived?: boolean; // When false (default), excludes ARCHIVED events from results
 }
 
 // Archive Filter State (Story 4.2 - UI-only)
 export interface ArchiveFilters {
-  timePeriod?: 'all' | 'last5y' | '2020-2024' | '2015-2019' | '2010-2014' | 'before2010';
   topics?: string[]; // topic slugs or IDs
   search?: string;
 }

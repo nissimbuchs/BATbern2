@@ -70,6 +70,10 @@ class EventApiClient {
         // Use CONTAINS operator on title field for text search
         filterObj.title = { $contains: filters.search };
       }
+      if (filters?.topicCode && filters.topicCode.length > 0) {
+        // Filter by topic code(s) - Story 4.2 archive filtering
+        filterObj.topicCode = { $in: filters.topicCode };
+      }
 
       // Add filter parameter if we have filters
       // URLSearchParams will properly encode all special characters

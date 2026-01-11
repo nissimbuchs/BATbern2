@@ -20,34 +20,10 @@ function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
     search: archiveFilters.search,
   };
 
-  // Convert time period to year filter
-  if (archiveFilters.timePeriod && archiveFilters.timePeriod !== 'all') {
-    const currentYear = new Date().getFullYear();
-    switch (archiveFilters.timePeriod) {
-      case 'last5y':
-        eventFilters.year = currentYear - 5; // Last 5 years (backend >= comparison)
-        break;
-      case '2020-2024':
-        eventFilters.year = 2020;
-        // Note: Backend year filter uses >= so this will include 2020+
-        break;
-      case '2015-2019':
-        eventFilters.year = 2015;
-        break;
-      case '2010-2014':
-        eventFilters.year = 2010;
-        break;
-      case 'before2010':
-        eventFilters.year = 1900; // Use very old year for "before 2010"
-        break;
-    }
+  // Topic filter - filter by topicCode
+  if (archiveFilters.topics && archiveFilters.topics.length > 0) {
+    eventFilters.topicCode = archiveFilters.topics;
   }
-
-  // TODO: Handle topics filter when backend supports topicCode filtering
-  // Currently topics expansion is done via include=topics, not filtering
-  // if (archiveFilters.topics && archiveFilters.topics.length > 0) {
-  //   eventFilters.topicCode = { $in: archiveFilters.topics };
-  // }
 
   return eventFilters;
 }

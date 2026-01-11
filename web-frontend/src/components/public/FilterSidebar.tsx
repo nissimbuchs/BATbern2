@@ -25,21 +25,9 @@ interface FilterSidebarProps {
   currentSort: string;
 }
 
-type TimePeriod = 'all' | 'last5y' | '2020-2024' | '2015-2019' | '2010-2014' | 'before2010';
-
-const TIME_PERIODS: TimePeriod[] = [
-  'all',
-  'last5y',
-  '2020-2024',
-  '2015-2019',
-  '2010-2014',
-  'before2010',
-];
-
 const SORT_OPTIONS = [
   { value: '-date', label: 'archive.sort.newest' },
   { value: 'date', label: 'archive.sort.oldest' },
-  { value: '-attendance', label: 'archive.sort.mostAttended' },
 ];
 
 export function FilterSidebar({
@@ -67,10 +55,6 @@ export function FilterSidebar({
     setSearchValue(filters.search || '');
   }, [filters.search]);
 
-  const handleTimePeriodChange = (period: TimePeriod) => {
-    onFilterChange({ ...filters, timePeriod: period });
-  };
-
   const handleTopicToggle = (topicCode: string) => {
     const currentTopics = filters.topics || [];
     const newTopics = currentTopics.includes(topicCode)
@@ -81,15 +65,11 @@ export function FilterSidebar({
   };
 
   const hasActiveFilters =
-    (filters.timePeriod && filters.timePeriod !== 'all') ||
-    (filters.topics && filters.topics.length > 0) ||
-    (filters.search && filters.search.length > 0);
+    (filters.topics && filters.topics.length > 0) || (filters.search && filters.search.length > 0);
 
   // Count active filters
   const activeFilterCount =
-    (filters.timePeriod && filters.timePeriod !== 'all' ? 1 : 0) +
-    (filters.topics?.length || 0) +
-    (filters.search && filters.search.length > 0 ? 1 : 0);
+    (filters.topics?.length || 0) + (filters.search && filters.search.length > 0 ? 1 : 0);
 
   return (
     <aside
@@ -104,7 +84,7 @@ export function FilterSidebar({
           <h2 className="text-lg font-semibold">{t('archive.filters.title')}</h2>
           {activeFilterCount > 0 && (
             <p className="text-xs text-gray-600 mt-1">
-              {activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}
+              {t('archive.filters.activeCount', { count: activeFilterCount })}
             </p>
           )}
         </div>
@@ -127,36 +107,6 @@ export function FilterSidebar({
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-      </div>
-
-      {/* Time Period */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">
-          {t('archive.filters.timePeriod')}
-        </h3>
-        <div className="space-y-1">
-          {TIME_PERIODS.map((period) => {
-            const isActive = filters.timePeriod === period;
-            const translationKey =
-              period === 'all'
-                ? 'archive.filters.all'
-                : period === 'last5y'
-                  ? 'archive.filters.last5years'
-                  : `archive.filters.${period}`;
-
-            return (
-              <button
-                key={period}
-                onClick={() => handleTimePeriodChange(period)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                  isActive ? 'bg-blue-100 text-blue-900 active' : 'hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                {t(translationKey)}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Topics */}

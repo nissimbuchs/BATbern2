@@ -37,17 +37,15 @@ export default function ArchivePage() {
   // View mode (persisted to localStorage)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem('archive-view-mode');
-    return (saved as ViewMode) || 'grid';
+    return (saved as ViewMode) || 'list';
   });
 
   // Filters from URL query parameters
   const filters: ArchiveFilters = useMemo(() => {
-    const timePeriod = searchParams.get('period') || 'all';
     const topicsParam = searchParams.get('topics');
     const search = searchParams.get('q') || '';
 
     return {
-      timePeriod: timePeriod as ArchiveFilters['timePeriod'],
       topics: topicsParam ? topicsParam.split(',') : [],
       search,
     };
@@ -75,19 +73,20 @@ export default function ArchivePage() {
 
   // Handle filter changes - update URL query parameters
   const handleFilterChange = (newFilters: ArchiveFilters) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams);
 
-    if (newFilters.timePeriod && newFilters.timePeriod !== 'all') {
-      params.set('period', newFilters.timePeriod);
-    }
+    // Update or remove topics parameter
     if (newFilters.topics && newFilters.topics.length > 0) {
       params.set('topics', newFilters.topics.join(','));
+    } else {
+      params.delete('topics');
     }
+
+    // Update or remove search parameter
     if (newFilters.search) {
       params.set('q', newFilters.search);
-    }
-    if (sort !== '-date') {
-      params.set('sort', sort);
+    } else {
+      params.delete('q');
     }
 
     setSearchParams(params);
@@ -188,7 +187,7 @@ export default function ArchivePage() {
             {/* View Toggle */}
             <div className="flex justify-between items-center mb-6">
               <div className="text-sm text-gray-600">
-                {isLoading ? '' : `${events.length} of ${totalCount} events`}
+                {!isLoading && totalCount > 0 && `${totalCount} events`}
               </div>
               <div className="flex gap-2">
                 <button

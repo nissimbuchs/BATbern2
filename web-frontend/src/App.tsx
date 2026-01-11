@@ -85,7 +85,6 @@ const RegistrationConfirmationPage = React.lazy(
 );
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
-const ArchiveEventDetailPage = React.lazy(() => import('@pages/public/ArchiveEventDetailPage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -208,7 +207,8 @@ function App() {
                     />
                     {/* Story 4.2: Archive browsing routes */}
                     <Route path="/archive" element={<ArchivePage />} />
-                    <Route path="/archive/:eventCode" element={<ArchiveEventDetailPage />} />
+                    {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
+                    <Route path="/archive/:eventCode" element={<HomePage />} />
                     <Route
                       path="/search"
                       element={

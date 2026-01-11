@@ -347,5 +347,41 @@
     "select": "Organisator auswählen",
     "all": "Alle Organisatoren",
     "unassigned": "Nicht zugewiesen"
+  },
+  "archive": {
+    "title": "Vergangene Veranstaltungen",
+    "description": "Durchsuchen Sie über 20 Jahre BATbern-Veranstaltungen mit Präsentationen und Referenten",
+    "viewToggle": {
+      "grid": "Raster",
+      "list": "Liste"
+    },
+    "loading": "Lade Veranstaltungen...",
+    "loadingMore": "Lade weitere Veranstaltungen...",
+    "noResults": "Keine Veranstaltungen gefunden",
+    "errors": {
+      "loadFailed": "Fehler beim Laden der Veranstaltungen"
+    },
+    "card": {
+      "sessions": "Präsentationen",
+      "viewDetails": "Details anzeigen",
+      "andMore": "und {{count}} weitere"
+    },
+    "filters": {
+      "title": "Filter",
+      "search": "Veranstaltungen suchen...",
+      "topics": "Themen",
+      "clearAll": "Alle löschen",
+      "activeCount": "{{count}} aktiver Filter",
+      "activeCount_one": "{{count}} aktiver Filter",
+      "activeCount_other": "{{count}} aktive Filter"
+    },
+    "sort": {
+      "label": "Sortieren nach",
+      "newest": "Neueste zuerst",
+      "oldest": "Älteste zuerst"
+    },
+    "detail": {
+      "backToArchive": "← Zurück zum Archiv"
+    }
   }
 }

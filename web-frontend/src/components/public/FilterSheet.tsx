@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FilterSidebar } from './FilterSidebar';
 import type { ArchiveFilters } from '@/types/event.types';
 
@@ -33,6 +34,7 @@ export function FilterSheet({
   onSortChange,
   currentSort,
 }: FilterSheetProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -42,7 +44,7 @@ export function FilterSheet({
         onClick={() => setIsOpen(true)}
         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
       >
-        Filters
+        {t('archive.filters.title')}
       </button>
 
       {/* Modal Overlay */}
@@ -51,7 +53,7 @@ export function FilterSheet({
           {/* Sheet */}
           <div className="bg-white w-full max-h-[80vh] rounded-t-lg overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Filters</h2>
+              <h2 className="text-lg font-semibold">{t('archive.filters.title')}</h2>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
