@@ -78,6 +78,7 @@ const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
 const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
+const CancelRegistrationPage = React.lazy(() => import('@pages/public/CancelRegistrationPage'));
 const RegistrationConfirmationPage = React.lazy(
   () => import('@pages/public/RegistrationConfirmationPage')
 );
@@ -193,6 +194,10 @@ function App() {
                   <Route
                     path="/events/:eventCode/confirm-registration"
                     element={<ConfirmRegistrationPage />}
+                  />
+                  <Route
+                    path="/events/:eventCode/cancel-registration"
+                    element={<CancelRegistrationPage />}
                   />
                   <Route
                     path="/registration-confirmation/:confirmationCode"

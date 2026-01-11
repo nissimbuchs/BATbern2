@@ -28,7 +28,12 @@
     "login": "Anmelden",
     "joinUp": "Registrieren",
     "register": "Anmelden",
-    "goToPortal": "Zum Portal"
+    "goToPortal": "Zum Portal",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "Sie sind bereits für diese Veranstaltung registriert."
+      }
+    }
   },
   "footer": {
     "tagline": "Technologieaustausch zwischen IT Experten",

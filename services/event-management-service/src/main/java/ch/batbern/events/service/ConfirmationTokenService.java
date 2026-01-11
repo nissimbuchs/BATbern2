@@ -12,16 +12,16 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * Service for generating and validating email confirmation tokens.
+ * Service for generating and validating email confirmation and cancellation tokens.
  *
- * Generates short-lived JWT tokens (48h validity) for email-based registration confirmation.
+ * Generates short-lived JWT tokens (48h validity) for email-based registration confirmation and cancellation.
  * Tokens contain registration details and cannot be forged without the secret key.
  *
  * Security Features:
  * - JWT signature validation (HMAC-SHA256)
  * - Time-based expiry (48 hours)
- * - Type validation (only "email-confirmation" tokens accepted)
- * - One-time use tracking (via confirmation timestamp in database)
+ * - Type validation (only "email-confirmation" or "registration-cancellation" tokens accepted)
+ * - One-time use tracking (via confirmation timestamp or deletion in database)
  */
 @Service
 public class ConfirmationTokenService {
@@ -103,5 +103,49 @@ public class ConfirmationTokenService {
      */
     public String getEventCode(Claims claims) {
         return claims.get("eventCode", String.class);
+    }
+
+    /**
+     * Generate cancellation token for registration.
+     *
+     * @param registrationId  UUID of the registration
+     * @param eventCode       Event code (e.g., "BATbern57")
+     * @return JWT token string (valid for 48 hours)
+     */
+    public String generateCancellationToken(UUID registrationId, String eventCode) {
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + validityMs);
+
+        return Jwts.builder()
+                .claim("registrationId", registrationId.toString())
+                .claim("eventCode", eventCode)
+                .claim("type", "registration-cancellation")
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(signingKey)
+                .compact();
+    }
+
+    /**
+     * Validate and parse cancellation token.
+     *
+     * @param token JWT token from email link
+     * @return Claims containing registrationId, eventCode, type
+     * @throws io.jsonwebtoken.JwtException if token is invalid, expired, or wrong type
+     */
+    public Claims validateCancellationToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        // Verify token type
+        String type = claims.get("type", String.class);
+        if (!"registration-cancellation".equals(type)) {
+            throw new IllegalArgumentException("Invalid token type: " + type);
+        }
+
+        return claims;
     }
 }
