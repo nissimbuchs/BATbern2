@@ -28,7 +28,12 @@
     "login": "Login",
     "joinUp": "Sign Up",
     "register": "Register",
-    "goToPortal": "Go to Portal"
+    "goToPortal": "Go to Portal",
+    "registration": {
+      "errors": {
+        "alreadyRegistered": "You are already registered for this event."
+      }
+    }
   },
   "footer": {
     "tagline": "Technology exchange between IT experts",

@@ -2,6 +2,8 @@ package ch.batbern.companyuser.repository;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -121,4 +123,169 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return List of users matching both first and last name (empty if no match)
      */
     List<User> findByFirstNameIgnoreCaseAndLastNameIgnoreCase(String firstName, String lastName);
+
+    /**
+     * Performance Optimization: Find all users with roles eagerly fetched
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param pageable Pagination parameters
+     * @return Page of users with roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> findAllWithRoles(Pageable pageable);
+
+    /**
+     * Performance Optimization: Find users by role with roles eagerly fetched
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param role User role to filter by
+     * @param pageable Pagination parameters
+     * @return Page of users with the specified role and roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles r
+        WHERE :role MEMBER OF u.roles
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> findByRolesContainingWithRoles(@Param("role") Role role, Pageable pageable);
+
+    /**
+     * Performance Optimization: Find users by company with roles eagerly fetched
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param companyId Company ID to filter by
+     * @param pageable Pagination parameters
+     * @return Page of users in the specified company with roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles
+        WHERE u.companyId = :companyId
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> findByCompanyIdWithRoles(@Param("companyId") String companyId, Pageable pageable);
+
+    /**
+     * Performance Optimization: Find users by role AND company with roles eagerly fetched
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param role User role to filter by
+     * @param companyId Company ID to filter by
+     * @param pageable Pagination parameters
+     * @return Page of users matching both criteria with roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles r
+        WHERE :role MEMBER OF u.roles
+        AND u.companyId = :companyId
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> findByRoleAndCompanyWithRoles(
+            @Param("role") Role role,
+            @Param("companyId") String companyId,
+            Pageable pageable);
+
+    /**
+     * Performance Optimization: Search users with roles eagerly fetched
+     * Searches across username, email, firstName, and lastName (case-insensitive)
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param search Search term to match against user fields
+     * @param pageable Pagination parameters
+     * @return Page of matching users with roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles
+        WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> searchUsersWithRoles(@Param("search") String search, Pageable pageable);
+
+    /**
+     * Performance Optimization: Search users by role with roles eagerly fetched
+     * Searches across username, email, firstName, and lastName (case-insensitive)
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param search Search term to match against user fields
+     * @param role User role to filter by
+     * @param pageable Pagination parameters
+     * @return Page of matching users with the specified role and roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles r
+        WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND :role MEMBER OF u.roles
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> searchUsersByRoleWithRoles(
+            @Param("search") String search,
+            @Param("role") Role role,
+            Pageable pageable);
+
+    /**
+     * Performance Optimization: Search users by company with roles eagerly fetched
+     * Searches across username, email, firstName, and lastName (case-insensitive)
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param search Search term to match against user fields
+     * @param companyId Company ID to filter by
+     * @param pageable Pagination parameters
+     * @return Page of matching users in the specified company with roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles
+        WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND u.companyId = :companyId
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> searchUsersByCompanyWithRoles(
+            @Param("search") String search,
+            @Param("companyId") String companyId,
+            Pageable pageable);
+
+    /**
+     * Performance Optimization: Search users by role AND company with roles eagerly fetched
+     * Searches across username, email, firstName, and lastName (case-insensitive)
+     * Uses JOIN FETCH to avoid N+1 query problem
+     *
+     * @param search Search term to match against user fields
+     * @param role User role to filter by
+     * @param companyId Company ID to filter by
+     * @param pageable Pagination parameters
+     * @return Page of matching users with both filters and roles loaded
+     */
+    @Query("""
+        SELECT DISTINCT u FROM User u
+        LEFT JOIN FETCH u.roles r
+        WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND :role MEMBER OF u.roles
+        AND u.companyId = :companyId
+        ORDER BY u.lastName ASC, u.firstName ASC
+        """)
+    Page<User> searchUsersByRoleAndCompanyWithRoles(
+            @Param("search") String search,
+            @Param("role") Role role,
+            @Param("companyId") String companyId,
+            Pageable pageable);
 }

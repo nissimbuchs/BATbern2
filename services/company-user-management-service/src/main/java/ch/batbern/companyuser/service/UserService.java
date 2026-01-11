@@ -18,6 +18,9 @@ import ch.batbern.shared.service.SlugGenerationService;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -217,7 +220,10 @@ public class UserService {
      * List users with filters (admin/organizer only)
      * Story 1.16.2: Public API uses username
      * AC3: List users with role, company, search, and JSON filters
+     *
+     * @deprecated Use listUsersPaginated() for better performance
      */
+    @Deprecated
     @Transactional(readOnly = true)
     public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search,
             String jsonFilter) {
@@ -276,6 +282,84 @@ public class UserService {
                 })
                 .map(responseMapper::mapToResponse)
                 .toList();
+    }
+
+    /**
+     * List users with filters and database-level pagination (admin/organizer only)
+     * Performance optimized version using JOIN FETCH and proper pagination
+     *
+     * @param roleFilter Role filter (ORGANIZER, SPEAKER, etc.)
+     * @param companyFilter Company ID filter
+     * @param search Search query (name, email, username)
+     * @param jsonFilter JSON filter (active status, etc.)
+     * @param page Page number (0-based)
+     * @param limit Page size
+     * @return Page of user responses with pagination metadata
+     */
+    @Transactional(readOnly = true)
+    public Page<UserResponse> listUsersPaginated(String roleFilter, String companyFilter,
+                                                   String search, String jsonFilter,
+                                                   int page, int limit) {
+        log.debug("UserService: Paginated listing - role={}, company={}, search={}, filter={}, page={}, limit={}",
+                roleFilter, companyFilter, search, jsonFilter, page, limit);
+
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<User> usersPage;
+
+        // Use optimized repository methods with JOIN FETCH
+        // Database-level search filtering when search parameter is provided
+        if (search != null && !search.isBlank()) {
+            // Search queries (database-level filtering)
+            if (roleFilter != null && companyFilter != null) {
+                // Search + role + company filters
+                Role role = parseRole(roleFilter);
+                log.debug("Searching with role: {} and company: {}", role, companyFilter);
+                usersPage = userRepository.searchUsersByRoleAndCompanyWithRoles(search, role, companyFilter, pageable);
+            } else if (roleFilter != null) {
+                // Search + role filter
+                Role role = parseRole(roleFilter);
+                log.debug("Searching with role: {}", role);
+                usersPage = userRepository.searchUsersByRoleWithRoles(search, role, pageable);
+            } else if (companyFilter != null) {
+                // Search + company filter
+                log.debug("Searching with company: {}", companyFilter);
+                usersPage = userRepository.searchUsersByCompanyWithRoles(search, companyFilter, pageable);
+            } else {
+                // Search only
+                log.debug("Searching users: {}", search);
+                usersPage = userRepository.searchUsersWithRoles(search, pageable);
+            }
+        } else {
+            // No search - use existing filter queries
+            if (roleFilter != null && companyFilter != null) {
+                // Both filters
+                Role role = parseRole(roleFilter);
+                log.debug("Filtering by role: {} and company: {}", role, companyFilter);
+                usersPage = userRepository.findByRoleAndCompanyWithRoles(role, companyFilter, pageable);
+            } else if (roleFilter != null) {
+                // Role filter only
+                Role role = parseRole(roleFilter);
+                log.debug("Filtering by role: {}", role);
+                usersPage = userRepository.findByRolesContainingWithRoles(role, pageable);
+            } else if (companyFilter != null) {
+                // Company filter only
+                usersPage = userRepository.findByCompanyIdWithRoles(companyFilter, pageable);
+            } else {
+                // No filters
+                usersPage = userRepository.findAllWithRoles(pageable);
+            }
+        }
+
+        // Apply JSON filter (active status, etc.)
+        Page<User> filteredPage = usersPage;
+        if (jsonFilter != null && !jsonFilter.isBlank()) {
+            List<User> jsonFiltered = applyJsonFilter(usersPage.getContent(), jsonFilter);
+            filteredPage = new org.springframework.data.domain.PageImpl<>(
+                    jsonFiltered, pageable, jsonFiltered.size());
+        }
+
+        // Map to response DTOs
+        return filteredPage.map(responseMapper::mapToResponse);
     }
 
     /**

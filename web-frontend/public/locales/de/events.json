@@ -46,9 +46,20 @@
         "email": "E-Mail",
         "company": "Unternehmen",
         "status": "Status",
-        "registrationDate": "Anmeldedatum"
+        "registrationDate": "Anmeldedatum",
+        "actions": "Aktionen"
       },
-      "empty": "Noch keine Teilnehmer angemeldet"
+      "empty": "Noch keine Teilnehmer angemeldet",
+      "actions": {
+        "cancel": "Anmeldung stornieren",
+        "delete": "Anmeldung löschen"
+      },
+      "deleteDialog": {
+        "title": "Anmeldung löschen",
+        "message": "Möchten Sie die Anmeldung für {{name}} wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+        "cancel": "Abbrechen",
+        "confirm": "Löschen"
+      }
     },
     "participantFilters": {
       "search": {
@@ -398,7 +409,19 @@
     "progressive": "Progressiv",
     "immediate": "Sofort",
     "currentPhase": "Aktuelle Phase",
-    "timeline": "Zeitplan",
+    "timeline": {
+      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
+      "topic": "Thema",
+      "speakers": "Referenten",
+      "agenda": "Agenda",
+      "updates": "Aktualisierungen",
+      "now": "Jetzt",
+      "publishedOn": "Veröffentlicht am {{date}}",
+      "scheduled": "Geplant: {{date}}",
+      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
+      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
+      "days": "{{count}} Tage"
+    },
     "qualityChecks": "Qualitätsprüfungen",
     "configure": "Veröffentlichung konfigurieren",
     "republish": "Neu veröffentlichen",
@@ -488,19 +511,6 @@
         "refreshPreview": "Vorschau aktualisieren",
         "eventContentPreview": "Veranstaltungsinhalts-Vorschau"
       }
-    },
-    "timeline": {
-      "phasesPublished": "{{completed}} von {{total}} Phasen veröffentlicht ({{percent}}%)",
-      "topic": "Thema",
-      "speakers": "Referenten",
-      "agenda": "Agenda",
-      "updates": "Aktualisierungen",
-      "now": "Jetzt",
-      "publishedOn": "Veröffentlicht am {{date}}",
-      "scheduled": "Geplant: {{date}}",
-      "autoPublishIn": "Auto-Veröffentlichung in {{days}} Tagen",
-      "autoPublishScheduled": "Auto-Veröffentlichung geplant",
-      "days": "{{count}} Tage"
     },
     "versionControl": {
       "title": "Versionsverlauf",

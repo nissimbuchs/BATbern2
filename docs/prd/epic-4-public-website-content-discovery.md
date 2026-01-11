@@ -1,12 +1,12 @@
 # Epic 4: Public Website & Content Discovery
 
 ## Status
-🔄 **IN PROGRESS** - Story 4.1 ~85% Complete
+🔄 **IN PROGRESS** - Story 4.1 ~90% Complete
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2026-01-11
 
 **Progress Summary:**
-- ✅ Story 4.1 Foundation (Setup, Layout, Hero, Content, Registration) - COMPLETE (8 sub-stories)
+- ✅ Story 4.1 Foundation (Setup, Layout, Hero, Content, Registration) - COMPLETE (9 sub-stories)
 - 🔄 Story 4.1 Backend Integration - IN PROGRESS (2 sub-stories)
 - ✔️ Story 4.1 Finalization - APPROVED (2 sub-stories ready to start)
 
@@ -18,6 +18,7 @@
 - ✅ 4.1.5 - Registration Wizard
 - ✅ 4.1.5a - Registration Architecture
 - ✅ 4.1.5c - Secure Email Confirmation
+- ✅ 4.1.5d - Anonymous Registration Cancellation
 - ✅ 4.1.6 - Registration Confirmation
 
 **In Progress:**
@@ -210,6 +211,88 @@ As an **attendee**, I want to see the current/upcoming BATbern event prominently
 - [ ] Performance benchmarks met (<1.5s LCP)
 
 **Estimated Duration:** 1.5 weeks
+
+---
+
+### Story 4.1.5d: Anonymous Registration Cancellation
+**Status:** ✅ **COMPLETE**
+
+**User Story:**
+As an **anonymous attendee**, I want to cancel my event registration without logging in using a secure link from my confirmation email, so that I can withdraw my registration if my plans change.
+
+**Problem Statement:**
+Per Story 4.1.5c security requirements, registration codes were removed from API responses to prevent unauthorized access. However, the original cancellation endpoint required users to provide their registration code, creating an impossible situation for anonymous users who never received their code. This story implements a secure JWT-based cancellation flow that maintains security while enabling anonymous cancellation.
+
+**Architecture Integration:**
+- **Backend**: Event Management Service with JWT token validation
+- **Security**: Separate JWT cancellation token (48-hour validity, type: "registration-cancellation")
+- **Email**: Cancellation link embedded in confirmation emails
+- **Frontend**: Public cancellation page with loading/success/error states
+- **i18n**: Full German/English support for emails and UI
+
+**Key Functionality:**
+1. **JWT Token Generation**: Generate separate cancellation token during registration
+2. **Email Integration**: Cancellation link embedded in email footer (German/English templates)
+3. **Public Cancellation Endpoint**: POST `/api/v1/registrations/cancel?token={jwt}` (no authentication required)
+4. **Token Validation**: Type-safe validation ensuring token is specifically for cancellation
+5. **Permanent Deletion**: Registration permanently deleted from database (not just status change)
+6. **Cancellation Page**: User-friendly confirmation page with i18n support
+7. **Security**: Token cleared from URL after successful cancellation
+
+**Implementation Details:**
+
+**Backend (Event Management Service):**
+- **ConfirmationTokenService.java**:
+  - `generateCancellationToken(UUID registrationId, String eventCode)` - Creates JWT with type "registration-cancellation"
+  - `validateCancellationToken(String token)` - Validates token and checks type field
+- **EventController.java**:
+  - POST `/api/v1/registrations/cancel` endpoint (public access)
+  - Validates JWT, retrieves registration, permanently deletes record
+  - Returns `{message: "...", status: "CANCELLED"}`
+- **SecurityConfig.java**: Added `.requestMatchers("/api/v1/registrations/cancel").permitAll()`
+- **RegistrationEmailService.java**: Updated to accept `cancellationToken` parameter
+- **Email Templates**: Added cancellation link in footer (48-hour validity notice)
+
+**Frontend (React):**
+- **eventApiClient.ts**: `cancelRegistration(token)` method with Skip-Auth header
+- **CancelRegistrationPage.tsx**: Three-state UI (loading → success/error)
+- **App.tsx**: Route `/cancel-registration` with lazy loading
+- **i18n**: Full translation support in registration namespace (de/en)
+
+**Security Model:**
+- **Token Type Validation**: Cancellation tokens explicitly marked with `type: "registration-cancellation"`
+- **48-Hour Expiry**: Tokens expire after 48 hours (same as confirmation tokens)
+- **Single-Use**: Registration deleted after successful cancellation (token becomes invalid)
+- **URL Clearing**: Token removed from browser URL after processing (security best practice)
+- **No Authentication**: Public endpoint - JWT provides authorization
+
+**Acceptance Criteria:**
+1. ✅ Cancellation token generated during registration alongside confirmation token
+2. ✅ Email templates include "Registrierung stornieren" / "Cancel Registration" link
+3. ✅ POST `/api/v1/registrations/cancel?token={jwt}` endpoint validates token and deletes registration
+4. ✅ Cancellation page shows loading spinner during API call
+5. ✅ Success state displays confirmation message with "Back to Home" button
+6. ✅ Error state shows user-friendly messages for expired/invalid/not-found tokens
+7. ✅ Full i18n support for German and English users
+8. ✅ Token cleared from URL after successful cancellation
+9. ✅ Security config permits public access to cancellation endpoint
+10. ✅ All tests updated to reflect new method signature with cancellation token
+
+**Technical Files Modified:**
+- Backend: 6 files (ConfirmationTokenService, EventController, SecurityConfig × 2, RegistrationEmailService, email templates × 2)
+- Frontend: 5 files (eventApiClient, CancelRegistrationPage, App, i18n config, translation files × 2)
+- Documentation: 1 file (events-api.openapi.yml)
+- Tests: 1 file (RegistrationEmailServiceTest)
+
+**Branch:** `feature/anonymous-registration-cancellation`
+**Commit:** `8ba3fe1` (15 files changed, 587 insertions, 14 deletions)
+**Implementation Date:** 2026-01-11
+
+**Testing Status:**
+- ✅ Unit tests passing (all test method signatures updated)
+- ✅ TypeScript compilation successful
+- ✅ Pre-commit hooks passing (Prettier, ESLint, Checkstyle)
+- ⏳ Manual E2E testing pending
 
 ---
 

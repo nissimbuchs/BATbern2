@@ -1,5 +1,5 @@
--- V35__Add_fulltext_search_indexes.sql
--- Story 4.2: Historical Event Archive Browsing
+-- V36__Add_fulltext_search_indexes.sql
+-- Story 4.2: Historical Event Archive Browsing (BAT-109)
 -- Purpose: Add GIN full-text search indexes to events and sessions tables for archive search functionality
 -- SOURCE OF TRUTH: docs/stories/BAT-109.archive-browsing.md, AC9 (full-text search requirement)
 

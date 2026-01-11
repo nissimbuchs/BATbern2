@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Registrierung wird storniert...",
+      "message": "Bitte warten Sie, während wir Ihre Stornierung bearbeiten."
+    },
+    "success": {
+      "title": "Registrierung storniert",
+      "subtitle": "Ihre Registrierung wurde erfolgreich storniert",
+      "whatHappened": "Was ist passiert?",
+      "permanentDeletion": "Permanente Löschung",
+      "permanentDeletionText": "Ihre Registrierung wurde dauerhaft aus unserem System entfernt.",
+      "noFurtherAction": "Keine weiteren Maßnahmen",
+      "noFurtherActionText": "Sie werden keine weiteren Mitteilungen zu dieser Veranstaltung erhalten.",
+      "registerAgain": "Erneut registrieren",
+      "registerAgainText": "Falls Sie es sich anders überlegen, können Sie sich jederzeit vor der Veranstaltung erneut registrieren.",
+      "backToHome": "Zurück zur Startseite",
+      "registerForAnother": "Für eine andere Veranstaltung registrieren"
+    },
+    "error": {
+      "title": "Stornierung fehlgeschlagen",
+      "subtitle": "Ihre Registrierung konnte nicht storniert werden",
+      "whatCanYouDo": "Was können Sie tun?",
+      "checkLink": "Überprüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail angeklickt haben",
+      "expired": "Stornierungslinks sind 48 Stunden gültig",
+      "alreadyCancelled": "Die Registrierung wurde möglicherweise bereits storniert",
+      "useLatestEmail": "Stellen Sie sicher, dass Sie die neueste E-Mail verwenden",
+      "contactSupport": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht",
+      "errors": {
+        "expired": "Der Stornierungslink ist abgelaufen (gültig für 48 Stunden).",
+        "invalid": "Ungültiger Stornierungslink. Bitte überprüfen Sie Ihre E-Mail auf den richtigen Link.",
+        "notFound": "Registrierung nicht gefunden oder bereits storniert.",
+        "default": "Die Stornierung der Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Ihre Registrierung wird bestätigt...",
+      "message": "Bitte warten Sie, während wir Ihre Bestätigung bearbeiten."
+    },
+    "success": {
+      "title": "Registrierung bestätigt!",
+      "subtitle": "Sie sind für die Veranstaltung angemeldet",
+      "whatsNext": "Wie geht es weiter?",
+      "checkIn": "Check-in bei der Veranstaltung",
+      "checkInText": "Zeigen Sie Ihren Ausweis am Veranstaltungsschalter vor. Wir haben Ihre bestätigte Registrierung hinterlegt.",
+      "eventDetails": "Veranstaltungsdetails",
+      "eventDetailsText": "Sie erhalten Veranstaltungsaktualisierungen und Erinnerungen per E-Mail.",
+      "backToHome": "Zurück zur Startseite",
+      "createAccount": "Konto erstellen, um Registrierungen zu verwalten"
+    },
+    "alreadyConfirmed": {
+      "title": "Bereits bestätigt",
+      "subtitle": "Diese Registrierung wurde bereits bestätigt",
+      "message": "Ihre Registrierung wurde zuvor bestätigt. Es ist keine weitere Aktion erforderlich.",
+      "backToHome": "Zurück zur Startseite"
+    },
+    "error": {
+      "title": "Bestätigung fehlgeschlagen",
+      "subtitle": "Ihre Registrierung konnte nicht bestätigt werden",
+      "whatCanYouDo": "Was können Sie tun?",
+      "checkLink": "Überprüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail angeklickt haben",
+      "expired": "Bestätigungslinks sind 48 Stunden gültig - möglicherweise müssen Sie sich erneut registrieren",
+      "useLatestEmail": "Stellen Sie sicher, dass Sie die neueste Bestätigungs-E-Mail verwenden",
+      "contactSupport": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht",
+      "backToHome": "Zurück zur Startseite",
+      "registerAgain": "Erneut registrieren",
+      "errors": {
+        "expired": "Der Bestätigungslink ist abgelaufen. Bitte registrieren Sie sich erneut.",
+        "invalid": "Ungültiger Bestätigungslink. Bitte überprüfen Sie Ihre E-Mail auf den richtigen Link.",
+        "default": "Die Bestätigung der Registrierung ist fehlgeschlagen. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support."
+      }
+    }
+  }
+}

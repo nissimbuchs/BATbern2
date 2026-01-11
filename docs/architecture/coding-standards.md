@@ -338,6 +338,86 @@ public Event createEvent(CreateEventRequest request) {
 - Document integration patterns and dependencies
 - Maintain decision records (ADRs) for significant architectural choices
 
+## JPA Performance Best Practices
+
+### Fetch Strategy Guidelines
+
+**CRITICAL: Always use LAZY fetch for collections to avoid N+1 query problems**
+
+```java
+// ✅ Correct - LAZY fetch (JPA default for @OneToMany/@ManyToMany)
+@OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+private List<Child> children = new ArrayList<>();
+
+// ✅ Correct - Explicit LAZY fetch for @ElementCollection
+@ElementCollection(fetch = FetchType.LAZY)
+@CollectionTable(name = "user_roles")
+private Set<Role> roles = new HashSet<>();
+
+// ✅ Correct - LAZY fetch for @ManyToOne
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "parent_id")
+private Parent parent;
+
+// ❌ Wrong - EAGER causes N+1 queries
+@ElementCollection(fetch = FetchType.EAGER)  // DON'T DO THIS
+private Set<Role> roles = new HashSet<>();
+```
+
+### Use JOIN FETCH for Bulk Loading
+
+When you need to load collections, use repository methods with JOIN FETCH:
+
+```java
+// ✅ Correct - Repository method with JOIN FETCH
+@Query("""
+    SELECT DISTINCT u FROM User u
+    LEFT JOIN FETCH u.roles
+    ORDER BY u.lastName ASC
+    """)
+Page<User> findAllWithRoles(Pageable pageable);
+
+// ❌ Wrong - Loading entities in a loop (N+1 query)
+List<User> users = userRepository.findAll();
+for (User user : users) {
+    user.getRoles().size();  // Triggers separate query per user!
+}
+```
+
+### Database-Level Pagination
+
+Always paginate at the database level, never in memory:
+
+```java
+// ✅ Correct - Database pagination
+Page<User> users = userRepository.findAll(PageRequest.of(page, limit));
+
+// ❌ Wrong - In-memory pagination (loads everything)
+List<User> allUsers = userRepository.findAll();
+List<User> pageUsers = allUsers.subList(start, end);
+```
+
+### N+1 Query Detection
+
+- **Local Development**: Enable SQL logging to spot N+1 queries
+- **Integration Tests**: Use `@Sql` with actual PostgreSQL (Testcontainers)
+- **Code Review**: Always check fetch strategies on `@ElementCollection`, `@OneToMany`, `@ManyToMany`
+
+```yaml
+# application-development.yml - Enable SQL logging
+spring.jpa.show-sql: true
+spring.jpa.properties.hibernate.format_sql: true
+logging.level.org.hibernate.SQL: DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+```
+
+### Common N+1 Pitfalls
+
+1. **@ElementCollection with EAGER fetch** - Most common (found in User.roles)
+2. **Loading parent entities without JOIN FETCH** - Common in list endpoints
+3. **Accessing lazy collections in loops** - Classic N+1 pattern
+4. **DTO mapping with nested entity access** - Triggers lazy loading
+
 ## Performance Standards
 
 ### Frontend Performance Targets

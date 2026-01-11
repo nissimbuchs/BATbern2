@@ -812,6 +812,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/registrations/cancel': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Cancel registration via email token
+     * @description Cancel a registration using the JWT token sent via email.
+     *     Permanently deletes the registration from the database.
+     *
+     *     **Story**: Anonymous Cancellation Flow
+     *     **Security**: Public endpoint - JWT token provides authentication and authorization
+     *
+     *     **Token Validation**:
+     *     - JWT signature verified (HMAC-SHA256)
+     *     - Token expiry checked (48 hours from registration)
+     *     - Token type must be "registration-cancellation"
+     *     - Registration ID extracted from token claims
+     *
+     *     **Deletion**: Permanently removes registration from database. Cannot be undone.
+     */
+    post: operations['cancelRegistration'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/batch_registrations': {
     parameters: {
       query?: never;
@@ -4067,6 +4099,63 @@ export interface operations {
            * @example {
            *       "error": "Not found",
            *       "message": "Registration not found",
+           *       "code": "REGISTRATION_NOT_FOUND"
+           *     }
+           */
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  cancelRegistration: {
+    parameters: {
+      query: {
+        /** @description JWT cancellation token from email link */
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Registration cancelled successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            /** @example Registration cancelled successfully */
+            message: string;
+            /**
+             * @example CANCELLED
+             * @enum {string}
+             */
+            status: 'CANCELLED';
+          };
+        };
+      };
+      /** @description Invalid or expired token */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Registration not found or already cancelled */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "error": "Not found",
+           *       "message": "Registration not found or already cancelled",
            *       "code": "REGISTRATION_NOT_FOUND"
            *     }
            */

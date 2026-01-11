@@ -46,9 +46,20 @@
         "email": "Email",
         "company": "Company",
         "status": "Status",
-        "registrationDate": "Registration Date"
+        "registrationDate": "Registration Date",
+        "actions": "Actions"
       },
-      "empty": "No participants registered yet"
+      "empty": "No participants registered yet",
+      "actions": {
+        "cancel": "Cancel Registration",
+        "delete": "Delete Registration"
+      },
+      "deleteDialog": {
+        "title": "Delete Registration",
+        "message": "Are you sure you want to permanently delete the registration for {{name}}? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     },
     "participantFilters": {
       "search": {
@@ -408,7 +419,19 @@
     "progressive": "Progressive",
     "immediate": "Immediate",
     "currentPhase": "Current Phase",
-    "timeline": "Timeline",
+    "timeline": {
+      "phasesPublished": "{{completed}} of {{total}} phases published ({{percent}}%)",
+      "topic": "Topic",
+      "speakers": "Speakers",
+      "agenda": "Agenda",
+      "updates": "Updates",
+      "now": "Now",
+      "publishedOn": "Published on {{date}}",
+      "scheduled": "Scheduled: {{date}}",
+      "autoPublishIn": "Auto-publish in {{days}} days",
+      "autoPublishScheduled": "Auto-publish scheduled",
+      "days": "{{count}} days"
+    },
     "qualityChecks": "Quality Checks",
     "configure": "Configure Publishing",
     "republish": "Republish",
@@ -498,19 +521,6 @@
         "refreshPreview": "Refresh preview",
         "eventContentPreview": "Event content preview"
       }
-    },
-    "timeline": {
-      "phasesPublished": "{{completed}} of {{total}} phases published ({{percent}}%)",
-      "topic": "Topic",
-      "speakers": "Speakers",
-      "agenda": "Agenda",
-      "updates": "Updates",
-      "now": "Now",
-      "publishedOn": "Published on {{date}}",
-      "scheduled": "Scheduled: {{date}}",
-      "autoPublishIn": "Auto-publish in {{days}} days",
-      "autoPublishScheduled": "Auto-publish scheduled",
-      "days": "{{count}} days"
     },
     "versionControl": {
       "title": "Version History",

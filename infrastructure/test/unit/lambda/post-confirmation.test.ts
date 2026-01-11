@@ -120,26 +120,28 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // No existing role
+      // Mock database calls for new user creation flow
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user by email
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
       // Act
       const result = await handler(event, context, {} as any);
 
       // Assert - Story 1.2.3: Check new fields from custom:preferences
-      expect(executeTransaction).toHaveBeenCalledWith(
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO user_profiles'),
         expect.arrayContaining([
-          expect.objectContaining({
-            query: expect.stringContaining('INSERT INTO user_profiles'),
-            params: expect.arrayContaining([
-              'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // cognito_user_id
-              'user@example.com', // email
-              'john.doe', // username (generated from firstName.lastName)
-              'John', // first_name
-              'Doe', // last_name
-              'en', // pref_language
-              true, // pref_email_notifications
-            ]),
-          }),
+          'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // cognito_user_id
+          'user@example.com', // email
+          'john.doe', // username (generated from firstName.lastName)
+          'John', // first_name
+          'Doe', // last_name
+          'en', // pref_language
+          true, // pref_email_notifications
         ])
       );
       expect(result).toEqual(event);
@@ -165,7 +167,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       } as any);
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
@@ -182,18 +189,20 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
 
       // Assert - Check that pref_email_notifications is set to true by default
-      expect(executeTransaction).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            params: expect.arrayContaining([true]), // pref_email_notifications = true
-          }),
-        ])
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO user_profiles'),
+        expect.arrayContaining([true]) // pref_email_notifications = true
       );
     });
 
@@ -202,18 +211,20 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
 
       // Assert
-      expect(executeTransaction).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            query: expect.stringContaining('active'),
-          }),
-        ])
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO user_profiles'),
+        expect.anything()
       );
     });
   });
@@ -228,7 +239,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
       // Act
       await handler(event, context, {} as any);
@@ -254,7 +270,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       } as any);
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
@@ -271,7 +292,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
@@ -298,7 +324,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       } as any);
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
@@ -321,16 +352,30 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      // User already exists (ON CONFLICT DO NOTHING returns 0 rows)
-      (executeTransaction as any).mockResolvedValue([{ rows: [], rowCount: 0 }]);
+      // User already exists with same Cognito ID (Lambda retry scenario)
       mockDbClient.query
-        .mockResolvedValueOnce({ rows: [{ id: 'existing-user-123' }], rowCount: 1 }) // Get existing user
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // No existing role
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - user exists with same Cognito ID
+          rows: [
+            {
+              id: 'existing-user-123',
+              cognito_user_id: 'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
+              username: 'john.doe',
+              first_name: 'John',
+              last_name: 'Doe',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       const result = await handler(event, context, {} as any);
 
-      // Assert - Should not throw error
+      // Assert - Should not throw error, should be idempotent
       expect(result).toEqual(event);
     });
 
@@ -339,10 +384,24 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      (executeTransaction as any).mockResolvedValue([{ rows: [], rowCount: 0 }]);
       mockDbClient.query
-        .mockResolvedValueOnce({ rows: [{ id: 'existing-user' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - user exists
+          rows: [
+            {
+              id: 'existing-user',
+              cognito_user_id: 'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
+              username: 'john.doe',
+              first_name: 'John',
+              last_name: 'Doe',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       const result = await handler(event, context, {} as any);
@@ -356,10 +415,24 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      (executeTransaction as any).mockResolvedValue([{ rows: [], rowCount: 0 }]);
       mockDbClient.query
-        .mockResolvedValueOnce({ rows: [{ id: 'existing-user' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ id: 'role-123' }], rowCount: 1 }); // Role already exists
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - user exists
+          rows: [
+            {
+              id: 'existing-user',
+              cognito_user_id: 'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111',
+              username: 'john.doe',
+              first_name: 'John',
+              last_name: 'Doe',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [{ user_id: 'existing-user' }], rowCount: 1 }); // Role already exists
 
       // Act
       await handler(event, context, {} as any);
@@ -530,13 +603,19 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
 
-      // Assert
-      expect(executeTransaction).toHaveBeenCalled();
+      // Assert - Should use BEGIN/COMMIT for transaction
+      expect(mockDbClient.query).toHaveBeenCalledWith('BEGIN');
+      expect(mockDbClient.query).toHaveBeenCalledWith('COMMIT');
     });
 
     it('should_rollbackTransaction_when_roleAssignmentFails', async () => {
@@ -544,15 +623,18 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      (executeTransaction as any).mockResolvedValue([{ rows: [{ id: 'user-123' }], rowCount: 1 }]);
       mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Check existing role
-        .mockRejectedValueOnce(new Error('Role insert failed'));
+        .mockRejectedValueOnce(new Error('Role insert failed')); // Role INSERT fails
 
       // Act
       const result = await handler(event, context, {} as any);
 
-      // Assert - Should not throw, return event
+      // Assert - Should not throw, return event (non-blocking Lambda)
       expect(result).toEqual(event);
     });
 
@@ -561,13 +643,18 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
       // Act
       await handler(event, context, {} as any);
 
       // Assert
-      expect(executeTransaction).toHaveBeenCalled();
+      expect(mockDbClient.query).toHaveBeenCalledWith('COMMIT');
       expect(mockDbClient.release).toHaveBeenCalled();
     });
   });
@@ -582,7 +669,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
       // Act
       await handler(event, context, {} as any);
@@ -606,7 +698,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      (executeTransaction as any).mockRejectedValue(new Error('DB Error'));
+      mockDbClient.query.mockRejectedValue(new Error('DB Error'));
 
       // Act
       await handler(event, context, {} as any);
@@ -629,7 +721,12 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
 
-      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
       // Act
       await handler(event, context, {} as any);
@@ -644,6 +741,316 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
           ]),
           Namespace: 'BATbern/UserSync',
         })
+      );
+    });
+  });
+
+  // ============================================================================
+  // TEST GROUP 8: Email-Based Matching (Historical Participants)
+  // ============================================================================
+
+  describe('Email-Based Matching - ADR-005', () => {
+    it('should_linkHistoricalParticipant_when_emailExistsWithoutCognitoId', async () => {
+      // Arrange - Historical participant with no Cognito ID
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'new-cognito-123',
+            email: 'historical@batbern.ch',
+            email_verified: 'true',
+            'custom:preferences': JSON.stringify({
+              firstName: 'Maria',
+              lastName: 'Schmidt',
+              language: 'de',
+            }),
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: User exists with email but no cognito_user_id
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT existing user by email
+          rows: [
+            {
+              id: 'historical-user-456',
+              cognito_user_id: null,
+              username: 'maria.schmidt',
+              first_name: 'Maria',
+              last_name: 'Schmidt',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE to link Cognito ID
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
+
+      // Act
+      const result = await handler(event, context, {} as any);
+
+      // Assert - Should UPDATE existing user with Cognito ID
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE user_profiles'),
+        expect.arrayContaining(['new-cognito-123', 'Maria', 'Schmidt', 'de', 'historical-user-456'])
+      );
+
+      // Assert - Should publish metric for historical participant linking
+      expect(mockCloudWatchSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          MetricData: expect.arrayContaining([
+            expect.objectContaining({
+              MetricName: 'HistoricalParticipantLinked',
+            }),
+          ]),
+        })
+      );
+
+      expect(result).toEqual(event);
+    });
+
+    it('should_preserveExistingData_when_linkingHistoricalParticipant', async () => {
+      // Arrange - Historical participant with existing name data
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'new-cognito-789',
+            email: 'existing@batbern.ch',
+            email_verified: 'true',
+            'custom:preferences': JSON.stringify({
+              firstName: 'NewFirst',
+              lastName: 'NewLast',
+              language: 'en',
+            }),
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: Historical user with existing name
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT existing user
+          rows: [
+            {
+              id: 'historical-user-789',
+              cognito_user_id: null,
+              username: 'existing.user',
+              first_name: 'ExistingFirst',
+              last_name: 'ExistingLast',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
+
+      // Act
+      await handler(event, context, {} as any);
+
+      // Assert - Should use COALESCE to preserve existing first/last names
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('COALESCE(NULLIF(first_name'),
+        expect.anything()
+      );
+    });
+
+    it('should_createNewUser_when_emailDoesNotExist', async () => {
+      // Arrange - Completely new user
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'new-cognito-999',
+            email: 'newuser@batbern.ch',
+            email_verified: 'true',
+            'custom:preferences': JSON.stringify({
+              firstName: 'New',
+              lastName: 'User',
+              language: 'de',
+            }),
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: No existing user
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no user found
+        .mockResolvedValueOnce({ rows: [{ id: 'new-user-999' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
+
+      // Act
+      const result = await handler(event, context, {} as any);
+
+      // Assert - Should INSERT new user
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO user_profiles'),
+        expect.arrayContaining(['new-cognito-999', 'newuser@batbern.ch', 'new.user', 'New', 'User', 'de', true])
+      );
+
+      // Assert - Should publish metric for new user creation
+      expect(mockCloudWatchSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          MetricData: expect.arrayContaining([
+            expect.objectContaining({
+              MetricName: 'NewUserCreated',
+            }),
+          ]),
+        })
+      );
+
+      expect(result).toEqual(event);
+    });
+
+    it('should_beIdempotent_when_sameCognitoIdAlreadyLinked', async () => {
+      // Arrange - Lambda retry scenario
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'existing-cognito-123',
+            email: 'linked@batbern.ch',
+            email_verified: 'true',
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: User already linked to same Cognito ID
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - user already linked
+          rows: [
+            {
+              id: 'user-123',
+              cognito_user_id: 'existing-cognito-123',
+              username: 'linked.user',
+              first_name: 'Linked',
+              last_name: 'User',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT (no UPDATE needed)
+        .mockResolvedValueOnce({ rows: [{ user_id: 'user-123' }], rowCount: 1 }); // Role exists
+
+      // Act
+      const result = await handler(event, context, {} as any);
+
+      // Assert - Should NOT call UPDATE (idempotent)
+      expect(mockDbClient.query).not.toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE user_profiles'),
+        expect.anything()
+      );
+
+      expect(result).toEqual(event);
+    });
+
+    it('should_throwError_when_emailConflictDetected', async () => {
+      // Arrange - Email already linked to different Cognito user
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'new-cognito-456',
+            email: 'conflict@batbern.ch',
+            email_verified: 'true',
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: Email already linked to different Cognito ID
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - email exists with different Cognito ID
+          rows: [
+            {
+              id: 'user-existing',
+              cognito_user_id: 'different-cognito-789',
+              username: 'conflict.user',
+              first_name: 'Conflict',
+              last_name: 'User',
+              is_active: true,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // ROLLBACK
+
+      // Act
+      const result = await handler(event, context, {} as any);
+
+      // Assert - Should ROLLBACK and not block Cognito confirmation
+      expect(mockDbClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(result).toEqual(event); // Lambda should not throw (non-blocking)
+
+      // Assert - Should publish failure metric
+      expect(mockCloudWatchSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          MetricData: expect.arrayContaining([
+            expect.objectContaining({
+              MetricName: 'SyncFailure',
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should_reactivateUser_when_linkingInactiveHistoricalParticipant', async () => {
+      // Arrange - Inactive historical participant
+      const event = createPostConfirmationEvent({
+        request: {
+          userAttributes: {
+            sub: 'reactivate-cognito-111',
+            email: 'inactive@batbern.ch',
+            email_verified: 'true',
+            'custom:preferences': JSON.stringify({
+              firstName: 'Reactivated',
+              lastName: 'User',
+            }),
+          },
+        },
+      } as any);
+      const context = createLambdaContext();
+
+      // Mock: Inactive historical user
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({
+          // SELECT - inactive user
+          rows: [
+            {
+              id: 'inactive-user-111',
+              cognito_user_id: null,
+              username: 'inactive.user',
+              first_name: '',
+              last_name: '',
+              is_active: false,
+            },
+          ],
+          rowCount: 1,
+        })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // UPDATE to reactivate
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
+
+      // Act
+      await handler(event, context, {} as any);
+
+      // Assert - Should set is_active = true in UPDATE
+      expect(mockDbClient.query).toHaveBeenCalledWith(
+        expect.stringContaining('is_active = true'),
+        expect.anything()
       );
     });
   });

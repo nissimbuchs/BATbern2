@@ -122,7 +122,7 @@ class RegistrationEmailServiceTest {
                 });
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", Locale.GERMAN);
 
         // Wait for async operation (in test mode, email service returns immediately)
         Thread.sleep(100);
@@ -182,7 +182,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", Locale.ENGLISH);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", Locale.ENGLISH);
 
         // Wait for async operation
         Thread.sleep(100);
@@ -234,7 +234,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         // When
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", Locale.GERMAN);
 
         // Wait for async operation
         Thread.sleep(100);
@@ -287,7 +287,7 @@ class RegistrationEmailServiceTest {
                 .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyString(), any(), anyList());
 
         // When & Then - should not throw exception
-        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", Locale.GERMAN);
+        registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "test-cancel-token", Locale.GERMAN);
 
         // Wait for async operation
         Thread.sleep(100);

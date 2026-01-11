@@ -321,6 +321,38 @@ class EventApiClient {
   }
 
   /**
+   * Cancel Registration (PUBLIC ACCESS - Story 4.1.5d: Email Cancellation)
+   *
+   * Cancels a registration using the JWT token from the cancellation email.
+   * Permanently deletes the registration from the database.
+   *
+   * @param eventCode Event code from URL
+   * @param token JWT cancellation token from email
+   * @returns Cancellation response with status
+   */
+  async cancelRegistration(
+    eventCode: string,
+    token: string
+  ): Promise<{ message: string; status: string }> {
+    try {
+      const response = await apiClient.post<{ message: string; status: string }>(
+        `/events/${eventCode}/registrations/cancel`,
+        null,
+        {
+          params: { token },
+          headers: {
+            // Public endpoint - skip auth header added by interceptor
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Get registration by confirmation code (PUBLIC ACCESS - Story 4.1.5)
    *
    * Retrieves registration details using confirmation code.

@@ -42,6 +42,9 @@ const ConfirmRegistrationPage = () => {
             setState('success');
           }
 
+          // Clear pending registration from sessionStorage
+          sessionStorage.removeItem('pendingRegistration');
+
           // Clear token from URL (security best practice)
           window.history.replaceState({}, '', '/confirm-registration');
         }
