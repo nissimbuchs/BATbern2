@@ -722,11 +722,6 @@
         "invalidDuration": "Duration must be between 1 and 480 minutes",
         "saveFailed": "Failed to save session"
       }
-    },
-    "registration": {
-      "errors": {
-        "alreadyRegistered": "You are already registered for this event."
-      }
     }
   },
   "slotAssignment": {

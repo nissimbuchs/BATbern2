@@ -712,11 +712,6 @@
         "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
         "saveFailed": "Session konnte nicht gespeichert werden"
       }
-    },
-    "registration": {
-      "errors": {
-        "alreadyRegistered": "Sie sind bereits für diese Veranstaltung registriert."
-      }
     }
   },
   "slotAssignment": {
