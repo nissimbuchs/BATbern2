@@ -135,13 +135,9 @@ public class Event {
     @Column(name = "last_published_at")
     private Instant lastPublishedAt;
 
-    // Full-text search vector columns (Story 4.2 AC9, AC19)
-    // GENERATED ALWAYS AS columns from V35 migration - do not insert/update
-    @Column(name = "title_vector", insertable = false, updatable = false)
-    private String titleVector;
-
-    @Column(name = "description_vector", insertable = false, updatable = false)
-    private String descriptionVector;
+    // Note: title_vector and description_vector columns exist in DB (V35 migration)
+    // but are not mapped here because they're PostgreSQL tsvector types used only
+    // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
 
     @Version
     @Column(name = "version")

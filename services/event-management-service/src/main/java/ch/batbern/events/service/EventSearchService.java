@@ -291,25 +291,76 @@ public class EventSearchService {
 
                 case CONTAINS:
                     // Use PostgreSQL full-text search for title field (Story 4.2 AC9, AC19)
-                    // GIN indexes on title_vector provide fast search across event titles
+                    // GIN indexes search across: event titles, event descriptions, session titles, session descriptions
                     if ("title".equals(field)) {
                         // PostgreSQL full-text search: title_vector @@ to_tsquery('german', searchTerm)
                         // Convert user input to tsquery format (replace spaces with & for AND logic)
                         String searchTerm = value.toString().trim().replace(" ", " & ");
 
-                        // Use custom SQL function to perform: title_vector @@ to_tsquery('german', ?)
-                        return criteriaBuilder.isTrue(
+                        // Create tsquery expression once
+                        jakarta.persistence.criteria.Expression<Object> tsquery = criteriaBuilder.function(
+                            "to_tsquery",
+                            Object.class,
+                            criteriaBuilder.literal("german"),
+                            criteriaBuilder.literal(searchTerm)
+                        );
+
+                        // Search in event title_vector
+                        jakarta.persistence.criteria.Predicate eventTitleMatch = criteriaBuilder.isTrue(
                             criteriaBuilder.function(
-                                "@@",
+                                "ts_match_title",
                                 Boolean.class,
-                                root.get("titleVector"),  // Use the generated tsvector column
-                                criteriaBuilder.function(
-                                    "to_tsquery",
-                                    Object.class,
-                                    criteriaBuilder.literal("german"),
-                                    criteriaBuilder.literal(searchTerm)
+                                tsquery
+                            )
+                        );
+
+                        // Search in event description_vector
+                        jakarta.persistence.criteria.Predicate eventDescriptionMatch = criteriaBuilder.isTrue(
+                            criteriaBuilder.function(
+                                "ts_match_description",
+                                Boolean.class,
+                                tsquery
+                            )
+                        );
+
+                        // Search in sessions: EXISTS (SELECT 1 FROM sessions WHERE event_id = events.id
+                        //   AND (title_vector @@ tsquery OR description_vector @@ tsquery))
+                        jakarta.persistence.criteria.Subquery<Integer> sessionSubquery = query.subquery(Integer.class);
+                        jakarta.persistence.criteria.Root<ch.batbern.events.domain.Session> sessionRoot =
+                            sessionSubquery.from(ch.batbern.events.domain.Session.class);
+
+                        sessionSubquery.select(criteriaBuilder.literal(1));
+                        sessionSubquery.where(
+                            criteriaBuilder.and(
+                                criteriaBuilder.equal(sessionRoot.get("eventId"), root.get("id")),
+                                criteriaBuilder.or(
+                                    // Session title match
+                                    criteriaBuilder.isTrue(
+                                        criteriaBuilder.function(
+                                            "ts_match_session_title",
+                                            Boolean.class,
+                                            tsquery
+                                        )
+                                    ),
+                                    // Session description match
+                                    criteriaBuilder.isTrue(
+                                        criteriaBuilder.function(
+                                            "ts_match_session_description",
+                                            Boolean.class,
+                                            tsquery
+                                        )
+                                    )
                                 )
                             )
+                        );
+
+                        // Return events where ANY of these match:
+                        // - Event title OR event description
+                        // - Any session title OR session description
+                        return criteriaBuilder.or(
+                            eventTitleMatch,
+                            eventDescriptionMatch,
+                            criteriaBuilder.exists(sessionSubquery)
                         );
                     }
                     // Fallback to LIKE for other fields
