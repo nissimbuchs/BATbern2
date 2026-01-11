@@ -1377,8 +1377,8 @@ public class EventController {
                 pageNumber,
                 pageSize,
                 org.springframework.data.domain.Sort.by(
-                        org.springframework.data.domain.Sort.Order.asc("attendeeLastName").nullsLast(),
-                        org.springframework.data.domain.Sort.Order.asc("attendeeFirstName").nullsLast()
+                        org.springframework.data.domain.Sort.Order.asc("attendeeLastName"),
+                        org.springframework.data.domain.Sort.Order.asc("attendeeFirstName")
                 )
         );
 
