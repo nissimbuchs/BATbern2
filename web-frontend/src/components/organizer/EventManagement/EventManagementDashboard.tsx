@@ -156,8 +156,8 @@ export const EventManagementDashboard: React.FC = () => {
               <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                 <Typography variant="h5">{t('dashboard.activeEvents')}</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {eventsData?.data?.length || 0}/{eventsData?.pagination?.totalItems || 0}{' '}
-                  {(eventsData?.pagination?.totalItems || 0) === 1
+                  {eventsData?.data?.length || 0}/{eventsData?.pagination?.total || 0}{' '}
+                  {(eventsData?.pagination?.total || 0) === 1
                     ? t('dashboard.eventWord')
                     : t('dashboard.eventWord_plural')}
                 </Typography>
@@ -173,7 +173,7 @@ export const EventManagementDashboard: React.FC = () => {
               {eventsData?.pagination && (
                 <EventPagination
                   page={eventsData.pagination.page}
-                  totalPages={eventsData.pagination.totalPages}
+                  totalPages={eventsData.pagination.pages}
                   limit={eventsData.pagination.limit}
                   onPageChange={(newPage) => setPage(newPage)}
                   onLimitChange={(newLimit) => setLimit(newLimit)}

@@ -34,12 +34,25 @@ export type CreateRegistrationRequest = components['schemas']['CreateRegistratio
 // ============================================================================
 
 /**
+ * UI-Extended Speaker Type
+ * Adds frontend-specific fields to the base Speaker type from API
+ */
+export interface SpeakerUI extends Speaker {
+  // Archive browsing fields (Story 4.2)
+  speakerId?: string; // UUID identifier for speaker
+  fullName?: string; // Computed full name (firstName + lastName)
+  companyName?: string; // Speaker's company name
+  photoUrl?: string; // Speaker's photo URL (alias for profilePictureUrl)
+}
+
+/**
  * UI-Extended Session Type
  * Adds frontend-specific fields to the base Session type from API
  */
 export interface SessionUI extends Session {
   // UUID id for speaker pool matching (Story 5.6)
   id?: string;
+  sessionId?: string; // UUID identifier for session (Story 4.2)
   // UI-only fields for session management (Phase 2 features)
   slotNumber?: number; // Slot number in the agenda
   speaker?: {
@@ -49,6 +62,9 @@ export interface SessionUI extends Session {
     email?: string;
     profilePictureUrl?: string; // Speaker's profile picture
   };
+  // Archive browsing presentation fields (Story 4.2)
+  presentationUrl?: string; // URL to download presentation PDF
+  presentationSize?: number; // Presentation file size in bytes
   // Note: speakers is inherited from base Session type (SessionSpeaker[])
   // Note: materialsStatus is now defined in base Session type from OpenAPI spec
 }
@@ -61,6 +77,9 @@ export interface EventUI extends Event {
   // Aliases for convenience (map API fields to UI-friendly names)
   eventDate?: string; // Alias for 'date' field
   capacity?: number; // Alias for 'venueCapacity' field
+
+  // Archive browsing fields (Story 4.2)
+  topic?: string; // Primary topic/theme of the event
 
   // UI-only fields (Phase 2 features - not in backend API yet)
   venueCode?: string; // Venue identifier for dropdown selection
@@ -78,6 +97,9 @@ export interface EventUI extends Event {
 export interface EventDetailUI extends EventDetail {
   booking?: VenueBooking;
   catering?: CateringConfig;
+
+  // Archive browsing fields (Story 4.2)
+  topic?: string; // Primary topic/theme of the event
 
   // Additional UI-only fields for dashboard and detail view (Phase 2 features)
   eventDate?: string; // Alias for 'date' field
@@ -198,6 +220,13 @@ export interface EventFilters {
   year?: number;
   search?: string;
   includeArchived?: boolean; // When false (default), excludes ARCHIVED events from results
+}
+
+// Archive Filter State (Story 4.2 - UI-only)
+export interface ArchiveFilters {
+  timePeriod?: 'all' | 'last5y' | '2020-2024' | '2015-2019' | '2010-2014' | 'before2010';
+  topics?: string[]; // topic slugs or IDs
+  search?: string;
 }
 
 export interface EventSortOption {
@@ -329,11 +358,9 @@ export interface EventListResponse {
   data: Event[];
   pagination: {
     page: number;
+    pages: number; // Total number of pages
     limit: number;
-    totalItems: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    total: number; // Total number of items
   };
 }
 

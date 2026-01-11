@@ -43,7 +43,7 @@ class EventApiClient {
   async getEvents(
     pagination: PaginationParams = { page: 1, limit: 20 },
     filters?: EventFilters,
-    options?: { expand?: string[] }
+    options?: { expand?: string[]; sort?: string }
   ): Promise<EventListResponse> {
     try {
       // Use URLSearchParams for proper URL encoding
@@ -80,6 +80,11 @@ class EventApiClient {
       // Add include parameter for resource expansion
       if (options?.expand && options.expand.length > 0) {
         params.append('include', options.expand.join(','));
+      }
+
+      // Add sort parameter (Story 4.2 - archive sorting)
+      if (options?.sort) {
+        params.append('sort', options.sort);
       }
 
       const response = await apiClient.get<EventListResponse>(
