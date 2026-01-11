@@ -47,6 +47,9 @@ const CancelRegistrationPage = () => {
         if (response.status === 'CANCELLED') {
           setState('success');
 
+          // Clear pending registration from sessionStorage
+          sessionStorage.removeItem('pendingRegistration');
+
           // Clear token from URL (security best practice)
           window.history.replaceState({}, '', `/events/${eventCode}/cancel-registration`);
         }
