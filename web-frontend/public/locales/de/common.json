@@ -357,6 +357,8 @@
     },
     "loading": "Lade Veranstaltungen...",
     "loadingMore": "Lade weitere Veranstaltungen...",
+    "loadingTopics": "Lade Themen...",
+    "noTopicsAvailable": "Keine Themen verfügbar",
     "noResults": "Keine Veranstaltungen gefunden",
     "errors": {
       "loadFailed": "Fehler beim Laden der Veranstaltungen"

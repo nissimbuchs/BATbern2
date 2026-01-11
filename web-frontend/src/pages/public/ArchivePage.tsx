@@ -16,18 +16,11 @@ import { FilterSidebar } from '@/components/public/FilterSidebar';
 import { FilterSheet } from '@/components/public/FilterSheet';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { useInfiniteEvents } from '@/hooks/useInfiniteEvents';
+import { topicService } from '@/services/topicService';
 import type { ArchiveFilters, EventDetailUI } from '@/types/event.types';
+import type { Topic } from '@/types/topic.types';
 
 type ViewMode = 'grid' | 'list';
-
-// Mock topics data - in production this would come from an API
-const MOCK_TOPICS = [
-  { id: '1', name: 'Cloud Architecture', code: 'cloud', count: 23 },
-  { id: '2', name: 'DevOps', code: 'devops', count: 18 },
-  { id: '3', name: 'Security', code: 'security', count: 15 },
-  { id: '4', name: 'Microservices', code: 'microservices', count: 12 },
-  { id: '5', name: 'AI/ML', code: 'ai-ml', count: 8 },
-];
 
 export default function ArchivePage() {
   const { t } = useTranslation();
@@ -39,6 +32,33 @@ export default function ArchivePage() {
     const saved = localStorage.getItem('archive-view-mode');
     return (saved as ViewMode) || 'list';
   });
+
+  // Topics state (loaded from API)
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topicsLoading, setTopicsLoading] = useState(true);
+
+  // Fetch topics on component mount
+  useEffect(() => {
+    const fetchTopics = async () => {
+      try {
+        setTopicsLoading(true);
+        // Fetch active topics only, sorted by title
+        const response = await topicService.getTopics({
+          status: 'AVAILABLE',
+          sort: 'title',
+          limit: 100, // Get all active topics
+        });
+        setTopics(response.data);
+      } catch (error) {
+        console.error('Failed to load topics:', error);
+        setTopics([]); // Fail gracefully - empty topic list
+      } finally {
+        setTopicsLoading(false);
+      }
+    };
+
+    fetchTopics();
+  }, []);
 
   // Filters from URL query parameters
   const filters: ArchiveFilters = useMemo(() => {
@@ -162,11 +182,12 @@ export default function ArchivePage() {
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <FilterSidebar
               filters={filters}
-              topics={MOCK_TOPICS}
+              topics={topics}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
               onSortChange={handleSortChange}
               currentSort={sort}
+              loading={topicsLoading}
             />
           </aside>
 
@@ -174,11 +195,12 @@ export default function ArchivePage() {
           <div className="lg:hidden">
             <FilterSheet
               filters={filters}
-              topics={MOCK_TOPICS}
+              topics={topics}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
               onSortChange={handleSortChange}
               currentSort={sort}
+              loading={topicsLoading}
             />
           </div>
 

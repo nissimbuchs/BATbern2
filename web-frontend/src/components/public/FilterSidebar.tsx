@@ -8,13 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ArchiveFilters } from '@/types/event.types';
-
-interface Topic {
-  id: string;
-  name: string;
-  code: string;
-  count: number;
-}
+import type { Topic } from '@/types/topic.types';
 
 interface FilterSidebarProps {
   filters: ArchiveFilters;
@@ -23,6 +17,7 @@ interface FilterSidebarProps {
   onClearFilters: () => void;
   onSortChange: (sort: string) => void;
   currentSort: string;
+  loading?: boolean;
 }
 
 const SORT_OPTIONS = [
@@ -37,6 +32,7 @@ export function FilterSidebar({
   onClearFilters,
   onSortChange,
   currentSort,
+  loading = false,
 }: FilterSidebarProps) {
   const { t } = useTranslation();
   const [searchValue, setSearchValue] = useState(filters.search || '');
@@ -113,24 +109,30 @@ export function FilterSidebar({
       <div>
         <h3 className="text-sm font-medium text-gray-900 mb-2">{t('archive.filters.topics')}</h3>
         <div className="space-y-2">
-          {topics.map((topic) => {
-            const isChecked = filters.topics?.includes(topic.code) || false;
+          {loading ? (
+            <div className="text-sm text-gray-500">{t('archive.loadingTopics')}</div>
+          ) : topics.length === 0 ? (
+            <div className="text-sm text-gray-500">{t('archive.noTopicsAvailable')}</div>
+          ) : (
+            topics.map((topic) => {
+              const isChecked = filters.topics?.includes(topic.topicCode) || false;
 
-            return (
-              <label key={topic.id} className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleTopicToggle(topic.code)}
-                  aria-label={`${topic.name} (${topic.count})`}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  {topic.name} ({topic.count})
-                </span>
-              </label>
-            );
-          })}
+              return (
+                <label key={topic.topicCode} className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleTopicToggle(topic.topicCode)}
+                    aria-label={`${topic.title} (${topic.usageCount})`}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">
+                    {topic.title} ({topic.usageCount})
+                  </span>
+                </label>
+              );
+            })
+          )}
         </div>
       </div>
 

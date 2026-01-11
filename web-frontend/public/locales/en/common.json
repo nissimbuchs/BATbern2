@@ -357,6 +357,8 @@
     },
     "loading": "Loading events...",
     "loadingMore": "Loading more events...",
+    "loadingTopics": "Loading topics...",
+    "noTopicsAvailable": "No topics available",
     "noResults": "No events found",
     "errors": {
       "loadFailed": "Failed to load events"

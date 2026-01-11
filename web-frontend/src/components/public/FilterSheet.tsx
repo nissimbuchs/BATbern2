@@ -9,13 +9,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FilterSidebar } from './FilterSidebar';
 import type { ArchiveFilters } from '@/types/event.types';
-
-interface Topic {
-  id: string;
-  name: string;
-  code: string;
-  count: number;
-}
+import type { Topic } from '@/types/topic.types';
 
 interface FilterSheetProps {
   filters: ArchiveFilters;
@@ -24,6 +18,7 @@ interface FilterSheetProps {
   onClearFilters: () => void;
   onSortChange: (sort: string) => void;
   currentSort: string;
+  loading?: boolean;
 }
 
 export function FilterSheet({
@@ -33,6 +28,7 @@ export function FilterSheet({
   onClearFilters,
   onSortChange,
   currentSort,
+  loading = false,
 }: FilterSheetProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -79,6 +75,7 @@ export function FilterSheet({
                 setIsOpen(false);
               }}
               currentSort={currentSort}
+              loading={loading}
             />
           </div>
         </div>
