@@ -42,11 +42,10 @@ export default function ArchivePage() {
     const fetchTopics = async () => {
       try {
         setTopicsLoading(true);
-        // Fetch active topics only, sorted by title
+        // Fetch all topics, sorted by title
         const response = await topicService.getTopics({
-          status: 'AVAILABLE',
           sort: 'title',
-          limit: 100, // Get all active topics
+          limit: 100, // Get all topics
         });
         setTopics(response.data);
       } catch (error) {
