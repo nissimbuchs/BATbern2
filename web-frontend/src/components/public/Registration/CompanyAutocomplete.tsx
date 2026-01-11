@@ -145,7 +145,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
         <PopoverContent
           className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-800"
           align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e: Event) => e.preventDefault()}
         >
           <Command className="bg-zinc-900">
             <CommandList>
