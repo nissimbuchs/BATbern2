@@ -1,0 +1,76 @@
+{
+  "cancellation": {
+    "loading": {
+      "title": "Cancelling Your Registration...",
+      "message": "Please wait while we process your cancellation."
+    },
+    "success": {
+      "title": "Registration Cancelled",
+      "subtitle": "Your registration has been successfully cancelled",
+      "whatHappened": "What Happened?",
+      "permanentDeletion": "Permanent Deletion",
+      "permanentDeletionText": "Your registration has been permanently removed from our system.",
+      "noFurtherAction": "No Further Action",
+      "noFurtherActionText": "You will not receive any further communications about this event.",
+      "registerAgain": "Register Again",
+      "registerAgainText": "If you change your mind, you can register again at any time before the event.",
+      "backToHome": "Back to Home",
+      "registerForAnother": "Register for Another Event"
+    },
+    "error": {
+      "title": "Cancellation Failed",
+      "subtitle": "Unable to cancel your registration",
+      "whatCanYouDo": "What can you do?",
+      "checkLink": "Check if you clicked the correct link from your email",
+      "expired": "Cancellation links expire after 48 hours",
+      "alreadyCancelled": "Registration may have already been cancelled",
+      "useLatestEmail": "Make sure you're using the latest email",
+      "contactSupport": "Contact support if the problem persists",
+      "errors": {
+        "expired": "Cancellation link has expired (valid for 48 hours).",
+        "invalid": "Invalid cancellation link. Please check your email for the correct link.",
+        "notFound": "Registration not found or already cancelled.",
+        "default": "Failed to cancel registration. Please try again or contact support."
+      }
+    }
+  },
+  "confirmation": {
+    "loading": {
+      "title": "Confirming Your Registration...",
+      "message": "Please wait while we process your confirmation."
+    },
+    "success": {
+      "title": "Registration Confirmed!",
+      "subtitle": "You're all set for the event",
+      "whatsNext": "What's Next?",
+      "checkIn": "Check-in at the Event",
+      "checkInText": "Present your ID at the event desk for check-in. We'll have your confirmed registration on file.",
+      "eventDetails": "Event Details",
+      "eventDetailsText": "You'll receive event updates and reminders via email.",
+      "backToHome": "Back to Home",
+      "createAccount": "Create Account to Manage Registrations"
+    },
+    "alreadyConfirmed": {
+      "title": "Already Confirmed",
+      "subtitle": "This registration has already been confirmed",
+      "message": "Your registration was previously confirmed. No further action is needed.",
+      "backToHome": "Back to Home"
+    },
+    "error": {
+      "title": "Confirmation Failed",
+      "subtitle": "Unable to confirm your registration",
+      "whatCanYouDo": "What can you do?",
+      "checkLink": "Check if you clicked the correct link from your email",
+      "expired": "Confirmation links expire after 48 hours - you may need to register again",
+      "useLatestEmail": "Make sure you're using the latest confirmation email",
+      "contactSupport": "Contact support if the problem persists",
+      "backToHome": "Back to Home",
+      "registerAgain": "Register Again",
+      "errors": {
+        "expired": "Confirmation link has expired. Please register again.",
+        "invalid": "Invalid confirmation link. Please check your email for the correct link.",
+        "default": "Failed to confirm registration. Please try again or contact support."
+      }
+    }
+  }
+}

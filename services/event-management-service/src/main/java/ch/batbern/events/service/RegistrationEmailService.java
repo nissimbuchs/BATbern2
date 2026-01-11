@@ -60,6 +60,7 @@ public class RegistrationEmailService {
      * @param userProfile User profile DTO
      * @param event Event entity
      * @param confirmationToken JWT token for email confirmation (Story 4.1.5c)
+     * @param cancellationToken JWT token for email cancellation (Anonymous Cancellation Flow)
      * @param locale User's preferred locale (defaults to German if null)
      */
     @Async
@@ -68,6 +69,7 @@ public class RegistrationEmailService {
             UserResponse userProfile,
             Event event,
             String confirmationToken,
+            String cancellationToken,
             Locale locale
     ) {
         try {
@@ -82,7 +84,7 @@ public class RegistrationEmailService {
 
             // Load email template (i18n)
             String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event,
-                eventDateTime, confirmationToken);
+                eventDateTime, confirmationToken, cancellationToken);
 
             // Generate calendar file (.ics)
             byte[] icsFile = generateCalendarFile(event, eventDateTime);
@@ -118,7 +120,7 @@ public class RegistrationEmailService {
      */
     private String loadEmailTemplate(Locale locale, Registration registration,
         UserResponse userProfile, Event event, ZonedDateTime eventDateTime,
-        String confirmationToken) {
+        String confirmationToken, String cancellationToken) {
         try {
             // Determine template file based on locale
             String templateName = locale.getLanguage().equals("de")
@@ -130,6 +132,7 @@ public class RegistrationEmailService {
 
             // Prepare template variables
             // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
+            // Anonymous Cancellation Flow: Include cancellation link in email
             Map<String, String> variables = Map.ofEntries(
                     Map.entry("attendeeFirstName", userProfile.getFirstName()),
                     Map.entry("attendeeLastName", userProfile.getLastName()),
@@ -141,6 +144,7 @@ public class RegistrationEmailService {
                     Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
                     Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
                         + "/confirm-registration?token=" + confirmationToken),
+                    Map.entry("cancellationUrl", baseUrl + "/cancel-registration?token=" + cancellationToken),
                     Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),

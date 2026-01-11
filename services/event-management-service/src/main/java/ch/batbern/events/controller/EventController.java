@@ -1267,6 +1267,12 @@ public class EventController {
                 eventCode
         );
 
+        // Generate cancellation token (48h validity)
+        String cancellationToken = confirmationTokenService.generateCancellationToken(
+                registration.getId(),
+                eventCode
+        );
+
         // Fetch event for email
         ch.batbern.events.domain.Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NoSuchElementException("Event not found: " + eventCode));
@@ -1275,18 +1281,23 @@ public class EventController {
         ch.batbern.events.dto.generated.users.UserResponse userProfile =
                 userApiClient.getUserByUsername(registration.getAttendeeUsername());
 
-        // Send confirmation email with JWT token (Story 4.1.5c)
-        // Email includes confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
+        // Send confirmation email with JWT tokens (Story 4.1.5c + Anonymous Cancellation)
+        // Email includes:
+        //   - Confirmation link: https://batbern.ch/events/{eventCode}/confirm-registration?token={confirmationToken}
+        //   - Cancellation link: https://batbern.ch/cancel-registration?token={cancellationToken}
         registrationEmailService.sendRegistrationConfirmation(
                 registration,
                 userProfile,
                 event,
                 confirmationToken,
+                cancellationToken,
                 java.util.Locale.GERMAN // Default to German for BATbern events
         );
 
-        log.info("Confirmation token generated and email queued for registration {}: {}",
-                registration.getId(), confirmationToken.substring(0, 20) + "...");
+        log.info("Confirmation and cancellation tokens generated, email queued for registration {}: confirm={}, cancel={}",
+                registration.getId(),
+                confirmationToken.substring(0, 20) + "...",
+                cancellationToken.substring(0, 20) + "...");
 
         // QA Fix (VALID-001): Return different status for resend vs new registration
         if (isResend) {
@@ -1659,6 +1670,71 @@ public class EventController {
         } catch (io.jsonwebtoken.JwtException e) {
             log.warn("Invalid confirmation token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid or expired confirmation token");
+        }
+    }
+
+    /**
+     * Cancel Event Registration - Email Cancellation Flow
+     *
+     * POST /api/v1/registrations/cancel?token={JWT}
+     *
+     * Cancels a registration using the JWT token from the cancellation email.
+     * Deletes the registration record from the database.
+     * Token is valid for 48 hours.
+     *
+     * @param token JWT cancellation token from email
+     * @return Success message
+     */
+    @PostMapping("/registrations/cancel")
+    @Operation(
+            summary = "Cancel Registration",
+            description = "Cancel a registration using the token from the cancellation email. "
+                + "Token is valid for 48 hours. Registration will be permanently deleted."
+    )
+    public ResponseEntity<Map<String, String>> cancelRegistration(
+            @RequestParam("token") String token) {
+        log.debug("POST /api/v1/registrations/cancel");
+
+        try {
+            // Validate token
+            io.jsonwebtoken.Claims claims = confirmationTokenService.validateCancellationToken(token);
+
+            // Extract registration ID
+            UUID registrationId = confirmationTokenService.getRegistrationId(claims);
+            String eventCode = confirmationTokenService.getEventCode(claims);
+
+            // Find registration
+            Registration registration = registrationRepository.findById(registrationId)
+                    .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+
+            // Fetch the event to verify registration belongs to it
+            Event event = eventRepository.findById(registration.getEventId())
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Event not found for registration: " + registrationId));
+
+            // Verify registration belongs to the event in the token
+            if (!event.getEventCode().equals(eventCode)) {
+                throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+            }
+
+            // Delete the registration
+            registrationRepository.delete(registration);
+
+            log.info("Registration cancelled and deleted: {} for event: {}", registrationId, eventCode);
+
+            // Return success response
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Registration cancelled successfully");
+            response.put("status", "CANCELLED");
+
+            return ResponseEntity.ok(response);
+
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("Invalid cancellation token: {}", e.getMessage());
+            throw new IllegalArgumentException("Invalid or expired cancellation token");
+        } catch (NoSuchElementException e) {
+            log.warn("Registration not found for cancellation: {}", e.getMessage());
+            throw new IllegalArgumentException("Registration not found or already cancelled");
         }
     }
 

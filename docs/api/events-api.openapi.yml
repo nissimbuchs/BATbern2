@@ -2190,6 +2190,86 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /registrations/cancel:
+    post:
+      tags:
+        - Registrations
+      summary: Cancel registration via email token
+      description: |
+        Cancel a registration using the JWT token sent via email.
+        Permanently deletes the registration from the database.
+
+        **Story**: Anonymous Cancellation Flow
+        **Security**: Public endpoint - JWT token provides authentication and authorization
+
+        **Token Validation**:
+        - JWT signature verified (HMAC-SHA256)
+        - Token expiry checked (48 hours from registration)
+        - Token type must be "registration-cancellation"
+        - Registration ID extracted from token claims
+
+        **Deletion**: Permanently removes registration from database. Cannot be undone.
+
+      operationId: cancelRegistration
+      security: []  # Public endpoint - JWT token in query param provides security
+      parameters:
+        - name: token
+          in: query
+          description: JWT cancellation token from email link
+          required: true
+          schema:
+            type: string
+            example: eyJhbGciOiJIUzI1NiJ9.eyJyZWdpc3RyYXRpb25JZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsImV2ZW50Q29kZSI6IkJBVGJlcm41NyIsInR5cGUiOiJyZWdpc3RyYXRpb24tY2FuY2VsbGF0aW9uIiwiaWF0IjoxNzA1MDAwMDAwLCJleHAiOjE3MDUxNzI4MDB9.signature
+      responses:
+        '200':
+          description: Registration cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - status
+                properties:
+                  message:
+                    type: string
+                    example: Registration cancelled successfully
+                  status:
+                    type: string
+                    enum: [CANCELLED]
+                    example: CANCELLED
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    error: Invalid token
+                    message: Token has expired (48 hour validity)
+                    code: TOKEN_EXPIRED
+                invalidToken:
+                  summary: Invalid token signature
+                  value:
+                    error: Invalid token
+                    message: Token signature validation failed
+                    code: INVALID_TOKEN
+        '404':
+          description: Registration not found or already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Registration not found or already cancelled
+                code: REGISTRATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /events/batch_registrations:
     post:
       tags:
