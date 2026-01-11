@@ -31,6 +31,7 @@ import { People as PeopleIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { EventParticipant, RegistrationStatus } from '../../../types/eventParticipant.types';
 import CompanyCell from '../UserManagement/CompanyCell';
+import RegistrationActionsMenu from './RegistrationActionsMenu';
 
 interface EventParticipantTableProps {
   participants: EventParticipant[];
@@ -134,6 +135,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
               <TableCell>{t('eventPage.participantTable.headers.company')}</TableCell>
               <TableCell>{t('eventPage.participantTable.headers.status')}</TableCell>
               <TableCell>{t('eventPage.participantTable.headers.registrationDate')}</TableCell>
+              <TableCell align="right">{t('eventPage.participantTable.headers.actions')}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -156,6 +158,9 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <Skeleton width={100} />
+                </TableCell>
+                <TableCell align="right">
+                  <Skeleton width={80} />
                 </TableCell>
               </TableRow>
             ))}
@@ -227,6 +232,7 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 {t('eventPage.participantTable.headers.registrationDate')}
               </TableSortLabel>
             </TableCell>
+            <TableCell align="right">{t('eventPage.participantTable.headers.actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -267,6 +273,9 @@ const EventParticipantTable: React.FC<EventParticipantTableProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   {formatDate(participant.registrationDate)}
                 </Typography>
+              </TableCell>
+              <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                <RegistrationActionsMenu participant={participant} />
               </TableCell>
             </TableRow>
           ))}

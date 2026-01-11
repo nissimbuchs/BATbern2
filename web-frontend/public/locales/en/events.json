@@ -46,9 +46,20 @@
         "email": "Email",
         "company": "Company",
         "status": "Status",
-        "registrationDate": "Registration Date"
+        "registrationDate": "Registration Date",
+        "actions": "Actions"
       },
-      "empty": "No participants registered yet"
+      "empty": "No participants registered yet",
+      "actions": {
+        "cancel": "Cancel Registration",
+        "delete": "Delete Registration"
+      },
+      "deleteDialog": {
+        "title": "Delete Registration",
+        "message": "Are you sure you want to permanently delete the registration for {{name}}? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      }
     },
     "participantFilters": {
       "search": {

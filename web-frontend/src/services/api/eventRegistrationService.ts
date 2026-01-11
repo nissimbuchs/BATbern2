@@ -105,3 +105,54 @@ export const getEventRegistrations = async (
     pagination: response.data.pagination,
   };
 };
+
+/**
+ * Update registration status
+ *
+ * @param eventCode - Event code
+ * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ * @param status - New registration status
+ * @returns Updated registration
+ */
+export const updateRegistrationStatus = async (
+  eventCode: string,
+  registrationCode: string,
+  status: EventParticipant['status']
+): Promise<EventParticipant> => {
+  // Backend expects lowercase status values to match database constraint
+  const lowercaseStatus = status.toLowerCase();
+
+  const response = await apiClient.patch<BackendRegistrationItem>(
+    `/events/${eventCode}/registrations/${registrationCode}`,
+    { status: lowercaseStatus }
+  );
+
+  return transformRegistration(response.data);
+};
+
+/**
+ * Cancel registration (set status to CANCELLED)
+ *
+ * @param eventCode - Event code
+ * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ * @returns Updated registration with CANCELLED status
+ */
+export const cancelRegistration = async (
+  eventCode: string,
+  registrationCode: string
+): Promise<EventParticipant> => {
+  return updateRegistrationStatus(eventCode, registrationCode, 'CANCELLED');
+};
+
+/**
+ * Delete registration (permanent removal)
+ *
+ * @param eventCode - Event code
+ * @param registrationCode - Registration code (e.g., BAT-2025-000123)
+ */
+export const deleteRegistration = async (
+  eventCode: string,
+  registrationCode: string
+): Promise<void> => {
+  await apiClient.delete(`/events/${eventCode}/registrations/${registrationCode}`);
+};
