@@ -76,7 +76,7 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                     {/* Speakers with companies */}
                     {session.speakers && session.speakers.length > 0 ? (
                       <div
-                        className={`grid gap-2 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                        className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                       >
                         {session.speakers.map((speaker) => (
                           <SpeakerDisplay
