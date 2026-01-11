@@ -77,17 +77,19 @@ public class RegistrationSpecification {
 
     /**
      * Build combined specification for all database-level filters
-     * (Status can be filtered in DB, search/companyId require user enrichment)
+     * Performance Optimization: Now supports search across denormalized attendee fields
      *
      * @param eventId Event UUID (required)
      * @param statuses List of status values to filter by (optional)
-     * @param usernameSearch Search term for attendee username (optional, DB-level only)
+     * @param search Search term for attendee name/email (optional, searches denormalized fields)
+     * @param companyId Company ID to filter by (optional, uses denormalized field)
      * @return Specification for filtering registrations
      */
     public static Specification<Registration> buildSpecification(
             UUID eventId,
             List<String> statuses,
-            String usernameSearch
+            String search,
+            String companyId
     ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -103,14 +105,25 @@ public class RegistrationSpecification {
                 predicates.add(criteriaBuilder.upper(root.get("status")).in(upperStatuses));
             }
 
-            // Search in attendee username if provided
-            if (usernameSearch != null && !usernameSearch.isEmpty()) {
-                predicates.add(
-                        criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("attendeeUsername")),
-                                "%" + usernameSearch.toLowerCase() + "%"
-                        )
-                );
+            // Search across denormalized attendee fields (username, firstName, lastName, email)
+            if (search != null && !search.isEmpty()) {
+                String searchLower = "%" + search.toLowerCase() + "%";
+                Predicate usernamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("attendeeUsername")), searchLower);
+                Predicate firstNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("attendeeFirstName")), searchLower);
+                Predicate lastNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("attendeeLastName")), searchLower);
+                Predicate emailPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("attendeeEmail")), searchLower);
+
+                predicates.add(criteriaBuilder.or(
+                        usernamePredicate, firstNamePredicate, lastNamePredicate, emailPredicate));
+            }
+
+            // Filter by company ID (uses denormalized field)
+            if (companyId != null && !companyId.isEmpty()) {
+                predicates.add(criteriaBuilder.equal(root.get("attendeeCompanyId"), companyId));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

@@ -84,6 +84,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
                 // Email confirmation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
+                // Email cancellation endpoint (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize

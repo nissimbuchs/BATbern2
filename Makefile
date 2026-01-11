@@ -416,7 +416,12 @@ audit-security: ## Run security audits and vulnerability scans on all projects
 # UTILITIES
 # ═══════════════════════════════════════════════════════════
 
-verify: lint test ## Pre-commit verification (lint + test)
+check-generated-types: ## Verify generated API types are up to date
+	@echo "🔍 Checking generated API types are up to date..."
+	@cd web-frontend && npm run check:api-types
+	@echo "✓ Generated types are up to date"
+
+verify: lint check-generated-types test ## Pre-commit verification (lint + check + test)
 	@echo "✓ Verification complete - ready to commit!"
 
 all: clean install build test ## Complete workflow: clean, install, build, test
