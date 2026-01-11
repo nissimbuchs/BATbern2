@@ -312,18 +312,22 @@ class EventApiClient {
   }
 
   /**
-   * Cancel Registration (PUBLIC ACCESS - Story: Email Cancellation)
+   * Cancel Registration (PUBLIC ACCESS - Story 4.1.5d: Email Cancellation)
    *
    * Cancels a registration using the JWT token from the cancellation email.
    * Permanently deletes the registration from the database.
    *
+   * @param eventCode Event code from URL
    * @param token JWT cancellation token from email
    * @returns Cancellation response with status
    */
-  async cancelRegistration(token: string): Promise<{ message: string; status: string }> {
+  async cancelRegistration(
+    eventCode: string,
+    token: string
+  ): Promise<{ message: string; status: string }> {
     try {
       const response = await apiClient.post<{ message: string; status: string }>(
-        `/registrations/cancel`,
+        `/events/${eventCode}/registrations/cancel`,
         null,
         {
           params: { token },

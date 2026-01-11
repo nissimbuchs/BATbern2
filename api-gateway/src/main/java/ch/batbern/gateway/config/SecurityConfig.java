@@ -129,7 +129,7 @@ public class SecurityConfig {
 
                         // Email-based cancellation endpoint
                         // (no auth required - JWT token in query param provides security)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/registrations/cancel").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
                         // Public partner showcase endpoint (GET only for homepage display)
                         .requestMatchers(HttpMethod.GET, "/api/v1/partners").permitAll()

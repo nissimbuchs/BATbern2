@@ -21,12 +21,13 @@ const CancelRegistrationPage = () => {
   const { t } = useTranslation('registration');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const eventCode = searchParams.get('event');
 
   const [state, setState] = useState<CancellationState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || !eventCode) {
       setState('error');
       setErrorMessage(t('cancellation.error.errors.invalid'));
       return;
@@ -34,7 +35,7 @@ const CancelRegistrationPage = () => {
 
     const cancelRegistration = async () => {
       try {
-        const response = await eventApiClient.cancelRegistration(token);
+        const response = await eventApiClient.cancelRegistration(eventCode, token);
 
         if (response.status === 'CANCELLED') {
           setState('success');
@@ -62,10 +63,10 @@ const CancelRegistrationPage = () => {
     };
 
     cancelRegistration();
-  }, [token, t]);
+  }, [token, eventCode, t]);
 
-  // No token -> redirect to home
-  if (!token) {
+  // No token or eventCode -> redirect to home
+  if (!token || !eventCode) {
     return <Navigate to="/" replace />;
   }
 

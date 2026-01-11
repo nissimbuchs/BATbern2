@@ -144,7 +144,7 @@ public class RegistrationEmailService {
                     Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
                     Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
                         + "/confirm-registration?token=" + confirmationToken),
-                    Map.entry("cancellationUrl", baseUrl + "/cancel-registration?token=" + cancellationToken),
+                    Map.entry("cancellationUrl", baseUrl + "/cancel-registration?token=" + cancellationToken + "&event=" + event.getEventCode()),
                     Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),
