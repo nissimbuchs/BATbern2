@@ -117,11 +117,17 @@ public class RegistrationService {
 
         // 4. Create and save registration (ADR-004: No denormalized user data)
         // Story 4.1.5c: Status starts as "registered", becomes "confirmed" after email confirmation
+        // Performance: Populate search cache fields for database-level filtering
         Registration registration = Registration.builder()
                 .registrationCode(registrationCode)
                 .eventId(event.getId())
                 .eventCode(eventCode) // Transient field for API responses
                 .attendeeUsername(username) // Cross-service reference
+                // Search cache fields (performance optimization for database-level filtering)
+                .attendeeFirstName(userResponse.getUser().getFirstName())
+                .attendeeLastName(userResponse.getUser().getLastName())
+                .attendeeEmail(userResponse.getUser().getEmail())
+                .attendeeCompanyId(userResponse.getUser().getCompanyId())
                 .status("registered") // Status before email confirmation (lowercase per DB constraint)
                 .registrationDate(Instant.now()) // Auto-set registration timestamp
                 .build();

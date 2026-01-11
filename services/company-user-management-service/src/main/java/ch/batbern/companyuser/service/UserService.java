@@ -307,43 +307,53 @@ public class UserService {
         Page<User> usersPage;
 
         // Use optimized repository methods with JOIN FETCH
-        if (roleFilter != null && companyFilter != null) {
-            // Both filters
-            Role role = parseRole(roleFilter);
-            log.debug("Filtering by role: {} and company: {}", role, companyFilter);
-            usersPage = userRepository.findByRoleAndCompanyWithRoles(role, companyFilter, pageable);
-        } else if (roleFilter != null) {
-            // Role filter only
-            Role role = parseRole(roleFilter);
-            log.debug("Filtering by role: {}", role);
-            usersPage = userRepository.findByRolesContainingWithRoles(role, pageable);
-        } else if (companyFilter != null) {
-            // Company filter only
-            usersPage = userRepository.findByCompanyIdWithRoles(companyFilter, pageable);
-        } else {
-            // No filters
-            usersPage = userRepository.findAllWithRoles(pageable);
-        }
-
-        // Apply search filter (in-memory for now - TODO: add database-level search in future)
-        Page<User> filteredPage = usersPage;
+        // Database-level search filtering when search parameter is provided
         if (search != null && !search.isBlank()) {
-            String searchLower = search.toLowerCase();
-            List<User> searchFiltered = usersPage.getContent().stream()
-                    .filter(u ->
-                            (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower))
-                            || (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower))
-                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower))
-                            || (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower))
-                    )
-                    .toList();
-            filteredPage = new org.springframework.data.domain.PageImpl<>(
-                    searchFiltered, pageable, searchFiltered.size());
+            // Search queries (database-level filtering)
+            if (roleFilter != null && companyFilter != null) {
+                // Search + role + company filters
+                Role role = parseRole(roleFilter);
+                log.debug("Searching with role: {} and company: {}", role, companyFilter);
+                usersPage = userRepository.searchUsersByRoleAndCompanyWithRoles(search, role, companyFilter, pageable);
+            } else if (roleFilter != null) {
+                // Search + role filter
+                Role role = parseRole(roleFilter);
+                log.debug("Searching with role: {}", role);
+                usersPage = userRepository.searchUsersByRoleWithRoles(search, role, pageable);
+            } else if (companyFilter != null) {
+                // Search + company filter
+                log.debug("Searching with company: {}", companyFilter);
+                usersPage = userRepository.searchUsersByCompanyWithRoles(search, companyFilter, pageable);
+            } else {
+                // Search only
+                log.debug("Searching users: {}", search);
+                usersPage = userRepository.searchUsersWithRoles(search, pageable);
+            }
+        } else {
+            // No search - use existing filter queries
+            if (roleFilter != null && companyFilter != null) {
+                // Both filters
+                Role role = parseRole(roleFilter);
+                log.debug("Filtering by role: {} and company: {}", role, companyFilter);
+                usersPage = userRepository.findByRoleAndCompanyWithRoles(role, companyFilter, pageable);
+            } else if (roleFilter != null) {
+                // Role filter only
+                Role role = parseRole(roleFilter);
+                log.debug("Filtering by role: {}", role);
+                usersPage = userRepository.findByRolesContainingWithRoles(role, pageable);
+            } else if (companyFilter != null) {
+                // Company filter only
+                usersPage = userRepository.findByCompanyIdWithRoles(companyFilter, pageable);
+            } else {
+                // No filters
+                usersPage = userRepository.findAllWithRoles(pageable);
+            }
         }
 
         // Apply JSON filter (active status, etc.)
+        Page<User> filteredPage = usersPage;
         if (jsonFilter != null && !jsonFilter.isBlank()) {
-            List<User> jsonFiltered = applyJsonFilter(filteredPage.getContent(), jsonFilter);
+            List<User> jsonFiltered = applyJsonFilter(usersPage.getContent(), jsonFilter);
             filteredPage = new org.springframework.data.domain.PageImpl<>(
                     jsonFiltered, pageable, jsonFiltered.size());
         }

@@ -1362,89 +1362,45 @@ public class EventController {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-        // Build specification for database-level filters (status only)
-        // Note: search and companyId require enriched user data, so they're applied in-memory
+        // Build specification for database-level filters
+        // Performance Optimization: All filters now applied at database level using denormalized fields
         org.springframework.data.jpa.domain.Specification<Registration> spec =
                 ch.batbern.events.specification.RegistrationSpecification.buildSpecification(
                         event.getId(),
                         status,
-                        null // Username search handled in-memory with name/email search
+                        search,      // Now searches denormalized firstName/lastName/email fields
+                        companyId    // Now filters using denormalized companyId field
                 );
 
-        // Fetch ALL matching registrations (we'll paginate after in-memory filtering)
-        // This is necessary because search/companyId filters require enriched user data
-        List<Registration> allRegistrations = registrationRepository.findAll(spec);
+        // Create Pageable with sorting by last name, first name
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                pageNumber,
+                pageSize,
+                org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Order.asc("attendeeLastName").nullsLast(),
+                        org.springframework.data.domain.Sort.Order.asc("attendeeFirstName").nullsLast()
+                )
+        );
 
-        // Enrich each registration with user data
-        List<RegistrationResponse> enrichedResponses = allRegistrations.stream()
+        // Fetch filtered and paginated registrations from database (NOT all registrations!)
+        org.springframework.data.domain.Page<Registration> registrationsPage =
+                registrationRepository.findAll(spec, pageable);
+
+        // Enrich only the current page of registrations with user data
+        List<RegistrationResponse> paginatedResponses = registrationsPage.getContent().stream()
                 .peek(reg -> reg.setEventCode(eventCode)) // Set transient field
                 .map(registrationService::enrichRegistrationWithUserData)
                 .collect(Collectors.toList());
 
-        // Apply in-memory filters (search in name/email, filter by companyId)
-        List<RegistrationResponse> filteredResponses = enrichedResponses.stream()
-                .filter(response -> {
-                    // Filter by search term (name or email)
-                    if (search != null && !search.isEmpty()) {
-                        String searchLower = search.toLowerCase();
-                        boolean matchesUsername = response.getAttendeeUsername() != null
-                                && response.getAttendeeUsername().toLowerCase().contains(searchLower);
-                        boolean matchesFirstName = response.getAttendeeFirstName() != null
-                                && response.getAttendeeFirstName().toLowerCase().contains(searchLower);
-                        boolean matchesLastName = response.getAttendeeLastName() != null
-                                && response.getAttendeeLastName().toLowerCase().contains(searchLower);
-                        boolean matchesEmail = response.getAttendeeEmail() != null
-                                && response.getAttendeeEmail().toLowerCase().contains(searchLower);
-
-                        if (!matchesUsername && !matchesFirstName && !matchesLastName && !matchesEmail) {
-                            return false;
-                        }
-                    }
-
-                    // Filter by companyId
-                    if (companyId != null && !companyId.isEmpty()) {
-                        if (response.getAttendeeCompany() == null
-                                || !companyId.equals(response.getAttendeeCompany())) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                })
-                .sorted((r1, r2) -> {
-                    // Sort alphabetically by last name, then first name for better user experience
-                    String lastName1 = r1.getAttendeeLastName() != null ? r1.getAttendeeLastName() : "";
-                    String lastName2 = r2.getAttendeeLastName() != null ? r2.getAttendeeLastName() : "";
-                    int lastNameCompare = lastName1.compareToIgnoreCase(lastName2);
-                    if (lastNameCompare != 0) {
-                        return lastNameCompare;
-                    }
-                    String firstName1 = r1.getAttendeeFirstName() != null ? r1.getAttendeeFirstName() : "";
-                    String firstName2 = r2.getAttendeeFirstName() != null ? r2.getAttendeeFirstName() : "";
-                    return firstName1.compareToIgnoreCase(firstName2);
-                })
-                .collect(Collectors.toList());
-
-        // Apply pagination to filtered results
-        long totalItems = filteredResponses.size();
-        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
-        int startIndex = pageNumber * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, filteredResponses.size());
-
-        List<RegistrationResponse> paginatedResponses = filteredResponses.subList(
-                Math.min(startIndex, filteredResponses.size()),
-                Math.min(endIndex, filteredResponses.size())
-        );
-
-        // Build pagination metadata
+        // Build pagination metadata from Page object
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
                 ch.batbern.shared.api.PaginationMetadata.builder()
                         .page(pageNumber + 1) // Convert back to 1-indexed for response
                         .limit(pageSize)
-                        .totalItems(totalItems)
-                        .totalPages(totalPages)
-                        .hasNext(pageNumber + 1 < totalPages)
-                        .hasPrev(pageNumber > 0)
+                        .totalItems(registrationsPage.getTotalElements())
+                        .totalPages(registrationsPage.getTotalPages())
+                        .hasNext(registrationsPage.hasNext())
+                        .hasPrev(registrationsPage.hasPrevious())
                         .build();
 
         // Build paginated response
@@ -1674,67 +1630,72 @@ public class EventController {
     }
 
     /**
-     * Cancel Event Registration - Email Cancellation Flow
+     * Cancel Event Registration - Email Cancellation Flow (Story 4.1.5d)
      *
-     * POST /api/v1/registrations/cancel?token={JWT}
+     * POST /api/v1/events/{eventCode}/registrations/cancel?token={JWT}
      *
      * Cancels a registration using the JWT token from the cancellation email.
      * Deletes the registration record from the database.
      * Token is valid for 48 hours.
      *
+     * @param eventCode Event code (for URL consistency)
      * @param token JWT cancellation token from email
      * @return Success message
      */
-    @PostMapping("/registrations/cancel")
+    @PostMapping("/{eventCode}/registrations/cancel")
     @Operation(
             summary = "Cancel Registration",
             description = "Cancel a registration using the token from the cancellation email. "
                 + "Token is valid for 48 hours. Registration will be permanently deleted."
     )
     public ResponseEntity<Map<String, String>> cancelRegistration(
+            @PathVariable String eventCode,
             @RequestParam("token") String token) {
-        log.debug("POST /api/v1/registrations/cancel");
+        log.debug("POST /api/v1/events/{}/registrations/cancel", eventCode);
 
         try {
             // Validate token
             io.jsonwebtoken.Claims claims = confirmationTokenService.validateCancellationToken(token);
 
-            // Extract registration ID
+            // Extract registration ID and event code from token
             UUID registrationId = confirmationTokenService.getRegistrationId(claims);
-            String eventCode = confirmationTokenService.getEventCode(claims);
+            String tokenEventCode = confirmationTokenService.getEventCode(claims);
+
+            // Verify event code in URL matches token
+            if (!eventCode.equals(tokenEventCode)) {
+                throw new IllegalArgumentException(
+                    "Event code in URL does not match token: " + eventCode);
+            }
 
             // Find registration
             Registration registration = registrationRepository.findById(registrationId)
-                    .orElseThrow(() -> new NoSuchElementException("Registration not found: " + registrationId));
+                    .orElseThrow(() -> new NoSuchElementException(
+                        "Registration not found: " + registrationId));
 
-            // Fetch the event to verify registration belongs to it
+            // Verify registration belongs to the event
             Event event = eventRepository.findById(registration.getEventId())
                     .orElseThrow(() -> new NoSuchElementException(
-                            "Event not found for registration: " + registrationId));
+                        "Event not found for registration: " + registrationId));
 
-            // Verify registration belongs to the event in the token
             if (!event.getEventCode().equals(eventCode)) {
-                throw new IllegalArgumentException("Registration does not belong to event: " + eventCode);
+                throw new IllegalArgumentException(
+                    "Registration does not belong to event: " + eventCode);
             }
 
-            // Delete the registration
+            // Delete registration (permanent deletion)
             registrationRepository.delete(registration);
 
-            log.info("Registration cancelled and deleted: {} for event: {}", registrationId, eventCode);
+            log.info("Registration cancelled successfully: registrationId={}, eventCode={}",
+                    registrationId, eventCode);
 
-            // Return success response
             Map<String, String> response = new HashMap<>();
             response.put("message", "Registration cancelled successfully");
             response.put("status", "CANCELLED");
-
             return ResponseEntity.ok(response);
 
         } catch (io.jsonwebtoken.JwtException e) {
-            log.warn("Invalid cancellation token: {}", e.getMessage());
+            log.warn("Invalid or expired cancellation token: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid or expired cancellation token");
-        } catch (NoSuchElementException e) {
-            log.warn("Registration not found for cancellation: {}", e.getMessage());
-            throw new IllegalArgumentException("Registration not found or already cancelled");
         }
     }
 

@@ -28,13 +28,19 @@ import java.util.UUID;
  * Story 2.2a: Anonymous Event Registration (ADR-005)
  * <p>
  * ADR-004: Factor User Fields from Domain Entities
- * - No denormalized user data (name, email) stored in registrations
  * - User details fetched via UserApiClient from User Management Service
+ * - Denormalized search fields (name, email, company) for database-level filtering
+ * - Full enrichment still required for API responses
  * <p>
  * ADR-005: Anonymous Event Registration
  * - Supports anonymous users (cognito_id=NULL in user_profiles)
  * - Registration links to user via attendeeUsername
  * - User details enriched at API response time
+ * <p>
+ * Performance Optimization:
+ * - Denormalized attendee search fields enable database-level filtering before pagination
+ * - Prevents N+1 queries and in-memory filtering of large result sets
+ * - Fields updated on registration creation and user profile updates
  */
 @Entity
 @Table(
@@ -51,7 +57,9 @@ import java.util.UUID;
         indexes = {
             @Index(name = "idx_registration_code", columnList = "registration_code", unique = true),
             @Index(name = "idx_event_id", columnList = "event_id"),
-            @Index(name = "idx_attendee_username", columnList = "attendee_username")
+            @Index(name = "idx_attendee_username", columnList = "attendee_username"),
+            @Index(name = "idx_attendee_email", columnList = "attendee_email"),
+            @Index(name = "idx_attendee_company_id", columnList = "attendee_company_id")
         }
 )
 @Data
@@ -90,6 +98,27 @@ public class Registration {
      */
     @Column(name = "attendee_username", nullable = false, length = 100)
     private String attendeeUsername;
+
+    /**
+     * Denormalized search fields for database-level filtering (Performance Optimization)
+     * <p>
+     * These fields enable database-level search and filtering before pagination,
+     * preventing the need to fetch ALL registrations and enrich with HTTP calls.
+     * Updated on registration creation and user profile changes.
+     * <p>
+     * Full user enrichment still required for API responses (via UserApiClient).
+     */
+    @Column(name = "attendee_first_name", length = 100)
+    private String attendeeFirstName;
+
+    @Column(name = "attendee_last_name", length = 100)
+    private String attendeeLastName;
+
+    @Column(name = "attendee_email", length = 255)
+    private String attendeeEmail;
+
+    @Column(name = "attendee_company_id", length = 100)
+    private String attendeeCompanyId;
 
     @Column(nullable = false)
     private String status; // pending, confirmed, cancelled, waitlist
