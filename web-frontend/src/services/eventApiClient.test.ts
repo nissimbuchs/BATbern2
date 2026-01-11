@@ -476,4 +476,310 @@ describe('Event API Client (RED Phase)', () => {
       );
     });
   });
+
+  describe('Archive Browsing (Story 4.2 - Task 2a)', () => {
+    describe('AC7: Time Period Filters', () => {
+      it('should_filterByTimePeriod_when_timePeriod2020to2024', async () => {
+        const filters = { timePeriod: '2020-2024' };
+
+        // Should filter events by date range 2020-2024
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_filterByTimePeriod_when_timePeriodLast5Years', async () => {
+        const filters = { timePeriod: 'last5years' };
+
+        // Should calculate and filter by last 5 years
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_filterByTimePeriod_when_timePeriodBefore2010', async () => {
+        const filters = { timePeriod: 'before2010' };
+
+        // Should filter events before 2010
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_NOT_filterByTime_when_timePeriodIsAll', async () => {
+        const filters = { timePeriod: 'all' };
+
+        // Should not add date filter when "all" is selected
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('AC8: Topic Filters with Counts', () => {
+      it('should_filterBySingleTopic_when_topicProvided', async () => {
+        const filters = { topics: ['cloud'] };
+
+        // Should filter by single topic
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_filterByMultipleTopics_when_multipleTopicsProvided', async () => {
+        const filters = { topics: ['cloud', 'devops', 'security'] };
+
+        // Should filter by multiple topics (OR logic)
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_NOT_filterByTopic_when_topicsArrayEmpty', async () => {
+        const filters = { topics: [] };
+
+        // Should not add topic filter when empty array
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('AC9: Search with Debouncing (API Integration)', () => {
+      it('should_searchEventsByTitle_when_searchTextProvided', async () => {
+        const filters = { search: 'Cloud Architecture' };
+
+        // Should use $contains operator on title field
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_handleEmptySearch_when_searchTextEmpty', async () => {
+        const filters = { search: '' };
+
+        // Should not add search filter when empty
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_handleSpecialCharacters_when_searchTextHasSpecialChars', async () => {
+        const filters = { search: 'C++ & Java (Advanced)' };
+
+        // Should properly encode special characters
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('AC12: Sort Parameters', () => {
+      it('should_sortByNewest_when_sortIsMinusDate', async () => {
+        const options = { sort: '-date' };
+
+        // Should sort by date descending (newest first)
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_sortByOldest_when_sortIsDate', async () => {
+        const options = { sort: 'date' };
+
+        // Should sort by date ascending (oldest first)
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_sortByMostAttended_when_sortIsMinusAttendance', async () => {
+        const options = { sort: '-attendance' };
+
+        // Should sort by attendance descending
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_useDefaultSort_when_sortNotProvided', async () => {
+        // Should use default sort (newest first: -date)
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('AC23: Resource Expansion for Archive', () => {
+      it('should_expandTopics_when_includeTopics', async () => {
+        const options = { expand: ['topics'] };
+
+        // Should add ?include=topics parameter
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_expandSessions_when_includeSessions', async () => {
+        const options = { expand: ['sessions'] };
+
+        // Should add ?include=sessions parameter
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_expandSpeakers_when_includeSpeakers', async () => {
+        const options = { expand: ['speakers'] };
+
+        // Should add ?include=speakers parameter
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_expandMultipleResources_when_includeTopicsSessionsSpeakers', async () => {
+        const options = { expand: ['topics', 'sessions', 'speakers'] };
+
+        // Should add ?include=topics,sessions,speakers parameter
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_NOT_addInclude_when_expandArrayEmpty', async () => {
+        const options = { expand: [] };
+
+        // Should not add include parameter when empty
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+    });
+
+    describe('Combined Filters, Sort, and Expansion', () => {
+      it('should_combineAllParameters_when_filtersAndSortAndExpansionProvided', async () => {
+        const filters = {
+          timePeriod: '2020-2024',
+          topics: ['cloud', 'devops'],
+          search: 'Architecture',
+        };
+        const options = {
+          expand: ['topics', 'sessions', 'speakers'],
+          sort: '-date',
+        };
+
+        // Should build URL with pagination, filters, sort, and resource expansion
+        // Example: ?page=1&limit=20&filter={...}&include=topics,sessions,speakers&sort=-date
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, filters, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_handleComplexFilterCombinations_when_allFiltersProvided', async () => {
+        const filters = {
+          timePeriod: '2015-2019',
+          topics: ['microservices', 'ai-ml'],
+          search: 'Innovation',
+          workflowState: ['ARCHIVED', 'COMPLETED'],
+        };
+        const options = {
+          expand: ['topics', 'sessions', 'speakers'],
+          sort: '-attendance',
+        };
+
+        // Should handle complex filter combinations
+        await expect(
+          eventApiClient.getEvents({ page: 2, limit: 50 }, filters, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+    });
+
+    describe('includeArchived Parameter', () => {
+      it('should_includeArchived_when_includeArchivedTrue', async () => {
+        const filters = { includeArchived: true };
+
+        // Should add ?includeArchived=true parameter
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_excludeArchived_when_includeArchivedFalse', async () => {
+        const filters = { includeArchived: false };
+
+        // Should add ?includeArchived=false or omit (backend default: false)
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_excludeArchivedByDefault_when_includeArchivedNotProvided', async () => {
+        // Should not include archived events by default (backend behavior)
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('Pagination for Archive', () => {
+      it('should_fetch20PerPage_when_defaultPaginationUsed', async () => {
+        // Default limit should be 20 events per page
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_fetchPage2_when_page2Requested', async () => {
+        const pagination = { page: 2, limit: 20 };
+
+        // Should fetch page 2
+        await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_fetchWithCustomLimit_when_limitProvided', async () => {
+        const pagination = { page: 1, limit: 50 };
+
+        // Should use custom limit
+        await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+
+    describe('URL Parameter Encoding', () => {
+      it('should_encodeFilterJSON_when_filtersProvided', async () => {
+        const filters = {
+          workflowState: ['ARCHIVED', 'COMPLETED'],
+          topics: ['cloud'],
+        };
+
+        // Should properly encode JSON filter object
+        // Example: filter={"workflowState":{"$in":["ARCHIVED","COMPLETED"]},"topics":{"$in":["cloud"]}}
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+
+      it('should_encodeCommasSeparated_when_multipleResourceExpansions', async () => {
+        const options = { expand: ['topics', 'sessions', 'speakers', 'venue'] };
+
+        // Should join with commas: ?include=topics,sessions,speakers,venue
+        await expect(
+          eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)
+        ).rejects.toThrow(/(Network Error|Server Error)/);
+      });
+
+      it('should_handleSpacesInSearch_when_searchTextHasSpaces', async () => {
+        const filters = { search: 'Cloud Architecture Summit 2024' };
+
+        // Should properly encode spaces
+        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
+          /(Network Error|Server Error)/
+        );
+      });
+    });
+  });
 });

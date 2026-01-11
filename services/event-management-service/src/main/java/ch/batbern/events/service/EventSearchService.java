@@ -108,6 +108,7 @@ public class EventSearchService {
 
     /**
      * Build Spring Data Sort from SortCriteria list
+     * Maps logical field names to database column names (Story BAT-109)
      */
     private Sort buildSort(List<SortCriteria> sortCriteria) {
         if (sortCriteria == null || sortCriteria.isEmpty()) {
@@ -119,10 +120,24 @@ public class EventSearchService {
             Sort.Direction direction = criteria.getDirection() == SortDirection.ASC
                     ? Sort.Direction.ASC
                     : Sort.Direction.DESC;
-            orders.add(new Sort.Order(direction, criteria.getField()));
+
+            // Map logical field names to actual database column names
+            String mappedField = mapSortField(criteria.getField());
+            orders.add(new Sort.Order(direction, mappedField));
         }
 
         return Sort.by(orders);
+    }
+
+    /**
+     * Map logical sort field names to database column names
+     * Story BAT-109: Archive browsing sort requirements
+     */
+    private String mapSortField(String logicalField) {
+        return switch (logicalField) {
+            case "attendeeCount" -> "currentAttendeeCount";
+            default -> logicalField; // Use as-is for standard fields (date, eventNumber, etc.)
+        };
     }
 
     /**

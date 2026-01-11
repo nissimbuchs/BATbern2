@@ -297,15 +297,16 @@ class FilterParserTest {
     }
 
     @Test
-    @DisplayName("should_throwValidationError_when_emptyFilterProvided")
-    void should_throwValidationError_when_emptyFilterProvided() {
-        // Given: Empty filter
+    @DisplayName("should_returnNull_when_emptyFilterProvided")
+    void should_returnNull_when_emptyFilterProvided() {
+        // Given: Empty filter (Story BAT-109: treat {} as "no filter")
         String emptyFilter = "{}";
 
-        // When/Then: Should throw ValidationException
-        assertThatThrownBy(() -> FilterParser.parse(emptyFilter))
-                .isInstanceOf(ValidationException.class)
-                .hasMessageContaining("Filter cannot be empty");
+        // When: Parsing empty filter
+        FilterCriteria result = FilterParser.parse(emptyFilter);
+
+        // Then: Should return null (no filter applied)
+        assertThat(result).isNull();
     }
 
     @Test

@@ -5,40 +5,48 @@
  * No logistics (registration, venue details) - content focus only
  */
 
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import { PublicLayout } from '@/components/public/PublicLayout';
+import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetailUI, SessionUI, SpeakerUI } from '@/types/event.types';
 
-// Simple OpenGraph mock component (to be replaced with actual SEO component)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function OpenGraphTags({
-  title: _title,
-  description: _description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return null; // Meta tags would be injected in <head> via react-helmet or similar
-}
-
 export default function ArchiveEventDetailPage() {
   const { eventCode } = useParams<{ eventCode: string }>();
-  const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+
+  // Preserve query parameters when navigating back
+  const backToArchiveUrl = location.search ? `/archive${location.search}` : '/archive';
 
   // Fetch event details (cast to EventDetailUI for extended properties)
   const {
     data: event,
     isLoading,
     isError,
+    error,
   } = useQuery<EventDetailUI>({
     queryKey: ['event', eventCode],
-    queryFn: () => eventApiClient.getEvent(eventCode!) as Promise<EventDetailUI>,
+    queryFn: () =>
+      eventApiClient.getEvent(eventCode!, {
+        expand: ['topics', 'sessions', 'speakers'],
+      }) as Promise<EventDetailUI>,
     enabled: !!eventCode,
   });
+
+  // Check if error is a 404 (event not found)
+  const isNotFound =
+    isError &&
+    error &&
+    typeof error === 'object' &&
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response &&
+    'status' in error.response &&
+    (error.response as { status: number }).status === 404;
 
   // Format date
   const formattedDate = event
@@ -56,6 +64,15 @@ export default function ArchiveEventDetailPage() {
     return `${mb.toFixed(1)} MB`;
   };
 
+  // Get initials from full name (e.g., "John Doe" -> "JD")
+  const getInitials = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    // First and last name initials
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
   // Collect all unique speakers (cast to SpeakerUI for extended properties)
   const allSpeakers =
     (event?.sessions as SessionUI[] | undefined)
@@ -67,40 +84,98 @@ export default function ArchiveEventDetailPage() {
       )
       .map((speaker) => speaker as SpeakerUI) || [];
 
+  // SEO metadata
+  const pageUrl = `${window.location.origin}/archive/${eventCode}`;
+  const eventTitle = event?.title || 'Event Details';
+  const eventDescription =
+    event?.description ||
+    `Explore ${event?.sessions?.length || 0} presentations from ${eventTitle}`;
+  const eventImage =
+    event?.themeImageUrl || 'https://cdn.batbern.ch/assets/default-event-cover.jpg';
+
+  // JSON-LD structured data for event
+  const eventStructuredData = event
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Event',
+        name: event.title,
+        description: event.description || eventTitle,
+        image: eventImage,
+        startDate: event.date,
+        endDate: event.date,
+        eventStatus: 'https://schema.org/EventScheduled',
+        eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        location: event.venueName
+          ? {
+              '@type': 'Place',
+              name: event.venueName,
+            }
+          : undefined,
+        organizer: {
+          '@type': 'Organization',
+          name: 'BATbern',
+          url: window.location.origin,
+        },
+        performer:
+          allSpeakers.length > 0
+            ? allSpeakers.map((speaker) => ({
+                '@type': 'Person',
+                name: speaker.fullName,
+                ...(speaker.companyName && {
+                  affiliation: {
+                    '@type': 'Organization',
+                    name: speaker.companyName,
+                  },
+                }),
+              }))
+            : undefined,
+      }
+    : null;
+
   return (
     <PublicLayout>
       {event && (
-        <OpenGraphTags
-          title={event.title}
-          description={event.description || `${event.title} - BATbern Archive`}
-        />
+        <>
+          <OpenGraphTags
+            title={eventTitle}
+            description={eventDescription}
+            url={pageUrl}
+            image={eventImage}
+            type="website"
+          />
+
+          {/* JSON-LD Structured Data for Event */}
+          <Helmet>
+            <script type="application/ld+json">{JSON.stringify(eventStructuredData)}</script>
+          </Helmet>
+        </>
       )}
 
       <div className="container mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Link to={backToArchiveUrl} className="mb-6 text-blue-600 hover:text-blue-800 inline-block">
+          {t('archive.detail.backToArchive')}
+        </Link>
+
         {/* Loading State */}
-        {isLoading && <div className="text-center py-12 text-gray-600">Loading...</div>}
+        {isLoading && (
+          <div className="text-center py-12 text-gray-600" role="status">
+            Loading...
+          </div>
+        )}
 
         {/* Error State */}
         {isError && (
           <div className="text-center py-12">
-            <div className="text-red-600 mb-4">{t('archive.errors.loadFailed')}</div>
-            <Link to="/archive" className="text-blue-600 hover:text-blue-800">
-              {t('archive.detail.backToArchive')}
-            </Link>
+            <div className="text-red-600 mb-4">
+              {isNotFound ? t('archive.errors.notFound') : t('archive.errors.loadFailed')}
+            </div>
           </div>
         )}
 
         {/* Event Details */}
         {event && (
           <>
-            {/* Back Button */}
-            <button
-              onClick={() => navigate('/archive')}
-              className="mb-6 text-blue-600 hover:text-blue-800 flex items-center gap-2"
-            >
-              ← {t('archive.detail.backToArchive')}
-            </button>
-
             {/* Event Header */}
             <div className="mb-8">
               {/* Theme Image */}
@@ -112,12 +187,16 @@ export default function ArchiveEventDetailPage() {
                 />
               )}
 
-              {/* Topic Badge */}
-              {event.topic && (
+              {/* Topic Badge - Story BAT-109: Use expanded topic object */}
+              {event.topic && typeof event.topic === 'object' ? (
                 <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded mb-3">
-                  {event.topic}
+                  {event.topic.name}
                 </span>
-              )}
+              ) : event.topicCode ? (
+                <span className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded mb-3">
+                  {event.topicCode}
+                </span>
+              ) : null}
 
               {/* Title */}
               <h1 className="text-4xl font-bold text-gray-900 mb-3">{event.title}</h1>
@@ -132,12 +211,12 @@ export default function ArchiveEventDetailPage() {
             </div>
 
             {/* Sessions Section */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {t('archive.detail.sessions')}
-              </h2>
+            {event.sessions && event.sessions.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  {t('archive.detail.sessions')}
+                </h2>
 
-              {event.sessions && event.sessions.length > 0 ? (
                 <div className="space-y-6">
                   {(event.sessions as SessionUI[]).map((session) => (
                     <div
@@ -196,14 +275,12 @@ export default function ArchiveEventDetailPage() {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="text-gray-600">No sessions available</div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Speakers Grid */}
             {allSpeakers.length > 0 && (
-              <div>
+              <section>
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   {t('archive.detail.speakers')}
                 </h2>
@@ -218,8 +295,8 @@ export default function ArchiveEventDetailPage() {
                         />
                       ) : (
                         <div className="w-24 h-24 rounded-full bg-gray-200 mx-auto mb-3 flex items-center justify-center">
-                          <span className="text-2xl text-gray-500">
-                            {speaker.fullName?.charAt(0) || '?'}
+                          <span className="text-2xl font-medium text-gray-600">
+                            {getInitials(speaker.fullName || '')}
                           </span>
                         </div>
                       )}
@@ -232,7 +309,7 @@ export default function ArchiveEventDetailPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
           </>
         )}

@@ -9,12 +9,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { EventCard } from '@/components/public/EventCard';
 import { FilterSidebar } from '@/components/public/FilterSidebar';
 import { FilterSheet } from '@/components/public/FilterSheet';
+import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { useInfiniteEvents } from '@/hooks/useInfiniteEvents';
-import type { ArchiveFilters } from '@/types/event.types';
+import type { ArchiveFilters, EventDetailUI } from '@/types/event.types';
 
 type ViewMode = 'grid' | 'list';
 
@@ -111,8 +113,44 @@ export default function ArchivePage() {
   const events = data?.pages.flatMap((page) => page.data) || [];
   const totalCount = data?.pages[0]?.pagination?.total || 0;
 
+  // SEO metadata
+  const pageUrl = `${window.location.origin}/archive${window.location.search}`;
+  const pageTitle = filters.search
+    ? `Search Results: ${filters.search}`
+    : totalCount > 0
+    ? `${totalCount} Historical Events`
+    : 'Historical Events Archive';
+  const pageDescription = `Browse ${totalCount > 0 ? totalCount : '54+'} BATbern conference events spanning 20+ years. Filter by time period, topics, and search presentations.`;
+
   return (
     <PublicLayout>
+      <OpenGraphTags
+        title={pageTitle}
+        description={pageDescription}
+        url={pageUrl}
+        image="https://cdn.batbern.ch/assets/archive-cover.jpg"
+      />
+
+      {/* JSON-LD Structured Data for Archive */}
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: 'BATbern Historical Events Archive',
+            description: pageDescription,
+            url: pageUrl,
+            inLanguage: 'de-CH',
+            isPartOf: {
+              '@type': 'WebSite',
+              name: 'BATbern',
+              url: window.location.origin,
+            },
+            numberOfItems: totalCount,
+          })}
+        </script>
+      </Helmet>
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -150,7 +188,7 @@ export default function ArchivePage() {
             {/* View Toggle */}
             <div className="flex justify-between items-center mb-6">
               <div className="text-sm text-gray-600">
-                {isLoading ? t('archive.loading') : `${events.length} of ${totalCount} events`}
+                {isLoading ? '' : `${events.length} of ${totalCount} events`}
               </div>
               <div className="flex gap-2">
                 <button
@@ -200,7 +238,14 @@ export default function ArchivePage() {
                     }
                   >
                     {events.map((event) => (
-                      <EventCard key={event.eventCode} event={event} viewMode={viewMode} />
+                      <EventCard
+                        key={event.eventCode}
+                        event={{
+                          ...event,
+                          sessions: event.sessions ?? undefined,
+                        } as EventDetailUI}
+                        viewMode={viewMode}
+                      />
                     ))}
                   </div>
                 )}

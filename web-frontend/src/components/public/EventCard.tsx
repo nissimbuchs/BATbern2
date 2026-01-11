@@ -53,12 +53,16 @@ export function EventCard({ event, viewMode }: EventCardProps) {
 
       {/* Event Details */}
       <div className="p-4 flex-1">
-        {/* Topic Badge */}
-        {event.topic && (
+        {/* Topic Badge - Story BAT-109: Use expanded topic object */}
+        {event.topic && typeof event.topic === 'object' ? (
           <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded mb-2">
-            {event.topic}
+            {event.topic.name}
           </span>
-        )}
+        ) : event.topicCode ? (
+          <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded mb-2">
+            {event.topicCode}
+          </span>
+        ) : null}
 
         {/* Title */}
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h3>

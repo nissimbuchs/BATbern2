@@ -78,8 +78,8 @@ export interface EventUI extends Event {
   eventDate?: string; // Alias for 'date' field
   capacity?: number; // Alias for 'venueCapacity' field
 
-  // Archive browsing fields (Story 4.2)
-  topic?: string; // Primary topic/theme of the event
+  // Note: topic field comes from base Event type (Story BAT-109: expanded topic object)
+  // Do NOT override it here - use event.topic?.name to access topic name
 
   // UI-only fields (Phase 2 features - not in backend API yet)
   venueCode?: string; // Venue identifier for dropdown selection
@@ -98,8 +98,8 @@ export interface EventDetailUI extends EventDetail {
   booking?: VenueBooking;
   catering?: CateringConfig;
 
-  // Archive browsing fields (Story 4.2)
-  topic?: string; // Primary topic/theme of the event
+  // Note: topic field comes from base Event type (Story BAT-109: expanded topic object)
+  // Do NOT override it here - use event.topic?.name to access topic name
 
   // Additional UI-only fields for dashboard and detail view (Phase 2 features)
   eventDate?: string; // Alias for 'date' field

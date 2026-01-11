@@ -1340,6 +1340,38 @@ export interface components {
        *     Story 5.1a: Event Workflow State Machine
        */
       workflowState?: components['schemas']['EventWorkflowState'];
+      /**
+       * @description Expanded topic details (only included when ?include=topics).
+       *     Story BAT-109: Archive browsing with topic expansion
+       */
+      topic?: {
+        /** @example cloud-native-security-2024 */
+        code?: string;
+        /** @example Cloud Native Security */
+        name?: string;
+        /** @example Security patterns for cloud-native applications */
+        description?: string;
+        /**
+         * @example technical
+         * @enum {string}
+         */
+        category?:
+          | 'technical'
+          | 'management'
+          | 'soft_skills'
+          | 'industry_trends'
+          | 'tools_platforms';
+      } | null;
+      /**
+       * @description Expanded venue details (only included when ?include=venue).
+       *     Story BAT-109: Archive browsing with venue expansion
+       */
+      venue?: components['schemas']['Venue'];
+      /**
+       * @description Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+       *     Story BAT-109: Archive browsing with session expansion
+       */
+      sessions?: components['schemas']['Session'][] | null;
     };
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];

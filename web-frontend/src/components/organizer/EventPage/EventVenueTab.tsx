@@ -25,7 +25,11 @@ interface EventVenueTabProps {
 
 export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
   const { t } = useTranslation('events');
-  const eventUI = event as EventDetailUI;
+  // Convert Event to EventDetailUI, normalizing sessions: null -> undefined
+  const eventUI: EventDetailUI = {
+    ...event,
+    sessions: event.sessions ?? undefined,
+  } as EventDetailUI;
 
   // ⚠️ MOCK DATA - Schedule data (backend integration pending)
   const schedule = [
@@ -195,7 +199,7 @@ export const EventVenueTab: React.FC<EventVenueTabProps> = ({ event }) => {
       </Paper>
 
       {/* Full Venue & Logistics Component */}
-      <VenueLogistics event={event} onUpdate={async () => {}} />
+      <VenueLogistics event={eventUI} onUpdate={async () => {}} />
     </Stack>
   );
 };

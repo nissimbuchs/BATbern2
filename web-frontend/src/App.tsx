@@ -74,7 +74,7 @@ const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'))
 // Slot Assignment Page - Story 5.7 (BAT-11)
 const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
 
-// Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
+// Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 4.2
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
 const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
@@ -83,6 +83,9 @@ const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRe
 const RegistrationConfirmationPage = React.lazy(
   () => import('@pages/public/RegistrationConfirmationPage')
 );
+// Story 4.2: Archive browsing pages
+const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
+const ArchiveEventDetailPage = React.lazy(() => import('@pages/public/ArchiveEventDetailPage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -203,14 +206,9 @@ function App() {
                       path="/registration-confirmation/:confirmationCode"
                       element={<RegistrationConfirmationPage />}
                     />
-                    <Route
-                      path="/archive"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Archive (Coming in 4.2)
-                        </div>
-                      }
-                    />
+                    {/* Story 4.2: Archive browsing routes */}
+                    <Route path="/archive" element={<ArchivePage />} />
+                    <Route path="/archive/:eventCode" element={<ArchiveEventDetailPage />} />
                     <Route
                       path="/search"
                       element={
