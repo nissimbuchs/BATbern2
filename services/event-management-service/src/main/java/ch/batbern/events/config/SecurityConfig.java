@@ -76,6 +76,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 
+                // Story 4.2 (BAT-109): Public archive browsing endpoint
+                .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
+
                 // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/PUT/DELETE require ORGANIZER)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
