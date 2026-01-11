@@ -64,7 +64,7 @@ export function EventCard({ event, viewMode }: EventCardProps) {
           {/* Session Preview - Show all sessions with speakers */}
           {sessions.length > 0 && (
             <div className="space-y-3">
-              <div className={`grid gap-8 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {sessions.map((session) => (
                   <div
                     key={session.sessionId}
@@ -76,7 +76,7 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                     {/* Speakers with companies */}
                     {session.speakers && session.speakers.length > 0 ? (
                       <div
-                        className={`grid gap-3 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                        className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                       >
                         {session.speakers.map((speaker) => (
                           <SpeakerDisplay
