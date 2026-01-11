@@ -290,6 +290,29 @@ public class EventSearchService {
                     return criteriaBuilder.not(root.get(field).in(convertedValue));
 
                 case CONTAINS:
+                    // Use PostgreSQL full-text search for title field (Story 4.2 AC9, AC19)
+                    // GIN indexes on title_vector provide fast search across event titles
+                    if ("title".equals(field)) {
+                        // PostgreSQL full-text search: title_vector @@ to_tsquery('german', searchTerm)
+                        // Convert user input to tsquery format (replace spaces with & for AND logic)
+                        String searchTerm = value.toString().trim().replace(" ", " & ");
+
+                        // Use custom SQL function to perform: title_vector @@ to_tsquery('german', ?)
+                        return criteriaBuilder.isTrue(
+                            criteriaBuilder.function(
+                                "@@",
+                                Boolean.class,
+                                root.get("titleVector"),  // Use the generated tsvector column
+                                criteriaBuilder.function(
+                                    "to_tsquery",
+                                    Object.class,
+                                    criteriaBuilder.literal("german"),
+                                    criteriaBuilder.literal(searchTerm)
+                                )
+                            )
+                        );
+                    }
+                    // Fallback to LIKE for other fields
                     return criteriaBuilder.like(
                             criteriaBuilder.lower(root.get(field)),
                             "%" + value.toString().toLowerCase() + "%"

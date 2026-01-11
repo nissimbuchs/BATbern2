@@ -135,6 +135,14 @@ public class Event {
     @Column(name = "last_published_at")
     private Instant lastPublishedAt;
 
+    // Full-text search vector columns (Story 4.2 AC9, AC19)
+    // GENERATED ALWAYS AS columns from V35 migration - do not insert/update
+    @Column(name = "title_vector", insertable = false, updatable = false)
+    private String titleVector;
+
+    @Column(name = "description_vector", insertable = false, updatable = false)
+    private String descriptionVector;
+
     @Version
     @Column(name = "version")
     private Long version;
