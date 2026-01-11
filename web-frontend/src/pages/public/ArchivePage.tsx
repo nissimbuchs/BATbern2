@@ -173,8 +173,8 @@ export default function ArchivePage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('archive.title')}</h1>
-          <p className="text-gray-600">{t('archive.description')}</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t('archive.title')}</h1>
+          <p className="text-muted-foreground">{t('archive.description')}</p>
         </div>
 
         <div className="flex gap-8">
