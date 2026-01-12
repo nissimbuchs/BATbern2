@@ -64,7 +64,7 @@ class UserReconciliationServiceTest {
         reconciliationService = new UserReconciliationService(
                 userRepository,
                 cognitoClient,
-                metricsService,
+                Optional.of(metricsService),
                 USER_POOL_ID
         );
     }

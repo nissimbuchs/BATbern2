@@ -5,6 +5,7 @@ import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
 import io.micrometer.core.aop.CountedAspect;
 import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
@@ -17,6 +18,9 @@ import java.util.Map;
  *
  * Configures Micrometer to publish metrics to CloudWatch under the "BATbern" namespace.
  * Enables @Timed and @Counted aspects for automatic method-level metrics.
+ *
+ * Cost optimization: Disabled by default for non-production environments.
+ * Enable via management.metrics.export.cloudwatch2.enabled=true
  */
 @Configuration
 public class MetricsConfiguration {
@@ -26,8 +30,11 @@ public class MetricsConfiguration {
      *
      * Metrics are published to the "BATbern" namespace with a 1-minute step interval.
      * This allows the CloudWatch dashboard to display real-time service metrics.
+     *
+     * Only enabled when management.metrics.export.cloudwatch2.enabled=true
      */
     @Bean
+    @ConditionalOnProperty(name = "management.metrics.export.cloudwatch2.enabled", havingValue = "true")
     public CloudWatchMeterRegistry cloudWatchMeterRegistry() {
         CloudWatchConfig cloudWatchConfig = new CloudWatchConfig() {
             private final Map<String, String> configuration = Map.of(

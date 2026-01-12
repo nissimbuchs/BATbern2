@@ -48,13 +48,13 @@ public class UserReconciliationService {
 
     private final UserRepository userRepository;
     private final CognitoIdentityProviderClient cognitoClient;
-    private final UserSyncMetricsService metricsService;
+    private final Optional<UserSyncMetricsService> metricsService;
     private final String userPoolId;
 
     public UserReconciliationService(
             UserRepository userRepository,
             CognitoIdentityProviderClient cognitoClient,
-            UserSyncMetricsService metricsService,
+            Optional<UserSyncMetricsService> metricsService,
             @Value("${aws.cognito.user-pool-id}") String userPoolId) {
         this.userRepository = userRepository;
         this.cognitoClient = cognitoClient;
@@ -106,14 +106,14 @@ public class UserReconciliationService {
             Instant endTime = Instant.now();
             long durationMs = endTime.toEpochMilli() - startTime.toEpochMilli();
 
-            // Publish metrics
-            metricsService.recordReconciliationJob(
+            // Publish metrics (if CloudWatch metrics enabled)
+            metricsService.ifPresent(metrics -> metrics.recordReconciliationJob(
                     report.getOrphanedUsers(),
                     report.getMissingUsers(),
                     0, // No role mismatches (DB is source of truth)
                     0, // No compensation retries (unidirectional sync)
                     durationMs
-            );
+            ));
 
             log.info("User reconciliation completed",
                     mapOf("durationMs", durationMs,
@@ -235,7 +235,7 @@ public class UserReconciliationService {
                 userRepository.save(user);
                 report.incrementOrphanedUsers();
 
-                metricsService.recordDriftDetected(1);
+                metricsService.ifPresent(metrics -> metrics.recordDriftDetected(1));
 
             } catch (Exception e) {
                 log.error("Failed to check Cognito user",
@@ -280,8 +280,8 @@ public class UserReconciliationService {
                         createMissingUser(cognitoUser);
                         report.incrementMissingUsers();
 
-                        metricsService.recordUserCreated("RECONCILIATION");
-                        metricsService.recordDriftDetected(1);
+                        metricsService.ifPresent(metrics -> metrics.recordUserCreated("RECONCILIATION"));
+                        metricsService.ifPresent(metrics -> metrics.recordDriftDetected(1));
                     }
                 }
             }

@@ -2,6 +2,7 @@ package ch.batbern.companyuser.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
@@ -24,10 +25,14 @@ import java.util.List;
  * - Record sync failure metrics
  * - Record drift detection metrics
  * - Publish metrics to CloudWatch namespace: BATbern/UserSync
+ * <p>
+ * Cost optimization: Only active when CloudWatch metrics are enabled.
+ * Controlled by management.metrics.export.cloudwatch2.enabled property.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "management.metrics.export.cloudwatch2.enabled", havingValue = "true")
 public class UserSyncMetricsService {
 
     private final CloudWatchClient cloudWatchClient;

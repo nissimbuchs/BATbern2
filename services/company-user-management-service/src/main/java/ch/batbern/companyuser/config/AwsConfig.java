@@ -56,6 +56,10 @@ public class AwsConfig {
 
     @Bean
     @ConditionalOnMissingBean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "management.metrics.export.cloudwatch2.enabled",
+        havingValue = "true"
+    )
     public CloudWatchClient cloudWatchClient(AwsCredentialsProvider credentialsProvider) {
         log.info("Creating CloudWatchClient for region: {}", awsRegion);
         return CloudWatchClient.builder()
