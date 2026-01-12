@@ -135,6 +135,10 @@ public class Event {
     @Column(name = "last_published_at")
     private Instant lastPublishedAt;
 
+    // Note: title_vector and description_vector columns exist in DB (V35 migration)
+    // but are not mapped here because they're PostgreSQL tsvector types used only
+    // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
+
     @Version
     @Column(name = "version")
     private Long version;

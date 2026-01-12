@@ -76,7 +76,7 @@ public class EventWorkflowController {
             @Valid @RequestBody TransitionStateRequest request) {
 
         // Extract authenticated user from JWT token
-        String organizerUsername = securityContextHelper.getCurrentUserId();
+        String organizerUsername = securityContextHelper.getCurrentUsername();
 
         // Extract override flag (defaults to false if not provided)
         boolean override = Boolean.TRUE.equals(request.getOverrideValidation());
@@ -136,7 +136,7 @@ public class EventWorkflowController {
     public ResponseEntity<WorkflowStatusDto> getWorkflowStatus(
             @PathVariable("code") String eventCode) {
 
-        String requestingUser = securityContextHelper.getCurrentUserId();
+        String requestingUser = securityContextHelper.getCurrentUsername();
         log.info("User {} querying workflow status for event {}", requestingUser, eventCode);
 
         // Find event by event code

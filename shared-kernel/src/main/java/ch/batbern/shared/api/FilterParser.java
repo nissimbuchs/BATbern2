@@ -138,9 +138,9 @@ public class FilterParser {
             // Parse JSON string to JsonNode
             JsonNode rootNode = OBJECT_MAPPER.readTree(filterJson);
 
-            // Empty object check
+            // Empty object check - treat {} as "no filter" (Story BAT-109: Archive browsing)
             if (rootNode.isEmpty()) {
-                throw new ValidationException("Filter cannot be empty");
+                return null;
             }
 
             // Parse the JSON node into FilterCriteria

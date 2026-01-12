@@ -88,8 +88,6 @@ class NotificationWebSocketClient {
   private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
   private notificationCallbacks: Set<NotificationCallback> = new Set();
   private stateCallbacks: Set<ConnectionStateCallback> = new Set();
-  // Reserved for future unsubscribe functionality
-  private _subscriptionId: string | null = null;
 
   /**
    * Connect to WebSocket server for a specific user
@@ -122,10 +120,8 @@ class NotificationWebSocketClient {
       webSocketFactory: () => {
         return new SockJS(`${getWebSocketUrl()}/ws`) as WebSocket;
       },
-      debug: (str: string) => {
-        if (import.meta.env.DEV) {
-          console.log('STOMP Debug:', str);
-        }
+      debug: () => {
+        // STOMP debug logging disabled - enable console.log if needed for debugging
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
@@ -156,7 +152,6 @@ class NotificationWebSocketClient {
     if (this.client) {
       this.client.deactivate();
       this.client = null;
-      this._subscriptionId = null;
       this.updateConnectionState(ConnectionState.DISCONNECTED);
     }
   }
@@ -211,7 +206,6 @@ class NotificationWebSocketClient {
    * Handle successful connection
    */
   private onConnected(): void {
-    console.log('WebSocket connected successfully');
     this.updateConnectionState(ConnectionState.CONNECTED);
 
     if (!this.client || !this.username) {
@@ -220,23 +214,15 @@ class NotificationWebSocketClient {
 
     // Subscribe to user's notification topic
     const topic = `/topic/notifications/${this.username}`;
-    const subscription = this.client.subscribe(topic, (message) => {
+    this.client.subscribe(topic, (message) => {
       this.handleNotificationMessage(message.body);
     });
-
-    this._subscriptionId = subscription.id;
-    console.log(
-      `Subscribed to notification topic: ${topic} (subscription: ${this._subscriptionId})`
-    );
   }
 
   /**
    * Handle disconnection
    */
   private onDisconnected(): void {
-    console.log('WebSocket disconnected');
-    this._subscriptionId = null;
-
     if (this.connectionState === ConnectionState.CONNECTED) {
       // Unexpected disconnection - will auto-reconnect
       this.updateConnectionState(ConnectionState.RECONNECTING);

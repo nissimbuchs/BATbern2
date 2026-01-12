@@ -51,7 +51,7 @@ tests {
       expect(topic.stalenessScore).to.be.a('number');
       expect(topic.stalenessScore).to.be.at.least(0);
       expect(topic.stalenessScore).to.be.at.most(100);
-      expect(topic.status).to.be.oneOf(['AVAILABLE', 'IN_USE', 'ARCHIVED']);
+      expect(topic.status).to.be.oneOf(['AVAILABLE', 'CAUTION', 'UNAVAILABLE']);
     }
   });
 }

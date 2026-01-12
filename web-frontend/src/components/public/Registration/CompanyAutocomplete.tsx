@@ -145,10 +145,17 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
         <PopoverContent
           className="w-[var(--radix-popover-trigger-width)] p-0 bg-zinc-900 border-zinc-800"
           align="start"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e: Event) => e.preventDefault()}
         >
           <Command className="bg-zinc-900">
             <CommandList>
+              {isLoading && (
+                <div className="py-6 text-center text-sm text-zinc-500 flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </div>
+              )}
+
               {!isLoading && shouldSearch && companies.length === 0 && (
                 <CommandEmpty className="text-zinc-500 py-6 text-center text-sm">
                   {isError ? (
@@ -219,6 +226,9 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Error message */}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
 
       {/* Helper text */}
       {!error && inputValue.length > 0 && inputValue.length < 2 && (

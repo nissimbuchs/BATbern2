@@ -26,7 +26,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 /**
@@ -41,14 +41,14 @@ async function loginAsOrganizer(page: Page) {
   await page.fill('input[name="password"]', testPassword);
   await page.click('button[type="submit"]');
 
-  await page.waitForURL(`${BASE_URL}/organizer/dashboard`);
+  await page.waitForURL(`${BASE_URL}/organizer/events`);
 }
 
 /**
  * Helper: Create event ready for publishing
  */
 async function createEventReadyForPublishing(page: Page): Promise<string> {
-  await page.goto(`${BASE_URL}/organizer/dashboard`);
+  await page.goto(`${BASE_URL}/organizer/events`);
   await page.click('button:has-text("New Event")');
 
   await page.fill('input[name="title"]', `E2E Publishing Test ${Date.now()}`);
@@ -120,7 +120,7 @@ async function setupEventWithTimings(eventCode: string) {
 
 test.describe('Progressive Publishing Workflow (Story BAT-11)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test('should publish Phase 3 (Agenda) after validation passes (AC14-AC17, AC21)', async ({

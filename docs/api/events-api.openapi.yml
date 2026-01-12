@@ -3295,6 +3295,42 @@ components:
           description: |
             Current workflow state (16-step workflow).
             Story 5.1a: Event Workflow State Machine
+        # Optional resource expansion fields (Story BAT-109: Archive Browsing)
+        # These fields are populated only when requested via ?include parameter
+        topic:
+          type: object
+          nullable: true
+          description: |
+            Expanded topic details (only included when ?include=topics).
+            Story BAT-109: Archive browsing with topic expansion
+          properties:
+            code:
+              type: string
+              example: "cloud-native-security-2024"
+            name:
+              type: string
+              example: "Cloud Native Security"
+            description:
+              type: string
+              example: "Security patterns for cloud-native applications"
+            category:
+              type: string
+              enum: [technical, management, soft_skills, industry_trends, tools_platforms]
+              example: "technical"
+        venue:
+          $ref: '#/components/schemas/Venue'
+          nullable: true
+          description: |
+            Expanded venue details (only included when ?include=venue).
+            Story BAT-109: Archive browsing with venue expansion
+        sessions:
+          type: array
+          nullable: true
+          description: |
+            Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+            Story BAT-109: Archive browsing with session expansion
+          items:
+            $ref: '#/components/schemas/Session'
 
     EventDetail:
       allOf:

@@ -48,6 +48,7 @@ import { useMarkAsRead } from '@/hooks/useNotifications';
 
 interface TeamActivityFeedProps {
   notifications: Notification[];
+  totalNotifications?: number;
   isLoading?: boolean;
   onReload?: () => void;
   limit?: number;
@@ -134,6 +135,7 @@ const getNotificationColor = (
 
 export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   notifications,
+  totalNotifications,
   isLoading = false,
   onReload,
   limit,
@@ -145,6 +147,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   const displayedNotifications = limit ? notifications.slice(0, limit) : notifications;
   const hasMore = limit && notifications.length > limit;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const totalCount = totalNotifications ?? notifications.length;
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -196,9 +199,9 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
           <Typography variant="h6">Notifications</Typography>
           <Badge badgeContent={unreadCount} color="error">
             <Chip
-              label={notifications.length}
+              label={totalCount}
               size="small"
-              aria-label={`${notifications.length} notifications`}
+              aria-label={`${totalCount} total notifications`}
             />
           </Badge>
         </Stack>
@@ -306,7 +309,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       {hasMore && (
         <Box textAlign="center" mt={2}>
           <Button variant="outlined" size="small">
-            View All ({notifications.length})
+            View All ({totalCount})
           </Button>
         </Box>
       )}

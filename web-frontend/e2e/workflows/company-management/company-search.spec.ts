@@ -22,7 +22,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 // Test data
@@ -141,7 +141,7 @@ test.describe('Company Search - UI Workflow', () => {
   test.beforeAll(async ({ browser }) => {
     // Setup: Create test companies
     const page = await browser.newPage();
-    await loginAsUser(page);
+    await page.goto('/dashboard');
     authToken = await getAuthToken(page);
 
     for (const company of TEST_COMPANIES) {
@@ -160,7 +160,7 @@ test.describe('Company Search - UI Workflow', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await loginAsUser(page);
+    await page.goto('/dashboard');
   });
 
   test('should_displaySearchInput_when_navigateToCompaniesPage', async ({ page }) => {
@@ -262,7 +262,7 @@ test.describe('Company Search - API Endpoints', () => {
   test.beforeAll(async ({ browser }) => {
     // Setup: Create test companies
     const page = await browser.newPage();
-    await loginAsUser(page);
+    await page.goto('/dashboard');
     authToken = await getAuthToken(page);
 
     for (const company of TEST_COMPANIES) {
@@ -340,7 +340,7 @@ test.describe('Company Search - Redis Caching', () => {
   test.beforeAll(async ({ browser }) => {
     // Setup: Create test companies
     const page = await browser.newPage();
-    await loginAsUser(page);
+    await page.goto('/dashboard');
     authToken = await getAuthToken(page);
 
     for (const company of TEST_COMPANIES) {
@@ -420,7 +420,7 @@ test.describe('Company Search - Performance', () => {
   test.beforeAll(async ({ browser }) => {
     // Setup: Create test companies
     const page = await browser.newPage();
-    await loginAsUser(page);
+    await page.goto('/dashboard');
     authToken = await getAuthToken(page);
 
     for (const company of TEST_COMPANIES) {
@@ -513,7 +513,7 @@ test.describe('Company Search - Advanced Query Patterns', () => {
   test.beforeAll(async ({ browser }) => {
     // Setup: Create test companies
     const page = await browser.newPage();
-    await loginAsUser(page);
+    await page.goto('/dashboard');
     authToken = await getAuthToken(page);
 
     for (const company of TEST_COMPANIES) {

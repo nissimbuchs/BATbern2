@@ -1,8 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { I18nextProvider } from 'react-i18next';
+import { I18nextProvider, useTranslation } from 'react-i18next';
 import i18n from '@/i18n/config';
 import LanguageSwitcher from './LanguageSwitcher';
+
+// Mock useAuth hook
+const mockUseAuth = {
+  isAuthenticated: false,
+  user: null,
+  signIn: vi.fn(),
+  signOut: vi.fn(),
+  isLoading: false,
+  error: null,
+  clearError: vi.fn(),
+};
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth,
+}));
 
 describe('LanguageSwitcher Component', () => {
   beforeEach(() => {
@@ -84,8 +99,6 @@ describe('LanguageSwitcher Component', () => {
           </div>
         );
       };
-
-      const { useTranslation } = await import('react-i18next');
 
       render(
         <I18nextProvider i18n={i18n}>

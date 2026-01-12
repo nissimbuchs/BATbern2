@@ -22,7 +22,7 @@ import {
 export const getUserProfile = async (includes?: string[]): Promise<UserProfileResponse> => {
   const params = includes && includes.length > 0 ? { include: includes.join(',') } : {};
 
-  const response = await apiClient.get<UserProfileResponse>('/api/v1/users/me', { params });
+  const response = await apiClient.get<UserProfileResponse>('/users/me', { params });
   return response.data;
 };
 
@@ -35,7 +35,7 @@ export const updateUserPreferences = async (
   preferences: UpdatePreferencesRequest
 ): Promise<UpdatePreferencesResponse> => {
   const response = await apiClient.put<UpdatePreferencesResponse>(
-    '/api/v1/users/me/preferences',
+    '/users/me/preferences',
     preferences
   );
   return response.data;

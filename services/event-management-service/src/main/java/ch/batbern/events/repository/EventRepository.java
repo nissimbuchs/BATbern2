@@ -117,4 +117,43 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
      * @return List of events with deadlines in the given range
      */
     List<Event> findByRegistrationDeadlineBetween(Instant start, Instant end);
+
+    // ================================
+    // EntityGraph Methods (Story BAT-109: Archive Browsing - Task 3a)
+    // ================================
+    // NOTE: The Event entity does not have @OneToMany relationships with Topics or Sessions.
+    // Resource expansion is handled at the service layer by calling TopicService and SessionRepository.
+    // These methods delegate to findAll() as Entity doesn't have the relationships.
+
+    /**
+     * Find all events (delegated - resource expansion happens at service layer)
+     * GREEN PHASE: Implemented via service-layer resource expansion
+     */
+    default List<Event> findAllWithTopics() {
+        return findAll();
+    }
+
+    /**
+     * Find all events (delegated - resource expansion happens at service layer)
+     * GREEN PHASE: Implemented via service-layer resource expansion
+     */
+    default List<Event> findAllWithSessions() {
+        return findAll();
+    }
+
+    /**
+     * Find all events (delegated - resource expansion happens at service layer)
+     * GREEN PHASE: Implemented via service-layer resource expansion
+     */
+    default List<Event> findAllWithAllResources() {
+        return findAll();
+    }
+
+    /**
+     * Find event by code (delegated - resource expansion happens at service layer)
+     * GREEN PHASE: Implemented via service-layer resource expansion
+     */
+    default Optional<Event> findByEventCodeWithAllResources(String eventCode) {
+        return findByEventCode(eventCode);
+    }
 }

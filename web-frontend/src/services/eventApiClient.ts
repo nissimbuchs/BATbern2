@@ -43,7 +43,7 @@ class EventApiClient {
   async getEvents(
     pagination: PaginationParams = { page: 1, limit: 20 },
     filters?: EventFilters,
-    options?: { expand?: string[] }
+    options?: { expand?: string[]; sort?: string }
   ): Promise<EventListResponse> {
     try {
       // Use URLSearchParams for proper URL encoding
@@ -70,6 +70,10 @@ class EventApiClient {
         // Use CONTAINS operator on title field for text search
         filterObj.title = { $contains: filters.search };
       }
+      if (filters?.topicCode && filters.topicCode.length > 0) {
+        // Filter by topic code(s) - Story 4.2 archive filtering
+        filterObj.topicCode = { $in: filters.topicCode };
+      }
 
       // Add filter parameter if we have filters
       // URLSearchParams will properly encode all special characters
@@ -80,6 +84,11 @@ class EventApiClient {
       // Add include parameter for resource expansion
       if (options?.expand && options.expand.length > 0) {
         params.append('include', options.expand.join(','));
+      }
+
+      // Add sort parameter (Story 4.2 - archive sorting)
+      if (options?.sort) {
+        params.append('sort', options.sort);
       }
 
       const response = await apiClient.get<EventListResponse>(

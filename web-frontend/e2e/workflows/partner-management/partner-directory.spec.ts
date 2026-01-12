@@ -22,7 +22,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 /**
@@ -55,7 +55,7 @@ async function navigateToPartnerDirectory(page: Page) {
 
 test.describe('Partner Directory - User Journey', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test('should navigate to Partner Directory from menu', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('Partner Directory - User Journey', () => {
 
 test.describe('Partner Directory - Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
 
@@ -166,7 +166,7 @@ test.describe('Partner Directory - Search Functionality', () => {
 
 test.describe('Partner Directory - Filter Functionality', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
 
@@ -234,7 +234,7 @@ test.describe('Partner Directory - Filter Functionality', () => {
 
 test.describe('Partner Directory - View Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
 
@@ -265,7 +265,7 @@ test.describe('Partner Directory - View Mode Toggle', () => {
 
 test.describe('Partner Directory - Sorting', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
 
@@ -291,7 +291,7 @@ test.describe('Partner Directory - Sorting', () => {
 
 test.describe('Partner Directory - Pagination', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
 
@@ -334,7 +334,7 @@ test.describe('Partner Directory - Error Handling', () => {
       route.abort('failed');
     });
 
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
 
     // Wait for error message
@@ -355,7 +355,7 @@ test.describe('Partner Directory - Error Handling', () => {
       });
     });
 
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
 
     // Wait for error message

@@ -1,0 +1,70 @@
+/**
+ * useInfiniteEvents Hook (Story 4.2 - Task 2b)
+ *
+ * React Query infinite scroll hook for archive browsing
+ * Handles pagination, filtering, sorting, and caching
+ */
+
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { eventApiClient } from '@/services/eventApiClient';
+import type { ArchiveFilters, EventFilters } from '@/types/event.types';
+
+/**
+ * Convert ArchiveFilters to EventFilters for API
+ * Story BAT-109: Archive browsing filter conversion
+ */
+function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
+  const eventFilters: EventFilters = {
+    includeArchived: true, // Archive page shows archived events
+    workflowState: ['ARCHIVED'], // Only show archived events
+    search: archiveFilters.search,
+  };
+
+  // Topic filter - filter by topicCode
+  if (archiveFilters.topics && archiveFilters.topics.length > 0) {
+    eventFilters.topicCode = archiveFilters.topics;
+  }
+
+  // Time period filter - convert to year
+  if (archiveFilters.timePeriod && archiveFilters.timePeriod !== 'all') {
+    // Handle year range format (e.g., "2020-2024")
+    const yearRangeMatch = archiveFilters.timePeriod.match(/^(\d{4})-\d{4}$/);
+    if (yearRangeMatch) {
+      eventFilters.year = parseInt(yearRangeMatch[1], 10);
+    }
+    // Handle relative format (e.g., "last5years")
+    else if (archiveFilters.timePeriod === 'last5years') {
+      const currentYear = new Date().getFullYear();
+      eventFilters.year = currentYear - 5;
+    }
+  }
+
+  return eventFilters;
+}
+
+/**
+ * Infinite scroll hook for events archive
+ *
+ * @param filters - Archive filters (time period, topics, search)
+ * @param sort - Sort parameter (e.g., '-date' for newest first)
+ * @returns React Query infinite query result with pagination controls
+ */
+export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '-date') {
+  // Convert ArchiveFilters to EventFilters for API
+  const eventFilters = convertToEventFilters(filters);
+
+  return useInfiniteQuery({
+    queryKey: ['events', 'archive', filters, sort],
+    queryFn: ({ pageParam = 1 }) =>
+      eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
+        expand: ['topics', 'sessions', 'speakers'],
+        sort,
+      }),
+    getNextPageParam: (lastPage) => {
+      const { page, pages } = lastPage.pagination;
+      return page < pages ? page + 1 : undefined;
+    },
+    initialPageParam: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes - cache results to reduce API calls
+  });
+}

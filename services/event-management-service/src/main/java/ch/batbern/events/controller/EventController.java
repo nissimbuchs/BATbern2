@@ -120,7 +120,7 @@ public class EventController {
             summary = "List/Search Events",
             description = "Retrieve events with optional filtering, sorting, and pagination. "
                     + "Uses MongoDB-style filter syntax for rich querying. "
-                    + "Supports resource expansion via ?include parameter (e.g., ?include=registrations)"
+                    + "Supports resource expansion via ?include parameter (e.g., ?include=topics,sessions,speakers)"
     )
     public ResponseEntity<PaginatedResponse<EventResponse>> listEvents(
             @Parameter(description = "JSON filter object (e.g., {\"status\":\"published\"})")
@@ -138,7 +138,8 @@ public class EventController {
             @Parameter(description = "Include archived events (default: false)")
             @RequestParam(required = false, defaultValue = "false") boolean includeArchived,
 
-            @Parameter(description = "Comma-separated list of resources to include (e.g., registrations)")
+            @Parameter(description = "Comma-separated list of resources to include " +
+                               "(e.g., topics,sessions,speakers,registrations)")
             @RequestParam(required = false) String include
     ) {
         log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, includeArchived: {}, include: {}",
@@ -147,22 +148,28 @@ public class EventController {
         // Search events using EventSearchService
         PaginatedResponse<Event> result = eventSearchService.searchEvents(filter, sort, page, limit, includeArchived);
 
-        // Convert entities to DTOs with optional registration counts
-        List<EventResponse> eventResponses;
-        if (include != null && include.contains("registrations")) {
-            // Include actual registration counts from database
-            eventResponses = result.getData().stream()
-                    .map(event -> {
+        // Convert entities to EventResponse DTOs with optional resource expansion
+        List<EventResponse> eventResponses = result.getData().stream()
+                .map(event -> {
+                    // Build base EventResponse
+                    EventResponse response;
+
+                    // Handle registration count expansion
+                    if (include != null && include.contains("registrations")) {
                         long regCount = registrationRepository.countByEventId(event.getId());
-                        return EventResponse.fromEntity(event, regCount);
-                    })
-                    .collect(Collectors.toList());
-        } else {
-            // Use default conversion (uses cached currentAttendeeCount)
-            eventResponses = result.getData().stream()
-                    .map(EventResponse::fromEntity)
-                    .collect(Collectors.toList());
-        }
+                        response = EventResponse.fromEntity(event, regCount);
+                    } else {
+                        response = EventResponse.fromEntity(event);
+                    }
+
+                    // Apply additional resource expansions if requested
+                    if (include != null && !include.trim().isEmpty()) {
+                        applyResourceExpansionsToDTO(event, include, response);
+                    }
+
+                    return response;
+                })
+                .collect(Collectors.toList());
 
         // Build response
         PaginatedResponse<EventResponse> response = PaginatedResponse.<EventResponse>builder()
@@ -320,10 +327,22 @@ public class EventController {
         for (String resource : includes) {
             String trimmed = resource.trim();
             switch (trimmed) {
+                case "topics":
+                    // Expand topic details (Story BAT-109: Archive browsing)
+                    Map<String, Object> topic = expandTopic(event);
+                    if (topic != null) {
+                        response.put("topic", topic);
+                    }
+                    break;
                 case "venue":
                     response.put("venue", expandVenue(event));
                     break;
                 case "sessions":
+                    response.put("sessions", expandSessions(event));
+                    break;
+                case "speakers":
+                    // Speakers are already included in sessions expansion
+                    // This case is kept for explicit speaker expansion requests
                     response.put("sessions", expandSessions(event));
                     break;
                 case "registrations":
@@ -340,6 +359,57 @@ public class EventController {
                     log.warn("Unknown include resource requested: {}", trimmed);
             }
         }
+    }
+
+    /**
+     * Apply resource expansions to EventResponse DTO
+     * Story BAT-109: Archive browsing with resource expansion
+     * Populates optional fields (topic, sessions, venue) when requested via ?include parameter
+     */
+    private void applyResourceExpansionsToDTO(Event event, String include, EventResponse response) {
+        String[] includes = include.split(",");
+        for (String resource : includes) {
+            String trimmed = resource.trim();
+            switch (trimmed) {
+                case "topics":
+                    response.setTopic(expandTopic(event));
+                    break;
+                case "venue":
+                    response.setVenue(expandVenue(event));
+                    break;
+                case "sessions":
+                case "speakers":
+                    // Sessions include speakers automatically
+                    response.setSessions(expandSessions(event));
+                    break;
+                default:
+                    // Ignore unknown expand parameters
+                    break;
+                // "registrations" is handled separately in listEvents()
+            }
+        }
+    }
+
+    /**
+     * Expand topic data for an event
+     * Story BAT-109: Archive browsing with topic expansion
+     */
+    private Map<String, Object> expandTopic(Event event) {
+        if (event.getTopicCode() == null) {
+            return null;
+        }
+
+        // Fetch topic from repository
+        return topicService.getTopicByCode(event.getTopicCode())
+                .map(topic -> {
+                    Map<String, Object> topicMap = new HashMap<>();
+                    topicMap.put("code", topic.getTopicCode());
+                    topicMap.put("name", topic.getTitle());
+                    topicMap.put("description", topic.getDescription());
+                    topicMap.put("category", topic.getCategory());
+                    return topicMap;
+                })
+                .orElse(null);
     }
 
     /**
@@ -630,7 +700,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventCreatedEvent domainEvent = new EventCreatedEvent(
                     savedEvent.getId(),           // Internal UUID
                     savedEvent.getEventCode(),    // Public business identifier
@@ -685,7 +755,10 @@ public class EventController {
      */
     @PutMapping("/{eventCode}")
     @Operation(summary = "Update Event", description = "Fully replace an existing event")
-    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @org.springframework.cache.annotation.Caching(evict = {
+        @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
+        @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true)
+    })
     public ResponseEntity<Map<String, Object>> updateEvent(
             @PathVariable String eventCode,
             @Valid @RequestBody UpdateEventRequest request) {
@@ -772,7 +845,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventUpdatedEvent domainEvent = new EventUpdatedEvent(
                     updatedEvent.getId(),           // Internal UUID
                     updatedEvent.getEventCode(),    // Public business identifier
@@ -873,7 +946,7 @@ public class EventController {
 
         // Publish domain event (Story 2.2: Architecture Compliance)
         try {
-            String userId = securityContextHelper.getCurrentUserId();
+            String userId = securityContextHelper.getCurrentUsername();
             EventUpdatedEvent domainEvent = new EventUpdatedEvent(
                     patchedEvent.getId(),           // Internal UUID
                     patchedEvent.getEventCode(),    // Public business identifier
@@ -1031,7 +1104,7 @@ public class EventController {
         EventWorkflowState previousWorkflowState = event.getWorkflowState();
 
         // Transition to AGENDA_PUBLISHED workflow state
-        String userId = securityContextHelper.getCurrentUserId();
+        String userId = securityContextHelper.getCurrentUsername();
         Event publishedEvent = eventWorkflowStateMachine.transitionToState(
                 eventCode,
                 EventWorkflowState.AGENDA_PUBLISHED,
@@ -1873,7 +1946,7 @@ public class EventController {
         String topicCode = request.getTopicCode();
 
         // Get current user from security context
-        String organizerUsername = securityContextHelper.getCurrentUserId();
+        String organizerUsername = securityContextHelper.getCurrentUsername();
 
         // Select topic for event (calls workflow state machine)
         // ADR-003: Pass topicCode directly instead of UUID

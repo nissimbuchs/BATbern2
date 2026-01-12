@@ -17,7 +17,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
 // Test data - User to be created and deleted
 const TEST_USER_TO_DELETE = {
@@ -119,7 +119,7 @@ test.describe('User Deletion Workflow (GDPR)', () => {
   let testUserEmail: string;
 
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
 
     // Create a test user to delete

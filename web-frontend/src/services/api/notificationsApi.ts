@@ -28,7 +28,7 @@ export const getNotifications = async (
 ): Promise<NotificationsResponse> => {
   const params = { status, limit };
 
-  const response = await apiClient.get<NotificationsResponse>('/api/v1/notifications', { params });
+  const response = await apiClient.get<NotificationsResponse>('/notifications', { params });
   return response.data;
 };
 
@@ -40,7 +40,7 @@ export const getNotifications = async (
 export const markNotificationsAsRead = async (
   request: MarkAsReadRequest
 ): Promise<MarkAsReadResponse> => {
-  const response = await apiClient.put<MarkAsReadResponse>('/api/v1/notifications/read', request);
+  const response = await apiClient.put<MarkAsReadResponse>('/notifications/read', request);
   return response.data;
 };
 
@@ -53,7 +53,7 @@ export const deleteNotification = async (
   notificationId: string
 ): Promise<DeleteNotificationResponse> => {
   const response = await apiClient.delete<DeleteNotificationResponse>(
-    `/api/v1/notifications/${notificationId}`
+    `/notifications/${notificationId}`
   );
   return response.data;
 };

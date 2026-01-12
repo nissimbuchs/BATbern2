@@ -108,6 +108,7 @@ public class EventSearchService {
 
     /**
      * Build Spring Data Sort from SortCriteria list
+     * Maps logical field names to database column names (Story BAT-109)
      */
     private Sort buildSort(List<SortCriteria> sortCriteria) {
         if (sortCriteria == null || sortCriteria.isEmpty()) {
@@ -119,10 +120,24 @@ public class EventSearchService {
             Sort.Direction direction = criteria.getDirection() == SortDirection.ASC
                     ? Sort.Direction.ASC
                     : Sort.Direction.DESC;
-            orders.add(new Sort.Order(direction, criteria.getField()));
+
+            // Map logical field names to actual database column names
+            String mappedField = mapSortField(criteria.getField());
+            orders.add(new Sort.Order(direction, mappedField));
         }
 
         return Sort.by(orders);
+    }
+
+    /**
+     * Map logical sort field names to database column names
+     * Story BAT-109: Archive browsing sort requirements
+     */
+    private String mapSortField(String logicalField) {
+        return switch (logicalField) {
+            case "attendeeCount" -> "currentAttendeeCount";
+            default -> logicalField; // Use as-is for standard fields (date, eventNumber, etc.)
+        };
     }
 
     /**
@@ -275,6 +290,11 @@ public class EventSearchService {
                     return criteriaBuilder.not(root.get(field).in(convertedValue));
 
                 case CONTAINS:
+                    // Use PostgreSQL full-text search for title field (Story 4.2 AC9, AC19)
+                    if ("title".equals(field)) {
+                        return buildFullTextSearchPredicate(root, query, criteriaBuilder, value);
+                    }
+                    // Fallback to LIKE for other fields
                     return criteriaBuilder.like(
                             criteriaBuilder.lower(root.get(field)),
                             "%" + value.toString().toLowerCase() + "%"
@@ -344,5 +364,77 @@ public class EventSearchService {
             log.warn("Failed to convert value '{}' for field '{}': {}", value, field, e.getMessage());
             return value;
         }
+    }
+
+    /**
+     * Build PostgreSQL full-text search predicate across events and sessions (Story 4.2 AC9, AC19)
+     * Searches across: event titles, event descriptions, session titles, session descriptions
+     * Uses GIN indexes on title_vector and description_vector columns
+     *
+     * @param root Event query root
+     * @param query CriteriaQuery for subquery creation
+     * @param criteriaBuilder CriteriaBuilder for predicate construction
+     * @param value Search term value
+     * @return Predicate matching events where any indexed field contains the search term
+     */
+    private jakarta.persistence.criteria.Predicate buildFullTextSearchPredicate(
+            jakarta.persistence.criteria.Root<Event> root,
+            jakarta.persistence.criteria.CriteriaQuery<?> query,
+            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+            Object value) {
+
+        // PostgreSQL full-text search: title_vector @@ to_tsquery('german', searchTerm)
+        // Convert user input to tsquery format (replace spaces with & for AND logic)
+        String searchTerm = value.toString().trim().replace(" ", " & ");
+
+        // Create tsquery expression once
+        jakarta.persistence.criteria.Expression<Object> tsquery = criteriaBuilder.function(
+            "to_tsquery",
+            Object.class,
+            criteriaBuilder.literal("german"),
+            criteriaBuilder.literal(searchTerm)
+        );
+
+        // Search in event title_vector
+        jakarta.persistence.criteria.Predicate eventTitleMatch = criteriaBuilder.isTrue(
+            criteriaBuilder.function("ts_match_title", Boolean.class, tsquery)
+        );
+
+        // Search in event description_vector
+        jakarta.persistence.criteria.Predicate eventDescriptionMatch = criteriaBuilder.isTrue(
+            criteriaBuilder.function("ts_match_description", Boolean.class, tsquery)
+        );
+
+        // Search in sessions: EXISTS (SELECT 1 FROM sessions WHERE event_id = events.id
+        //   AND (title_vector @@ tsquery OR description_vector @@ tsquery))
+        jakarta.persistence.criteria.Subquery<Integer> sessionSubquery = query.subquery(Integer.class);
+        jakarta.persistence.criteria.Root<ch.batbern.events.domain.Session> sessionRoot =
+            sessionSubquery.from(ch.batbern.events.domain.Session.class);
+
+        sessionSubquery.select(criteriaBuilder.literal(1));
+        sessionSubquery.where(
+            criteriaBuilder.and(
+                criteriaBuilder.equal(sessionRoot.get("eventId"), root.get("id")),
+                criteriaBuilder.or(
+                    // Session title match
+                    criteriaBuilder.isTrue(
+                        criteriaBuilder.function("ts_match_session_title", Boolean.class, tsquery)
+                    ),
+                    // Session description match
+                    criteriaBuilder.isTrue(
+                        criteriaBuilder.function("ts_match_session_description", Boolean.class, tsquery)
+                    )
+                )
+            )
+        );
+
+        // Return events where ANY of these match:
+        // - Event title OR event description
+        // - Any session title OR session description
+        return criteriaBuilder.or(
+            eventTitleMatch,
+            eventDescriptionMatch,
+            criteriaBuilder.exists(sessionSubquery)
+        );
     }
 }
