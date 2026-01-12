@@ -225,6 +225,7 @@ export interface EventFilters {
 
 // Archive Filter State (Story 4.2 - UI-only)
 export interface ArchiveFilters {
+  timePeriod?: string; // Time period filter (e.g., "all", "2020-2024", "last5years")
   topics?: string[]; // topic slugs or IDs
   search?: string;
 }

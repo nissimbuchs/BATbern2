@@ -129,9 +129,9 @@ describe('EventCard Component', () => {
     test('should_renderEventDate_when_provided', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      // Date should be formatted (exact format depends on locale)
+      // Date should be formatted in Swiss German (de-CH locale: "15. Dezember 2024")
       // Use more specific matcher to avoid matching "2024" in title
-      expect(screen.getByText(/December.*15.*2024/)).toBeInTheDocument();
+      expect(screen.getByText(/15.*Dezember.*2024/)).toBeInTheDocument();
     });
 
     test('should_renderTopicBadge_when_topicProvided', () => {
@@ -221,17 +221,17 @@ describe('EventCard Component', () => {
     test('should_renderGridLayout_when_viewModeIsGrid', () => {
       const { container } = renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      // Grid layout should have specific styling
-      const card = container.firstChild as HTMLElement;
-      expect(card).toHaveClass('grid-card'); // Example class
+      // Grid layout should have specific styling - check the div inside the link
+      const card = container.querySelector('.grid-card');
+      expect(card).toBeInTheDocument();
     });
 
     test('should_renderListLayout_when_viewModeIsList', () => {
       const { container } = renderWithRouter(<EventCard event={mockEvent} viewMode="list" />);
 
-      // List layout should have different styling
-      const card = container.firstChild as HTMLElement;
-      expect(card).toHaveClass('list-card'); // Example class
+      // List layout should have different styling - check the div inside the link
+      const card = container.querySelector('.list-card');
+      expect(card).toBeInTheDocument();
     });
 
     test('should_displayImageOnLeft_when_listViewMode', () => {
@@ -268,8 +268,10 @@ describe('EventCard Component', () => {
 
       renderWithRouter(<EventCard event={eventWithoutImage} viewMode="grid" />);
 
-      // Should display placeholder or fallback
-      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      // Should not display theme image (but may have speaker profile pictures)
+      expect(
+        screen.queryByAltText(`${eventWithoutImage.title} theme image`)
+      ).not.toBeInTheDocument();
     });
 
     test('should_handleNoSessions_when_sessionsArrayEmpty', () => {
@@ -344,9 +346,11 @@ describe('EventCard Component', () => {
     test('should_haveAccessibleImageAltText_when_rendered', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      const image = screen.getByRole('img');
-      expect(image).toHaveAttribute('alt');
-      expect(image.getAttribute('alt')).toBeTruthy();
+      // Check theme image has alt text
+      const themeImage = screen.getByAltText(`${mockEvent.title} theme image`);
+      expect(themeImage).toBeInTheDocument();
+      expect(themeImage).toHaveAttribute('alt');
+      expect(themeImage.getAttribute('alt')).toBeTruthy();
     });
 
     test('should_haveSemanticHTML_when_rendered', () => {

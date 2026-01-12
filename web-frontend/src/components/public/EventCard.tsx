@@ -24,7 +24,11 @@ export function EventCard({ event, viewMode }: EventCardProps) {
   // Get all sessions with speakers
   const sessions = (event.sessions || []) as SessionUI[];
 
-  // Format date
+  // Limit to first 3 sessions for preview
+  const displayedSessions = sessions.slice(0, 3);
+  const remainingSessionCount = sessions.length - 3;
+
+  // Format date (use Swiss German locale for Swiss company)
   const formattedDate = new Date(event.date).toLocaleDateString('de-CH', {
     year: 'numeric',
     month: 'long',
@@ -36,74 +40,105 @@ export function EventCard({ event, viewMode }: EventCardProps) {
       to={`/archive/${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
     >
-      <Card className="group bg-zinc-800/60 border-zinc-700 hover:border-zinc-600 transition-colors h-full">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-4 mb-2">
-            {/* Event Code (e.g., BATbern57) */}
-            <Badge
-              variant="outline"
-              className="bg-blue-400/10 text-blue-400 border-blue-400/20 font-mono"
+      <div
+        className={viewMode === 'grid' ? 'grid-card' : 'list-card'}
+        data-testid={`event-card-${event.eventCode}`}
+        data-view-mode={viewMode}
+      >
+        <Card className="group bg-zinc-800/60 border-zinc-700 hover:border-zinc-600 transition-colors h-full">
+          {/* Theme Image */}
+          {event.themeImageUrl && (
+            <div
+              className={`overflow-hidden ${viewMode === 'list' ? 'flex-shrink-0 w-48' : 'w-full h-48'}`}
             >
-              {event.eventCode}
-            </Badge>
-
-            {/* Topic Badge */}
-            {event.topic && typeof event.topic === 'object' && (
-              <Badge className="bg-zinc-800 text-zinc-300">{event.topic.name}</Badge>
-            )}
-          </div>
-
-          {/* Event Title */}
-          <CardTitle className="font-light text-xl text-zinc-100">{event.title}</CardTitle>
-
-          {/* Date */}
-          <p className="text-sm text-zinc-400 mt-2">{formattedDate}</p>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Session Preview - Show all sessions with speakers */}
-          {sessions.length > 0 && (
-            <div className="space-y-3">
-              <div className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                {sessions.map((session) => (
-                  <div
-                    key={session.sessionId}
-                    className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
-                  >
-                    {/* Session Title */}
-                    <p className="text-sm font-medium text-zinc-200 mb-2">{session.title}</p>
-
-                    {/* Speakers with companies */}
-                    {session.speakers && session.speakers.length > 0 ? (
-                      <div
-                        className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
-                      >
-                        {session.speakers.map((speaker) => (
-                          <SpeakerDisplay
-                            key={speaker.username}
-                            speaker={speaker}
-                            size="small"
-                            showProfilePicture={true}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-zinc-500">Keine Referenten</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <img
+                src={event.themeImageUrl}
+                alt={`${event.title} theme image`}
+                className="w-full h-full object-cover"
+              />
             </div>
           )}
 
-          {/* View Details Link */}
-          <div className="pt-2 border-t border-zinc-800">
-            <span className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
-              {t('archive.card.viewDetails')} →
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4 mb-2">
+              {/* Event Code (e.g., BATbern57) */}
+              <Badge
+                variant="outline"
+                className="bg-blue-400/10 text-blue-400 border-blue-400/20 font-mono"
+              >
+                {event.eventCode}
+              </Badge>
+
+              {/* Topic Badge */}
+              {event.topic && typeof event.topic === 'object' && (
+                <Badge className="bg-zinc-800 text-zinc-300">{event.topic.name}</Badge>
+              )}
+            </div>
+
+            {/* Event Title */}
+            <CardTitle className="font-light text-xl text-zinc-100">{event.title}</CardTitle>
+
+            {/* Date and Venue */}
+            <div className="space-y-1 mt-2">
+              <p className="text-sm text-zinc-400">{formattedDate}</p>
+              {event.venueName && <p className="text-sm text-zinc-400">{event.venueName}</p>}
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {/* Session Preview - Show first 3 sessions */}
+            {displayedSessions.length > 0 && (
+              <div className="space-y-3">
+                <div
+                  className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                >
+                  {displayedSessions.map((session) => (
+                    <div
+                      key={session.sessionId}
+                      className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
+                    >
+                      {/* Session Title */}
+                      <p className="text-sm font-medium text-zinc-200 mb-2">{session.title}</p>
+
+                      {/* Speakers with companies */}
+                      {session.speakers && session.speakers.length > 0 ? (
+                        <div
+                          className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                        >
+                          {session.speakers.map((speaker) => (
+                            <SpeakerDisplay
+                              key={speaker.username}
+                              speaker={speaker}
+                              size="small"
+                              showProfilePicture={true}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500">Keine Referenten</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Show remaining session count if more than 3 */}
+                {remainingSessionCount > 0 && (
+                  <p className="text-sm text-zinc-400 italic">
+                    {t('archive.card.andMore', { count: remainingSessionCount })}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* View Details Link */}
+            <div className="pt-2 border-t border-zinc-800">
+              <span className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                {t('archive.card.viewDetails')} →
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Link>
   );
 }
