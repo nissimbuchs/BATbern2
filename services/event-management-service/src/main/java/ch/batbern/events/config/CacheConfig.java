@@ -32,6 +32,7 @@ public class CacheConfig {
 
     public static final String EVENT_CACHE = "events";
     public static final String EVENT_WITH_INCLUDES_CACHE = "eventWithIncludes";
+    public static final String ARCHIVE_EVENTS_CACHE = "archiveEvents";
     public static final String USER_API_CACHE = "userApiCache";
     public static final String EVENT_TYPES_CACHE = "eventTypes";
     public static final String STATUS_SUMMARY_CACHE = "statusSummary";
@@ -42,6 +43,7 @@ public class CacheConfig {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
                 EVENT_CACHE,
                 EVENT_WITH_INCLUDES_CACHE,
+                ARCHIVE_EVENTS_CACHE,
                 USER_API_CACHE,
                 EVENT_TYPES_CACHE,
                 STATUS_SUMMARY_CACHE,

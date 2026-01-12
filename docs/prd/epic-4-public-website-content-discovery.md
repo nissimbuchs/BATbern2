@@ -310,69 +310,71 @@ As an **visitor or attendee**, I want to browse and view historical BATbern even
 - **Cache**: Caffeine in-memory cache for archive data (15-minute TTL)
 
 **Key Functionality:**
-1. **Event Archive Grid**: Card-based layout showing events with thumbnails, dates, titles, topics
-2. **Timeline View**: Interactive timeline visualization showing 20+ years of events (2000-2025)
-3. **Advanced Filtering**: Multi-criteria filters (year, topic, speaker, company, content type)
-4. **Sort Controls**: Sort by date, relevance, popularity, topic
-5. **Event Detail Pages**: Rich event pages with sessions, speakers, presentations, photo galleries
+1. **Event Archive Grid**: Card-based layout showing events with session titles, speakers, and companies
+2. **Simple Filtering**: Time period and topic filters optimized for 3 events/year
+3. **Infinite Scroll**: Automatic loading of more events as user scrolls
+4. **Sort Controls**: Sort by date, attendance, session count
+5. **Archive Event Detail Pages**: Content-focused pages with session descriptions and presentation downloads
 6. **Grid/List Toggle**: Switch between grid and list views with user preference persistence
-7. **Content Preview**: Inline preview modals for presentations without full download
+7. **Session Materials**: Direct PDF download links for all presentations
 
 ---
 
 ### Wireframe Reference
-**From docs/wireframes/sitemap.md:**
-- **Main Screen**: `docs/wireframes/story-1.18-historical-archive.md` ✅
-  - Event archive grid with card layout
-  - Interactive timeline visualization (2000-2025)
-  - Multi-criteria filter panel
-  - Grid/list/timeline view toggle
-  - Sort controls (date, relevance, popularity)
-  - Event detail pages with sessions, speakers, presentations
-  - Photo gallery with lightbox
-  - Presentation download interface
-  - Related events recommendation panel
+**Updated Modern Wireframe:**
+- **Main Screen**: `docs/wireframes/story-4.2-archive-browsing-modern.md` ✅
+  - Event archive grid with session previews
+  - Simple time period + topic filters (no year-level nav for 3 events/year)
+  - Grid/list view toggle
+  - Automatic infinite scroll
+  - Sort controls (newest, oldest, most attended, most sessions)
+  - Archive event detail page (content-focused, no logistics)
+  - Session cards with descriptions and material downloads
+  - Simple speaker grid
 
 ---
 
 ### Acceptance Criteria
 
-**Archive Interface:**
-1. **Event Grid**: Event cards with thumbnail, title, date, topic, speaker count, view count
-2. **Timeline Visualization**: Gantt-style timeline showing events by year/quarter (clickable to filter)
-3. **View Options**: Toggle between grid view, list view, and timeline view
-4. **Pagination**: Load more functionality with infinite scroll option (20 events per page)
-5. **Quick Filters**: Prominent filter chips for common queries (Last Year, Top Rated, Most Popular)
+**Archive Browse Interface:**
+1. **Event Cards**: Cards show event image, title, date, topic, and first 3 sessions with speaker/company
+2. **View Options**: Toggle between grid view and list view (persists to localStorage)
+3. **Infinite Scroll**: Automatic loading when scrolling within 400px of bottom (20 events per page)
+4. **Session Preview**: Each card displays 3 session titles with speaker names and companies
+5. **Load Indicator**: Shows "Loading more events..." with progress (X of Y events shown)
 
 **Filtering & Search:**
-6. **Filter Panel**: Sidebar with year slider, topic checkboxes, speaker dropdown, company filter
-7. **Search Integration**: Search bar at top filtering events by title, topic, speaker
-8. **Active Filters Display**: Visual chips showing applied filters with [x] to remove
-9. **Filter Persistence**: Filters preserved in URL query parameters for sharing
-10. **Reset Filters**: [Clear All Filters] button to reset to default view
+6. **Filter Panel**: Sidebar (desktop) or bottom sheet (mobile) with time period + topic filters
+7. **Time Period Filter**: Radio group (All, Last 5 Years, 2020-2024, 2015-2019, 2010-2014, Before 2010)
+8. **Topic Filter**: Checkboxes with event counts (e.g., "Cloud (23)", "Security (18)")
+9. **Search Bar**: Full-text search across event titles, topics, speakers (debounced 300ms)
+10. **Filter Persistence**: Filters preserved in URL query parameters for shareable links
+11. **Clear Filters**: [Clear All Filters] button to reset to default view
+12. **Sort Controls**: Dropdown with Newest, Oldest, Most Attended, Most Sessions
 
-**Event Detail Pages:**
-11. **Event Header**: Event title, date, location, topic, attendance count
-12. **Session List**: All sessions with time, speaker, title, abstract, presentation link
-13. **Speaker Profiles**: Linked speaker profiles with bio and speaking history
-14. **Presentation Downloads**: Secure download links for all presentations (track download count)
-15. **Photo Gallery**: Event photos in responsive grid with lightbox view
-16. **Related Events**: "Similar events you might like" based on topic/speakers
+**Archive Event Detail Pages:**
+13. **Event Header**: Event title, date, topic, description (no venue/logistics for archive)
+14. **All Sessions Shown**: Display all 4-8 sessions at once (no pagination)
+15. **Session Details**: Each session shows title, speaker(s), full description, materials
+16. **Presentation Downloads**: Download PDF buttons with file size (e.g., "Download PDF (2.4 MB)")
+17. **Speaker Grid**: Simple grid showing all speakers with photos and companies
+18. **Back Navigation**: "← Back to Archive" returns to browse page with filters preserved
 
 **Technical Requirements:**
-17. **Performance Optimization**: Lazy loading images, code splitting, progressive content loading
-18. **Responsive Design**: Optimized browsing on mobile, tablet, desktop
-19. **Accessibility**: Full keyboard navigation, screen reader compatibility (WCAG 2.1 Level AA)
-20. **SEO**: Individual event pages indexed by search engines with rich snippets
+19. **Performance**: Archive page <2.5s LCP, infinite scroll <300ms, images lazy loaded
+20. **Responsive Design**: Mobile-first design (320px+), tablet (768px+), desktop (1024px+)
+21. **Accessibility**: WCAG 2.1 Level AA, keyboard navigation, screen reader labels
+22. **SEO**: Meta tags, Open Graph, structured data (JSON-LD), canonical URLs
+23. **API Efficiency**: Single call with `?include=topics,sessions,speakers` for event cards
 
 **Deliverables:**
-- [ ] Event archive interface live with 54+ historical events
-- [ ] Filtering and sorting functional across all dimensions
-- [ ] Timeline visualization interactive and performant
-- [ ] Event detail pages rich with content
-- [ ] Presentation downloads working with access controls
-- [ ] Mobile-responsive design verified
-- [ ] Performance <2.5s Largest Contentful Paint
+- [ ] Archive browse page live with 54+ historical events
+- [ ] Filtering and sorting functional (time period + topics)
+- [ ] Infinite scroll working smoothly
+- [ ] Archive event detail pages showing all sessions with materials
+- [ ] Presentation downloads working with direct CDN links
+- [ ] Mobile-responsive design verified on all breakpoints
+- [ ] Performance <2.5s LCP verified
 
 **Estimated Duration:** 2 weeks
 

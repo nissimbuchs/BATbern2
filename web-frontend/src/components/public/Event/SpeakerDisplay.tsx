@@ -42,7 +42,7 @@ export const SpeakerDisplay = ({
   const sizeClasses = {
     small: {
       avatar: 'h-12 w-12',
-      logoContainer: 'max-h-12',
+      logoContainer: 'max-h-12 max-w-24', // Limit logo to 2x height (96px)
       logoImage: 'max-h-12 max-w-full',
       name: 'text-sm',
       company: 'text-xs',
@@ -50,7 +50,7 @@ export const SpeakerDisplay = ({
     },
     medium: {
       avatar: 'h-16 w-16',
-      logoContainer: 'max-h-16',
+      logoContainer: 'max-h-16 max-w-32', // Limit logo to 2x height (128px)
       logoImage: 'max-h-16 max-w-full',
       name: 'text-base',
       company: 'text-sm',
@@ -58,7 +58,7 @@ export const SpeakerDisplay = ({
     },
     large: {
       avatar: 'h-20 w-20',
-      logoContainer: 'max-h-20',
+      logoContainer: 'max-h-20 max-w-40', // Limit logo to 2x height (160px)
       logoImage: 'max-h-20 max-w-full',
       name: 'text-lg',
       company: 'text-base',

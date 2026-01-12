@@ -352,5 +352,43 @@
     "select": "Select Organizer",
     "all": "All Organizers",
     "unassigned": "Unassigned"
+  },
+  "archive": {
+    "title": "Past Events",
+    "description": "Browse over 20 years of BATbern events with presentations and speakers",
+    "viewToggle": {
+      "grid": "Grid",
+      "list": "List"
+    },
+    "loading": "Loading events...",
+    "loadingMore": "Loading more events...",
+    "loadingTopics": "Loading topics...",
+    "noTopicsAvailable": "No topics available",
+    "noResults": "No events found",
+    "errors": {
+      "loadFailed": "Failed to load events"
+    },
+    "card": {
+      "sessions": "Presentations",
+      "viewDetails": "View Details",
+      "andMore": "and {{count}} more"
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Search events...",
+      "topics": "Topics",
+      "clearAll": "Clear all",
+      "activeCount": "{{count}} active filter",
+      "activeCount_one": "{{count}} active filter",
+      "activeCount_other": "{{count}} active filters"
+    },
+    "sort": {
+      "label": "Sort by",
+      "newest": "Newest first",
+      "oldest": "Oldest first"
+    },
+    "detail": {
+      "backToArchive": "← Back to Archive"
+    }
   }
 }

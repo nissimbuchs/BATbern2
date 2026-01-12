@@ -17,7 +17,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
 /**
  * Helper: Login as an authenticated organizer
@@ -47,7 +47,7 @@ async function navigateToUserManagement(page: Page) {
 
 test.describe('User List and Search Workflow', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test('should_displayUserList_when_navigatingToUsersPage', async ({ page }) => {

@@ -117,7 +117,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                             <p className="text-xs text-zinc-500 mb-2">
                               {t('public.program.speaker')}:
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               {session.speakers.map((speaker) => (
                                 <SpeakerDisplay
                                   key={speaker.username}

@@ -25,6 +25,8 @@ import { RegistrationWizard } from '@components/auth/RegistrationWizard';
 import { EmailVerification } from '@components/auth/EmailVerification';
 import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
+import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
+import { AuthProvider } from '@/contexts/AuthContext';
 import theme from '@/theme';
 
 // Create React Query client
@@ -72,7 +74,7 @@ const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'))
 // Slot Assignment Page - Story 5.7 (BAT-11)
 const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
 
-// Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6
+// Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 4.2
 const HomePage = React.lazy(() => import('@pages/public/HomePage'));
 const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
@@ -82,6 +84,8 @@ const CancelRegistrationPage = React.lazy(() => import('@pages/public/CancelRegi
 const RegistrationConfirmationPage = React.lazy(
   () => import('@pages/public/RegistrationConfirmationPage')
 );
+// Story 4.2: Archive browsing pages
+const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -181,345 +185,345 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <ThemeProvider theme={theme}>
-          <Router>
-            <NavigationSetup>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
-                  <Route path="/" element={<HomePage />} />
-                  {/* Story 5.7: Public event page with preview mode support */}
-                  <Route path="/events/:eventCode" element={<HomePage />} />
-                  <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
-                  <Route path="/registration-success" element={<RegistrationSuccessPage />} />
-                  <Route
-                    path="/events/:eventCode/confirm-registration"
-                    element={<ConfirmRegistrationPage />}
-                  />
-                  <Route
-                    path="/events/:eventCode/cancel-registration"
-                    element={<CancelRegistrationPage />}
-                  />
-                  <Route
-                    path="/registration-confirmation/:confirmationCode"
-                    element={<RegistrationConfirmationPage />}
-                  />
-                  <Route
-                    path="/archive"
-                    element={
-                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                        Archive (Coming in 4.2)
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="/search"
-                    element={
-                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                        Search (Coming in 4.3)
-                      </div>
-                    }
-                  />
-                  <Route path="/about" element={<AboutPage />} />
-                  <Route
-                    path="/privacy"
-                    element={
-                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                        Privacy Policy (Coming later)
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="/terms"
-                    element={
-                      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                        Terms of Service (Coming later)
-                      </div>
-                    }
-                  />
+          <AuthProvider>
+            <Router>
+              <NavigationSetup>
+                {/* Sync user language preferences after authentication */}
+                <LanguageSync />
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    {/* Public routes - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 5.7 */}
+                    <Route path="/" element={<HomePage />} />
+                    {/* Story 5.7: Public event page with preview mode support */}
+                    <Route path="/events/:eventCode" element={<HomePage />} />
+                    <Route path="/register/:eventCode" element={<PublicRegistrationPage />} />
+                    <Route path="/registration-success" element={<RegistrationSuccessPage />} />
+                    <Route
+                      path="/events/:eventCode/confirm-registration"
+                      element={<ConfirmRegistrationPage />}
+                    />
+                    <Route
+                      path="/events/:eventCode/cancel-registration"
+                      element={<CancelRegistrationPage />}
+                    />
+                    <Route
+                      path="/registration-confirmation/:confirmationCode"
+                      element={<RegistrationConfirmationPage />}
+                    />
+                    {/* Story 4.2: Archive browsing routes */}
+                    <Route path="/archive" element={<ArchivePage />} />
+                    {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
+                    <Route path="/archive/:eventCode" element={<HomePage />} />
+                    <Route
+                      path="/search"
+                      element={
+                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                          Search (Coming in 4.3)
+                        </div>
+                      }
+                    />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route
+                      path="/privacy"
+                      element={
+                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                          Privacy Policy (Coming later)
+                        </div>
+                      }
+                    />
+                    <Route
+                      path="/terms"
+                      element={
+                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                          Terms of Service (Coming later)
+                        </div>
+                      }
+                    />
 
-                  {/* Authentication routes */}
-                  <Route
-                    path="/login"
-                    element={
-                      <AuthPageLayout>
-                        <LoginPage />
-                      </AuthPageLayout>
-                    }
-                  />
-                  <Route
-                    path="/auth/login"
-                    element={
-                      <AuthPageLayout>
-                        <LoginPage />
-                      </AuthPageLayout>
-                    }
-                  />
-                  <Route
-                    path="/auth/forgot-password"
-                    element={
-                      <AuthPageLayout>
-                        <ForgotPasswordPage />
-                      </AuthPageLayout>
-                    }
-                  />
-                  <Route
-                    path="/auth/reset-password"
-                    element={
-                      <AuthPageLayout>
-                        <ResetPasswordPage />
-                      </AuthPageLayout>
-                    }
-                  />
-                  <Route
-                    path="/auth/register"
-                    element={
-                      <AuthPageLayout>
-                        <RegistrationPage />
-                      </AuthPageLayout>
-                    }
-                  />
-                  <Route
-                    path="/auth/verify-email"
-                    element={
-                      <AuthPageLayout>
-                        <EmailVerification />
-                      </AuthPageLayout>
-                    }
-                  />
+                    {/* Authentication routes */}
+                    <Route
+                      path="/login"
+                      element={
+                        <AuthPageLayout>
+                          <LoginPage />
+                        </AuthPageLayout>
+                      }
+                    />
+                    <Route
+                      path="/auth/login"
+                      element={
+                        <AuthPageLayout>
+                          <LoginPage />
+                        </AuthPageLayout>
+                      }
+                    />
+                    <Route
+                      path="/auth/forgot-password"
+                      element={
+                        <AuthPageLayout>
+                          <ForgotPasswordPage />
+                        </AuthPageLayout>
+                      }
+                    />
+                    <Route
+                      path="/auth/reset-password"
+                      element={
+                        <AuthPageLayout>
+                          <ResetPasswordPage />
+                        </AuthPageLayout>
+                      }
+                    />
+                    <Route
+                      path="/auth/register"
+                      element={
+                        <AuthPageLayout>
+                          <RegistrationPage />
+                        </AuthPageLayout>
+                      }
+                    />
+                    <Route
+                      path="/auth/verify-email"
+                      element={
+                        <AuthPageLayout>
+                          <EmailVerification />
+                        </AuthPageLayout>
+                      }
+                    />
 
-                  {/* Protected routes with lazy-loaded components */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <Dashboard />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Protected routes with lazy-loaded components */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <Dashboard />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/events"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <Events />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    <Route
+                      path="/events"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <Events />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Event Management Routes - Story 2.5.3, Task 4 */}
-                  <Route
-                    path="/organizer/events"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventManagementDashboard />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/organizer/events/create"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventCreate />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/organizer/events/timeline"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventTimeline />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Story 5.6: Unified Event Page */}
-                  <Route
-                    path="/organizer/events/:eventCode"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventPage />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Story 5.7 (BAT-11): Dedicated Slot Assignment Page */}
-                  <Route
-                    path="/organizer/events/:eventCode/slot-assignment"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <SlotAssignmentPage />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Story 5.6: Redirect deprecated /edit route to unified page */}
-                  <Route
-                    path="/organizer/events/:eventCode/edit"
-                    element={<Navigate to=".." replace />}
-                  />
-                  <Route
-                    path="/organizer/event-types"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <EventTypeConfigurationAdmin />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/organizer/topics"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <TopicManagementPage />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  {/* Story 5.5: Task Management Page */}
-                  <Route
-                    path="/organizer/tasks"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <TaskBoardPage />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Event Management Routes - Story 2.5.3, Task 4 */}
+                    <Route
+                      path="/organizer/events"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <EventManagementDashboard />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/organizer/events/create"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <EventCreate />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/organizer/events/timeline"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <EventTimeline />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 5.6: Unified Event Page */}
+                    <Route
+                      path="/organizer/events/:eventCode"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <EventPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 5.7 (BAT-11): Dedicated Slot Assignment Page */}
+                    <Route
+                      path="/organizer/events/:eventCode/slot-assignment"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <SlotAssignmentPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 5.6: Redirect deprecated /edit route to unified page */}
+                    <Route
+                      path="/organizer/events/:eventCode/edit"
+                      element={<Navigate to=".." replace />}
+                    />
+                    <Route
+                      path="/organizer/event-types"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <EventTypeConfigurationAdmin />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/organizer/topics"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <TopicManagementPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 5.5: Task Management Page */}
+                    <Route
+                      path="/organizer/tasks"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <TaskBoardPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/speakers"
-                    element={
-                      <SpeakerRoute>
-                        <AuthLayout>
-                          <Speakers />
-                        </AuthLayout>
-                      </SpeakerRoute>
-                    }
-                  />
+                    <Route
+                      path="/speakers"
+                      element={
+                        <SpeakerRoute>
+                          <AuthLayout>
+                            <Speakers />
+                          </AuthLayout>
+                        </SpeakerRoute>
+                      }
+                    />
 
-                  {/* Partner Management Routes */}
-                  <Route
-                    path="/organizer/partners"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <OrganizerPartners />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Partner Management Routes */}
+                    <Route
+                      path="/organizer/partners"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <OrganizerPartners />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/organizer/partners/:companyName"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <OrganizerPartnerDetail />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    <Route
+                      path="/organizer/partners/:companyName"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <OrganizerPartnerDetail />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/partners"
-                    element={
-                      <PartnerRoute>
-                        <AuthLayout>
-                          <Partners />
-                        </AuthLayout>
-                      </PartnerRoute>
-                    }
-                  />
+                    <Route
+                      path="/partners"
+                      element={
+                        <PartnerRoute>
+                          <AuthLayout>
+                            <Partners />
+                          </AuthLayout>
+                        </PartnerRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/analytics"
-                    element={
-                      <PartnerRoute>
-                        <AuthLayout>
-                          <Analytics />
-                        </AuthLayout>
-                      </PartnerRoute>
-                    }
-                  />
+                    <Route
+                      path="/analytics"
+                      element={
+                        <PartnerRoute>
+                          <AuthLayout>
+                            <Analytics />
+                          </AuthLayout>
+                        </PartnerRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/content"
-                    element={
-                      <AttendeeRoute>
-                        <AuthLayout>
-                          <Content />
-                        </AuthLayout>
-                      </AttendeeRoute>
-                    }
-                  />
+                    <Route
+                      path="/content"
+                      element={
+                        <AttendeeRoute>
+                          <AuthLayout>
+                            <Content />
+                          </AuthLayout>
+                        </AttendeeRoute>
+                      }
+                    />
 
-                  {/* Company Management Routes */}
-                  <Route
-                    path="/organizer/companies/*"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <CompanyManagement />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Company Management Routes */}
+                    <Route
+                      path="/organizer/companies/*"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <CompanyManagement />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  <Route
-                    path="/speaker/company/*"
-                    element={
-                      <SpeakerRoute>
-                        <AuthLayout>
-                          <CompanyManagement />
-                        </AuthLayout>
-                      </SpeakerRoute>
-                    }
-                  />
+                    <Route
+                      path="/speaker/company/*"
+                      element={
+                        <SpeakerRoute>
+                          <AuthLayout>
+                            <CompanyManagement />
+                          </AuthLayout>
+                        </SpeakerRoute>
+                      }
+                    />
 
-                  {/* User Management Routes - Story 2.5.2 */}
-                  <Route
-                    path="/organizer/users/*"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <UserManagement />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* User Management Routes - Story 2.5.2 */}
+                    <Route
+                      path="/organizer/users/*"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <UserManagement />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* User Account Page - Story 2.6 */}
-                  <Route
-                    path="/account"
-                    element={
-                      <ProtectedRoute>
-                        <AuthLayout>
-                          <UserAccountPage />
-                        </AuthLayout>
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* User Account Page - Story 2.6 */}
+                    <Route
+                      path="/account"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <UserAccountPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Catch all route - redirect to home */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </NavigationSetup>
-          </Router>
+                    {/* Catch all route - redirect to home */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </NavigationSetup>
+            </Router>
+          </AuthProvider>
         </ThemeProvider>
       </HelmetProvider>
     </QueryClientProvider>

@@ -21,10 +21,10 @@
  * 5. Run: npx playwright test e2e/organizer/event-type-selection.spec.ts
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 // Test data - matches OpenAPI spec and database seed data (for future use)
@@ -82,31 +82,15 @@ interface EventSlotConfigurationResponse {
   typicalEndTime?: string;
 }
 
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/dashboard`);
-}
-
 test.describe('Event Type Selection (Story 5.1)', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
   });
 
   test.describe('AC1: Event Type Selector in Event Creation Form', () => {
     test('should display event type selector when creating new event', async ({ page }) => {
       // Navigate to dashboard
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
 
       // Click "New Event" button
       await page.click('button:has-text("New Event")');
@@ -114,16 +98,16 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       // Wait for EventForm modal to open
       await expect(page.locator('[role="dialog"]')).toBeVisible();
 
-      // Verify EventTypeSelector component exists
+      // Verify EventTypeSelector component exists and is a MUI Select
       const eventTypeSelector = page.locator('[data-testid="event-type-selector"]');
       await expect(eventTypeSelector).toBeVisible();
 
-      // Verify it's a dropdown/select component
-      await expect(eventTypeSelector).toHaveAttribute('role', 'combobox');
+      // Verify it's a MUI Select component by checking for MuiSelect-root class
+      await expect(eventTypeSelector).toHaveClass(/MuiSelect-root/);
     });
 
     test('should show all three event types in dropdown', async ({ page }) => {
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
       await page.click('button:has-text("New Event")');
 
       // Open event type dropdown
@@ -136,7 +120,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
     });
 
     test('should display slot configuration details for selected event type', async ({ page }) => {
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
       await page.click('button:has-text("New Event")');
 
       // Select "Full Day Event"
@@ -157,7 +141,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
 
   test.describe('AC2: Quick Actions Navigation to Event Types Admin', () => {
     test('should display Event Types button in Quick Actions sidebar', async ({ page }) => {
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
 
       // Verify Quick Actions sidebar exists
       const quickActions = page.locator('[data-testid="quick-actions"]');
@@ -169,7 +153,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
     });
 
     test('should navigate to Event Types admin page when clicking button', async ({ page }) => {
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
 
       // Click Event Types button
       await page.click('button:has-text("Event Types")');
@@ -189,7 +173,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
         (request) => request.url().includes('/api/v1/events/types') && request.method() === 'GET'
       );
 
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
       await page.click('button:has-text("New Event")');
 
       // Verify API was called
@@ -203,7 +187,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
         setTimeout(() => route.continue(), 1000);
       });
 
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
       await page.click('button:has-text("New Event")');
 
       // Verify loading indicator appears
@@ -224,7 +208,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
         });
       });
 
-      await page.goto(`${BASE_URL}/organizer/dashboard`);
+      await page.goto(`${BASE_URL}/organizer/events`);
       await page.click('button:has-text("New Event")');
 
       // Verify error message is displayed
@@ -283,7 +267,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await page.click('button:has-text("Back to Dashboard")');
 
       // Verify navigation back to dashboard
-      await page.waitForURL(`${BASE_URL}/organizer/dashboard`);
+      await page.waitForURL(`${BASE_URL}/organizer/events`);
       await expect(page.locator('h1')).toContainText('Event Management Dashboard');
     });
   });

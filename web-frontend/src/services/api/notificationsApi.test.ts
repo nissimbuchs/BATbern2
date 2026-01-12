@@ -41,7 +41,7 @@ describe('Notifications API', () => {
       };
 
       mockAxios
-        .onGet('/api/v1/notifications', { params: { status: 'unread', limit: 10 } })
+        .onGet('/notifications', { params: { status: 'unread', limit: 10 } })
         .reply((config) => {
           expect(config.params?.status).toBe('unread');
           expect(config.params?.limit).toBe(10);
@@ -63,7 +63,7 @@ describe('Notifications API', () => {
       };
 
       mockAxios
-        .onGet('/api/v1/notifications', { params: { status: 'all', limit: 20 } })
+        .onGet('/notifications', { params: { status: 'all', limit: 20 } })
         .reply((config) => {
           expect(config.params?.status).toBe('all');
           expect(config.params?.limit).toBe(20);
@@ -84,7 +84,7 @@ describe('Notifications API', () => {
         hasMore: true,
       };
 
-      mockAxios.onGet('/api/v1/notifications').reply((config) => {
+      mockAxios.onGet('/notifications').reply((config) => {
         expect(config.params?.limit).toBe(50);
         return [200, mockResponse];
       });
@@ -103,13 +103,11 @@ describe('Notifications API', () => {
         updatedAt: '2024-03-15T14:35:00Z',
       };
 
-      mockAxios
-        .onPut('/api/v1/notifications/read', { notificationIds: ['notif-1'] })
-        .reply((config) => {
-          const data = JSON.parse(config.data);
-          expect(data.notificationIds).toEqual(['notif-1']);
-          return [200, mockResponse];
-        });
+      mockAxios.onPut('/notifications/read', { notificationIds: ['notif-1'] }).reply((config) => {
+        const data = JSON.parse(config.data);
+        expect(data.notificationIds).toEqual(['notif-1']);
+        return [200, mockResponse];
+      });
 
       const result = await markNotificationsAsRead({ notificationIds: ['notif-1'] });
 
@@ -125,7 +123,7 @@ describe('Notifications API', () => {
       };
 
       mockAxios
-        .onPut('/api/v1/notifications/read', {
+        .onPut('/notifications/read', {
           notificationIds: ['notif-1', 'notif-2', 'notif-3'],
         })
         .reply(200, mockResponse);
@@ -144,7 +142,7 @@ describe('Notifications API', () => {
         updatedAt: '2024-03-15T14:35:00Z',
       };
 
-      mockAxios.onPut('/api/v1/notifications/read', { markAll: true }).reply((config) => {
+      mockAxios.onPut('/notifications/read', { markAll: true }).reply((config) => {
         const data = JSON.parse(config.data);
         expect(data.markAll).toBe(true);
         return [200, mockResponse];
@@ -156,7 +154,7 @@ describe('Notifications API', () => {
     });
 
     it('should_throwError_when_invalidNotificationIdsProvided', async () => {
-      mockAxios.onPut('/api/v1/notifications/read').reply(400, {
+      mockAxios.onPut('/notifications/read').reply(400, {
         message: 'Invalid notification IDs',
       });
 
@@ -168,7 +166,7 @@ describe('Notifications API', () => {
     it('should_deleteNotification_when_validIdProvided', async () => {
       const mockResponse = { success: true };
 
-      mockAxios.onDelete('/api/v1/notifications/notif-1').reply(200, mockResponse);
+      mockAxios.onDelete('/notifications/notif-1').reply(200, mockResponse);
 
       const result = await deleteNotification('notif-1');
 
@@ -177,7 +175,7 @@ describe('Notifications API', () => {
     });
 
     it('should_throwError_when_notificationNotFound', async () => {
-      mockAxios.onDelete('/api/v1/notifications/invalid-id').reply(404, {
+      mockAxios.onDelete('/notifications/invalid-id').reply(404, {
         message: 'Notification not found',
       });
 
@@ -185,7 +183,7 @@ describe('Notifications API', () => {
     });
 
     it('should_throwError_when_unauthorized', async () => {
-      mockAxios.onDelete('/api/v1/notifications/notif-1').reply(401, {
+      mockAxios.onDelete('/notifications/notif-1').reply(401, {
         message: 'Unauthorized',
       });
 

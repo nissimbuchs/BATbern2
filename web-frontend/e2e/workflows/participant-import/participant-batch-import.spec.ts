@@ -25,7 +25,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
 /**
  * Helper: Login as an authenticated organizer
@@ -107,7 +107,7 @@ async function waitForImportComplete(page: Page, timeoutMs: number = 60000) {
 test.describe('Participant Batch Import (Real Backend)', () => {
   test.beforeEach(async ({ page }) => {
     // Authenticate and navigate to users page
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
   });
 
@@ -304,7 +304,7 @@ test.describe('Participant Batch Import (Real Backend)', () => {
 
 test.describe('Participant Batch Import - Error Handling', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
   });
 
@@ -340,7 +340,7 @@ test.describe('Participant Batch Import - Error Handling', () => {
 
 test.describe('Participant Batch Import - Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsOrganizer(page);
+    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
   });
 

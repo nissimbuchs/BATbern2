@@ -20,7 +20,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
 // Type definitions
@@ -462,7 +462,7 @@ test.describe('Role Change Sync - Access Control', () => {
     await loginAndGetToken(page, testEmail, testPassword);
 
     // Can access organizer page
-    await page.goto(`${BASE_URL}/organizer/dashboard`);
+    await page.goto(`${BASE_URL}/organizer/events`);
     await expect(page).toHaveURL(/\/organizer\/dashboard/);
 
     // Revoke ORGANIZER role
@@ -479,7 +479,7 @@ test.describe('Role Change Sync - Access Control', () => {
     await loginAndGetToken(page, testEmail, testPassword);
 
     // Should no longer have access
-    await page.goto(`${BASE_URL}/organizer/dashboard`);
+    await page.goto(`${BASE_URL}/organizer/events`);
     await expect(page).toHaveURL(/\/403/); // Forbidden
   });
 });

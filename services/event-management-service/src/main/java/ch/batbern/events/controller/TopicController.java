@@ -60,6 +60,10 @@ public class TopicController {
     /**
      * List all topics with optional filters (AC1).
      *
+     * Story 4.2 (BAT-109): Made public for archive filtering.
+     * - Anonymous users: Get active topics only
+     * - Organizers: Get all topics (active and inactive)
+     *
      * @param filter Optional JSON filter string (e.g., {"category":"technical"})
      * @param page Page number (default 0 for Spring Data, but 1 for API consistency)
      * @param limit Page size (default 50)
@@ -68,7 +72,6 @@ public class TopicController {
      * @return Paginated list of topics
      */
     @GetMapping
-    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TopicListResponse> getAllTopics(
             @RequestParam(required = false) String filter,
             @RequestParam(defaultValue = "1") Integer page,

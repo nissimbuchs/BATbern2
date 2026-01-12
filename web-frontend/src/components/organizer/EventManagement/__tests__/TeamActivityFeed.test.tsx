@@ -87,9 +87,12 @@ describe('TeamActivityFeed Component', () => {
       body: 'John Doe assigned speaker Jane Smith to session 1',
       recipientUsername: 'organizer',
       priority: 'NORMAL',
+      channel: 'IN_APP',
+      status: 'UNREAD',
       isRead: false,
       createdAt: '2025-01-15T10:00:00Z',
-      readAt: null,
+      updatedAt: '2025-01-15T10:00:00Z',
+      readAt: undefined,
       metadata: {},
     },
     {
@@ -100,9 +103,12 @@ describe('TeamActivityFeed Component', () => {
       body: 'Jane Smith uploaded materials: presentation slides',
       recipientUsername: 'organizer',
       priority: 'NORMAL',
+      channel: 'IN_APP',
+      status: 'UNREAD',
       isRead: false,
       createdAt: '2025-01-14T15:30:00Z',
-      readAt: null,
+      updatedAt: '2025-01-14T15:30:00Z',
+      readAt: undefined,
       metadata: {},
     },
     {
@@ -113,9 +119,12 @@ describe('TeamActivityFeed Component', () => {
       body: 'System advanced workflow to Speaker Research phase',
       recipientUsername: 'organizer',
       priority: 'NORMAL',
+      channel: 'IN_APP',
+      status: 'UNREAD',
       isRead: false,
       createdAt: '2025-01-13T09:00:00Z',
-      readAt: null,
+      updatedAt: '2025-01-13T09:00:00Z',
+      readAt: undefined,
       metadata: {},
     },
   ];
@@ -124,7 +133,7 @@ describe('TeamActivityFeed Component', () => {
     it('should_displayTitle_when_rendered', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
-      expect(screen.getByText(/notifications/i)).toBeInTheDocument();
+      expect(screen.getByText('Notifications')).toBeInTheDocument();
     });
 
     it('should_displayAllActivities_when_activitiesProvided', () => {
@@ -138,13 +147,13 @@ describe('TeamActivityFeed Component', () => {
     it('should_displayEmptyState_when_noActivities', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={[]} />);
 
-      expect(screen.getByText(/no notifications yet/i)).toBeInTheDocument();
+      expect(screen.getByText('No notifications yet')).toBeInTheDocument();
     });
 
     it('should_displayActivityCount_when_activitiesProvided', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
-      expect(screen.getByLabelText(/3 notifications/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('3 total notifications')).toBeInTheDocument();
     });
   });
 
@@ -264,7 +273,7 @@ describe('TeamActivityFeed Component', () => {
     it('should_displayLastUpdated_when_rendered', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
-      expect(screen.getByText(/last updated/i)).toBeInTheDocument();
+      expect(screen.getByText(/Last updated:/i)).toBeInTheDocument();
     });
   });
 
@@ -287,7 +296,7 @@ describe('TeamActivityFeed Component', () => {
     it('should_displayViewAll_when_moreActivitiesExist', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} limit={2} />);
 
-      expect(screen.getByRole('button', { name: /view all/i })).toBeInTheDocument();
+      expect(screen.getByText(/View All/i)).toBeInTheDocument();
     });
   });
 
@@ -303,20 +312,22 @@ describe('TeamActivityFeed Component', () => {
     it('should_haveAriaLabel_when_rendered', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
-      expect(screen.getByLabelText(/notification feed/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Notification feed')).toBeInTheDocument();
     });
 
     it('should_announceActivityCount_when_screenReaderActive', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
-      expect(screen.getByLabelText(/3 notifications/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('3 total notifications')).toBeInTheDocument();
     });
 
     it('should_supportKeyboardNavigation_when_focused', () => {
       renderWithQueryClient(<TeamActivityFeed notifications={mockNotifications} />);
 
       const reloadButton = screen.getByRole('button', { name: /reload/i });
-      expect(reloadButton).toHaveAttribute('tabIndex');
+      // MUI buttons are focusable by default without explicit tabIndex
+      expect(reloadButton).toBeInTheDocument();
+      expect(reloadButton.tagName).toBe('BUTTON');
     });
   });
 

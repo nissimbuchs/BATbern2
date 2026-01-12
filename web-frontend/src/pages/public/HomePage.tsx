@@ -1,5 +1,5 @@
 /**
- * HomePage Component (Story 4.1.3, 4.1.4, 5.7)
+ * HomePage Component (Story 4.1.3, 4.1.4, 4.2, 5.7)
  * BATbern-public design with dynamic event data from backend
  * Displays current event with hero, logistics, countdown, speakers, sessions, venue, and social sharing
  *
@@ -7,9 +7,13 @@
  * - Route "/" shows current published event
  * - Route "/events/:eventCode" shows specific event (with optional preview mode)
  * - Query params: ?preview=true&phase=speakers&mode=progressive
+ *
+ * Story 4.2 (BAT-109): Supports archive mode
+ * - Route "/archive/:eventCode" shows archived event with timeline only
+ * - Hides speakers, sessions, and venue sections
  */
 
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
@@ -31,8 +35,13 @@ import { useTranslation } from 'react-i18next';
 
 const HomePage = () => {
   const { t } = useTranslation('events');
+  const { t: tCommon } = useTranslation('common');
   const { eventCode } = useParams<{ eventCode?: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Check if we're in archive mode (Story 4.2)
+  const isArchiveMode = location.pathname.startsWith('/archive');
 
   // Check if we're in preview mode
   const isPreview = searchParams.get('preview') === 'true';
@@ -94,6 +103,13 @@ const HomePage = () => {
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
 
+  // Archive mode: construct back URL preserving query parameters (filters, sort)
+  const backToArchiveUrl = isArchiveMode
+    ? location.search
+      ? `/archive${location.search}`
+      : '/archive'
+    : null;
+
   // Progressive publishing phase-based display (Story 5.7)
   // API returns uppercase: 'TOPIC', 'SPEAKERS', 'AGENDA'
   // Default to 'AGENDA' (show all) if not set (backward compatibility)
@@ -101,9 +117,13 @@ const HomePage = () => {
     ('currentPublishedPhase' in event
       ? (event.currentPublishedPhase as 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null | undefined)
       : null) || 'AGENDA';
-  const showSpeakersAndSessions = currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA';
-  const showTimetable = currentPhase === 'AGENDA';
-  const showSessionList = currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
+
+  // Archive mode (Story 4.2): Only show timeline, hide speakers/sessions/venue
+  const showSpeakersAndSessions =
+    !isArchiveMode && (currentPhase === 'SPEAKERS' || currentPhase === 'AGENDA');
+  const showTimetable = isArchiveMode || currentPhase === 'AGENDA'; // Always show in archive mode
+  const showSessionList = !isArchiveMode && currentPhase === 'SPEAKERS'; // Only show when speakers published, not when agenda published (timetable replaces it)
+  const showVenue = !isArchiveMode; // Hide venue in archive mode
 
   // Preview Mode Banner (Story 5.7) - shown above navigation
   // Fixed positioning to stay above the fixed navigation
@@ -146,11 +166,23 @@ const HomePage = () => {
 
       {/* Event Content */}
       <div className="container mx-auto px-4">
-        {/* Event Logistics */}
-        <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
-          <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
-          <EventLogistics event={event} />
-        </div>
+        {/* Back Button - Only shown in archive mode (Story 4.2) */}
+        {isArchiveMode && backToArchiveUrl && (
+          <Link
+            to={backToArchiveUrl}
+            className="inline-block mt-8 mb-4 text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            {tCommon('archive.detail.backToArchive')}
+          </Link>
+        )}
+
+        {/* Event Logistics - Hidden in archive mode (Story 4.2) */}
+        {!isArchiveMode && (
+          <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
+            <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
+            <EventLogistics event={event} />
+          </div>
+        )}
 
         {/* Event Topics - TODO: Add when topics are implemented in backend */}
         {/* {event.topics && event.topics.length > 0 && (
@@ -175,8 +207,8 @@ const HomePage = () => {
           <SpeakerGrid sessions={event.sessions} />
         )}
 
-        {/* Venue Map */}
-        {event.venueName && event.venueAddress && (
+        {/* Venue Map - Hidden in archive mode (Story 4.2) */}
+        {showVenue && event.venueName && event.venueAddress && (
           <VenueMap
             venue={{
               id: event.eventCode,

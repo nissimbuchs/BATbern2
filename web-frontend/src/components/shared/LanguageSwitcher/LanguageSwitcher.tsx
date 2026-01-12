@@ -2,15 +2,31 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, MenuItem, Box, SelectChangeEvent } from '@mui/material';
 import LanguageIcon from '@mui/icons-material/Language';
+import { updateUserPreferences } from '../../../services/api/userApi';
+import { useAuth } from '../../../hooks/useAuth';
 
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
+  const { isAuthenticated } = useAuth();
 
   const handleLanguageChange = async (event: SelectChangeEvent<string>) => {
     const newLang = event.target.value as 'de' | 'en';
     await i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
     localStorage.setItem('batbern-language', newLang);
+
+    // Persist to API only if authenticated (backend is ready, Story 2.6)
+    if (isAuthenticated) {
+      try {
+        await updateUserPreferences({ language: newLang });
+        console.log('[LanguageSwitcher] Language preference saved to backend');
+      } catch (error) {
+        console.error('[LanguageSwitcher] Failed to persist language preference:', error);
+        // Continue anyway - localStorage update was successful
+      }
+    } else {
+      console.log('[LanguageSwitcher] Skipping backend save - user not authenticated');
+    }
   };
 
   return (

@@ -20,7 +20,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 const TEST_EMAIL = `test-${Date.now()}@batbern.ch`;
 const TEST_PASSWORD = 'TestPassword123!';
