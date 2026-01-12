@@ -13,12 +13,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import ArchivePage from '../ArchivePage';
 import { eventApiClient } from '@/services/eventApiClient';
+import { topicService } from '@/services/topicService';
 import type { EventListResponse } from '@/types/event.types';
 
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
     getEvents: vi.fn(),
+  },
+}));
+
+// Mock topicService
+vi.mock('@/services/topicService', () => ({
+  topicService: {
+    getTopics: vi.fn(),
   },
 }));
 
@@ -83,6 +91,30 @@ describe('ArchivePage Component', () => {
     },
   });
 
+  const mockTopics = [
+    {
+      topicCode: 'cloud',
+      title: 'Cloud Architecture',
+      description: '',
+      category: 'technical',
+      usageCount: 23,
+    },
+    {
+      topicCode: 'devops',
+      title: 'DevOps',
+      description: '',
+      category: 'technical',
+      usageCount: 18,
+    },
+    {
+      topicCode: 'security',
+      title: 'Security',
+      description: '',
+      category: 'technical',
+      usageCount: 15,
+    },
+  ];
+
   const mockEventsPage1: EventListResponse = {
     data: [
       {
@@ -136,6 +168,14 @@ describe('ArchivePage Component', () => {
       total: 54,
     },
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(topicService.getTopics).mockResolvedValue({
+      data: mockTopics,
+      pagination: { page: 1, pages: 1, limit: 100, total: 3 },
+    });
+  });
 
   const renderWithProviders = (initialRoute = '/archive') => {
     return render(

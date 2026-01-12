@@ -15,7 +15,7 @@ import type { ArchiveFilters } from '@/types/event.types';
 // Mock i18n
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'archive.filters.title': 'Filters',
         'archive.filters.timePeriod': 'Time Period',
@@ -28,24 +28,58 @@ vi.mock('react-i18next', () => ({
         'archive.filters.2015-2019': '2015-2019',
         'archive.filters.2010-2014': '2010-2014',
         'archive.filters.before2010': 'Before 2010',
+        'archive.filters.activeCount': '{{count}} active filters',
         'archive.sort.label': 'Sort By',
         'archive.sort.newest': 'Newest First',
         'archive.sort.oldest': 'Oldest First',
         'archive.sort.mostAttended': 'Most Attended',
         'archive.sort.mostSessions': 'Most Sessions',
       };
-      return translations[key] || key;
+      let translation = translations[key] || key;
+
+      // Handle parameter interpolation
+      if (params) {
+        Object.entries(params).forEach(([paramKey, value]) => {
+          translation = translation.replace(`{{${paramKey}}}`, String(value));
+        });
+      }
+
+      return translation;
     },
   }),
 }));
 
 describe('FilterSidebar Component', () => {
   const mockTopics = [
-    { id: '1', name: 'Cloud Architecture', code: 'cloud', count: 23 },
-    { id: '2', name: 'DevOps', code: 'devops', count: 18 },
-    { id: '3', name: 'Security', code: 'security', count: 15 },
-    { id: '4', name: 'Microservices', code: 'microservices', count: 12 },
-    { id: '5', name: 'AI/ML', code: 'ai-ml', count: 8 },
+    {
+      topicCode: 'cloud',
+      title: 'Cloud Architecture',
+      description: '',
+      category: 'technical',
+      usageCount: 23,
+    },
+    {
+      topicCode: 'devops',
+      title: 'DevOps',
+      description: '',
+      category: 'technical',
+      usageCount: 18,
+    },
+    {
+      topicCode: 'security',
+      title: 'Security',
+      description: '',
+      category: 'technical',
+      usageCount: 15,
+    },
+    {
+      topicCode: 'microservices',
+      title: 'Microservices',
+      description: '',
+      category: 'technical',
+      usageCount: 12,
+    },
+    { topicCode: 'ai-ml', title: 'AI/ML', description: '', category: 'technical', usageCount: 8 },
   ];
 
   const defaultFilters: ArchiveFilters = {
@@ -506,7 +540,7 @@ describe('FilterSidebar Component', () => {
       expect(onFilterChange).toHaveBeenCalled();
 
       // Re-render with updated filters to reflect checked state
-      const clickedTopicCode = mockTopics[0].code; // 'cloud'
+      const clickedTopicCode = mockTopics[0].topicCode; // 'cloud'
       rerender(
         <FilterSidebar
           {...defaultProps}
@@ -539,7 +573,13 @@ describe('FilterSidebar Component', () => {
       const longTopicName = 'Cloud Architecture and Microservices Design Patterns';
       const topicsWithLongName = [
         ...mockTopics,
-        { id: '6', name: longTopicName, code: 'long', count: 5 },
+        {
+          topicCode: 'long',
+          title: longTopicName,
+          description: '',
+          category: 'technical',
+          usageCount: 5,
+        },
       ];
 
       render(<FilterSidebar {...defaultProps} topics={topicsWithLongName} />);
@@ -550,10 +590,11 @@ describe('FilterSidebar Component', () => {
 
     test('should_handleManyTopics_when_moreThan20Topics', () => {
       const manyTopics = Array.from({ length: 25 }, (_, i) => ({
-        id: `${i}`,
-        name: `Topic ${i}`,
-        code: `topic-${i}`,
-        count: Math.floor(Math.random() * 50),
+        topicCode: `topic-${i}`,
+        title: `Topic ${i}`,
+        description: '',
+        category: 'technical',
+        usageCount: Math.floor(Math.random() * 50),
       }));
 
       render(<FilterSidebar {...defaultProps} topics={manyTopics} />);
