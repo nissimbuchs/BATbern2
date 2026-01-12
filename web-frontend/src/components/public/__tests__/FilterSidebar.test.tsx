@@ -6,7 +6,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+import { render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { FilterSidebar } from '../FilterSidebar';
 import type { ArchiveFilters } from '@/types/event.types';

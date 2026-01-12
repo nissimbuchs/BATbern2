@@ -298,6 +298,10 @@ export default defineConfig({
         // User profile tabs - tested via E2E
         'src/components/user/UserProfileTab/**',
         'src/components/user/UserSettingsTab/**',
+        // Pure data structure files (no testable logic)
+        'src/data/**/*.json',
+        // i18n framework setup (side effects only, no business logic)
+        'src/i18n/config.ts',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files

@@ -6,8 +6,8 @@
  */
 
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, within } from '@testing-library/react';
+import { render } from '@/test/test-utils';
 import { EventCard } from '../EventCard';
 import type { EventDetail } from '@/types/event.types';
 
@@ -55,10 +55,12 @@ describe('EventCard Component', () => {
         title: 'Serverless at Scale',
         speakers: [
           {
-            speakerId: 'sp1',
-            fullName: 'John Doe',
-            companyName: 'TechCorp',
-            photoUrl: 'https://cdn.batbern.ch/speakers/john.jpg',
+            username: 'john.doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            company: 'TechCorp',
+            profilePictureUrl: 'https://cdn.batbern.ch/speakers/john.jpg',
+            speakerRole: 'PRIMARY_SPEAKER' as const,
           },
         ],
       },
@@ -67,10 +69,12 @@ describe('EventCard Component', () => {
         title: 'Container Orchestration Patterns',
         speakers: [
           {
-            speakerId: 'sp2',
-            fullName: 'Jane Smith',
-            companyName: 'CloudInc',
-            photoUrl: 'https://cdn.batbern.ch/speakers/jane.jpg',
+            username: 'jane.smith',
+            firstName: 'Jane',
+            lastName: 'Smith',
+            company: 'CloudInc',
+            profilePictureUrl: 'https://cdn.batbern.ch/speakers/jane.jpg',
+            speakerRole: 'PRIMARY_SPEAKER' as const,
           },
         ],
       },
@@ -79,9 +83,11 @@ describe('EventCard Component', () => {
         title: 'Microservices Design',
         speakers: [
           {
-            speakerId: 'sp3',
-            fullName: 'Bob Wilson',
-            companyName: 'StartupXYZ',
+            username: 'bob.wilson',
+            firstName: 'Bob',
+            lastName: 'Wilson',
+            company: 'StartupXYZ',
+            speakerRole: 'PRIMARY_SPEAKER' as const,
           },
         ],
       },
@@ -90,9 +96,11 @@ describe('EventCard Component', () => {
         title: 'API Gateway Architecture',
         speakers: [
           {
-            speakerId: 'sp4',
-            fullName: 'Alice Johnson',
-            companyName: 'DevCo',
+            username: 'alice.johnson',
+            firstName: 'Alice',
+            lastName: 'Johnson',
+            company: 'DevCo',
+            speakerRole: 'PRIMARY_SPEAKER' as const,
           },
         ],
       },
@@ -100,7 +108,7 @@ describe('EventCard Component', () => {
   };
 
   const renderWithRouter = (component: React.ReactElement) => {
-    return render(<MemoryRouter>{component}</MemoryRouter>);
+    return render(component);
   };
 
   describe('AC1: Event Card Layout', () => {
@@ -297,9 +305,27 @@ describe('EventCard Component', () => {
             sessionId: 's1',
             title: 'Panel Discussion',
             speakers: [
-              { speakerId: 'sp1', fullName: 'John Doe', companyName: 'TechCorp' },
-              { speakerId: 'sp2', fullName: 'Jane Smith', companyName: 'CloudInc' },
-              { speakerId: 'sp3', fullName: 'Bob Wilson', companyName: 'StartupXYZ' },
+              {
+                username: 'john.doe',
+                firstName: 'John',
+                lastName: 'Doe',
+                company: 'TechCorp',
+                speakerRole: 'PRIMARY_SPEAKER' as const,
+              },
+              {
+                username: 'jane.smith',
+                firstName: 'Jane',
+                lastName: 'Smith',
+                company: 'CloudInc',
+                speakerRole: 'CO_SPEAKER' as const,
+              },
+              {
+                username: 'bob.wilson',
+                firstName: 'Bob',
+                lastName: 'Wilson',
+                company: 'StartupXYZ',
+                speakerRole: 'PANELIST' as const,
+              },
             ],
           },
         ],
