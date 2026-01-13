@@ -12,6 +12,7 @@ import { loadRuntimeConfig } from './config/runtime-config';
 import { ConfigProvider } from './contexts/ConfigContext';
 import { configureAmplify } from './config/amplify';
 import { updateApiClientConfig } from './services/api/apiClient';
+import { ErrorBoundary } from './components/ErrorBoundary'; // Task 4: Error boundaries
 
 /**
  * Loading Screen Component
@@ -132,9 +133,11 @@ async function bootstrap() {
     // Render app with configuration
     root.render(
       <React.StrictMode>
-        <ConfigProvider config={config}>
-          <App />
-        </ConfigProvider>
+        <ErrorBoundary>
+          <ConfigProvider config={config}>
+            <App />
+          </ConfigProvider>
+        </ErrorBoundary>
       </React.StrictMode>
     );
   } catch (error) {
