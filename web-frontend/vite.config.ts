@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
+import sitemap from 'vite-plugin-sitemap';
 
 /**
  * Vite Configuration - Environment-Agnostic Build
@@ -146,6 +147,13 @@ export default defineConfig({
       devOptions: {
         enabled: false, // Disable PWA in development for faster builds
       },
+    }),
+    // Sitemap generation for SEO (Story 4.1.8)
+    sitemap({
+      hostname: 'https://batbern.ch',
+      dynamicRoutes: ['/', '/current-event', '/archive', '/search', '/about'],
+      changefreq: 'weekly',
+      priority: 0.8,
     }),
     // Gzip compression for production builds (Task 13b)
     viteCompression({
