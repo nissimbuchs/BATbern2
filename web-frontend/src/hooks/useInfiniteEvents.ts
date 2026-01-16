@@ -46,13 +46,6 @@ export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '
         expand: ['topics', 'sessions', 'speakers'],
         sort,
       });
-      console.log('🔍 Infinite Query Response:', {
-        page: result.pagination.page,
-        totalPages: result.pagination.totalPages,
-        totalItems: result.pagination.totalItems,
-        dataLength: result.data.length,
-        hasNext: result.pagination.hasNext,
-      });
       return result;
     },
     getNextPageParam: (lastPage) => {
