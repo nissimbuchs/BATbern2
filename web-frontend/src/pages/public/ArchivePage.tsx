@@ -27,7 +27,7 @@ export default function ArchivePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { ref, inView } = useInView({
     threshold: 0,
-    rootMargin: '400px', // Trigger loading 400px before reaching the element
+    rootMargin: '100px', // Trigger loading 100px before reaching the element
   });
 
   // View mode (persisted to localStorage)
