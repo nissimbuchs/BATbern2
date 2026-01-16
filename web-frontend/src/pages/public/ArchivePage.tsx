@@ -63,10 +63,8 @@ export default function ArchivePage() {
   const filters: ArchiveFilters = useMemo(() => {
     const topicsParam = searchParams.get('topics');
     const search = searchParams.get('q') || '';
-    const timePeriod = searchParams.get('timePeriod') || 'all';
 
     return {
-      timePeriod,
       topics: topicsParam ? topicsParam.split(',') : [],
       search,
     };
@@ -95,13 +93,6 @@ export default function ArchivePage() {
   // Handle filter changes - update URL query parameters
   const handleFilterChange = (newFilters: ArchiveFilters) => {
     const params = new URLSearchParams(searchParams);
-
-    // Update or remove time period parameter
-    if (newFilters.timePeriod && newFilters.timePeriod !== 'all') {
-      params.set('timePeriod', newFilters.timePeriod);
-    } else {
-      params.delete('timePeriod');
-    }
 
     // Update or remove topics parameter
     if (newFilters.topics && newFilters.topics.length > 0) {

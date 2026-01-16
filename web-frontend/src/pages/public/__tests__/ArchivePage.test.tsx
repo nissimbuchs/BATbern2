@@ -37,7 +37,6 @@ vi.mock('react-i18next', () => ({
       const translations: Record<string, string> = {
         'archive.title': 'Event Archive',
         'archive.description': 'Browse 20+ years of BATbern conferences',
-        'archive.filters.timePeriod': 'Time Period',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',

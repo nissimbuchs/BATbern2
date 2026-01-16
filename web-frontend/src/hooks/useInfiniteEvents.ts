@@ -25,20 +25,6 @@ function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
     eventFilters.topicCode = archiveFilters.topics;
   }
 
-  // Time period filter - convert to year
-  if (archiveFilters.timePeriod && archiveFilters.timePeriod !== 'all') {
-    // Handle year range format (e.g., "2020-2024")
-    const yearRangeMatch = archiveFilters.timePeriod.match(/^(\d{4})-\d{4}$/);
-    if (yearRangeMatch) {
-      eventFilters.year = parseInt(yearRangeMatch[1], 10);
-    }
-    // Handle relative format (e.g., "last5years")
-    else if (archiveFilters.timePeriod === 'last5years') {
-      const currentYear = new Date().getFullYear();
-      eventFilters.year = currentYear - 5;
-    }
-  }
-
   return eventFilters;
 }
 

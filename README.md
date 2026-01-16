@@ -73,7 +73,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ```bash
 # Clone repository
-git clone https://github.com/nisimbuchs/BATbern2.git
+git clone https://github.com/nissimbuchs/BATbern2.git
 cd BATbern
 
 # Install git hooks (pre-commit, pre-push)

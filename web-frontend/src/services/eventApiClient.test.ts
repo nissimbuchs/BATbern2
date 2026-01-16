@@ -478,44 +478,6 @@ describe('Event API Client (RED Phase)', () => {
   });
 
   describe('Archive Browsing (Story 4.2 - Task 2a)', () => {
-    describe('AC7: Time Period Filters', () => {
-      it('should_filterByTimePeriod_when_timePeriod2020to2024', async () => {
-        const filters = { timePeriod: '2020-2024' };
-
-        // Should filter events by date range 2020-2024
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_filterByTimePeriod_when_timePeriodLast5Years', async () => {
-        const filters = { timePeriod: 'last5years' };
-
-        // Should calculate and filter by last 5 years
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_filterByTimePeriod_when_timePeriodBefore2010', async () => {
-        const filters = { timePeriod: 'before2010' };
-
-        // Should filter events before 2010
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_NOT_filterByTime_when_timePeriodIsAll', async () => {
-        const filters = { timePeriod: 'all' };
-
-        // Should not add date filter when "all" is selected
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-    });
-
     describe('AC8: Topic Filters with Counts', () => {
       it('should_filterBySingleTopic_when_topicProvided', async () => {
         const filters = { topics: ['cloud'] };
@@ -660,7 +622,6 @@ describe('Event API Client (RED Phase)', () => {
     describe('Combined Filters, Sort, and Expansion', () => {
       it('should_combineAllParameters_when_filtersAndSortAndExpansionProvided', async () => {
         const filters = {
-          timePeriod: '2020-2024',
           topics: ['cloud', 'devops'],
           search: 'Architecture',
         };
@@ -678,7 +639,6 @@ describe('Event API Client (RED Phase)', () => {
 
       it('should_handleComplexFilterCombinations_when_allFiltersProvided', async () => {
         const filters = {
-          timePeriod: '2015-2019',
           topics: ['microservices', 'ai-ml'],
           search: 'Innovation',
           workflowState: ['ARCHIVED', 'COMPLETED'],

@@ -26,15 +26,6 @@ const SORT_OPTIONS = [
   { value: '-attendance', label: 'archive.sort.mostAttended' },
 ];
 
-const TIME_PERIOD_OPTIONS = [
-  { value: 'all', label: 'archive.filters.all' },
-  { value: 'last5years', label: 'archive.filters.last5years' },
-  { value: '2020-2024', label: 'archive.filters.2020-2024' },
-  { value: '2015-2019', label: 'archive.filters.2015-2019' },
-  { value: '2010-2014', label: 'archive.filters.2010-2014' },
-  { value: 'before2010', label: 'archive.filters.before2010' },
-];
-
 export function FilterSidebar({
   filters,
   topics,
@@ -71,15 +62,11 @@ export function FilterSidebar({
   };
 
   const hasActiveFilters =
-    filters.timePeriod !== 'all' ||
-    (filters.topics && filters.topics.length > 0) ||
-    (filters.search && filters.search.length > 0);
+    (filters.topics && filters.topics.length > 0) || (filters.search && filters.search.length > 0);
 
   // Count active filters
   const activeFilterCount =
-    (filters.timePeriod !== 'all' ? 1 : 0) +
-    (filters.topics?.length || 0) +
-    (filters.search && filters.search.length > 0 ? 1 : 0);
+    (filters.topics?.length || 0) + (filters.search && filters.search.length > 0 ? 1 : 0);
 
   return (
     <aside
@@ -117,32 +104,6 @@ export function FilterSidebar({
           onChange={(e) => setSearchValue(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-      </div>
-
-      {/* Time Period */}
-      <div>
-        <h3 className="text-sm font-medium text-gray-900 mb-2">
-          {t('archive.filters.timePeriod')}
-        </h3>
-        <div className="space-y-2">
-          {TIME_PERIOD_OPTIONS.map((option) => {
-            const isActive = filters.timePeriod === option.value;
-            return (
-              <button
-                key={option.value}
-                onClick={() => onFilterChange({ ...filters, timePeriod: option.value })}
-                className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 font-medium active'
-                    : 'hover:bg-gray-50 text-gray-700'
-                }`}
-                aria-pressed={isActive}
-              >
-                {t(option.label)}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Topics */}
