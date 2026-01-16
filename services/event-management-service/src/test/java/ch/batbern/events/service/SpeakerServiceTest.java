@@ -12,6 +12,8 @@ import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,6 +56,9 @@ class SpeakerServiceTest {
 
     @Mock
     private DomainEventPublisher domainEventPublisher;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private SpeakerService speakerService;
@@ -368,5 +372,141 @@ class SpeakerServiceTest {
 
         // Verify no event published on failure
         verify(domainEventPublisher, never()).publish(any());
+    }
+
+    // getSpeakerEntityByUsername tests - internal method for cross-service use
+
+    @Test
+    void should_getSpeakerEntity_when_speakerExistsWithoutEnrichment() {
+        // Given
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+
+        // When
+        Speaker entity = speakerService.getSpeakerEntityByUsername("john.doe");
+
+        // Then - returns raw entity without user enrichment
+        assertThat(entity.getUsername()).isEqualTo("john.doe");
+        assertThat(entity.getAvailability()).isEqualTo(SpeakerAvailability.AVAILABLE);
+        // Verify no user API call for entity method
+        verify(userApiClient, never()).getUserByUsername(anyString());
+    }
+
+    @Test
+    void should_throwSpeakerNotFoundException_when_gettingEntityForNonexistent() {
+        // Given
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("nonexistent.user"))
+                .thenReturn(Optional.empty());
+
+        // When/Then - covers lambda$getSpeakerEntityByUsername$1 exception path
+        assertThatThrownBy(() -> speakerService.getSpeakerEntityByUsername("nonexistent.user"))
+                .isInstanceOf(SpeakerNotFoundException.class)
+                .hasMessageContaining("nonexistent.user");
+    }
+
+    @Test
+    void should_throwSpeakerNotFoundException_when_updatingNonexistentSpeaker() {
+        // Given
+        SpeakerRequest updateRequest = SpeakerRequest.builder()
+                .availability(SpeakerAvailability.BUSY)
+                .build();
+
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("nonexistent.user"))
+                .thenReturn(Optional.empty());
+
+        // When/Then - covers lambda$updateSpeaker$2 exception path
+        assertThatThrownBy(() -> speakerService.updateSpeaker("nonexistent.user", updateRequest))
+                .isInstanceOf(SpeakerNotFoundException.class)
+                .hasMessageContaining("nonexistent.user");
+
+        verify(speakerRepository, never()).save(any());
+        verify(domainEventPublisher, never()).publish(any());
+    }
+
+    // Update speaker field coverage tests - ensure all update branches are covered
+
+    @Test
+    void should_updateAllFields_when_allFieldsProvided() {
+        // Given - request with all updatable fields
+        SpeakerRequest updateRequest = SpeakerRequest.builder()
+                .availability(SpeakerAvailability.BUSY)
+                .workflowState(SpeakerWorkflowState.CONFIRMED)
+                .expertiseAreas(List.of("AI/ML", "Data"))
+                .speakingTopics(List.of("Machine Learning", "Deep Learning"))
+                .linkedInUrl("https://linkedin.com/in/johndoe")
+                .twitterHandle("@johndoe")
+                .certifications(List.of("AWS Solutions Architect", "CKA"))
+                .languages(List.of("de", "en", "fr"))
+                .build();
+
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(mockSpeaker);
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+
+        // When
+        speakerService.updateSpeaker("john.doe", updateRequest);
+
+        // Then - verify all fields updated
+        assertThat(mockSpeaker.getAvailability()).isEqualTo(SpeakerAvailability.BUSY);
+        assertThat(mockSpeaker.getWorkflowState()).isEqualTo(SpeakerWorkflowState.CONFIRMED);
+        assertThat(mockSpeaker.getExpertiseAreas()).containsExactly("AI/ML", "Data");
+        assertThat(mockSpeaker.getSpeakingTopics()).containsExactly("Machine Learning", "Deep Learning");
+        assertThat(mockSpeaker.getLinkedInUrl()).isEqualTo("https://linkedin.com/in/johndoe");
+        assertThat(mockSpeaker.getTwitterHandle()).isEqualTo("@johndoe");
+        assertThat(mockSpeaker.getCertifications()).containsExactly("AWS Solutions Architect", "CKA");
+        assertThat(mockSpeaker.getLanguages()).containsExactly("de", "en", "fr");
+
+        // Verify event contains changed fields
+        ArgumentCaptor<SpeakerUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(SpeakerUpdatedEvent.class);
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getChangedFields())
+                .contains("availability", "workflowState", "expertiseAreas", "speakingTopics",
+                         "linkedInUrl", "twitterHandle", "certifications", "languages");
+    }
+
+    // parseSpeakingHistory exception handling tests
+
+    @Test
+    void should_returnEmptySpeakingHistory_when_parseError() throws Exception {
+        // Given - speaker with speaking history that fails to parse
+        mockSpeaker.setSpeakingHistory("[{\"eventId\":\"evt-1\"}]");
+
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+
+        // Mock ObjectMapper to throw exception
+        when(objectMapper.readValue(anyString(), any(TypeReference.class)))
+                .thenThrow(new RuntimeException("Parse error"));
+
+        // When
+        SpeakerResponse response = speakerService.getSpeakerByUsername("john.doe", "speakingHistory");
+
+        // Then - should return empty list gracefully, not throw
+        assertThat(response.getSpeakingHistory()).isEmpty();
+    }
+
+    @Test
+    void should_parseValidSpeakingHistory_when_validJson() throws Exception {
+        // Given - speaker with valid speaking history
+        mockSpeaker.setSpeakingHistory("[{\"eventId\":\"evt-1\",\"sessionTitle\":\"Test\"}]");
+
+        SpeakerResponse.SpeakingHistoryEntry entry = new SpeakerResponse.SpeakingHistoryEntry();
+        entry.setEventId("evt-1");
+        entry.setSessionTitle("Test");
+
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+        when(objectMapper.readValue(anyString(), any(TypeReference.class)))
+                .thenReturn(List.of(entry));
+
+        // When
+        SpeakerResponse response = speakerService.getSpeakerByUsername("john.doe", "speakingHistory");
+
+        // Then - should return parsed list
+        assertThat(response.getSpeakingHistory()).hasSize(1);
+        assertThat(response.getSpeakingHistory().get(0).getEventId()).isEqualTo("evt-1");
     }
 }
