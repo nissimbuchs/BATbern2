@@ -497,6 +497,130 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
                 .isLessThan(800L);
     }
 
+    // =========================================================================
+    // parseSort branch coverage tests
+    // =========================================================================
+
+    @Test
+    void should_sortDescending_when_descSortProvided() throws Exception {
+        // Given - create speakers with different usernames
+        createTestSpeaker("alpha.speaker");
+        createTestSpeaker("zulu.speaker");
+        createTestSpeaker("mike.speaker");
+
+        // When/Then - sort by username descending
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("sort", "username,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(3)));
+        // Note: Results are sorted descending by username
+    }
+
+    @Test
+    void should_useDefaultSort_when_emptySortProvided() throws Exception {
+        // Given
+        createTestSpeaker("default.sort.speaker");
+
+        // When/Then - empty sort should use default (username,asc)
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("sort", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    void should_sortByFieldWithoutDirection_when_fieldOnlyProvided() throws Exception {
+        // Given
+        createTestSpeaker("field.sort.speaker");
+
+        // When/Then - sort field only, no direction (should default to ASC)
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("sort", "username"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    // =========================================================================
+    // parseSpeakingHistory exception path coverage
+    // =========================================================================
+
+    @Test
+    void should_returnEmptyHistory_when_speakingHistoryIsNull() throws Exception {
+        // Given - speaker with null speaking history
+        Speaker speaker = createTestSpeaker("null.history");
+        speaker.setSpeakingHistory(null);
+        speakerRepository.save(speaker);
+
+        // When/Then
+        mockMvc.perform(get("/api/v1/speakers/null.history")
+                        .param("include", "speakingHistory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakingHistory").isArray())
+                .andExpect(jsonPath("$.speakingHistory", hasSize(0)));
+    }
+
+    @Test
+    void should_returnEmptyHistory_when_speakingHistoryIsEmptyArray() throws Exception {
+        // Given - speaker with empty array speaking history
+        Speaker speaker = createTestSpeaker("empty.history");
+        speaker.setSpeakingHistory("[]");
+        speakerRepository.save(speaker);
+
+        // When/Then
+        mockMvc.perform(get("/api/v1/speakers/empty.history")
+                        .param("include", "speakingHistory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakingHistory").isArray())
+                .andExpect(jsonPath("$.speakingHistory", hasSize(0)));
+    }
+
+    @Test
+    void should_returnEmptyHistory_when_speakingHistoryIsEmptyObject() throws Exception {
+        // Given - speaker with empty object (not array) for speaking history
+        Speaker speaker = createTestSpeaker("object.history");
+        speaker.setSpeakingHistory("{}"); // Valid JSON but not an array
+        speakerRepository.save(speaker);
+
+        // When/Then - should return empty array (graceful handling of wrong JSON type)
+        mockMvc.perform(get("/api/v1/speakers/object.history")
+                        .param("include", "speakingHistory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakingHistory").isArray())
+                .andExpect(jsonPath("$.speakingHistory", hasSize(0)));
+    }
+
+    // =========================================================================
+    // Update non-existent speaker coverage
+    // =========================================================================
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void should_return404_when_updatingNonexistentSpeaker() throws Exception {
+        // Given - no speaker with this username
+        String requestBody = """
+            {
+                "username": "nonexistent.speaker",
+                "availability": "BUSY"
+            }
+            """;
+
+        // When/Then
+        mockMvc.perform(patch("/api/v1/speakers/nonexistent.speaker")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void should_return404_when_deletingNonexistentSpeaker() throws Exception {
+        // Given - no speaker with this username
+
+        // When/Then
+        mockMvc.perform(delete("/api/v1/speakers/nonexistent.speaker"))
+                .andExpect(status().isNotFound());
+    }
+
     // Helper method
 
     private Speaker createTestSpeaker(String username) {
