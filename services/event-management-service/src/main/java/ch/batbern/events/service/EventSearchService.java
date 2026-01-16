@@ -367,9 +367,9 @@ public class EventSearchService {
     }
 
     /**
-     * Build PostgreSQL full-text search predicate across events and sessions (Story 4.2 AC9, AC19)
-     * Searches across: event titles, event descriptions, session titles, session descriptions
-     * Uses GIN indexes on title_vector and description_vector columns
+     * Build PostgreSQL full-text search predicate across events, sessions, and speakers
+     * Searches across: event titles, event descriptions, session titles, session descriptions, speaker names
+     * Uses GIN indexes on title_vector, description_vector, and speaker_name_vector columns
      *
      * @param root Event query root
      * @param query CriteriaQuery for subquery creation
@@ -428,13 +428,37 @@ public class EventSearchService {
             )
         );
 
+        // Search in speakers: EXISTS (SELECT 1 FROM session_users su
+        //   JOIN sessions s ON su.session_id = s.id
+        //   WHERE s.event_id = events.id AND su.speaker_name_vector @@ tsquery)
+        jakarta.persistence.criteria.Subquery<Integer> speakerSubquery = query.subquery(Integer.class);
+        jakarta.persistence.criteria.Root<ch.batbern.events.domain.SessionUser> speakerRoot =
+            speakerSubquery.from(ch.batbern.events.domain.SessionUser.class);
+
+        // Join to sessions to get event_id
+        jakarta.persistence.criteria.Join<ch.batbern.events.domain.SessionUser, ch.batbern.events.domain.Session> sessionJoin =
+            speakerRoot.join("session");
+
+        speakerSubquery.select(criteriaBuilder.literal(1));
+        speakerSubquery.where(
+            criteriaBuilder.and(
+                criteriaBuilder.equal(sessionJoin.get("eventId"), root.get("id")),
+                // Speaker name match
+                criteriaBuilder.isTrue(
+                    criteriaBuilder.function("ts_match_speaker_name", Boolean.class, tsquery)
+                )
+            )
+        );
+
         // Return events where ANY of these match:
         // - Event title OR event description
         // - Any session title OR session description
+        // - Any speaker name
         return criteriaBuilder.or(
             eventTitleMatch,
             eventDescriptionMatch,
-            criteriaBuilder.exists(sessionSubquery)
+            criteriaBuilder.exists(sessionSubquery),
+            criteriaBuilder.exists(speakerSubquery)
         );
     }
 }

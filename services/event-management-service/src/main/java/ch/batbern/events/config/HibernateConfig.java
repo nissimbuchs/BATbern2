@@ -55,5 +55,15 @@ public class HibernateConfig implements FunctionContributor {
                 .getBasicTypeRegistry()
                 .resolve(StandardBasicTypes.BOOLEAN)
         );
+
+        // Usage: ts_match_speaker_name(to_tsquery('german', ?))
+        // Generates SQL: speaker_name_vector @@ ?1 (for session_users table context)
+        functionContributions.getFunctionRegistry().registerPattern(
+            "ts_match_speaker_name",
+            "(speaker_name_vector @@ ?1)",
+            functionContributions.getTypeConfiguration()
+                .getBasicTypeRegistry()
+                .resolve(StandardBasicTypes.BOOLEAN)
+        );
     }
 }
