@@ -27,7 +27,7 @@ export default function ArchivePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { ref, inView } = useInView({
     threshold: 0,
-    rootMargin: '100px', // Trigger loading 100px before reaching the element
+    rootMargin: '0px', // Trigger only when element is visible
   });
 
   // View mode (persisted to localStorage)
@@ -95,7 +95,11 @@ export default function ArchivePage() {
     });
     if (inView && hasNextPage && !isFetchingNextPage) {
       console.log('✅ Fetching next page...');
-      fetchNextPage();
+      // Small delay to ensure state is stable before fetching
+      const timer = setTimeout(() => {
+        fetchNextPage();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, events.length, totalCount]);
 
@@ -285,10 +289,12 @@ export default function ArchivePage() {
 
                 {/* Infinite Scroll Trigger */}
                 {hasNextPage && (
-                  <div ref={ref} className="text-center py-8">
+                  <div ref={ref} className="text-center py-32 min-h-[200px]">
                     {isFetchingNextPage ? (
                       <div className="text-gray-600">{t('archive.loadingMore')}</div>
-                    ) : null}
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('archive.scrollForMore')}</div>
+                    )}
                   </div>
                 )}
               </>
