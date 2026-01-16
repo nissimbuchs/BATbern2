@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -218,7 +218,7 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
             """;
 
         // When/Then
-        mockMvc.perform(put("/api/v1/speakers/update.speaker")
+        mockMvc.perform(patch("/api/v1/speakers/update.speaker")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -236,7 +236,7 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
             }
             """;
 
-        mockMvc.perform(put("/api/v1/speakers/protected.speaker")
+        mockMvc.perform(patch("/api/v1/speakers/protected.speaker")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isForbidden());

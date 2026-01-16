@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
  * - GET /api/v1/speakers - List speakers with filters
  * - GET /api/v1/speakers/{username} - Get speaker by username
  * - POST /api/v1/speakers - Create new speaker profile
- * - PUT /api/v1/speakers/{username} - Update speaker profile
+ * - PATCH /api/v1/speakers/{username} - Update speaker profile (partial update)
  * - DELETE /api/v1/speakers/{username} - Soft delete speaker profile
  */
 @RestController
@@ -149,13 +149,13 @@ public class SpeakerController {
      * @param request Update request (partial update supported)
      * @return Updated speaker profile
      */
-    @PutMapping("/{username}")
+    @PatchMapping("/{username}")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SpeakerResponse> updateSpeaker(
             @PathVariable String username,
             @Valid @RequestBody SpeakerRequest request) {
 
-        log.info("PUT /api/v1/speakers/{}", username);
+        log.info("PATCH /api/v1/speakers/{}", username);
 
         SpeakerResponse updated = speakerService.updateSpeaker(username, request);
         return ResponseEntity.ok(updated);
