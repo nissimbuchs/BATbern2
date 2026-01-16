@@ -397,12 +397,12 @@ public class EventSearchService {
 
         // Search in event title_vector
         jakarta.persistence.criteria.Predicate eventTitleMatch = criteriaBuilder.isTrue(
-            criteriaBuilder.function("ts_match_title", Boolean.class, tsquery)
+            criteriaBuilder.function("ts_match", Boolean.class, root.get("titleVector"), tsquery)
         );
 
         // Search in event description_vector
         jakarta.persistence.criteria.Predicate eventDescriptionMatch = criteriaBuilder.isTrue(
-            criteriaBuilder.function("ts_match_description", Boolean.class, tsquery)
+            criteriaBuilder.function("ts_match", Boolean.class, root.get("descriptionVector"), tsquery)
         );
 
         // Search in sessions: EXISTS (SELECT 1 FROM sessions WHERE event_id = events.id
@@ -418,11 +418,13 @@ public class EventSearchService {
                 criteriaBuilder.or(
                     // Session title match
                     criteriaBuilder.isTrue(
-                        criteriaBuilder.function("ts_match_session_title", Boolean.class, tsquery)
+                        criteriaBuilder.function("ts_match", Boolean.class, sessionRoot.get("titleVector"), tsquery)
                     ),
                     // Session description match
                     criteriaBuilder.isTrue(
-                        criteriaBuilder.function("ts_match_session_description", Boolean.class, tsquery)
+                        criteriaBuilder.function(
+                            "ts_match", Boolean.class,
+                            sessionRoot.get("descriptionVector"), tsquery)
                     )
                 )
             )
@@ -436,8 +438,9 @@ public class EventSearchService {
             speakerSubquery.from(ch.batbern.events.domain.SessionUser.class);
 
         // Join to sessions to get event_id
-        jakarta.persistence.criteria.Join<ch.batbern.events.domain.SessionUser, ch.batbern.events.domain.Session> sessionJoin =
-            speakerRoot.join("session");
+        jakarta.persistence.criteria.Join<
+            ch.batbern.events.domain.SessionUser,
+            ch.batbern.events.domain.Session> sessionJoin = speakerRoot.join("session");
 
         speakerSubquery.select(criteriaBuilder.literal(1));
         speakerSubquery.where(
@@ -445,7 +448,7 @@ public class EventSearchService {
                 criteriaBuilder.equal(sessionJoin.get("eventId"), root.get("id")),
                 // Speaker name match
                 criteriaBuilder.isTrue(
-                    criteriaBuilder.function("ts_match_speaker_name", Boolean.class, tsquery)
+                    criteriaBuilder.function("ts_match", Boolean.class, speakerRoot.get("speakerNameVector"), tsquery)
                 )
             )
         );

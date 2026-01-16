@@ -59,9 +59,13 @@ public class Session {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // Note: title_vector and description_vector columns exist in DB (V35 migration)
-    // but are not mapped here because they're PostgreSQL tsvector types used only
-    // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
+    // Full-text search vector columns (GENERATED ALWAYS AS in PostgreSQL)
+    // Story 4.2 - BAT-109: Archive browsing with full-text search
+    @Column(name = "title_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object titleVector;
+
+    @Column(name = "description_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object descriptionVector;
 
     @Column(name = "session_type", length = 50)
     private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch

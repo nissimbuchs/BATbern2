@@ -281,6 +281,11 @@ public class SessionBatchImportService {
      * - isConfirmed = true (sessions already happened)
      * - invitedAt = eventDate - 4 weeks (realistic invitation timeline)
      *
+     * Re-import behavior (V38 migration compatibility):
+     * - If speaker assignment exists with NULL names, backfills speaker_first_name and speaker_last_name
+     * - If speaker assignment exists with names populated, skips (no-op)
+     * - If speaker assignment doesn't exist, creates new assignment with names
+     *
      * @param session Session entity
      * @param username Username (mapped from speakerId)
      * @param role Speaker role
@@ -296,9 +301,24 @@ public class SessionBatchImportService {
                 return;
             }
 
-            // Check if already assigned (shouldn't happen in batch import, but be safe)
-            if (sessionUserRepository.existsBySessionIdAndUsername(session.getId(), username)) {
-                log.warn("User {} already assigned to session {}, skipping", username, session.getId());
+            // Check if already assigned - if so, backfill speaker names if missing
+            Optional<SessionUser> existingAssignment =
+                sessionUserRepository.findBySessionIdAndUsername(session.getId(), username);
+
+            if (existingAssignment.isPresent()) {
+                SessionUser sessionUser = existingAssignment.get();
+
+                // Backfill speaker names if missing (V38 migration compatibility)
+                if (sessionUser.getSpeakerFirstName() == null || sessionUser.getSpeakerLastName() == null) {
+                    sessionUser.setSpeakerFirstName(user.getFirstName());
+                    sessionUser.setSpeakerLastName(user.getLastName());
+                    sessionUserRepository.save(sessionUser);
+                    log.info("Backfilled speaker names for {} in session '{}': {} {}",
+                            username, session.getTitle(), user.getFirstName(), user.getLastName());
+                } else {
+                    log.debug("Speaker {} already assigned to session '{}' with names populated, skipping",
+                            username, session.getTitle());
+                }
                 return;
             }
 
@@ -309,10 +329,13 @@ public class SessionBatchImportService {
 
             // Create SessionUser entity
             // For historical data: isConfirmed = true (sessions already happened)
+            // Populate speaker name cache fields for full-text search (V38 migration)
             SessionUser sessionUser = SessionUser.builder()
                     .session(session)
                     .username(username)
                     .speakerRole(role)
+                    .speakerFirstName(user.getFirstName())  // Cache for full-text search
+                    .speakerLastName(user.getLastName())    // Cache for full-text search
                     .isConfirmed(true)
                     .invitedAt(invitedAt)
                     .confirmedAt(invitedAt.plus(Duration.ofDays(3))) // Confirmed 3 days after invitation
