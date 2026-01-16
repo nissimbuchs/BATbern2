@@ -293,6 +293,11 @@ dev-native-restart: ## Restart all native services
 dev-native-restart-service: ## Restart specific native service (use SERVICE=name)
 	@./scripts/dev/restart-native.sh $(SERVICE)
 
+dev-seed-data: ## Seed test data into local database (event + speakers)
+	@echo "🌱 Seeding test data into local database..."
+	@docker exec batbern-dev-postgres psql -U postgres -d batbern_development -f /dev/stdin < scripts/dev/seed-test-data.sql
+	@echo "✓ Test data seeded"
+
 # ═══════════════════════════════════════════════════════════
 # PARALLEL INSTANCE SUPPORT (Multiple Local Dev Environments)
 # ═══════════════════════════════════════════════════════════
