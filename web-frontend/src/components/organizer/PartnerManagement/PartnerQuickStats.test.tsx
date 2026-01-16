@@ -37,8 +37,15 @@ describe('PartnerQuickStats', () => {
   it('should_calculateDuration_when_partnerSinceSet', () => {
     render(<PartnerQuickStats partner={mockPartnerData} />);
 
-    // Should show duration (e.g., "3 years")
-    expect(screen.getByText(/3 years/i)).toBeInTheDocument();
+    // Calculate expected years since 2022-01-15
+    const startDate = new Date('2022-01-15');
+    const now = new Date();
+    const expectedYears = Math.floor(
+      (now.getTime() - startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    );
+
+    // Should show duration (e.g., "4 years")
+    expect(screen.getByText(new RegExp(`${expectedYears} years`, 'i'))).toBeInTheDocument();
   });
 
   /**
