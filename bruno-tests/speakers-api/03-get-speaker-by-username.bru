@@ -1,0 +1,55 @@
+meta {
+  name: Get Speaker by Username
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.username: isDefined
+}
+
+tests {
+  test("should return 200 status (public endpoint)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return speaker with correct username (ADR-003)", function() {
+    const body = res.getBody();
+    expect(body.username).to.exist;
+  });
+
+  test("should return speaker with enriched user data (ADR-004)", function() {
+    const body = res.getBody();
+    expect(body.email).to.exist;
+    expect(body.firstName).to.exist;
+    expect(body.lastName).to.exist;
+  });
+
+  test("should return speaker domain fields", function() {
+    const body = res.getBody();
+    expect(body.availability).to.be.a('string');
+    expect(body.workflowState).to.be.a('string');
+    expect(body.expertiseAreas).to.be.an('array');
+    expect(body.languages).to.be.an('array');
+  });
+
+  test("should NOT have expansion fields without include parameter", function() {
+    const body = res.getBody();
+    expect(body.speakingHistory).to.be.undefined;
+    expect(body.events).to.be.undefined;
+    expect(body.sessions).to.be.undefined;
+  });
+}

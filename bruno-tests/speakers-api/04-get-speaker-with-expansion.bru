@@ -1,0 +1,44 @@
+meta {
+  name: Get Speaker with Speaking History Expansion
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}?include=speakingHistory
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+params:query {
+  include: speakingHistory
+}
+
+assert {
+  res.status: eq 200
+  res.body.username: isDefined
+}
+
+tests {
+  test("should return 200 status with include parameter (AC3)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should include speakingHistory field when requested (AC3)", function() {
+    const body = res.getBody();
+    expect(body.speakingHistory).to.be.an('array');
+  });
+
+  test("should still have standard speaker fields", function() {
+    const body = res.getBody();
+    expect(body.username).to.exist;
+    expect(body.email).to.exist;
+    expect(body.availability).to.exist;
+  });
+}

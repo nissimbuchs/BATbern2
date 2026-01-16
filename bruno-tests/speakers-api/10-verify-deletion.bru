@@ -1,0 +1,27 @@
+meta {
+  name: Verify Speaker Deleted
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 for soft-deleted speaker", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

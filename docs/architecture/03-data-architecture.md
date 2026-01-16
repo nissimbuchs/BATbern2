@@ -307,15 +307,17 @@ interface ActivityHistory {
 
 **Purpose:** Individual speakers with speaking-specific workflow and expertise data. Speaker profile extends User entity per ADR-004.
 
-**ADR-004 Reference Pattern:**
-- Speaker references User entity via `userId` (UUID foreign key, internal)
+**ADR-003/ADR-004 Reference Pattern (CRITICAL):**
+- Speaker references User entity via `username` (meaningful ID, NOT userId UUID)
+- **NO database foreign key** to users table (cross-service per ADR-003)
 - API uses `username` as public identifier (e.g., `GET /speakers/john.doe`)
 - User fields (email, name, bio, photo, company) stored in User entity (NEVER duplicated)
+- User data enriched via **HTTP call** to User Management Service (NOT JPQL join)
 - Speaker entity contains ONLY domain-specific fields (availability, expertise, speaking history)
 
 **Key Attributes:**
-- id: UUID - Unique speaker identifier
-- userId: UUID - Foreign key to User entity (internal, NOT exposed in API)
+- id: UUID - Unique speaker identifier (internal primary key)
+- username: string - Meaningful ID referencing User (ADR-003, NOT userId UUID)
 - availability: SpeakerAvailability - Current availability status
 - workflowState: SpeakerWorkflowState - Speaker coordination workflow state
 - expertiseAreas: string[] - Areas of technical expertise
@@ -326,6 +328,7 @@ interface ActivityHistory {
 - certifications: string[] - Professional certifications
 - languages: string[] - Languages speaker can present in
 - slotPreferences: SpeakerSlotPreferences - Time slot preferences per event
+- deletedAt: Date - Soft delete timestamp (null = active)
 
 **Fields Stored in User Entity (NOT in Speaker):**
 - ❌ email, firstName, lastName (from User.email, User.firstName, User.lastName)
@@ -333,24 +336,26 @@ interface ActivityHistory {
 - ❌ profilePhotoUrl (from User.profilePictureUrl)
 - ❌ companyId (from User.companyId)
 - ❌ position (removed entirely per ADR-004)
+- ❌ userId UUID (use username per ADR-003)
 
 #### TypeScript Interface
 ```typescript
-// Speaker entity references User (per ADR-004)
+// Speaker entity references User via username (per ADR-003 + ADR-004)
+// CRITICAL: Uses username (meaningful ID), NOT userId UUID
 interface Speaker {
-  id: string;                              // UUID (internal)
-  userId: string;                          // UUID FK to User.id (internal)
+  id: string;                              // UUID (internal PK)
+  username: string;                        // Meaningful ID (ADR-003) - NOT userId UUID!
 
-  // API responses include User fields by joining:
+  // API responses include User fields via HTTP enrichment:
   // username: string;                     // From User (API identifier)
-  // email: string;                        // From User
-  // firstName: string;                    // From User
-  // lastName: string;                     // From User
-  // bio: string;                          // From User (single bio)
-  // profilePictureUrl: string;            // From User
-  // companyId: string;                    // From User
+  // email: string;                        // From User Service HTTP call
+  // firstName: string;                    // From User Service HTTP call
+  // lastName: string;                     // From User Service HTTP call
+  // bio: string;                          // From User Service HTTP call
+  // profilePictureUrl: string;            // From User Service HTTP call
+  // companyId: string;                    // From User Service HTTP call
 
-  // Speaker-specific fields:
+  // Speaker-specific fields (stored in speakers table):
   availability: SpeakerAvailability;
   workflowState: SpeakerWorkflowState;
   expertiseAreas: string[];
@@ -365,6 +370,7 @@ interface Speaker {
   communicationPreferences: ContactPreferences;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;                        // Soft delete support
 }
 
 enum SpeakerWorkflowState {
@@ -396,8 +402,8 @@ enum SpeakerAvailability {
 ```
 
 #### Relationships
-- **One-to-One:** Speaker → User (via `Speaker.userId` FK to `User.id`)
-- **Many-to-One:** Speaker → Company (via `User.companyId`, transitive through User)
+- **One-to-One:** Speaker → User (via `Speaker.username` referencing `User.username`, NO FK constraint)
+- **Many-to-One:** Speaker → Company (via `User.companyId`, transitive through User HTTP call)
 - **Many-to-Many:** Speaker ↔ Sessions (speakers can present multiple sessions)
 - **One-to-Many:** Speaker → SpeakingEngagements (historical session participation)
 
@@ -406,19 +412,50 @@ enum SpeakerAvailability {
 # Public API uses username identifier
 GET /api/v1/speakers/john.doe
 
-# Response combines User + Speaker via JPQL join
+# Response combines User + Speaker via HTTP enrichment (NOT JPQL join)
 {
-  "username": "john.doe",           // From User (public ID)
-  "email": "john@example.com",      // From User
-  "firstName": "John",               // From User
-  "lastName": "Doe",                 // From User
-  "bio": "Experienced architect",    // From User
-  "profilePictureUrl": "https://...",// From User
-  "company": "GoogleZH",             // From User.companyId
-  "availability": "available",       // From Speaker
-  "expertiseAreas": ["Security"],    // From Speaker
-  "speakingTopics": ["Blockchain"]   // From Speaker
+  "username": "john.doe",           // From User Service HTTP call
+  "email": "john@example.com",      // From User Service HTTP call
+  "firstName": "John",               // From User Service HTTP call
+  "lastName": "Doe",                 // From User Service HTTP call
+  "bio": "Experienced architect",    // From User Service HTTP call
+  "profilePictureUrl": "https://...",// From User Service HTTP call
+  "company": "GoogleZH",             // From User Service HTTP call
+  "availability": "available",       // From Speaker table
+  "expertiseAreas": ["Security"],    // From Speaker table
+  "speakingTopics": ["Blockchain"]   // From Speaker table
 }
+```
+
+#### Service Implementation Pattern (ADR-004 HTTP Enrichment)
+```java
+// ✅ CORRECT: HTTP-based access for cross-service data
+@Service
+public class SpeakerService {
+    private final SpeakerRepository speakerRepository;
+    private final UserApiClient userApiClient;  // HTTP client
+
+    public SpeakerResponse getSpeaker(String username) {
+        // 1. Get Speaker from OWN database (uses username)
+        Speaker speaker = speakerRepository.findByUsername(username)
+            .orElseThrow(() -> new SpeakerNotFoundException(username));
+
+        // 2. Enrich with User data via HTTP call (ADR-004)
+        UserProfileDTO user = userApiClient.getUserByUsername(username);
+
+        // 3. Combine into response DTO
+        return SpeakerResponse.builder()
+            .username(user.getUsername())
+            .email(user.getEmail())           // From HTTP call
+            .firstName(user.getFirstName())   // From HTTP call
+            .availability(speaker.getAvailability())  // From Speaker table
+            .expertiseAreas(speaker.getExpertiseAreas())
+            .build();
+    }
+}
+
+// ❌ WRONG: Don't use JPQL joins across services
+// @Query("SELECT ... FROM Speaker s INNER JOIN User u ON s.userId = u.id")
 ```
 
 ### Session
@@ -1666,10 +1703,15 @@ CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date 
 ### Speaker Coordination Service Database Schema
 
 ```sql
--- Speakers table (ADR-004: References User, no duplicated fields)
+-- Speakers table (ADR-003 + ADR-004 Compliant)
+-- CRITICAL: Uses username (meaningful ID), NOT user_id UUID
+-- NO foreign key constraint (cross-service reference per ADR-003)
 CREATE TABLE speakers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE,  -- FK to users.id (one-to-one)
+
+    -- ADR-003: Meaningful ID reference to User (NOT userId UUID)
+    -- Cross-service reference - NO foreign key constraint
+    username VARCHAR(100) NOT NULL UNIQUE,
 
     -- Domain-specific fields only (NO email, name, bio, photo, company, position)
     availability VARCHAR(50) NOT NULL CHECK (availability IN (
@@ -1682,33 +1724,34 @@ CREATE TABLE speakers (
     -- Note: slot assignment tracked via session.startTime, NOT as speaker state
     expertise_areas TEXT[] DEFAULT '{}',
     speaking_topics TEXT[] DEFAULT '{}',
-    linkedin_url VARCHAR(255),
+    linkedin_url VARCHAR(500),
     twitter_handle VARCHAR(100),
     certifications TEXT[] DEFAULT '{}',
-    languages VARCHAR(10)[] DEFAULT '{}',
+    languages VARCHAR(10)[] DEFAULT ARRAY['de', 'en'],
     speaking_history JSONB DEFAULT '[]',
 
+    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    deleted_at TIMESTAMP WITH TIME ZONE  -- Soft delete support
 
-    -- Foreign key constraint with cascade delete
-    CONSTRAINT fk_speaker_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
+    -- NO FOREIGN KEY to users table (cross-service per ADR-003)
 );
 
 -- Indexes
-CREATE UNIQUE INDEX idx_speakers_user_id ON speakers(user_id);
+CREATE UNIQUE INDEX idx_speakers_username ON speakers(username);
 CREATE INDEX idx_speakers_availability ON speakers(availability);
 CREATE INDEX idx_speakers_workflow_state ON speakers(workflow_state);
 CREATE INDEX idx_speakers_expertise_areas ON speakers USING GIN(expertise_areas);
+CREATE INDEX idx_speakers_speaking_topics ON speakers USING GIN(speaking_topics);
+CREATE INDEX idx_speakers_active ON speakers(deleted_at) WHERE deleted_at IS NULL;
 
 -- Session speaker assignments (many-to-many with roles)
+-- Note: session_id references sessions table in event-management-service (no FK)
 CREATE TABLE session_speakers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL, -- References event service
-    speaker_id UUID NOT NULL REFERENCES speakers(id) ON DELETE CASCADE,
+    session_id UUID NOT NULL,  -- Cross-service reference (no FK constraint)
+    speaker_id UUID NOT NULL REFERENCES speakers(id) ON DELETE CASCADE,  -- Same service FK OK
     role VARCHAR(50) NOT NULL CHECK (role IN (
         'primary_speaker', 'co_speaker', 'moderator', 'panelist'
     )),
@@ -1726,15 +1769,21 @@ CREATE TABLE session_speakers (
 CREATE INDEX idx_session_speakers_session_id ON session_speakers(session_id);
 CREATE INDEX idx_session_speakers_speaker_id ON session_speakers(speaker_id);
 
--- Example query: Get speaker with user data (JPQL constructor projection)
--- SELECT new SpeakerResponse(
---     u.username, u.email, u.firstName, u.lastName, u.bio, u.profilePictureUrl, c.name,
---     s.availability, s.workflowState, s.expertiseAreas, s.speakingTopics
--- )
--- FROM Speaker s
--- INNER JOIN User u ON s.userId = u.id
--- LEFT JOIN Company c ON u.companyId = c.id
--- WHERE u.username = :username
+-- Example: Get speaker with user data (HTTP enrichment, NOT JPQL join)
+--
+-- // Java Service Pattern (ADR-004)
+-- public SpeakerResponse getSpeaker(String username) {
+--     Speaker speaker = speakerRepository.findByUsername(username)
+--         .orElseThrow(() -> new SpeakerNotFoundException(username));
+--
+--     // HTTP call to User Management Service
+--     UserProfileDTO user = userApiClient.getUserByUsername(username);
+--
+--     return buildResponse(speaker, user);
+-- }
+--
+-- // ❌ WRONG: Don't use cross-service JPQL joins
+-- // SELECT ... FROM Speaker s INNER JOIN User u ON s.userId = u.id
 ```
 
 ### Company Management Service Database Schema
