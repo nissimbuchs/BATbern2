@@ -403,6 +403,18 @@ function App() {
                       }
                     />
 
+                    {/* Story 6.0: Organizer Speaker Management */}
+                    <Route
+                      path="/organizer/speakers"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <Speakers />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
                     <Route
                       path="/speakers"
                       element={
