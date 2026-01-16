@@ -6,8 +6,11 @@ import ch.batbern.events.domain.SpeakerAvailability;
 import ch.batbern.events.dto.SpeakerRequest;
 import ch.batbern.events.dto.SpeakerResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.event.SpeakerCreatedEvent;
+import ch.batbern.events.event.SpeakerUpdatedEvent;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.SpeakerRepository;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for SpeakerService - Story 6.0.
@@ -48,6 +52,9 @@ class SpeakerServiceTest {
 
     @Mock
     private UserApiClient userApiClient;
+
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     @InjectMocks
     private SpeakerService speakerService;
@@ -291,5 +298,75 @@ class SpeakerServiceTest {
 
         // Then
         assertThat(exists).isFalse();
+    }
+
+    // Domain Event tests - AC7
+
+    @Test
+    void should_publishSpeakerCreatedEvent_when_speakerCreated() {
+        // Given
+        SpeakerRequest request = SpeakerRequest.builder()
+                .username("john.doe")
+                .availability(SpeakerAvailability.AVAILABLE)
+                .expertiseAreas(List.of("Security"))
+                .build();
+
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+        when(speakerRepository.existsByUsername("john.doe")).thenReturn(false);
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(mockSpeaker);
+
+        // When
+        speakerService.createSpeaker(request);
+
+        // Then - verify SpeakerCreatedEvent is published
+        ArgumentCaptor<SpeakerCreatedEvent> eventCaptor = ArgumentCaptor.forClass(SpeakerCreatedEvent.class);
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+
+        SpeakerCreatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUsername()).isEqualTo("john.doe");
+        assertThat(event.getAggregateId()).isEqualTo(mockSpeaker.getId());
+    }
+
+    @Test
+    void should_publishSpeakerUpdatedEvent_when_speakerUpdated() {
+        // Given
+        SpeakerRequest updateRequest = SpeakerRequest.builder()
+                .availability(SpeakerAvailability.BUSY)
+                .expertiseAreas(List.of("AI/ML", "Data"))
+                .build();
+
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(mockSpeaker);
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+
+        // When
+        speakerService.updateSpeaker("john.doe", updateRequest);
+
+        // Then - verify SpeakerUpdatedEvent is published
+        ArgumentCaptor<SpeakerUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(SpeakerUpdatedEvent.class);
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+
+        SpeakerUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUsername()).isEqualTo("john.doe");
+        assertThat(event.getAggregateId()).isEqualTo(mockSpeaker.getId());
+    }
+
+    @Test
+    void should_notPublishEvent_when_speakerCreationFails() {
+        // Given
+        SpeakerRequest request = SpeakerRequest.builder()
+                .username("john.doe")
+                .build();
+
+        when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
+        when(speakerRepository.existsByUsername("john.doe")).thenReturn(true);
+
+        // When/Then
+        assertThatThrownBy(() -> speakerService.createSpeaker(request))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        // Verify no event published on failure
+        verify(domainEventPublisher, never()).publish(any());
     }
 }

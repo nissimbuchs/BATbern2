@@ -6,8 +6,11 @@ import ch.batbern.events.domain.SpeakerAvailability;
 import ch.batbern.events.dto.SpeakerRequest;
 import ch.batbern.events.dto.SpeakerResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.event.SpeakerCreatedEvent;
+import ch.batbern.events.event.SpeakerUpdatedEvent;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.SpeakerRepository;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,6 +47,7 @@ public class SpeakerService {
 
     private final SpeakerRepository speakerRepository;
     private final UserApiClient userApiClient;
+    private final DomainEventPublisher domainEventPublisher;
     private final ObjectMapper objectMapper;
 
     /**
@@ -78,6 +82,18 @@ public class SpeakerService {
 
         Speaker saved = speakerRepository.save(speaker);
         log.info("Created speaker profile with ID: {}", saved.getId());
+
+        // AC7: Publish SpeakerCreatedEvent
+        domainEventPublisher.publish(new SpeakerCreatedEvent(
+                saved.getId(),
+                saved.getUsername(),
+                saved.getAvailability() != null ? saved.getAvailability().name() : null,
+                saved.getWorkflowState() != null ? saved.getWorkflowState().name() : null,
+                saved.getExpertiseAreas(),
+                saved.getSpeakingTopics(),
+                saved.getLanguages(),
+                request.getUsername()
+        ));
 
         return enrichWithUserData(saved);
     }
@@ -141,34 +157,58 @@ public class SpeakerService {
         Speaker speaker = speakerRepository.findByUsernameAndDeletedAtIsNull(username)
                 .orElseThrow(() -> new SpeakerNotFoundException(username));
 
+        // Track changed fields for AC7 event
+        List<String> changedFields = new ArrayList<>();
+
         // Update only non-null fields
         if (request.getAvailability() != null) {
+            changedFields.add("availability");
             speaker.setAvailability(request.getAvailability());
         }
         if (request.getWorkflowState() != null) {
+            changedFields.add("workflowState");
             speaker.setWorkflowState(request.getWorkflowState());
         }
         if (request.getExpertiseAreas() != null) {
+            changedFields.add("expertiseAreas");
             speaker.setExpertiseAreas(new ArrayList<>(request.getExpertiseAreas()));
         }
         if (request.getSpeakingTopics() != null) {
+            changedFields.add("speakingTopics");
             speaker.setSpeakingTopics(new ArrayList<>(request.getSpeakingTopics()));
         }
         if (request.getLinkedInUrl() != null) {
+            changedFields.add("linkedInUrl");
             speaker.setLinkedInUrl(request.getLinkedInUrl());
         }
         if (request.getTwitterHandle() != null) {
+            changedFields.add("twitterHandle");
             speaker.setTwitterHandle(request.getTwitterHandle());
         }
         if (request.getCertifications() != null) {
+            changedFields.add("certifications");
             speaker.setCertifications(new ArrayList<>(request.getCertifications()));
         }
         if (request.getLanguages() != null) {
+            changedFields.add("languages");
             speaker.setLanguages(new ArrayList<>(request.getLanguages()));
         }
 
         Speaker updated = speakerRepository.save(speaker);
         log.info("Updated speaker profile: {}", username);
+
+        // AC7: Publish SpeakerUpdatedEvent
+        domainEventPublisher.publish(new SpeakerUpdatedEvent(
+                updated.getId(),
+                updated.getUsername(),
+                updated.getAvailability() != null ? updated.getAvailability().name() : null,
+                updated.getWorkflowState() != null ? updated.getWorkflowState().name() : null,
+                updated.getExpertiseAreas(),
+                updated.getSpeakingTopics(),
+                updated.getLanguages(),
+                changedFields,
+                username
+        ));
 
         return enrichWithUserData(updated);
     }
