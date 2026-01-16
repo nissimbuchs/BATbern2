@@ -25,7 +25,10 @@ type ViewMode = 'grid' | 'list';
 export default function ArchivePage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: '400px', // Trigger loading 400px before reaching the element
+  });
 
   // View mode (persisted to localStorage)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
