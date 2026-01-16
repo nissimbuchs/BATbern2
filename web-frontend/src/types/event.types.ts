@@ -358,9 +358,11 @@ export interface EventListResponse {
   data: Event[];
   pagination: {
     page: number;
-    pages: number; // Total number of pages
     limit: number;
-    total: number; // Total number of items
+    totalPages: number; // Backend returns totalPages
+    totalItems: number; // Backend returns totalItems
+    hasNext: boolean; // Backend provides hasNext flag
+    hasPrev: boolean; // Backend provides hasPrev flag
   };
 }
 

@@ -41,14 +41,25 @@ export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '
 
   return useInfiniteQuery({
     queryKey: ['events', 'archive', filters, sort],
-    queryFn: ({ pageParam = 1 }) =>
-      eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
+    queryFn: async ({ pageParam = 1 }) => {
+      const result = await eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
         expand: ['topics', 'sessions', 'speakers'],
         sort,
-      }),
+      });
+      console.log('🔍 Infinite Query Response:', {
+        page: result.pagination.page,
+        totalPages: result.pagination.totalPages,
+        totalItems: result.pagination.totalItems,
+        dataLength: result.data.length,
+        hasNext: result.pagination.hasNext,
+      });
+      return result;
+    },
     getNextPageParam: (lastPage) => {
-      const { page, pages } = lastPage.pagination;
-      return page < pages ? page + 1 : undefined;
+      const { page, totalPages, hasNext } = lastPage.pagination;
+      const nextPage = hasNext ? page + 1 : undefined;
+      console.log('🔍 getNextPageParam:', { page, totalPages, hasNext, nextPage });
+      return nextPage;
     },
     initialPageParam: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes - cache results to reduce API calls

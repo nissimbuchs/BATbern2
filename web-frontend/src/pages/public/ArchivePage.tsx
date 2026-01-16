@@ -80,12 +80,24 @@ export default function ArchivePage() {
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteEvents(filters, sort);
 
+  // Flatten all pages into single events array
+  const events = data?.pages.flatMap((page) => page.data) || [];
+  const totalCount = data?.pages[0]?.pagination?.totalItems || 0;
+
   // Auto-fetch next page when scroll trigger is in view
   useEffect(() => {
+    console.log('🔍 Scroll Trigger Effect:', {
+      inView,
+      hasNextPage,
+      isFetchingNextPage,
+      eventsLength: events.length,
+      totalCount,
+    });
     if (inView && hasNextPage && !isFetchingNextPage) {
+      console.log('✅ Fetching next page...');
       fetchNextPage();
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, events.length, totalCount]);
 
   // Handle view mode toggle
   const handleViewModeChange = (mode: ViewMode) => {
@@ -129,10 +141,6 @@ export default function ArchivePage() {
     }
     setSearchParams(params);
   };
-
-  // Flatten all pages into single events array
-  const events = data?.pages.flatMap((page) => page.data) || [];
-  const totalCount = data?.pages[0]?.pagination?.total || 0;
 
   // SEO metadata
   const pageUrl = `${window.location.origin}/archive${window.location.search}`;
