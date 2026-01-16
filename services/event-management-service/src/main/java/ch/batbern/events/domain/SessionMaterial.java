@@ -1,0 +1,79 @@
+package ch.batbern.events.domain;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Session Material entity representing uploaded files (presentations, documents, videos)
+ * Story 5.9: Session Materials Upload - Task 1b (GREEN Phase)
+ *
+ * Matches V41__Add_session_materials.sql migration exactly.
+ * Follows ADR-002 Generic File Upload Service pattern.
+ */
+@Entity
+@Table(name = "session_materials")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class SessionMaterial {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "UUID")
+    private UUID id;
+
+    @Column(name = "session_id", nullable = false, columnDefinition = "UUID")
+    private UUID sessionId;
+
+    @Column(name = "upload_id", unique = true, nullable = false, length = 100)
+    private String uploadId;  // From Generic Upload Service (ADR-002)
+
+    @Column(name = "s3_key", nullable = false, length = 500)
+    private String s3Key;
+
+    @Column(name = "cloudfront_url", nullable = false, length = 1000)
+    private String cloudFrontUrl;
+
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
+
+    @Column(name = "file_extension", nullable = false, length = 10)
+    private String fileExtension;
+
+    @Column(name = "file_size", nullable = false)
+    private Long fileSize;  // Size in bytes
+
+    @Column(name = "mime_type", nullable = false, length = 100)
+    private String mimeType;
+
+    @Column(name = "material_type", nullable = false, length = 50)
+    private String materialType;  // PRESENTATION, DOCUMENT, VIDEO, OTHER
+
+    @Column(name = "uploaded_by", nullable = false)
+    private String uploadedBy;  // Username who uploaded
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    // Content extraction tracking (for future RAG search - Story 5.10)
+    @Column(name = "content_extracted", nullable = false)
+    private Boolean contentExtracted;
+
+    @Column(name = "extraction_status", nullable = false, length = 20)
+    private String extractionStatus;  // PENDING, IN_PROGRESS, COMPLETED, FAILED, NOT_APPLICABLE
+}
