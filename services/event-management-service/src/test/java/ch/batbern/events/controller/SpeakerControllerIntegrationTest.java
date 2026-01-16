@@ -283,6 +283,139 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // =========================================================================
+    // AC3: Resource Expansion Tests (Task 7)
+    // =========================================================================
+
+    @Test
+    void should_includeSpeakingHistory_when_includeSpeakingHistoryParameter() throws Exception {
+        // Given - speaker with speaking history
+        Speaker speaker = createTestSpeaker("history.speaker");
+        speaker.setSpeakingHistory("""
+            [
+                {"eventId": "evt-123", "sessionTitle": "Cloud Security", "date": "2025-06-15"},
+                {"eventId": "evt-456", "sessionTitle": "Zero Trust Architecture", "date": "2025-09-20"}
+            ]
+            """);
+        speakerRepository.save(speaker);
+
+        // When/Then - AC3: ?include=speakingHistory
+        mockMvc.perform(get("/api/v1/speakers/history.speaker")
+                        .param("include", "speakingHistory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username", is("john.doe")))
+                .andExpect(jsonPath("$.speakingHistory").isArray())
+                .andExpect(jsonPath("$.speakingHistory", hasSize(2)))
+                .andExpect(jsonPath("$.speakingHistory[0].sessionTitle", is("Cloud Security")));
+    }
+
+    @Test
+    void should_includeEventsAndSessions_when_includeMultipleParameters() throws Exception {
+        // Given - speaker with sessions in events
+        createTestSpeaker("multi.speaker");
+
+        // When/Then - AC3: ?include=events,sessions
+        mockMvc.perform(get("/api/v1/speakers/multi.speaker")
+                        .param("include", "events,sessions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events").exists())
+                .andExpect(jsonPath("$.sessions").exists());
+    }
+
+    @Test
+    void should_notIncludeExpansions_when_noIncludeParameter() throws Exception {
+        // Given
+        createTestSpeaker("basic.speaker");
+
+        // When/Then - no ?include, should not have expansion fields
+        mockMvc.perform(get("/api/v1/speakers/basic.speaker"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakingHistory").doesNotExist())
+                .andExpect(jsonPath("$.events").doesNotExist())
+                .andExpect(jsonPath("$.sessions").doesNotExist());
+    }
+
+    // =========================================================================
+    // AC4: Advanced Search Tests (Task 9)
+    // =========================================================================
+
+    @Test
+    void should_filterByExpertiseAreas_when_expertiseFilterProvided() throws Exception {
+        // Given - speakers with different expertise
+        Speaker securityExpert = createTestSpeaker("security.expert");
+        securityExpert.setExpertiseAreas(List.of("Security", "Compliance"));
+        speakerRepository.save(securityExpert);
+
+        Speaker cloudExpert = createTestSpeaker("cloud.expert");
+        cloudExpert.setExpertiseAreas(List.of("Cloud", "DevOps"));
+        speakerRepository.save(cloudExpert);
+
+        // When/Then - AC4: filter by expertise containing "Security"
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("expertiseAreas", "Security"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].username", is("john.doe"))); // from mock
+    }
+
+    @Test
+    void should_filterByLanguages_when_languagesFilterProvided() throws Exception {
+        // Given - speakers with different languages
+        Speaker germanSpeaker = createTestSpeaker("german.speaker");
+        germanSpeaker.setLanguages(List.of("de"));
+        speakerRepository.save(germanSpeaker);
+
+        Speaker frenchSpeaker = createTestSpeaker("french.speaker");
+        frenchSpeaker.setLanguages(List.of("fr"));
+        speakerRepository.save(frenchSpeaker);
+
+        // When/Then - AC4: filter by languages containing "de"
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("languages", "de"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
+    @Test
+    void should_filterBySpeakingTopics_when_topicsFilterProvided() throws Exception {
+        // Given - speakers with different topics
+        Speaker awsSpeaker = createTestSpeaker("aws.speaker");
+        awsSpeaker.setSpeakingTopics(List.of("AWS", "Lambda"));
+        speakerRepository.save(awsSpeaker);
+
+        Speaker azureSpeaker = createTestSpeaker("azure.speaker");
+        azureSpeaker.setSpeakingTopics(List.of("Azure", "Functions"));
+        speakerRepository.save(azureSpeaker);
+
+        // When/Then - AC4: filter by topics containing "AWS"
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("speakingTopics", "AWS"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
+    @Test
+    void should_combineFilters_when_multipleFiltersProvided() throws Exception {
+        // Given - speakers with various attributes
+        Speaker matchingSpeaker = createTestSpeaker("matching.speaker");
+        matchingSpeaker.setAvailability(SpeakerAvailability.AVAILABLE);
+        matchingSpeaker.setExpertiseAreas(List.of("Security"));
+        matchingSpeaker.setLanguages(List.of("de", "en"));
+        speakerRepository.save(matchingSpeaker);
+
+        Speaker nonMatchingSpeaker = createTestSpeaker("nonmatching.speaker");
+        nonMatchingSpeaker.setAvailability(SpeakerAvailability.BUSY);
+        nonMatchingSpeaker.setExpertiseAreas(List.of("Security"));
+        speakerRepository.save(nonMatchingSpeaker);
+
+        // When/Then - AC4: combine availability + expertise filters
+        mockMvc.perform(get("/api/v1/speakers")
+                        .param("availability", "AVAILABLE")
+                        .param("expertiseAreas", "Security"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
     // Helper method
 
     private Speaker createTestSpeaker(String username) {

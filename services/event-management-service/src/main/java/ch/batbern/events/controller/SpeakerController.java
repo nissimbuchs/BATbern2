@@ -47,12 +47,15 @@ public class SpeakerController {
     private final SpeakerService speakerService;
 
     /**
-     * List speakers with pagination and optional filters (AC2).
+     * List speakers with pagination and optional filters (AC2, AC4).
      *
      * Public endpoint - anonymous users can view speaker directory.
      *
      * @param availability Optional filter by availability
      * @param workflowState Optional filter by workflow state
+     * @param expertiseAreas Optional filter by expertise areas (array contains) (AC4)
+     * @param languages Optional filter by languages (array contains) (AC4)
+     * @param speakingTopics Optional filter by speaking topics (array contains) (AC4)
      * @param page Page number (1-based for API, converted to 0-based for Spring)
      * @param limit Page size
      * @param sort Sort field and direction (e.g., "username,asc")
@@ -62,12 +65,15 @@ public class SpeakerController {
     public ResponseEntity<PaginatedResponse<SpeakerResponse>> listSpeakers(
             @RequestParam(required = false) SpeakerAvailability availability,
             @RequestParam(required = false) SpeakerWorkflowState workflowState,
+            @RequestParam(required = false) String expertiseAreas,
+            @RequestParam(required = false) String languages,
+            @RequestParam(required = false) String speakingTopics,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "username,asc") String sort) {
 
-        log.debug("GET /api/v1/speakers - availability={}, workflowState={}, page={}, limit={}",
-                availability, workflowState, page, limit);
+        log.debug("GET /api/v1/speakers - availability={}, workflowState={}, expertiseAreas={}, languages={}, speakingTopics={}, page={}, limit={}",
+                availability, workflowState, expertiseAreas, languages, speakingTopics, page, limit);
 
         // Convert 1-based API page to 0-based Spring page
         int springPage = Math.max(0, page - 1);
@@ -76,7 +82,8 @@ public class SpeakerController {
         Sort sortSpec = parseSort(sort);
         PageRequest pageable = PageRequest.of(springPage, limit, sortSpec);
 
-        Page<SpeakerResponse> speakerPage = speakerService.listSpeakers(availability, workflowState, pageable);
+        Page<SpeakerResponse> speakerPage = speakerService.listSpeakers(
+                availability, workflowState, expertiseAreas, languages, speakingTopics, pageable);
 
         PaginationMetadata pagination = PaginationMetadata.builder()
                 .page(page)
@@ -96,19 +103,22 @@ public class SpeakerController {
     }
 
     /**
-     * Get speaker by username (AC2).
+     * Get speaker by username (AC2, AC3).
      *
      * ADR-003: Uses username as public identifier.
      * Public endpoint - anyone can view speaker profile.
      *
      * @param username Speaker's username
-     * @return Speaker with enriched user data
+     * @param include Optional comma-separated list of expansions (speakingHistory,events,sessions) (AC3)
+     * @return Speaker with enriched user data and optional expansions
      */
     @GetMapping("/{username}")
-    public ResponseEntity<SpeakerResponse> getSpeaker(@PathVariable String username) {
-        log.debug("GET /api/v1/speakers/{}", username);
+    public ResponseEntity<SpeakerResponse> getSpeaker(
+            @PathVariable String username,
+            @RequestParam(required = false) String include) {
+        log.debug("GET /api/v1/speakers/{} - include={}", username, include);
 
-        SpeakerResponse speaker = speakerService.getSpeakerByUsername(username);
+        SpeakerResponse speaker = speakerService.getSpeakerByUsername(username, include);
         return ResponseEntity.ok(speaker);
     }
 

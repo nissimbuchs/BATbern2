@@ -1,8 +1,14 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.domain.SpeakerAvailability;
+import ch.batbern.shared.types.SpeakerWorkflowState;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -40,4 +46,43 @@ public interface SpeakerRepository extends JpaRepository<Speaker, UUID>, JpaSpec
      * @return Optional containing the active speaker if found
      */
     Optional<Speaker> findByUsernameAndDeletedAtIsNull(String username);
+
+    /**
+     * Find speakers with advanced filtering including array fields (AC4).
+     * Uses PostgreSQL array operators for expertise_areas, languages, and speaking_topics.
+     *
+     * @param availability Optional availability filter (null to skip)
+     * @param workflowState Optional workflow state filter (null to skip)
+     * @param expertiseArea Optional expertise area to filter by (array contains)
+     * @param language Optional language to filter by (array contains)
+     * @param speakingTopic Optional speaking topic to filter by (array contains)
+     * @param pageable Pagination parameters
+     * @return Page of matching speakers
+     */
+    @Query(value = """
+        SELECT * FROM speakers s
+        WHERE s.deleted_at IS NULL
+          AND (:availability IS NULL OR s.availability = :availability)
+          AND (:workflowState IS NULL OR s.workflow_state = :workflowState)
+          AND (:expertiseArea IS NULL OR :expertiseArea = ANY(s.expertise_areas))
+          AND (:language IS NULL OR :language = ANY(s.languages))
+          AND (:speakingTopic IS NULL OR :speakingTopic = ANY(s.speaking_topics))
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM speakers s
+        WHERE s.deleted_at IS NULL
+          AND (:availability IS NULL OR s.availability = :availability)
+          AND (:workflowState IS NULL OR s.workflow_state = :workflowState)
+          AND (:expertiseArea IS NULL OR :expertiseArea = ANY(s.expertise_areas))
+          AND (:language IS NULL OR :language = ANY(s.languages))
+          AND (:speakingTopic IS NULL OR :speakingTopic = ANY(s.speaking_topics))
+        """,
+        nativeQuery = true)
+    Page<Speaker> findWithAdvancedFilters(
+            @Param("availability") String availability,
+            @Param("workflowState") String workflowState,
+            @Param("expertiseArea") String expertiseArea,
+            @Param("language") String language,
+            @Param("speakingTopic") String speakingTopic,
+            Pageable pageable);
 }

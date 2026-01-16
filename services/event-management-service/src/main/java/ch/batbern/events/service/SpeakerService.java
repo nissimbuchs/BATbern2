@@ -9,6 +9,8 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -19,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for managing global Speaker profiles - Story 6.0.
@@ -40,6 +44,7 @@ public class SpeakerService {
 
     private final SpeakerRepository speakerRepository;
     private final UserApiClient userApiClient;
+    private final ObjectMapper objectMapper;
 
     /**
      * Create a new speaker profile.
@@ -78,7 +83,7 @@ public class SpeakerService {
     }
 
     /**
-     * Get speaker by username with user enrichment.
+     * Get speaker by username with user enrichment (AC2).
      *
      * @param username Speaker's username (ADR-003)
      * @return Speaker with enriched user data
@@ -86,12 +91,26 @@ public class SpeakerService {
      */
     @Transactional(readOnly = true)
     public SpeakerResponse getSpeakerByUsername(String username) {
-        log.debug("Fetching speaker by username: {}", username);
+        return getSpeakerByUsername(username, null);
+    }
+
+    /**
+     * Get speaker by username with user enrichment and optional expansions (AC2, AC3).
+     *
+     * @param username Speaker's username (ADR-003)
+     * @param include Comma-separated list of expansions (speakingHistory,events,sessions)
+     * @return Speaker with enriched user data and requested expansions
+     * @throws SpeakerNotFoundException if speaker not found
+     */
+    @Transactional(readOnly = true)
+    public SpeakerResponse getSpeakerByUsername(String username, String include) {
+        log.debug("Fetching speaker by username: {}, include: {}", username, include);
 
         Speaker speaker = speakerRepository.findByUsernameAndDeletedAtIsNull(username)
                 .orElseThrow(() -> new SpeakerNotFoundException(username));
 
-        return enrichWithUserData(speaker);
+        Set<String> includes = parseIncludes(include);
+        return enrichWithUserData(speaker, includes);
     }
 
     /**
@@ -173,7 +192,7 @@ public class SpeakerService {
     }
 
     /**
-     * List speakers with pagination and optional filtering.
+     * List speakers with pagination and optional filtering (AC2).
      *
      * @param availability Optional availability filter
      * @param workflowState Optional workflow state filter
@@ -186,12 +205,59 @@ public class SpeakerService {
             SpeakerWorkflowState workflowState,
             Pageable pageable
     ) {
-        log.debug("Listing speakers with availability={}, workflowState={}", availability, workflowState);
+        return listSpeakers(availability, workflowState, null, null, null, pageable);
+    }
 
-        Specification<Speaker> spec = buildSpecification(availability, workflowState);
-        Page<Speaker> speakers = speakerRepository.findAll(spec, pageable);
+    /**
+     * List speakers with pagination and advanced filtering (AC2, AC4).
+     *
+     * @param availability Optional availability filter
+     * @param workflowState Optional workflow state filter
+     * @param expertiseAreas Optional filter - expertise areas must contain this value (AC4)
+     * @param languages Optional filter - languages must contain this value (AC4)
+     * @param speakingTopics Optional filter - speaking topics must contain this value (AC4)
+     * @param pageable Pagination parameters
+     * @return Page of speakers with enriched user data
+     */
+    @Transactional(readOnly = true)
+    public Page<SpeakerResponse> listSpeakers(
+            SpeakerAvailability availability,
+            SpeakerWorkflowState workflowState,
+            String expertiseAreas,
+            String languages,
+            String speakingTopics,
+            Pageable pageable
+    ) {
+        log.debug("Listing speakers with availability={}, workflowState={}, expertiseAreas={}, languages={}, speakingTopics={}",
+                availability, workflowState, expertiseAreas, languages, speakingTopics);
 
-        return speakers.map(this::enrichWithUserData);
+        Page<Speaker> speakers;
+
+        // Use native query for array filters (AC4), or Specification for basic filters
+        if (hasArrayFilters(expertiseAreas, languages, speakingTopics)) {
+            // Convert enum values to lowercase database representation
+            String availabilityDb = availability != null ? availability.name().toLowerCase() : null;
+            String workflowStateDb = workflowState != null ? workflowState.name().toLowerCase() : null;
+
+            speakers = speakerRepository.findWithAdvancedFilters(
+                    availabilityDb, workflowStateDb,
+                    expertiseAreas, languages, speakingTopics,
+                    pageable);
+        } else {
+            Specification<Speaker> spec = buildBasicSpecification(availability, workflowState);
+            speakers = speakerRepository.findAll(spec, pageable);
+        }
+
+        return speakers.map(s -> enrichWithUserData(s, Collections.emptySet()));
+    }
+
+    /**
+     * Check if any array filters are provided.
+     */
+    private boolean hasArrayFilters(String expertiseAreas, String languages, String speakingTopics) {
+        return (expertiseAreas != null && !expertiseAreas.isBlank())
+                || (languages != null && !languages.isBlank())
+                || (speakingTopics != null && !speakingTopics.isBlank());
     }
 
     /**
@@ -206,9 +272,10 @@ public class SpeakerService {
     }
 
     /**
-     * Build JPA Specification for filtering speakers.
+     * Build JPA Specification for basic filtering (availability, workflowState).
+     * Array filters use native query via findWithAdvancedFilters.
      */
-    private Specification<Speaker> buildSpecification(
+    private Specification<Speaker> buildBasicSpecification(
             SpeakerAvailability availability,
             SpeakerWorkflowState workflowState
     ) {
@@ -231,6 +298,20 @@ public class SpeakerService {
     }
 
     /**
+     * Parse comma-separated include parameter into a Set.
+     */
+    private Set<String> parseIncludes(String include) {
+        if (include == null || include.isBlank()) {
+            return Collections.emptySet();
+        }
+        Set<String> includes = new HashSet<>();
+        for (String part : include.split(",")) {
+            includes.add(part.trim().toLowerCase());
+        }
+        return includes;
+    }
+
+    /**
      * Enrich Speaker entity with User data from User Service (ADR-004).
      * Uses HTTP call to fetch user profile data.
      *
@@ -238,9 +319,20 @@ public class SpeakerService {
      * @return SpeakerResponse with combined data
      */
     private SpeakerResponse enrichWithUserData(Speaker speaker) {
+        return enrichWithUserData(speaker, Collections.emptySet());
+    }
+
+    /**
+     * Enrich Speaker entity with User data and optional expansions (ADR-004, AC3).
+     *
+     * @param speaker Speaker entity
+     * @param includes Set of expansion names (speakingHistory, events, sessions)
+     * @return SpeakerResponse with combined data and requested expansions
+     */
+    private SpeakerResponse enrichWithUserData(Speaker speaker, Set<String> includes) {
         UserResponse user = userApiClient.getUserByUsername(speaker.getUsername());
 
-        return SpeakerResponse.builder()
+        SpeakerResponse.SpeakerResponseBuilder builder = SpeakerResponse.builder()
                 // User fields (from HTTP enrichment)
                 .username(user.getId())
                 .email(user.getEmail())
@@ -259,7 +351,40 @@ public class SpeakerService {
                 .certifications(speaker.getCertifications())
                 .languages(speaker.getLanguages())
                 .createdAt(speaker.getCreatedAt())
-                .updatedAt(speaker.getUpdatedAt())
-                .build();
+                .updatedAt(speaker.getUpdatedAt());
+
+        // AC3: Resource expansion
+        if (includes.contains("speakinghistory")) {
+            builder.speakingHistory(parseSpeakingHistory(speaker.getSpeakingHistory()));
+        }
+
+        if (includes.contains("events")) {
+            // For now, return empty list - would need SessionUser query
+            builder.events(Collections.emptyList());
+        }
+
+        if (includes.contains("sessions")) {
+            // For now, return empty list - would need SessionUser query
+            builder.sessions(Collections.emptyList());
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Parse speaking history JSON string to list of entries (AC3).
+     */
+    private List<SpeakerResponse.SpeakingHistoryEntry> parseSpeakingHistory(String speakingHistoryJson) {
+        if (speakingHistoryJson == null || speakingHistoryJson.isBlank() || "[]".equals(speakingHistoryJson.trim())) {
+            return Collections.emptyList();
+        }
+
+        try {
+            return objectMapper.readValue(speakingHistoryJson,
+                    new TypeReference<List<SpeakerResponse.SpeakingHistoryEntry>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse speaking history JSON: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 }

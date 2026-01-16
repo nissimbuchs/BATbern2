@@ -1,0 +1,61 @@
+meta {
+  name: List Speakers
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/speakers?page=1&limit=20
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+params:query {
+  page: 1
+  limit: 20
+}
+
+assert {
+  res.status: eq 200
+  res.body.pagination: isDefined
+  res.body.data: isArray
+}
+
+tests {
+  test("should return 200 status (public endpoint)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should have pagination metadata", function() {
+    const body = res.getBody();
+    expect(body.pagination).to.be.an('object');
+    expect(body.pagination.page).to.equal(1);
+    expect(body.pagination.limit).to.equal(20);
+    expect(body.pagination.totalItems).to.be.a('number');
+  });
+
+  test("should return array of speakers", function() {
+    const body = res.getBody();
+    expect(body.data).to.be.an('array');
+  });
+
+  test("speakers should have username field (ADR-003)", function() {
+    const body = res.getBody();
+    if (body.data && body.data.length > 0) {
+      expect(body.data[0].username).to.be.a('string');
+    }
+  });
+
+  test("speakers should have availability field", function() {
+    const body = res.getBody();
+    if (body.data && body.data.length > 0) {
+      expect(body.data[0].availability).to.be.a('string');
+    }
+  });
+}

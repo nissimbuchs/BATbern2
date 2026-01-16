@@ -1,0 +1,45 @@
+meta {
+  name: Filter Speakers by Availability
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/speakers?availability=AVAILABLE
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: de-CH
+  Accept: application/json
+}
+
+params:query {
+  availability: AVAILABLE
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("should return 200 status with availability filter (AC2)", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return paginated results", function() {
+    const body = res.getBody();
+    expect(body.pagination).to.be.an('object');
+    expect(body.data).to.be.an('array');
+  });
+
+  test("should only return speakers with AVAILABLE status", function() {
+    const body = res.getBody();
+    body.data.forEach(speaker => {
+      expect(speaker.availability).to.equal('AVAILABLE');
+    });
+  });
+}

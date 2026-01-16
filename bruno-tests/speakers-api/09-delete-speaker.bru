@@ -1,0 +1,31 @@
+meta {
+  name: Delete Speaker (Soft Delete)
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should soft delete speaker successfully with ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

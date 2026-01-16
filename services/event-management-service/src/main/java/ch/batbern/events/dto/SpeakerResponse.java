@@ -110,4 +110,65 @@ public class SpeakerResponse {
      * Record last update timestamp.
      */
     private Instant updatedAt;
+
+    // --- Expansion fields (optional, populated via ?include parameter) ---
+
+    /**
+     * Speaking history - past sessions the speaker has presented (AC3).
+     * Populated when ?include=speakingHistory is requested.
+     * Contains parsed JSON from Speaker.speakingHistory field.
+     */
+    private List<SpeakingHistoryEntry> speakingHistory;
+
+    /**
+     * Events the speaker has participated in (AC3).
+     * Populated when ?include=events is requested.
+     */
+    private List<EventSummary> events;
+
+    /**
+     * Sessions the speaker has been assigned to (AC3).
+     * Populated when ?include=sessions is requested.
+     */
+    private List<SessionSummary> sessions;
+
+    /**
+     * Speaking history entry for past sessions.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SpeakingHistoryEntry {
+        private String eventId;
+        private String sessionTitle;
+        private String date;
+    }
+
+    /**
+     * Summary of an event for expansion.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EventSummary {
+        private String eventId;
+        private String title;
+        private String date;
+    }
+
+    /**
+     * Summary of a session for expansion.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SessionSummary {
+        private String sessionId;
+        private String title;
+        private String eventTitle;
+        private String role;
+    }
 }

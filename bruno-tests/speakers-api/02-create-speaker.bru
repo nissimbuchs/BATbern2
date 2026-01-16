@@ -1,0 +1,72 @@
+meta {
+  name: Create Speaker
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/speakers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "availability": "AVAILABLE",
+    "expertiseAreas": ["Cloud Architecture", "Security"],
+    "speakingTopics": ["AWS", "Kubernetes"],
+    "languages": ["de", "en"]
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.username: isDefined
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    const speaker = res.getBody();
+    bru.setEnvVar("testSpeakerCreatedUsername", speaker.username);
+    console.log("Created speaker with username:", speaker.username);
+  }
+}
+
+tests {
+  test("should create speaker successfully with ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created speaker with username", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('object');
+    expect(body.username).to.exist;
+    expect(body.username).to.be.a('string');
+  });
+
+  test("should return speaker with enriched user data (ADR-004)", function() {
+    const body = res.getBody();
+    expect(body.email).to.exist;
+    expect(body.firstName).to.exist;
+    expect(body.lastName).to.exist;
+  });
+
+  test("should return speaker with domain fields", function() {
+    const body = res.getBody();
+    expect(body.availability).to.equal('AVAILABLE');
+    expect(body.expertiseAreas).to.be.an('array');
+    expect(body.languages).to.be.an('array');
+  });
+}

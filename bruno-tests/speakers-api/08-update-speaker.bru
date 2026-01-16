@@ -1,0 +1,60 @@
+meta {
+  name: Update Speaker
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept-Language: en-US
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerCreatedUsername}}",
+    "availability": "BUSY",
+    "expertiseAreas": ["Cloud Architecture", "Security", "DevOps"],
+    "speakingTopics": ["AWS", "Kubernetes", "Terraform"]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.availability: eq BUSY
+}
+
+tests {
+  test("should update speaker successfully with ORGANIZER role", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated speaker with new availability", function() {
+    const body = res.getBody();
+    expect(body.availability).to.equal('BUSY');
+  });
+
+  test("should return updated expertise areas", function() {
+    const body = res.getBody();
+    expect(body.expertiseAreas).to.be.an('array');
+    expect(body.expertiseAreas).to.include('DevOps');
+  });
+
+  test("should preserve enriched user data after update", function() {
+    const body = res.getBody();
+    expect(body.email).to.exist;
+    expect(body.firstName).to.exist;
+    expect(body.lastName).to.exist;
+  });
+}
