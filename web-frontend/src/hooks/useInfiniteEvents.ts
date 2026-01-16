@@ -56,10 +56,8 @@ export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '
       return result;
     },
     getNextPageParam: (lastPage) => {
-      const { page, totalPages, hasNext } = lastPage.pagination;
-      const nextPage = hasNext ? page + 1 : undefined;
-      console.log('🔍 getNextPageParam:', { page, totalPages, hasNext, nextPage });
-      return nextPage;
+      const { hasNext, page } = lastPage.pagination;
+      return hasNext ? page + 1 : undefined;
     },
     initialPageParam: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes - cache results to reduce API calls

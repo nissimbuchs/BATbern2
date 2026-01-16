@@ -86,15 +86,7 @@ export default function ArchivePage() {
 
   // Auto-fetch next page when scroll trigger is in view
   useEffect(() => {
-    console.log('🔍 Scroll Trigger Effect:', {
-      inView,
-      hasNextPage,
-      isFetchingNextPage,
-      eventsLength: events.length,
-      totalCount,
-    });
     if (inView && hasNextPage && !isFetchingNextPage) {
-      console.log('✅ Fetching next page...');
       // Small delay to ensure state is stable before fetching
       const timer = setTimeout(() => {
         fetchNextPage();
