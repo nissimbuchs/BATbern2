@@ -21,7 +21,16 @@ export interface paths {
      */
     get: operations['listSpeakers'];
     put?: never;
-    post?: never;
+    /**
+     * Create speaker profile
+     * @description Create a new speaker profile for an existing user.
+     *     Story 6.0: Speaker Profile Foundation (AC2)
+     *
+     *     **Prerequisites**:
+     *     - User must already exist in User service
+     *     - Requires ORGANIZER role
+     */
+    post: operations['createSpeaker'];
     delete?: never;
     options?: never;
     head?: never;
@@ -44,7 +53,17 @@ export interface paths {
     get: operations['getSpeakerByUsername'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Soft delete speaker profile
+     * @description Soft delete a speaker profile (sets deletedAt timestamp).
+     *     Story 6.0: Speaker Profile Foundation (AC2)
+     *
+     *     **Notes**:
+     *     - Speaker is not permanently deleted, just marked as deleted
+     *     - Does not delete the underlying User entity
+     *     - Requires ORGANIZER role
+     */
+    delete: operations['deleteSpeaker'];
     options?: never;
     head?: never;
     /**
@@ -282,6 +301,84 @@ export interface components {
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
+      /** @description Speaking history (when ?include=speakingHistory) */
+      speakingHistory?: components['schemas']['SpeakingHistoryEntry'][];
+      /** @description Events speaker has presented at (when ?include=events) */
+      events?: Record<string, never>[];
+      /** @description Sessions speaker has delivered (when ?include=sessions) */
+      sessions?: Record<string, never>[];
+    };
+    /** @description A single entry in speaker's speaking history */
+    SpeakingHistoryEntry: {
+      /**
+       * @description Event code (ADR-003)
+       * @example BATbern55
+       */
+      eventCode?: string;
+      /** @example BATbern Q3 2025 */
+      eventTitle?: string;
+      /** @example Zero Trust Security in Enterprise */
+      sessionTitle?: string;
+      /** Format: date-time */
+      presentedAt?: string;
+    };
+    /**
+     * @description Create a new speaker profile for an existing user.
+     *     Story 6.0: Speaker Profile Foundation (AC2)
+     *
+     *     **Requires**: User must exist in User service (validated via UserApiClient)
+     */
+    CreateSpeakerRequest: {
+      /**
+       * @description Username of existing user (ADR-003)
+       * @example john.doe
+       */
+      username: string;
+      availability?: components['schemas']['SpeakerAvailability'];
+      workflowState?: components['schemas']['SpeakerWorkflowState'];
+      /**
+       * @description Areas of technical expertise
+       * @example [
+       *       "Security",
+       *       "Cloud Architecture"
+       *     ]
+       */
+      expertiseAreas?: string[];
+      /**
+       * @description Topics the speaker can present
+       * @example [
+       *       "Zero Trust",
+       *       "AWS Security"
+       *     ]
+       */
+      speakingTopics?: string[];
+      /**
+       * Format: uri
+       * @description LinkedIn profile URL
+       * @example https://linkedin.com/in/johndoe
+       */
+      linkedInUrl?: string;
+      /**
+       * @description Twitter/X handle
+       * @example @johndoe
+       */
+      twitterHandle?: string;
+      /**
+       * @description Professional certifications
+       * @example [
+       *       "CISSP",
+       *       "AWS Solutions Architect"
+       *     ]
+       */
+      certifications?: string[];
+      /**
+       * @description Languages speaker can present in (defaults to ['de', 'en'])
+       * @example [
+       *       "de",
+       *       "en"
+       *     ]
+       */
+      languages?: string[];
     };
     /**
      * @description Update speaker-specific fields only.
@@ -625,6 +722,12 @@ export interface operations {
         page?: number;
         /** @description Number of items per page */
         limit?: number;
+        /** @description Filter by expertise area (array contains filter) - AC4 */
+        expertiseAreas?: string;
+        /** @description Filter by languages (array contains filter) - AC4 */
+        languages?: string;
+        /** @description Filter by speaking topics (array contains filter) - AC4 */
+        speakingTopics?: string;
       };
       header?: never;
       path?: never;
@@ -667,9 +770,67 @@ export interface operations {
       };
     };
   };
-  getSpeakerByUsername: {
+  createSpeaker: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSpeakerRequest'];
+      };
+    };
+    responses: {
+      /** @description Speaker profile created successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerResponse'];
+        };
+      };
+      /** @description Bad request - validation errors or duplicate speaker */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description User not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSpeakerByUsername: {
+    parameters: {
+      query?: {
+        /**
+         * @description Resource expansion - comma-separated list of related resources to include (AC3).
+         *     Supported: speakingHistory, events, sessions
+         */
+        include?: string;
+      };
       header?: never;
       path: {
         /** @description Username (ADR-003 meaningful ID from User entity) */
@@ -696,6 +857,48 @@ export interface operations {
         content?: never;
       };
       /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  deleteSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Username (ADR-003 meaningful ID from User entity) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker profile deleted successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
       403: {
         headers: {
           [name: string]: unknown;
