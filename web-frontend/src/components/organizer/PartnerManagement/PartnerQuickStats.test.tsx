@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PartnerQuickStats } from './PartnerQuickStats';
 
 /**
@@ -20,6 +20,17 @@ describe('PartnerQuickStats', () => {
       totalMeetings: 12,
     },
   };
+
+  // Mock system time to ensure consistent duration calculations
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Set to January 20, 2025 (3 years after the mock partnership start date)
+    vi.setSystemTime(new Date('2025-01-20'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   /**
    * AC2 Test 2.1: should_displayPartnerSince_when_partnerLoaded

@@ -101,6 +101,20 @@ function handler(event) {
       cookieBehavior: cloudfront.CacheCookieBehavior.none(),
     });
 
+    // Cache policy for SEO files (robots.txt, sitemap.xml) - Story 4.1.8a
+    const seoCachePolicy = new cloudfront.CachePolicy(this, 'SeoCachePolicy', {
+      cachePolicyName: `${envName}-seo-cache`,
+      comment: 'Cache policy for SEO files (robots.txt, sitemap.xml)',
+      defaultTtl: cdk.Duration.hours(1),
+      maxTtl: cdk.Duration.hours(24),
+      minTtl: cdk.Duration.seconds(0),
+      headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.none(),
+      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      enableAcceptEncodingGzip: true,
+      enableAcceptEncodingBrotli: true,
+    });
+
     // Response headers policy for security
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'SecurityHeaders', {
       responseHeadersPolicyName: `${envName}-security-headers`,
@@ -207,6 +221,24 @@ function handler(event) {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           compress: true, // Priority 9: Enable compression for CSS files
           cachePolicy: staticAssetsCachePolicy,
+          responseHeadersPolicy,
+        },
+        '/robots.txt': {
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
+            originAccessControl: oac,
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: false, // robots.txt should not be compressed
+          cachePolicy: seoCachePolicy,
+          responseHeadersPolicy,
+        },
+        '/sitemap.xml': {
+          origin: origins.S3BucketOrigin.withOriginAccessControl(this.websiteBucket, {
+            originAccessControl: oac,
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          compress: true,
+          cachePolicy: seoCachePolicy,
           responseHeadersPolicy,
         },
       },

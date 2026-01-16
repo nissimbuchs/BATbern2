@@ -1,0 +1,158 @@
+schema: 1
+story: '4.1.7'
+story_title: 'API Optimization & Performance'
+gate: FAIL
+status_reason: 'Critical security vulnerability (XSS in ErrorBoundary), code duplication, and core performance metrics not validated'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-13T00:00:00Z'
+
+top_issues:
+  - severity: high
+    category: security
+    title: 'XSS vulnerability in new ErrorBoundary component'
+    description: 'ErrorBoundary.tsx displays unsanitized error messages, allowing potential XSS attacks through malicious API responses'
+    refs:
+      - 'web-frontend/src/components/ErrorBoundary.tsx:66-72'
+    suggested_owner: dev
+    recommendation: 'Delete new ErrorBoundary and use existing shared/ErrorBoundary with XSS protection'
+
+  - severity: high
+    category: maintainability
+    title: 'Code duplication - two ErrorBoundary implementations'
+    description: 'Two ErrorBoundary components exist: /components/ErrorBoundary.tsx (new, no tests) and /components/shared/ErrorBoundary/ErrorBoundary.tsx (existing, 18 tests, XSS-safe)'
+    refs:
+      - 'web-frontend/src/components/ErrorBoundary.tsx'
+      - 'web-frontend/src/components/shared/ErrorBoundary/ErrorBoundary.tsx'
+    suggested_owner: dev
+    recommendation: 'Consolidate to single ErrorBoundary component (use shared version)'
+
+  - severity: high
+    category: testing
+    title: 'Critical error handling code has no tests'
+    description: 'New ErrorBoundary component (96 lines) has zero test coverage despite being critical error handling infrastructure'
+    refs:
+      - 'web-frontend/src/components/ErrorBoundary.tsx'
+    suggested_owner: dev
+    recommendation: 'Use shared ErrorBoundary which has 325 lines of tests (18 test cases)'
+
+  - severity: high
+    category: acceptance-criteria
+    title: 'Core performance metrics not validated (AC7, AC8, AC9)'
+    description: 'Lighthouse score, LCP, and CLS targets not validated. Story marked complete without performance validation.'
+    refs: []
+    suggested_owner: dev
+    recommendation: 'Run Lighthouse audit on deployed application and document results'
+
+  - severity: medium
+    category: testing
+    title: 'Bundle size targets not automated'
+    description: 'Bundle size targets exist but no CI/CD validation to prevent regression'
+    refs:
+      - 'web-frontend/vite.config.ts'
+    suggested_owner: dev
+    recommendation: 'Add bundlesize or size-limit to CI/CD pipeline'
+
+waiver:
+  active: false
+
+quality_score: 45
+expires: '2026-01-27T00:00:00Z'
+
+evidence:
+  tests_reviewed: 1
+  tests_found:
+    - 'web-frontend/src/components/shared/ErrorBoundary/ErrorBoundary.test.tsx (18 test cases)'
+  tests_missing:
+    - 'ErrorBoundary.tsx (new component, no tests)'
+    - 'EventHeroSkeleton.tsx (low risk, visual component)'
+    - 'SpeakerGridSkeleton.tsx (low risk, visual component)'
+    - 'SessionCardsSkeleton.tsx (low risk, visual component)'
+  risks_identified: 5
+  trace:
+    ac_covered: [2, 5, 6]
+    ac_gaps: [1, 3, 4, 7, 8, 9, 10]
+
+nfr_validation:
+  security:
+    status: FAIL
+    notes: |
+      XSS vulnerability in ErrorBoundary.tsx - displays unsanitized error messages.
+      Attack vector: Malicious API response with HTML/JS in error message can execute in browser.
+      Shared ErrorBoundary has sanitizeErrorMessage() function for XSS protection.
+
+  performance:
+    status: CONCERNS
+    notes: |
+      Implementation looks correct (code splitting, lazy loading, caching configured).
+      However, core acceptance criteria not validated:
+      - AC7: Lighthouse score >90 (NOT VALIDATED)
+      - AC8: LCP <1.5s (NOT VALIDATED)
+      - AC9: CLS <0.1 (NOT VALIDATED)
+      Web Vitals monitoring code exists but targets not verified.
+
+  reliability:
+    status: CONCERNS
+    notes: |
+      Error boundaries implemented but new ErrorBoundary has no tests.
+      Code duplication creates maintenance burden and inconsistency risk.
+      Skeletons have no tests (acceptable - low risk visual components).
+
+  maintainability:
+    status: FAIL
+    notes: |
+      Critical code duplication: two ErrorBoundary implementations.
+      New component inferior to existing (no tests, no XSS protection, less flexible).
+      Inconsistent component location (/ vs /shared/).
+      Missing tests for critical error handling code.
+
+recommendations:
+  immediate:
+    - action: 'Delete web-frontend/src/components/ErrorBoundary.tsx (security risk)'
+      refs: ['web-frontend/src/components/ErrorBoundary.tsx']
+      rationale: 'XSS vulnerability and code duplication. Existing shared ErrorBoundary is superior.'
+
+    - action: 'Update main.tsx to import shared ErrorBoundary'
+      refs: ['web-frontend/src/main.tsx:15']
+      rationale: 'Use tested, secure ErrorBoundary with XSS protection'
+
+    - action: 'Run Lighthouse audit and validate AC7, AC8, AC9'
+      refs: []
+      rationale: 'Core performance acceptance criteria not validated'
+
+  future:
+    - action: 'Add bundle size checks to CI/CD'
+      refs: ['web-frontend/vite.config.ts']
+      rationale: 'Prevent bundle size regression'
+
+    - action: 'Consider tests for React Query caching behavior'
+      refs: []
+      rationale: 'Validate deduplication and cache invalidation'
+
+    - action: 'If shadcn/ui styling needed, create custom fallback for shared ErrorBoundary'
+      refs: ['web-frontend/src/components/shared/ErrorBoundary/ErrorBoundary.tsx']
+      rationale: 'Maintain security and tests while allowing custom styling'
+
+risk_summary:
+  xss_risk: 9
+  code_duplication_risk: 8
+  test_coverage_risk: 7
+  performance_validation_risk: 8
+  bundle_size_regression_risk: 5
+
+notes: |
+  This story demonstrates good engineering in many areas (Vite config, lazy loading, skeletons),
+  but has critical flaws that must be addressed:
+
+  1. SECURITY: XSS vulnerability in error handling (CRITICAL)
+  2. MAINTAINABILITY: Unnecessary code duplication (CRITICAL)
+  3. VALIDATION: Core performance ACs not validated (HIGH)
+  4. TESTING: No tests for critical error handling (HIGH)
+
+  The shared ErrorBoundary component already exists with:
+  - XSS protection (sanitizeErrorMessage)
+  - Comprehensive tests (18 test cases, 325 lines)
+  - Better error logging (correlation IDs)
+  - Custom fallback support
+  - ARIA accessibility attributes
+
+  Recommendation: Revert ErrorBoundary changes, use shared component, validate performance metrics.

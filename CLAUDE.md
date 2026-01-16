@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-16
 
 **Status:** ✅ **MVP COMPLETE & PRODUCTION READY**
 
-The core platform is functional and ready for production launch. Epics 1-5 are substantially complete (87-100% each), with only minor features pending:
-- **Missing**: Historical archive browsing (Epic 4.2), content search (Epic 4.3), newsletter integration (Epic 5 - BAT-16)
-- **Ready**: All entity CRUD, authentication, workflow management, event registration, speaker coordination, task system
+The core platform is functional and ready for production launch. Epics 1-4 are 100% complete, Epic 5 is 87.5% complete, with only newsletter integration pending:
+- **Missing**: Newsletter integration only (Epic 5 - BAT-16)
+- **Ready**: All entity CRUD, authentication, workflow management, event registration (full flow with performance optimization), speaker coordination, task system, public website with archive browsing and content search
 - **Production Data**: Historical data migration tooling complete, production import pending user trigger
+- **Recent**: Epic 4 completed 100% - Public website with registration, archive browsing (BAT-109), and content search
 
 ## Project Overview
 
@@ -32,16 +33,14 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
 - ✅ **Epic 2**: Entity CRUD & Domain Services - **100% COMPLETE**
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
-- 🔄 **Epic 4**: Public Website & Content Discovery - **85% COMPLETE** (Story 4.1 done, 4.2-4.3 pending)
+- ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE** (All stories: 4.1 Registration + Testing + Performance, 4.2 Archive Browsing, 4.3 Content Search)
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **87.5% COMPLETE** (7/8 stories done, BAT-16 pending)
 
-**Remaining MVP Work (~2.5 weeks):**
+**Remaining MVP Work (~1 week):**
 1. BAT-16: Overflow management, auto-publishing, event lifecycle finalization (~1 week)
-2. Story 4.2: Historical archive browsing with filters and timeline (~1 week)
-3. Story 4.3: Full-text content search across presentations/speakers (~0.5 weeks)
 
 **When Adding New Features:**
-- Platform is feature-complete for MVP - focus on completing Stories 4.2, 4.3, and BAT-16
+- Platform is feature-complete for MVP - focus on completing BAT-16 (newsletter integration)
 - New features should be deferred to Epic 6+ unless critical for launch
 - Prioritize bug fixes, performance optimization, and production readiness
 
