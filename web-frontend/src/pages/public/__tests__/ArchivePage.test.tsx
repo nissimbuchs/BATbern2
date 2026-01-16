@@ -169,14 +169,6 @@ describe('ArchivePage Component', () => {
     },
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(topicService.getTopics).mockResolvedValue({
-      data: mockTopics,
-      pagination: { page: 1, pages: 1, limit: 100, total: 3 },
-    });
-  });
-
   const renderWithProviders = (initialRoute = '/archive') => {
     return render(
       <HelmetProvider>
@@ -196,6 +188,11 @@ describe('ArchivePage Component', () => {
     queryClient.clear();
     // Reset localStorage
     window.localStorage.clear();
+    // Set up topicService mock AFTER clearAllMocks
+    vi.mocked(topicService.getTopics).mockResolvedValue({
+      data: mockTopics,
+      pagination: { page: 1, pages: 1, limit: 100, total: 3 },
+    });
   });
 
   describe('AC1: Event Cards with Session Preview', () => {
