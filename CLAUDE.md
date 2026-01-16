@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-16
 
 **Status:** ✅ **MVP COMPLETE & PRODUCTION READY**
 
-The core platform is functional and ready for production launch. Epics 1-5 are substantially complete (87-100% each), with only minor features pending:
+The core platform is functional and ready for production launch. Epics 1-5 are substantially complete (90-100% each), with only minor features pending:
 - **Missing**: Historical archive browsing (Epic 4.2), content search (Epic 4.3), newsletter integration (Epic 5 - BAT-16)
-- **Ready**: All entity CRUD, authentication, workflow management, event registration, speaker coordination, task system
+- **Ready**: All entity CRUD, authentication, workflow management, event registration (full flow with performance optimization), speaker coordination, task system
 - **Production Data**: Historical data migration tooling complete, production import pending user trigger
+- **Recent**: Story 4.1.8/4.1.8a completed - Testing, SEO, Performance optimization deployed
 
 ## Project Overview
 
@@ -32,7 +33,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
 - ✅ **Epic 2**: Entity CRUD & Domain Services - **100% COMPLETE**
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
-- 🔄 **Epic 4**: Public Website & Content Discovery - **85% COMPLETE** (Story 4.1 done, 4.2-4.3 pending)
+- ✅ **Epic 4**: Public Website & Content Discovery - **~90% COMPLETE** (Story 4.1 fully complete with performance optimization, 4.2-4.3 pending)
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **87.5% COMPLETE** (7/8 stories done, BAT-16 pending)
 
 **Remaining MVP Work (~2.5 weeks):**
