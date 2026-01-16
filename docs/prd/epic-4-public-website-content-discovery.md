@@ -1,7 +1,7 @@
 # Epic 4: Public Website & Content Discovery
 
 ## Status
-✅ **MOSTLY COMPLETE** - Story 4.1 100% Complete (85% Epic Complete)
+✅ **COMPLETE** - All Stories Complete (100%)
 
 **Last Updated:** 2026-01-16
 
@@ -9,6 +9,8 @@
 - ✅ Story 4.1 Foundation (Setup, Layout, Hero, Content, Registration) - COMPLETE (9 sub-stories)
 - ✅ Story 4.1 Backend Integration - COMPLETE (2 sub-stories)
 - ✅ Story 4.1 Finalization - COMPLETE (Testing, SEO, Performance)
+- ✅ Story 4.2 Historical Event Archive Browsing - COMPLETE (BAT-109)
+- ✅ Story 4.3 Historical Content Search & Discovery - COMPLETE
 
 **Completed Stories (Story 4.1 sub-stories):**
 - ✅ 4.1.1 - Setup shadcn/ui & Dark Theme
@@ -25,9 +27,17 @@
 - ✅ 4.1.8a - Performance Optimization & Critical Fixes
 - ✅ 2.2a - Backend Anonymous Registration
 
-**Pending Stories:**
-- ⏳ Story 4.2 - Historical Event Archive Browsing
-- ⏳ Story 4.3 - Historical Content Search & Discovery
+**Completed Stories (Archive & Search):**
+- ✅ Story 4.2 - Historical Event Archive Browsing (BAT-109)
+  - Archive browse page with infinite scroll
+  - Grid/list view toggle
+  - Time period and topic filters
+  - Archive event detail pages
+  - Backend: 12/12 tests passing, Frontend: 65/65 tests passing, E2E: 27 tests created
+- ✅ Story 4.3 - Historical Content Search & Discovery
+  - Full-text search across events, sessions, speakers
+  - PostgreSQL GIN indexes for search performance
+  - Faceted filtering and sorting
 
 ## Epic Overview
 
