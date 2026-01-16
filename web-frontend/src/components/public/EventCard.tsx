@@ -91,9 +91,9 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                 <div
                   className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                 >
-                  {displayedSessions.map((session) => (
+                  {displayedSessions.map((session, index) => (
                     <div
-                      key={session.sessionId}
+                      key={session.sessionId || session.id || `session-${index}`}
                       className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
                     >
                       {/* Session Title */}
@@ -104,9 +104,9 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                         <div
                           className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                         >
-                          {session.speakers.map((speaker) => (
+                          {session.speakers.map((speaker, speakerIndex) => (
                             <SpeakerDisplay
-                              key={speaker.username}
+                              key={speaker.username || `speaker-${index}-${speakerIndex}`}
                               speaker={speaker}
                               size="small"
                               showProfilePicture={true}
