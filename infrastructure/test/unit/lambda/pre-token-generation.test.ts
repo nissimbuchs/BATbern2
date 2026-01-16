@@ -257,6 +257,34 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       expect(roles).toBe('ORGANIZER,SPEAKER');
     });
 
+    it('should_orderRolesByPriority_when_multipleRolesExist', async () => {
+      // Arrange
+      const event = createPreTokenGenerationEvent();
+      const context = createLambdaContext();
+
+      // Mock database returning roles in priority order (ORGANIZER > SPEAKER > PARTNER > ATTENDEE)
+      // This simulates the CASE-based ORDER BY in the SQL query
+      mockDbClient.query.mockResolvedValueOnce({
+        rows: [
+          { role: 'ORGANIZER' },
+          { role: 'SPEAKER' },
+          { role: 'PARTNER' },
+          { role: 'ATTENDEE' },
+        ],
+        rowCount: 4,
+      } as any);
+
+      // Act
+      const result = await handler(event, context, () => {});
+
+      // Assert - Roles should be ordered by priority (highest first)
+      // Frontend uses first role as primary, so ORGANIZER must come first
+      const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
+      expect(roles).toBeDefined();
+      expect(roles).toBe('ORGANIZER,SPEAKER,PARTNER,ATTENDEE');
+      expect(roles?.split(',')[0]).toBe('ORGANIZER'); // Verify highest priority role is first
+    });
+
     it('should_maintainRoleCase_when_settingClaims', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
