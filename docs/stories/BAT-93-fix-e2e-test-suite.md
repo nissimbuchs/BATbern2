@@ -63,11 +63,56 @@ See Linear sub-tasks for detailed breakdown:
 Claude Sonnet 4.5
 
 ### Status
-In Progress
+In Progress - BAT-94 (organizer tests) partially complete
+
+### Current Session Progress (2026-01-17)
+
+**BAT-94: Fix e2e/organizer/ tests (5 test files)**
+
+**Completed:**
+1. ✅ Fixed backend service startup issue (event-management-service missing COGNITO_USER_POOL_ID)
+2. ✅ Added `data-testid` attributes to QuickActions component (5 buttons)
+3. ✅ Added `data-testid` attributes to EventTypeSelector menu options (3 types)
+4. ✅ Updated `speaker-brainstorming.spec.ts` helper function with language-independent selectors
+5. ✅ Added proper wait conditions for dashboard/modal loading
+6. ✅ Committed changes: `fd54642b`
+
+**Components Modified:**
+- `web-frontend/src/components/organizer/EventManagement/QuickActions.tsx`
+- `web-frontend/src/components/organizer/EventTypeSelector/EventTypeSelector.tsx`
+- `web-frontend/e2e/organizer/speaker-brainstorming.spec.ts`
+
+**Pattern Established (Reusable):**
+1. Identify language-dependent selectors: `grep ":has-text(" test-file.spec.ts`
+2. Add `data-testid="descriptive-name"` to component
+3. Replace `:has-text()` with `[data-testid="..."]` in test
+4. Add wait conditions for dynamic content
+5. Commit with clear message
+
+**Remaining Work for BAT-94:**
+- [ ] `speaker-outreach.spec.ts` (15 tests) - Apply same pattern
+- [ ] `speaker-status-tracking.spec.ts` - Apply same pattern
+- [ ] `topic-selection.spec.ts` - Apply same pattern
+- [ ] `event-type-selection.spec.ts` (18 tests) - Cleanup remaining `:has-text()` selectors
+
+**Important Notes:**
+- Some tests may be intentionally RED phase (unimplemented features - speaker brainstorming/outreach)
+- Focus on fixing language-dependency issues first
+- Document which features are unimplemented vs. broken tests
+
+**How to Continue:**
+1. Check backend health: `curl 'http://localhost:8000/api/v1/events?page=1&limit=10'`
+2. Pick next test file: `npx playwright test e2e/organizer/[file].spec.ts --max-failures=1`
+3. Apply established pattern (see Linear comment for details)
+4. Commit each file separately
 
 ### File List
 - `docs/stories/BAT-93-fix-e2e-test-suite.md` (this file)
-- See Linear sub-tasks for specific test files
+- `web-frontend/src/components/organizer/EventManagement/QuickActions.tsx`
+- `web-frontend/src/components/organizer/EventTypeSelector/EventTypeSelector.tsx`
+- `web-frontend/e2e/organizer/speaker-brainstorming.spec.ts`
+- See Linear sub-tasks (BAT-94 through BAT-108) for remaining files
 
 ### Change Log
+- 2026-01-17: BAT-94 session - Fixed backend startup, added data-testid to QuickActions/EventTypeSelector, updated speaker-brainstorming test helpers. Commit: fd54642b
 - 2026-01-10: Story created with 15 sub-tasks for E2E test groups
