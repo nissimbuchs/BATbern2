@@ -10,7 +10,6 @@ import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-r
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
-import { sessionApiClient } from '@/services/api/sessionApiClient';
 
 interface EventProgramProps {
   sessions: SessionUI[];
@@ -20,24 +19,18 @@ interface EventProgramProps {
 export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps) => {
   const { t } = useTranslation('events');
 
-  // Helper: Handle material download (Story 5.9 - Task 8b)
-  const handleMaterialDownload = async (
-    eventCode: string,
-    sessionSlug: string,
-    materialId: string
-  ) => {
-    try {
-      // Fetch presigned download URL
-      const response = await sessionApiClient.getMaterialDownloadUrl(
-        eventCode,
-        sessionSlug,
-        materialId
-      );
-      // Open in new tab
-      window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('Failed to download material:', error);
-      alert(t('public.program.downloadError', 'Failed to download material. Please try again.'));
+  // Helper: Get type label for display (Story 5.9 - Task 8b)
+  const getMaterialTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'PRESENTATION':
+        return t('public.program.materialTypes.presentation', 'Presentation');
+      case 'DOCUMENT':
+        return t('public.program.materialTypes.document', 'Document');
+      case 'VIDEO':
+        return t('public.program.materialTypes.video', 'Video');
+      case 'OTHER':
+      default:
+        return t('public.program.materialTypes.other', 'Other');
     }
   };
 
@@ -200,22 +193,23 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
                           <p className="text-xs text-zinc-500 mb-3">
                             {t('public.program.materials', 'Materials')}:
                           </p>
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {Object.entries(groupMaterialsByType(session.materials)).map(
                               ([type, materials]) => (
                                 <div key={type}>
+                                  {/* Material Type Heading */}
+                                  <p className="text-xs font-medium text-zinc-400 mb-2 capitalize">
+                                    {getMaterialTypeLabel(type)}
+                                  </p>
                                   <div className="space-y-2">
                                     {materials.map((material) => (
-                                      <button
+                                      <a
                                         key={material.id}
-                                        onClick={() =>
-                                          handleMaterialDownload(
-                                            session.eventCode,
-                                            session.sessionSlug,
-                                            material.id
-                                          )
-                                        }
-                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 w-full text-left"
+                                        href={material.cloudFrontUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`Download ${material.fileName}`}
+                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline"
                                       >
                                         {getMaterialTypeIcon(material.materialType)}
                                         <span className="flex-1">{material.fileName}</span>
@@ -223,7 +217,7 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
                                           {formatFileSize(material.fileSize)}
                                         </span>
                                         <Download className="h-4 w-4" />
-                                      </button>
+                                      </a>
                                     ))}
                                   </div>
                                 </div>

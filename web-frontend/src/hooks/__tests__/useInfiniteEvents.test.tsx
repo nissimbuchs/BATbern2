@@ -50,6 +50,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: true,
     },
   };
 
@@ -71,6 +72,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: true,
     },
   };
 
@@ -92,6 +94,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: false,
     },
   };
 
@@ -338,7 +341,7 @@ describe('useInfiniteEvents Hook', () => {
           expect.objectContaining({
             includeArchived: true,
             workflowState: ['ARCHIVED'],
-            year: 2020,
+            topicCode: ['cloud'],
             search: 'Architecture',
           }),
           { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }

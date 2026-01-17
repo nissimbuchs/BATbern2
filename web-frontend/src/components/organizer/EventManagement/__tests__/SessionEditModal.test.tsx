@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
@@ -675,8 +676,8 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     const materialsTab = screen.getByRole('tab', { name: /materials/i });
     await user.click(materialsTab);
 
-    // Should display FileUpload component
-    expect(screen.getByText(/drag.*drop files/i)).toBeInTheDocument();
+    // Should display FileUpload component (check for dropzone)
+    expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
   });
 
   it('should_saveUploadedMaterials_when_modalSaved', async () => {
