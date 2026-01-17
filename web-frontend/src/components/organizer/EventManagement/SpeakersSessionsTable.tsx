@@ -51,7 +51,7 @@ interface SpeakersSessionsTableProps {
   sessions: SessionUI[];
   eventCode: string;
   eventDate: string; // ISO 8601 date for time conversion
-  onViewMaterials: (sessionId: string) => void;
+  onViewMaterials: (sessionId: string) => void; // Kept for backwards compatibility
   onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
   isLoading?: boolean;
   error?: string;
@@ -61,7 +61,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   sessions,
   eventCode: _eventCode, // eslint-disable-line @typescript-eslint/no-unused-vars
   eventDate,
-  onViewMaterials,
+  onViewMaterials: _onViewMaterials, // eslint-disable-line @typescript-eslint/no-unused-vars
   onSessionUpdate,
   isLoading = false,
   error,
@@ -71,6 +71,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<SessionUI | null>(null);
+  const [modalInitialTab, setModalInitialTab] = useState<number>(0); // Story 5.9 - AC2
 
   // Sort sessions by start time (unassigned sessions go to the end)
   const sortedSessions = React.useMemo(() => {
@@ -115,69 +116,61 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     }
   };
 
-  // Materials status icon and color mapping (QualityReviewStatus from architecture)
-  const getMaterialsStatusIcon = (
-    status?:
-      | 'pending'
-      | 'in_review'
-      | 'approved'
-      | 'requires_changes'
-      | 'rejected'
-      | 'revision_submitted'
-  ) => {
-    // Default to 'pending' if status is not available (Phase 2 feature)
-    const effectiveStatus = status || 'pending';
-    switch (effectiveStatus) {
-      case 'approved':
-        return (
-          <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />
-        );
-      case 'in_review':
-      case 'revision_submitted':
-      case 'pending':
-        return (
-          <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
-        );
-      case 'rejected':
-      case 'requires_changes':
-        return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
+  // Materials status icon and color mapping (Story 5.9 - AC2)
+  const getMaterialsStatusIcon = (session: SessionUI) => {
+    // Story 5.9: Use materialsCount and hasPresentation for status logic
+    const materialsCount = session.materialsCount || 0;
+    const hasPresentation = session.hasPresentation || false;
+
+    if (materialsCount === 0) {
+      // ❌ Missing: No materials uploaded
+      return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
     }
+
+    if (materialsCount > 0 && !hasPresentation) {
+      // ⚠️ Pending: Some materials but no presentation
+      return (
+        <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
+      );
+    }
+
+    // ✓ Complete: Has presentation
+    return <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />;
   };
 
-  const getMaterialsStatusLabel = (
-    status?:
-      | 'pending'
-      | 'in_review'
-      | 'approved'
-      | 'requires_changes'
-      | 'rejected'
-      | 'revision_submitted'
-  ) => {
-    // Default to 'pending' if status is not available (Phase 2 feature)
-    const effectiveStatus = status || 'pending';
-    switch (effectiveStatus) {
-      case 'approved':
-        return t('speakers.materialsComplete');
-      case 'in_review':
-      case 'revision_submitted':
-      case 'pending':
-        return t('speakers.materialsPending');
-      case 'rejected':
-      case 'requires_changes':
-        return t('speakers.materialsMissing');
-      default:
-        return '';
+  const getMaterialsStatusLabel = (session: SessionUI) => {
+    // Story 5.9: Use materialsCount and hasPresentation for status logic
+    const materialsCount = session.materialsCount || 0;
+    const hasPresentation = session.hasPresentation || false;
+
+    if (materialsCount === 0) {
+      return t('speakers.materialsMissing');
     }
+
+    if (materialsCount > 0 && !hasPresentation) {
+      return t('speakers.materialsPending');
+    }
+
+    return t('speakers.materialsComplete');
   };
 
   const handleRowClick = (session: SessionUI) => {
     setSelectedSession(session);
+    setModalInitialTab(0); // Open on Details tab
+    setEditModalOpen(true);
+  };
+
+  // Story 5.9 - AC2: Materials button opens SessionEditModal on Materials tab
+  const handleMaterialsClick = (session: SessionUI) => {
+    setSelectedSession(session);
+    setModalInitialTab(1); // Open on Materials tab
     setEditModalOpen(true);
   };
 
   const handleEditModalClose = () => {
     setEditModalOpen(false);
     setSelectedSession(null);
+    setModalInitialTab(0); // Reset to Details tab
   };
 
   // Loading state
@@ -264,10 +257,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                     </Stack>
                     <Typography variant="body2">{session.title}</Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {getMaterialsStatusIcon(session.materialsStatus)}
-                      <Typography variant="caption">
-                        {getMaterialsStatusLabel(session.materialsStatus)}
-                      </Typography>
+                      {getMaterialsStatusIcon(session)}
+                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
                     </Stack>
                   </>
                 ) : session.speaker ? (
@@ -282,10 +273,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                     />
                     <Typography variant="body2">{session.title}</Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      {getMaterialsStatusIcon(session.materialsStatus)}
-                      <Typography variant="caption">
-                        {getMaterialsStatusLabel(session.materialsStatus)}
-                      </Typography>
+                      {getMaterialsStatusIcon(session)}
+                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
                     </Stack>
                   </>
                 ) : (
@@ -303,7 +292,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   startIcon={<FolderIcon />}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onViewMaterials(session.sessionSlug);
+                    handleMaterialsClick(session); // Story 5.9 - AC2
                   }}
                 >
                   {t('speakers.materials')}
@@ -393,10 +382,8 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
                 <TableCell>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    {getMaterialsStatusIcon(session.materialsStatus)}
-                    <Typography variant="caption">
-                      {getMaterialsStatusLabel(session.materialsStatus)}
-                    </Typography>
+                    {getMaterialsStatusIcon(session)}
+                    <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
                   </Stack>
                 </TableCell>
 
@@ -408,7 +395,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                         startIcon={<FolderIcon />}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onViewMaterials(session.sessionSlug);
+                          handleMaterialsClick(session); // Story 5.9 - AC2
                         }}
                       >
                         {t('speakers.materials')}
@@ -429,6 +416,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         session={selectedSession}
         eventDate={eventDate}
         onSave={onSessionUpdate}
+        initialTab={modalInitialTab} // Story 5.9 - AC2: Materials button opens Materials tab
       />
     </Box>
   );

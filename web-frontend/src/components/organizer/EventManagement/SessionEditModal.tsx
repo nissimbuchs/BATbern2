@@ -42,6 +42,7 @@ interface SessionEditModalProps {
   session: SessionUI | null;
   eventDate: string; // ISO 8601 date for time conversion
   onSave: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
+  initialTab?: number; // 0 = Details (default), 1 = Materials (Story 5.9 - AC2)
 }
 
 export interface SessionUpdateData {
@@ -96,6 +97,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   session,
   eventDate,
   onSave,
+  initialTab = 0,
 }) => {
   const { t } = useTranslation('events');
 
@@ -115,7 +117,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   // Story 5.9: Materials tab state
-  const [activeTab, setActiveTab] = useState<number>(0); // 0 = Details, 1 = Materials
+  const [activeTab, setActiveTab] = useState<number>(initialTab); // 0 = Details, 1 = Materials
   const [uploadedMaterials, setUploadedMaterials] = useState<UploadedFile[]>([]);
   const [existingMaterials, setExistingMaterials] = useState<SessionMaterial[]>([]);
 
@@ -148,9 +150,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       // Story 5.9: Initialize materials from session
       setExistingMaterials(session.materials || []);
       setUploadedMaterials([]);
-      setActiveTab(0); // Reset to Details tab
+      setActiveTab(initialTab); // Use initialTab prop (AC2: Materials button opens Materials tab)
     }
-  }, [session]);
+  }, [session, initialTab]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
