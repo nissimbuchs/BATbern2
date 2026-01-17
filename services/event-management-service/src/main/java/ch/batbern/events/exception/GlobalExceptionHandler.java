@@ -415,6 +415,30 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle AccessDeniedException (Spring Security access denied)
+     * Returns HTTP 403 Forbidden
+     * Story 5.9: Session Materials Upload (AC7 - RBAC enforcement)
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            org.springframework.security.access.AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Access denied: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
      * Handle AuthorizationDeniedException (access denied)
      * Returns HTTP 403 Forbidden
      * Story 5.1: Event Type Definition (AC8 - ORGANIZER role required)

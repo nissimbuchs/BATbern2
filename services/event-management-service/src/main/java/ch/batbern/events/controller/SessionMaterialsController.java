@@ -1,14 +1,19 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionMaterialAssociationRequest;
 import ch.batbern.events.dto.SessionMaterialResponse;
+import ch.batbern.events.exception.SessionNotFoundException;
+import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SessionMaterialsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +39,7 @@ import java.util.UUID;
  * RBAC (AC7):
  * - Speakers can only upload/delete materials for their own sessions
  * - Organizers can upload/delete materials for any session
- * - RBAC enforced via @PreAuthorize annotations + SessionSecurityService
+ * - RBAC enforced via @PreAuthorize annotations + inline permission checks
  */
 @RestController
 @RequestMapping("/api/v1/sessions/{sessionSlug}/materials")
@@ -44,7 +49,13 @@ public class SessionMaterialsController {
     private SessionMaterialsService sessionMaterialsService;
 
     @Autowired
-    private SessionSecurityService sessionSecurityService;
+    private SessionRepository sessionRepository;
+
+    @Autowired
+    private SessionUserRepository sessionUserRepository;
+
+    @Autowired
+    private SecurityContextHelper securityContextHelper;
 
     /**
      * AC5: Associate uploaded materials with session
@@ -56,19 +67,29 @@ public class SessionMaterialsController {
      *
      * @param sessionSlug Session identifier
      * @param request Association request with uploadIds and materialTypes
-     * @param authentication Current user authentication
      * @return 201 Created with materials list
      */
     @PostMapping
-    @PreAuthorize("hasRole('ORGANIZER') or @sessionSecurityService.isSpeakerOfSession(#sessionSlug, authentication.name)")
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('SPEAKER')")
     public ResponseEntity<Map<String, Object>> associateMaterials(
             @PathVariable String sessionSlug,
-            @Valid @RequestBody SessionMaterialAssociationRequest request,
-            Authentication authentication) {
+            @Valid @RequestBody SessionMaterialAssociationRequest request) {
 
-        String uploadedBy = authentication.getName();
-        List<SessionMaterialResponse> materials = sessionMaterialsService.associateMaterialsWithSession(
-                sessionSlug, request, uploadedBy);
+        String username = securityContextHelper.getCurrentUsername();
+
+        // AC7: Check speaker owns session (organizers bypass this check)
+        if (!securityContextHelper.hasRole("ORGANIZER")) {
+            Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                    .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
+
+            if (!sessionUserRepository.existsBySessionIdAndUsername(session.getId(), username)) {
+                throw new AccessDeniedException(
+                        "Speaker can only upload materials to their own sessions");
+            }
+        }
+
+        List<SessionMaterialResponse> materials = sessionMaterialsService
+                .associateMaterialsWithSession(sessionSlug, request, username);
 
         Map<String, Object> response = new HashMap<>();
         response.put("materials", materials);
@@ -90,7 +111,8 @@ public class SessionMaterialsController {
     public ResponseEntity<Map<String, Object>> getMaterials(
             @PathVariable String sessionSlug) {
 
-        List<SessionMaterialResponse> materials = sessionMaterialsService.getMaterialsBySession(sessionSlug);
+        List<SessionMaterialResponse> materials = sessionMaterialsService
+                .getMaterialsBySession(sessionSlug);
 
         Map<String, Object> response = new HashMap<>();
         response.put("materials", materials);
@@ -108,17 +130,27 @@ public class SessionMaterialsController {
      *
      * @param sessionSlug Session identifier
      * @param materialId Material UUID
-     * @param authentication Current user authentication
      * @return 204 No Content
      */
     @DeleteMapping("/{materialId}")
-    @PreAuthorize("hasRole('ORGANIZER') or @sessionSecurityService.isSpeakerOfSession(#sessionSlug, authentication.name)")
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('SPEAKER')")
     public ResponseEntity<Void> deleteMaterial(
             @PathVariable String sessionSlug,
-            @PathVariable UUID materialId,
-            Authentication authentication) {
+            @PathVariable UUID materialId) {
 
-        String username = authentication.getName();
+        String username = securityContextHelper.getCurrentUsername();
+
+        // AC7: Check speaker owns session (organizers bypass this check)
+        if (!securityContextHelper.hasRole("ORGANIZER")) {
+            Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                    .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
+
+            if (!sessionUserRepository.existsBySessionIdAndUsername(session.getId(), username)) {
+                throw new AccessDeniedException(
+                        "Speaker can only delete materials from their own sessions");
+            }
+        }
+
         sessionMaterialsService.deleteMaterial(sessionSlug, materialId, username);
         return ResponseEntity.noContent().build();
     }
