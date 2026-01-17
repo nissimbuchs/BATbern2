@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -155,19 +156,66 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
     @Nested
     class BulkSendInvitation {
 
+        /**
+         * Helper to set up unique test data for bulk tests.
+         * Bulk invitation uses Propagation.NOT_SUPPORTED, so we must:
+         * 1. Rollback parent @BeforeEach data (not committed)
+         * 2. Create unique test data
+         * 3. Commit it to the database
+         */
+        private record BulkTestData(String speakerUsername, String eventCode) {}
+
+        private BulkTestData setupBulkTestData(String testSuffix) {
+            // Rollback parent @BeforeEach data (not needed for bulk tests)
+            TestTransaction.flagForRollback();
+            TestTransaction.end();
+
+            // Start new transaction with unique test data
+            TestTransaction.start();
+
+            String uniqueSpeaker = "bulk.speaker." + testSuffix;
+            String uniqueEventCode = "BULK-" + testSuffix;
+
+            speakerRepository.save(Speaker.builder()
+                    .username(uniqueSpeaker)
+                    .build());
+
+            eventRepository.save(Event.builder()
+                    .eventCode(uniqueEventCode)
+                    .title("Bulk Test Event")
+                    .eventNumber(800 + testSuffix.hashCode() % 100)
+                    .date(Instant.now().plus(60, ChronoUnit.DAYS))
+                    .eventType(EventType.EVENING)
+                    .registrationDeadline(Instant.now().plus(30, ChronoUnit.DAYS))
+                    .venueName("Test Venue")
+                    .venueAddress("Test Address, Bern")
+                    .venueCapacity(100)
+                    .organizerUsername("organizer")
+                    .workflowState(EventWorkflowState.SPEAKER_IDENTIFICATION)
+                    .build());
+
+            // Commit test data so it's visible to bulk method
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+
+            return new BulkTestData(uniqueSpeaker, uniqueEventCode);
+        }
+
         @Test
         @WithMockUser(username = "organizer", roles = "ORGANIZER")
         void should_sendBulkInvitations_when_organizerRequest() throws Exception {
+            BulkTestData data = setupBulkTestData("send1");
+
             // Given
             String requestBody = """
                 {
                     "usernames": ["%s"],
                     "expirationDays": 14
                 }
-                """.formatted(TEST_SPEAKER_USERNAME);
+                """.formatted(data.speakerUsername());
 
             // When/Then
-            mockMvc.perform(post("/api/v1/events/{eventCode}/invitations/bulk", TEST_EVENT_CODE)
+            mockMvc.perform(post("/api/v1/events/{eventCode}/invitations/bulk", data.eventCode())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody))
                     .andExpect(status().isOk())
@@ -175,22 +223,24 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(jsonPath("$.successCount").value(1))
                     .andExpect(jsonPath("$.failureCount").value(0))
                     .andExpect(jsonPath("$.successful").isArray())
-                    .andExpect(jsonPath("$.successful[0].username").value(TEST_SPEAKER_USERNAME));
+                    .andExpect(jsonPath("$.successful[0].username").value(data.speakerUsername()));
         }
 
         @Test
         @WithMockUser(username = "organizer", roles = "ORGANIZER")
         void should_returnPartialSuccess_when_someSpeakersNotFound() throws Exception {
+            BulkTestData data = setupBulkTestData("partial1");
+
             // Given - one valid speaker and one invalid
             String requestBody = """
                 {
                     "usernames": ["%s", "non.existent.speaker"],
                     "expirationDays": 14
                 }
-                """.formatted(TEST_SPEAKER_USERNAME);
+                """.formatted(data.speakerUsername());
 
             // When/Then
-            mockMvc.perform(post("/api/v1/events/{eventCode}/invitations/bulk", TEST_EVENT_CODE)
+            mockMvc.perform(post("/api/v1/events/{eventCode}/invitations/bulk", data.eventCode())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody))
                     .andExpect(status().isOk())
@@ -203,7 +253,7 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(username = "user", roles = "ATTENDEE")
         void should_rejectBulkInvitation_when_notOrganizer() throws Exception {
-            // Given
+            // Given - uses parent @BeforeEach data (no commit needed for auth check)
             String requestBody = """
                 {
                     "usernames": ["%s"],
