@@ -4,7 +4,7 @@
  * Story 5.9 - Task 8b: Added materials display for archived events
  */
 
-import type { Session, SessionMaterial } from '@/types/event.types';
+import type { SessionUI, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 import { format } from 'date-fns';
 import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-react';
 import { useMemo } from 'react';
@@ -13,7 +13,7 @@ import { SpeakerDisplay } from './SpeakerDisplay';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
 
 interface EventProgramProps {
-  sessions: Session[];
+  sessions: SessionUI[];
   isArchived?: boolean; // Story 5.9 - Show materials only for archived events
 }
 
@@ -80,7 +80,7 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
 
   // Group sessions by start time
   const timeSlots = useMemo(() => {
-    const slotMap = new Map<string, Session[]>();
+    const slotMap = new Map<string, SessionUI[]>();
 
     sessions.forEach((session) => {
       try {
@@ -179,7 +179,7 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
                               {t('public.program.speaker')}:
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {session.speakers.map((speaker) => (
+                              {session.speakers.map((speaker: SessionSpeaker) => (
                                 <SpeakerDisplay
                                   key={speaker.username}
                                   speaker={speaker}

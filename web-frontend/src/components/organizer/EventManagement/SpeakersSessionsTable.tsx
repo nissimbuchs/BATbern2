@@ -119,7 +119,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   // Materials status icon and color mapping (Story 5.9 - AC2)
   const getMaterialsStatusIcon = (session: SessionUI) => {
     // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
-    const status = session.materialsStatus || 'NONE';
+    const status: string = session.materialsStatus || 'NONE';
 
     if (status === 'NONE') {
       // ❌ Missing: No materials uploaded
@@ -139,7 +139,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
   const getMaterialsStatusLabel = (session: SessionUI) => {
     // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
-    const status = session.materialsStatus || 'NONE';
+    const status: string = session.materialsStatus || 'NONE';
 
     if (status === 'NONE') {
       return t('speakers.materialsMissing');

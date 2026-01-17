@@ -8,7 +8,7 @@
 
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
-import type { Session } from '@/types/event.types';
+import type { Session, SessionMaterial } from '@/types/event.types';
 
 // API base path for session endpoints
 const SESSION_API_PATH = '/events';
@@ -86,7 +86,7 @@ class SessionApiClient {
     eventCode: string,
     sessionSlug: string,
     materials: SessionMaterialAssociationRequest
-  ): Promise<SessionMaterialResponse[]> {
+  ): Promise<SessionMaterial[]> {
     try {
       const response = await apiClient.post(
         `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials`,
