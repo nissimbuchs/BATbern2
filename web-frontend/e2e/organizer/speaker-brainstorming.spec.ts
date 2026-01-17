@@ -52,7 +52,14 @@ interface SpeakerPoolResponse {
  */
 async function createTestEvent(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+
+  // Wait for dashboard to load (Quick Actions sidebar must be visible)
+  await page.waitForSelector('[data-testid="quick-actions"]', { timeout: 10000 });
+
+  await page.click('[data-testid="new-event-button"]');
+
+  // Wait for event form modal to open
+  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
   // Fill event form
   await page.fill('input[name="title"]', `E2E Speaker Test ${Date.now()}`);
@@ -63,10 +70,10 @@ async function createTestEvent(page: Page): Promise<string> {
 
   // Select event type
   await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  await page.click('[data-testid="event-type-option-evening"]');
 
   // Submit form
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  await page.click('button[type="submit"]');
 
   // Wait for success and extract event code
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
