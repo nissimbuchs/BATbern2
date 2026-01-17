@@ -214,7 +214,7 @@ export default function ArchivePage() {
           <main className="flex-1">
             {/* View Toggle */}
             <div className="flex justify-between items-center mb-6">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-zinc-400" data-testid="events-progress">
                 {!isLoading && totalCount > 0 && `${events.length} of ${totalCount} events`}
               </div>
               <div className="flex gap-2">
