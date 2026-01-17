@@ -50,8 +50,8 @@ public class Session {
     @JsonIgnore // Story 1.16.2: Hide internal UUID from API responses
     private UUID eventId;
 
-    @Transient
-    private String eventCode; // Not persisted - populated from path parameter for API responses
+    @Column(name = "event_code", nullable = false, length = 50)
+    private String eventCode; // Story 5.9: Persistent field for microservice-ready architecture
 
     @Column(nullable = false)
     private String title;
@@ -90,6 +90,21 @@ public class Session {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    /**
+     * Materials tracking fields - Story 5.9: Session Materials Upload
+     * Auto-updated by database triggers (V41 migration)
+     */
+    @Column(name = "materials_count", nullable = false)
+    @Builder.Default
+    private Integer materialsCount = 0;
+
+    @Column(name = "has_presentation", nullable = false)
+    @Builder.Default
+    private Boolean hasPresentation = false;
+
+    @Column(name = "materials_status", length = 20)
+    private String materialsStatus;  // NONE, PARTIAL, COMPLETE
 
     /**
      * Link to speaker pool entry (one session per speaker)

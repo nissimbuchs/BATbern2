@@ -2,14 +2,20 @@ package ch.batbern.events.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -27,6 +33,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"session"})  // Prevent circular reference
 public class SessionMaterial {
 
     @Id
@@ -34,8 +41,9 @@ public class SessionMaterial {
     @Column(columnDefinition = "UUID")
     private UUID id;
 
-    @Column(name = "session_id", nullable = false, columnDefinition = "UUID")
-    private UUID sessionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id", nullable = false)
+    private Session session;
 
     @Column(name = "upload_id", unique = true, nullable = false, length = 100)
     private String uploadId;  // From Generic Upload Service (ADR-002)
@@ -76,4 +84,25 @@ public class SessionMaterial {
 
     @Column(name = "extraction_status", nullable = false, length = 20)
     private String extractionStatus;  // PENDING, IN_PROGRESS, COMPLETED, FAILED, NOT_APPLICABLE
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = Instant.now();
+        }
+        if (contentExtracted == null) {
+            contentExtracted = false;
+        }
+        if (extractionStatus == null) {
+            extractionStatus = "PENDING";
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = Instant.now();
+    }
 }

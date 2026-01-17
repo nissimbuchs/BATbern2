@@ -97,8 +97,9 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
     @Test
     void should_persistSessionMaterial_when_validDataProvided() {
         // Given
+        Session testSession = sessionRepository.findById(testSessionId).orElseThrow();
         SessionMaterial material = SessionMaterial.builder()
-                .sessionId(testSessionId)
+                .session(testSession)
                 .uploadId("upload-123")
                 .s3Key("materials/2026/events/bat-bern-2026-spring/sessions/keynote/file.pptx")
                 .cloudFrontUrl("https://cdn.batbern.ch/materials/.../file.pptx")
@@ -120,7 +121,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         // Then
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUploadId()).isEqualTo("upload-123");
-        assertThat(saved.getSessionId()).isEqualTo(testSessionId);
+        assertThat(saved.getSession().getId()).isEqualTo(testSessionId);
         assertThat(saved.getMaterialType()).isEqualTo("PRESENTATION");
         assertThat(saved.getContentExtracted()).isFalse();
         assertThat(saved.getExtractionStatus()).isEqualTo("PENDING");
@@ -152,7 +153,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         sessionMaterialsRepository.saveAll(List.of(material1, material2, material3));
 
         // When
-        List<SessionMaterial> result = sessionMaterialsRepository.findBySessionId(testSessionId);
+        List<SessionMaterial> result = sessionMaterialsRepository.findBySession_Id(testSessionId);
 
         // Then
         assertThat(result).hasSize(2);
@@ -176,7 +177,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getUploadId()).isEqualTo("upload-unique-123");
-        assertThat(result.getSessionId()).isEqualTo(testSessionId);
+        assertThat(result.getSession().getId()).isEqualTo(testSessionId);
     }
 
     /**
@@ -207,7 +208,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         UUID emptySessionId = UUID.randomUUID();
 
         // When
-        List<SessionMaterial> result = sessionMaterialsRepository.findBySessionId(emptySessionId);
+        List<SessionMaterial> result = sessionMaterialsRepository.findBySession_Id(emptySessionId);
 
         // Then
         assertThat(result).isEmpty();
@@ -255,7 +256,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         ));
 
         // When
-        long count = sessionMaterialsRepository.countBySessionId(testSessionId);
+        long count = sessionMaterialsRepository.countBySession_Id(testSessionId);
 
         // Then
         assertThat(count).isEqualTo(3);
@@ -274,10 +275,10 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         ));
 
         // When
-        boolean hasPresentation = sessionMaterialsRepository.existsBySessionIdAndMaterialType(
+        boolean hasPresentation = sessionMaterialsRepository.existsBySession_IdAndMaterialType(
                 testSessionId, "PRESENTATION"
         );
-        boolean hasVideo = sessionMaterialsRepository.existsBySessionIdAndMaterialType(
+        boolean hasVideo = sessionMaterialsRepository.existsBySession_IdAndMaterialType(
                 testSessionId, "VIDEO"
         );
 
@@ -288,8 +289,9 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
 
     // Helper method to create test materials
     private SessionMaterial createTestMaterial(UUID sessionId, String uploadId, String materialType) {
+        Session session = sessionRepository.findById(sessionId).orElseThrow();
         return SessionMaterial.builder()
-                .sessionId(sessionId)
+                .session(session)
                 .uploadId(uploadId)
                 .s3Key("materials/test/file-" + uploadId + ".pdf")
                 .cloudFrontUrl("https://cdn.batbern.ch/materials/test/file-" + uploadId + ".pdf")

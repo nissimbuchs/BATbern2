@@ -25,7 +25,16 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
      * @param sessionId The session UUID
      * @return List of materials for the session
      */
-    List<SessionMaterial> findBySessionId(UUID sessionId);
+    List<SessionMaterial> findBySession_Id(UUID sessionId);
+
+    /**
+     * Find all materials for a session, ordered by creation time ascending
+     * Uses idx_session_materials_session_id index
+     *
+     * @param sessionId The session UUID
+     * @return List of materials for the session, ordered by creation time
+     */
+    List<SessionMaterial> findBySession_IdOrderByCreatedAtAsc(UUID sessionId);
 
     /**
      * Find material by unique upload ID (from Generic Upload Service)
@@ -52,7 +61,7 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
      * @param sessionId The session UUID
      * @return Number of materials for the session
      */
-    long countBySessionId(UUID sessionId);
+    long countBySession_Id(UUID sessionId);
 
     /**
      * Check if session has material of specific type
@@ -62,5 +71,5 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
      * @param materialType The material type (PRESENTATION, DOCUMENT, VIDEO, OTHER)
      * @return true if session has at least one material of the specified type
      */
-    boolean existsBySessionIdAndMaterialType(UUID sessionId, String materialType);
+    boolean existsBySession_IdAndMaterialType(UUID sessionId, String materialType);
 }

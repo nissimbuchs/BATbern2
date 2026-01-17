@@ -295,6 +295,31 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle MaterialNotFoundException (session material not found)
+     * Returns HTTP 404 Not Found
+     *
+     * Story 5.9: Session Materials Upload
+     */
+    @ExceptionHandler(MaterialNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMaterialNotFoundException(
+            MaterialNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Material not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
      * Handle NoSuchElementException (resource not found)
      * Returns HTTP 404 Not Found
      *

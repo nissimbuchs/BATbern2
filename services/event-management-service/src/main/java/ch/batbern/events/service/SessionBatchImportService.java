@@ -159,6 +159,7 @@ public class SessionBatchImportService {
         // Create session entity
         Session session = Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .sessionSlug(sessionSlug)
                 .title(title)
                 .description(description)
