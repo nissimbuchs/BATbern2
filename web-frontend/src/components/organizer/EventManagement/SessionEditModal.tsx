@@ -22,10 +22,19 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  Tabs,
+  Tab,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 import { AxiosError } from 'axios';
-import type { SessionUI } from '@/types/event.types';
+import type { SessionUI, SessionMaterial } from '@/types/event.types';
+import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
 
 interface SessionEditModalProps {
   open: boolean;
@@ -105,6 +114,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Story 5.9: Materials tab state
+  const [activeTab, setActiveTab] = useState<number>(0); // 0 = Details, 1 = Materials
+  const [uploadedMaterials, setUploadedMaterials] = useState<UploadedFile[]>([]);
+  const [existingMaterials, setExistingMaterials] = useState<SessionMaterial[]>([]);
+
   // Initialize form when session changes
   useEffect(() => {
     if (session) {
@@ -130,6 +144,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
       setErrors({});
       setSaveError(null);
+
+      // Story 5.9: Initialize materials from session
+      setExistingMaterials(session.materials || []);
+      setUploadedMaterials([]);
+      setActiveTab(0); // Reset to Details tab
     }
   }, [session]);
 
@@ -266,6 +285,19 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
     }
   };
 
+  // Story 5.9: Materials tab handlers
+  const handleFileUploadSuccess = (uploadedFile: UploadedFile) => {
+    setUploadedMaterials((prev) => [...prev, uploadedFile]);
+  };
+
+  const handleRemoveMaterial = (uploadId: string) => {
+    setUploadedMaterials((prev) => prev.filter((file) => file.uploadId !== uploadId));
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   // Auto-calculation handlers per AC2
   const handleStartTimeChange = (newStartTime: string) => {
     setStartTime(newStartTime);
@@ -316,109 +348,194 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('sessionEdit.title', 'Edit Session')}</DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          {/* Session Title */}
-          <TextField
-            label={t('sessionEdit.titleLabel', 'Session Title')}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (errors.title) {
-                setErrors({ ...errors, title: undefined });
-              }
-            }}
-            error={!!errors.title}
-            helperText={errors.title}
-            required
-            fullWidth
-            autoFocus
-            disabled={saving}
-          />
+      {/* Story 5.9: Tabs for Details and Materials */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Session edit tabs">
+          <Tab label={t('sessionEdit.tabs.details', 'Details')} />
+          <Tab label={t('sessionEdit.tabs.materials', 'Materials')} />
+        </Tabs>
+      </Box>
 
-          {/* Session Abstract */}
-          <Box>
+      <DialogContent>
+        {/* Details Tab */}
+        {activeTab === 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            {/* Session Title */}
             <TextField
-              label={t('sessionEdit.abstractLabel', 'Session Abstract')}
-              value={abstract}
+              label={t('sessionEdit.titleLabel', 'Session Title')}
+              value={title}
               onChange={(e) => {
-                setAbstract(e.target.value);
-                if (errors.abstract) {
-                  setErrors({ ...errors, abstract: undefined });
+                setTitle(e.target.value);
+                if (errors.title) {
+                  setErrors({ ...errors, title: undefined });
                 }
               }}
-              error={!!errors.abstract}
-              helperText={
-                errors.abstract ||
-                t('sessionEdit.charactersRemaining', {
-                  count: MAX_ABSTRACT_LENGTH - abstract.length,
-                  defaultValue: `{{count}} characters remaining`,
-                })
-              }
-              multiline
-              rows={6}
+              error={!!errors.title}
+              helperText={errors.title}
+              required
+              fullWidth
+              autoFocus
+              disabled={saving}
+            />
+
+            {/* Session Abstract */}
+            <Box>
+              <TextField
+                label={t('sessionEdit.abstractLabel', 'Session Abstract')}
+                value={abstract}
+                onChange={(e) => {
+                  setAbstract(e.target.value);
+                  if (errors.abstract) {
+                    setErrors({ ...errors, abstract: undefined });
+                  }
+                }}
+                error={!!errors.abstract}
+                helperText={
+                  errors.abstract ||
+                  t('sessionEdit.charactersRemaining', {
+                    count: MAX_ABSTRACT_LENGTH - abstract.length,
+                    defaultValue: `{{count}} characters remaining`,
+                  })
+                }
+                multiline
+                rows={6}
+                fullWidth
+                disabled={saving}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                {abstract.length} / {MAX_ABSTRACT_LENGTH}{' '}
+                {t('qualityReview.characters', 'characters')}
+              </Typography>
+            </Box>
+
+            {/* Session Duration */}
+            <TextField
+              label={t('sessionEdit.durationLabel', 'Duration (minutes)')}
+              type="number"
+              value={duration}
+              onChange={(e) => handleDurationChange(Number(e.target.value))}
+              error={!!errors.duration}
+              helperText={errors.duration}
+              inputProps={{ step: 5 }}
               fullWidth
               disabled={saving}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-              {abstract.length} / {MAX_ABSTRACT_LENGTH}{' '}
-              {t('qualityReview.characters', 'characters')}
-            </Typography>
+
+            {/* Start Time */}
+            <TextField
+              label={t('sessionEdit.startTimeLabel', 'Start Time')}
+              type="time"
+              value={startTime}
+              onChange={(e) => handleStartTimeChange(e.target.value)}
+              error={!!errors.startTime}
+              helperText={errors.startTime}
+              fullWidth
+              disabled={saving}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            {/* End Time */}
+            <TextField
+              label={t('sessionEdit.endTimeLabel', 'End Time')}
+              type="time"
+              value={endTime}
+              onChange={(e) => handleEndTimeChange(e.target.value)}
+              error={!!errors.endTime}
+              helperText={errors.endTime}
+              fullWidth
+              disabled={saving}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            {/* Save Error */}
+            {saveError && (
+              <Alert severity="error" onClose={() => setSaveError(null)}>
+                {saveError}
+              </Alert>
+            )}
           </Box>
+        )}
 
-          {/* Session Duration */}
-          <TextField
-            label={t('sessionEdit.durationLabel', 'Duration (minutes)')}
-            type="number"
-            value={duration}
-            onChange={(e) => handleDurationChange(Number(e.target.value))}
-            error={!!errors.duration}
-            helperText={errors.duration}
-            inputProps={{ step: 5 }}
-            fullWidth
-            disabled={saving}
-          />
+        {/* Materials Tab (Story 5.9) */}
+        {activeTab === 1 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            {/* File Upload Component */}
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('sessionEdit.materials.uploadTitle', 'Upload Session Materials')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {t(
+                  'sessionEdit.materials.uploadDescription',
+                  'Upload presentations, documents, or videos (max 100MB per file, up to 10 files)'
+                )}
+              </Typography>
+              <FileUpload
+                onUploadSuccess={handleFileUploadSuccess}
+                allowedTypes={['presentation', 'document', 'video', 'archive']}
+                maxFileSize={100 * 1024 * 1024} // 100MB
+                multiple={true}
+                maxFiles={10}
+                uploadedFiles={uploadedMaterials}
+              />
+            </Box>
 
-          {/* Start Time */}
-          <TextField
-            label={t('sessionEdit.startTimeLabel', 'Start Time')}
-            type="time"
-            value={startTime}
-            onChange={(e) => handleStartTimeChange(e.target.value)}
-            error={!!errors.startTime}
-            helperText={errors.startTime}
-            fullWidth
-            disabled={saving}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
+            {/* Uploaded Materials List */}
+            {uploadedMaterials.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t('sessionEdit.materials.uploadedTitle', 'Newly Uploaded Materials')}
+                </Typography>
+                <List dense>
+                  {uploadedMaterials.map((file) => (
+                    <ListItem key={file.uploadId}>
+                      <ListItemText
+                        primary={file.fileName}
+                        secondary={`${(file.fileSize / 1024 / 1024).toFixed(2)} MB • ${file.fileType}`}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={() => handleRemoveMaterial(file.uploadId)}
+                          size="small"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
 
-          {/* End Time */}
-          <TextField
-            label={t('sessionEdit.endTimeLabel', 'End Time')}
-            type="time"
-            value={endTime}
-            onChange={(e) => handleEndTimeChange(e.target.value)}
-            error={!!errors.endTime}
-            helperText={errors.endTime}
-            fullWidth
-            disabled={saving}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-
-          {/* Save Error */}
-          {saveError && (
-            <Alert severity="error" onClose={() => setSaveError(null)}>
-              {saveError}
-            </Alert>
-          )}
-        </Box>
+            {/* Existing Materials List */}
+            {existingMaterials.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t('sessionEdit.materials.existingTitle', 'Existing Materials')}
+                </Typography>
+                <List dense>
+                  {existingMaterials.map((material) => (
+                    <ListItem key={material.id}>
+                      <ListItemText
+                        primary={material.fileName}
+                        secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions>
