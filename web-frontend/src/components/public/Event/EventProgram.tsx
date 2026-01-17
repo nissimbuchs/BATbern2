@@ -1,21 +1,60 @@
 /**
  * EventProgram Component (Story 4.1.4)
  * Vertical timeline showing session schedule grouped by time slots
+ * Story 5.9 - Task 8b: Added materials display for archived events
  */
 
-import type { Session } from '@/types/event.types';
+import type { Session, SessionMaterial } from '@/types/event.types';
 import { format } from 'date-fns';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
 
 interface EventProgramProps {
   sessions: Session[];
+  isArchived?: boolean; // Story 5.9 - Show materials only for archived events
 }
 
-export const EventProgram = ({ sessions }: EventProgramProps) => {
+export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps) => {
   const { t } = useTranslation('events');
+
+  // Helper: Format file size in MB (Story 5.9 - Task 8b)
+  const formatFileSize = (bytes: number): string => {
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  // Helper: Get material type icon (Story 5.9 - Task 8b)
+  const getMaterialTypeIcon = (type: string) => {
+    switch (type) {
+      case 'PRESENTATION':
+        return <Presentation className="h-4 w-4" />;
+      case 'VIDEO':
+        return <Video className="h-4 w-4" />;
+      case 'DOCUMENT':
+      case 'OTHER':
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // Helper: Group materials by type (Story 5.9 - Task 8b)
+  const groupMaterialsByType = (materials: SessionMaterial[] | undefined) => {
+    if (!materials || materials.length === 0) return {};
+
+    return materials.reduce(
+      (acc, material) => {
+        const type = material.materialType || 'OTHER';
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(material);
+        return acc;
+      },
+      {} as Record<string, SessionMaterial[]>
+    );
+  };
 
   // Group sessions by start time
   const timeSlots = useMemo(() => {
@@ -132,6 +171,44 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                           <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
                         )}
                       </div>
+
+                      {/* Materials Section - Only for archived events (Story 5.9 - Task 8b) */}
+                      {isArchived && session.materials && session.materials.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                          <p className="text-xs text-zinc-500 mb-3">
+                            {t('public.program.materials', 'Materials')}:
+                          </p>
+                          <div className="space-y-3">
+                            {Object.entries(groupMaterialsByType(session.materials)).map(
+                              ([type, materials]) => (
+                                <div key={type}>
+                                  <p className="text-xs text-zinc-400 mb-2 capitalize">
+                                    {type.toLowerCase()}
+                                  </p>
+                                  <div className="space-y-2">
+                                    {materials.map((material) => (
+                                      <a
+                                        key={material.id}
+                                        href={material.cloudFrontUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400"
+                                      >
+                                        {getMaterialTypeIcon(material.materialType)}
+                                        <span className="flex-1">{material.fileName}</span>
+                                        <span className="text-xs text-zinc-500">
+                                          {formatFileSize(material.fileSize)}
+                                        </span>
+                                        <Download className="h-4 w-4" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
