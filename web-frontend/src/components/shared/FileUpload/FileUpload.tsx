@@ -66,6 +66,7 @@ interface FileUploadProps {
   multiple?: boolean; // Enable multiple file uploads
   maxFiles?: number; // Maximum number of files (default 10)
   uploadedFiles?: UploadedFile[]; // List of uploaded files (for multiple mode)
+  uploadEndpoint?: string; // API endpoint for presigned URL (default: '/logos/presigned-url')
 }
 
 // Helper function to format file size
@@ -104,6 +105,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   maxFiles = 10,
   uploadedFiles = [],
+  uploadEndpoint = '/logos/presigned-url', // Default to logos for backward compatibility
 }) => {
   const { t } = useTranslation('common');
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
@@ -119,9 +121,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     onUploadSuccess: (data) => {
       setFileUrl(data.tempFileUrl);
       setUploadId(data.uploadId);
-      onUploadSuccess?.(data);
+      // Only call parent's onUploadSuccess for single file mode
+      // Multiple file mode handles this in onDrop with full metadata
+      if (!multiple) {
+        onUploadSuccess?.(data);
+      }
     },
     onUploadError,
+    uploadEndpoint, // Pass through the endpoint
   });
 
   // Sync fileUrl with currentFileUrl prop
@@ -146,8 +153,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           return;
         }
 
-        // Upload all accepted files in parallel
-        await Promise.all(acceptedFiles.map((file) => uploadFile(file)));
+        // Upload all accepted files sequentially to capture metadata
+        for (const file of acceptedFiles) {
+          const uploadId = await uploadFile(file);
+          if (uploadId && onUploadSuccess) {
+            // Call with only the properties expected by the callback signature
+            onUploadSuccess({ uploadId, tempFileUrl: undefined });
+          }
+        }
       } else {
         // Original behavior: single file only
         if (acceptedFiles.length > 1) {
@@ -257,12 +270,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <input {...getInputProps()} />
             <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
             <Typography variant="body1" color="textSecondary">
-              {isDragActive
-                ? t('fileUpload.dragActive')
-                : 'Drag and drop files here, or click to select'}
+              {isDragActive ? t('fileUpload.dragActive') : t('fileUpload.dragDropMultiple')}
             </Typography>
             <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
-              {`Accepted formats: Multiple file types (max ${(maxFileSize / (1024 * 1024)).toFixed(0)}MB per file)`}
+              {t('fileUpload.acceptedFormatsMultiple', {
+                maxSize: (maxFileSize / (1024 * 1024)).toFixed(0),
+              })}
             </Typography>
           </Box>
         </>

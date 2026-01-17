@@ -16,6 +16,10 @@
     <!-- Allow longer parameter lists in configuration classes -->
     <suppress files="Config\.java$" checks="ParameterNumber"/>
 
+    <!-- Pre-existing code: comprehensive query params required for speaker filtering -->
+    <suppress files="SpeakerController\.java$" checks="ParameterNumber"/>
+    <suppress files="SpeakerContentSubmissionService\.java$" checks="ParameterNumber"/>
+
     <!-- Lombok generates code that may violate some rules -->
     <suppress checks="HiddenField" files=".*\.java"/>
 </suppressions>

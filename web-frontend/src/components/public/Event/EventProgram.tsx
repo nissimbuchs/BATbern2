@@ -10,6 +10,7 @@ import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-r
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
 
 interface EventProgramProps {
   sessions: Session[];
@@ -18,6 +19,27 @@ interface EventProgramProps {
 
 export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps) => {
   const { t } = useTranslation('events');
+
+  // Helper: Handle material download (Story 5.9 - Task 8b)
+  const handleMaterialDownload = async (
+    eventCode: string,
+    sessionSlug: string,
+    materialId: string
+  ) => {
+    try {
+      // Fetch presigned download URL
+      const response = await sessionApiClient.getMaterialDownloadUrl(
+        eventCode,
+        sessionSlug,
+        materialId
+      );
+      // Open in new tab
+      window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Failed to download material:', error);
+      alert(t('public.program.downloadError', 'Failed to download material. Please try again.'));
+    }
+  };
 
   // Helper: Format file size in MB (Story 5.9 - Task 8b)
   const formatFileSize = (bytes: number): string => {
@@ -182,17 +204,18 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
                             {Object.entries(groupMaterialsByType(session.materials)).map(
                               ([type, materials]) => (
                                 <div key={type}>
-                                  <p className="text-xs text-zinc-400 mb-2 capitalize">
-                                    {type.toLowerCase()}
-                                  </p>
                                   <div className="space-y-2">
                                     {materials.map((material) => (
-                                      <a
+                                      <button
                                         key={material.id}
-                                        href={material.cloudFrontUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400"
+                                        onClick={() =>
+                                          handleMaterialDownload(
+                                            session.eventCode,
+                                            session.sessionSlug,
+                                            material.id
+                                          )
+                                        }
+                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 w-full text-left"
                                       >
                                         {getMaterialTypeIcon(material.materialType)}
                                         <span className="flex-1">{material.fileName}</span>
@@ -200,7 +223,7 @@ export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps
                                           {formatFileSize(material.fileSize)}
                                         </span>
                                         <Download className="h-4 w-4" />
-                                      </a>
+                                      </button>
                                     ))}
                                   </div>
                                 </div>

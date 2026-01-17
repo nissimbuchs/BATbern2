@@ -3,12 +3,12 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
+import ch.batbern.events.dto.MaterialUploadItem;
 import ch.batbern.events.dto.SessionMaterialAssociationRequest;
 import ch.batbern.events.dto.SessionMaterialResponse;
 import ch.batbern.events.event.SessionMaterialsUploadedEvent;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.exception.MaterialNotFoundException;
-import ch.batbern.events.exception.InvalidUploadIdException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -32,8 +32,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for SessionMaterialsService - Story 5.9 Task 2a (RED Phase).
@@ -89,13 +92,27 @@ class SessionMaterialsServiceTest {
     void should_associateMaterials_when_validUploadIdsProvided() {
         // Given
         String sessionSlug = "keynote-digital-transformation";
-        List<String> uploadIds = Arrays.asList("upload-1", "upload-2");
-        List<String> materialTypes = Arrays.asList("PRESENTATION", "DOCUMENT");
         String uploadedBy = "john.doe";
 
         SessionMaterialAssociationRequest request = SessionMaterialAssociationRequest.builder()
-                .uploadIds(uploadIds)
-                .materialTypes(materialTypes)
+                .materials(Arrays.asList(
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-1")
+                                .materialType("PRESENTATION")
+                                .fileName("presentation.pptx")
+                                .fileExtension("pptx")
+                                .fileSize(1024L)
+                                .mimeType("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+                                .build(),
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-2")
+                                .materialType("DOCUMENT")
+                                .fileName("document.pdf")
+                                .fileExtension("pdf")
+                                .fileSize(2048L)
+                                .mimeType("application/pdf")
+                                .build()
+                ))
                 .build();
 
         when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(mockSession));
@@ -141,8 +158,16 @@ class SessionMaterialsServiceTest {
         // Given
         String invalidSessionSlug = "non-existent-session";
         SessionMaterialAssociationRequest request = SessionMaterialAssociationRequest.builder()
-                .uploadIds(Arrays.asList("upload-1"))
-                .materialTypes(Arrays.asList("PRESENTATION"))
+                .materials(Arrays.asList(
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-1")
+                                .materialType("PRESENTATION")
+                                .fileName("presentation.pdf")
+                                .fileExtension("pdf")
+                                .fileSize(1024L)
+                                .mimeType("application/pdf")
+                                .build()
+                ))
                 .build();
 
         when(sessionRepository.findBySessionSlug(invalidSessionSlug)).thenReturn(Optional.empty());
@@ -172,8 +197,16 @@ class SessionMaterialsServiceTest {
         // Given
         String sessionSlug = "keynote-digital-transformation";
         SessionMaterialAssociationRequest request = SessionMaterialAssociationRequest.builder()
-                .uploadIds(Arrays.asList("upload-1"))
-                .materialTypes(Arrays.asList("PRESENTATION"))
+                .materials(Arrays.asList(
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-1")
+                                .materialType("PRESENTATION")
+                                .fileName("presentation.pdf")
+                                .fileExtension("pdf")
+                                .fileSize(1024L)
+                                .mimeType("application/pdf")
+                                .build()
+                ))
                 .build();
         String uploadedBy = "john.doe";
 

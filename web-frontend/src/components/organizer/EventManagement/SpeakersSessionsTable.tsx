@@ -118,36 +118,34 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
   // Materials status icon and color mapping (Story 5.9 - AC2)
   const getMaterialsStatusIcon = (session: SessionUI) => {
-    // Story 5.9: Use materialsCount and hasPresentation for status logic
-    const materialsCount = session.materialsCount || 0;
-    const hasPresentation = session.hasPresentation || false;
+    // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
+    const status = session.materialsStatus || 'NONE';
 
-    if (materialsCount === 0) {
+    if (status === 'NONE') {
       // ❌ Missing: No materials uploaded
       return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
     }
 
-    if (materialsCount > 0 && !hasPresentation) {
-      // ⚠️ Pending: Some materials but no presentation
+    if (status === 'PARTIAL') {
+      // ⚠️ Pending: Some materials but incomplete
       return (
         <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
       );
     }
 
-    // ✓ Complete: Has presentation
+    // ✓ Complete: All materials uploaded
     return <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />;
   };
 
   const getMaterialsStatusLabel = (session: SessionUI) => {
-    // Story 5.9: Use materialsCount and hasPresentation for status logic
-    const materialsCount = session.materialsCount || 0;
-    const hasPresentation = session.hasPresentation || false;
+    // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
+    const status = session.materialsStatus || 'NONE';
 
-    if (materialsCount === 0) {
+    if (status === 'NONE') {
       return t('speakers.materialsMissing');
     }
 
-    if (materialsCount > 0 && !hasPresentation) {
+    if (status === 'PARTIAL') {
       return t('speakers.materialsPending');
     }
 

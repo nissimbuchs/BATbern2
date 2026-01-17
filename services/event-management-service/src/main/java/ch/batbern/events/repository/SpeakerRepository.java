@@ -1,8 +1,6 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Speaker;
-import ch.batbern.events.domain.SpeakerAvailability;
-import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

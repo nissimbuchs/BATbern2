@@ -19,6 +19,19 @@ export interface SessionUpdateRequest {
   durationMinutes?: number;
 }
 
+export interface MaterialUploadItem {
+  uploadId: string;
+  materialType: string; // PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER
+  fileName: string;
+  fileExtension: string;
+  fileSize: number;
+  mimeType: string;
+}
+
+export interface SessionMaterialAssociationRequest {
+  materials: MaterialUploadItem[];
+}
+
 /**
  * Session API Client Class
  *
@@ -54,6 +67,66 @@ class SessionApiClient {
       ) {
         throw error;
       }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Associate uploaded materials with a session
+   * Story 5.9: Session Materials Upload (AC5)
+   *
+   * POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param materials - Material association request with uploadIds and materialTypes
+   * @returns Created materials list
+   */
+  async associateMaterials(
+    eventCode: string,
+    sessionSlug: string,
+    materials: SessionMaterialAssociationRequest
+  ): Promise<SessionMaterialResponse[]> {
+    try {
+      const response = await apiClient.post(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials`,
+        materials
+      );
+      return response.data;
+    } catch (error) {
+      // Re-throw AxiosError to preserve auth errors
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get presigned download URL for a material
+   * Story 5.9: Session Materials Upload (AC5)
+   *
+   * GET /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param materialId - Material UUID
+   * @returns Object with downloadUrl (presigned URL valid for 1 hour)
+   */
+  async getMaterialDownloadUrl(
+    eventCode: string,
+    sessionSlug: string,
+    materialId: string
+  ): Promise<{ downloadUrl: string }> {
+    try {
+      const response = await apiClient.get(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials/${materialId}/download`
+      );
+      return response.data;
+    } catch (error) {
       throw this.transformError(error);
     }
   }

@@ -27,6 +27,8 @@
       "confirmed": "confirmed",
       "materials": "Materials",
       "pending": "pending",
+      "complete": "complete",
+      "sessionsComplete": "sessions complete",
       "budget": "Budget",
       "selectedTopic": "Selected Topic",
       "noTopicSelected": "No topic selected yet",
@@ -697,7 +699,9 @@
     },
     "program": {
       "title": "Event Program",
-      "speaker": "Speaker"
+      "speaker": "Speaker",
+      "materials": "Materials",
+      "downloadError": "Failed to download material. Please try again."
     },
     "venue": {
       "title": "Venue",
@@ -720,19 +724,29 @@
       "networking": "networking",
       "break": "break",
       "lunch": "lunch"
+    }
+  },
+  "sessionEdit": {
+    "title": "Edit Session",
+    "titleLabel": "Session Title",
+    "abstractLabel": "Session Abstract",
+    "charactersRemaining": "{{count}} characters remaining",
+    "durationLabel": "Duration (minutes)",
+    "tabs": {
+      "details": "Details",
+      "materials": "Materials"
     },
-    "sessionEdit": {
-      "title": "Edit Session",
-      "titleLabel": "Session Title",
-      "abstractLabel": "Session Abstract",
-      "charactersRemaining": "{{count}} characters remaining",
-      "durationLabel": "Duration (minutes)",
-      "errors": {
-        "titleRequired": "Title is required",
-        "abstractTooLong": "Abstract must be {{max}} characters or less",
-        "invalidDuration": "Duration must be between 1 and 480 minutes",
-        "saveFailed": "Failed to save session"
-      }
+    "materials": {
+      "uploadTitle": "Upload Session Materials",
+      "uploadDescription": "Upload presentations, documents, or videos (max 100MB per file, up to 10 files)",
+      "existingTitle": "Existing Materials",
+      "downloadError": "Failed to download material"
+    },
+    "errors": {
+      "titleRequired": "Title is required",
+      "abstractTooLong": "Abstract must be {{max}} characters or less",
+      "invalidDuration": "Duration must be between 1 and 480 minutes",
+      "saveFailed": "Failed to save session"
     }
   },
   "slotAssignment": {

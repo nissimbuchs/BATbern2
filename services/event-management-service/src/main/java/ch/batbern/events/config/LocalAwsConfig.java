@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -81,6 +82,48 @@ public class LocalAwsConfig {
         log.info("🪣 [LOCAL] Bucket: batbern-development-company-logos");
 
         return s3Client;
+    }
+
+    /**
+     * S3 Presigner configured for MinIO (local S3-compatible storage)
+     * Story 5.9: Session Materials Upload
+     * Generates real presigned URLs that work with MinIO running on localhost:8450
+     */
+    @Bean
+    @Primary
+    public S3Presigner s3Presigner() {
+        log.info("🪣 [LOCAL] Creating S3Presigner configured for MinIO (http://localhost:8450)");
+
+        // Configure S3 presigner to use MinIO endpoint
+        Region region = Region.EU_CENTRAL_1;
+
+        // Create S3 client configuration for MinIO
+        software.amazon.awssdk.services.s3.S3Configuration s3Config =
+            software.amazon.awssdk.services.s3.S3Configuration.builder()
+                .pathStyleAccessEnabled(true)  // MinIO requires path-style access
+                .build();
+
+        // Create credentials provider for MinIO (minioadmin/minioadmin)
+        AwsBasicCredentials credentials =
+            AwsBasicCredentials.create("minioadmin", "minioadmin");
+
+        StaticCredentialsProvider credentialsProvider =
+            StaticCredentialsProvider.create(credentials);
+
+        // Create endpoint override for MinIO
+        URI minioEndpoint = URI.create("http://localhost:8450");
+
+        // Build the S3Presigner
+        S3Presigner presigner = S3Presigner.builder()
+            .region(region)
+            .credentialsProvider(credentialsProvider)
+            .endpointOverride(minioEndpoint)
+            .serviceConfiguration(s3Config)
+            .build();
+
+        log.info("🪣 [LOCAL] S3Presigner configured successfully for MinIO");
+
+        return presigner;
     }
 
     /**

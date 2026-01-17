@@ -7,6 +7,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
+import ch.batbern.events.dto.MaterialUploadItem;
 import ch.batbern.events.dto.SessionMaterialAssociationRequest;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
@@ -41,8 +42,11 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Integration Tests for SessionMaterialsController (Story 5.9 - Task 3a: RED Phase)
@@ -180,8 +184,24 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     void should_associateMaterials_when_organizerAndValidUploadIds() throws Exception {
         // Given: Valid association request with 2 materials
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                Arrays.asList("upload-id-1", "upload-id-2"),
-                Arrays.asList("PRESENTATION", "DOCUMENT")
+                Arrays.asList(
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-id-1")
+                                .materialType("PRESENTATION")
+                                .fileName("presentation.pdf")
+                                .fileExtension("pdf")
+                                .fileSize(1024L)
+                                .mimeType("application/pdf")
+                                .build(),
+                        MaterialUploadItem.builder()
+                                .uploadId("upload-id-2")
+                                .materialType("DOCUMENT")
+                                .fileName("document.pdf")
+                                .fileExtension("pdf")
+                                .fileSize(2048L)
+                                .mimeType("application/pdf")
+                                .build()
+                )
         );
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials
@@ -309,8 +329,14 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
         // Given: Non-existent session slug
         String nonExistentSlug = "non-existent-session";
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of("upload-id-1"),
-                List.of("PRESENTATION")
+                List.of(MaterialUploadItem.builder()
+                        .uploadId("upload-id-1")
+                        .materialType("PRESENTATION")
+                        .fileName("presentation.pdf")
+                        .fileExtension("pdf")
+                        .fileSize(1024L)
+                        .mimeType("application/pdf")
+                        .build())
         );
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials with invalid slug
@@ -351,8 +377,14 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     void should_allowUpload_when_speakerOwnsSession() throws Exception {
         // Given: Speaker john.doe owns testSession, valid request
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of("upload-id-speaker"),
-                List.of("PRESENTATION")
+                List.of(MaterialUploadItem.builder()
+                        .uploadId("upload-id-speaker")
+                        .materialType("PRESENTATION")
+                        .fileName("presentation.pdf")
+                        .fileExtension("pdf")
+                        .fileSize(1024L)
+                        .mimeType("application/pdf")
+                        .build())
         );
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials as session owner
@@ -374,8 +406,14 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     void should_forbidUpload_when_speakerDoesNotOwnSession() throws Exception {
         // Given: Speaker john.doe does NOT own anotherSession (owned by jane.smith)
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of("upload-id-unauthorized"),
-                List.of("PRESENTATION")
+                List.of(MaterialUploadItem.builder()
+                        .uploadId("upload-id-unauthorized")
+                        .materialType("PRESENTATION")
+                        .fileName("presentation.pdf")
+                        .fileExtension("pdf")
+                        .fileSize(1024L)
+                        .mimeType("application/pdf")
+                        .build())
         );
 
         // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as non-owner
@@ -396,8 +434,14 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
     void should_allowUpload_when_userIsOrganizer() throws Exception {
         // Given: Organizer (not session owner), valid request for anotherSession
         SessionMaterialAssociationRequest request = new SessionMaterialAssociationRequest(
-                List.of("upload-id-organizer"),
-                List.of("DOCUMENT")
+                List.of(MaterialUploadItem.builder()
+                        .uploadId("upload-id-organizer")
+                        .materialType("DOCUMENT")
+                        .fileName("document.pdf")
+                        .fileExtension("pdf")
+                        .fileSize(2048L)
+                        .mimeType("application/pdf")
+                        .build())
         );
 
         // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as organizer

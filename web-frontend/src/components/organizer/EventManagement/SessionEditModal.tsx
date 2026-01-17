@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogTitle,
@@ -27,14 +28,41 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
+  ListItemIcon,
+  Link,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
+import {
+  Description as DescriptionIcon,
+  PictureAsPdf as PdfIcon,
+  VideoLibrary as VideoIcon,
+  Slideshow as PresentationIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { AxiosError } from 'axios';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
+
+// Helper function to get file type icon based on mime type
+const getFileTypeIcon = (mimeType: string | undefined): React.ReactNode => {
+  if (!mimeType) {
+    return <DescriptionIcon />;
+  }
+  if (
+    mimeType.startsWith('application/vnd.openxmlformats-officedocument.presentationml') ||
+    mimeType.startsWith('application/vnd.ms-powerpoint')
+  ) {
+    return <PresentationIcon />;
+  }
+  if (mimeType === 'application/pdf') {
+    return <PdfIcon />;
+  }
+  if (mimeType.startsWith('video/')) {
+    return <VideoIcon />;
+  }
+  return <DescriptionIcon />;
+};
 
 interface SessionEditModalProps {
   open: boolean;
@@ -71,6 +99,36 @@ const MAX_ABSTRACT_LENGTH = 1000;
 const MIN_SESSION_DURATION = 15; // minutes
 const MAX_SESSION_DURATION = 480; // 8 hours
 
+// Helper: Map MIME type to material type enum
+const getMaterialTypeFromMimeType = (mimeType: string): string => {
+  if (mimeType.startsWith('video/')) {
+    return 'VIDEO';
+  } else if (
+    mimeType.includes('powerpoint') ||
+    mimeType.includes('presentation') ||
+    mimeType.includes('keynote')
+  ) {
+    return 'PRESENTATION';
+  } else if (
+    mimeType === 'application/pdf' ||
+    mimeType.includes('document') ||
+    mimeType === 'text/plain'
+  ) {
+    return 'DOCUMENT';
+  } else if (mimeType.includes('zip') || mimeType.includes('gzip') || mimeType.includes('tar')) {
+    return 'ARCHIVE';
+  } else {
+    return 'OTHER';
+  }
+};
+
+// Helper: Extract file extension from filename (without dot)
+const getFileExtension = (fileName: string): string => {
+  const lastDot = fileName.lastIndexOf('.');
+  if (lastDot === -1) return '';
+  return fileName.substring(lastDot + 1).toLowerCase();
+};
+
 // Extract HH:mm from ISO 8601 timestamp
 const extractTimeFromISO = (isoString: string | null | undefined): string => {
   if (!isoString) return '';
@@ -100,6 +158,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   initialTab = 0,
 }) => {
   const { t } = useTranslation('events');
+  const queryClient = useQueryClient();
 
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
@@ -231,6 +290,29 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       }
 
       await onSave(session.sessionSlug, updates);
+
+      // Story 5.9: Save uploaded materials if any
+      if (uploadedMaterials.length > 0) {
+        const materials = uploadedMaterials.map((file) => ({
+          uploadId: file.uploadId,
+          materialType: getMaterialTypeFromMimeType(file.fileType),
+          fileName: file.fileName,
+          fileExtension: getFileExtension(file.fileName),
+          fileSize: file.fileSize,
+          mimeType: file.fileType,
+        }));
+
+        await sessionApiClient.associateMaterials(session.eventCode, session.sessionSlug, {
+          materials,
+        });
+
+        // Invalidate event cache to reload sessions with new materials
+        queryClient.invalidateQueries({ queryKey: ['event', session.eventCode] });
+      }
+
+      // Clear uploaded materials after successful save
+      setUploadedMaterials([]);
+
       onClose();
     } catch (error) {
       // Handle 409 conflict errors (speaker/room conflicts)
@@ -288,12 +370,20 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   };
 
   // Story 5.9: Materials tab handlers
-  const handleFileUploadSuccess = (uploadedFile: UploadedFile) => {
+  const handleFileUploadSuccess = (
+    data: UploadedFile | { uploadId: string; tempFileUrl?: string }
+  ) => {
+    // Handle both UploadedFile (multiple mode) and basic data (single mode)
+    const uploadedFile: UploadedFile =
+      'fileName' in data
+        ? data
+        : {
+            uploadId: data.uploadId,
+            fileName: 'Unknown', // Fallback for single mode (shouldn't happen in materials upload)
+            fileSize: 0,
+            fileType: 'application/octet-stream',
+          };
     setUploadedMaterials((prev) => [...prev, uploadedFile]);
-  };
-
-  const handleRemoveMaterial = (uploadId: string) => {
-    setUploadedMaterials((prev) => prev.filter((file) => file.uploadId !== uploadId));
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -481,44 +571,38 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
               </Typography>
               <FileUpload
                 onUploadSuccess={handleFileUploadSuccess}
-                allowedTypes={['presentation', 'document', 'video', 'archive']}
+                allowedTypes={[
+                  // Presentations (AC6 - Story 5.9)
+                  'application/vnd.ms-powerpoint', // .ppt
+                  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+                  'application/vnd.apple.keynote', // .key
+                  'application/vnd.oasis.opendocument.presentation', // .odp
+                  // Documents (AC6 - Story 5.9)
+                  'application/pdf', // .pdf
+                  'application/msword', // .doc
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                  'text/plain', // .txt
+                  // Videos (AC6 - Story 5.9)
+                  'video/mp4', // .mp4
+                  'video/quicktime', // .mov
+                  'video/x-msvideo', // .avi
+                  'video/x-matroska', // .mkv
+                  'video/webm', // .webm
+                  // Archives (AC6 - Story 5.9)
+                  'application/zip', // .zip
+                  'application/gzip', // .tar.gz
+                  'application/x-gzip', // .tar.gz
+                  'application/x-tar', // .tar
+                ]}
                 maxFileSize={100 * 1024 * 1024} // 100MB
                 multiple={true}
                 maxFiles={10}
                 uploadedFiles={uploadedMaterials}
+                uploadEndpoint="/materials/presigned-url" // Story 5.9: Use materials endpoint
               />
             </Box>
 
-            {/* Uploaded Materials List */}
-            {uploadedMaterials.length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  {t('sessionEdit.materials.uploadedTitle', 'Newly Uploaded Materials')}
-                </Typography>
-                <List dense>
-                  {uploadedMaterials.map((file) => (
-                    <ListItem key={file.uploadId}>
-                      <ListItemText
-                        primary={file.fileName}
-                        secondary={`${(file.fileSize / 1024 / 1024).toFixed(2)} MB • ${file.fileType}`}
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          edge="end"
-                          aria-label="delete"
-                          onClick={() => handleRemoveMaterial(file.uploadId)}
-                          size="small"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            )}
-
-            {/* Existing Materials List */}
+            {/* Existing Materials List (Story 5.9: Only show after save & reopen) */}
             {existingMaterials.length > 0 && (
               <Box>
                 <Typography variant="subtitle2" gutterBottom>
@@ -527,8 +611,44 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                 <List dense>
                   {existingMaterials.map((material) => (
                     <ListItem key={material.id}>
+                      <ListItemIcon>{getFileTypeIcon(material.mimeType)}</ListItemIcon>
                       <ListItemText
-                        primary={material.fileName}
+                        primary={
+                          <Link
+                            component="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                // Fetch presigned download URL
+                                const response = await sessionApiClient.getMaterialDownloadUrl(
+                                  session!.eventCode,
+                                  session!.sessionSlug,
+                                  material.id
+                                );
+                                // Open in new tab
+                                window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
+                              } catch (error) {
+                                console.error('Failed to get download URL:', error);
+                                alert(
+                                  t(
+                                    'sessionEdit.materials.downloadError',
+                                    'Failed to download material'
+                                  )
+                                );
+                              }
+                            }}
+                            underline="hover"
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {material.fileName}
+                            <DownloadIcon fontSize="small" />
+                          </Link>
+                        }
                         secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
                       />
                     </ListItem>
