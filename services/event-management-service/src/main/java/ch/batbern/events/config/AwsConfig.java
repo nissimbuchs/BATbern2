@@ -8,6 +8,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * AWS SDK configuration
@@ -44,6 +45,20 @@ public class AwsConfig {
         log.info("Creating CloudFrontClient for AWS");
         return CloudFrontClient.builder()
                 .region(Region.AWS_GLOBAL) // CloudFront is a global service
+                .credentialsProvider(DefaultCredentialsProvider.builder().build())
+                .build();
+    }
+
+    /**
+     * S3 Presigner for generating presigned URLs (Production)
+     * Story 5.9: Session Materials Upload
+     * Used by SessionMaterialsService to generate presigned upload URLs
+     */
+    @Bean
+    public S3Presigner s3Presigner() {
+        log.info("Creating S3Presigner for AWS region: eu-central-1");
+        return S3Presigner.builder()
+                .region(Region.EU_CENTRAL_1) // Bern, Switzerland region
                 .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build();
     }
