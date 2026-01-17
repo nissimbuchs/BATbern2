@@ -448,6 +448,30 @@ class EventApiClient {
   }
 
   /**
+   * Get presigned download URL for session material
+   * Story 5.9: Session Materials Upload
+   *
+   * @param eventCode Event code identifier
+   * @param sessionSlug Session identifier
+   * @param materialId Material UUID
+   * @returns Presigned S3 URL valid for 1 hour
+   */
+  async getMaterialDownloadUrl(
+    eventCode: string,
+    sessionSlug: string,
+    materialId: string
+  ): Promise<string> {
+    try {
+      const response = await apiClient.get<{ downloadUrl: string }>(
+        `${EVENT_API_PATH}/${eventCode}/sessions/${sessionSlug}/materials/${materialId}/download`
+      );
+      return response.data.downloadUrl;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Client-side validation: Registration deadline must be before event date
    */
   private validateRegistrationDeadline(eventDate: string, deadline: string): void {
