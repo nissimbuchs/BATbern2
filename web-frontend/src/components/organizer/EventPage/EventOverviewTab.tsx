@@ -91,6 +91,19 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const speakerPercent =
     totalSpeakers > 0 ? Math.round((confirmedSpeakers / totalSpeakers) * 100) : 0;
 
+  // Calculate session materials progress (Story 5.9 - Task 7b)
+  const sessionsWithMaterials = eventUI.sessionsWithMaterialsCount || 0;
+  const totalSessions = eventUI.totalSessionsCount || 0;
+  const materialsPercent =
+    totalSessions > 0 ? Math.round((sessionsWithMaterials / totalSessions) * 100) : 0;
+
+  // Determine materials progress bar color based on completion percentage
+  const getMaterialsProgressColor = (): 'error' | 'warning' | 'success' => {
+    if (materialsPercent < 50) return 'error'; // Red for <50%
+    if (materialsPercent < 100) return 'warning'; // Yellow for 50-99%
+    return 'success'; // Green for 100%
+  };
+
   // Handle edit
   const handleEditDetails = () => {
     if (onEdit) {
@@ -330,20 +343,24 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 />
               </Box>
 
-              {/* Materials - Speakers with complete info */}
+              {/* Materials - Session materials completion (Story 5.9 - Task 7b) */}
               <Box>
-                <Typography variant="subtitle2">
+                <Typography variant="subtitle2" gutterBottom>
                   📋 {t('eventPage.overview.materials', 'Materials')}
                 </Typography>
-                <Typography variant="body1">
-                  {eventUI.speakersWithCompleteInfoCount || 0}/{confirmedSpeakers}{' '}
-                  {t('eventPage.overview.materialsComplete', 'complete')}
+                <Typography variant="body1" gutterBottom>
+                  {sessionsWithMaterials}/{totalSessions}{' '}
+                  {t('eventPage.overview.sessionsComplete', 'sessions complete')}
                 </Typography>
-                {(eventUI.pendingMaterialsCount || 0) > 0 && (
-                  <Typography variant="body2" color="text.secondary">
-                    {eventUI.pendingMaterialsCount} {t('eventPage.overview.pending', 'pending')}
-                  </Typography>
-                )}
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(materialsPercent, 100)}
+                  color={getMaterialsProgressColor()}
+                  sx={{ height: 8, borderRadius: 1 }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {materialsPercent}% {t('eventPage.overview.complete', 'complete')}
+                </Typography>
               </Box>
 
               {/* Budget (if available) */}

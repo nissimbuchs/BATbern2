@@ -140,6 +140,9 @@ export interface EventDetailUI extends EventDetail {
     spent?: number;
     currency?: string;
   };
+  // Session materials metrics (Story 5.9 - Task 7)
+  sessionsWithMaterialsCount?: number; // Number of sessions with hasPresentation = true
+  totalSessionsCount?: number; // Total number of sessions for this event
   // Note: eventType and workflowState are now in base Event type from API
 }
 
