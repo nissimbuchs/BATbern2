@@ -204,7 +204,8 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
                 .findFirst()
                 .orElseThrow();
         assertThat(session1.getDescription()).contains("Discussion on modern UI patterns");
-        assertThat(session1.getDescription()).contains("PDF: BAT142_UI_Design.pdf");
+        // PDF is no longer embedded in description - it's stored as a separate material entity
+        assertThat(session1.getDescription()).doesNotContain("PDF:");
         assertThat(session1.getSessionType()).isEqualTo("presentation");
         assertThat(session1.getLanguage()).isEqualTo("de");
 
