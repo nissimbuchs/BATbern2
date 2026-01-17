@@ -295,6 +295,54 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle InvitationNotFoundException (invitation not found by token)
+     * Returns HTTP 404 Not Found
+     * Story 6.1: Automated Speaker Invitation System
+     */
+    @ExceptionHandler(InvitationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleInvitationNotFoundException(
+            InvitationNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Invitation not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle InvitationExpiredException (invitation has expired)
+     * Returns HTTP 422 Unprocessable Entity
+     * Story 6.1: Automated Speaker Invitation System
+     */
+    @ExceptionHandler(InvitationExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleInvitationExpiredException(
+            InvitationExpiredException ex,
+            HttpServletRequest request) {
+        log.warn("Invitation expired: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .error("Unprocessable Entity")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    /**
      * Handle NoSuchElementException (resource not found)
      * Returns HTTP 404 Not Found
      *

@@ -1,0 +1,45 @@
+meta {
+  name: Cleanup Test Event
+  type: http
+  seq: 99
+}
+
+delete {
+  url: {{baseUrl}}/events/{{invTestEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Cleanup Test Data
+
+  Deletes the test event created at the start of the test suite.
+  This also cascades to delete associated invitations.
+}
+
+assert {
+  res.status: in [200, 204, 404]
+}
+
+tests {
+  test("should delete test event or return 404 if already deleted", function() {
+    const status = res.getStatus();
+    expect([200, 204, 404]).to.include(status);
+    if (status === 404) {
+      console.log("Test event already deleted or not found");
+    } else {
+      console.log("Test event deleted successfully");
+    }
+  });
+
+  test("should clear test variables", function() {
+    bru.setVar("invTestEventCode", null);
+    bru.setVar("invTestEventNumber", null);
+    bru.setVar("invTestInvitationId", null);
+    bru.setVar("invTestFirstInvitationId", null);
+  });
+}

@@ -1,0 +1,337 @@
+package ch.batbern.events.service;
+
+import ch.batbern.events.domain.InvitationStatus;
+import ch.batbern.events.domain.ResponseType;
+import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.domain.SpeakerInvitation;
+import ch.batbern.events.dto.BulkInvitationResponse;
+import ch.batbern.events.dto.BulkSendInvitationRequest;
+import ch.batbern.events.dto.InvitationResponse;
+import ch.batbern.events.dto.RespondToInvitationRequest;
+import ch.batbern.events.dto.SendInvitationRequest;
+import ch.batbern.events.event.InvitationRespondedEvent;
+import ch.batbern.events.event.SpeakerInvitedEvent;
+import ch.batbern.events.exception.InvitationExpiredException;
+import ch.batbern.events.exception.InvitationNotFoundException;
+import ch.batbern.events.repository.SpeakerInvitationRepository;
+import ch.batbern.events.util.InvitationTokenGenerator;
+import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.types.SpeakerWorkflowState;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Service for managing speaker invitations - Story 6.1.
+ *
+ * Provides operations for:
+ * - Sending invitations with unique response tokens
+ * - Processing speaker responses
+ * - Tracking invitation status
+ * - Publishing domain events
+ *
+ * ADR-003/ADR-004 compliant: uses meaningful identifiers (username, event_code).
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class InvitationService {
+
+    private final SpeakerInvitationRepository invitationRepository;
+    private final SpeakerService speakerService;
+    private final InvitationTokenGenerator tokenGenerator;
+    private final DomainEventPublisher domainEventPublisher;
+    private final InvitationEmailService invitationEmailService;
+    private final TransactionTemplate transactionTemplate;
+
+    private static final int DEFAULT_EXPIRATION_DAYS = 14;
+
+    /**
+     * Send an invitation to a speaker for an event.
+     *
+     * @param request The invitation request
+     * @param organizerUsername The organizer sending the invitation
+     * @return The created invitation response
+     * @throws IllegalStateException if an active invitation already exists
+     */
+    public InvitationResponse sendInvitation(SendInvitationRequest request, String organizerUsername) {
+        return sendInvitationInternal(request, organizerUsername);
+    }
+
+    /**
+     * Internal implementation of sending an invitation.
+     * Separated to allow use from bulk operations with separate transactions.
+     */
+    private InvitationResponse sendInvitationInternal(SendInvitationRequest request, String organizerUsername) {
+        log.info("Sending invitation to speaker {} for event {}", request.getUsername(), request.getEventCode());
+
+        // Validate speaker exists
+        Speaker speaker = speakerService.getSpeakerEntityByUsername(request.getUsername());
+
+        // Check for existing active invitation
+        if (invitationRepository.existsActiveInvitation(request.getUsername(), request.getEventCode())) {
+            throw new IllegalStateException(
+                    String.format("An active invitation already exists for speaker %s and event %s",
+                            request.getUsername(), request.getEventCode()));
+        }
+
+        // Generate unique response token
+        String responseToken = tokenGenerator.generateToken();
+
+        // Calculate expiration date
+        int expirationDays = request.getExpirationDays() != null ? request.getExpirationDays() : DEFAULT_EXPIRATION_DAYS;
+        Instant expiresAt = Instant.now().plus(expirationDays, ChronoUnit.DAYS);
+        Instant sentAt = Instant.now();
+
+        // Create invitation
+        SpeakerInvitation invitation = SpeakerInvitation.builder()
+                .username(request.getUsername())
+                .eventCode(request.getEventCode())
+                .responseToken(responseToken)
+                .invitationStatus(InvitationStatus.SENT)
+                .sentAt(sentAt)
+                .expiresAt(expiresAt)
+                .createdBy(organizerUsername)
+                .build();
+
+        // Save invitation
+        SpeakerInvitation saved = invitationRepository.save(invitation);
+
+        // Update speaker workflow state to CONTACTED
+        speaker.setWorkflowState(SpeakerWorkflowState.CONTACTED);
+
+        // Publish domain event
+        domainEventPublisher.publish(new SpeakerInvitedEvent(
+                saved.getId(),
+                saved.getUsername(),
+                saved.getEventCode(),
+                saved.getExpiresAt(),
+                saved.getSentAt(),
+                organizerUsername
+        ));
+
+        // Send invitation email (AC4 - AWS SES integration)
+        invitationEmailService.sendInvitationEmail(saved, organizerUsername, request.getPersonalMessage());
+
+        log.info("Invitation sent successfully with ID {}", saved.getId());
+
+        return toResponse(saved);
+    }
+
+    /**
+     * Get invitation by response token.
+     * Used for speaker response portal (public, no auth required).
+     *
+     * @param token The unique response token
+     * @return The invitation response
+     * @throws InvitationNotFoundException if token is invalid
+     */
+    @Transactional(readOnly = true)
+    public InvitationResponse getInvitationByToken(String token) {
+        log.debug("Fetching invitation by token");
+
+        SpeakerInvitation invitation = invitationRepository.findByResponseToken(token)
+                .orElseThrow(() -> new InvitationNotFoundException(token));
+
+        // Mark as opened if first access
+        if (invitation.getInvitationStatus() == InvitationStatus.SENT) {
+            invitation.setInvitationStatus(InvitationStatus.OPENED);
+            invitation.setEmailOpenedAt(Instant.now());
+            invitationRepository.save(invitation);
+        }
+
+        return toResponse(invitation);
+    }
+
+    /**
+     * Process speaker response to invitation.
+     *
+     * @param token The unique response token
+     * @param request The response details
+     * @return The updated invitation response
+     * @throws InvitationNotFoundException if token is invalid
+     * @throws InvitationExpiredException if invitation has expired
+     */
+    public InvitationResponse respondToInvitation(String token, RespondToInvitationRequest request) {
+        log.info("Processing response for invitation token");
+
+        SpeakerInvitation invitation = invitationRepository.findByResponseToken(token)
+                .orElseThrow(() -> new InvitationNotFoundException(token));
+
+        // Check if expired
+        if (invitation.isExpired()) {
+            throw new InvitationExpiredException(token);
+        }
+
+        // Check if already responded
+        if (invitation.getInvitationStatus() == InvitationStatus.RESPONDED) {
+            log.warn("Attempt to respond to already responded invitation");
+            return toResponse(invitation);
+        }
+
+        Instant respondedAt = Instant.now();
+
+        // Update invitation
+        invitation.setInvitationStatus(InvitationStatus.RESPONDED);
+        invitation.setResponseType(request.getResponseType());
+        invitation.setRespondedAt(respondedAt);
+
+        if (request.getResponseType() == ResponseType.DECLINED) {
+            invitation.setDeclineReason(request.getDeclineReason());
+        }
+
+        SpeakerInvitation saved = invitationRepository.save(invitation);
+
+        // Update speaker workflow state
+        Speaker speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
+        SpeakerWorkflowState newState = mapResponseToWorkflowState(request.getResponseType());
+        speaker.setWorkflowState(newState);
+
+        // Publish domain event
+        domainEventPublisher.publish(new InvitationRespondedEvent(
+                saved.getId(),
+                saved.getUsername(),
+                saved.getEventCode(),
+                saved.getResponseType().name(),
+                saved.getDeclineReason(),
+                respondedAt,
+                saved.getUsername() // Speaker username as triggeredBy
+        ));
+
+        log.info("Invitation response recorded: {} for speaker {}", request.getResponseType(), invitation.getUsername());
+
+        return toResponse(saved);
+    }
+
+    /**
+     * List invitations for an event.
+     *
+     * @param eventCode The event code
+     * @param pageable Pagination parameters
+     * @return Page of invitation responses
+     */
+    @Transactional(readOnly = true)
+    public Page<InvitationResponse> listInvitationsByEvent(String eventCode, Pageable pageable) {
+        return invitationRepository.findByEventCode(eventCode, pageable)
+                .map(this::toResponse);
+    }
+
+    /**
+     * List invitations for a speaker.
+     *
+     * @param username The speaker's username
+     * @return List of invitation responses
+     */
+    @Transactional(readOnly = true)
+    public List<InvitationResponse> listInvitationsBySpeaker(String username) {
+        return invitationRepository.findByUsername(username).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Send bulk invitations to multiple speakers for an event.
+     * Story 6.1 AC7: Bulk invitation support.
+     *
+     * @param eventCode The event code
+     * @param request The bulk invitation request
+     * @param organizerUsername The organizer sending the invitations
+     * @return Summary of successful and failed invitations
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public BulkInvitationResponse sendBulkInvitations(String eventCode, BulkSendInvitationRequest request, String organizerUsername) {
+        log.info("Sending bulk invitations to {} speakers for event {}", request.getUsernames().size(), eventCode);
+
+        List<InvitationResponse> successful = new ArrayList<>();
+        List<BulkInvitationResponse.BulkInvitationFailure> failures = new ArrayList<>();
+
+        for (String username : request.getUsernames()) {
+            try {
+                // Execute each invitation in its own transaction to prevent rollback propagation
+                InvitationResponse response = transactionTemplate.execute(status -> {
+                    SendInvitationRequest singleRequest = SendInvitationRequest.builder()
+                            .username(username)
+                            .eventCode(eventCode)
+                            .personalMessage(request.getPersonalMessage())
+                            .expirationDays(request.getExpirationDays())
+                            .build();
+
+                    return sendInvitationInternal(singleRequest, organizerUsername);
+                });
+                successful.add(response);
+            } catch (Exception e) {
+                log.warn("Failed to send invitation to {}: {}", username, e.getMessage());
+                failures.add(BulkInvitationResponse.BulkInvitationFailure.builder()
+                        .username(username)
+                        .reason(e.getMessage())
+                        .build());
+            }
+        }
+
+        log.info("Bulk invitations completed: {} successful, {} failed", successful.size(), failures.size());
+
+        return BulkInvitationResponse.builder()
+                .totalRequested(request.getUsernames().size())
+                .successCount(successful.size())
+                .failureCount(failures.size())
+                .successful(successful)
+                .failures(failures)
+                .build();
+    }
+
+    /**
+     * Mark expired invitations as expired.
+     * Called by scheduled job.
+     */
+    public void markExpiredInvitations() {
+        List<SpeakerInvitation> expired = invitationRepository.findExpiredInvitations(Instant.now());
+        for (SpeakerInvitation invitation : expired) {
+            invitation.setInvitationStatus(InvitationStatus.EXPIRED);
+            invitationRepository.save(invitation);
+            log.info("Marked invitation {} as expired", invitation.getId());
+        }
+    }
+
+    /**
+     * Map response type to speaker workflow state.
+     */
+    private SpeakerWorkflowState mapResponseToWorkflowState(ResponseType responseType) {
+        return switch (responseType) {
+            case ACCEPTED -> SpeakerWorkflowState.ACCEPTED;
+            case DECLINED -> SpeakerWorkflowState.DECLINED;
+            case TENTATIVE -> SpeakerWorkflowState.CONTACTED; // Stay in contacted for tentative
+        };
+    }
+
+    /**
+     * Convert entity to response DTO.
+     */
+    private InvitationResponse toResponse(SpeakerInvitation invitation) {
+        return InvitationResponse.builder()
+                .id(invitation.getId())
+                .username(invitation.getUsername())
+                .eventCode(invitation.getEventCode())
+                .invitationStatus(invitation.getInvitationStatus())
+                .sentAt(invitation.getSentAt())
+                .respondedAt(invitation.getRespondedAt())
+                .responseType(invitation.getResponseType())
+                .declineReason(invitation.getDeclineReason())
+                .expiresAt(invitation.getExpiresAt())
+                .reminderCount(invitation.getReminderCount())
+                .lastReminderAt(invitation.getLastReminderAt())
+                .createdAt(invitation.getCreatedAt())
+                .createdBy(invitation.getCreatedBy())
+                .build();
+    }
+}

@@ -1,0 +1,56 @@
+meta {
+  name: Respond to Invitation with Invalid Token
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/invitations/respond/invalid-token-that-does-not-exist-67890
+  body: json
+  auth: none
+}
+
+docs {
+  # Public Endpoint - No Authentication Required
+
+  Tests the POST /invitations/respond/{token} endpoint with an invalid token.
+
+  Note: Response tokens are sent via email only (security requirement).
+  Successful token flow is validated in integration tests where we have
+  database access to retrieve the token.
+
+  This test validates:
+  - Endpoint is accessible without authentication
+  - Invalid tokens return 404 Not Found
+  - Request body validation works
+}
+
+body:json {
+  {
+    "responseType": "ACCEPTED",
+    "notes": "Looking forward to speaking!"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 for invalid token - Story 6.1 AC2", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should be accessible without authentication (public endpoint) - Story 6.1 AC2", function() {
+    // If we got here without auth and received 404 (not 401/403),
+    // the endpoint is correctly public
+    expect(res.getStatus()).to.not.equal(401);
+    expect(res.getStatus()).to.not.equal(403);
+  });
+
+  test("should return error response", function() {
+    const body = res.getBody();
+    // Endpoint returns error structure
+    expect(body.error || body.message || body.status).to.exist;
+  });
+}

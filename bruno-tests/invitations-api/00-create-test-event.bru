@@ -1,0 +1,61 @@
+meta {
+  name: Create Test Event for Invitations API
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+script:pre-request {
+  // Generate unique eventNumber that fits in Java int32
+  const now = Date.now();
+  const eventNumber = (now % 1000000) + 900000;
+
+  bru.setVar("invTestTimestamp", now);
+  bru.setVar("invEventNumber", eventNumber);
+}
+
+body:json {
+  {
+    "title": "Invitations API Test Event {{invTestTimestamp}}",
+    "eventNumber": {{invEventNumber}},
+    "date": "2026-06-15T18:00:00Z",
+    "registrationDeadline": "2026-06-01T23:59:59Z",
+    "venueName": "Invitation Test Venue",
+    "venueAddress": "Test Address, 3000 Bern",
+    "venueCapacity": 100,
+    "workflowState": "CREATED",
+    "organizerUsername": "{{organizerUsername}}",
+    "description": "Test event for speaker invitations API tests - Story 6.1",
+    "eventType": "EVENING"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("should create event for invitations API tests - Story 6.1", function() {
+    expect(res.getStatus()).to.equal(201);
+    const event = res.getBody();
+    expect(event.eventCode).to.be.a('string');
+    expect(event.title).to.include('Invitations API Test Event');
+  });
+
+  test("should save eventCode for subsequent tests", function() {
+    const event = res.getBody();
+    bru.setVar("invTestEventCode", event.eventCode);
+    bru.setVar("invTestEventNumber", event.eventNumber);
+    console.log("Created test event with code:", event.eventCode);
+  });
+}

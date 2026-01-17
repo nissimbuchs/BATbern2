@@ -1,0 +1,24 @@
+meta {
+  name: Speaker Invitations API (Story 6.1)
+}
+
+docs {
+  # Speaker Invitations API Tests - Story 6.1
+
+  Tests for the automated speaker invitation system:
+  - Send individual invitations (AC2)
+  - Send bulk invitations (AC7)
+  - List invitations by event (AC2)
+  - Token-based response (AC2, public endpoints)
+  - Expiration handling (AC9)
+
+  ## Test Flow
+  1. Create test event
+  2. Send single invitation
+  3. Send bulk invitations
+  4. List invitations
+  5. Get invitation by token (public)
+  6. Respond to invitation (public)
+  7. Error cases (invalid token, expired)
+  8. Cleanup test event
+}

@@ -1,0 +1,75 @@
+meta {
+  name: Bulk Send Speaker Invitations
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/events/{{invTestEventCode}}/invitations/bulk
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "usernames": ["{{testSpeakerUsername}}", "nonexistent.user.12345", "another.fake.user.67890"],
+    "personalMessage": "We'd love to have you speak at our upcoming BATbern event!",
+    "expirationDays": 14
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalRequested: eq 3
+}
+
+tests {
+  test("should return 200 status for bulk operation - Story 6.1 AC7", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should report total requested count - Story 6.1 AC7", function() {
+    const response = res.getBody();
+    expect(response.totalRequested).to.equal(3);
+  });
+
+  test("should handle partial failures gracefully - Story 6.1 AC7", function() {
+    const response = res.getBody();
+    // First username already has invitation from test 01, should fail with duplicate
+    // Other usernames don't exist, should fail with user not found
+    expect(response.failureCount).to.be.greaterThan(0);
+    expect(response.failures).to.be.an('array');
+    expect(response.failures.length).to.equal(response.failureCount);
+  });
+
+  test("should return failure details with reasons - Story 6.1 AC7", function() {
+    const response = res.getBody();
+    if (response.failures && response.failures.length > 0) {
+      const failure = response.failures[0];
+      expect(failure.username).to.be.a('string');
+      expect(failure.reason).to.be.a('string');
+    }
+  });
+
+  test("should include success and failure counts - Story 6.1 AC7", function() {
+    const response = res.getBody();
+    expect(response.successCount).to.be.a('number');
+    expect(response.failureCount).to.be.a('number');
+    expect(response.successCount + response.failureCount).to.equal(response.totalRequested);
+  });
+
+  test("should return successfully sent invitations - Story 6.1 AC7", function() {
+    const response = res.getBody();
+    expect(response.successful).to.be.an('array');
+    if (response.successCount > 0) {
+      const successful = response.successful[0];
+      expect(successful.id).to.be.a('string');
+      expect(successful.username).to.be.a('string');
+      expect(successful.invitationStatus).to.equal('SENT');
+    }
+  });
+}

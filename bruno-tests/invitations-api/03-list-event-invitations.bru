@@ -1,0 +1,75 @@
+meta {
+  name: List Event Invitations
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/events/{{invTestEventCode}}/invitations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+params:query {
+  page: 0
+  size: 20
+}
+
+assert {
+  res.status: eq 200
+  res.body.content: isDefined
+}
+
+tests {
+  test("should return 200 status - Story 6.1 AC2", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return paginated response - Story 6.1 AC2", function() {
+    const response = res.getBody();
+    expect(response.content).to.be.an('array');
+    expect(response.pageable).to.exist;
+    expect(response.totalElements).to.be.a('number');
+    expect(response.totalPages).to.be.a('number');
+  });
+
+  test("should include invitations for the test event - Story 6.1 AC2", function() {
+    const response = res.getBody();
+    expect(response.content.length).to.be.greaterThan(0);
+
+    // Verify invitations are for the correct event
+    const invitation = response.content[0];
+    expect(invitation.eventCode).to.equal(bru.getVar("invTestEventCode"));
+  });
+
+  test("should include invitation details - Story 6.1 AC2", function() {
+    const response = res.getBody();
+    const invitation = response.content[0];
+
+    expect(invitation.id).to.be.a('string');
+    expect(invitation.username).to.be.a('string');
+    expect(invitation.invitationStatus).to.be.a('string');
+    expect(invitation.expiresAt).to.be.a('string');
+    expect(invitation.createdAt).to.be.a('string');
+    expect(invitation.createdBy).to.be.a('string');
+  });
+
+  test("should include status tracking fields - Story 6.1 AC6", function() {
+    const response = res.getBody();
+    const invitation = response.content[0];
+
+    expect(invitation.invitationStatus).to.be.oneOf(['PENDING', 'SENT', 'OPENED', 'RESPONDED', 'EXPIRED']);
+    expect(invitation.reminderCount).to.be.a('number');
+  });
+
+  test("should save first invitation for token tests", function() {
+    const response = res.getBody();
+    if (response.content.length > 0) {
+      bru.setVar("invTestFirstInvitationId", response.content[0].id);
+    }
+  });
+}

@@ -1,0 +1,45 @@
+meta {
+  name: Duplicate Invitation Error
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/events/{{invTestEventCode}}/invitations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # Duplicate Invitation Error Test
+
+  Tests that sending an invitation to a speaker who already has an active
+  invitation for the same event returns 409 Conflict.
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "personalMessage": "Trying to send duplicate invitation",
+    "expirationDays": 14
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("should return 409 Conflict for duplicate invitation - Story 6.1 AC2", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("should return error message about active invitation", function() {
+    const body = res.getBody();
+    expect(body.error || body.message).to.exist;
+  });
+}

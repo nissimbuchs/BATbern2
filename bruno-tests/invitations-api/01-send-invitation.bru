@@ -1,0 +1,73 @@
+meta {
+  name: Send Speaker Invitation
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/events/{{invTestEventCode}}/invitations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{testSpeakerUsername}}",
+    "personalMessage": "We'd love to have you speak at our upcoming event!",
+    "expirationDays": 14
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.username: eq {{testSpeakerUsername}}
+  res.body.eventCode: eq {{invTestEventCode}}
+  res.body.invitationStatus: eq SENT
+}
+
+tests {
+  test("should return 201 status - Story 6.1 AC2", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return invitation with correct username and event - Story 6.1 AC1, AC2", function() {
+    const invitation = res.getBody();
+    expect(invitation.id).to.be.a('string');
+    expect(invitation.username).to.equal(bru.getEnvVar("testSpeakerUsername"));
+    expect(invitation.eventCode).to.equal(bru.getVar("invTestEventCode"));
+  });
+
+  test("should return invitation with SENT status - Story 6.1 AC6", function() {
+    const invitation = res.getBody();
+    expect(invitation.invitationStatus).to.equal('SENT');
+  });
+
+  test("should include expiration timestamp - Story 6.1 AC9", function() {
+    const invitation = res.getBody();
+    expect(invitation.expiresAt).to.be.a('string');
+
+    // Verify expiration is ~14 days in the future
+    const expiresAt = new Date(invitation.expiresAt);
+    const now = new Date();
+    const diffDays = (expiresAt - now) / (1000 * 60 * 60 * 24);
+    expect(diffDays).to.be.greaterThan(13);
+    expect(diffDays).to.be.lessThan(15);
+  });
+
+  test("should include creator info - Story 6.1 AC1", function() {
+    const invitation = res.getBody();
+    expect(invitation.createdBy).to.exist;
+    expect(invitation.createdAt).to.be.a('string');
+  });
+
+  test("should save invitation ID for later tests", function() {
+    const invitation = res.getBody();
+    bru.setVar("invTestInvitationId", invitation.id);
+    console.log("Created invitation with ID:", invitation.id);
+  });
+}

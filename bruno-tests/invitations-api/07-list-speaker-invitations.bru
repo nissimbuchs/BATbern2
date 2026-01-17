@@ -1,0 +1,66 @@
+meta {
+  name: List Speaker Invitations
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/speakers/{{testSpeakerUsername}}/invitations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  # List Invitations for a Speaker
+
+  Tests the GET /speakers/{username}/invitations endpoint.
+  Requires ORGANIZER role or SPEAKER role (if requesting own invitations).
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 status - Story 6.1 AC2", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of invitations - Story 6.1 AC2", function() {
+    const invitations = res.getBody();
+    expect(invitations).to.be.an('array');
+  });
+
+  test("should include invitations for the speaker - Story 6.1 AC2", function() {
+    const invitations = res.getBody();
+    expect(invitations.length).to.be.greaterThan(0);
+
+    // Verify all invitations are for the correct speaker
+    invitations.forEach(invitation => {
+      expect(invitation.username).to.equal(bru.getEnvVar("testSpeakerUsername"));
+    });
+  });
+
+  test("should include invitation details - Story 6.1 AC2", function() {
+    const invitations = res.getBody();
+    const invitation = invitations[0];
+
+    expect(invitation.id).to.be.a('string');
+    expect(invitation.eventCode).to.be.a('string');
+    expect(invitation.invitationStatus).to.be.a('string');
+    expect(invitation.expiresAt).to.be.a('string');
+    expect(invitation.createdAt).to.be.a('string');
+  });
+
+  test("should include test event invitation - Story 6.1", function() {
+    const invitations = res.getBody();
+    const testEventInvitation = invitations.find(
+      inv => inv.eventCode === bru.getVar("invTestEventCode")
+    );
+    expect(testEventInvitation).to.exist;
+  });
+}
