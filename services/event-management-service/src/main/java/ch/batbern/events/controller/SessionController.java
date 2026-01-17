@@ -190,6 +190,7 @@ public class SessionController {
         Session session = Session.builder()
                 .sessionSlug(sessionSlug)
                 .eventId(eventId)
+                .eventCode(eventCode)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .sessionType(request.getSessionType())

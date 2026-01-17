@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
+import sitemap from 'vite-plugin-sitemap';
 
 /**
  * Vite Configuration - Environment-Agnostic Build
@@ -147,6 +148,13 @@ export default defineConfig({
         enabled: false, // Disable PWA in development for faster builds
       },
     }),
+    // Sitemap generation for SEO (Story 4.1.8)
+    sitemap({
+      hostname: 'https://batbern.ch',
+      dynamicRoutes: ['/', '/current-event', '/archive', '/search', '/about'],
+      changefreq: 'weekly',
+      priority: 0.8,
+    }),
     // Gzip compression for production builds (Task 13b)
     viteCompression({
       algorithm: 'gzip',
@@ -202,14 +210,51 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Manual chunks for code splitting (Task 13b)
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/icons-material'],
-          aws: ['aws-amplify', '@aws-amplify/ui-react'],
-          query: ['@tanstack/react-query'],
-          router: ['react-router-dom'],
-          i18n: ['react-i18next', 'i18next', 'i18next-browser-languagedetector'],
+        // Manual chunks for code splitting (Task 13b + Story 4.1.8a)
+        manualChunks: (id) => {
+          // Split node_modules by package
+          if (id.includes('node_modules')) {
+            // MUI Icons - separate chunk (lightweight, cacheable)
+            if (id.includes('@mui/icons-material')) {
+              return 'mui-icons';
+            }
+            // MUI Core - keep together (heavily used, better compression)
+            if (
+              id.includes('@mui/material') ||
+              id.includes('@mui/system') ||
+              id.includes('@emotion')
+            ) {
+              return 'mui';
+            }
+            // Core React vendors
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'vendor';
+            }
+            // AWS Amplify
+            if (
+              id.includes('aws-amplify') ||
+              id.includes('@aws-amplify') ||
+              id.includes('@aws-sdk')
+            ) {
+              return 'aws';
+            }
+            // React Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'query';
+            }
+            // React Router
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            // i18n
+            if (id.includes('i18next')) {
+              return 'i18n';
+            }
+            // Date utilities
+            if (id.includes('date-fns')) {
+              return 'format';
+            }
+          }
         },
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {

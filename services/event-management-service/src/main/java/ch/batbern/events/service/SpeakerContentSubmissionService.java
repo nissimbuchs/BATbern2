@@ -49,6 +49,7 @@ public class SpeakerContentSubmissionService {
      * External calls (users-service) are made outside transaction to avoid long-running transactions.
      *
      * @param poolId the speaker pool ID
+     * @param eventCode the event code (from path parameter) - Story 5.9: Used for persistent session.eventCode
      * @param presentationTitle the presentation title (required)
      * @param presentationAbstract the presentation abstract (required, max 1000 chars)
      * @param username the speaker username (if existing user)
@@ -63,6 +64,7 @@ public class SpeakerContentSubmissionService {
     @Transactional
     public SpeakerContentResponse submitContent(
             String poolId,
+            String eventCode,
             String presentationTitle,
             String presentationAbstract,
             String username,
@@ -121,6 +123,7 @@ public class SpeakerContentSubmissionService {
 
         Session session = Session.builder()
                 .eventId(speaker.getEventId())
+                .eventCode(eventCode)
                 .sessionSlug(sessionSlug)
                 .title(presentationTitle)
                 .description(presentationAbstract)

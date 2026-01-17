@@ -72,11 +72,14 @@ public class SessionUserService {
         }
 
         // Create SessionUser entity (ADR-003: username is the primary identifier)
+        // Populate speaker name cache fields for full-text search (V38 migration)
         SessionUser sessionUser = SessionUser.builder()
                 .session(session)
                 .username(username)
                 .speakerRole(speakerRole)
                 .presentationTitle(presentationTitle)
+                .speakerFirstName(user.getFirstName())  // Cache for full-text search
+                .speakerLastName(user.getLastName())    // Cache for full-text search
                 .isConfirmed(false)
                 .invitedAt(Instant.now())
                 .build();

@@ -229,6 +229,7 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
         // Given: Existing session in database
         Session existingSession = new Session();
         existingSession.setEventId(testEvent.getId());
+        existingSession.setEventCode(testEvent.getEventCode());
         existingSession.setTitle("User Interface Design");
         existingSession.setDescription("Existing session");
         existingSession.setSessionType("presentation");

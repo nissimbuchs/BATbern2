@@ -286,8 +286,10 @@
   },
   "fileUpload": {
     "dragDrop": "Drag and drop a file here, or click to select",
+    "dragDropMultiple": "Drag and drop files here, or click to select",
     "dragActive": "Drop the file here",
     "acceptedFormats": "Accepted formats: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "acceptedFormatsMultiple": "Accepted formats: Multiple file types (max {{maxSize}}MB per file)",
     "uploading": "Uploading... {{progress}}%",
     "removeFile": "Remove file",
     "altText": "Uploaded file preview",

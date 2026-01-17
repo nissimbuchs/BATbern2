@@ -50,8 +50,8 @@ public class Session {
     @JsonIgnore // Story 1.16.2: Hide internal UUID from API responses
     private UUID eventId;
 
-    @Transient
-    private String eventCode; // Not persisted - populated from path parameter for API responses
+    @Column(name = "event_code", nullable = false, length = 50)
+    private String eventCode; // Story 5.9: Persistent field for microservice-ready architecture
 
     @Column(nullable = false)
     private String title;
@@ -59,9 +59,13 @@ public class Session {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // Note: title_vector and description_vector columns exist in DB (V35 migration)
-    // but are not mapped here because they're PostgreSQL tsvector types used only
-    // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
+    // Full-text search vector columns (GENERATED ALWAYS AS in PostgreSQL)
+    // Story 4.2 - BAT-109: Archive browsing with full-text search
+    @Column(name = "title_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object titleVector;
+
+    @Column(name = "description_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object descriptionVector;
 
     @Column(name = "session_type", length = 50)
     private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch
@@ -86,6 +90,21 @@ public class Session {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    /**
+     * Materials tracking fields - Story 5.9: Session Materials Upload
+     * Auto-updated by database triggers (V41 migration)
+     */
+    @Column(name = "materials_count", nullable = false)
+    @Builder.Default
+    private Integer materialsCount = 0;
+
+    @Column(name = "has_presentation", nullable = false)
+    @Builder.Default
+    private Boolean hasPresentation = false;
+
+    @Column(name = "materials_status", length = 20)
+    private String materialsStatus;  // NONE, PARTIAL, COMPLETE
 
     /**
      * Link to speaker pool entry (one session per speaker)

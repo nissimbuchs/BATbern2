@@ -25,7 +25,10 @@ type ViewMode = 'grid' | 'list';
 export default function ArchivePage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { ref, inView } = useInView();
+  const { ref, inView } = useInView({
+    threshold: 0,
+    rootMargin: '200px', // Trigger loading 200px before reaching the element
+  });
 
   // View mode (persisted to localStorage)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -63,10 +66,8 @@ export default function ArchivePage() {
   const filters: ArchiveFilters = useMemo(() => {
     const topicsParam = searchParams.get('topics');
     const search = searchParams.get('q') || '';
-    const timePeriod = searchParams.get('timePeriod') || 'all';
 
     return {
-      timePeriod,
       topics: topicsParam ? topicsParam.split(',') : [],
       search,
     };
@@ -79,12 +80,20 @@ export default function ArchivePage() {
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteEvents(filters, sort);
 
+  // Flatten all pages into single events array
+  const events = data?.pages.flatMap((page) => page.data) || [];
+  const totalCount = data?.pages[0]?.pagination?.totalItems || 0;
+
   // Auto-fetch next page when scroll trigger is in view
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      // Small delay to ensure state is stable before fetching
+      const timer = setTimeout(() => {
+        fetchNextPage();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage, events.length, totalCount]);
 
   // Handle view mode toggle
   const handleViewModeChange = (mode: ViewMode) => {
@@ -95,13 +104,6 @@ export default function ArchivePage() {
   // Handle filter changes - update URL query parameters
   const handleFilterChange = (newFilters: ArchiveFilters) => {
     const params = new URLSearchParams(searchParams);
-
-    // Update or remove time period parameter
-    if (newFilters.timePeriod && newFilters.timePeriod !== 'all') {
-      params.set('timePeriod', newFilters.timePeriod);
-    } else {
-      params.delete('timePeriod');
-    }
 
     // Update or remove topics parameter
     if (newFilters.topics && newFilters.topics.length > 0) {
@@ -135,10 +137,6 @@ export default function ArchivePage() {
     }
     setSearchParams(params);
   };
-
-  // Flatten all pages into single events array
-  const events = data?.pages.flatMap((page) => page.data) || [];
-  const totalCount = data?.pages[0]?.pagination?.total || 0;
 
   // SEO metadata
   const pageUrl = `${window.location.origin}/archive${window.location.search}`;
@@ -216,7 +214,7 @@ export default function ArchivePage() {
           <main className="flex-1">
             {/* View Toggle */}
             <div className="flex justify-between items-center mb-6">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-zinc-400" data-testid="events-progress">
                 {!isLoading && totalCount > 0 && `${events.length} of ${totalCount} events`}
               </div>
               <div className="flex gap-2">
@@ -283,10 +281,12 @@ export default function ArchivePage() {
 
                 {/* Infinite Scroll Trigger */}
                 {hasNextPage && (
-                  <div ref={ref} className="text-center py-8">
+                  <div ref={ref} className="text-center py-32 min-h-[200px]">
                     {isFetchingNextPage ? (
                       <div className="text-gray-600">{t('archive.loadingMore')}</div>
-                    ) : null}
+                    ) : (
+                      <div className="text-gray-400 text-sm">{t('archive.scrollForMore')}</div>
+                    )}
                   </div>
                 )}
               </>

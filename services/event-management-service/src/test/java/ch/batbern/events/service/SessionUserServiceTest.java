@@ -65,6 +65,7 @@ class SessionUserServiceTest {
                 .id(sessionId)
                 .sessionSlug("test-session")
                 .eventId(UUID.randomUUID())
+                .eventCode("TEST-EVENT-123")
                 .title("Test Session")
                 .sessionType("presentation")
                 .startTime(Instant.now())

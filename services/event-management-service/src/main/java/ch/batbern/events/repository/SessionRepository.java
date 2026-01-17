@@ -46,10 +46,10 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      * Find all sessions for a specific event with session users eagerly loaded
      * Story 5.5: Fix lazy loading issue when expanding sessions in API responses
      */
-    @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers " +
-           "WHERE s.eventId = :eventId ORDER BY s.startTime, s.sessionSlug")
-
+    @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers "
+           + "WHERE s.eventId = :eventId ORDER BY s.startTime, s.sessionSlug")
     List<Session> findByEventIdWithSpeakers(UUID eventId);
+
     /**
      * Find all sessions for a specific event and session type
      */

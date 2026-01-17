@@ -141,7 +141,15 @@ export const HeroSection = ({
         {/* Background - Theme Image or Unicorn.studio Interactive Background */}
         <div className="absolute inset-0 z-0 w-full h-full" aria-hidden="true">
           {themeImageUrl ? (
-            <img src={themeImageUrl} alt="" className="w-full h-full object-cover" />
+            <img
+              src={themeImageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              width={1920}
+              height={1080}
+              fetchPriority="high"
+              style={{ aspectRatio: '16/9' }}
+            />
           ) : (
             <div data-us-project={unicornProjectId} style={{ width: '100%', height: '100%' }} />
           )}

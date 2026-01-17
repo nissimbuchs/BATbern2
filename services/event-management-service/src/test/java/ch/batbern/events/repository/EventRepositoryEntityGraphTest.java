@@ -103,6 +103,7 @@ class EventRepositoryEntityGraphTest extends AbstractIntegrationTest {
         // Create sessions
         session1 = Session.builder()
                 .eventId(archivedEvent.getId())
+                .eventCode(archivedEvent.getEventCode())
                 .sessionSlug("cloud-keynote")
                 .title("Cloud Architecture Keynote")
                 .description("Opening keynote")
@@ -117,6 +118,7 @@ class EventRepositoryEntityGraphTest extends AbstractIntegrationTest {
 
         session2 = Session.builder()
                 .eventId(archivedEvent.getId())
+                .eventCode(archivedEvent.getEventCode())
                 .sessionSlug("microservices-workshop")
                 .title("Microservices Workshop")
                 .description("Hands-on microservices")
@@ -301,6 +303,7 @@ class EventRepositoryEntityGraphTest extends AbstractIntegrationTest {
 
         Session session3 = Session.builder()
                 .eventId(event2.getId())
+                .eventCode(event2.getEventCode())
                 .sessionSlug("session-3")
                 .title("Test Session")
                 .sessionType("presentation")
@@ -391,6 +394,7 @@ class EventRepositoryEntityGraphTest extends AbstractIntegrationTest {
 
         Session session3 = Session.builder()
                 .eventId(event2.getId())
+                .eventCode(event2.getEventCode())
                 .sessionSlug("devops-session")
                 .title("DevOps Session")
                 .sessionType("presentation")

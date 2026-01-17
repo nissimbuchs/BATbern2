@@ -113,6 +113,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         // When: Content is submitted
         SpeakerContentResponse response = contentSubmissionService.submitContent(
                 testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
                 request.getUsername(),
@@ -169,6 +170,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         // When/Then: Content submission is rejected
         assertThatThrownBy(() -> contentSubmissionService.submitContent(
                 testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
                 "Test Title",
                 "Test abstract with lessons learned.",
                 "john.doe",
@@ -186,6 +188,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         // When/Then: Submission with null title is rejected
         assertThatThrownBy(() -> contentSubmissionService.submitContent(
                 testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
                 null, // missing title
                 "Test abstract",
                 "john.doe",
@@ -202,6 +205,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         // When/Then: Submission with null abstract is rejected
         assertThatThrownBy(() -> contentSubmissionService.submitContent(
                 testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
                 "Test Title",
                 null, // missing abstract
                 "john.doe",
@@ -222,6 +226,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         // When/Then: Transaction fails and rolls back
         assertThatThrownBy(() -> contentSubmissionService.submitContent(
                 invalidPoolId.toString(),
+                "TEST-EVENT-01",
                 "Test Title",
                 "Test abstract",
                 "john.doe",
@@ -258,6 +263,7 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
 
         SpeakerContentResponse submitted = contentSubmissionService.submitContent(
                 testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
                 request.getUsername(),

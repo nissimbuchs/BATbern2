@@ -286,8 +286,10 @@
   },
   "fileUpload": {
     "dragDrop": "Datei hier ablegen oder klicken, um auszuwählen",
+    "dragDropMultiple": "Dateien hier ablegen oder klicken, um auszuwählen",
     "dragActive": "Datei hier ablegen",
     "acceptedFormats": "Akzeptierte Formate: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "acceptedFormatsMultiple": "Akzeptierte Formate: Mehrere Dateitypen (max {{maxSize}}MB pro Datei)",
     "uploading": "Wird hochgeladen... {{progress}}%",
     "removeFile": "Datei entfernen",
     "altText": "Vorschau der hochgeladenen Datei",

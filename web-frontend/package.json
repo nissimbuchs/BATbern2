@@ -139,6 +139,7 @@
     "vite": "^7.1.12",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^1.0.3",
+    "vite-plugin-sitemap": "^0.8.2",
     "vitest": "^4.0.13",
     "vitest-axe": "^0.1.0"
   },

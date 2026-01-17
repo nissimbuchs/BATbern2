@@ -27,6 +27,8 @@
       "confirmed": "bestätigt",
       "materials": "Materialien",
       "pending": "ausstehend",
+      "complete": "vollständig",
+      "sessionsComplete": "Sessions vollständig",
       "budget": "Budget",
       "selectedTopic": "Ausgewähltes Thema",
       "noTopicSelected": "Noch kein Thema ausgewählt",
@@ -687,7 +689,9 @@
     },
     "program": {
       "title": "Programm",
-      "speaker": "Referent"
+      "speaker": "Referent",
+      "materials": "Materialien",
+      "downloadError": "Material konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut."
     },
     "venue": {
       "title": "Veranstaltungsort",
@@ -710,19 +714,29 @@
       "networking": "Networking",
       "break": "Pause",
       "lunch": "Mittagessen"
+    }
+  },
+  "sessionEdit": {
+    "title": "Session bearbeiten",
+    "titleLabel": "Session-Titel",
+    "abstractLabel": "Session-Zusammenfassung",
+    "charactersRemaining": "{{count}} Zeichen verbleibend",
+    "durationLabel": "Dauer (Minuten)",
+    "tabs": {
+      "details": "Details",
+      "materials": "Materialien"
     },
-    "sessionEdit": {
-      "title": "Session bearbeiten",
-      "titleLabel": "Session-Titel",
-      "abstractLabel": "Session-Zusammenfassung",
-      "charactersRemaining": "{{count}} Zeichen verbleibend",
-      "durationLabel": "Dauer (Minuten)",
-      "errors": {
-        "titleRequired": "Titel ist erforderlich",
-        "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
-        "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
-        "saveFailed": "Session konnte nicht gespeichert werden"
-      }
+    "materials": {
+      "uploadTitle": "Session-Materialien hochladen",
+      "uploadDescription": "Laden Sie Präsentationen, Dokumente oder Videos hoch (max. 100MB pro Datei, bis zu 10 Dateien)",
+      "existingTitle": "Vorhandene Materialien",
+      "downloadError": "Material konnte nicht heruntergeladen werden"
+    },
+    "errors": {
+      "titleRequired": "Titel ist erforderlich",
+      "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
+      "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
+      "saveFailed": "Session konnte nicht gespeichert werden"
     }
   },
   "slotAssignment": {

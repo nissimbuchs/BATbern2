@@ -5,6 +5,7 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -13,10 +14,12 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -83,6 +86,12 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private ch.batbern.events.repository.LogoRepository logoRepository;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @Autowired
+    private EntityManager entityManager;
 
     // Counter for generating unique event numbers in tests
     private int eventNumberCounter = 1000;
@@ -813,6 +822,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Story 5.7: Must have at least one session with timing assigned before publishing
         ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
                 .eventId(draftEvent.getId())
+                .eventCode(draftEvent.getEventCode())
                 .sessionSlug("keynote-2028")
                 .title("Keynote 2028")
                 .sessionType("keynote")
@@ -1985,5 +1995,166 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                         .content(patchBody))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message").value(containsString("Generated event code BATbern998 is already in use")));
+    }
+
+    // ============================================================================
+    // Full-Text Search: Speaker Name Search (Feature Enhancement)
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_findEventBySpeakerName_when_fullTextSearchUsed")
+    void should_findEventBySpeakerName_when_fullTextSearchUsed() throws Exception {
+        // Given - Create event with session and speaker
+        Event event = createTestEvent("Architecture Workshop", "2025-08-15T09:00:00Z", "AGENDA_PUBLISHED");
+
+        // Create session for the event
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(event.getId())
+                .eventCode(event.getEventCode())
+                .title("Modern Architecture Patterns")
+                .description("Deep dive into modern architecture")
+                .sessionSlug("modern-architecture-patterns")
+                .startTime(Instant.parse("2025-08-15T10:00:00Z"))
+                .endTime(Instant.parse("2025-08-15T11:30:00Z"))
+                .build();
+        session = sessionRepository.save(session);
+
+        // Create session_user (speaker) with name cache fields
+        ch.batbern.events.repository.SessionUserRepository sessionUserRepo =
+            applicationContext.getBean(ch.batbern.events.repository.SessionUserRepository.class);
+
+        ch.batbern.events.domain.SessionUser speaker = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username("mueller.hans")
+                .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(true)
+                .build();
+        sessionUserRepo.save(speaker);
+
+        // Execute raw SQL to update speaker name cache fields (GENERATED column will auto-update)
+        entityManager.createNativeQuery(
+            "UPDATE session_users SET speaker_first_name = 'Hans', speaker_last_name = 'Müller' WHERE username = 'mueller.hans'"
+        ).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        // When - Search for events by speaker last name
+        String filter = "{\"title\":{\"$contains\":\"Müller\"}}";
+
+        // Then - Event should be found via speaker name full-text search
+        mockMvc.perform(get("/api/v1/events")
+                        .param("filter", filter)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.data[?(@.title == 'Architecture Workshop')]").exists());
+    }
+
+    @Test
+    @DisplayName("should_findEventBySpeakerFirstName_when_fullTextSearchUsed")
+    void should_findEventBySpeakerFirstName_when_fullTextSearchUsed() throws Exception {
+        // Given - Create event with session and multiple speakers
+        Event event = createTestEvent("Security Workshop", "2025-09-20T09:00:00Z", "AGENDA_PUBLISHED");
+
+        // Create session for the event
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(event.getId())
+                .eventCode(event.getEventCode())
+                .title("Security Best Practices")
+                .description("Comprehensive security workshop")
+                .sessionSlug("security-best-practices")
+                .startTime(Instant.parse("2025-09-20T10:00:00Z"))
+                .endTime(Instant.parse("2025-09-20T12:00:00Z"))
+                .build();
+        session = sessionRepository.save(session);
+
+        // Create two speakers with different names
+        ch.batbern.events.repository.SessionUserRepository sessionUserRepo =
+            applicationContext.getBean(ch.batbern.events.repository.SessionUserRepository.class);
+
+        ch.batbern.events.domain.SessionUser speaker1 = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username("schmidt.petra")
+                .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(true)
+                .build();
+        sessionUserRepo.save(speaker1);
+
+        ch.batbern.events.domain.SessionUser speaker2 = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username("weber.thomas")
+                .speakerRole(SpeakerRole.CO_SPEAKER)
+                .isConfirmed(true)
+                .build();
+        sessionUserRepo.save(speaker2);
+
+        // Update speaker name cache fields
+        entityManager.createNativeQuery(
+            "UPDATE session_users SET speaker_first_name = 'Petra', speaker_last_name = 'Schmidt' WHERE username = 'schmidt.petra'"
+        ).executeUpdate();
+        entityManager.createNativeQuery(
+            "UPDATE session_users SET speaker_first_name = 'Thomas', speaker_last_name = 'Weber' WHERE username = 'weber.thomas'"
+        ).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        // When - Search for events by speaker first name "Petra"
+        String filter = "{\"title\":{\"$contains\":\"Petra\"}}";
+
+        // Then - Event should be found via speaker name full-text search
+        mockMvc.perform(get("/api/v1/events")
+                        .param("filter", filter)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.data[?(@.title == 'Security Workshop')]").exists());
+    }
+
+    @Test
+    @DisplayName("should_notFindEvent_when_speakerNameDoesNotMatch")
+    void should_notFindEvent_when_speakerNameDoesNotMatch() throws Exception {
+        // Given - Create event with session and speaker
+        Event event = createTestEvent("Database Workshop", "2025-10-10T09:00:00Z", "AGENDA_PUBLISHED");
+
+        ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
+                .eventId(event.getId())
+                .eventCode(event.getEventCode())
+                .title("Database Optimization")
+                .description("Performance tuning workshop")
+                .sessionSlug("database-optimization")
+                .startTime(Instant.parse("2025-10-10T10:00:00Z"))
+                .endTime(Instant.parse("2025-10-10T11:00:00Z"))
+                .build();
+        session = sessionRepository.save(session);
+
+        ch.batbern.events.repository.SessionUserRepository sessionUserRepo =
+            applicationContext.getBean(ch.batbern.events.repository.SessionUserRepository.class);
+
+        ch.batbern.events.domain.SessionUser speaker = ch.batbern.events.domain.SessionUser.builder()
+                .session(session)
+                .username("meier.anna")
+                .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
+                .isConfirmed(true)
+                .build();
+        sessionUserRepo.save(speaker);
+
+        entityManager.createNativeQuery(
+            "UPDATE session_users SET speaker_first_name = 'Anna', speaker_last_name = 'Meier' WHERE username = 'meier.anna'"
+        ).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+
+        // When - Search for events by a non-existent speaker name
+        String filter = "{\"title\":{\"$contains\":\"Zimmermann\"}}";
+
+        // Then - No events should be found
+        mockMvc.perform(get("/api/v1/events")
+                        .param("filter", filter)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[?(@.title == 'Database Workshop')]").doesNotExist());
     }
 }
