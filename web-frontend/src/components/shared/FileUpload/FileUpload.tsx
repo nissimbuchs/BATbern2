@@ -24,21 +24,73 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Box, Typography, IconButton, LinearProgress, Alert } from '@mui/material';
-import { CloudUpload as CloudUploadIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Box,
+  Typography,
+  IconButton,
+  LinearProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
+import {
+  CloudUpload as CloudUploadIcon,
+  Delete as DeleteIcon,
+  Description as DescriptionIcon,
+  PictureAsPdf as PdfIcon,
+  VideoLibrary as VideoIcon,
+  Slideshow as PresentationIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
+
+export interface UploadedFile {
+  uploadId: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+}
 
 interface FileUploadProps {
   currentFileUrl?: string;
   onUploadSuccess?: (data: { uploadId: string; tempFileUrl?: string }) => void;
   onUploadError?: (error: { type: string; message: string }) => void;
-  onFileRemove?: () => void; // Callback when file is removed (Story 2.5.3a)
+  onFileRemove?: (uploadId?: string) => void; // Callback when file is removed (Story 2.5.3a, 5.9)
   maxFileSize?: number; // in bytes, default 5MB
   allowedTypes?: string[]; // MIME types
   altText?: string; // Alt text for the uploaded image
   removeButtonLabel?: string; // Aria label for the remove button
+  // Story 5.9: Multiple files support
+  multiple?: boolean; // Enable multiple file uploads
+  maxFiles?: number; // Maximum number of files (default 10)
+  uploadedFiles?: UploadedFile[]; // List of uploaded files (for multiple mode)
 }
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+// Helper function to get file type icon
+const getFileTypeIcon = (mimeType: string): React.ReactNode => {
+  if (
+    mimeType.startsWith('application/vnd.openxmlformats-officedocument.presentationml') ||
+    mimeType.startsWith('application/vnd.ms-powerpoint')
+  ) {
+    return <PresentationIcon data-testid="file-icon-presentation" />;
+  }
+  if (mimeType === 'application/pdf') {
+    return <PdfIcon data-testid="file-icon-document" />;
+  }
+  if (mimeType.startsWith('video/')) {
+    return <VideoIcon data-testid="file-icon-video" />;
+  }
+  return <DescriptionIcon data-testid="file-icon-document" />;
+};
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   currentFileUrl,
@@ -49,6 +101,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml'],
   altText,
   removeButtonLabel,
+  multiple = false,
+  maxFiles = 10,
+  uploadedFiles = [],
 }) => {
   const { t } = useTranslation('common');
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
@@ -79,46 +134,140 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       // Reset error state
       reset();
 
-      // Check for multiple files - we handle this manually for better error messaging
-      if (acceptedFiles.length > 1) {
-        onUploadError?.({
-          type: 'MULTIPLE_FILES',
-          message: t('fileUpload.errors.multipleFiles'),
-        });
-        return;
-      }
+      // Story 5.9: Handle multiple files mode
+      if (multiple) {
+        // Check if exceeding maxFiles limit
+        const totalFiles = uploadedFiles.length + acceptedFiles.length;
+        if (totalFiles > maxFiles) {
+          onUploadError?.({
+            type: 'TOO_MANY_FILES',
+            message: `You can only upload a maximum of ${maxFiles} files. Current: ${uploadedFiles.length}, Attempting to add: ${acceptedFiles.length}`,
+          });
+          return;
+        }
 
-      const file = acceptedFiles[0];
-      if (file) {
-        await uploadFile(file);
+        // Upload all accepted files in parallel
+        await Promise.all(acceptedFiles.map((file) => uploadFile(file)));
+      } else {
+        // Original behavior: single file only
+        if (acceptedFiles.length > 1) {
+          onUploadError?.({
+            type: 'MULTIPLE_FILES',
+            message: t('fileUpload.errors.multipleFiles'),
+          });
+          return;
+        }
+
+        const file = acceptedFiles[0];
+        if (file) {
+          await uploadFile(file);
+        }
       }
     },
-    [uploadFile, reset, onUploadError]
+    [uploadFile, reset, onUploadError, multiple, maxFiles, uploadedFiles.length, t]
   );
+
+  // Build accept object dynamically from allowed types
+  const buildAcceptObject = (types: string[]) => {
+    const acceptObj: Record<string, string[]> = {};
+    types.forEach((type) => {
+      // Map MIME types to extensions
+      if (type === 'image/png') acceptObj[type] = ['.png'];
+      else if (type === 'image/jpeg') acceptObj[type] = ['.jpg', '.jpeg'];
+      else if (type === 'image/svg+xml') acceptObj[type] = ['.svg'];
+      else if (type === 'application/pdf') acceptObj[type] = ['.pdf'];
+      else if (type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+        acceptObj[type] = ['.pptx'];
+      else if (type === 'application/vnd.ms-powerpoint') acceptObj[type] = ['.ppt'];
+      else if (type === 'video/mp4') acceptObj[type] = ['.mp4'];
+      else if (type === 'video/quicktime') acceptObj[type] = ['.mov'];
+      else acceptObj[type] = []; // Accept without specific extension
+    });
+    return acceptObj;
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/svg+xml': ['.svg'],
-    },
-    // Note: We don't set maxFiles or multiple:false here to allow testing
-    // and to provide a custom error message when multiple files are selected
+    accept: buildAcceptObject(allowedTypes),
+    multiple: true, // Always allow multiple file selection, handle limits in onDrop
     disabled: isUploading,
   });
 
-  const handleRemoveFile = useCallback(() => {
-    setFileUrl(undefined);
-    setUploadId(undefined);
-    reset();
-    // Notify parent component that file was removed (Story 2.5.3a)
-    onFileRemove?.();
-  }, [reset, onFileRemove]);
+  const handleRemoveFile = useCallback(
+    (uploadId?: string) => {
+      setFileUrl(undefined);
+      setUploadId(undefined);
+      reset();
+      // Notify parent component that file was removed (Story 2.5.3a, 5.9)
+      onFileRemove?.(uploadId);
+    },
+    [reset, onFileRemove]
+  );
 
   return (
     <Box sx={{ width: '100%' }}>
-      {fileUrl ? (
+      {/* Story 5.9: Multiple files mode */}
+      {multiple ? (
+        <>
+          {/* Display uploaded files list */}
+          {uploadedFiles.length > 0 && (
+            <List sx={{ mb: 2 }}>
+              {uploadedFiles.map((file) => (
+                <ListItem
+                  key={file.uploadId}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleRemoveFile(file.uploadId)}
+                      disabled={isUploading}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemIcon>{getFileTypeIcon(file.fileType)}</ListItemIcon>
+                  <ListItemText primary={file.fileName} secondary={formatFileSize(file.fileSize)} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+
+          {/* Always show dropzone in multiple mode */}
+          <Box
+            {...getRootProps()}
+            data-testid="file-dropzone"
+            aria-disabled={isUploading}
+            className={isDragActive ? 'dropzone-active' : ''}
+            sx={{
+              border: '2px dashed',
+              borderColor: isDragActive ? 'primary.main' : 'grey.400',
+              borderRadius: 2,
+              padding: 4,
+              textAlign: 'center',
+              cursor: isUploading ? 'not-allowed' : 'pointer',
+              backgroundColor: isDragActive ? 'action.hover' : 'background.paper',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                borderColor: isUploading ? 'grey.400' : 'primary.main',
+                backgroundColor: isUploading ? 'background.paper' : 'action.hover',
+              },
+            }}
+          >
+            <input {...getInputProps()} />
+            <CloudUploadIcon sx={{ fontSize: 48, color: 'grey.500', mb: 2 }} />
+            <Typography variant="body1" color="textSecondary">
+              {isDragActive
+                ? t('fileUpload.dragActive')
+                : 'Drag and drop files here, or click to select'}
+            </Typography>
+            <Typography variant="caption" color="textSecondary" sx={{ mt: 1 }}>
+              {`Accepted formats: Multiple file types (max ${(maxFileSize / (1024 * 1024)).toFixed(0)}MB per file)`}
+            </Typography>
+          </Box>
+        </>
+      ) : /* Original single file mode */
+      fileUrl ? (
         <Box
           sx={{
             display: 'flex',
@@ -141,7 +290,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             }}
           />
           <IconButton
-            onClick={handleRemoveFile}
+            onClick={() => handleRemoveFile()}
             color="error"
             aria-label={translatedRemoveButtonLabel}
             disabled={isUploading}
