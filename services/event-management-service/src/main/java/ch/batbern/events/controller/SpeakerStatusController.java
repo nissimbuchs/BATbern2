@@ -154,6 +154,7 @@ public class SpeakerStatusController {
 
         SpeakerContentResponse response = contentSubmissionService.submitContent(
                 speakerId.toString(),
+                eventCode,
                 request.getPresentationTitle(),
                 request.getPresentationAbstract(),
                 request.getUsername(),

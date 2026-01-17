@@ -80,6 +80,9 @@ export const SpeakerDisplay = ({
               src={speaker.profilePictureUrl}
               alt={`${speaker.firstName} ${speaker.lastName}`}
               className="h-full w-full object-cover"
+              width={80}
+              height={80}
+              loading="lazy"
             />
           ) : (
             <span className={`${sizes.initials} font-light text-zinc-300`}>
@@ -113,6 +116,9 @@ export const SpeakerDisplay = ({
               src={logoUrl}
               alt={`${speaker.company} logo`}
               className={`${sizes.logoImage} object-contain`}
+              width={128}
+              height={64}
+              loading="lazy"
             />
           ) : (
             <Building2 className="h-8 w-8 text-zinc-400" />

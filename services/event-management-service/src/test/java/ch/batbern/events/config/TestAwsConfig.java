@@ -1,5 +1,6 @@
 package ch.batbern.events.config;
 
+import ch.batbern.shared.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -11,11 +12,15 @@ import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
-import ch.batbern.shared.service.EmailService;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -70,6 +75,29 @@ public class TestAwsConfig {
                 .thenReturn(successResponse);
 
         return mockS3Client;
+    }
+
+    /**
+     * Mock S3Presigner for testing MaterialsUploadService
+     * Story 5.9: Session Materials Upload
+     */
+    @Bean
+    @Primary
+    public S3Presigner s3Presigner() {
+        S3Presigner mockS3Presigner = Mockito.mock(S3Presigner.class);
+
+        // Configure mock to return presigned URL
+        PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
+        try {
+            when(mockPresignedRequest.url()).thenReturn(new URL("https://minio.local:8450/test-upload-url"));
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Failed to create test URL", e);
+        }
+
+        when(mockS3Presigner.presignPutObject(any(PutObjectPresignRequest.class)))
+                .thenReturn(mockPresignedRequest);
+
+        return mockS3Presigner;
     }
 
     /**

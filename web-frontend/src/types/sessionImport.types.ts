@@ -25,6 +25,8 @@ export interface LegacySession {
   abstract: string;
   /** PDF filename (optional) - will be appended to description */
   pdf?: string;
+  /** Material URL (CDN URL added by generate-staging-sessions-json.js) */
+  materialUrl?: string;
   /** Moderator name for "Moderation" sessions - e.g., "Thomas Goetz" */
   authoren?: string;
   /** Speaker details for detailed sessions */
@@ -56,8 +58,10 @@ export interface BatchImportSessionRequest {
   title: string;
   /** Session description (using "abstract" to match backend @JsonProperty) */
   abstract: string;
-  /** PDF filename for reference */
+  /** PDF filename for reference (deprecated - use materialUrl) */
   pdf?: string;
+  /** Material URL (CDN URL for PDF/PPTX files) - Story 5.9 */
+  materialUrl?: string;
   /** Event number (bat field) */
   bat: number;
   /** List of speakers */
@@ -69,7 +73,13 @@ export interface BatchImportSessionRequest {
 /**
  * Import status for each session during batch import
  */
-export type SessionImportStatus = 'pending' | 'importing' | 'success' | 'error' | 'skipped';
+export type SessionImportStatus =
+  | 'pending'
+  | 'importing'
+  | 'success'
+  | 'updated'
+  | 'error'
+  | 'skipped';
 
 /**
  * Candidate for import with transformation and status tracking
@@ -98,7 +108,9 @@ export interface SessionBatchImportResult {
   totalProcessed: number;
   /** Successfully created */
   successfullyCreated: number;
-  /** Skipped (duplicates) */
+  /** Existing sessions updated (materials added) */
+  updated: number;
+  /** Skipped (duplicates without changes) */
   skipped: number;
   /** Failed to import */
   failed: number;
@@ -114,7 +126,7 @@ export interface SessionImportDetail {
   /** Session title */
   title: string;
   /** Import status */
-  status: 'success' | 'skipped' | 'failed';
+  status: 'success' | 'updated' | 'skipped' | 'failed';
   /** Status message */
   message: string;
   /** Generated session slug (null if failed) */

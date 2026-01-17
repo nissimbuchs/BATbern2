@@ -100,6 +100,7 @@ public class EventController {
     private final ch.batbern.events.service.SpeakerPoolService speakerPoolService;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
+    private final ch.batbern.events.service.SessionService sessionService;
 
     /**
      * List/Search Events (AC1)
@@ -138,8 +139,8 @@ public class EventController {
             @Parameter(description = "Include archived events (default: false)")
             @RequestParam(required = false, defaultValue = "false") boolean includeArchived,
 
-            @Parameter(description = "Comma-separated list of resources to include " +
-                               "(e.g., topics,sessions,speakers,registrations)")
+            @Parameter(description = "Comma-separated list of resources to include "
+                               + "(e.g., topics,sessions,speakers,registrations)")
             @RequestParam(required = false) String include
     ) {
         log.debug("GET /api/v1/events - filter: {}, sort: {}, page: {}, limit: {}, includeArchived: {}, include: {}",
@@ -474,6 +475,19 @@ public class EventController {
                     .orElse(null);
         }
 
+        // Story 5.9: Calculate session materials metrics
+        List<ch.batbern.events.domain.Session> allSessions = sessionRepository.findByEventId(eventId);
+        long totalSessions = allSessions.size();
+        long sessionsWithMaterials = allSessions.stream()
+                .filter(session -> {
+                    // Count sessions with materialsStatus = COMPLETE
+                    List<ch.batbern.events.dto.SessionMaterialResponse> materials =
+                            sessionService.toSessionResponse(session, event.getEventCode(), false)
+                                    .getMaterials();
+                    return materials != null && !materials.isEmpty();
+                })
+                .count();
+
         // Add metrics to response
         response.put("confirmedSpeakersCount", (int) totalConfirmedSpeakers);
         response.put("speakersWithCompleteInfoCount", (int) speakersWithCompleteInfo);
@@ -481,11 +495,14 @@ public class EventController {
         if (maxSpeakerSlots != null) {
             response.put("maxSpeakerSlots", maxSpeakerSlots);
         }
+        // Story 5.9: Add session materials count
+        response.put("sessionsWithMaterialsCount", (int) sessionsWithMaterials);
+        response.put("totalSessionsCount", (int) totalSessions);
 
         log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
-                        + "pending materials: {}, max slots: {}",
+                        + "pending materials: {}, max slots: {}, sessions with materials: {}/{}",
                 event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
-                pendingMaterials, maxSpeakerSlots);
+                pendingMaterials, maxSpeakerSlots, sessionsWithMaterials, totalSessions);
     }
 
     /**
@@ -500,25 +517,36 @@ public class EventController {
         // Find all sessions for this event with speakers eagerly loaded (Story 5.5)
         List<ch.batbern.events.domain.Session> sessions = sessionRepository.findByEventIdWithSpeakers(event.getId());
 
-        // Convert to response format
+        // Convert to response format using SessionService (includes materials - Story 5.9)
         return sessions.stream()
                 .map(session -> {
+                    // Use SessionService.toSessionResponse() to get materials included
+                    ch.batbern.events.dto.SessionResponse sessionResponse =
+                            sessionService.toSessionResponse(session, event.getEventCode());
+
+                    // Convert SessionResponse to Map for backward compatibility
                     Map<String, Object> sessionMap = new HashMap<>();
                     sessionMap.put("id", session.getId()); // Story 5.6: Include UUID for speaker pool matching
-                    sessionMap.put("sessionSlug", session.getSessionSlug());
-                    sessionMap.put("eventCode", event.getEventCode());
-                    sessionMap.put("title", session.getTitle());
-                    sessionMap.put("description", session.getDescription());
-                    sessionMap.put("sessionType", session.getSessionType());
-                    sessionMap.put("startTime", session.getStartTime());
-                    sessionMap.put("endTime", session.getEndTime());
-                    sessionMap.put("room", session.getRoom());
-                    sessionMap.put("capacity", session.getCapacity());
-                    sessionMap.put("language", session.getLanguage());
+                    sessionMap.put("sessionSlug", sessionResponse.getSessionSlug());
+                    sessionMap.put("eventCode", sessionResponse.getEventCode());
+                    sessionMap.put("title", sessionResponse.getTitle());
+                    sessionMap.put("description", sessionResponse.getDescription());
+                    sessionMap.put("sessionType", sessionResponse.getSessionType());
+                    sessionMap.put("startTime", sessionResponse.getStartTime());
+                    sessionMap.put("endTime", sessionResponse.getEndTime());
+                    sessionMap.put("room", sessionResponse.getRoom());
+                    sessionMap.put("capacity", sessionResponse.getCapacity());
+                    sessionMap.put("language", sessionResponse.getLanguage());
+                    sessionMap.put("createdAt", sessionResponse.getCreatedAt());
+                    sessionMap.put("updatedAt", sessionResponse.getUpdatedAt());
 
-                    // Story 1.15a.1b: Enrich with speaker data
-                    List<Map<String, Object>> speakers = expandSessionSpeakers(session);
-                    sessionMap.put("speakers", speakers);
+                    // Story 5.9: Include materials data
+                    sessionMap.put("materials", sessionResponse.getMaterials());
+                    sessionMap.put("materialsCount", sessionResponse.getMaterialsCount());
+                    sessionMap.put("materialsStatus", sessionResponse.getMaterialsStatus());
+
+                    // Story 1.15a.1b: Use speakers from SessionResponse
+                    sessionMap.put("speakers", sessionResponse.getSpeakers());
 
                     return sessionMap;
                 })
@@ -1367,7 +1395,8 @@ public class EventController {
                 java.util.Locale.GERMAN // Default to German for BATbern events
         );
 
-        log.info("Confirmation and cancellation tokens generated, email queued for registration {}: confirm={}, cancel={}",
+        log.info("Confirmation and cancellation tokens generated, email queued for registration {}: "
+                        + "confirm={}, cancel={}",
                 registration.getId(),
                 confirmationToken.substring(0, 20) + "...",
                 cancellationToken.substring(0, 20) + "...");

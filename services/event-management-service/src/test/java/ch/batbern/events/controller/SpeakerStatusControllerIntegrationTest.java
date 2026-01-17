@@ -95,6 +95,7 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
         testSession = ch.batbern.events.domain.Session.builder()
                 .sessionSlug("test-session-controller")
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .title("Test Session for Controller")
                 .build();
         testSession = sessionRepository.save(testSession);

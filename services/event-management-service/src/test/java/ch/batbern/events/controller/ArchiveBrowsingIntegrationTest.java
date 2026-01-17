@@ -201,6 +201,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
         // Create sessions for archived event 2024
         session1 = Session.builder()
                 .eventId(archivedEvent2024.getId())
+                .eventCode(archivedEvent2024.getEventCode())
                 .sessionSlug("cloud-patterns-keynote")
                 .title("Cloud Architecture Keynote")
                 .description("Opening keynote on cloud patterns")
@@ -215,6 +216,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
 
         session2 = Session.builder()
                 .eventId(archivedEvent2024.getId())
+                .eventCode(archivedEvent2024.getEventCode())
                 .sessionSlug("microservices-workshop")
                 .title("Microservices Workshop")
                 .description("Hands-on microservices patterns")

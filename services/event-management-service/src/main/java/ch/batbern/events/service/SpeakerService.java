@@ -68,16 +68,29 @@ public class SpeakerService {
             throw new IllegalArgumentException("Speaker profile already exists for username: " + request.getUsername());
         }
 
+        SpeakerAvailability availability = request.getAvailability() != null
+                ? request.getAvailability() : SpeakerAvailability.AVAILABLE;
+        SpeakerWorkflowState workflowState = request.getWorkflowState() != null
+                ? request.getWorkflowState() : SpeakerWorkflowState.IDENTIFIED;
+        List<String> expertiseAreas = request.getExpertiseAreas() != null
+                ? new ArrayList<>(request.getExpertiseAreas()) : new ArrayList<>();
+        List<String> speakingTopics = request.getSpeakingTopics() != null
+                ? new ArrayList<>(request.getSpeakingTopics()) : new ArrayList<>();
+        List<String> certifications = request.getCertifications() != null
+                ? new ArrayList<>(request.getCertifications()) : new ArrayList<>();
+        List<String> languages = request.getLanguages() != null
+                ? new ArrayList<>(request.getLanguages()) : new ArrayList<>(List.of("de", "en"));
+
         Speaker speaker = Speaker.builder()
                 .username(request.getUsername())
-                .availability(request.getAvailability() != null ? request.getAvailability() : SpeakerAvailability.AVAILABLE)
-                .workflowState(request.getWorkflowState() != null ? request.getWorkflowState() : SpeakerWorkflowState.IDENTIFIED)
-                .expertiseAreas(request.getExpertiseAreas() != null ? new ArrayList<>(request.getExpertiseAreas()) : new ArrayList<>())
-                .speakingTopics(request.getSpeakingTopics() != null ? new ArrayList<>(request.getSpeakingTopics()) : new ArrayList<>())
+                .availability(availability)
+                .workflowState(workflowState)
+                .expertiseAreas(expertiseAreas)
+                .speakingTopics(speakingTopics)
                 .linkedInUrl(request.getLinkedInUrl())
                 .twitterHandle(request.getTwitterHandle())
-                .certifications(request.getCertifications() != null ? new ArrayList<>(request.getCertifications()) : new ArrayList<>())
-                .languages(request.getLanguages() != null ? new ArrayList<>(request.getLanguages()) : new ArrayList<>(List.of("de", "en")))
+                .certifications(certifications)
+                .languages(languages)
                 .build();
 
         Speaker saved = speakerRepository.save(speaker);
@@ -268,7 +281,8 @@ public class SpeakerService {
             String speakingTopics,
             Pageable pageable
     ) {
-        log.debug("Listing speakers with availability={}, workflowState={}, expertiseAreas={}, languages={}, speakingTopics={}",
+        log.debug("Listing speakers with availability={}, workflowState={}, expertiseAreas={}, "
+                        + "languages={}, speakingTopics={}",
                 availability, workflowState, expertiseAreas, languages, speakingTopics);
 
         Page<Speaker> speakers;

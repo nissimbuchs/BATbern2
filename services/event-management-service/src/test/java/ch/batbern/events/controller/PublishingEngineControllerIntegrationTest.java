@@ -94,6 +94,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
         // Create assigned sessions (simulating completed slot assignment)
         Session session1 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("john-doe-techcorp")
                 .title("Microservices Architecture Patterns")
                 .sessionType("presentation")
@@ -105,6 +106,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
         Session session2 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("jane-smith-datainc")
                 .title("Cloud Native Development")
                 .sessionType("presentation")
@@ -117,6 +119,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
         // Additional sessions to meet FULL_DAY minimum requirement (6 sessions total)
         Session session3 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("speaker-three")
                 .title("Container Orchestration with Kubernetes")
                 .sessionType("presentation")
@@ -128,6 +131,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
         Session session4 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("speaker-four")
                 .title("DevOps Best Practices")
                 .sessionType("presentation")
@@ -139,6 +143,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
         Session session5 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("speaker-five")
                 .title("Serverless Architectures")
                 .sessionType("presentation")
@@ -150,6 +155,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
         Session session6 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("speaker-six")
                 .title("Infrastructure as Code")
                 .sessionType("presentation")
@@ -290,6 +296,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
         // Create session without timing
         Session untimedSession = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("untimed-session")
                 .title("Session Without Timing")
                 .sessionType("presentation")
@@ -559,6 +566,7 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
         // Create session without timing
         Session untimedSession = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("bob-jones-cloudco")
                 .title("Kubernetes Best Practices")
                 .sessionType("presentation")

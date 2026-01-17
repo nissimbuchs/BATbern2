@@ -299,7 +299,8 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
       const eventWithZeroCapacity = { ...mockEvent, venueCapacity: 0, currentAttendeeCount: 0 };
       renderWithProviders(<EventOverviewTab event={eventWithZeroCapacity} eventCode="BAT54" />);
 
-      expect(screen.getByText(/0%/)).toBeInTheDocument();
+      // Should show "0% filled" for capacity (more specific to avoid matching materials "0% complete")
+      expect(screen.getByText(/0%.*filled/i)).toBeInTheDocument();
     });
 
     it('should_handleMissingWorkflowState_withDefault', () => {
@@ -308,6 +309,102 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
 
       // Should use default CREATED state
       expect(screen.getByTestId('workflow-progress-bar')).toBeInTheDocument();
+    });
+  });
+
+  describe('Session Materials Metrics (Story 5.9 - Task 7a)', () => {
+    it('should_displaySessionMaterialsRatio_when_sessionsHaveMaterials', () => {
+      const eventWithMaterials: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 3,
+        totalSessionsCount: 4,
+      };
+      renderWithProviders(<EventOverviewTab event={eventWithMaterials} eventCode="BAT54" />);
+
+      // Should show "3/4 sessions complete" or "3/4 sessions"
+      expect(screen.getByText(/3\/4.*session/i)).toBeInTheDocument();
+    });
+
+    it('should_showRedProgressBar_when_materialsCompletionBelow50Percent', () => {
+      const eventLowCompletion: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 1,
+        totalSessionsCount: 4,
+      };
+      renderWithProviders(<EventOverviewTab event={eventLowCompletion} eventCode="BAT54" />);
+
+      // Find the materials progress bar (25% completion = red)
+      // LinearProgress with value 25 and error color (red)
+      const progressBars = screen.getAllByRole('progressbar');
+      const materialsProgressBar = progressBars.find((bar) => {
+        return bar.getAttribute('aria-valuenow') === '25';
+      });
+
+      expect(materialsProgressBar).toBeInTheDocument();
+      // Check for error color class (MUI uses .MuiLinearProgress-colorError for red)
+      expect(materialsProgressBar?.className).toContain('colorError');
+    });
+
+    it('should_showYellowProgressBar_when_materialsCompletion50To99Percent', () => {
+      const eventMediumCompletion: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 3,
+        totalSessionsCount: 4,
+      };
+      renderWithProviders(<EventOverviewTab event={eventMediumCompletion} eventCode="BAT54" />);
+
+      // Find the materials progress bar (75% completion = yellow/warning)
+      const progressBars = screen.getAllByRole('progressbar');
+      const materialsProgressBar = progressBars.find((bar) => {
+        return bar.getAttribute('aria-valuenow') === '75';
+      });
+
+      expect(materialsProgressBar).toBeInTheDocument();
+      // Check for warning color class (MUI uses .MuiLinearProgress-colorWarning for yellow)
+      expect(materialsProgressBar?.className).toContain('colorWarning');
+    });
+
+    it('should_showGreenProgressBar_when_materialsCompletion100Percent', () => {
+      const eventFullCompletion: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 4,
+        totalSessionsCount: 4,
+      };
+      renderWithProviders(<EventOverviewTab event={eventFullCompletion} eventCode="BAT54" />);
+
+      // Find the materials progress bar (100% completion = green/success)
+      const progressBars = screen.getAllByRole('progressbar');
+      const materialsProgressBar = progressBars.find((bar) => {
+        return bar.getAttribute('aria-valuenow') === '100';
+      });
+
+      expect(materialsProgressBar).toBeInTheDocument();
+      // Check for success color class (MUI uses .MuiLinearProgress-colorSuccess for green)
+      expect(materialsProgressBar?.className).toContain('colorSuccess');
+    });
+
+    it('should_showZeroCompletion_when_noSessionsHaveMaterials', () => {
+      const eventNoMaterials: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 0,
+        totalSessionsCount: 4,
+      };
+      renderWithProviders(<EventOverviewTab event={eventNoMaterials} eventCode="BAT54" />);
+
+      // Should show "0/4 sessions"
+      expect(screen.getByText(/0\/4.*session/i)).toBeInTheDocument();
+    });
+
+    it('should_handleNoSessions_gracefully', () => {
+      const eventNoSessions: EventDetailUI = {
+        ...mockEventDetailUI,
+        sessionsWithMaterialsCount: 0,
+        totalSessionsCount: 0,
+      };
+      renderWithProviders(<EventOverviewTab event={eventNoSessions} eventCode="BAT54" />);
+
+      // Should show "0/0 sessions" or hide the section
+      expect(screen.getByText(/0\/0.*session/i)).toBeInTheDocument();
     });
   });
 });

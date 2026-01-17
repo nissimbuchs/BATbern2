@@ -113,6 +113,24 @@ public class SessionUser {
     @Column(name = "decline_reason", columnDefinition = "TEXT")
     private String declineReason;
 
+    /**
+     * Speaker name search cache fields (V38 migration)
+     * NOT source of truth - full user data fetched via UserManagementClient API
+     * Updated on session assignment and user profile changes
+     */
+    @Column(name = "speaker_first_name", length = 100)
+    private String speakerFirstName;
+
+    @Column(name = "speaker_last_name", length = 100)
+    private String speakerLastName;
+
+    /**
+     * Full-text search vector for speaker names (GENERATED ALWAYS AS in PostgreSQL)
+     * Story 4.2 - BAT-109: Archive browsing with speaker name search
+     */
+    @Column(name = "speaker_name_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object speakerNameVector;
+
     @Column(name = "created_at")
     private Instant createdAt;
 

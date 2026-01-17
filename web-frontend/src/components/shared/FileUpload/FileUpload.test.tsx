@@ -358,4 +358,257 @@ describe('FileUpload Component', () => {
     const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
     expect(input).toBeInTheDocument();
   });
+
+  // ============ Story 5.9: Multiple Files Upload Tests (AC1) ============
+
+  describe('Story 5.9: Session Materials Upload', () => {
+    it('should_acceptMultipleFiles_when_multiplePropsEnabled', async () => {
+      const user = userEvent.setup();
+      mockUploadFile.mockResolvedValue('upload-multi-123');
+
+      render(
+        <FileUpload
+          multiple={true}
+          maxFiles={10}
+          allowedTypes={[
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/pdf',
+          ]}
+          onUploadSuccess={mockOnUploadSuccess}
+        />
+      );
+
+      const file1 = new File(['content1'], 'presentation.pptx', {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      });
+      const file2 = new File(['content2'], 'document.pdf', { type: 'application/pdf' });
+
+      const dropzone = screen.getByTestId('file-dropzone');
+      const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+
+      await user.upload(input, [file1, file2]);
+
+      await waitFor(() => {
+        expect(mockUploadFile).toHaveBeenCalledTimes(2);
+        expect(mockUploadFile).toHaveBeenCalledWith(file1);
+        expect(mockUploadFile).toHaveBeenCalledWith(file2);
+      });
+    });
+
+    it('should_rejectFiles_when_overMaxFilesLimit', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <FileUpload
+          multiple={true}
+          maxFiles={3}
+          allowedTypes={['application/pdf']}
+          onUploadError={mockOnUploadError}
+        />
+      );
+
+      // Try to upload 4 files (exceeds limit of 3)
+      const files = [
+        new File(['1'], 'file1.pdf', { type: 'application/pdf' }),
+        new File(['2'], 'file2.pdf', { type: 'application/pdf' }),
+        new File(['3'], 'file3.pdf', { type: 'application/pdf' }),
+        new File(['4'], 'file4.pdf', { type: 'application/pdf' }),
+      ];
+
+      const dropzone = screen.getByTestId('file-dropzone');
+      const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+
+      await user.upload(input, files);
+
+      await waitFor(() => {
+        expect(mockOnUploadError).toHaveBeenCalledWith({
+          type: 'TOO_MANY_FILES',
+          message: expect.stringContaining('maximum of 3 files'),
+        });
+      });
+    });
+
+    it('should_acceptPowerPointFiles_when_pptxProvided', async () => {
+      const user = userEvent.setup();
+      mockUploadFile.mockResolvedValue('upload-pptx-123');
+
+      render(
+        <FileUpload
+          allowedTypes={[
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/vnd.ms-powerpoint',
+          ]}
+          onUploadSuccess={mockOnUploadSuccess}
+        />
+      );
+
+      const file = new File(['pptx content'], 'slides.pptx', {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      });
+
+      const dropzone = screen.getByTestId('file-dropzone');
+      const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+
+      await user.upload(input, file);
+
+      await waitFor(() => {
+        expect(mockUploadFile).toHaveBeenCalledWith(file);
+      });
+    });
+
+    it('should_acceptPDFFiles_when_pdfProvided', async () => {
+      const user = userEvent.setup();
+      mockUploadFile.mockResolvedValue('upload-pdf-123');
+
+      render(
+        <FileUpload allowedTypes={['application/pdf']} onUploadSuccess={mockOnUploadSuccess} />
+      );
+
+      const file = new File(['pdf content'], 'document.pdf', { type: 'application/pdf' });
+
+      const dropzone = screen.getByTestId('file-dropzone');
+      const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+
+      await user.upload(input, file);
+
+      await waitFor(() => {
+        expect(mockUploadFile).toHaveBeenCalledWith(file);
+      });
+    });
+
+    it('should_acceptVideoFiles_when_mp4Provided', async () => {
+      const user = userEvent.setup();
+      mockUploadFile.mockResolvedValue('upload-video-123');
+
+      render(
+        <FileUpload
+          allowedTypes={['video/mp4', 'video/quicktime']}
+          onUploadSuccess={mockOnUploadSuccess}
+        />
+      );
+
+      const file = new File(['video content'], 'presentation.mp4', { type: 'video/mp4' });
+
+      const dropzone = screen.getByTestId('file-dropzone');
+      const input = dropzone.querySelector('input[type="file"]') as HTMLInputElement;
+
+      await user.upload(input, file);
+
+      await waitFor(() => {
+        expect(mockUploadFile).toHaveBeenCalledWith(file);
+      });
+    });
+
+    it('should_accept100MBFiles_when_maxFileSizeIncreased', () => {
+      render(<FileUpload maxFileSize={100 * 1024 * 1024} />);
+
+      expect(mockUseFileUpload).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxFileSize: 100 * 1024 * 1024,
+        })
+      );
+
+      expect(screen.getByText(/accepted formats.*\(max 100mb\)/i)).toBeInTheDocument();
+    });
+
+    it('should_displayUploadedFilesList_when_multipleFilesUploaded', () => {
+      render(
+        <FileUpload
+          multiple={true}
+          uploadedFiles={[
+            {
+              uploadId: 'upload-1',
+              fileName: 'presentation.pptx',
+              fileSize: 5242880,
+              fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            },
+            {
+              uploadId: 'upload-2',
+              fileName: 'document.pdf',
+              fileSize: 1048576,
+              fileType: 'application/pdf',
+            },
+          ]}
+        />
+      );
+
+      expect(screen.getByText('presentation.pptx')).toBeInTheDocument();
+      expect(screen.getByText('document.pdf')).toBeInTheDocument();
+      expect(screen.getByText(/5\.0 mb/i)).toBeInTheDocument();
+      expect(screen.getByText(/1\.0 mb/i)).toBeInTheDocument();
+    });
+
+    it('should_displayFileTypeIcons_when_filesListed', () => {
+      render(
+        <FileUpload
+          multiple={true}
+          uploadedFiles={[
+            {
+              uploadId: 'upload-1',
+              fileName: 'slides.pptx',
+              fileSize: 1024,
+              fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            },
+            {
+              uploadId: 'upload-2',
+              fileName: 'doc.pdf',
+              fileSize: 1024,
+              fileType: 'application/pdf',
+            },
+            {
+              uploadId: 'upload-3',
+              fileName: 'video.mp4',
+              fileSize: 1024,
+              fileType: 'video/mp4',
+            },
+          ]}
+        />
+      );
+
+      // Icons should be displayed (using data-testid or aria-label)
+      expect(screen.getByTestId('file-icon-presentation')).toBeInTheDocument();
+      expect(screen.getByTestId('file-icon-document')).toBeInTheDocument();
+      expect(screen.getByTestId('file-icon-video')).toBeInTheDocument();
+    });
+
+    it('should_removeSpecificFile_when_deleteButtonClicked', async () => {
+      const user = userEvent.setup();
+      const mockOnFileRemove = vi.fn();
+
+      render(
+        <FileUpload
+          multiple={true}
+          uploadedFiles={[
+            {
+              uploadId: 'upload-1',
+              fileName: 'file1.pdf',
+              fileSize: 1024,
+              fileType: 'application/pdf',
+            },
+            {
+              uploadId: 'upload-2',
+              fileName: 'file2.pdf',
+              fileSize: 1024,
+              fileType: 'application/pdf',
+            },
+          ]}
+          onFileRemove={mockOnFileRemove}
+        />
+      );
+
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      await user.click(deleteButtons[0]); // Delete first file
+
+      await waitFor(() => {
+        expect(mockOnFileRemove).toHaveBeenCalledWith('upload-1');
+      });
+    });
+
+    it('should_displayEmptyState_when_noFilesUploadedWithMultipleMode', () => {
+      render(<FileUpload multiple={true} uploadedFiles={[]} />);
+
+      expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+      expect(screen.getByText(/drag and drop files here/i)).toBeInTheDocument();
+    });
+  });
 });

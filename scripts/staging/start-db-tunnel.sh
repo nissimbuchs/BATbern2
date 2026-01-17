@@ -1,6 +1,21 @@
 #!/bin/bash
 # Start SSM port forward tunnel to RDS database
 # This creates a secure tunnel allowing local Docker containers to access AWS RDS
+#
+# DATABASE CREDENTIALS:
+# To get the database credentials for connecting through the tunnel:
+#
+#   # List secrets to find the RDS secret name:
+#   AWS_PROFILE=batbern-staging aws secretsmanager list-secrets \
+#     --region eu-central-1 --query 'SecretList[].Name' --output text
+#
+#   # Get credentials from the RDS secret (look for "RdsClusterInstanceSecret*"):
+#   AWS_PROFILE=batbern-staging aws secretsmanager get-secret-value \
+#     --secret-id <SECRET_NAME> \
+#     --region eu-central-1 --query SecretString --output text | jq -r '{username, password}'
+#
+#   # Example connection string after tunnel is running:
+#   PGPASSWORD='<password>' psql -h localhost -p 5433 -U postgres -d batbern
 
 set -e
 

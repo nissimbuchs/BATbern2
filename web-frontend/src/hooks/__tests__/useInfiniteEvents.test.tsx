@@ -50,6 +50,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: true,
     },
   };
 
@@ -71,6 +72,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: true,
     },
   };
 
@@ -92,6 +94,7 @@ describe('useInfiniteEvents Hook', () => {
       pages: 3,
       limit: 20,
       total: 54,
+      hasNext: false,
     },
   };
 
@@ -324,7 +327,6 @@ describe('useInfiniteEvents Hook', () => {
   describe('Filters Integration', () => {
     test('should_passFiltersToAPI_when_filtersProvided', async () => {
       const filters: ArchiveFilters = {
-        timePeriod: '2020-2024',
         topics: ['cloud'],
         search: 'Architecture',
       };
@@ -339,7 +341,7 @@ describe('useInfiniteEvents Hook', () => {
           expect.objectContaining({
             includeArchived: true,
             workflowState: ['ARCHIVED'],
-            year: 2020,
+            topicCode: ['cloud'],
             search: 'Architecture',
           }),
           { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
@@ -364,7 +366,6 @@ describe('useInfiniteEvents Hook', () => {
 
       // Change filters
       const newFilters: ArchiveFilters = {
-        timePeriod: 'all',
         topics: ['devops'],
         search: '',
       };
@@ -412,7 +413,6 @@ describe('useInfiniteEvents Hook', () => {
 
       // Change filters
       const newFilters: ArchiveFilters = {
-        timePeriod: 'all',
         topics: ['cloud'],
         search: '',
       };
@@ -566,7 +566,6 @@ describe('useInfiniteEvents Hook', () => {
   describe('Query Key Construction', () => {
     test('should_includeFiltersInQueryKey_when_filtersProvided', async () => {
       const filters: ArchiveFilters = {
-        timePeriod: '2020-2024',
         topics: ['cloud'],
         search: '',
       };
@@ -600,12 +599,10 @@ describe('useInfiniteEvents Hook', () => {
       vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
 
       const filters1: ArchiveFilters = {
-        timePeriod: 'all',
         topics: ['cloud'],
         search: '',
       };
       const filters2: ArchiveFilters = {
-        timePeriod: 'all',
         topics: ['devops'],
         search: '',
       };

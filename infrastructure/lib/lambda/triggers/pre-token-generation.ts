@@ -65,13 +65,22 @@ async function fetchUserData(cognitoId: string): Promise<UserData[]> {
     // - Filter by cognito_user_id for performance (indexed column)
     // - Username from user_profiles (Story 1.16.2: meaningful ID)
     // - All roles in role_assignments are active global roles
+    // - Order by priority: ORGANIZER > SPEAKER > PARTNER > ATTENDEE
+    //   This ensures highest-privilege role appears first in JWT custom:role claim
     const result = await client.query(
       `
         SELECT u.username, ra.role
         FROM user_profiles u
         LEFT JOIN role_assignments ra ON ra.user_id = u.id
         WHERE u.cognito_user_id = $1
-        ORDER BY ra.role
+        ORDER BY
+          CASE ra.role
+            WHEN 'ORGANIZER' THEN 1
+            WHEN 'SPEAKER' THEN 2
+            WHEN 'PARTNER' THEN 3
+            WHEN 'ATTENDEE' THEN 4
+            ELSE 5
+          END
       `,
       [cognitoId]
     );

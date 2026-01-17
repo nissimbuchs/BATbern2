@@ -20,6 +20,7 @@ interface UseFileUploadOptions {
   allowedTypes?: string[]; // MIME types, default: PNG, JPEG, SVG
   onUploadSuccess?: (data: UploadSuccessData) => void;
   onUploadError?: (error: UploadError) => void;
+  uploadEndpoint?: string; // endpoint for presigned URL, default: '/logos/presigned-url'
 }
 
 interface UploadSuccessData {
@@ -71,6 +72,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
     allowedTypes = DEFAULT_ALLOWED_TYPES,
     onUploadSuccess,
     onUploadError,
+    uploadEndpoint = '/logos/presigned-url', // Default to logos for backward compatibility
   } = options;
 
   const [isUploading, setIsUploading] = useState(false);
@@ -132,15 +134,12 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
       }
 
       try {
-        // Phase 1: Request presigned URL from backend (generic endpoint)
-        const presignedResponse = await apiClient.post<PresignedUrlResponse>(
-          '/logos/presigned-url',
-          {
-            fileName: file.name,
-            fileSize: file.size,
-            mimeType: file.type,
-          }
-        );
+        // Phase 1: Request presigned URL from backend (configurable endpoint)
+        const presignedResponse = await apiClient.post<PresignedUrlResponse>(uploadEndpoint, {
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        });
 
         const { uploadUrl, fileId, s3Key, fileExtension, requiredHeaders } = presignedResponse.data;
 
@@ -184,7 +183,9 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
 
         // Phase 3: Confirm upload with backend
         const checksum = await calculateChecksum(file);
-        await apiClient.post(`/logos/${fileId}/confirm`, {
+        // Extract base path from uploadEndpoint (/logos/presigned-url -> /logos)
+        const basePath = uploadEndpoint.split('/').slice(0, -1).join('/');
+        await apiClient.post(`${basePath}/${fileId}/confirm`, {
           fileId,
           fileExtension,
           checksum,

@@ -286,8 +286,10 @@
   },
   "fileUpload": {
     "dragDrop": "Datei hier ablegen oder klicken, um auszuwählen",
+    "dragDropMultiple": "Dateien hier ablegen oder klicken, um auszuwählen",
     "dragActive": "Datei hier ablegen",
     "acceptedFormats": "Akzeptierte Formate: PNG, JPEG, SVG (max {{maxSize}}MB)",
+    "acceptedFormatsMultiple": "Akzeptierte Formate: Mehrere Dateitypen (max {{maxSize}}MB pro Datei)",
     "uploading": "Wird hochgeladen... {{progress}}%",
     "removeFile": "Datei entfernen",
     "altText": "Vorschau der hochgeladenen Datei",
@@ -325,7 +327,7 @@
       "dropzoneHint": "Nur sessions.json wird akzeptiert",
       "preview": "{{count}} Sitzungen zum Import",
       "progress": "{{current}} von {{total}} importiert",
-      "complete": "Import abgeschlossen: {{success}} erfolgreich, {{skipped}} übersprungen, {{failed}} fehlgeschlagen",
+      "complete": "Import abgeschlossen: {{success}} erfolgreich, {{updated}} aktualisiert, {{skipped}} übersprungen, {{failed}} fehlgeschlagen",
       "noSessions": "Keine Sitzungen in der Datei gefunden",
       "importButtonWithCount": "{{count}} Sitzungen importieren",
       "cancelButton": "Abbrechen",
@@ -339,6 +341,7 @@
         "pending": "Ausstehend",
         "importing": "Importiere...",
         "success": "Erfolgreich",
+        "updated": "Aktualisiert",
         "skipped": "Übersprungen",
         "error": "Fehler"
       },

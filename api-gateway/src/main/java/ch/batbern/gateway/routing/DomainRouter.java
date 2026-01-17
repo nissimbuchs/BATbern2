@@ -69,7 +69,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")
                 || cleanPath.startsWith("/api/v1/tasks")
-                || cleanPath.startsWith("/api/v1/notifications")) {
+                || cleanPath.startsWith("/api/v1/notifications")
+                || cleanPath.startsWith("/api/v1/materials")) { // Story 5.9: Materials upload
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/speakers")) {
             return "speaker-coordination-service";

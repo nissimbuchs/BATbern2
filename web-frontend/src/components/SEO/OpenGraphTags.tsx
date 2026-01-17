@@ -11,6 +11,7 @@ interface OpenGraphTagsProps {
   url: string;
   image?: string;
   type?: string;
+  keywords?: string;
 }
 
 export const OpenGraphTags = ({
@@ -19,6 +20,7 @@ export const OpenGraphTags = ({
   url,
   image,
   type = 'website',
+  keywords,
 }: OpenGraphTagsProps) => {
   const siteName = 'BATbern';
   const fullTitle = `${title} | ${siteName}`;
@@ -30,6 +32,7 @@ export const OpenGraphTags = ({
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
+      {keywords && <meta name="keywords" content={keywords} />}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />

@@ -29,7 +29,12 @@ public class BatchImportSessionResult {
     private int successfullyCreated;
 
     /**
-     * Number of sessions skipped (e.g., duplicates)
+     * Number of existing sessions updated (materials added)
+     */
+    private int updated;
+
+    /**
+     * Number of sessions skipped (e.g., duplicates without changes)
      */
     private int skipped;
 

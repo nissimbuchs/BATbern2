@@ -37,7 +37,6 @@ vi.mock('react-i18next', () => ({
       const translations: Record<string, string> = {
         'archive.title': 'Event Archive',
         'archive.description': 'Browse 20+ years of BATbern conferences',
-        'archive.filters.timePeriod': 'Time Period',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',
@@ -165,7 +164,7 @@ describe('ArchivePage Component', () => {
       page: 1,
       pages: 3,
       limit: 20,
-      total: 54,
+      totalItems: 54,
     },
   };
 
@@ -191,7 +190,7 @@ describe('ArchivePage Component', () => {
     // Set up topicService mock AFTER clearAllMocks
     vi.mocked(topicService.getTopics).mockResolvedValue({
       data: mockTopics,
-      pagination: { page: 1, pages: 1, limit: 100, total: 3 },
+      pagination: { page: 1, pages: 1, limit: 100, totalItems: 3 },
     });
   });
 
@@ -335,7 +334,7 @@ describe('ArchivePage Component', () => {
           page: 2,
           pages: 3,
           limit: 20,
-          total: 54,
+          totalItems: 54,
         },
       };
 
@@ -386,8 +385,9 @@ describe('ArchivePage Component', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        // Should show "2 of 54 events" or similar
-        expect(screen.getByText(/2.*54/)).toBeInTheDocument();
+        // Should show "2 of 54 events"
+        const progressElement = screen.getByTestId('events-progress');
+        expect(progressElement).toHaveTextContent('2 of 54 events');
       });
     });
 
@@ -620,7 +620,7 @@ describe('ArchivePage Component', () => {
     test('should_displayNoResults_when_noEventsMatch', async () => {
       vi.mocked(eventApiClient.getEvents).mockResolvedValue({
         data: [],
-        pagination: { page: 1, pages: 0, limit: 20, total: 0 },
+        pagination: { page: 1, pages: 0, limit: 20, totalItems: 0 },
       });
 
       renderWithProviders();

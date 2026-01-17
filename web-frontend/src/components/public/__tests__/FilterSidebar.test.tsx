@@ -18,16 +18,9 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'archive.filters.title': 'Filters',
-        'archive.filters.timePeriod': 'Time Period',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
         'archive.filters.clearAll': 'Clear All Filters',
-        'archive.filters.all': 'All Events',
-        'archive.filters.last5years': 'Last 5 Years',
-        'archive.filters.2020-2024': '2020-2024',
-        'archive.filters.2015-2019': '2015-2019',
-        'archive.filters.2010-2014': '2010-2014',
-        'archive.filters.before2010': 'Before 2010',
         'archive.filters.activeCount': '{{count}} active filters',
         'archive.sort.label': 'Sort By',
         'archive.sort.newest': 'Newest First',
@@ -83,7 +76,6 @@ describe('FilterSidebar Component', () => {
   ];
 
   const defaultFilters: ArchiveFilters = {
-    timePeriod: 'all',
     topics: [],
     search: '',
   };
@@ -108,12 +100,6 @@ describe('FilterSidebar Component', () => {
       expect(screen.getByText('Filters')).toBeInTheDocument();
     });
 
-    test('should_renderTimePeriodSection_when_mounted', () => {
-      render(<FilterSidebar {...defaultProps} />);
-
-      expect(screen.getByText('Time Period')).toBeInTheDocument();
-    });
-
     test('should_renderTopicsSection_when_mounted', () => {
       render(<FilterSidebar {...defaultProps} />);
 
@@ -136,69 +122,6 @@ describe('FilterSidebar Component', () => {
       render(<FilterSidebar {...defaultProps} />);
 
       expect(screen.getByText('Sort By')).toBeInTheDocument();
-    });
-  });
-
-  describe('AC7: Time Period Filter', () => {
-    test('should_displayAllTimePeriodOptions_when_rendered', () => {
-      render(<FilterSidebar {...defaultProps} />);
-
-      expect(screen.getByText('All Events')).toBeInTheDocument();
-      expect(screen.getByText('Last 5 Years')).toBeInTheDocument();
-      expect(screen.getByText('2020-2024')).toBeInTheDocument();
-      expect(screen.getByText('2015-2019')).toBeInTheDocument();
-      expect(screen.getByText('2010-2014')).toBeInTheDocument();
-      expect(screen.getByText('Before 2010')).toBeInTheDocument();
-    });
-
-    test('should_selectTimePeriod_when_optionClicked', async () => {
-      const user = userEvent.setup();
-      const onFilterChange = vi.fn();
-
-      render(<FilterSidebar {...defaultProps} onFilterChange={onFilterChange} />);
-
-      const option2020 = screen.getByText('2020-2024');
-      await user.click(option2020);
-
-      expect(onFilterChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          timePeriod: '2020-2024',
-        })
-      );
-    });
-
-    test('should_highlightSelectedPeriod_when_filterActive', () => {
-      const activeFilters: ArchiveFilters = {
-        ...defaultFilters,
-        timePeriod: '2020-2024',
-      };
-
-      render(<FilterSidebar {...defaultProps} filters={activeFilters} />);
-
-      const option2020 = screen.getByText('2020-2024');
-      expect(option2020.closest('button') || option2020.closest('div')).toHaveClass('active'); // Or similar styling class
-    });
-
-    test('should_clearTimePeriod_when_allEventsClicked', async () => {
-      const user = userEvent.setup();
-      const onFilterChange = vi.fn();
-      const activeFilters: ArchiveFilters = {
-        ...defaultFilters,
-        timePeriod: '2020-2024',
-      };
-
-      render(
-        <FilterSidebar {...defaultProps} filters={activeFilters} onFilterChange={onFilterChange} />
-      );
-
-      const allEventsOption = screen.getByText('All Events');
-      await user.click(allEventsOption);
-
-      expect(onFilterChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          timePeriod: 'all',
-        })
-      );
     });
   });
 
@@ -385,7 +308,6 @@ describe('FilterSidebar Component', () => {
       const user = userEvent.setup();
       const onClearFilters = vi.fn();
       const activeFilters: ArchiveFilters = {
-        timePeriod: '2020-2024',
         topics: ['cloud', 'devops'],
         search: 'Cloud',
       };
@@ -475,16 +397,11 @@ describe('FilterSidebar Component', () => {
   describe('Active Filter Indicators', () => {
     test('should_highlightActiveFilters_when_filtersApplied', () => {
       const activeFilters: ArchiveFilters = {
-        timePeriod: '2020-2024',
         topics: ['cloud', 'devops'],
         search: 'Architecture',
       };
 
       render(<FilterSidebar {...defaultProps} filters={activeFilters} />);
-
-      // Time period should be highlighted
-      const period2020 = screen.getByText('2020-2024');
-      expect(period2020).toHaveClass('active'); // Or similar class
 
       // Topics should be checked
       const cloudCheckbox = screen.getByLabelText(/Cloud Architecture/i);
@@ -500,15 +417,14 @@ describe('FilterSidebar Component', () => {
 
     test('should_showActiveFilterCount_when_filtersApplied', () => {
       const activeFilters: ArchiveFilters = {
-        timePeriod: '2020-2024',
         topics: ['cloud', 'devops'],
         search: '',
       };
 
       render(<FilterSidebar {...defaultProps} filters={activeFilters} />);
 
-      // Should show count of active filters (e.g., "3 active filters")
-      expect(screen.getByText(/3.*active/i)).toBeInTheDocument();
+      // Should show count of active filters (e.g., "2 active filters" - 2 topics only, no time period)
+      expect(screen.getByText(/2.*active/i)).toBeInTheDocument();
     });
   });
 

@@ -91,6 +91,7 @@ export function useSessionBatchImport(
       const result: SessionBatchImportResult = {
         totalProcessed: 0,
         successfullyCreated: 0,
+        updated: 0,
         skipped: 0,
         failed: 0,
         details: [],
@@ -124,6 +125,7 @@ export function useSessionBatchImport(
           // Update overall result
           result.totalProcessed += importResult.totalProcessed;
           result.successfullyCreated += importResult.successfullyCreated;
+          result.updated += importResult.updated || 0;
           result.skipped += importResult.skipped;
           result.failed += importResult.failed;
           result.details.push(...importResult.details);
@@ -135,9 +137,11 @@ export function useSessionBatchImport(
               const status =
                 detail.status === 'success'
                   ? 'success'
-                  : detail.status === 'skipped'
-                    ? 'skipped'
-                    : 'error';
+                  : detail.status === 'updated'
+                    ? 'updated'
+                    : detail.status === 'skipped'
+                      ? 'skipped'
+                      : 'error';
               updateCandidate(candidateIndex, {
                 importStatus: status,
                 errorMessage: detail.status === 'failed' ? detail.message : undefined,

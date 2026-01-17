@@ -24,9 +24,8 @@ export function EventCard({ event, viewMode }: EventCardProps) {
   // Get all sessions with speakers
   const sessions = (event.sessions || []) as SessionUI[];
 
-  // Limit to first 3 sessions for preview
-  const displayedSessions = sessions.slice(0, 3);
-  const remainingSessionCount = sessions.length - 3;
+  // Show all sessions (no limit)
+  const displayedSessions = sessions;
 
   // Format date (use Swiss German locale for Swiss company)
   const formattedDate = new Date(event.date).toLocaleDateString('de-CH', {
@@ -86,15 +85,15 @@ export function EventCard({ event, viewMode }: EventCardProps) {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* Session Preview - Show first 3 sessions */}
+            {/* Session Preview - Show all sessions */}
             {displayedSessions.length > 0 && (
               <div className="space-y-3">
                 <div
                   className={`grid gap-4 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                 >
-                  {displayedSessions.map((session) => (
+                  {displayedSessions.map((session, index) => (
                     <div
-                      key={session.sessionId}
+                      key={session.sessionId || session.id || `session-${index}`}
                       className="border-t border-zinc-800 pt-3 first:border-t-0 first:pt-0"
                     >
                       {/* Session Title */}
@@ -105,9 +104,9 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                         <div
                           className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
                         >
-                          {session.speakers.map((speaker) => (
+                          {session.speakers.map((speaker, speakerIndex) => (
                             <SpeakerDisplay
-                              key={speaker.username}
+                              key={speaker.username || `speaker-${index}-${speakerIndex}`}
                               speaker={speaker}
                               size="small"
                               showProfilePicture={true}
@@ -120,13 +119,6 @@ export function EventCard({ event, viewMode }: EventCardProps) {
                     </div>
                   ))}
                 </div>
-
-                {/* Show remaining session count if more than 3 */}
-                {remainingSessionCount > 0 && (
-                  <p className="text-sm text-zinc-400 italic">
-                    {t('archive.card.andMore', { count: remainingSessionCount })}
-                  </p>
-                )}
               </div>
             )}
 

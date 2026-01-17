@@ -74,7 +74,11 @@ describe('SessionApiClient', () => {
 
       await client.batchImportSessions(eventCode, sessions);
 
-      expect(mockPost).toHaveBeenCalledWith('/events/BATbern142/sessions/batch-import', sessions);
+      expect(mockPost).toHaveBeenCalledWith(
+        '/events/BATbern142/sessions/batch-import',
+        sessions,
+        { timeout: 120000 } // Extended timeout for large PDF downloads from CDN
+      );
     });
 
     it('should_returnImportResult_when_importSuccessful', async () => {

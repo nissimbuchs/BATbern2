@@ -1,25 +1,79 @@
 /**
  * EventProgram Component (Story 4.1.4)
  * Vertical timeline showing session schedule grouped by time slots
+ * Story 5.9 - Task 8b: Added materials display for archived events
  */
 
-import type { Session } from '@/types/event.types';
+import type { SessionUI, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 import { format } from 'date-fns';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
 
 interface EventProgramProps {
-  sessions: Session[];
+  sessions: SessionUI[];
+  isArchived?: boolean; // Story 5.9 - Show materials only for archived events
 }
 
-export const EventProgram = ({ sessions }: EventProgramProps) => {
+export const EventProgram = ({ sessions, isArchived = false }: EventProgramProps) => {
   const { t } = useTranslation('events');
+
+  // Helper: Get type label for display (Story 5.9 - Task 8b)
+  const getMaterialTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'PRESENTATION':
+        return t('public.program.materialTypes.presentation', 'Presentation');
+      case 'DOCUMENT':
+        return t('public.program.materialTypes.document', 'Document');
+      case 'VIDEO':
+        return t('public.program.materialTypes.video', 'Video');
+      case 'OTHER':
+      default:
+        return t('public.program.materialTypes.other', 'Other');
+    }
+  };
+
+  // Helper: Format file size in MB (Story 5.9 - Task 8b)
+  const formatFileSize = (bytes: number): string => {
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  // Helper: Get material type icon (Story 5.9 - Task 8b)
+  const getMaterialTypeIcon = (type: string) => {
+    switch (type) {
+      case 'PRESENTATION':
+        return <Presentation className="h-4 w-4" />;
+      case 'VIDEO':
+        return <Video className="h-4 w-4" />;
+      case 'DOCUMENT':
+      case 'OTHER':
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // Helper: Group materials by type (Story 5.9 - Task 8b)
+  const groupMaterialsByType = (materials: SessionMaterial[] | undefined) => {
+    if (!materials || materials.length === 0) return {};
+
+    return materials.reduce(
+      (acc, material) => {
+        const type = material.materialType || 'OTHER';
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(material);
+        return acc;
+      },
+      {} as Record<string, SessionMaterial[]>
+    );
+  };
 
   // Group sessions by start time
   const timeSlots = useMemo(() => {
-    const slotMap = new Map<string, Session[]>();
+    const slotMap = new Map<string, SessionUI[]>();
 
     sessions.forEach((session) => {
       try {
@@ -118,7 +172,7 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                               {t('public.program.speaker')}:
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {session.speakers.map((speaker) => (
+                              {session.speakers.map((speaker: SessionSpeaker) => (
                                 <SpeakerDisplay
                                   key={speaker.username}
                                   speaker={speaker}
@@ -132,6 +186,46 @@ export const EventProgram = ({ sessions }: EventProgramProps) => {
                           <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
                         )}
                       </div>
+
+                      {/* Materials Section - Only for archived events (Story 5.9 - Task 8b) */}
+                      {isArchived && session.materials && session.materials.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                          <p className="text-xs text-zinc-500 mb-3">
+                            {t('public.program.materials', 'Materials')}:
+                          </p>
+                          <div className="space-y-4">
+                            {Object.entries(groupMaterialsByType(session.materials)).map(
+                              ([type, materials]) => (
+                                <div key={type}>
+                                  {/* Material Type Heading */}
+                                  <p className="text-xs font-medium text-zinc-400 mb-2 capitalize">
+                                    {getMaterialTypeLabel(type)}
+                                  </p>
+                                  <div className="space-y-2">
+                                    {materials.map((material) => (
+                                      <a
+                                        key={material.id}
+                                        href={material.cloudFrontUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`Download ${material.fileName}`}
+                                        className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline"
+                                      >
+                                        {getMaterialTypeIcon(material.materialType)}
+                                        <span className="flex-1">{material.fileName}</span>
+                                        <span className="text-xs text-zinc-500">
+                                          {formatFileSize(material.fileSize)}
+                                        </span>
+                                        <Download className="h-4 w-4" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

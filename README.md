@@ -4,7 +4,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-16
 
 **Current Phase:** MVP Complete - Epics 1-5 Functional (Minor Features Pending)
 
@@ -17,7 +17,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 | **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | 100% (27/27) | Shared Kernel, API Gateway, Auth (all flows), User Mgmt, CI/CD, Monitoring, API Consolidation |
 | **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | 100% (8/8) | Company, User, Event, Partner Management (Backend + Frontend) |
 | **Epic 3: Historical Data Migration** | ✅ Complete | 100% (Implementation Ready) | All Batch Imports Implemented (Companies, Speakers, Events, Sessions, Participants) - Production data import pending |
-| **Epic 4: Public Website & Content Discovery** | 🔄 Nearly Complete | ~85% (Story 4.1 Done) | Event Landing Page, Registration Flow, Email Confirmation - Missing: Archive Browsing (4.2), Content Search (4.3) |
+| **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% (All Stories) | Event Landing Page, Registration Flow, Email Confirmation, Testing, SEO, Performance Optimization, Archive Browsing (BAT-109), Content Search |
 | **Epic 5: Enhanced Organizer Workflows** | ✅ Core Complete | 87.5% (7/8 stories) | Event Types, Workflow State Machine, Speaker Coordination, Content Submission, Quality Review, Task System - Missing: Newsletter Integration (BAT-16) |
 
 ### Key Components Status
@@ -33,7 +33,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 | **Partner Management** | ✅ Complete | 2.7, 2.8.1-2.8.4 |
 | **React Frontend Foundation** | ✅ Complete | 1.17 |
 | **Public Website - Registration** | ✅ Complete | 4.1.1-4.1.6 |
-| **Public Website - Backend** | 🔄 In Progress | 4.1.7, 2.2a |
+| **Public Website - Testing & Performance** | ✅ Complete | 4.1.7, 4.1.8, 4.1.8a, 2.2a |
 | **Event Type & Workflow** | ✅ Complete | 5.1, 5.1a, 5.3 |
 | **Topic Selection** | 🔄 Ready for Review | 5.2 |
 
@@ -45,12 +45,8 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
    - Auto-publishing engine with CDN integration
    - Event lifecycle completion (finalization, completion, archive states)
 
-2. **Epic 4: Public Content Discovery** - ~1.5 weeks
-   - Story 4.2: Historical Archive Browsing (event listings, timeline view, filters)
-   - Story 4.3: Full-Text Content Search (presentations, speakers, topics)
-
 **Production Readiness (When Launching):**
-3. **Epic 3: Production Data Import** - ~1 day
+2. **Epic 3: Production Data Import** - ~1 day
    - Import 2,307 historical participants via batch import modal
    - Data integrity validation
    - Performance monitoring
@@ -77,7 +73,7 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ```bash
 # Clone repository
-git clone https://github.com/nisimbuchs/BATbern2.git
+git clone https://github.com/nissimbuchs/BATbern2.git
 cd BATbern
 
 # Install git hooks (pre-commit, pre-push)

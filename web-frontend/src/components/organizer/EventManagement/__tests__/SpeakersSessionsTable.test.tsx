@@ -35,6 +35,7 @@ const mockSessions: Session[] = [
   {
     id: 'session-1',
     sessionSlug: 'session-1',
+    eventCode: 'BAT54',
     slotNumber: 1,
     startTime: '09:00',
     endTime: '10:00',
@@ -47,11 +48,14 @@ const mockSessions: Session[] = [
     },
     title: 'Microservices: From Theory to Practice',
     abstract: 'Comprehensive guide to implementing microservices in production',
-    materialsStatus: 'approved' as const,
+    materialsStatus: 'COMPLETE',
+    materialsCount: 3, // Story 5.9: Has multiple materials including presentation
+    hasPresentation: true, // Story 5.9: Complete (✓)
   },
   {
     id: 'session-2',
     sessionSlug: 'session-2',
+    eventCode: 'BAT54',
     slotNumber: 2,
     startTime: '10:15',
     endTime: '11:15',
@@ -64,11 +68,14 @@ const mockSessions: Session[] = [
     },
     title: 'Cloud Security Architecture',
     abstract: 'Best practices for securing cloud-native applications',
-    materialsStatus: 'pending' as const,
+    materialsStatus: 'PARTIAL',
+    materialsCount: 2, // Story 5.9: Has some materials but no presentation
+    hasPresentation: false, // Story 5.9: Pending (⚠️)
   },
   {
     id: 'session-3',
     sessionSlug: 'session-3',
+    eventCode: 'BAT54',
     slotNumber: 3,
     startTime: '11:30',
     endTime: '12:30',
@@ -81,7 +88,9 @@ const mockSessions: Session[] = [
     },
     title: 'Kubernetes in Production: Real-World Experience',
     abstract: 'Lessons learned from running Kubernetes in enterprise production',
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
+    materialsCount: 0, // Story 5.9: No materials uploaded
+    hasPresentation: false, // Story 5.9: Missing (❌)
   },
   // Slots 4-12 for full 12-slot display
   {
@@ -93,7 +102,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-5',
@@ -104,7 +113,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-6',
@@ -115,7 +124,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-7',
@@ -126,7 +135,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-8',
@@ -137,7 +146,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-9',
@@ -148,7 +157,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-10',
@@ -159,7 +168,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-11',
@@ -170,7 +179,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
   {
     id: 'session-12',
@@ -181,7 +190,7 @@ const mockSessions: Session[] = [
     speaker: undefined,
     title: undefined,
     abstract: undefined,
-    materialsStatus: 'rejected' as const,
+    materialsStatus: 'NONE',
   },
 ];
 
@@ -324,13 +333,14 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
         />
       );
 
-      // Should display "Complete ✓" for session 1
-      expect(screen.getByText(/complete/i)).toBeInTheDocument();
-      // Should have check icon (✓) or success indicator
+      // Should have check icon (✓) or success indicator for session 1
       const slot1Row = screen
         .getByText('Microservices: From Theory to Practice')
         .closest('[data-testid^="session-row"]');
       expect(within(slot1Row!).getByTestId('materials-status-complete')).toBeInTheDocument();
+
+      // Should display status text ("Vollständig" in German or "Complete" in English)
+      expect(within(slot1Row!).getByText(/vollständig|complete/i)).toBeInTheDocument();
     });
 
     it('should_displayPendingStatus_when_materialsPending', () => {
@@ -344,13 +354,14 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
         />
       );
 
-      // Should display "Pending ⚠️" for session 2
-      expect(screen.getByText(/pending/i)).toBeInTheDocument();
-      // Should have warning icon (⚠️)
+      // Should have warning icon (⚠️) for session 2
       const slot2Row = screen
         .getByText('Cloud Security Architecture')
         .closest('[data-testid^="session-row"]');
       expect(within(slot2Row!).getByTestId('materials-status-pending')).toBeInTheDocument();
+
+      // Should display status text ("Ausstehend" in German or "Pending" in English)
+      expect(within(slot2Row!).getByText(/ausstehend|pending/i)).toBeInTheDocument();
     });
 
     it('should_displayMissingStatus_when_materialsMissing', () => {
@@ -364,15 +375,15 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
         />
       );
 
-      // Should display "Missing ❌" for session 3 and unassigned slots
-      const missingElements = screen.getAllByText(/missing/i);
-      expect(missingElements.length).toBeGreaterThanOrEqual(10); // Session 3 + 9 empty slots
-
-      // Should have error icon (❌)
+      // Should have error icon (❌) for session 3
       const slot3Row = screen
         .getByText('Kubernetes in Production: Real-World Experience')
         .closest('[data-testid^="session-row"]');
       expect(within(slot3Row!).getByTestId('materials-status-missing')).toBeInTheDocument();
+
+      // Should display status text ("Fehlend" in German or "Missing" in English) for session 3 and unassigned slots
+      const missingElements = screen.getAllByText(/fehlend|missing/i);
+      expect(missingElements.length).toBeGreaterThanOrEqual(10); // Session 3 + 9 empty slots
     });
   });
 
@@ -393,7 +404,7 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       expect(materialsButtons.length).toBeGreaterThanOrEqual(3);
     });
 
-    it('should_callOnViewMaterials_when_materialsClicked', async () => {
+    it('should_openMaterialsModal_when_materialsClicked', async () => {
       const user = userEvent.setup();
       renderWithProviders(
         <SpeakersSessionsTable
@@ -408,7 +419,15 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       const materialsButtons = screen.getAllByRole('button', { name: /materials/i });
       await user.click(materialsButtons[0]);
 
-      expect(mockOnViewMaterials).toHaveBeenCalledWith('session-1');
+      // Story 5.9 - AC2: Materials button opens SessionEditModal on Materials tab
+      await waitFor(() => {
+        expect(screen.getByRole('tab', { name: /materials/i })).toBeInTheDocument();
+        // Materials tab should be selected (active)
+        expect(screen.getByRole('tab', { name: /materials/i })).toHaveAttribute(
+          'aria-selected',
+          'true'
+        );
+      });
     });
 
     it('should_openEditModal_when_rowClicked', async () => {
@@ -602,6 +621,145 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       expect(timeElements.length).toBeGreaterThan(0);
       // Component implements responsive design with Material-UI breakpoints
       // Desktop: Table view | Mobile: Card view
+    });
+  });
+});
+
+describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
+  const renderWithProviders = (component: React.ReactElement) => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+      },
+    });
+
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <BrowserRouter>{component}</BrowserRouter>
+        </I18nextProvider>
+      </QueryClientProvider>
+    );
+  };
+
+  it('should_showMissingIcon_when_noMaterialsUploaded', () => {
+    const sessionWithNoMaterials: Session = {
+      sessionSlug: 'test-session',
+      eventCode: 'BAT54',
+      title: 'Test Session',
+      materialsCount: 0,
+      hasPresentation: false,
+      startTime: '2024-12-15T09:00:00Z',
+      endTime: '2024-12-15T10:00:00Z',
+    };
+
+    renderWithProviders(
+      <SpeakersSessionsTable
+        sessions={[sessionWithNoMaterials]}
+        eventCode="BAT54"
+        eventDate="2024-12-15"
+        onViewMaterials={vi.fn()}
+        onSessionUpdate={vi.fn()}
+      />
+    );
+
+    // Should display error icon (❌ Missing)
+    expect(screen.getByTestId('materials-status-missing')).toBeInTheDocument();
+  });
+
+  it('should_showPendingIcon_when_materialsExistButNoPresentation', () => {
+    const sessionWithPartialMaterials: Session = {
+      sessionSlug: 'test-session',
+      eventCode: 'BAT54',
+      title: 'Test Session',
+      materialsCount: 2,
+      hasPresentation: false,
+      materialsStatus: 'PARTIAL',
+      startTime: '2024-12-15T09:00:00Z',
+      endTime: '2024-12-15T10:00:00Z',
+    };
+
+    renderWithProviders(
+      <SpeakersSessionsTable
+        sessions={[sessionWithPartialMaterials]}
+        eventCode="BAT54"
+        eventDate="2024-12-15"
+        onViewMaterials={vi.fn()}
+        onSessionUpdate={vi.fn()}
+      />
+    );
+
+    // Should display warning icon (⚠️ Pending)
+    expect(screen.getByTestId('materials-status-pending')).toBeInTheDocument();
+  });
+
+  it('should_showCompleteIcon_when_presentationExists', () => {
+    const sessionWithPresentation: Session = {
+      sessionSlug: 'test-session',
+      eventCode: 'BAT54',
+      title: 'Test Session',
+      materialsCount: 3,
+      hasPresentation: true,
+      materialsStatus: 'COMPLETE',
+      startTime: '2024-12-15T09:00:00Z',
+      endTime: '2024-12-15T10:00:00Z',
+    };
+
+    renderWithProviders(
+      <SpeakersSessionsTable
+        sessions={[sessionWithPresentation]}
+        eventCode="BAT54"
+        eventDate="2024-12-15"
+        onViewMaterials={vi.fn()}
+        onSessionUpdate={vi.fn()}
+      />
+    );
+
+    // Should display check icon (✓ Complete)
+    expect(screen.getByTestId('materials-status-complete')).toBeInTheDocument();
+  });
+
+  it('should_openMaterialsTab_when_materialsButtonClicked', async () => {
+    const user = userEvent.setup();
+    const testSession: Session = {
+      sessionSlug: 'test-session',
+      eventCode: 'BAT54',
+      title: 'Test Session',
+      materialsCount: 0,
+      hasPresentation: false,
+      startTime: '2024-12-15T09:00:00Z',
+      endTime: '2024-12-15T10:00:00Z',
+      speaker: {
+        id: 'speaker-test',
+        name: 'Test Speaker',
+        company: 'Test Company',
+        email: 'test@test.com',
+        bio: 'Test bio',
+      },
+    };
+
+    renderWithProviders(
+      <SpeakersSessionsTable
+        sessions={[testSession]}
+        eventCode="BAT54"
+        eventDate="2024-12-15"
+        onViewMaterials={vi.fn()}
+        onSessionUpdate={vi.fn()}
+      />
+    );
+
+    // Find and click Materials button (handles both English "Materials" and German "Materialien")
+    const materialsButton = screen.getByRole('button', { name: /material/i });
+    await user.click(materialsButton);
+
+    // Should open SessionEditModal on Materials tab
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /material/i })).toBeInTheDocument();
+      // Materials tab should be selected (active)
+      expect(screen.getByRole('tab', { name: /material/i })).toHaveAttribute(
+        'aria-selected',
+        'true'
+      );
     });
   });
 });

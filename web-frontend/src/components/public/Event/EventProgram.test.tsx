@@ -191,4 +191,165 @@ describe('EventProgram', () => {
     expect(openingKeynote).toBeInTheDocument();
     expect(morningWorkshop).toBeInTheDocument();
   });
+
+  describe('Session Materials Display (Story 5.9 - Task 8a)', () => {
+    const mockSessionsWithMaterials: Session[] = [
+      {
+        sessionSlug: 'keynote-morning',
+        eventCode: 'BATbern142',
+        title: 'Opening Keynote',
+        description: 'Welcome and introduction to the conference.',
+        sessionType: 'keynote',
+        startTime: '2025-05-15T09:00:00Z',
+        endTime: '2025-05-15T10:00:00Z',
+        room: 'Main Hall',
+        capacity: 200,
+        language: 'de',
+        speakers: [
+          {
+            username: 'john.doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            speakerRole: 'PRIMARY_SPEAKER',
+            isConfirmed: true,
+          },
+        ],
+        materials: [
+          {
+            id: 'mat-1',
+            uploadId: 'upload-1',
+            cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/keynote-slides.pptx',
+            fileName: 'keynote-slides.pptx',
+            fileSize: 5242880, // 5MB
+            materialType: 'PRESENTATION',
+            uploadedBy: 'john.doe',
+            createdAt: '2025-05-10T10:00:00Z',
+          },
+          {
+            id: 'mat-2',
+            uploadId: 'upload-2',
+            cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/handout.pdf',
+            fileName: 'handout.pdf',
+            fileSize: 1048576, // 1MB
+            materialType: 'DOCUMENT',
+            uploadedBy: 'john.doe',
+            createdAt: '2025-05-10T11:00:00Z',
+          },
+          {
+            id: 'mat-3',
+            uploadId: 'upload-3',
+            cloudFrontUrl: 'https://cdn.batbern.ch/materials/2025/bat142/session-recording.mp4',
+            fileName: 'session-recording.mp4',
+            fileSize: 104857600, // 100MB
+            materialType: 'VIDEO',
+            uploadedBy: 'john.doe',
+            createdAt: '2025-05-16T10:00:00Z',
+          },
+        ],
+        materialsCount: 3,
+        hasPresentation: true,
+      },
+    ];
+
+    it('should_displayMaterialsSection_when_eventIsArchived', () => {
+      // For archived events (past events), materials should be displayed
+      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+
+      // Should show materials heading
+      expect(screen.getByText(/materials|downloads/i)).toBeInTheDocument();
+
+      // Should show material file names
+      expect(screen.getByText('keynote-slides.pptx')).toBeInTheDocument();
+      expect(screen.getByText('handout.pdf')).toBeInTheDocument();
+      expect(screen.getByText('session-recording.mp4')).toBeInTheDocument();
+    });
+
+    it('should_hideMaterialsSection_when_eventIsUpcoming', () => {
+      // For upcoming events (future events), materials should be hidden
+      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={false} />);
+
+      // Should NOT show materials heading
+      expect(screen.queryByText(/materials|downloads/i)).not.toBeInTheDocument();
+
+      // Should NOT show material file names
+      expect(screen.queryByText('keynote-slides.pptx')).not.toBeInTheDocument();
+      expect(screen.queryByText('handout.pdf')).not.toBeInTheDocument();
+    });
+
+    it('should_groupMaterialsByType_when_multipleTypesExist', () => {
+      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+
+      // Should show grouped material types
+      expect(screen.getByText(/presentation/i)).toBeInTheDocument();
+      expect(screen.getByText(/document/i)).toBeInTheDocument();
+      expect(screen.getByText(/video/i)).toBeInTheDocument();
+    });
+
+    it('should_displayMaterialMetadata_when_rendered', () => {
+      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+
+      // Should show file sizes (formatted)
+      expect(screen.getByText(/5(\.\d+)?\s*MB/i)).toBeInTheDocument(); // 5MB presentation
+      expect(screen.getByText(/1(\.\d+)?\s*MB/i)).toBeInTheDocument(); // 1MB document
+      expect(screen.getByText(/100(\.\d+)?\s*MB/i)).toBeInTheDocument(); // 100MB video
+    });
+
+    it('should_renderDownloadLinks_when_materialsDisplayed', () => {
+      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+
+      // Should have download links with correct CloudFront URLs
+      const downloadLinks = screen.getAllByRole('link', {
+        name: /download|keynote-slides|handout|session-recording/i,
+      });
+      expect(downloadLinks.length).toBeGreaterThan(0);
+
+      // First link should have correct href
+      const presentationLink = screen.getByRole('link', { name: /keynote-slides/i });
+      expect(presentationLink).toHaveAttribute(
+        'href',
+        'https://cdn.batbern.ch/materials/2025/bat142/keynote-slides.pptx'
+      );
+
+      // Links should open in new tab
+      expect(presentationLink).toHaveAttribute('target', '_blank');
+      expect(presentationLink).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it('should_displayMaterialTypeIcons_when_materialsRendered', () => {
+      const { container } = renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />
+      );
+
+      // Should have icons for different material types (using data-testid or checking for SVG presence)
+      // Material-UI icons are SVG elements
+      const icons = container.querySelectorAll('svg');
+      expect(icons.length).toBeGreaterThan(0);
+    });
+
+    it('should_notDisplayMaterials_when_sessionHasNoMaterials', () => {
+      const sessionsWithoutMaterials: Session[] = [
+        {
+          sessionSlug: 'workshop-morning',
+          eventCode: 'BATbern142',
+          title: 'Morning Workshop',
+          description: 'Interactive workshop session.',
+          sessionType: 'workshop',
+          startTime: '2025-05-15T09:00:00Z',
+          endTime: '2025-05-15T10:00:00Z',
+          room: 'Workshop Room A',
+          capacity: 50,
+          language: 'de',
+          speakers: [],
+          materials: [],
+          materialsCount: 0,
+          hasPresentation: false,
+        },
+      ];
+
+      renderWithProviders(<EventProgram sessions={sessionsWithoutMaterials} isArchived={true} />);
+
+      // Should not show materials section for session without materials
+      expect(screen.queryByText(/materials|downloads/i)).not.toBeInTheDocument();
+    });
+  });
 });
