@@ -822,6 +822,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Story 5.7: Must have at least one session with timing assigned before publishing
         ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
                 .eventId(draftEvent.getId())
+                .eventCode(draftEvent.getEventCode())
                 .sessionSlug("keynote-2028")
                 .title("Keynote 2028")
                 .sessionType("keynote")
@@ -2009,6 +2010,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create session for the event
         ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .title("Modern Architecture Patterns")
                 .description("Deep dive into modern architecture")
                 .sessionSlug("modern-architecture-patterns")
@@ -2058,6 +2060,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // Create session for the event
         ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .title("Security Best Practices")
                 .description("Comprehensive security workshop")
                 .sessionSlug("security-best-practices")
@@ -2117,6 +2120,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
         ch.batbern.events.domain.Session session = ch.batbern.events.domain.Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .title("Database Optimization")
                 .description("Performance tuning workshop")
                 .sessionSlug("database-optimization")

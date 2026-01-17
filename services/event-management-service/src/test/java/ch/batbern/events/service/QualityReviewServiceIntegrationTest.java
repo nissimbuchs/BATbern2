@@ -315,6 +315,7 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
         // Create session
         Session session = Session.builder()
                 .eventId(testEventId)
+                .eventCode(testEvent.getEventCode())
                 .title("Test Presentation by " + speakerName)
                 .description("This is a test abstract with lessons learned about scalable architectures.")
                 .sessionSlug("test-presentation-" + username)

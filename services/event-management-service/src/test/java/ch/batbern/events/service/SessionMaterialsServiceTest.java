@@ -330,7 +330,10 @@ class SessionMaterialsServiceTest {
 
         Session differentSession = Session.builder()
                 .id(UUID.randomUUID())
+                .eventId(UUID.randomUUID())
+                .eventCode("TEST-EVENT")
                 .sessionSlug("different-session")
+                .title("Different Session")
                 .build();
 
         SessionMaterial material = SessionMaterial.builder()

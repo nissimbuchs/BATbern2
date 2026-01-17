@@ -44,6 +44,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
 
     private UUID testSessionId;
     private UUID testEventId;
+    private Event testEvent;
 
     @BeforeEach
     void setUp() {
@@ -53,7 +54,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         eventRepository.deleteAll();
 
         // Create a valid event first (required by sessions FK)
-        Event testEvent = Event.builder()
+        testEvent = Event.builder()
                 .eventCode("test-event-2026")
                 .eventNumber(999)
                 .title("Test Event 2026")
@@ -74,6 +75,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         // Create a valid session (required by session_materials FK)
         Session testSession = Session.builder()
                 .eventId(testEventId)
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("test-session-keynote")
                 .title("Test Keynote Session")
                 .description("Test keynote description")
@@ -136,6 +138,7 @@ class SessionMaterialsRepositoryTest extends AbstractIntegrationTest {
         // Given - Create a second session for filtering test
         Session otherSession = Session.builder()
                 .eventId(testEventId)
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("test-session-other")
                 .title("Other Session")
                 .sessionType("presentation")

@@ -286,6 +286,7 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     private void createSessionWithTiming(Event event, Instant eventDate) {
         Session session = Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .sessionSlug("test-session")
                 .title("Test Session")
                 .sessionType("presentation")
@@ -298,6 +299,7 @@ public class PublishingScheduledServiceIntegrationTest extends AbstractIntegrati
     private void createSessionWithoutTiming(Event event) {
         Session session = Session.builder()
                 .eventId(event.getId())
+                .eventCode(event.getEventCode())
                 .sessionSlug("test-session-no-timing")
                 .title("Test Session Without Timing")
                 .sessionType("presentation")

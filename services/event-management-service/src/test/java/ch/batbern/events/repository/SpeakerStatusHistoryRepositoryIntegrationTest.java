@@ -79,6 +79,7 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
         testSession = ch.batbern.events.domain.Session.builder()
                 .sessionSlug("test-session-speaker-status")
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .title("Test Session")  // NOT NULL requirement
                 .build();
         testSession = sessionRepository.save(testSession);
