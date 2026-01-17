@@ -24,22 +24,6 @@ import { test, expect, type Page } from '@playwright/test';
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
-
 // Type definitions for Story 5.2 API responses
 interface SpeakerPoolResponse {
   id: string;
