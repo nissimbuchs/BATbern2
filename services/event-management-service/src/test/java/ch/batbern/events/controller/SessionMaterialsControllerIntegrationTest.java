@@ -204,9 +204,9 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 )
         );
 
-        // When: POST /api/v1/sessions/{sessionSlug}/materials
+        // When: POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials
         // Then: 201 Created with materials list
-        mockMvc.perform(post("/api/v1/sessions/{sessionSlug}/materials", sessionSlug)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -261,7 +261,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: GET /api/v1/sessions/{sessionSlug}/materials
         // Then: 200 OK with materials list (2 materials)
-        mockMvc.perform(get("/api/v1/sessions/{sessionSlug}/materials", sessionSlug))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.materials", hasSize(2)))
                 .andExpect(jsonPath("$.materials[0].fileName", is("keynote-slides.pptx")))
@@ -283,7 +283,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: GET /api/v1/sessions/{sessionSlug}/materials
         // Then: 200 OK with empty materials list
-        mockMvc.perform(get("/api/v1/sessions/{sessionSlug}/materials", sessionSlug))
+        mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.materials", hasSize(0)));
     }
@@ -311,10 +311,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 .build();
         SessionMaterial savedMaterial = sessionMaterialsRepository.save(material);
 
-        // When: DELETE /api/v1/sessions/{sessionSlug}/materials/{materialId}
+        // When: DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}
         // Then: 204 No Content
-        mockMvc.perform(delete("/api/v1/sessions/{sessionSlug}/materials/{materialId}",
-                        sessionSlug, savedMaterial.getId()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}",
+                        eventCode, sessionSlug, savedMaterial.getId()))
                 .andExpect(status().isNoContent());
     }
 
@@ -341,7 +341,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials with invalid slug
         // Then: 404 Not Found
-        mockMvc.perform(post("/api/v1/sessions/{sessionSlug}/materials", nonExistentSlug)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, nonExistentSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -359,10 +359,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
         // Given: Non-existent material ID
         UUID nonExistentMaterialId = UUID.randomUUID();
 
-        // When: DELETE /api/v1/sessions/{sessionSlug}/materials/{materialId} with invalid ID
+        // When: DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId} with invalid ID
         // Then: 404 Not Found
-        mockMvc.perform(delete("/api/v1/sessions/{sessionSlug}/materials/{materialId}",
-                        sessionSlug, nonExistentMaterialId))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}",
+                        eventCode, sessionSlug, nonExistentMaterialId))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Session material not found with ID: " + nonExistentMaterialId));
     }
@@ -389,7 +389,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: POST /api/v1/sessions/{sessionSlug}/materials as session owner
         // Then: 201 Created (speaker can upload to own session)
-        mockMvc.perform(post("/api/v1/sessions/{sessionSlug}/materials", sessionSlug)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, sessionSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -418,7 +418,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as non-owner
         // Then: 403 Forbidden (speaker cannot upload to another speaker's session)
-        mockMvc.perform(post("/api/v1/sessions/{sessionSlug}/materials", anotherSessionSlug)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, anotherSessionSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -446,7 +446,7 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
 
         // When: POST /api/v1/sessions/{anotherSessionSlug}/materials as organizer
         // Then: 201 Created (organizer can upload to any session)
-        mockMvc.perform(post("/api/v1/sessions/{sessionSlug}/materials", anotherSessionSlug)
+        mockMvc.perform(post("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials", eventCode, anotherSessionSlug)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -476,10 +476,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 .build();
         SessionMaterial savedMaterial = sessionMaterialsRepository.save(material);
 
-        // When: DELETE /api/v1/sessions/{sessionSlug}/materials/{materialId} as material owner
+        // When: DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId} as material owner
         // Then: 204 No Content (speaker can delete own materials)
-        mockMvc.perform(delete("/api/v1/sessions/{sessionSlug}/materials/{materialId}",
-                        sessionSlug, savedMaterial.getId()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}",
+                        eventCode, sessionSlug, savedMaterial.getId()))
                 .andExpect(status().isNoContent());
     }
 
@@ -506,10 +506,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 .build();
         SessionMaterial savedMaterial = sessionMaterialsRepository.save(material);
 
-        // When: DELETE /api/v1/sessions/{anotherSessionSlug}/materials/{materialId} as non-owner
+        // When: DELETE /api/v1/events/{eventCode}/sessions/{anotherSessionSlug}/materials/{materialId} as non-owner
         // Then: 403 Forbidden (speaker cannot delete from another speaker's session)
-        mockMvc.perform(delete("/api/v1/sessions/{sessionSlug}/materials/{materialId}",
-                        anotherSessionSlug, savedMaterial.getId()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}",
+                        eventCode, anotherSessionSlug, savedMaterial.getId()))
                 .andExpect(status().isForbidden());
     }
 
@@ -536,10 +536,10 @@ public class SessionMaterialsControllerIntegrationTest extends AbstractIntegrati
                 .build();
         SessionMaterial savedMaterial = sessionMaterialsRepository.save(material);
 
-        // When: DELETE /api/v1/sessions/{anotherSessionSlug}/materials/{materialId} as organizer
+        // When: DELETE /api/v1/events/{eventCode}/sessions/{anotherSessionSlug}/materials/{materialId} as organizer
         // Then: 204 No Content (organizer can delete any material)
-        mockMvc.perform(delete("/api/v1/sessions/{sessionSlug}/materials/{materialId}",
-                        anotherSessionSlug, savedMaterial.getId()))
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}",
+                        eventCode, anotherSessionSlug, savedMaterial.getId()))
                 .andExpect(status().isNoContent());
     }
 }
