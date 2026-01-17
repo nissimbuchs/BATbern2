@@ -236,6 +236,206 @@ public class SessionMaterialsService {
     }
 
     /**
+     * Upload material from URL (for batch import)
+     * Used by session batch import to fetch PDFs from CDN and associate with sessions
+     *
+     * @param sessionSlug  The session slug
+     * @param url          URL to fetch material from (CDN URL)
+     * @param filename     Original filename
+     * @param materialType Material type (PRESENTATION, DOCUMENT, VIDEO, OTHER)
+     * @param uploadedBy   Username of uploader
+     * @return Created material response
+     * @throws SessionNotFoundException if session not found
+     */
+    public SessionMaterialResponse uploadMaterialFromUrl(
+            String sessionSlug,
+            String url,
+            String filename,
+            String materialType,
+            String uploadedBy) {
+
+        log.info("Uploading material from URL for session {}: {}", sessionSlug, filename);
+
+        // Validate session exists
+        Session session = sessionRepository.findBySessionSlug(sessionSlug)
+                .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
+
+        try {
+            // Fetch file from URL with extended timeout for large PDFs
+            log.debug("Fetching material from URL: {} (filename: {})", url, filename);
+
+            // URL-encode the URL to handle spaces and special characters
+            java.net.URI uri;
+            try {
+                uri = new java.net.URI(url);
+            } catch (java.net.URISyntaxException e) {
+                // URL contains invalid characters (e.g., spaces) - encode it
+                try {
+                    java.net.URL urlObj = new java.net.URL(url);
+                    uri = new java.net.URI(
+                            urlObj.getProtocol(),
+                            urlObj.getUserInfo(),
+                            urlObj.getHost(),
+                            urlObj.getPort(),
+                            urlObj.getPath(),
+                            urlObj.getQuery(),
+                            urlObj.getRef()
+                    );
+                } catch (Exception encodingException) {
+                    String errorMsg = String.format(
+                            "Invalid URL format (session: %s, filename: %s, url: %s): %s",
+                            sessionSlug, filename, url, encodingException.getMessage());
+                    log.error(errorMsg, encodingException);
+                    throw new RuntimeException(errorMsg, encodingException);
+                }
+            }
+
+            java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(15))
+                    .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                    .build();
+
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(uri)
+                    .timeout(java.time.Duration.ofSeconds(120)) // Increased to 2 minutes for large files
+                    .GET()
+                    .build();
+
+            log.debug("Downloading material from CDN...");
+            long downloadStart = System.currentTimeMillis();
+
+            java.net.http.HttpResponse<byte[]> response = client.send(request,
+                    java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+
+            long downloadTime = System.currentTimeMillis() - downloadStart;
+
+            if (response.statusCode() != 200) {
+                String errorMsg = String.format("Failed to fetch file from URL (HTTP %d): %s",
+                        response.statusCode(), url);
+                log.error(errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            byte[] fileData = response.body();
+            long fileSize = fileData.length;
+
+            log.info("Downloaded material from CDN: {} bytes in {}ms (filename: {})",
+                    fileSize, downloadTime, filename);
+
+            // Extract file extension
+            String fileExtension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+
+            // Determine MIME type
+            String mimeType = determineMimeType(fileExtension);
+
+            // Generate unique upload ID
+            String uploadId = UUID.randomUUID().toString();
+
+            // Generate final S3 key
+            String finalS3Key = generateFinalS3Key(session, uploadId, fileExtension);
+
+            // Upload directly to final S3 location
+            uploadToS3(finalS3Key, fileData, mimeType);
+
+            // Build CloudFront URL
+            String cloudFrontUrl = cloudFrontDomain + "/" + finalS3Key;
+
+            // Create SessionMaterial entity
+            SessionMaterial material = SessionMaterial.builder()
+                    .session(session)
+                    .uploadId(uploadId)
+                    .s3Key(finalS3Key)
+                    .cloudFrontUrl(cloudFrontUrl)
+                    .fileName(filename)
+                    .fileExtension(fileExtension)
+                    .fileSize(fileSize)
+                    .mimeType(mimeType)
+                    .materialType(materialType)
+                    .uploadedBy(uploadedBy)
+                    .contentExtracted(false)
+                    .extractionStatus("PENDING")
+                    .build();
+
+            // Save material
+            SessionMaterial savedMaterial = sessionMaterialsRepository.save(material);
+
+            // Emit domain event
+            SessionMaterialsUploadedEvent event = new SessionMaterialsUploadedEvent(
+                    sessionSlug,
+                    session.getEventCode(),
+                    List.of(uploadId),
+                    List.of(materialType),
+                    uploadedBy
+            );
+            domainEventPublisher.publish(event);
+
+            log.info("Uploaded material from URL for session {}: {} (uploadId: {})",
+                    sessionSlug, filename, uploadId);
+
+            return toResponse(savedMaterial);
+
+        } catch (java.net.http.HttpTimeoutException e) {
+            String errorMsg = String.format(
+                    "Timeout downloading material from CDN (session: %s, filename: %s, url: %s)",
+                    sessionSlug, filename, url);
+            log.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        } catch (java.io.IOException e) {
+            String errorMsg = String.format(
+                    "Network error downloading material (session: %s, filename: %s, url: %s): %s",
+                    sessionSlug, filename, url, e.getMessage());
+            log.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        } catch (Exception e) {
+            String errorMsg = String.format(
+                    "Failed to upload material from URL (session: %s, filename: %s, url: %s): %s",
+                    sessionSlug, filename, url, e.getMessage());
+            log.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
+
+    /**
+     * Determine MIME type from file extension
+     */
+    private String determineMimeType(String fileExtension) {
+        return switch (fileExtension.toLowerCase()) {
+            case "pdf" -> "application/pdf";
+            case "pptx" -> "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case "ppt" -> "application/vnd.ms-powerpoint";
+            case "doc" -> "application/msword";
+            case "docx" -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            case "mp4" -> "video/mp4";
+            case "mov" -> "video/quicktime";
+            case "avi" -> "video/x-msvideo";
+            default -> "application/octet-stream";
+        };
+    }
+
+    /**
+     * Upload byte array to S3
+     */
+    private void uploadToS3(String s3Key, byte[] data, String mimeType) {
+        try {
+            software.amazon.awssdk.services.s3.model.PutObjectRequest putRequest =
+                    software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(s3Key)
+                            .contentType(mimeType)
+                            .contentLength((long) data.length)
+                            .build();
+
+            s3Client.putObject(putRequest,
+                    software.amazon.awssdk.core.sync.RequestBody.fromBytes(data));
+
+            log.debug("Uploaded {} bytes to S3: {}", data.length, s3Key);
+        } catch (Exception e) {
+            log.error("Failed to upload to S3: {}", s3Key, e);
+            throw new RuntimeException("Failed to upload to S3", e);
+        }
+    }
+
+    /**
      * Generate final S3 key for material
      * Pattern: materials/{year}/events/{eventCode}/sessions/{sessionSlug}/file-{uploadId}.{ext}
      */

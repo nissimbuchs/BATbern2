@@ -11,6 +11,7 @@ import ch.batbern.events.dto.SessionImportDetail;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.service.SlugGenerationService;
@@ -43,8 +44,10 @@ public class SessionBatchImportService {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
+    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final UserApiClient userApiClient;
     private final SlugGenerationService slugGenerationService;
+    private final SessionMaterialsService sessionMaterialsService;
 
     private static final Duration SESSION_DURATION = Duration.ofMinutes(45);
     private static final Duration NO_SPEAKER_SESSION_DURATION = Duration.ofMinutes(10);
@@ -68,6 +71,7 @@ public class SessionBatchImportService {
 
         List<SessionImportDetail> details = new ArrayList<>();
         int successCount = 0;
+        int updatedCount = 0;
         int skippedCount = 0;
         int failedCount = 0;
 
@@ -82,6 +86,9 @@ public class SessionBatchImportService {
                 switch (detail.getStatus()) {
                     case "success":
                         successCount++;
+                        break;
+                    case "updated":
+                        updatedCount++;
                         break;
                     case "skipped":
                         skippedCount++;
@@ -101,12 +108,13 @@ public class SessionBatchImportService {
             }
         }
 
-        log.info("Batch import completed: {} success, {} skipped, {} failed",
-                successCount, skippedCount, failedCount);
+        log.info("Batch import completed: {} success, {} updated, {} skipped, {} failed",
+                successCount, updatedCount, skippedCount, failedCount);
 
         return BatchImportSessionResult.builder()
                 .totalProcessed(requests.size())
                 .successfullyCreated(successCount)
+                .updated(updatedCount)
                 .skipped(skippedCount)
                 .failed(failedCount)
                 .details(details)
@@ -127,16 +135,78 @@ public class SessionBatchImportService {
             int sequenceIndex
     ) {
         String title = request.getTitle();
+        String materialUrl = request.getMaterialUrl();
+        String pdfFilename = request.getPdf(); // Legacy field for backward compatibility
 
-        // Check for duplicate (same event + title)
+        // Check for existing session (same event + title)
         Optional<Session> existingSession = sessionRepository.findByEventIdAndTitle(event.getId(), title);
         if (existingSession.isPresent()) {
-            log.info("Skipping duplicate session: {}", title);
-            return SessionImportDetail.skipped(title, "Session already exists with this title");
+            // Session exists - check if we need to add material
+            Session session = existingSession.get();
+
+            // Clean up description (remove legacy PDF references)
+            String cleanedDescription = removePdfReferences(session.getDescription());
+            if (!cleanedDescription.equals(session.getDescription())) {
+                session.setDescription(cleanedDescription);
+                session.setUpdatedAt(Instant.now());
+                sessionRepository.save(session);
+                log.info("Cleaned up PDF references from description for session: {}", title);
+            }
+
+            // Upload material from URL if provided
+            if (materialUrl != null && !materialUrl.isEmpty()) {
+                try {
+                    // Extract filename from URL or use PDF filename
+                    String filename = pdfFilename != null && !pdfFilename.isEmpty()
+                            ? pdfFilename
+                            : extractFilenameFromUrl(materialUrl);
+
+                    // Skip placeholder filenames (n/a, N/A, empty, etc.)
+                    if (!isValidMaterialFilename(filename)) {
+                        log.info("Skipping session with placeholder material filename: {} ({})", title, filename);
+                        return SessionImportDetail.skipped(title, "No valid material file");
+                    }
+
+                    // Check if material already exists (duplicate prevention)
+                    if (sessionMaterialsRepository.existsBySession_IdAndFileName(session.getId(), filename)) {
+                        log.info("Material already exists for session {}: {}", title, filename);
+                        return SessionImportDetail.skipped(
+                                title,
+                                "Session already has this material: " + filename
+                        );
+                    }
+
+                    sessionMaterialsService.uploadMaterialFromUrl(
+                            session.getSessionSlug(),
+                            materialUrl,
+                            filename,
+                            "DOCUMENT",
+                            event.getOrganizerUsername()
+                    );
+
+                    log.info("Updated existing session with material from URL: {} ({})", title, filename);
+                    return SessionImportDetail.updated(
+                            title,
+                            session.getSessionSlug(),
+                            "Material uploaded from CDN and associated with session"
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to upload material for session {}: {}", title, e.getMessage());
+                    return SessionImportDetail.updated(
+                            title,
+                            session.getSessionSlug(),
+                            "Session exists, but material upload failed: " + e.getMessage()
+                    );
+                }
+            }
+
+            // Session exists - skip
+            log.info("Skipping duplicate session (no new material): {}", title);
+            return SessionImportDetail.skipped(title, "Session already exists");
         }
 
-        // Build description (abstract + PDF reference)
-        String description = buildDescription(request.getSessionAbstract(), request.getPdf());
+        // Build description (abstract only, no PDF references)
+        String description = buildDescription(request.getSessionAbstract(), null);
 
         // Check if session has speakers
         boolean hasSpeakers = request.getReferenten() != null && !request.getReferenten().isEmpty();
@@ -177,6 +247,38 @@ public class SessionBatchImportService {
         // Assign speakers
         assignSpeakers(session, request.getReferenten(), event.getOrganizerUsername(), event.getDate());
 
+        // Upload material from URL if provided (Story 5.9)
+        if (materialUrl != null && !materialUrl.isEmpty()) {
+            try {
+                // Extract filename from URL or use PDF filename
+                String filename = pdfFilename != null && !pdfFilename.isEmpty()
+                        ? pdfFilename
+                        : extractFilenameFromUrl(materialUrl);
+
+                // Skip placeholder filenames (n/a, N/A, empty, etc.)
+                if (!isValidMaterialFilename(filename)) {
+                    log.info("Skipping material upload for new session with placeholder filename: {} ({})",
+                            title, filename);
+                } else if (!sessionMaterialsRepository.existsBySession_IdAndFileName(session.getId(), filename)) {
+                    // Check if material already exists (should not happen for new sessions, but safety check)
+                    sessionMaterialsService.uploadMaterialFromUrl(
+                            sessionSlug,
+                            materialUrl,
+                            filename,
+                            "DOCUMENT",
+                            event.getOrganizerUsername()
+                    );
+
+                    log.info("Uploaded material from URL for new session: {} ({})", title, filename);
+                } else {
+                    log.warn("Material already exists for new session {} ({}), skipping upload", title, filename);
+                }
+            } catch (Exception e) {
+                log.error("Failed to upload material for session {}: {}", title, e.getMessage());
+                // Don't fail the entire import - material can be uploaded later
+            }
+        }
+
         return SessionImportDetail.success(title, sessionSlug);
     }
 
@@ -198,6 +300,46 @@ public class SessionBatchImportService {
         }
 
         return description.toString();
+    }
+
+    /**
+     * Remove PDF references from session description
+     * Cleans up legacy "PDF: filename" references added by previous import logic
+     *
+     * @param description Current session description
+     * @return Cleaned description without PDF references
+     */
+    private String removePdfReferences(String description) {
+        if (description == null || description.isEmpty()) {
+            return description;
+        }
+
+        // Remove "PDF: filename" patterns (with optional newlines before)
+        String cleaned = description.replaceAll("\\n\\n?PDF:\\s*[^\\n]+", "");
+        cleaned = cleaned.replaceAll("^PDF:\\s*[^\\n]+\\n\\n?", "");
+
+        return cleaned.trim();
+    }
+
+    /**
+     * Extract filename from URL
+     * Example: https://cdn.staging.batbern.ch/import-data/session-materials/BAT01_RTC.pdf → BAT01_RTC.pdf
+     *
+     * @param url URL to extract filename from
+     * @return Extracted filename
+     */
+    private String extractFilenameFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return "material.pdf";
+        }
+
+        // Extract last path segment after final slash
+        int lastSlash = url.lastIndexOf('/');
+        if (lastSlash >= 0 && lastSlash < url.length() - 1) {
+            return url.substring(lastSlash + 1);
+        }
+
+        return "material.pdf";
     }
 
     /**
@@ -351,5 +493,26 @@ public class SessionBatchImportService {
             log.warn("Failed to assign speaker '{}' to session '{}': {}",
                     username, session.getTitle(), e.getMessage());
         }
+    }
+
+    /**
+     * Check if a material filename is valid (not a placeholder)
+     *
+     * @param filename Filename to check
+     * @return true if valid, false if placeholder (n/a, empty, etc.)
+     */
+    private boolean isValidMaterialFilename(String filename) {
+        if (filename == null || filename.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalized = filename.trim().toLowerCase();
+
+        // Common placeholder values
+        return !normalized.equals("n/a")
+                && !normalized.equals("na")
+                && !normalized.equals("none")
+                && !normalized.equals("null")
+                && !normalized.equals("-");
     }
 }

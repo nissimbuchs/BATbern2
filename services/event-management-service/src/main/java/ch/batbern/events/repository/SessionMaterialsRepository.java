@@ -72,4 +72,14 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
      * @return true if session has at least one material of the specified type
      */
     boolean existsBySession_IdAndMaterialType(UUID sessionId, String materialType);
+
+    /**
+     * Check if session already has a material with the given filename
+     * Used during batch import to prevent duplicate uploads
+     *
+     * @param sessionId The session UUID
+     * @param fileName The filename to check
+     * @return true if session already has a material with this filename
+     */
+    boolean existsBySession_IdAndFileName(UUID sessionId, String fileName);
 }

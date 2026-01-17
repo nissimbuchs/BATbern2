@@ -63,6 +63,7 @@ export function createSessionImportCandidates(sessions: LegacySession[]): Sessio
       title: session.title,
       abstract: session.abstract || '',
       pdf: session.pdf,
+      materialUrl: session.materialUrl, // From generate-staging-sessions-json.js
       bat: session.bat,
       referenten: session.referenten,
       authoren: session.authoren,

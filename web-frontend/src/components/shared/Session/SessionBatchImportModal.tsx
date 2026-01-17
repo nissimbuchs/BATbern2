@@ -38,6 +38,7 @@ import {
   HourglassEmpty as PendingIcon,
   SkipNext as SkipIcon,
   Close as CloseIcon,
+  Update as UpdateIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSessionBatchImport } from '@/hooks/useSessionBatchImport';
@@ -56,6 +57,8 @@ function getStatusIcon(status: SessionImportStatus) {
   switch (status) {
     case 'success':
       return <CheckCircleIcon color="success" fontSize="small" />;
+    case 'updated':
+      return <UpdateIcon color="info" fontSize="small" />;
     case 'error':
       return <ErrorIcon color="error" fontSize="small" />;
     case 'skipped':
@@ -72,10 +75,12 @@ function getStatusIcon(status: SessionImportStatus) {
  */
 function getStatusColor(
   status: SessionImportStatus
-): 'default' | 'primary' | 'success' | 'error' | 'warning' {
+): 'default' | 'primary' | 'success' | 'error' | 'warning' | 'info' {
   switch (status) {
     case 'success':
       return 'success';
+    case 'updated':
+      return 'info';
     case 'error':
       return 'error';
     case 'skipped':
@@ -266,6 +271,7 @@ export const SessionBatchImportModal: React.FC<SessionBatchImportModalProps> = (
           <Alert severity={importResult.failed > 0 ? 'warning' : 'success'} sx={{ mb: 2 }}>
             {t('session.batchImport.complete', {
               success: importResult.successfullyCreated,
+              updated: importResult.updated || 0,
               skipped: importResult.skipped,
               failed: importResult.failed,
             })}

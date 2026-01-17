@@ -209,4 +209,46 @@ public class SessionMaterialsController {
         sessionMaterialsService.deleteMaterial(sessionSlug, materialId, username);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Upload material from URL (for batch import)
+     * POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url
+     *
+     * This endpoint is used by batch import to fetch PDFs from CDN and associate with sessions.
+     * RBAC: Organizers only (batch import operation)
+     *
+     * @param eventCode Event code identifier
+     * @param sessionSlug Session identifier
+     * @param requestBody Request containing "url", "filename", and "materialType"
+     * @return 201 Created with material details
+     */
+    @PostMapping("/upload-from-url")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<SessionMaterialResponse> uploadMaterialFromUrl(
+            @PathVariable String eventCode,
+            @PathVariable String sessionSlug,
+            @RequestBody Map<String, String> requestBody) {
+
+        String url = requestBody.get("url");
+        String filename = requestBody.get("filename");
+        String materialType = requestBody.getOrDefault("materialType", "DOCUMENT");
+
+        if (url == null || url.isBlank() || filename == null || filename.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String username = securityContextHelper.getCurrentUsername();
+
+        try {
+            SessionMaterialResponse material = sessionMaterialsService
+                    .uploadMaterialFromUrl(sessionSlug, url, filename, materialType, username);
+
+            // Clear event cache to include new material
+            clearEventCache(eventCode);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(material);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

@@ -53,8 +53,17 @@ public class BatchImportSessionRequest {
     /**
      * PDF filename from legacy data
      * Will be appended to description for reference
+     * @deprecated Use materialUrl instead (Story 5.9)
      */
+    @Deprecated
     private String pdf;
+
+    /**
+     * Material URL (CDN URL for PDF/PPTX files)
+     * When provided, backend fetches from URL and associates as session material
+     * Story 5.9: Session Materials Upload
+     */
+    private String materialUrl;
 
     /**
      * Moderator names (sometimes empty string in legacy data)
