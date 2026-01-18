@@ -448,20 +448,20 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify auto-save indicator exists
-    await expect(page.getByTestId('auto-save-indicator')).toBeVisible();
+    const autoSaveIndicator = page.getByTestId('auto-save-indicator');
+    await expect(autoSaveIndicator).toBeVisible();
 
     // Change title (scope to modal to avoid background card)
     const titleInput = modal.getByLabel(/Title|Titel/);
+    await titleInput.clear();
     await titleInput.fill('Updated Event Title for Auto-Save Test');
+    await titleInput.blur(); // Trigger blur to ensure change is registered
 
-    // Verify "Saving..." indicator appears
-    await expect(page.getByTestId('auto-save-indicator')).toContainText(/Saving|Speichern/);
+    // Verify "Saving..." indicator appears (wait up to 6 seconds for debounce + rendering)
+    await expect(autoSaveIndicator).toContainText(/Saving|Speichern/, { timeout: 7000 });
 
-    // Wait for auto-save to complete (5 seconds + buffer)
-    await page.waitForTimeout(6000);
-
-    // Verify "saved" timestamp appears
-    await expect(page.getByTestId('auto-save-indicator')).toContainText(/saved|gespeichert/);
+    // Wait for auto-save to complete (save operation + network)
+    await expect(autoSaveIndicator).toContainText(/saved|gespeichert/, { timeout: 10000 });
   });
 
   test.skip('should_displaySavingIndicator_when_autoSaveTriggered', async ({ page }) => {
