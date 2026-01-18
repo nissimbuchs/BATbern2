@@ -9,9 +9,18 @@ import { defineConfig, devices } from '@playwright/test';
  * - production: AWS production environment (batbern.ch)
  *
  * Usage:
- *   npm run test:e2e              # Default: development
+ *   npm run test:e2e              # Regular E2E tests (excludes documentation tests)
  *   npm run test:e2e:staging      # Test staging
  *   npm run test:e2e:production   # Test production
+ *   npm run test:e2e:docs         # Documentation screenshot/video tests (opt-in only)
+ *
+ * Documentation Tests:
+ *   By default, documentation screenshot and screencast tests are EXCLUDED because they:
+ *   - Take 10-60 minutes to run (full workflow from event creation to archival)
+ *   - Generate documentation artifacts (screenshots/videos), not validate functionality
+ *   - Should only run when explicitly generating documentation
+ *
+ *   To run them: INCLUDE_DOCS_TESTS=true npm run test:e2e
  */
 
 // Get test environment from environment variable
@@ -94,6 +103,13 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: process.env.INCLUDE_DOCS_TESTS
+        ? []
+        : [
+            '**/workflows/documentation/**',
+            '**/screencast-event-workflow.spec.ts',
+            '**/verify-timing.spec.ts',
+          ],
     },
     // {
     //   name: 'Mobile Safari',
@@ -115,51 +131,55 @@ export default defineConfig({
     //   use: { ...devices['Pixel 5'] },
     // },
 
-    /* Documentation screenshots project - Standard viewport for clear screenshots */
-    {
-      name: 'documentation-screenshots',
-      use: {
-        // Don't spread devices preset - define all properties manually to avoid deviceScaleFactor issues
-        browserName: 'chromium',
-        viewport: { width: 1920, height: 1080 }, // Full HD - proper scale for enterprise app
-        deviceScaleFactor: 1, // CRITICAL: Prevent zoomed/distorted screenshots (must be 1)
-        isMobile: false,
-        hasTouch: false,
-        video: 'retain-on-failure',
-        screenshot: 'only-on-failure',
-        // Ensure storage state is loaded for authenticated tests
-        storageState: '.playwright-auth-state.json',
-      },
-      testMatch: /workflows\/documentation\/.*.spec.ts/, // Only run documentation tests
-      retries: 0, // No retries - fail fast for debugging
-    },
+    /* Documentation screenshots project - ONLY runs when INCLUDE_DOCS_TESTS=true */
+    ...(process.env.INCLUDE_DOCS_TESTS
+      ? [
+          {
+            name: 'documentation-screenshots',
+            use: {
+              // Don't spread devices preset - define all properties manually to avoid deviceScaleFactor issues
+              browserName: 'chromium' as const,
+              viewport: { width: 1920, height: 1080 }, // Full HD - proper scale for enterprise app
+              deviceScaleFactor: 1, // CRITICAL: Prevent zoomed/distorted screenshots (must be 1)
+              isMobile: false,
+              hasTouch: false,
+              video: 'retain-on-failure' as const,
+              screenshot: 'only-on-failure' as const,
+              // Ensure storage state is loaded for authenticated tests
+              storageState: '.playwright-auth-state.json',
+            },
+            testMatch: /workflows\/documentation\/.*.spec.ts/, // Only run documentation tests
+            retries: 0, // No retries - fail fast for debugging
+          },
 
-    /* Screencast training video project - Continuous recording for German training video */
-    {
-      name: 'screencast-training',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 1920, height: 1080 }, // Full HD viewport
-        deviceScaleFactor: 1, // No zoom distortion
-        isMobile: false,
-        hasTouch: false,
-        video: {
-          mode: 'on', // ALWAYS record video for screencast
-          size: { width: 1920, height: 1080 }, // Full HD video recording (matches viewport)
-        },
-        screenshot: 'off', // No screenshots needed (video only)
-        storageState: '.playwright-auth-state.json',
-        launchOptions: {
-          slowMo: 500, // Slow down actions for clarity in video
-          args: [
-            '--window-size=1920,1080', // Force window size
-            '--force-device-scale-factor=1', // Prevent DPI scaling
-          ],
-        },
-      },
-      testMatch: /screencast-event-workflow.spec.ts/, // Only run screencast test
-      retries: 0, // No retries - want one clean recording
-    },
+          /* Screencast training video project - Continuous recording for German training video */
+          {
+            name: 'screencast-training',
+            use: {
+              browserName: 'chromium' as const,
+              viewport: { width: 1920, height: 1080 }, // Full HD viewport
+              deviceScaleFactor: 1, // No zoom distortion
+              isMobile: false,
+              hasTouch: false,
+              video: {
+                mode: 'on' as const, // ALWAYS record video for screencast
+                size: { width: 1920, height: 1080 }, // Full HD video recording (matches viewport)
+              },
+              screenshot: 'off' as const, // No screenshots needed (video only)
+              storageState: '.playwright-auth-state.json',
+              launchOptions: {
+                slowMo: 500, // Slow down actions for clarity in video
+                args: [
+                  '--window-size=1920,1080', // Force window size
+                  '--force-device-scale-factor=1', // Prevent DPI scaling
+                ],
+              },
+            },
+            testMatch: /screencast-event-workflow.spec.ts/, // Only run screencast test
+            retries: 0, // No retries - want one clean recording
+          },
+        ]
+      : []),
   ],
 
   /* Run your local dev server before starting the tests (development only) */
