@@ -285,12 +285,16 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     onChange={(e) => handleContactMethodChange(e.target.value)}
                     label={t('speakerOutreach.contactMethod')}
                   >
-                    <MenuItem value="email">
-                      {t('speakerOutreach.markContactedModal.method.email')}
-                    </MenuItem>
-                    <MenuItem value="phone">
-                      {t('speakerOutreach.markContactedModal.method.phone')}
-                    </MenuItem>
+                    {speaker.email && (
+                      <MenuItem value="email">
+                        {t('speakerOutreach.markContactedModal.method.email')}
+                      </MenuItem>
+                    )}
+                    {speaker.phone && (
+                      <MenuItem value="phone">
+                        {t('speakerOutreach.markContactedModal.method.phone')}
+                      </MenuItem>
+                    )}
                     <MenuItem value="in_person">
                       {t('speakerOutreach.markContactedModal.method.inPerson')}
                     </MenuItem>
