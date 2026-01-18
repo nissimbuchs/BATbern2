@@ -54,6 +54,7 @@ function getAuthToken(): string {
 
 /**
  * Helper: Create company via API for testing
+ * Handles 409 Conflict by deleting existing company first
  */
 async function createCompanyViaAPI(
   authToken: string,
@@ -70,6 +71,28 @@ async function createCompanyViaAPI(
 
   if (!response.ok) {
     const errorText = await response.text();
+
+    // If company already exists, delete it and retry
+    if (response.status === 409) {
+      await deleteCompanyViaAPI(authToken, companyData.name);
+      // Retry creation
+      const retryResponse = await fetch(`${API_URL}/api/v1/companies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(companyData),
+      });
+      if (!retryResponse.ok) {
+        const retryErrorText = await retryResponse.text();
+        throw new Error(
+          `Failed to create company after cleanup (${retryResponse.status}): ${retryResponse.statusText}. ${retryErrorText}`
+        );
+      }
+      return;
+    }
+
     throw new Error(
       `Failed to create company (${response.status}): ${response.statusText}. ${errorText}`
     );
@@ -125,8 +148,8 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
       await companyInput.fill(TEST_COMPANY.displayName);
 
-      // Wait for autocomplete results
-      await page.waitForTimeout(500); // Wait for debounce + results
+      // Wait for autocomplete results (debounce 300ms + API response)
+      await page.waitForTimeout(1000);
       await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
 
       // AC4: Partnership Tier Dropdown - Select tier
@@ -238,7 +261,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       // Fill in company
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
       await companyInput.fill(TEST_COMPANY.displayName);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
       await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
 
       // Set end date before start date
@@ -273,7 +296,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await companyInput.fill('Test'); // Partial search
 
       // Wait for debounce and results
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
       // Verify company appears (getByRole works for autocomplete options)
       const companyOption = page.getByRole('option', {
@@ -304,7 +327,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       // Make changes to form
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
       await companyInput.fill(TEST_COMPANY.displayName);
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
       await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
 
       // Setup dialog listener
