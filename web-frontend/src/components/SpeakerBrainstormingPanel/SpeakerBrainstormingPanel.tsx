@@ -23,6 +23,8 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -267,21 +269,30 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
               {speakerPool.map((speaker) => (
                 <ListItem
                   key={speaker.id}
-                  onClick={() => handleSpeakerClick(speaker)}
                   sx={{
                     border: 1,
                     borderColor: 'divider',
                     borderRadius: 1,
                     mb: 1,
-                    cursor: 'pointer',
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                      borderColor: 'primary.main',
-                    },
-                    transition: 'all 0.2s ease-in-out',
                   }}
                   secondaryAction={
-                    <EditIcon fontSize="small" color="action" sx={{ opacity: 0.5 }} />
+                    <Tooltip title={t('speakerBrainstorm.pool.edit', 'Edit speaker')}>
+                      <IconButton
+                        edge="end"
+                        aria-label="edit"
+                        onClick={() => handleSpeakerClick(speaker)}
+                        data-testid={`edit-speaker-${speaker.id}`}
+                        sx={{
+                          color: 'primary.main',
+                          '&:hover': {
+                            bgcolor: 'primary.light',
+                            color: 'primary.contrastText',
+                          },
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
                   }
                 >
                   <ListItemText
