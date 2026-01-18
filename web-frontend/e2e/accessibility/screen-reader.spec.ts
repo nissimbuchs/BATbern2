@@ -78,8 +78,18 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('should have visually hidden screen reader text for icons', async ({ page }) => {
-    // Find icon-only buttons (buttons without visible text)
-    const iconButtons = await page.locator('button:has(svg):not(:has-text(/[a-zA-Z]/))').all();
+    // Find all buttons with SVG icons
+    const allButtons = await page.locator('button:has(svg)').all();
+
+    // Filter to icon-only buttons (those without visible text)
+    const iconButtons = [];
+    for (const button of allButtons) {
+      const textContent = await button.textContent();
+      // Consider it an icon-only button if it has no text or only whitespace
+      if (!textContent || textContent.trim().length === 0) {
+        iconButtons.push(button);
+      }
+    }
 
     for (const button of iconButtons) {
       const ariaLabel = await button.getAttribute('aria-label');
@@ -132,7 +142,6 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', () => {
   test('should announce route changes to screen readers', async ({ page }) => {
     // Navigate to different route
     const link = page.getByRole('link').first();
-    const linkText = await link.textContent();
 
     await link.click();
     await page.waitForLoadState('networkidle');

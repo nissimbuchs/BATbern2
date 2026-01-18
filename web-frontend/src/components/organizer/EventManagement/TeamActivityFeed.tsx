@@ -210,7 +210,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
           onClick={onReload}
           disabled={isLoading}
           size="small"
-          aria-label="Reload notifications"
+          aria-label="reload activity feed"
         >
           <RefreshIcon />
         </IconButton>
