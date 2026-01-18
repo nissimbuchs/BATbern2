@@ -10,6 +10,8 @@ public class AddSpeakerToPoolRequest {
     private String expertise;
     private String assignedOrganizerId;
     private String notes;
+    private String email;
+    private String phone;
 
     // Constructors
 
@@ -65,5 +67,21 @@ public class AddSpeakerToPoolRequest {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 }

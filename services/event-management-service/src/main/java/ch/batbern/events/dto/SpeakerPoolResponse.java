@@ -19,6 +19,8 @@ public class SpeakerPoolResponse {
     private String status;
     private UUID sessionId;
     private String notes;
+    private String email;
+    private String phone;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -29,7 +31,8 @@ public class SpeakerPoolResponse {
 
     public SpeakerPoolResponse(UUID id, UUID eventId, String speakerName, String company,
                                String expertise, String assignedOrganizerId, String status,
-                               UUID sessionId, String notes, Instant createdAt, Instant updatedAt) {
+                               UUID sessionId, String notes, String email, String phone,
+                               Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.eventId = eventId;
         this.speakerName = speakerName;
@@ -39,6 +42,8 @@ public class SpeakerPoolResponse {
         this.status = status;
         this.sessionId = sessionId;
         this.notes = notes;
+        this.email = email;
+        this.phone = phone;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -60,6 +65,8 @@ public class SpeakerPoolResponse {
                 speakerPool.getStatus() != null ? speakerPool.getStatus().name() : null,
                 speakerPool.getSessionId(),
                 speakerPool.getNotes(),
+                speakerPool.getEmail(),
+                speakerPool.getPhone(),
                 speakerPool.getCreatedAt(),
                 speakerPool.getUpdatedAt()
         );
@@ -137,6 +144,22 @@ public class SpeakerPoolResponse {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public Instant getCreatedAt() {

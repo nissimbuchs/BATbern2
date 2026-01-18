@@ -23,6 +23,8 @@ export interface SpeakerPoolEntry {
   status: SpeakerWorkflowState;
   sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
   notes?: string;
+  email?: string; // Email address for contacting the speaker
+  phone?: string; // Phone number for contacting the speaker
   createdAt: string;
 }
 
@@ -36,6 +38,8 @@ export interface AddSpeakerToPoolRequest {
   expertise?: string;
   assignedOrganizerId?: string;
   notes?: string;
+  email?: string;
+  phone?: string;
 }
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;

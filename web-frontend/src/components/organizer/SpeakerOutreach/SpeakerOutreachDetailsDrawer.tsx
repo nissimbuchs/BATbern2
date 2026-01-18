@@ -224,6 +224,22 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 {t('speakerBrainstorm.form.expertise')}: {speaker.expertise}
               </Typography>
             )}
+            {speaker.email && (
+              <Box display="flex" alignItems="center" gap={1} mt={1}>
+                <Email fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {speaker.email}
+                </Typography>
+              </Box>
+            )}
+            {speaker.phone && (
+              <Box display="flex" alignItems="center" gap={1} mt={0.5}>
+                <Phone fontSize="small" color="action" />
+                <Typography variant="body2" color="text.secondary">
+                  {speaker.phone}
+                </Typography>
+              </Box>
+            )}
             <Box mt={1}>
               <Chip
                 label={speaker.status}

@@ -4502,6 +4502,17 @@ components:
           type: string
           description: Free-text notes about the speaker (optional)
           example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address for contacting the speaker (optional)
+          example: jane.smith@techcorp.ch
+        phone:
+          type: string
+          maxLength: 50
+          description: Phone number for contacting the speaker (optional)
+          example: +41 79 123 45 67
 
     SpeakerPoolResponse:
       type: object
@@ -4568,6 +4579,17 @@ components:
           nullable: true
           description: Free-text notes about the speaker
           example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Email address for contacting the speaker
+          example: jane.smith@techcorp.ch
+        phone:
+          type: string
+          nullable: true
+          description: Phone number for contacting the speaker
+          example: +41 79 123 45 67
         createdAt:
           type: string
           format: date-time

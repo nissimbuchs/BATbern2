@@ -53,6 +53,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
   const [expertise, setExpertise] = useState('');
   const [assignedOrganizerId, setAssignedOrganizerId] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
 
   // Fetch speaker pool
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
@@ -71,6 +73,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       expertise,
       assignedOrganizerId,
       notes,
+      email,
+      phone,
     });
 
     const request: AddSpeakerToPoolRequest = {
@@ -79,6 +83,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       expertise: expertise.trim() || undefined,
       assignedOrganizerId: assignedOrganizerId || undefined,
       notes: notes.trim() || undefined,
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
     };
 
     console.log('Request payload:', request);
@@ -93,6 +99,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           setExpertise('');
           setAssignedOrganizerId('');
           setNotes('');
+          setEmail('');
+          setPhone('');
         },
       }
     );
@@ -163,6 +171,27 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           onChange={(e) => setNotes(e.target.value)}
           disabled={addSpeakerMutation.isPending}
           inputProps={{ 'data-testid': 'speaker-notes-field' }}
+        />
+
+        <TextField
+          fullWidth
+          size="small"
+          type="email"
+          label={t('speakerBrainstorm.form.email', 'Email (Optional)')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-email-field' }}
+        />
+
+        <TextField
+          fullWidth
+          size="small"
+          label={t('speakerBrainstorm.form.phone', 'Phone (Optional)')}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          disabled={addSpeakerMutation.isPending}
+          inputProps={{ 'data-testid': 'speaker-phone-field' }}
         />
 
         <Button

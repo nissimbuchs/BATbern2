@@ -70,6 +70,8 @@ public class SpeakerPoolService {
         speakerPool.setExpertise(request.getExpertise());
         speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
         speakerPool.setNotes(request.getNotes());
+        speakerPool.setEmail(request.getEmail());
+        speakerPool.setPhone(request.getPhone());
         // AC13: Initial status = 'identified'
         speakerPool.setStatus(ch.batbern.shared.types.SpeakerWorkflowState.IDENTIFIED);
         // Session will be created when speaker accepts (status = ACCEPTED)

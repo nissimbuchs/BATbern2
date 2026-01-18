@@ -88,6 +88,12 @@ public class SpeakerPool {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "phone", length = 50)
+    private String phone;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -174,6 +180,22 @@ public class SpeakerPool {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public Instant getCreatedAt() {
