@@ -153,6 +153,54 @@ public class SpeakerInvitation {
     @Column(name = "created_by", nullable = false, length = 100)
     private String createdBy;
 
+    // ========== Story 6.2: Speaker Response Portal Fields ==========
+
+    /**
+     * Personalized message from organizer explaining why this speaker was chosen.
+     * Displayed as "Why we chose you" on the response portal.
+     */
+    @Column(name = "personal_message", columnDefinition = "TEXT")
+    private String personalMessage;
+
+    /**
+     * Speaker's preferred time slot for presenting.
+     * Values: MORNING, AFTERNOON, NO_PREFERENCE (stored as lowercase in DB).
+     */
+    @Column(name = "preferred_time_slot", length = 50)
+    private String preferredTimeSlot;
+
+    /**
+     * Speaker's travel/accommodation requirements.
+     * Values: LOCAL, ACCOMMODATION, VIRTUAL (stored as lowercase in DB).
+     */
+    @Column(name = "travel_requirements", length = 50)
+    private String travelRequirements;
+
+    /**
+     * Technical requirements requested by speaker.
+     * Comma-separated list: mac_adapter, remote_option, special_av
+     */
+    @Column(name = "technical_requirements", columnDefinition = "TEXT")
+    private String technicalRequirements;
+
+    /**
+     * Initial presentation title proposed by speaker when accepting.
+     */
+    @Column(name = "initial_presentation_title", length = 200)
+    private String initialPresentationTitle;
+
+    /**
+     * Additional comments from speaker to organizer.
+     */
+    @Column(name = "comments_for_organizer", columnDefinition = "TEXT")
+    private String commentsForOrganizer;
+
+    /**
+     * General notes from speaker response.
+     */
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -177,6 +225,8 @@ public class SpeakerInvitation {
      * Check if invitation can still be responded to.
      */
     public boolean canRespond() {
-        return !isExpired() && invitationStatus != InvitationStatus.RESPONDED && invitationStatus != InvitationStatus.EXPIRED;
+        return !isExpired()
+                && invitationStatus != InvitationStatus.RESPONDED
+                && invitationStatus != InvitationStatus.EXPIRED;
     }
 }

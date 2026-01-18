@@ -174,7 +174,10 @@ public class SpeakerPoolService {
      * @throws IllegalArgumentException if speaker not found or doesn't belong to event
      */
     @Transactional
-    public SpeakerPoolResponse updateSpeakerInPool(String eventCode, String speakerId, UpdateSpeakerPoolRequest request) {
+    public SpeakerPoolResponse updateSpeakerInPool(
+            String eventCode,
+            String speakerId,
+            UpdateSpeakerPoolRequest request) {
         // Validate event exists
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));

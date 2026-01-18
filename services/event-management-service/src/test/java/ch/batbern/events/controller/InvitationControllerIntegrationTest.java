@@ -358,10 +358,10 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
 
         @BeforeEach
         void setUpInvitations() {
-            String token1 = UUID.randomUUID().toString().replace("-", "") +
-                            UUID.randomUUID().toString().replace("-", "");
-            String token2 = UUID.randomUUID().toString().replace("-", "") +
-                            UUID.randomUUID().toString().replace("-", "");
+            String token1 = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
+            String token2 = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
 
             invitationRepository.save(SpeakerInvitation.builder()
                     .username(TEST_SPEAKER_USERNAME)

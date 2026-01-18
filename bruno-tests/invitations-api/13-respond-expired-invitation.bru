@@ -1,0 +1,56 @@
+meta {
+  name: Respond to Expired Invitation (Structure Test)
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/invitations/respond/expired-invitation-test-token-xyz
+  body: json
+  auth: none
+}
+
+docs {
+  # Public Endpoint - No Authentication Required
+
+  Story 6.2: Speaker Self-Service Response Portal
+
+  Tests handling of expired invitations.
+
+  Note: Actual expiration logic is validated in integration tests.
+  This test confirms the endpoint structure and public accessibility.
+
+  Validates:
+  - Public endpoint accessibility (no auth required)
+  - Invalid/expired tokens are handled gracefully
+  - Response structure includes error information
+}
+
+body:json {
+  {
+    "responseType": "ACCEPTED"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 for expired/invalid token - Story 6.2 AC5", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should be accessible without authentication (public endpoint) - Story 6.2 AC1", function() {
+    // If we got here without auth and received 404 (not 401/403),
+    // the endpoint is correctly public
+    expect(res.getStatus()).to.not.equal(401);
+    expect(res.getStatus()).to.not.equal(403);
+  });
+
+  test("should return error response with message - Story 6.2 AC5", function() {
+    const body = res.getBody();
+    // Endpoint returns error structure for invalid/expired tokens
+    expect(body.error || body.message || body.status).to.exist;
+  });
+}

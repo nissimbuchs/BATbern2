@@ -1,0 +1,132 @@
+{
+  "loading": {
+    "title": "Loading Invitation...",
+    "description": "Please wait while we retrieve your invitation details."
+  },
+  "submitting": {
+    "title": "Submitting Your Response...",
+    "description": "Please wait while we process your response."
+  },
+  "errors": {
+    "noToken": "No invitation token provided",
+    "expired": "This invitation has expired.",
+    "invalid": "Invalid or expired invitation link.",
+    "loadFailed": "Failed to load invitation. Please try again later.",
+    "alreadyResponded": "You have already responded to this invitation.",
+    "submitFailed": "Failed to submit your response. Please try again."
+  },
+  "invitationDetails": {
+    "title": "Speaker Invitation",
+    "subtitle": "You've been invited to speak",
+    "event": "Event",
+    "deadline": "Response Deadline",
+    "invitedBy": "Invited By",
+    "location": "Location"
+  },
+  "whyWeChoseYou": {
+    "title": "Why We Chose You"
+  },
+  "responseButtons": {
+    "title": "How would you like to respond?",
+    "accept": "Accept Invitation",
+    "decline": "Decline Invitation",
+    "needMoreInfo": "Need More Info",
+    "declineReasonLabel": "Reason for declining (optional)",
+    "declineReasonPlaceholder": "Let us know why you cannot participate...",
+    "confirmDecline": "Confirm Decline",
+    "questionsLabel": "What questions do you have?",
+    "questionsPlaceholder": "Let us know what information you need...",
+    "submitQuestions": "Send Questions",
+    "hint": "Accepting will show additional options for your preferences."
+  },
+  "preferencesForm": {
+    "title": "Your Preferences",
+    "description": "Help us plan the perfect event by sharing your preferences. All fields are optional.",
+    "timeSlot": {
+      "label": "Preferred Time Slot",
+      "morning": "Morning",
+      "afternoon": "Afternoon",
+      "noPreference": "No Preference"
+    },
+    "travel": {
+      "label": "Travel & Accommodation",
+      "local": "Local",
+      "localDesc": "No accommodation needed",
+      "accommodation": "Need Hotel",
+      "accommodationDesc": "Overnight stay required",
+      "virtual": "Virtual",
+      "virtualDesc": "Remote participation"
+    },
+    "technical": {
+      "label": "Technical Requirements",
+      "macAdapter": "Mac Display Adapter",
+      "macAdapterDesc": "USB-C/HDMI adapter for Mac laptop",
+      "remoteOption": "Remote Presentation Option",
+      "remoteOptionDesc": "Ability to present remotely if needed",
+      "specialAv": "Special A/V Equipment",
+      "specialAvDesc": "Additional audio/visual requirements"
+    },
+    "presentationTitle": {
+      "label": "Proposed Presentation Title",
+      "placeholder": "Enter a working title for your presentation...",
+      "hint": "This can be changed later"
+    },
+    "comments": {
+      "label": "Additional Comments",
+      "placeholder": "Any other information or requests for the organizer..."
+    },
+    "submit": "Confirm Acceptance"
+  },
+  "success": {
+    "accepted": {
+      "title": "Thank You for Accepting!",
+      "description": "We look forward to having you speak at the event."
+    },
+    "declined": {
+      "title": "Response Received",
+      "description": "We appreciate you letting us know."
+    },
+    "tentative": {
+      "title": "Thank You for Your Response",
+      "description": "The organizer will reach out with more information."
+    },
+    "nextSteps": {
+      "title": "What's Next?",
+      "accepted1": "The organizer will contact you with scheduling details.",
+      "accepted2": "You'll receive confirmation of your time slot.",
+      "accepted3": "Closer to the event, we'll send presentation guidelines.",
+      "tentative1": "The organizer will reach out with additional information.",
+      "tentative2": "Feel free to contact us if you have questions.",
+      "declined": "We hope to invite you to future events. Thank you for your time."
+    }
+  },
+  "alreadyResponded": {
+    "title": "Already Responded",
+    "description": "You have already responded to this invitation.",
+    "status": "Your response: ",
+    "respondedAt": "Responded on: "
+  },
+  "responseTypes": {
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "tentative": "Need More Info"
+  },
+  "expired": {
+    "title": "Invitation Expired",
+    "description": "This invitation is no longer available.",
+    "message": "The deadline for responding to this invitation has passed. Please contact the organizer if you would still like to participate."
+  },
+  "error": {
+    "title": "Something Went Wrong",
+    "description": "Unable to process your request.",
+    "whatToDo": "What can you do?",
+    "tip1": "Check if you clicked the correct link from your email",
+    "tip2": "Invitation links expire - you may need to contact the organizer",
+    "tip3": "Try refreshing the page",
+    "tip4": "Contact support if the problem persists"
+  },
+  "actions": {
+    "backToHome": "Back to Home",
+    "tryAgain": "Try Again"
+  }
+}

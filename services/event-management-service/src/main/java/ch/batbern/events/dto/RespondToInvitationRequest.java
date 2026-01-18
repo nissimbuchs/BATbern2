@@ -1,6 +1,7 @@
 package ch.batbern.events.dto;
 
 import ch.batbern.events.domain.ResponseType;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -9,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request DTO for speaker response to invitation - Story 6.1.
+ * Request DTO for speaker response to invitation - Story 6.1, extended in Story 6.2.
  *
  * Used when speaker responds via the unique response token URL.
  */
@@ -36,4 +37,11 @@ public class RespondToInvitationRequest {
      */
     @Size(max = 2000, message = "Notes must be at most 2000 characters")
     private String notes;
+
+    /**
+     * Speaker preferences when accepting invitation - Story 6.2.
+     * Optional: only relevant when responseType is ACCEPTED.
+     */
+    @Valid
+    private SpeakerResponsePreferences preferences;
 }

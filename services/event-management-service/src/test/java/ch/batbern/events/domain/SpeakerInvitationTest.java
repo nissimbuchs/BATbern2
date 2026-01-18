@@ -278,7 +278,7 @@ class SpeakerInvitationTest extends AbstractIntegrationTest {
     }
 
     private String generateUniqueToken() {
-        return java.util.UUID.randomUUID().toString().replace("-", "") +
-               java.util.UUID.randomUUID().toString().replace("-", "");
+        return java.util.UUID.randomUUID().toString().replace("-", "")
+                + java.util.UUID.randomUUID().toString().replace("-", "");
     }
 }

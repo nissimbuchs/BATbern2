@@ -152,6 +152,10 @@ public class SecurityConfig {
                         // Public organizers endpoint for About page
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
 
+                        // Story 6.2: Speaker invitation response portal (public, token-based auth)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/invitations/respond/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/invitations/respond/*").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

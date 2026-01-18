@@ -13,7 +13,6 @@ import ch.batbern.events.exception.InvitationExpiredException;
 import ch.batbern.events.exception.InvitationNotFoundException;
 import ch.batbern.events.repository.SpeakerInvitationRepository;
 import ch.batbern.events.util.InvitationTokenGenerator;
-import ch.batbern.events.service.InvitationEmailService;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for InvitationService - Story 6.1.

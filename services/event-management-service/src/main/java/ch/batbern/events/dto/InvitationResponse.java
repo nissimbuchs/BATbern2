@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Response DTO for speaker invitation details - Story 6.1.
+ * Response DTO for speaker invitation details - Story 6.1, extended in Story 6.2.
  */
 @Data
 @Builder
@@ -41,4 +41,21 @@ public class InvitationResponse {
     // Enriched fields (from Event Service)
     private String eventTitle;
     private Instant eventDate;
+
+    // Story 6.2: Speaker Response Portal fields
+    /**
+     * Personalized message from organizer explaining why this speaker was chosen.
+     * Displayed as "Why we chose you" on the response portal.
+     */
+    private String personalMessage;
+
+    /**
+     * Speaker preferences (populated after ACCEPTED response).
+     */
+    private SpeakerResponsePreferences preferences;
+
+    /**
+     * General notes from speaker response.
+     */
+    private String notes;
 }

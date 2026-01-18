@@ -4,11 +4,15 @@ import ch.batbern.events.domain.InvitationStatus;
 import ch.batbern.events.domain.ResponseType;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerInvitation;
+import ch.batbern.events.domain.PreferredTimeSlot;
+import ch.batbern.events.domain.TechnicalRequirement;
+import ch.batbern.events.domain.TravelRequirement;
 import ch.batbern.events.dto.BulkInvitationResponse;
 import ch.batbern.events.dto.BulkSendInvitationRequest;
 import ch.batbern.events.dto.InvitationResponse;
 import ch.batbern.events.dto.RespondToInvitationRequest;
 import ch.batbern.events.dto.SendInvitationRequest;
+import ch.batbern.events.dto.SpeakerResponsePreferences;
 import ch.batbern.events.event.InvitationRespondedEvent;
 import ch.batbern.events.event.SpeakerInvitedEvent;
 import ch.batbern.events.exception.InvitationExpiredException;
@@ -29,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -90,11 +95,13 @@ public class InvitationService {
         String responseToken = tokenGenerator.generateToken();
 
         // Calculate expiration date
-        int expirationDays = request.getExpirationDays() != null ? request.getExpirationDays() : DEFAULT_EXPIRATION_DAYS;
+        int expirationDays = request.getExpirationDays() != null
+                ? request.getExpirationDays()
+                : DEFAULT_EXPIRATION_DAYS;
         Instant expiresAt = Instant.now().plus(expirationDays, ChronoUnit.DAYS);
         Instant sentAt = Instant.now();
 
-        // Create invitation
+        // Create invitation with personalMessage (Story 6.2)
         SpeakerInvitation invitation = SpeakerInvitation.builder()
                 .username(request.getUsername())
                 .eventCode(request.getEventCode())
@@ -103,6 +110,7 @@ public class InvitationService {
                 .sentAt(sentAt)
                 .expiresAt(expiresAt)
                 .createdBy(organizerUsername)
+                .personalMessage(request.getPersonalMessage())
                 .build();
 
         // Save invitation
@@ -186,9 +194,31 @@ public class InvitationService {
         invitation.setInvitationStatus(InvitationStatus.RESPONDED);
         invitation.setResponseType(request.getResponseType());
         invitation.setRespondedAt(respondedAt);
+        invitation.setNotes(request.getNotes());
 
         if (request.getResponseType() == ResponseType.DECLINED) {
             invitation.setDeclineReason(request.getDeclineReason());
+        }
+
+        // Story 6.2: Persist preferences when accepting
+        if (request.getResponseType() == ResponseType.ACCEPTED && request.getPreferences() != null) {
+            SpeakerResponsePreferences prefs = request.getPreferences();
+            if (prefs.getPreferredTimeSlot() != null) {
+                invitation.setPreferredTimeSlot(prefs.getPreferredTimeSlot().name().toLowerCase());
+            }
+            if (prefs.getTravelRequirements() != null) {
+                invitation.setTravelRequirements(prefs.getTravelRequirements().name().toLowerCase());
+            }
+            if (prefs.getTechnicalRequirements() != null && !prefs.getTechnicalRequirements().isEmpty()) {
+                invitation.setTechnicalRequirements(
+                        prefs.getTechnicalRequirements().stream()
+                                .map(req -> req.name().toLowerCase())
+                                .reduce((a, b) -> a + "," + b)
+                                .orElse(null)
+                );
+            }
+            invitation.setInitialPresentationTitle(prefs.getInitialPresentationTitle());
+            invitation.setCommentsForOrganizer(prefs.getCommentsForOrganizer());
         }
 
         SpeakerInvitation saved = invitationRepository.save(invitation);
@@ -209,7 +239,8 @@ public class InvitationService {
                 saved.getUsername() // Speaker username as triggeredBy
         ));
 
-        log.info("Invitation response recorded: {} for speaker {}", request.getResponseType(), invitation.getUsername());
+        log.info("Invitation response recorded: {} for speaker {}",
+                request.getResponseType(), invitation.getUsername());
 
         return toResponse(saved);
     }
@@ -250,7 +281,10 @@ public class InvitationService {
      * @return Summary of successful and failed invitations
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public BulkInvitationResponse sendBulkInvitations(String eventCode, BulkSendInvitationRequest request, String organizerUsername) {
+    public BulkInvitationResponse sendBulkInvitations(
+            String eventCode,
+            BulkSendInvitationRequest request,
+            String organizerUsername) {
         log.info("Sending bulk invitations to {} speakers for event {}", request.getUsernames().size(), eventCode);
 
         List<InvitationResponse> successful = new ArrayList<>();
@@ -332,6 +366,43 @@ public class InvitationService {
                 .lastReminderAt(invitation.getLastReminderAt())
                 .createdAt(invitation.getCreatedAt())
                 .createdBy(invitation.getCreatedBy())
+                // Story 6.2: Add personalMessage, notes, and preferences
+                .personalMessage(invitation.getPersonalMessage())
+                .notes(invitation.getNotes())
+                .preferences(buildPreferencesDto(invitation))
+                .build();
+    }
+
+    /**
+     * Build preferences DTO from entity fields - Story 6.2.
+     */
+    private SpeakerResponsePreferences buildPreferencesDto(SpeakerInvitation invitation) {
+        // Only populate if any preference field is set
+        if (invitation.getPreferredTimeSlot() == null
+                && invitation.getTravelRequirements() == null
+                && invitation.getTechnicalRequirements() == null
+                && invitation.getInitialPresentationTitle() == null
+                && invitation.getCommentsForOrganizer() == null) {
+            return null;
+        }
+
+        return SpeakerResponsePreferences.builder()
+                .preferredTimeSlot(invitation.getPreferredTimeSlot() != null
+                        ? PreferredTimeSlot.valueOf(invitation.getPreferredTimeSlot().toUpperCase())
+                        : null)
+                .travelRequirements(invitation.getTravelRequirements() != null
+                        ? TravelRequirement.valueOf(invitation.getTravelRequirements().toUpperCase())
+                        : null)
+                .technicalRequirements(invitation.getTechnicalRequirements() != null
+                        && !invitation.getTechnicalRequirements().isBlank()
+                        ? Arrays.stream(invitation.getTechnicalRequirements().split(","))
+                                .map(String::trim)
+                                .map(String::toUpperCase)
+                                .map(TechnicalRequirement::valueOf)
+                                .toList()
+                        : null)
+                .initialPresentationTitle(invitation.getInitialPresentationTitle())
+                .commentsForOrganizer(invitation.getCommentsForOrganizer())
                 .build();
     }
 }

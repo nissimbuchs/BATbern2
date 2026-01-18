@@ -159,7 +159,7 @@ public class InvitationController {
     @PostMapping("/invitations/respond/{token}")
     @Operation(
             summary = "Respond to invitation",
-            description = "Submit a response to an invitation using the unique response token (no authentication required)"
+            description = "Submit a response to an invitation using the unique response token"
     )
     @ApiResponse(responseCode = "200", description = "Response recorded successfully")
     @ApiResponse(responseCode = "404", description = "Invitation not found")

@@ -1,0 +1,132 @@
+{
+  "loading": {
+    "title": "Einladung wird geladen...",
+    "description": "Bitte warten Sie, während wir Ihre Einladungsdetails abrufen."
+  },
+  "submitting": {
+    "title": "Antwort wird gesendet...",
+    "description": "Bitte warten Sie, während wir Ihre Antwort verarbeiten."
+  },
+  "errors": {
+    "noToken": "Kein Einladungstoken angegeben",
+    "expired": "Diese Einladung ist abgelaufen.",
+    "invalid": "Ungültiger oder abgelaufener Einladungslink.",
+    "loadFailed": "Einladung konnte nicht geladen werden. Bitte versuchen Sie es später erneut.",
+    "alreadyResponded": "Sie haben auf diese Einladung bereits geantwortet.",
+    "submitFailed": "Antwort konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+  },
+  "invitationDetails": {
+    "title": "Speaker-Einladung",
+    "subtitle": "Sie wurden als Speaker eingeladen",
+    "event": "Event",
+    "deadline": "Antwort-Frist",
+    "invitedBy": "Eingeladen von",
+    "location": "Ort"
+  },
+  "whyWeChoseYou": {
+    "title": "Warum wir Sie ausgewählt haben"
+  },
+  "responseButtons": {
+    "title": "Wie möchten Sie antworten?",
+    "accept": "Einladung annehmen",
+    "decline": "Einladung ablehnen",
+    "needMoreInfo": "Mehr Informationen benötigt",
+    "declineReasonLabel": "Grund für die Absage (optional)",
+    "declineReasonPlaceholder": "Teilen Sie uns mit, warum Sie nicht teilnehmen können...",
+    "confirmDecline": "Absage bestätigen",
+    "questionsLabel": "Welche Fragen haben Sie?",
+    "questionsPlaceholder": "Teilen Sie uns mit, welche Informationen Sie benötigen...",
+    "submitQuestions": "Fragen senden",
+    "hint": "Bei Annahme werden zusätzliche Präferenz-Optionen angezeigt."
+  },
+  "preferencesForm": {
+    "title": "Ihre Präferenzen",
+    "description": "Helfen Sie uns bei der Planung, indem Sie Ihre Präferenzen teilen. Alle Felder sind optional.",
+    "timeSlot": {
+      "label": "Bevorzugte Zeitfenster",
+      "morning": "Vormittag",
+      "afternoon": "Nachmittag",
+      "noPreference": "Keine Präferenz"
+    },
+    "travel": {
+      "label": "Reise & Unterkunft",
+      "local": "Lokal",
+      "localDesc": "Keine Unterkunft benötigt",
+      "accommodation": "Hotel benötigt",
+      "accommodationDesc": "Übernachtung erforderlich",
+      "virtual": "Virtuell",
+      "virtualDesc": "Remote-Teilnahme"
+    },
+    "technical": {
+      "label": "Technische Anforderungen",
+      "macAdapter": "Mac Display-Adapter",
+      "macAdapterDesc": "USB-C/HDMI-Adapter für Mac Laptop",
+      "remoteOption": "Remote-Präsentationsoption",
+      "remoteOptionDesc": "Möglichkeit zur Remote-Präsentation falls nötig",
+      "specialAv": "Spezielle A/V-Ausrüstung",
+      "specialAvDesc": "Zusätzliche Audio/Video-Anforderungen"
+    },
+    "presentationTitle": {
+      "label": "Vorläufiger Präsentationstitel",
+      "placeholder": "Geben Sie einen Arbeitstitel für Ihre Präsentation ein...",
+      "hint": "Dies kann später geändert werden"
+    },
+    "comments": {
+      "label": "Zusätzliche Kommentare",
+      "placeholder": "Weitere Informationen oder Anfragen an den Organisator..."
+    },
+    "submit": "Zusage bestätigen"
+  },
+  "success": {
+    "accepted": {
+      "title": "Vielen Dank für Ihre Zusage!",
+      "description": "Wir freuen uns darauf, Sie als Speaker begrüssen zu dürfen."
+    },
+    "declined": {
+      "title": "Antwort erhalten",
+      "description": "Vielen Dank für Ihre Rückmeldung."
+    },
+    "tentative": {
+      "title": "Vielen Dank für Ihre Antwort",
+      "description": "Der Organisator wird sich mit weiteren Informationen bei Ihnen melden."
+    },
+    "nextSteps": {
+      "title": "Wie geht es weiter?",
+      "accepted1": "Der Organisator wird Sie bezüglich Terminplanung kontaktieren.",
+      "accepted2": "Sie erhalten eine Bestätigung Ihres Zeitfensters.",
+      "accepted3": "Näher am Event erhalten Sie Präsentationsrichtlinien.",
+      "tentative1": "Der Organisator wird sich mit weiteren Informationen melden.",
+      "tentative2": "Kontaktieren Sie uns gerne bei Fragen.",
+      "declined": "Wir hoffen, Sie zu zukünftigen Events einladen zu können. Vielen Dank für Ihre Zeit."
+    }
+  },
+  "alreadyResponded": {
+    "title": "Bereits beantwortet",
+    "description": "Sie haben auf diese Einladung bereits geantwortet.",
+    "status": "Ihre Antwort: ",
+    "respondedAt": "Beantwortet am: "
+  },
+  "responseTypes": {
+    "accepted": "Zugesagt",
+    "declined": "Abgelehnt",
+    "tentative": "Mehr Informationen benötigt"
+  },
+  "expired": {
+    "title": "Einladung abgelaufen",
+    "description": "Diese Einladung ist nicht mehr verfügbar.",
+    "message": "Die Frist für die Beantwortung dieser Einladung ist abgelaufen. Bitte kontaktieren Sie den Organisator, wenn Sie noch teilnehmen möchten."
+  },
+  "error": {
+    "title": "Etwas ist schiefgelaufen",
+    "description": "Ihre Anfrage konnte nicht verarbeitet werden.",
+    "whatToDo": "Was können Sie tun?",
+    "tip1": "Überprüfen Sie, ob Sie den richtigen Link aus Ihrer E-Mail angeklickt haben",
+    "tip2": "Einladungslinks laufen ab - möglicherweise müssen Sie den Organisator kontaktieren",
+    "tip3": "Versuchen Sie, die Seite zu aktualisieren",
+    "tip4": "Kontaktieren Sie den Support, wenn das Problem weiterhin besteht"
+  },
+  "actions": {
+    "backToHome": "Zurück zur Startseite",
+    "tryAgain": "Erneut versuchen"
+  }
+}

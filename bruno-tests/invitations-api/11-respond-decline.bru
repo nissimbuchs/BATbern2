@@ -1,0 +1,60 @@
+meta {
+  name: Respond Decline with Reason (Structure Test)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/invitations/respond/test-decline-response-invalid-token-xyz
+  body: json
+  auth: none
+}
+
+docs {
+  # Public Endpoint - No Authentication Required
+
+  Story 6.2: Speaker Self-Service Response Portal
+
+  Tests the POST /invitations/respond/{token} endpoint with DECLINED response
+  and optional decline reason.
+
+  Note: This test validates request body structure. Actual successful flow
+  is validated in integration tests where we have database access.
+
+  Validates:
+  - Public endpoint accessibility (no auth required)
+  - Request body structure for decline with reason
+  - Invalid tokens return 404 (not auth errors)
+}
+
+body:json {
+  {
+    "responseType": "DECLINED",
+    "declineReason": "I have a conflicting conference engagement on this date. I would be happy to speak at a future event.",
+    "notes": "Please keep me in mind for next year's events."
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 for invalid token - Story 6.2 AC3", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should be accessible without authentication (public endpoint) - Story 6.2 AC1", function() {
+    // If we got here without auth and received 404 (not 401/403),
+    // the endpoint is correctly public
+    expect(res.getStatus()).to.not.equal(401);
+    expect(res.getStatus()).to.not.equal(403);
+  });
+
+  test("should accept valid decline structure in request body - Story 6.2 AC3", function() {
+    // Validated by reaching this point without parse errors
+    // The 404 is for invalid token, not invalid body structure
+    const body = res.getBody();
+    expect(body.error || body.message || body.status).to.exist;
+  });
+}
