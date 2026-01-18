@@ -178,7 +178,7 @@ export const ResetPasswordForm: React.FC = () => {
         {t('auth:reset.backToLogin')}
       </Link>
 
-      <Typography variant="h4" align="center" gutterBottom>
+      <Typography variant="h4" align="center" gutterBottom data-testid="reset-password-title">
         {t('auth:reset.title')}
       </Typography>
       <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -331,6 +331,7 @@ export const ResetPasswordForm: React.FC = () => {
           disabled={isPending || !isValid}
           sx={{ mt: 2, mb: 2 }}
           startIcon={isPending ? <CircularProgress size={20} /> : null}
+          data-testid="reset-password-submit"
         >
           {isPending ? t('common:actions.loading') : t('auth:reset.submitButton')}
         </Button>

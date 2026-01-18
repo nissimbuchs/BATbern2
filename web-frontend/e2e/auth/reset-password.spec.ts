@@ -30,7 +30,7 @@ const TEST_CODE = process.env.E2E_TEST_CODE || '123456';
  */
 async function navigateToResetPassword(page: Page, email: string) {
   await page.goto(`${BASE_URL}/auth/reset-password?email=${encodeURIComponent(email)}`);
-  await expect(page.locator('h4')).toContainText(/set new password/i);
+  await expect(page.locator('[data-testid="reset-password-title"]')).toBeVisible();
 }
 
 /**
@@ -67,7 +67,7 @@ test.describe('Reset Password - Basic Flow', () => {
     await expect(page.getByLabel(/6-digit.*code/i)).toBeVisible();
     await expect(page.getByLabel(/new password/i)).toBeVisible();
     await expect(page.getByLabel(/confirm password/i)).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toContainText(/reset password/i);
+    await expect(page.locator('[data-testid="reset-password-submit"]')).toBeVisible();
     await expect(page.getByText(/back to login/i)).toBeVisible();
   });
 
