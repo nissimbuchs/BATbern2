@@ -11,9 +11,13 @@ import AxeBuilder from '@axe-core/playwright';
 test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
   });
 
   test('should have proper ARIA live regions for dynamic content', async ({ page }) => {
+    // Wait for page to fully render
+    await page.waitForTimeout(500);
+
     // Check for aria-live regions
     const liveRegions = await page.locator('[aria-live]').all();
     expect(liveRegions.length).toBeGreaterThan(0);
