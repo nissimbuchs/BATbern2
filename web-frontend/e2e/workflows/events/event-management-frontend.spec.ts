@@ -384,10 +384,14 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
     // Get event title before clicking
     const eventTitle = await firstEventCard.locator('[data-testid="event-title"]').textContent();
 
-    // Click event card to open edit form
-    await firstEventCard.click();
+    // Hover over card to reveal edit button
+    await firstEventCard.hover();
 
-    // Verify edit form is visible
+    // Click edit icon button to open edit form
+    await page.getByRole('button', { name: /Edit/i }).first().click();
+
+    // Verify edit modal is visible
+    await expect(page.getByTestId('event-edit-modal')).toBeVisible();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify form is pre-filled with event data
@@ -397,7 +401,9 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_prefillAllFields_when_editFormOpened', async ({ page }) => {
     // AC4: Pre-fill form with existing event data
-    await page.locator('[data-testid^="event-card-"]').first().click();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
+    await firstEventCard.hover();
+    await page.getByRole('button', { name: /Edit/i }).first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify all major fields are pre-filled
@@ -409,7 +415,9 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
   test('should_enableAutoSave_when_fieldChanged', async ({ page }) => {
     // AC20: Auto-save always enabled for all organizers (5-second debounce)
     // AC20: NOT configurable per user (stakeholder decision)
-    await page.locator('[data-testid^="event-card-"]').first().click();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
+    await firstEventCard.hover();
+    await page.getByRole('button', { name: /Edit/i }).first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change title
@@ -428,7 +436,9 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_displaySavingIndicator_when_autoSaveTriggered', async ({ page }) => {
     // AC20: Visual indicator showing "Saving..." and "Last saved at [timestamp]"
-    await page.locator('[data-testid^="event-card-"]').first().click();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
+    await firstEventCard.hover();
+    await page.getByRole('button', { name: /Edit/i }).first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change description
@@ -450,7 +460,9 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_sendPartialUpdate_when_onlyTitleChanged', async ({ page }) => {
     // AC4: Partial update support (only changed fields sent to backend)
-    await page.locator('[data-testid^="event-card-"]').first().click();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
+    await firstEventCard.hover();
+    await page.getByRole('button', { name: /Edit/i }).first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change only title
@@ -466,7 +478,9 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_showUnsavedWarning_when_modalClosedWithChanges', async ({ page }) => {
     // AC4: Unsaved changes warning on modal close
-    await page.locator('[data-testid^="event-card-"]').first().click();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
+    await firstEventCard.hover();
+    await page.getByRole('button', { name: /Edit/i }).first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Make a change
