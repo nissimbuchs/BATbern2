@@ -212,6 +212,7 @@ const CompanyManagementScreen: React.FC = () => {
                   startIcon={<AddIcon />}
                   onClick={handleCreateCompany}
                   aria-label={t('company.createCompany')}
+                  data-testid="create-company-button"
                 >
                   {t('company.createCompany')}
                 </Button>
@@ -231,12 +232,14 @@ const CompanyManagementScreen: React.FC = () => {
             path="/*"
             element={
               <>
-                <CompanyList
-                  companies={companiesData?.data || []}
-                  isLoading={isLoadingCompanies}
-                  viewMode={viewMode}
-                  onCompanyClick={(id) => navigate(`${id}`)}
-                />
+                <Box data-testid="company-list-view">
+                  <CompanyList
+                    companies={companiesData?.data || []}
+                    isLoading={isLoadingCompanies}
+                    viewMode={viewMode}
+                    onCompanyClick={(id) => navigate(`${id}`)}
+                  />
+                </Box>
                 {/* Pagination */}
                 {companiesData?.pagination && (
                   <CompanyPagination
