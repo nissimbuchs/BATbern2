@@ -127,22 +127,10 @@ export default defineConfig({
             },
           },
         ],
-        // Offline fallback - exclude auth pages, API routes, public event pages, and authenticated routes
-        navigateFallback: '/offline.html',
-        navigateFallbackDenylist: [
-          /^\/api/,
-          /^\/auth/, // All auth routes (login, register, verify-email, reset-password, etc.)
-          /^\/login/,
-          /^\/register/,
-          /^\/forgot-password/,
-          /^\/events/, // Story 4.1.5: Public event pages (registration confirmation, etc.)
-          /^\/organizer/, // Organizer pages - let app handle errors with proper auth context
-          /^\/speaker/, // Speaker pages - let app handle errors with proper auth context
-          /^\/partner/, // Partner pages - let app handle errors with proper auth context
-          /^\/attendee/, // Attendee pages - let app handle errors with proper auth context
-          /^\/admin/, // Admin pages - let app handle errors with proper auth context
-          /^\/user/, // User profile pages - let app handle errors with proper auth context
-        ],
+        // No offline fallback - CloudFront handles 404->index.html for SPA routing
+        // Service worker's offline fallback was causing false "you are offline" errors
+        // navigateFallback: '/offline.html',
+        // navigateFallbackDenylist: [...],
       },
       devOptions: {
         enabled: false, // Disable PWA in development for faster builds

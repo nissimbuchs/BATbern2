@@ -66,6 +66,35 @@ const getAmplifyConfig = (runtimeConfig: AppConfig): ResourcesConfig => {
   return config;
 };
 
+// Detect which storage has Cognito tokens (localStorage or sessionStorage)
+// This ensures we restore sessions correctly regardless of "remember me" choice
+function detectTokenStorage(): Storage {
+  // Check for Cognito tokens in both storages
+  // Token keys follow pattern: CognitoIdentityServiceProvider.{clientId}.{username}.{tokenType}
+  const localKeys = Object.keys(localStorage);
+  const sessionKeys = Object.keys(sessionStorage);
+
+  const hasCognitoTokenInLocal = localKeys.some((key) =>
+    key.startsWith('CognitoIdentityServiceProvider.')
+  );
+  const hasCognitoTokenInSession = sessionKeys.some((key) =>
+    key.startsWith('CognitoIdentityServiceProvider.')
+  );
+
+  // Prefer sessionStorage if tokens found there (user didn't check "remember me")
+  // Otherwise use localStorage (user checked "remember me" or no session yet)
+  if (hasCognitoTokenInSession) {
+    console.log('[Amplify] Detected tokens in sessionStorage (temporary session)');
+    return sessionStorage;
+  } else if (hasCognitoTokenInLocal) {
+    console.log('[Amplify] Detected tokens in localStorage (persistent session)');
+    return localStorage;
+  } else {
+    console.log('[Amplify] No existing session found, defaulting to localStorage');
+    return localStorage;
+  }
+}
+
 // Configure Amplify with runtime config
 export const configureAmplify = (runtimeConfig: AppConfig) => {
   const config = getAmplifyConfig(runtimeConfig);
@@ -73,9 +102,10 @@ export const configureAmplify = (runtimeConfig: AppConfig) => {
   try {
     Amplify.configure(config);
 
-    // Configure default storage to use localStorage for persistent sessions
-    // This ensures tokens persist across page reloads (users stay logged in)
-    const storageAdapter = createStorageAdapter(localStorage);
+    // Detect and configure correct storage based on existing tokens
+    // This fixes the issue where page refresh loses auth when "remember me" wasn't checked
+    const storage = detectTokenStorage();
+    const storageAdapter = createStorageAdapter(storage);
     cognitoUserPoolsTokenProvider.setKeyValueStorage(storageAdapter);
 
     console.log(
