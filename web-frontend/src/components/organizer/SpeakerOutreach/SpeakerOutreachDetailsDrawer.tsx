@@ -33,11 +33,12 @@ import {
   Button,
   Stack,
 } from '@mui/material';
-import { Close as CloseIcon, Email, Phone, Person } from '@mui/icons-material';
+import { Close as CloseIcon, Email, Phone, Person, Edit as EditIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
+import { SpeakerEditModal } from '../../SpeakerBrainstormingPanel/SpeakerEditModal';
 
 interface SpeakerOutreachDetailsDrawerProps {
   open: boolean;
@@ -85,6 +86,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showForm, setShowForm] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Reset form when drawer opens/closes or speaker changes
   useEffect(() => {
@@ -211,9 +213,18 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
         {/* Speaker Info */}
         {speaker && (
           <Paper sx={{ m: 2, p: 2 }} elevation={1}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              {speaker.speakerName}
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                {speaker.speakerName}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setEditModalOpen(true)}
+                title={t('speakerBrainstorm.pool.edit', 'Edit speaker')}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Box>
             {speaker.company && (
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 {speaker.company}
@@ -414,6 +425,14 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
           )}
         </Box>
       </Box>
+
+      {/* Edit Speaker Modal */}
+      <SpeakerEditModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        speaker={speaker}
+        eventCode={eventCode}
+      />
     </Drawer>
   );
 };
