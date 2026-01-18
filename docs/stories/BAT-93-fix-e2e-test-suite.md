@@ -126,6 +126,33 @@ In Progress - BAT-94 (organizer tests) COMPLETE, helpers updated for all 5 test 
 3. Apply established pattern (see Linear comment for details)
 4. Commit each file separately
 
+**Running Tests with Authentication:**
+
+For tests that require authentication (api-integration, some workflows), use staging Cognito tokens:
+
+```bash
+# 1. Get/refresh auth token (valid for ~1 hour)
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+
+# 2. Token is stored in ~/.batbern/staging.json with idToken, refreshToken, expiresIn
+
+# 3. Run specific test group with auth (exports AUTH_TOKEN automatically)
+AUTH_TOKEN=$(jq -r '.idToken' ~/.batbern/staging.json) \
+  npx playwright test e2e/api-integration/ --max-failures=1
+
+# 4. Or use the wrapper script (handles token loading + refresh check)
+./scripts/ci/run-playwright-tests.sh staging
+
+# 5. Check token validity (auto-refreshes if <5 min remaining)
+./scripts/auth/refresh-token.sh staging
+```
+
+**Key Points:**
+- Tests check `process.env.AUTH_TOKEN` (not E2E_AUTH_TOKEN) - be consistent
+- Tokens expire after ~1 hour - script auto-refreshes if <5 minutes remaining
+- run-playwright-tests.sh exports AUTH_TOKEN from ~/.batbern/{environment}.json
+- Tests skip gracefully if AUTH_TOKEN not provided (but we have it, so don't skip!)
+
 ### File List
 - `docs/stories/BAT-93-fix-e2e-test-suite.md` (this file)
 - `web-frontend/src/components/organizer/EventManagement/QuickActions.tsx`
@@ -141,7 +168,7 @@ In Progress - BAT-94 (organizer tests) COMPLETE, helpers updated for all 5 test 
 - See Linear sub-tasks (BAT-95 through BAT-108) for remaining test groups
 
 ### Change Log
-- 2026-01-18: BAT-96 COMPLETE - All 15 API integration tests aligned with implementation. 8 passing, 7 appropriately skipped. 3 commits: company search now public endpoint (200 vs 401), OPTIONS preflight returns 204, CORS wildcard headers accepted, filter external resource errors. Commits: 825b6425 through f260692c
+- 2026-01-18: BAT-96 COMPLETE - All 15 API integration tests passing with staging authentication. 5 commits: company endpoints are public (list/search return 200 not 401), POST company response validation updated (removed 'id' check, added 'createdBy'), /health endpoint CORS tests fixed (use /actuator/health not /health), OPTIONS preflight returns 204, CORS wildcard headers accepted, filter external resource errors. Auth token approach documented for future sessions. Commits: 825b6425 through current
 - 2026-01-18: BAT-95 COMPLETE - All 29 accessibility tests aligned with implementation. 26 passing, 3 appropriately skipped. 18 commits fixing: color contrast, heading hierarchy, ARIA attributes, CircularProgress labels, skip link, semantic landmarks, navigation selectors, keyboard navigation timing, EventPagination ARIA, notification announcements, route changes, form labels. Commits: 4cab6182 through 825b6425
 - 2026-01-18: BAT-94 COMPLETE - All 5 organizer test files have language-independent helper functions. Added testids to SpeakerStatus and SpeakerOutreach components. Discovered Stories 5.1, 5.2, 5.4 are fully implemented. 4 commits: ce4acdec, 44d90d87, 85210462, 581f9b55
 - 2026-01-17: BAT-94 session - Fixed backend startup, added data-testid to QuickActions/EventTypeSelector, updated speaker-brainstorming test helpers. Commit: fd54642b
