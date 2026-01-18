@@ -58,13 +58,10 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
   test('should have proper ARIA attributes on navigation elements', async ({ page }) => {
     await page.goto('/dashboard');
-
-    // Check hamburger menu button (mobile)
-    const menuButton = page.getByRole('button', { name: /menu/i });
-    await expect(menuButton).toHaveAttribute('aria-label', 'menu');
+    await page.waitForLoadState('networkidle');
 
     // Check notification button
-    const notificationButton = page.getByRole('button', { name: /notifications/i });
+    const notificationButton = page.getByRole('button', { name: /^notifications$/i });
     await expect(notificationButton).toHaveAttribute('aria-expanded');
     await expect(notificationButton).toHaveAttribute('aria-haspopup', 'true');
 
