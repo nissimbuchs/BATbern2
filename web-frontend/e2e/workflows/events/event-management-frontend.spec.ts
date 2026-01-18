@@ -210,14 +210,15 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await page.getByTestId('new-event-button').click();
 
     // Verify create event modal is visible
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
     await expect(page.getByTestId('create-event-form')).toBeVisible();
 
-    // Verify form fields are present
-    await expect(page.getByLabel(/Title|Titel/)).toBeVisible();
-    await expect(page.getByLabel(/Description|Beschreibung/)).toBeVisible();
-    await expect(page.getByLabel(/Event Date|Veranstaltungsdatum/)).toBeVisible();
-    await expect(page.getByLabel(/Event Type|Veranstaltungstyp/)).toBeVisible();
+    // Verify form fields are present (scoped to modal to avoid matching background elements)
+    await expect(modal.getByLabel(/Title|Titel/)).toBeVisible();
+    await expect(modal.getByLabel(/Description|Beschreibung/)).toBeVisible();
+    await expect(modal.getByLabel(/Event Date|Veranstaltungsdatum/)).toBeVisible();
+    await expect(modal.getByLabel(/Event Type|Veranstaltungstyp/)).toBeVisible();
   });
 
   test('should_validateRequiredFields_when_saveClicked', async ({ page }) => {
@@ -235,58 +236,61 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
   test('should_validateEventDate_when_dateTooSoon', async ({ page }) => {
     // AC3: Date picker with validation (min 30 days in future)
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
     // Fill title
-    await page.getByLabel(/Title|Titel/).fill('Test Event');
+    await modal.getByLabel(/Title|Titel/).fill('Test Event');
 
     // Set date to tomorrow (should fail validation)
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    await page.getByLabel(/Event Date|Veranstaltungsdatum/).fill(tomorrowStr);
+    await modal.getByLabel(/Event Date|Veranstaltungsdatum/).fill(tomorrowStr);
 
     // Click save
     await page.getByTestId('save-create-event-button').click();
 
     // Verify validation error for date
-    await expect(page.getByText(/30 days.*future|30 Tage.*Zukunft/)).toBeVisible();
+    await expect(modal.getByText(/30 days.*future|30 Tage.*Zukunft/)).toBeVisible();
   });
 
   test('should_validateRegistrationDeadline_when_deadlineTooClose', async ({ page }) => {
     // AC3: Registration deadline picker (min 7 days before event)
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
     // Fill title
-    await page.getByLabel(/Title|Titel/).fill('Test Event');
+    await modal.getByLabel(/Title|Titel/).fill('Test Event');
 
     // Set event date to 40 days in future
     const eventDate = new Date();
     eventDate.setDate(eventDate.getDate() + 40);
     const eventDateStr = eventDate.toISOString().split('T')[0];
-    await page.getByLabel(/Event Date|Veranstaltungsdatum/).fill(eventDateStr);
+    await modal.getByLabel(/Event Date|Veranstaltungsdatum/).fill(eventDateStr);
 
     // Set registration deadline to 5 days before event (should fail - min 7 days)
     const deadline = new Date(eventDate);
     deadline.setDate(deadline.getDate() - 5);
     const deadlineStr = deadline.toISOString().split('T')[0];
-    await page.getByLabel(/Registration Deadline|Anmeldefrist/).fill(deadlineStr);
+    await modal.getByLabel(/Registration Deadline|Anmeldefrist/).fill(deadlineStr);
 
     // Click save
     await page.getByTestId('save-create-event-button').click();
 
     // Verify validation error for deadline
-    await expect(page.getByText(/7 days.*before|7 Tage.*vor/)).toBeVisible();
+    await expect(modal.getByText(/7 days.*before|7 Tage.*vor/)).toBeVisible();
   });
 
   test('should_allowSaveDraft_when_incompleteDataProvided', async ({ page }) => {
     // AC3: "Save Draft" button (allows incomplete data)
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
     // Fill only title (minimal data)
-    await page.getByLabel(/Title|Titel/).fill('Draft Event');
+    await modal.getByLabel(/Title|Titel/).fill('Draft Event');
 
     // Click Save Draft (should not validate required fields)
     await page.getByTestId('save-draft-event-button').click();
@@ -295,7 +299,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await expect(page.getByText(/Draft saved|Entwurf gespeichert/)).toBeVisible();
 
     // Verify modal closes
-    await expect(page.getByTestId('create-event-modal')).not.toBeVisible();
+    await expect(modal).not.toBeVisible();
 
     // Verify event appears in dashboard
     await expect(page.getByText('Draft Event')).toBeVisible();
@@ -304,27 +308,28 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
   test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Complete event creation workflow
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
     // Fill all required fields
-    await page.getByLabel(/Title|Titel/).fill('BATbern Test 2025');
-    await page.getByLabel(/Description|Beschreibung/).fill('Test event for E2E testing');
+    await modal.getByLabel(/Title|Titel/).fill('BATbern Test 2025');
+    await modal.getByLabel(/Description|Beschreibung/).fill('Test event for E2E testing');
 
     // Set event date to 40 days in future
     const eventDate = new Date();
     eventDate.setDate(eventDate.getDate() + 40);
     const eventDateStr = eventDate.toISOString().split('T')[0];
-    await page.getByLabel(/Event Date|Veranstaltungsdatum/).fill(eventDateStr);
+    await modal.getByLabel(/Event Date|Veranstaltungsdatum/).fill(eventDateStr);
 
     // Select event type
-    await page.getByLabel(/Event Type|Veranstaltungstyp/).click();
+    await modal.getByLabel(/Event Type|Veranstaltungstyp/).click();
     await page.getByRole('option', { name: /Full Day|Ganztägig/ }).click();
 
     // Set capacity
-    await page.getByLabel(/Capacity|Kapazität/).fill('200');
+    await modal.getByLabel(/Capacity|Kapazität/).fill('200');
 
     // Select venue
-    await page.getByLabel(/Venue|Veranstaltungsort/).click();
+    await modal.getByLabel(/Venue|Veranstaltungsort/).click();
     await page.getByRole('option').first().click();
 
     // Click Save & Create
@@ -334,7 +339,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await expect(page.getByText(/Event created|Veranstaltung erstellt/)).toBeVisible();
 
     // Verify modal closes
-    await expect(page.getByTestId('create-event-modal')).not.toBeVisible();
+    await expect(modal).not.toBeVisible();
 
     // Verify event appears in dashboard
     await expect(page.getByText('BATbern Test 2025')).toBeVisible();
@@ -343,9 +348,10 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
   test('should_selectEventType_when_typeDropdownClicked', async ({ page }) => {
     // AC3: Event type selection (Full Day, Afternoon, Evening)
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
-    await page.getByLabel(/Event Type|Veranstaltungstyp/).click();
+    await modal.getByLabel(/Event Type|Veranstaltungstyp/).click();
 
     // Verify event type options
     await expect(page.getByRole('option', { name: /Full Day|Ganztägig/ })).toBeVisible();
@@ -356,9 +362,10 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
   test('should_selectVenue_when_venueDropdownClicked', async ({ page }) => {
     // AC3: Venue selection dropdown
     await page.getByTestId('new-event-button').click();
-    await expect(page.getByTestId('create-event-modal')).toBeVisible();
+    const modal = page.getByTestId('create-event-modal');
+    await expect(modal).toBeVisible();
 
-    await page.getByLabel(/Venue|Veranstaltungsort/).click();
+    await modal.getByLabel(/Venue|Veranstaltungsort/).click();
 
     // Verify venue options are displayed
     const venueOptions = page.getByRole('option');

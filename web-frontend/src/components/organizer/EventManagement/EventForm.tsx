@@ -950,9 +950,15 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseClick}>{t('form.cancel')}</Button>
+          <Button onClick={handleCloseClick} data-testid="close-edit-modal-button">
+            {t('form.cancel')}
+          </Button>
           {mode === 'create' && (
-            <Button onClick={handleSaveDraftClick} color="secondary">
+            <Button
+              onClick={handleSaveDraftClick}
+              color="secondary"
+              data-testid="save-draft-event-button"
+            >
               {t('form.saveDraft')}
             </Button>
           )}
