@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
       <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
         Dashboard
       </Typography>
-      <CircularProgress />
+      <CircularProgress aria-label="Loading dashboard" />
       <Typography variant="body2" color="text.primary">
         Loading your dashboard...
       </Typography>

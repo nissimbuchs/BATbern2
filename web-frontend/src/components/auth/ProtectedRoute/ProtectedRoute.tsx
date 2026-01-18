@@ -35,7 +35,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
           Loading
         </Typography>
-        <CircularProgress size={40} />
+        <CircularProgress size={40} aria-label="Loading, please wait" />
         <Typography variant="body2" color="text.primary">
           Checking authentication...
         </Typography>
