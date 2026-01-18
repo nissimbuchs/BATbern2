@@ -50,7 +50,7 @@ fi
 
 case $OPERATION in
   get-last-deployed)
-    echo "🔍 Querying last successful deployment for $ENVIRONMENT..."
+    echo "🔍 Querying last successful deployment for $ENVIRONMENT..." >&2
 
     # Query GitHub Deployments API for most recent successful deployment
     RESPONSE=$(curl -s -f \
@@ -63,21 +63,21 @@ case $OPERATION in
     LAST_DEPLOYED=$(echo "$RESPONSE" | jq -r '.[0].sha // empty' 2>/dev/null || echo "")
 
     if [ -z "$LAST_DEPLOYED" ]; then
-      # No deployment history found
-      echo "::notice::No deployment history for $ENVIRONMENT"
-      echo "::notice::This is either the first deployment or tracking was just enabled"
-      echo "::notice::Will fall back to comparing against previous commit"
-      echo ""  # Return empty to trigger fallback in workflow
+      # No deployment history found - send notices to stderr
+      echo "::notice::No deployment history for $ENVIRONMENT" >&2
+      echo "::notice::This is either the first deployment or tracking was just enabled" >&2
+      echo "::notice::Will fall back to comparing against previous commit" >&2
+      echo ""  # Return empty to stdout to trigger fallback in workflow
     else
-      # Found last deployed commit
+      # Found last deployed commit - send info to stderr, SHA to stdout
       DEPLOYED_AT=$(echo "$RESPONSE" | jq -r '.[0].created_at // "unknown"' 2>/dev/null)
       DESCRIPTION=$(echo "$RESPONSE" | jq -r '.[0].description // "No description"' 2>/dev/null)
 
-      echo "✅ Found last successful deployment:"
-      echo "   Commit: $LAST_DEPLOYED"
-      echo "   Deployed: $DEPLOYED_AT"
-      echo "   Description: $DESCRIPTION"
-      echo "$LAST_DEPLOYED"  # Output SHA for use in workflow
+      echo "✅ Found last successful deployment:" >&2
+      echo "   Commit: $LAST_DEPLOYED" >&2
+      echo "   Deployed: $DEPLOYED_AT" >&2
+      echo "   Description: $DESCRIPTION" >&2
+      echo "$LAST_DEPLOYED"  # ONLY this goes to stdout for workflow capture
     fi
     ;;
 
