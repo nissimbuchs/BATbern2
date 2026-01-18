@@ -28,12 +28,14 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
   test('should support keyboard navigation through menu items', async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
-    // Tab to first navigation item
+    // Tab to first navigation item (skip link is first)
     await page.keyboard.press('Tab');
+    await page.waitForTimeout(100);
 
     // Verify focus indicator is visible
-    const focusedElement = await page.locator(':focus');
+    const focusedElement = page.locator(':focus');
     await expect(focusedElement).toBeVisible();
 
     // Check focus has visible outline (CSS focus indicator)
