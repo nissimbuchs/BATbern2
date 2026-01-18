@@ -18,11 +18,9 @@ public class UpdateSpeakerPoolRequest {
     private String assignedOrganizerId;
     private String notes;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank(message = "Phone is required")
     private String phone;
 
     // Constructors

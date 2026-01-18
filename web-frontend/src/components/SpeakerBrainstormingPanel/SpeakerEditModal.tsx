@@ -91,15 +91,12 @@ export const SpeakerEditModal: React.FC<SpeakerEditModalProps> = ({
       );
     }
 
-    if (!email.trim()) {
-      newErrors.email = t('speakerBrainstorm.errors.emailRequired', 'Email is required');
-    } else if (!validateEmail(email)) {
+    // Email is optional, but if provided must be valid
+    if (email.trim() && !validateEmail(email)) {
       newErrors.email = t('speakerBrainstorm.errors.emailInvalid', 'Email must be valid');
     }
 
-    if (!phone.trim()) {
-      newErrors.phone = t('speakerBrainstorm.errors.phoneRequired', 'Phone is required');
-    }
+    // Phone is optional - no validation needed
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -116,8 +113,8 @@ export const SpeakerEditModal: React.FC<SpeakerEditModalProps> = ({
       expertise: expertise.trim() || undefined,
       assignedOrganizerId: assignedOrganizerId || undefined,
       notes: notes.trim() || undefined,
-      email: email.trim(),
-      phone: phone.trim(),
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
     };
 
     updateMutation.mutate(
@@ -244,10 +241,9 @@ export const SpeakerEditModal: React.FC<SpeakerEditModalProps> = ({
 
           {/* Email */}
           <TextField
-            required
             fullWidth
             type="email"
-            label={t('speakerBrainstorm.form.email', 'Email')}
+            label={t('speakerBrainstorm.form.email', 'Email (Optional)')}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -262,18 +258,10 @@ export const SpeakerEditModal: React.FC<SpeakerEditModalProps> = ({
 
           {/* Phone */}
           <TextField
-            required
             fullWidth
-            label={t('speakerBrainstorm.form.phone', 'Phone')}
+            label={t('speakerBrainstorm.form.phone', 'Phone (Optional)')}
             value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
-              if (errors.phone) {
-                setErrors((prev) => ({ ...prev, phone: undefined }));
-              }
-            }}
-            error={!!errors.phone}
-            helperText={errors.phone}
+            onChange={(e) => setPhone(e.target.value)}
             disabled={updateMutation.isPending}
           />
 
