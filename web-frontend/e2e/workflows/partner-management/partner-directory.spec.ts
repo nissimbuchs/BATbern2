@@ -29,9 +29,13 @@ const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
  * Helper: Navigate to Partner Directory
  */
 async function navigateToPartnerDirectory(page: Page) {
+  // Wait for Partners navigation link to be visible and clickable
+  const partnersLink = page.locator('a[href="/organizer/partners"]');
+  await partnersLink.waitFor({ state: 'visible', timeout: 10000 });
+
   // Click on Partners navigation link
-  await page.click('a[href="/organizer/partners"]');
-  await page.waitForURL(`${BASE_URL}/organizer/partners`);
+  await partnersLink.click();
+  await page.waitForURL(`${BASE_URL}/organizer/partners`, { timeout: 15000 });
 
   // Wait for page to load - use language-independent selector
   await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
