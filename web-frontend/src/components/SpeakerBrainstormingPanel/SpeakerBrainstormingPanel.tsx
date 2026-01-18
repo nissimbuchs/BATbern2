@@ -24,11 +24,12 @@ import {
   CircularProgress,
   Divider,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerPool, useAddSpeakerToPool } from '@/hooks/useSpeakerPool';
-import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
+import type { AddSpeakerToPoolRequest, SpeakerPoolEntry } from '@/types/speakerPool.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
+import { SpeakerEditModal } from './SpeakerEditModal';
 
 export interface SpeakerBrainstormingPanelProps {
   eventCode: string;
@@ -56,11 +57,26 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSpeaker, setSelectedSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
   // Fetch speaker pool
   const { data: speakerPool, isLoading, isError } = useSpeakerPool(eventCode);
 
   // Mutation for adding speaker
   const addSpeakerMutation = useAddSpeakerToPool();
+
+  // Handler for opening edit modal
+  const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
+    setSelectedSpeaker(speaker);
+    setEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setEditModalOpen(false);
+    setSelectedSpeaker(null);
+  };
 
   const handleAddSpeaker = () => {
     if (!speakerName.trim() || !email.trim() || !phone.trim()) {
@@ -251,12 +267,22 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
               {speakerPool.map((speaker) => (
                 <ListItem
                   key={speaker.id}
+                  onClick={() => handleSpeakerClick(speaker)}
                   sx={{
                     border: 1,
                     borderColor: 'divider',
                     borderRadius: 1,
                     mb: 1,
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: 'action.hover',
+                      borderColor: 'primary.main',
+                    },
+                    transition: 'all 0.2s ease-in-out',
                   }}
+                  secondaryAction={
+                    <EditIcon fontSize="small" color="action" sx={{ opacity: 0.5 }} />
+                  }
                 >
                   <ListItemText
                     primary={
@@ -331,6 +357,15 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           </Button>
         </Box>
       )}
+
+      {/* Edit Modal */}
+      <SpeakerEditModal
+        open={editModalOpen}
+        onClose={handleEditModalClose}
+        speaker={selectedSpeaker}
+        eventCode={eventCode}
+        organizers={organizers}
+      />
     </>
   );
 

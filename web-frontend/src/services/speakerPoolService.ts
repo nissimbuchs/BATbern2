@@ -13,6 +13,7 @@ import apiClient from '@/services/api/apiClient';
 import type {
   SpeakerPoolEntry,
   AddSpeakerToPoolRequest,
+  UpdateSpeakerPoolRequest,
   SpeakerPoolResponse,
 } from '@/types/speakerPool.types';
 
@@ -69,6 +70,28 @@ class SpeakerPoolService {
    */
   async deleteSpeakerFromPool(eventCode: string, speakerId: string): Promise<void> {
     await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`);
+  }
+
+  /**
+   * Update speaker in event speaker pool
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param speakerId Speaker UUID
+   * @param request Updated speaker data
+   * @returns Updated speaker pool entry
+   * @throws Error if event or speaker not found, validation fails, or unauthorized
+   */
+  async updateSpeakerInPool(
+    eventCode: string,
+    speakerId: string,
+    request: UpdateSpeakerPoolRequest
+  ): Promise<SpeakerPoolResponse> {
+    const response = await apiClient.put<SpeakerPoolResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`,
+      request
+    );
+
+    return response.data;
   }
 }
 

@@ -42,6 +42,16 @@ export interface AddSpeakerToPoolRequest {
   phone: string;
 }
 
+export interface UpdateSpeakerPoolRequest {
+  speakerName: string;
+  company?: string;
+  expertise?: string;
+  assignedOrganizerId?: string;
+  notes?: string;
+  email: string;
+  phone: string;
+}
+
 export type SpeakerPoolResponse = SpeakerPoolEntry;
 
 // ============================================================================

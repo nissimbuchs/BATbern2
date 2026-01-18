@@ -10,7 +10,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerPoolService } from '@/services/speakerPoolService';
-import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
+import type { AddSpeakerToPoolRequest, UpdateSpeakerPoolRequest } from '@/types/speakerPool.types';
 
 /**
  * Query key factory for speaker pool
@@ -83,6 +83,40 @@ export function useDeleteSpeakerFromPool() {
   return useMutation({
     mutationFn: ({ eventCode, speakerId }: { eventCode: string; speakerId: string }) =>
       speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId),
+    onSuccess: (_data, variables) => {
+      // Invalidate speaker pool list for this event to refetch
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+    },
+  });
+}
+
+/**
+ * Hook to update speaker in event pool (ORGANIZER only)
+ *
+ * @returns Mutation object with mutate function
+ * @example
+ * const updateMutation = useUpdateSpeakerInPool();
+ * updateMutation.mutate({
+ *   eventCode: 'BATbern56',
+ *   speakerId: 'uuid-here',
+ *   request: { speakerName: 'John Doe', company: 'ACME', ... }
+ * });
+ */
+export function useUpdateSpeakerInPool() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      eventCode,
+      speakerId,
+      request,
+    }: {
+      eventCode: string;
+      speakerId: string;
+      request: UpdateSpeakerPoolRequest;
+    }) => speakerPoolService.updateSpeakerInPool(eventCode, speakerId, request),
     onSuccess: (_data, variables) => {
       // Invalidate speaker pool list for this event to refetch
       queryClient.invalidateQueries({

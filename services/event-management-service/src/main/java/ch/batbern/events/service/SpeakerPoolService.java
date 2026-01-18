@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
+import ch.batbern.events.dto.UpdateSpeakerPoolRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -160,5 +161,47 @@ public class SpeakerPoolService {
 
         // Delete speaker from pool
         speakerPoolRepository.delete(speakerPool);
+    }
+
+    /**
+     * Update a speaker in the event speaker pool.
+     *
+     * @param eventCode the event code
+     * @param speakerId the speaker pool entry ID
+     * @param request the updated speaker details
+     * @return the updated speaker pool entry
+     * @throws EventNotFoundException if event not found
+     * @throws IllegalArgumentException if speaker not found or doesn't belong to event
+     */
+    @Transactional
+    public SpeakerPoolResponse updateSpeakerInPool(String eventCode, String speakerId, UpdateSpeakerPoolRequest request) {
+        // Validate event exists
+        Event event = eventRepository.findByEventCode(eventCode)
+                .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+
+        // Validate speaker exists
+        java.util.UUID speakerUuid = java.util.UUID.fromString(speakerId);
+        SpeakerPool speakerPool = speakerPoolRepository.findById(speakerUuid)
+                .orElseThrow(() -> new IllegalArgumentException("Speaker not found in pool: " + speakerId));
+
+        // Verify speaker belongs to this event
+        if (!speakerPool.getEventId().equals(event.getId())) {
+            throw new IllegalArgumentException("Speaker does not belong to event: " + eventCode);
+        }
+
+        // Update editable fields only (status and sessionId are managed by workflow)
+        speakerPool.setSpeakerName(request.getSpeakerName());
+        speakerPool.setCompany(request.getCompany());
+        speakerPool.setExpertise(request.getExpertise());
+        speakerPool.setAssignedOrganizerId(request.getAssignedOrganizerId());
+        speakerPool.setNotes(request.getNotes());
+        speakerPool.setEmail(request.getEmail());
+        speakerPool.setPhone(request.getPhone());
+
+        // Persist changes
+        SpeakerPool updated = speakerPoolRepository.save(speakerPool);
+        log.info("Updated speaker {} in pool for event {}", updated.getSpeakerName(), eventCode);
+
+        return SpeakerPoolResponse.fromEntity(updated);
     }
 }

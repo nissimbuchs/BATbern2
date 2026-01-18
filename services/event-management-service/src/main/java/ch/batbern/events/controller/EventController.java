@@ -2061,4 +2061,30 @@ public class EventController {
 
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Update speaker in event speaker pool.
+     *
+     * PUT /api/v1/events/{eventCode}/speakers/pool/{speakerId}
+     *
+     * Updates editable fields of a speaker in the pool (name, company, expertise, etc.).
+     * Status and sessionId are managed by workflow and cannot be updated via this endpoint.
+     */
+    @PutMapping("/{eventCode}/speakers/pool/{speakerId}")
+    @Operation(summary = "Update speaker in pool",
+            description = "Update editable fields of a speaker in the event speaker pool")
+    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> updateSpeakerInPool(
+            @PathVariable String eventCode,
+            @PathVariable String speakerId,
+            @Valid @RequestBody ch.batbern.events.dto.UpdateSpeakerPoolRequest request) {
+
+        // Update speaker in pool
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        // - IllegalArgumentException → HTTP 404 (speaker not found)
+        ch.batbern.events.dto.SpeakerPoolResponse response =
+                speakerPoolService.updateSpeakerInPool(eventCode, speakerId, request);
+
+        return ResponseEntity.ok(response);
+    }
 }

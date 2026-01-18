@@ -1102,6 +1102,91 @@ paths:
       security:
         - BearerAuth: []
 
+    put:
+      tags:
+        - Event Actions
+      summary: Update speaker in event pool
+      description: |
+        Update editable fields of a speaker in the event's speaker pool.
+
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Editable Fields**:
+        - speakerName, company, expertise, assignedOrganizerId, notes, email, phone
+
+        **Non-Editable Fields** (managed by workflow):
+        - status, sessionId
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker must exist in the pool
+        - Speaker must belong to the specified event
+
+        **Performance**: <150ms (P95)
+
+      operationId: updateSpeakerInPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSpeakerPoolRequest'
+      responses:
+        '200':
+          description: Speaker updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (e.g., speaker name missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker name is required"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker not found in pool"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool/550e8400-e29b-41d4-a716-446655440000"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/{speakerId}/outreach:
     post:
       tags:
@@ -4476,6 +4561,52 @@ components:
       description: |
         Request to add a potential speaker to the event speaker pool during brainstorming phase.
         Story 5.2 - AC9-12: Speaker Pool Management
+      required:
+        - speakerName
+        - email
+        - phone
+      properties:
+        speakerName:
+          type: string
+          maxLength: 255
+          description: Name of the potential speaker (required)
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Company or organization of the speaker (optional)
+          example: Tech Corp AG
+        expertise:
+          type: string
+          description: Areas of expertise (optional)
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (optional)
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (optional)
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address for contacting the speaker (required)
+          example: jane.smith@techcorp.ch
+        phone:
+          type: string
+          maxLength: 50
+          description: Phone number for contacting the speaker (required)
+          example: +41 79 123 45 67
+
+    UpdateSpeakerPoolRequest:
+      type: object
+      description: |
+        Request to update a speaker in the event speaker pool.
+        Editable fields: speakerName, company, expertise, assignedOrganizerId, notes, email, phone
+        Non-editable fields (managed by workflow): status, sessionId
       required:
         - speakerName
         - email

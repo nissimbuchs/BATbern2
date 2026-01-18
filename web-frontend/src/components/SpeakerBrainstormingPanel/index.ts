@@ -4,3 +4,6 @@
 
 export { SpeakerBrainstormingPanel } from './SpeakerBrainstormingPanel';
 export type { SpeakerBrainstormingPanelProps } from './SpeakerBrainstormingPanel';
+
+export { SpeakerEditModal } from './SpeakerEditModal';
+export type { SpeakerEditModalProps } from './SpeakerEditModal';
