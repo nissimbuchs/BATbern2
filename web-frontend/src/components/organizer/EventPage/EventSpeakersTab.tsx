@@ -39,7 +39,7 @@ import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
-import { useSpeakerPool } from '@/hooks/useSpeakerPool';
+import { speakerPoolService } from '@/services/speakerPoolService';
 import { useEvent } from '@/hooks/useEvents';
 import { useQueryClient } from '@tanstack/react-query';
 import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/SpeakerStatusLanes';
@@ -81,8 +81,15 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     staleTime: 15000,
   });
 
-  // Fetch speaker pool (using hook for proper cache invalidation)
-  const { data: speakers, isLoading: speakersLoading } = useSpeakerPool(eventCode);
+  // Fetch speaker pool with polling (using hook for proper cache invalidation)
+  // Note: useSpeakerPool has 2-min staleTime but we need real-time updates for status changes
+  const { data: speakers, isLoading: speakersLoading } = useQuery({
+    queryKey: ['speakerPool', 'list', eventCode],
+    queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
+    enabled: !!eventCode,
+    refetchInterval: 30000, // Poll every 30 seconds to catch invitation responses
+    staleTime: 15000,
+  });
 
   // Fetch event data for sessions view
   const { data: event } = useEvent(eventCode, ['sessions']);
