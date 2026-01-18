@@ -193,12 +193,12 @@ export const EventManagementDashboard: React.FC = () => {
               />
 
               {/* Critical Tasks - Story 5.5 Phase 6 */}
-              <Paper sx={{ p: 3 }}>
+              <Paper sx={{ p: 3 }} data-testid="critical-tasks-section">
                 <TaskWidget organizerUsername={user?.username || ''} />
               </Paper>
 
               {/* Notifications Feed - EventBridge Integration */}
-              <Paper sx={{ p: 3 }}>
+              <Paper sx={{ p: 3 }} data-testid="team-activity-section">
                 <TeamActivityFeed
                   notifications={notificationsData?.data || []}
                   totalNotifications={notificationsData?.pagination?.totalItems}

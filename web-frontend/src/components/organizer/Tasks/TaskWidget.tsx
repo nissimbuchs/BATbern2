@@ -135,7 +135,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
         />
       </Stack>
 
-      <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+      <List sx={{ maxHeight: 400, overflow: 'auto' }} data-testid="critical-tasks-list">
         {activeTasks.map((task) => (
           <TaskCard
             key={task.id}

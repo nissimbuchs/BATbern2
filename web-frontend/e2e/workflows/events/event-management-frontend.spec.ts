@@ -55,15 +55,15 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     // Verify progress bar is displayed
     await expect(page.locator('[data-testid="workflow-progress-bar"]').first()).toBeVisible();
 
-    // Verify workflow step indicator (e.g., "Step 7/16")
+    // Verify workflow step indicator (e.g., "Step 7/9" - Story 5.7 consolidated to 9 states)
     await expect(page.locator('[data-testid="workflow-step-indicator"]').first()).toBeVisible();
     await expect(page.locator('[data-testid="workflow-step-indicator"]').first()).toContainText(
-      /Step \d+\/16|Schritt \d+\/16/
+      /Step \d+\/9|Schritt \d+\/9/
     );
   });
 
   test('should_displayProgressPercentage_when_workflowActive', async ({ page }) => {
-    // AC1: Show workflow step (Step 7/16, Step 2/16) for each event
+    // AC1: Show workflow step (Step 7/9, Step 2/9) for each event - Story 5.7 consolidated to 9 states
 
     const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
     await firstEventCard.waitFor({ state: 'visible' });

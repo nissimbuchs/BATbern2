@@ -164,11 +164,13 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           {/* Search Input */}
           <FormControl fullWidth>
             <TextField
-              data-testid="event-search-input"
               placeholder={t('dashboard.searchEvents')}
               value={searchQuery}
               onChange={handleSearchChange}
               aria-label="Search events"
+              inputProps={{
+                'data-testid': 'event-search-input',
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
