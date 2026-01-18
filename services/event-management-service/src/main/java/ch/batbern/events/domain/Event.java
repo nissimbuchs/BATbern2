@@ -98,6 +98,14 @@ public class Event {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    // Full-text search vector columns (GENERATED ALWAYS AS in PostgreSQL)
+    // Story 4.2 - BAT-109: Archive browsing with full-text search
+    @Column(name = "title_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object titleVector;
+
+    @Column(name = "description_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private Object descriptionVector;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

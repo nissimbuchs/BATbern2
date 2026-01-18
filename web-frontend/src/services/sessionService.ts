@@ -38,9 +38,13 @@ class SessionApiClient {
     sessions: BatchImportSessionRequest[]
   ): Promise<SessionBatchImportResult> {
     try {
+      // Use extended timeout for batch import (120s) to handle large PDF downloads
       const response = await apiClient.post<SessionBatchImportResult>(
         `${SESSION_API_PATH}/${eventCode}/sessions/batch-import`,
-        sessions
+        sessions,
+        {
+          timeout: 120000, // 2 minutes - needed for downloading large PDFs from CDN
+        }
       );
       return response.data;
     } catch (error) {

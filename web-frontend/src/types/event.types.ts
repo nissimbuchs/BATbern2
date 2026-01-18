@@ -46,6 +46,27 @@ export interface SpeakerUI extends Speaker {
 }
 
 /**
+ * Session Material Type (Story 5.9)
+ * Represents uploaded materials for a session
+ */
+export interface SessionMaterial {
+  id: string; // UUID
+  uploadId: string;
+  s3Key?: string;
+  cloudFrontUrl: string;
+  fileName: string;
+  fileExtension?: string;
+  fileSize: number; // in bytes
+  mimeType?: string;
+  materialType: 'PRESENTATION' | 'DOCUMENT' | 'VIDEO' | 'OTHER';
+  uploadedBy: string;
+  createdAt: string; // ISO 8601
+  updatedAt?: string; // ISO 8601
+  contentExtracted?: boolean; // Forward compatibility for Story 5.10 (RAG search)
+  extractionStatus?: string; // Forward compatibility for Story 5.10
+}
+
+/**
  * UI-Extended Session Type
  * Adds frontend-specific fields to the base Session type from API
  */
@@ -65,6 +86,10 @@ export interface SessionUI extends Session {
   // Archive browsing presentation fields (Story 4.2)
   presentationUrl?: string; // URL to download presentation PDF
   presentationSize?: number; // Presentation file size in bytes
+  // Session materials (Story 5.9)
+  materials?: SessionMaterial[]; // List of uploaded materials
+  materialsCount?: number; // Number of materials uploaded
+  hasPresentation?: boolean; // Whether session has at least one presentation
   // Note: speakers is inherited from base Session type (SessionSpeaker[])
   // Note: materialsStatus is now defined in base Session type from OpenAPI spec
 }
@@ -115,6 +140,9 @@ export interface EventDetailUI extends EventDetail {
     spent?: number;
     currency?: string;
   };
+  // Session materials metrics (Story 5.9 - Task 7)
+  sessionsWithMaterialsCount?: number; // Number of sessions with hasPresentation = true
+  totalSessionsCount?: number; // Total number of sessions for this event
   // Note: eventType and workflowState are now in base Event type from API
 }
 
@@ -225,7 +253,6 @@ export interface EventFilters {
 
 // Archive Filter State (Story 4.2 - UI-only)
 export interface ArchiveFilters {
-  timePeriod?: string; // Time period filter (e.g., "all", "2020-2024", "last5years")
   topics?: string[]; // topic slugs or IDs
   search?: string;
 }
@@ -359,9 +386,11 @@ export interface EventListResponse {
   data: Event[];
   pagination: {
     page: number;
-    pages: number; // Total number of pages
     limit: number;
-    total: number; // Total number of items
+    totalPages: number; // Backend returns totalPages
+    totalItems: number; // Backend returns totalItems
+    hasNext: boolean; // Backend provides hasNext flag
+    hasPrev: boolean; // Backend provides hasPrev flag
   };
 }
 

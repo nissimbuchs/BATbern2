@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import viteCompression from 'vite-plugin-compression';
 import { VitePWA } from 'vite-plugin-pwa';
+import sitemap from 'vite-plugin-sitemap';
 
 /**
  * Vite Configuration - Environment-Agnostic Build
@@ -147,6 +148,13 @@ export default defineConfig({
         enabled: false, // Disable PWA in development for faster builds
       },
     }),
+    // Sitemap generation for SEO (Story 4.1.8)
+    sitemap({
+      hostname: 'https://batbern.ch',
+      dynamicRoutes: ['/', '/current-event', '/archive', '/search', '/about'],
+      changefreq: 'weekly',
+      priority: 0.8,
+    }),
     // Gzip compression for production builds (Task 13b)
     viteCompression({
       algorithm: 'gzip',
@@ -172,6 +180,12 @@ export default defineConfig({
       '@pages': resolve(__dirname, './src/pages'),
       'msw/node': resolve(__dirname, './node_modules/msw/lib/node/index.mjs'),
     },
+  },
+  // Fix circular dependency between @emotion and React (MUI v6.1.0+)
+  // https://github.com/emotion-js/emotion/issues/3322
+  // https://github.com/mui/material-ui/issues/43817
+  optimizeDeps: {
+    include: ['@emotion/react', '@emotion/styled', '@mui/material', '@mui/icons-material'],
   },
   server: {
     // Support dynamic port configuration for parallel instances
@@ -202,15 +216,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Manual chunks for code splitting (Task 13b)
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/icons-material'],
-          aws: ['aws-amplify', '@aws-amplify/ui-react'],
-          query: ['@tanstack/react-query'],
-          router: ['react-router-dom'],
-          i18n: ['react-i18next', 'i18next', 'i18next-browser-languagedetector'],
-        },
+        // DISABLED manual chunks to avoid circular dependency issues with @emotion
+        // https://github.com/mui/material-ui/issues/43817
+        // https://github.com/emotion-js/emotion/issues/3322
+        // Vite will automatically split chunks based on dependencies
+        manualChunks: undefined,
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name?.split('.');

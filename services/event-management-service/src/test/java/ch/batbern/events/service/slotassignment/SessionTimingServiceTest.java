@@ -80,6 +80,8 @@ class SessionTimingServiceTest {
 
         placeholderSession = Session.builder()
                 .id(UUID.randomUUID())
+                .eventId(UUID.randomUUID())
+                .eventCode("TEST-EVENT-123")
                 .sessionSlug("john-doe-techcorp")
                 .title("John Doe - TechCorp")
                 .startTime(null)
@@ -89,6 +91,8 @@ class SessionTimingServiceTest {
 
         assignedSession = Session.builder()
                 .id(UUID.randomUUID())
+                .eventId(UUID.randomUUID())
+                .eventCode("TEST-EVENT-123")
                 .sessionSlug("jane-smith-datainc")
                 .title("Jane Smith - DataInc")
                 .startTime(Instant.parse("2025-06-15T09:00:00Z"))
@@ -186,6 +190,8 @@ class SessionTimingServiceTest {
         // Given: Event with 3 sessions, 2 placeholder, 1 assigned
         String eventCode = "BATbern997";
         List<Session> unassignedSessions = List.of(placeholderSession, Session.builder()
+                .eventId(UUID.randomUUID())
+                .eventCode("TEST-EVENT-123")
                 .sessionSlug("bob-wilson-devops")
                 .title("Bob Wilson - DevOps AG")
                 .startTime(null)

@@ -25,20 +25,6 @@ function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
     eventFilters.topicCode = archiveFilters.topics;
   }
 
-  // Time period filter - convert to year
-  if (archiveFilters.timePeriod && archiveFilters.timePeriod !== 'all') {
-    // Handle year range format (e.g., "2020-2024")
-    const yearRangeMatch = archiveFilters.timePeriod.match(/^(\d{4})-\d{4}$/);
-    if (yearRangeMatch) {
-      eventFilters.year = parseInt(yearRangeMatch[1], 10);
-    }
-    // Handle relative format (e.g., "last5years")
-    else if (archiveFilters.timePeriod === 'last5years') {
-      const currentYear = new Date().getFullYear();
-      eventFilters.year = currentYear - 5;
-    }
-  }
-
   return eventFilters;
 }
 
@@ -55,14 +41,16 @@ export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '
 
   return useInfiniteQuery({
     queryKey: ['events', 'archive', filters, sort],
-    queryFn: ({ pageParam = 1 }) =>
-      eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
+    queryFn: async ({ pageParam = 1 }) => {
+      const result = await eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
         expand: ['topics', 'sessions', 'speakers'],
         sort,
-      }),
+      });
+      return result;
+    },
     getNextPageParam: (lastPage) => {
-      const { page, pages } = lastPage.pagination;
-      return page < pages ? page + 1 : undefined;
+      const { hasNext, page } = lastPage.pagination;
+      return hasNext ? page + 1 : undefined;
     },
     initialPageParam: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes - cache results to reduce API calls

@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
+import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
@@ -621,5 +622,136 @@ describe('SessionEditModal - Form Validation', () => {
     });
 
     expect(mockOnSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
+  let mockSession: SessionUI;
+  let mockOnSave: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    mockSession = {
+      sessionSlug: 'test-session',
+      title: 'Test Session',
+      description: 'Test description',
+      startTime: '2024-12-15T14:00:00Z',
+      endTime: '2024-12-15T15:00:00Z',
+      durationMinutes: 60,
+      slotNumber: 1,
+      materialsStatus: 'pending',
+      materials: [],
+    };
+    mockOnSave = vi.fn().mockResolvedValue(undefined);
+  });
+
+  it('should_showMaterialsTab_when_sessionEditModalOpens', () => {
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+
+    // Should show two tabs: Details and Materials
+    expect(screen.getByRole('tab', { name: /details/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /materials/i })).toBeInTheDocument();
+  });
+
+  it('should_displayFileUploadComponent_when_materialsTabSelected', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+
+    // Click Materials tab
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    // Should display FileUpload component (check for dropzone)
+    expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
+  });
+
+  it('should_saveUploadedMaterials_when_modalSaved', async () => {
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+
+    // Switch to Materials tab
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    // TODO: Simulate file upload (requires mocking FileUpload component)
+    // For now, we'll verify the Materials tab can be saved
+
+    // Save the modal
+    const saveButton = screen.getByRole('button', { name: /save/i });
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalled();
+    });
+  });
+
+  it('should_displayUploadedMaterialsList_when_materialsExist', async () => {
+    const mockSessionWithMaterials: SessionUI = {
+      ...mockSession,
+      materials: [
+        {
+          id: 'mat-1',
+          uploadId: 'upload-1',
+          fileName: 'presentation.pptx',
+          fileSize: 2048000,
+          materialType: 'PRESENTATION',
+          cloudFrontUrl: 'https://cdn.batbern.ch/materials/presentation.pptx',
+          uploadedBy: 'john.doe',
+          createdAt: '2024-01-15T10:00:00Z',
+        },
+        {
+          id: 'mat-2',
+          uploadId: 'upload-2',
+          fileName: 'document.pdf',
+          fileSize: 1024000,
+          materialType: 'DOCUMENT',
+          cloudFrontUrl: 'https://cdn.batbern.ch/materials/document.pdf',
+          uploadedBy: 'john.doe',
+          createdAt: '2024-01-15T10:05:00Z',
+        },
+      ],
+    };
+
+    const user = userEvent.setup();
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSessionWithMaterials}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+
+    // Switch to Materials tab
+    const materialsTab = screen.getByRole('tab', { name: /materials/i });
+    await user.click(materialsTab);
+
+    // Should display uploaded materials
+    expect(screen.getByText('presentation.pptx')).toBeInTheDocument();
+    expect(screen.getByText('document.pdf')).toBeInTheDocument();
   });
 });

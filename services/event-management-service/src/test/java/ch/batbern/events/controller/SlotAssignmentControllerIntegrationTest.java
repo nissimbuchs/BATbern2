@@ -138,6 +138,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         // These are created when speaker accepts invitation
         placeholderSession1 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("john-doe-techcorp")
                 .title("John Doe - TechCorp")
                 .description("Cloud Architecture Patterns")
@@ -149,6 +150,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
 
         placeholderSession2 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("jane-smith-datainc")
                 .title("Jane Smith - DataInc")
                 .description("Machine Learning in Practice")
@@ -161,6 +163,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         // Create one session with timing already assigned (for conflict testing)
         assignedSession = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("existing-session")
                 .title("Existing Session")
                 .description("Already scheduled")
@@ -290,6 +293,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         // Create another session for the same speaker
         Session duplicateSpeakerSession = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("john-doe-second-talk")
                 .title("John Doe - Second Talk")
                 .description("Another topic")
@@ -422,6 +426,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
         // Create conflicting assignments
         Session conflict1 = Session.builder()
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .sessionSlug("conflict-session-1")
                 .title("Conflict Session 1")
                 .sessionType("presentation")

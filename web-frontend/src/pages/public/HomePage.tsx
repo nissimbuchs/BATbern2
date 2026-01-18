@@ -194,7 +194,11 @@ const HomePage = () => {
 
         {/* Event Program Timeline (Timetable) - Only show when agenda is published */}
         {showTimetable && event.sessions && event.sessions.length > 0 && (
-          <EventProgram sessions={event.sessions} />
+          <EventProgram
+            sessions={event.sessions}
+            isArchived={event.workflowState === 'ARCHIVED'}
+            eventCode={event.eventCode}
+          />
         )}
 
         {/* Session Cards (List View) - Only show when speakers published, NOT when agenda published */}

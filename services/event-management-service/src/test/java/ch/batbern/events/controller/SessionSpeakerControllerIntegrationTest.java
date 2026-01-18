@@ -103,6 +103,7 @@ public class SessionSpeakerControllerIntegrationTest extends AbstractIntegration
         testSession = Session.builder()
                 .sessionSlug(sessionSlug)
                 .eventId(testEvent.getId())
+                .eventCode(testEvent.getEventCode())
                 .title("Test Session")
                 .sessionType("presentation")
                 .startTime(Instant.now())

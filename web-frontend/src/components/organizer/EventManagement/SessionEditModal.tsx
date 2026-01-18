@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogTitle,
@@ -22,10 +23,46 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  Tabs,
+  Tab,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Link,
 } from '@mui/material';
+import DownloadIcon from '@mui/icons-material/Download';
+import {
+  Description as DescriptionIcon,
+  PictureAsPdf as PdfIcon,
+  VideoLibrary as VideoIcon,
+  Slideshow as PresentationIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { AxiosError } from 'axios';
-import type { SessionUI } from '@/types/event.types';
+import type { SessionUI, SessionMaterial } from '@/types/event.types';
+import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
+
+// Helper function to get file type icon based on mime type
+const getFileTypeIcon = (mimeType: string | undefined): React.ReactNode => {
+  if (!mimeType) {
+    return <DescriptionIcon />;
+  }
+  if (
+    mimeType.startsWith('application/vnd.openxmlformats-officedocument.presentationml') ||
+    mimeType.startsWith('application/vnd.ms-powerpoint')
+  ) {
+    return <PresentationIcon />;
+  }
+  if (mimeType === 'application/pdf') {
+    return <PdfIcon />;
+  }
+  if (mimeType.startsWith('video/')) {
+    return <VideoIcon />;
+  }
+  return <DescriptionIcon />;
+};
 
 interface SessionEditModalProps {
   open: boolean;
@@ -33,6 +70,7 @@ interface SessionEditModalProps {
   session: SessionUI | null;
   eventDate: string; // ISO 8601 date for time conversion
   onSave: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
+  initialTab?: number; // 0 = Details (default), 1 = Materials (Story 5.9 - AC2)
 }
 
 export interface SessionUpdateData {
@@ -61,6 +99,36 @@ const MAX_ABSTRACT_LENGTH = 1000;
 const MIN_SESSION_DURATION = 15; // minutes
 const MAX_SESSION_DURATION = 480; // 8 hours
 
+// Helper: Map MIME type to material type enum
+const getMaterialTypeFromMimeType = (mimeType: string): string => {
+  if (mimeType.startsWith('video/')) {
+    return 'VIDEO';
+  } else if (
+    mimeType.includes('powerpoint') ||
+    mimeType.includes('presentation') ||
+    mimeType.includes('keynote')
+  ) {
+    return 'PRESENTATION';
+  } else if (
+    mimeType === 'application/pdf' ||
+    mimeType.includes('document') ||
+    mimeType === 'text/plain'
+  ) {
+    return 'DOCUMENT';
+  } else if (mimeType.includes('zip') || mimeType.includes('gzip') || mimeType.includes('tar')) {
+    return 'ARCHIVE';
+  } else {
+    return 'OTHER';
+  }
+};
+
+// Helper: Extract file extension from filename (without dot)
+const getFileExtension = (fileName: string): string => {
+  const lastDot = fileName.lastIndexOf('.');
+  if (lastDot === -1) return '';
+  return fileName.substring(lastDot + 1).toLowerCase();
+};
+
 // Extract HH:mm from ISO 8601 timestamp
 const extractTimeFromISO = (isoString: string | null | undefined): string => {
   if (!isoString) return '';
@@ -87,8 +155,10 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   session,
   eventDate,
   onSave,
+  initialTab = 0,
 }) => {
   const { t } = useTranslation('events');
+  const queryClient = useQueryClient();
 
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
@@ -104,6 +174,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   }>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Story 5.9: Materials tab state
+  const [activeTab, setActiveTab] = useState<number>(initialTab); // 0 = Details, 1 = Materials
+  const [uploadedMaterials, setUploadedMaterials] = useState<UploadedFile[]>([]);
+  const [existingMaterials, setExistingMaterials] = useState<SessionMaterial[]>([]);
 
   // Initialize form when session changes
   useEffect(() => {
@@ -130,8 +205,13 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
 
       setErrors({});
       setSaveError(null);
+
+      // Story 5.9: Initialize materials from session
+      setExistingMaterials(session.materials || []);
+      setUploadedMaterials([]);
+      setActiveTab(initialTab); // Use initialTab prop (AC2: Materials button opens Materials tab)
     }
-  }, [session]);
+  }, [session, initialTab]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -210,6 +290,29 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       }
 
       await onSave(session.sessionSlug, updates);
+
+      // Story 5.9: Save uploaded materials if any
+      if (uploadedMaterials.length > 0) {
+        const materials = uploadedMaterials.map((file) => ({
+          uploadId: file.uploadId,
+          materialType: getMaterialTypeFromMimeType(file.fileType),
+          fileName: file.fileName,
+          fileExtension: getFileExtension(file.fileName),
+          fileSize: file.fileSize,
+          mimeType: file.fileType,
+        }));
+
+        await sessionApiClient.associateMaterials(session.eventCode, session.sessionSlug, {
+          materials,
+        });
+
+        // Invalidate event cache to reload sessions with new materials
+        queryClient.invalidateQueries({ queryKey: ['event', session.eventCode] });
+      }
+
+      // Clear uploaded materials after successful save
+      setUploadedMaterials([]);
+
       onClose();
     } catch (error) {
       // Handle 409 conflict errors (speaker/room conflicts)
@@ -266,6 +369,27 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
     }
   };
 
+  // Story 5.9: Materials tab handlers
+  const handleFileUploadSuccess = (
+    data: UploadedFile | { uploadId: string; tempFileUrl?: string }
+  ) => {
+    // Handle both UploadedFile (multiple mode) and basic data (single mode)
+    const uploadedFile: UploadedFile =
+      'fileName' in data
+        ? data
+        : {
+            uploadId: data.uploadId,
+            fileName: 'Unknown', // Fallback for single mode (shouldn't happen in materials upload)
+            fileSize: 0,
+            fileType: 'application/octet-stream',
+          };
+    setUploadedMaterials((prev) => [...prev, uploadedFile]);
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   // Auto-calculation handlers per AC2
   const handleStartTimeChange = (newStartTime: string) => {
     setStartTime(newStartTime);
@@ -316,109 +440,224 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('sessionEdit.title', 'Edit Session')}</DialogTitle>
 
-      <DialogContent>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          {/* Session Title */}
-          <TextField
-            label={t('sessionEdit.titleLabel', 'Session Title')}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (errors.title) {
-                setErrors({ ...errors, title: undefined });
-              }
-            }}
-            error={!!errors.title}
-            helperText={errors.title}
-            required
-            fullWidth
-            autoFocus
-            disabled={saving}
-          />
+      {/* Story 5.9: Tabs for Details and Materials */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label="Session edit tabs">
+          <Tab label={t('sessionEdit.tabs.details', 'Details')} />
+          <Tab label={t('sessionEdit.tabs.materials', 'Materials')} />
+        </Tabs>
+      </Box>
 
-          {/* Session Abstract */}
-          <Box>
+      <DialogContent>
+        {/* Details Tab */}
+        {activeTab === 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            {/* Session Title */}
             <TextField
-              label={t('sessionEdit.abstractLabel', 'Session Abstract')}
-              value={abstract}
+              label={t('sessionEdit.titleLabel', 'Session Title')}
+              value={title}
               onChange={(e) => {
-                setAbstract(e.target.value);
-                if (errors.abstract) {
-                  setErrors({ ...errors, abstract: undefined });
+                setTitle(e.target.value);
+                if (errors.title) {
+                  setErrors({ ...errors, title: undefined });
                 }
               }}
-              error={!!errors.abstract}
-              helperText={
-                errors.abstract ||
-                t('sessionEdit.charactersRemaining', {
-                  count: MAX_ABSTRACT_LENGTH - abstract.length,
-                  defaultValue: `{{count}} characters remaining`,
-                })
-              }
-              multiline
-              rows={6}
+              error={!!errors.title}
+              helperText={errors.title}
+              required
+              fullWidth
+              autoFocus
+              disabled={saving}
+            />
+
+            {/* Session Abstract */}
+            <Box>
+              <TextField
+                label={t('sessionEdit.abstractLabel', 'Session Abstract')}
+                value={abstract}
+                onChange={(e) => {
+                  setAbstract(e.target.value);
+                  if (errors.abstract) {
+                    setErrors({ ...errors, abstract: undefined });
+                  }
+                }}
+                error={!!errors.abstract}
+                helperText={
+                  errors.abstract ||
+                  t('sessionEdit.charactersRemaining', {
+                    count: MAX_ABSTRACT_LENGTH - abstract.length,
+                    defaultValue: `{{count}} characters remaining`,
+                  })
+                }
+                multiline
+                rows={6}
+                fullWidth
+                disabled={saving}
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                {abstract.length} / {MAX_ABSTRACT_LENGTH}{' '}
+                {t('qualityReview.characters', 'characters')}
+              </Typography>
+            </Box>
+
+            {/* Session Duration */}
+            <TextField
+              label={t('sessionEdit.durationLabel', 'Duration (minutes)')}
+              type="number"
+              value={duration}
+              onChange={(e) => handleDurationChange(Number(e.target.value))}
+              error={!!errors.duration}
+              helperText={errors.duration}
+              inputProps={{ step: 5 }}
               fullWidth
               disabled={saving}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-              {abstract.length} / {MAX_ABSTRACT_LENGTH}{' '}
-              {t('qualityReview.characters', 'characters')}
-            </Typography>
+
+            {/* Start Time */}
+            <TextField
+              label={t('sessionEdit.startTimeLabel', 'Start Time')}
+              type="time"
+              value={startTime}
+              onChange={(e) => handleStartTimeChange(e.target.value)}
+              error={!!errors.startTime}
+              helperText={errors.startTime}
+              fullWidth
+              disabled={saving}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            {/* End Time */}
+            <TextField
+              label={t('sessionEdit.endTimeLabel', 'End Time')}
+              type="time"
+              value={endTime}
+              onChange={(e) => handleEndTimeChange(e.target.value)}
+              error={!!errors.endTime}
+              helperText={errors.endTime}
+              fullWidth
+              disabled={saving}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+
+            {/* Save Error */}
+            {saveError && (
+              <Alert severity="error" onClose={() => setSaveError(null)}>
+                {saveError}
+              </Alert>
+            )}
           </Box>
+        )}
 
-          {/* Session Duration */}
-          <TextField
-            label={t('sessionEdit.durationLabel', 'Duration (minutes)')}
-            type="number"
-            value={duration}
-            onChange={(e) => handleDurationChange(Number(e.target.value))}
-            error={!!errors.duration}
-            helperText={errors.duration}
-            inputProps={{ step: 5 }}
-            fullWidth
-            disabled={saving}
-          />
+        {/* Materials Tab (Story 5.9) */}
+        {activeTab === 1 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            {/* File Upload Component */}
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('sessionEdit.materials.uploadTitle', 'Upload Session Materials')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {t(
+                  'sessionEdit.materials.uploadDescription',
+                  'Upload presentations, documents, or videos (max 100MB per file, up to 10 files)'
+                )}
+              </Typography>
+              <FileUpload
+                onUploadSuccess={handleFileUploadSuccess}
+                allowedTypes={[
+                  // Presentations (AC6 - Story 5.9)
+                  'application/vnd.ms-powerpoint', // .ppt
+                  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+                  'application/vnd.apple.keynote', // .key
+                  'application/vnd.oasis.opendocument.presentation', // .odp
+                  // Documents (AC6 - Story 5.9)
+                  'application/pdf', // .pdf
+                  'application/msword', // .doc
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+                  'text/plain', // .txt
+                  // Videos (AC6 - Story 5.9)
+                  'video/mp4', // .mp4
+                  'video/quicktime', // .mov
+                  'video/x-msvideo', // .avi
+                  'video/x-matroska', // .mkv
+                  'video/webm', // .webm
+                  // Archives (AC6 - Story 5.9)
+                  'application/zip', // .zip
+                  'application/gzip', // .tar.gz
+                  'application/x-gzip', // .tar.gz
+                  'application/x-tar', // .tar
+                ]}
+                maxFileSize={100 * 1024 * 1024} // 100MB
+                multiple={true}
+                maxFiles={10}
+                uploadedFiles={uploadedMaterials}
+                uploadEndpoint="/materials/presigned-url" // Story 5.9: Use materials endpoint
+              />
+            </Box>
 
-          {/* Start Time */}
-          <TextField
-            label={t('sessionEdit.startTimeLabel', 'Start Time')}
-            type="time"
-            value={startTime}
-            onChange={(e) => handleStartTimeChange(e.target.value)}
-            error={!!errors.startTime}
-            helperText={errors.startTime}
-            fullWidth
-            disabled={saving}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-
-          {/* End Time */}
-          <TextField
-            label={t('sessionEdit.endTimeLabel', 'End Time')}
-            type="time"
-            value={endTime}
-            onChange={(e) => handleEndTimeChange(e.target.value)}
-            error={!!errors.endTime}
-            helperText={errors.endTime}
-            fullWidth
-            disabled={saving}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-
-          {/* Save Error */}
-          {saveError && (
-            <Alert severity="error" onClose={() => setSaveError(null)}>
-              {saveError}
-            </Alert>
-          )}
-        </Box>
+            {/* Existing Materials List (Story 5.9: Only show after save & reopen) */}
+            {existingMaterials.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t('sessionEdit.materials.existingTitle', 'Existing Materials')}
+                </Typography>
+                <List dense>
+                  {existingMaterials.map((material) => (
+                    <ListItem key={material.id}>
+                      <ListItemIcon>{getFileTypeIcon(material.mimeType)}</ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Link
+                            component="button"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                // Fetch presigned download URL
+                                const response = await sessionApiClient.getMaterialDownloadUrl(
+                                  session!.eventCode,
+                                  session!.sessionSlug,
+                                  material.id
+                                );
+                                // Open in new tab
+                                window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
+                              } catch (error) {
+                                console.error('Failed to get download URL:', error);
+                                alert(
+                                  t(
+                                    'sessionEdit.materials.downloadError',
+                                    'Failed to download material'
+                                  )
+                                );
+                              }
+                            }}
+                            underline="hover"
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {material.fileName}
+                            <DownloadIcon fontSize="small" />
+                          </Link>
+                        }
+                        secondary={`${(material.fileSize / 1024 / 1024).toFixed(2)} MB • ${material.materialType}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions>

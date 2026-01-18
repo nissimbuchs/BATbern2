@@ -105,7 +105,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               profilePictureUrl: primarySpeaker.profilePictureUrl,
             }
           : undefined,
-        materialsStatus: 'pending' as const,
+        // materialsStatus is already included in ...session from backend (Story 5.9)
       };
     });
   }, [event?.sessions]);

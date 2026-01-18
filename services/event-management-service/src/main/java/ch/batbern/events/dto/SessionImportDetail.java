@@ -23,7 +23,7 @@ public class SessionImportDetail {
     private String title;
 
     /**
-     * Import status: "success", "skipped", or "failed"
+     * Import status: "success", "updated", "skipped", or "failed"
      */
     private String status;
 
@@ -75,6 +75,18 @@ public class SessionImportDetail {
                 .status("failed")
                 .message(errorMessage)
                 .sessionSlug(null)
+                .build();
+    }
+
+    /**
+     * Factory method for updated import (existing session with materials added)
+     */
+    public static SessionImportDetail updated(String title, String sessionSlug, String updateMessage) {
+        return SessionImportDetail.builder()
+                .title(title)
+                .status("updated")
+                .message(updateMessage)
+                .sessionSlug(sessionSlug)
                 .build();
     }
 }

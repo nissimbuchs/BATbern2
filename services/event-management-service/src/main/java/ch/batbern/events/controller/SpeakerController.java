@@ -72,7 +72,8 @@ public class SpeakerController {
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(defaultValue = "username,asc") String sort) {
 
-        log.debug("GET /api/v1/speakers - availability={}, workflowState={}, expertiseAreas={}, languages={}, speakingTopics={}, page={}, limit={}",
+        log.debug("GET /api/v1/speakers - availability={}, workflowState={}, expertiseAreas={}, "
+                        + "languages={}, speakingTopics={}, page={}, limit={}",
                 availability, workflowState, expertiseAreas, languages, speakingTopics, page, limit);
 
         // Convert 1-based API page to 0-based Spring page

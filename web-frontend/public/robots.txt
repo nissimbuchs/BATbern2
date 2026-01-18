@@ -1,0 +1,39 @@
+# robots.txt - BATbern Public Website
+# Story 4.1.8: Testing, SEO & Production Deployment
+
+# Allow all crawlers to index public pages
+User-agent: *
+Allow: /
+
+# Disallow authenticated routes (organizer, speaker, partner, attendee)
+Disallow: /organizer
+Disallow: /speaker
+Disallow: /partner
+Disallow: /attendee
+
+# Disallow authentication pages
+Disallow: /auth
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+
+# Disallow admin routes
+Disallow: /admin
+
+# Disallow user profile routes
+Disallow: /user
+
+# Disallow API routes (if proxied through frontend)
+Disallow: /api/
+
+# Allow public pages explicitly (optional, since Allow: / is already set)
+# Allow: /current-event
+# Allow: /archive
+# Allow: /search
+# Allow: /about
+
+# Sitemap location
+Sitemap: https://batbern.ch/sitemap.xml
+Sitemap: https://staging.batbern.ch/sitemap.xml

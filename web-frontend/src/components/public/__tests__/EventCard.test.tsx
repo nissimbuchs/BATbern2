@@ -147,24 +147,24 @@ describe('EventCard Component', () => {
     });
   });
 
-  describe('AC4: Session Preview (First 3 Sessions)', () => {
+  describe('AC4: Session Preview (All Sessions)', () => {
     test('should_displayFirst3Sessions_when_moreThan3Available', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      // Should display first 3 sessions
+      // Should display all sessions (including 4th)
       expect(screen.getByText('Serverless at Scale')).toBeInTheDocument();
       expect(screen.getByText('Container Orchestration Patterns')).toBeInTheDocument();
       expect(screen.getByText('Microservices Design')).toBeInTheDocument();
 
-      // Should NOT display 4th session
-      expect(screen.queryByText('API Gateway Architecture')).not.toBeInTheDocument();
+      // Should also display 4th session (showing all sessions)
+      expect(screen.getByText('API Gateway Architecture')).toBeInTheDocument();
     });
 
     test('should_showSessionCount_when_moreThan3Sessions', () => {
       renderWithRouter(<EventCard event={mockEvent} viewMode="grid" />);
 
-      // Should indicate there are more sessions (e.g., "and 1 more")
-      expect(screen.getByText(/and 1 more/i)).toBeInTheDocument();
+      // Should NOT show "and X more" indicator (all sessions are displayed)
+      expect(screen.queryByText(/and \d+ more/i)).not.toBeInTheDocument();
     });
 
     test('should_displayAllSessions_when_3OrFewerAvailable', () => {

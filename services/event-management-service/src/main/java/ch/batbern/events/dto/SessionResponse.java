@@ -38,4 +38,13 @@ public class SessionResponse {
 
     // Story 1.15a.1b: Speakers array (enriched with User data)
     private List<SessionSpeakerResponse> speakers;
+
+    // Story 5.9: Session materials
+    private List<SessionMaterialResponse> materials;
+
+    // Story 5.9: Materials count (for overview displays)
+    private Integer materialsCount;
+
+    // Story 5.9: Materials status (NONE, PARTIAL, COMPLETE)
+    private String materialsStatus;
 }
