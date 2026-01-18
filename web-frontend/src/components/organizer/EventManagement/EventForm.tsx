@@ -613,7 +613,13 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
   return (
     <>
-      <Dialog open={open} onClose={handleCloseClick} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={handleCloseClick}
+        maxWidth="md"
+        fullWidth
+        data-testid={mode === 'create' ? 'create-event-modal' : 'edit-event-modal'}
+      >
         <DialogTitle>{mode === 'create' ? t('form.createEvent') : t('form.editEvent')}</DialogTitle>
 
         {/* Tabs - Story 5.5 Phase 6 */}
@@ -631,7 +637,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         <DialogContent>
           {/* Tab Panel 0: Info (Event Form) */}
           {currentTab === 0 && (
-            <Box sx={{ pt: 2 }}>
+            <Box sx={{ pt: 2 }} data-testid={mode === 'create' ? 'create-event-form' : 'edit-event-form'}>
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}
@@ -951,7 +957,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             onClick={handleSaveClick}
             variant="contained"
             color="primary"
-            data-testid="save-event-button"
+            data-testid={mode === 'create' ? 'save-create-event-button' : 'save-event-button'}
           >
             {mode === 'create' ? t('form.saveCreate') : t('form.save')}
           </Button>
