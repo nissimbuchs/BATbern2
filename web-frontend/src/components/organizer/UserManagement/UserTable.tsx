@@ -126,7 +126,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
   }
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} data-testid="user-table">
       <Table>
         <TableHead>
           <TableRow>

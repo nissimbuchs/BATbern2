@@ -169,6 +169,7 @@ const UserList: React.FC = () => {
               color="primary"
               startIcon={<UploadIcon />}
               onClick={() => setParticipantImportModalOpen(true)}
+              data-testid="import-participants-button"
             >
               {t('participantImport.button')}
             </Button>

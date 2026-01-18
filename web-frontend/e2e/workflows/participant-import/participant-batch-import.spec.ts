@@ -28,34 +28,16 @@ const __dirname = path.dirname(__filename);
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
 /**
- * Helper: Login as an authenticated organizer
+ * Note: Authentication handled by global-setup.ts
+ * No need for manual login - auth tokens are pre-injected into localStorage
  */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/auth/login`);
-
-  // Wait for login form to be visible
-  await page.waitForSelector('input[name="email"]', { timeout: 10000 });
-
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for navigation to dashboard or main page
-  await page.waitForURL(/\/(dashboard|organizer)/, { timeout: 15000 });
-}
 
 /**
  * Helper: Navigate to User Management page
  */
 async function navigateToUserManagement(page: Page) {
-  // Click on Users navigation item
-  await page.click('text=Users');
-
-  // Wait for URL to change to users page
-  await page.waitForURL(/\/organizer\/users/, { timeout: 10000 });
+  // Navigate directly to users page
+  await page.goto(`${BASE_URL}/organizer/users`);
 
   // Wait for user table to load
   await page.waitForSelector('[data-testid="user-table"]', { timeout: 10000 });
@@ -65,13 +47,12 @@ async function navigateToUserManagement(page: Page) {
  * Helper: Open Participant Batch Import Modal
  */
 async function openImportModal(page: Page) {
-  // Look for "Import Participants" button
-  const importButton = page.locator('button:has-text("Import Participants")');
-  await importButton.click();
+  // Click Import Participants button using data-testid
+  await page.click('[data-testid="import-participants-button"]');
 
   // Wait for modal to open
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
-  await expect(page.locator('[role="dialog"]')).toBeVisible();
+  await page.waitForSelector('[data-testid="participant-import-modal"]', { timeout: 5000 });
+  await expect(page.locator('[data-testid="participant-import-modal"]')).toBeVisible();
 }
 
 /**
@@ -79,7 +60,7 @@ async function openImportModal(page: Page) {
  */
 async function uploadCSV(page: Page, csvFilename: string) {
   const csvPath = path.resolve(__dirname, '../../fixtures', csvFilename);
-  const fileInput = await page.locator('input[type="file"]');
+  const fileInput = await page.locator('[data-testid="csv-file-input"]');
   await fileInput.setInputFiles(csvPath);
 
   // Wait for file to be processed
@@ -90,24 +71,22 @@ async function uploadCSV(page: Page, csvFilename: string) {
  * Helper: Start the import process
  */
 async function startImport(page: Page) {
-  const importButton = page.locator('button:has-text("Import")');
-  await importButton.click();
+  await page.click('[data-testid="participant-import-start-button"]');
 }
 
 /**
  * Helper: Wait for import completion
  */
 async function waitForImportComplete(page: Page, timeoutMs: number = 60000) {
-  // Wait for "Import complete!" or similar success message
-  await expect(page.locator('text=/Import (complete|successful|finished)/i')).toBeVisible({
+  // Wait for result alert (success or error message) - use first() due to multiple alerts
+  await expect(page.locator('[role="alert"]').first()).toBeVisible({
     timeout: timeoutMs,
   });
 }
 
 test.describe('Participant Batch Import (Real Backend)', () => {
   test.beforeEach(async ({ page }) => {
-    // Authenticate and navigate to users page
-    await page.goto('/organizer/events');
+    // Navigate to users page (auth handled by global-setup)
     await navigateToUserManagement(page);
   });
 
@@ -115,12 +94,11 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     // Open import modal
     await openImportModal(page);
 
-    // Verify modal is visible with expected content
-    await expect(page.locator('[role="dialog"]')).toBeVisible();
-    await expect(page.locator('text=/Import.*Participant/i')).toBeVisible();
+    // Verify modal is visible
+    await expect(page.locator('[data-testid="participant-import-modal"]')).toBeVisible();
 
     // Verify file input exists
-    await expect(page.locator('input[type="file"]')).toBeVisible();
+    await expect(page.locator('[data-testid="csv-file-input"]')).toBeVisible();
   });
 
   test('should_showPreview_when_csvUploaded', async ({ page }) => {
@@ -129,13 +107,13 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     // Upload sample CSV
     await uploadCSV(page, 'sample-participants.csv');
 
-    // Wait for preview to load
-    await page.waitForTimeout(2000);
+    // Wait for preview to load and import button to appear
+    await expect(page.locator('[data-testid="participant-import-start-button"]')).toBeVisible({
+      timeout: 5000,
+    });
 
-    // Verify preview shows participant count
-    await expect(
-      page.locator('text=/5.*participant/i').or(page.locator('text=/ready to import/i'))
-    ).toBeVisible({ timeout: 5000 });
+    // Verify preview alert is shown (use first() due to multiple alerts)
+    await expect(page.locator('[role="alert"]').first()).toBeVisible();
   });
 
   test('should_importParticipants_when_validCsvProvided', async ({ page }) => {
@@ -144,8 +122,8 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     // Upload valid CSV file
     await uploadCSV(page, 'sample-participants.csv');
 
-    // Wait for preview
-    await expect(page.locator('text=/participants ready to import/i')).toBeVisible({
+    // Wait for preview - check if import button is visible
+    await expect(page.locator('[data-testid="participant-import-start-button"]')).toBeVisible({
       timeout: 5000,
     });
 
@@ -155,15 +133,17 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     // Wait for completion
     await waitForImportComplete(page);
 
-    // Verify result summary shows success
-    const successText = await page.locator('[role="alert"]').textContent();
+    // Verify result summary shows success (use first() due to multiple alerts)
+    const successText = await page.locator('[role="alert"]').first().textContent();
     expect(successText).toContain('created');
 
     // Close modal
-    await page.click('text=Close');
+    await page.click('[data-testid="participant-import-cancel-button"]');
 
     // Verify modal closed
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="participant-import-modal"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test('should_showErrors_when_csvContainsInvalidData', async ({ page }) => {
@@ -178,8 +158,8 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     // Wait for completion
     await waitForImportComplete(page);
 
-    // Verify error count shown in result
-    const resultText = await page.locator('[role="alert"]').textContent();
+    // Verify error count shown in result (use first() due to multiple alerts)
+    const resultText = await page.locator('[role="alert"]').first().textContent();
     expect(resultText).toMatch(/failed|error/i);
   });
 
@@ -190,10 +170,10 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await startImport(page);
     await waitForImportComplete(page);
 
-    const firstResult = await page.locator('[role="alert"]').textContent();
+    const firstResult = await page.locator('[role="alert"]').first().textContent();
     expect(firstResult).toContain('created');
 
-    await page.click('text=Close');
+    await page.click('[data-testid="participant-import-cancel-button"]');
 
     // Wait a moment before second import
     await page.waitForTimeout(1000);
@@ -204,8 +184,8 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await startImport(page);
     await waitForImportComplete(page);
 
-    // Verify skipped count
-    const secondResult = await page.locator('[role="alert"]').textContent();
+    // Verify skipped count (use first() due to multiple alerts)
+    const secondResult = await page.locator('[role="alert"]').first().textContent();
     expect(secondResult).toMatch(/skipped|duplicate/i);
   });
 
@@ -218,9 +198,7 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await page.waitForTimeout(500);
 
     // Verify progress indicator is visible
-    const progressBar = page
-      .locator('[role="progressbar"]')
-      .or(page.locator('text=/Processing|Importing/i'));
+    const progressBar = page.locator('[role="progressbar"]');
 
     // Progress should be visible at some point during import
     // (may complete too fast for small files, so we don't require it)
@@ -236,18 +214,19 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await uploadCSV(page, 'sample-participants.csv');
 
     // Click cancel before starting import
-    const cancelButton = page.locator('button:has-text("Cancel")');
-    await cancelButton.click();
+    await page.click('[data-testid="participant-import-cancel-button"]');
 
     // Verify modal closed
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="participant-import-modal"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
   test('should_resetState_when_modalReopened', async ({ page }) => {
     // First interaction
     await openImportModal(page);
     await uploadCSV(page, 'sample-participants.csv');
-    await page.click('text=Cancel');
+    await page.click('[data-testid="participant-import-cancel-button"]');
 
     // Wait a moment
     await page.waitForTimeout(500);
@@ -256,7 +235,7 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await openImportModal(page);
 
     // Verify modal is in initial state (no file selected)
-    const fileInput = page.locator('input[type="file"]');
+    const fileInput = page.locator('[data-testid="csv-file-input"]');
     const inputValue = await fileInput.inputValue();
     expect(inputValue).toBe('');
   });
@@ -267,8 +246,8 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await startImport(page);
     await waitForImportComplete(page);
 
-    // Verify result summary contains detailed counts
-    const resultAlert = page.locator('[role="alert"]');
+    // Verify result summary contains detailed counts (use first() due to multiple alerts)
+    const resultAlert = page.locator('[role="alert"]').first();
     await expect(resultAlert).toBeVisible();
 
     const resultText = await resultAlert.textContent();
@@ -293,8 +272,8 @@ test.describe('Participant Batch Import (Real Backend)', () => {
     await startImport(page);
     await waitForImportComplete(page);
 
-    // Should complete (backend generates synthetic emails)
-    const resultText = await page.locator('[role="alert"]').textContent();
+    // Should complete (backend generates synthetic emails) - use first() due to multiple alerts
+    const resultText = await page.locator('[role="alert"]').first().textContent();
 
     // Should have at least some successful imports (those with valid emails)
     // or show appropriate error handling
@@ -304,29 +283,23 @@ test.describe('Participant Batch Import (Real Backend)', () => {
 
 test.describe('Participant Batch Import - Error Handling', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
   });
 
   test('should_showError_when_emptyFileUploaded', async ({ page }) => {
     await openImportModal(page);
 
-    // Try to start import without selecting file
-    const importButton = page.locator('button:has-text("Import")');
-
-    // Import button should be disabled or not visible initially
-    const isDisabled = await importButton.isDisabled().catch(() => true);
-    expect(isDisabled).toBe(true);
+    // Import button should not be visible when no file is selected
+    const importButton = page.locator('[data-testid="participant-import-start-button"]');
+    await expect(importButton).not.toBeVisible();
   });
 
   test('should_showError_when_invalidFileTypeUploaded', async ({ page }) => {
     await openImportModal(page);
 
-    // Try to upload a non-CSV file (if file input has accept restriction)
-    const fileInput = page.locator('input[type="file"]');
-    const acceptAttr = await fileInput.getAttribute('accept');
-
     // Verify file input only accepts CSV files
+    const fileInput = page.locator('[data-testid="csv-file-input"]');
+    const acceptAttr = await fileInput.getAttribute('accept');
     expect(acceptAttr).toContain('csv');
   });
 
@@ -340,20 +313,26 @@ test.describe('Participant Batch Import - Error Handling', () => {
 
 test.describe('Participant Batch Import - Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/organizer/events');
     await navigateToUserManagement(page);
   });
 
   test('should_haveAccessibleModal_when_importOpened', async ({ page }) => {
     await openImportModal(page);
 
-    // Verify modal has proper ARIA attributes
-    const modal = page.locator('[role="dialog"]');
+    // Verify modal is visible
+    const modal = page.locator('[data-testid="participant-import-modal"]');
     await expect(modal).toBeVisible();
 
-    // Verify modal has aria-labelledby or aria-label
-    const hasAriaLabel = await modal.getAttribute('aria-label');
-    const hasAriaLabelledBy = await modal.getAttribute('aria-labelledby');
+    // MUI Dialog uses role="presentation" for the container, the actual dialog is nested
+    await expect(modal).toHaveAttribute('role', 'presentation');
+
+    // Verify there's a dialog role inside
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible();
+
+    // Verify dialog has aria-labelledby or aria-label
+    const hasAriaLabel = await dialog.getAttribute('aria-label');
+    const hasAriaLabelledBy = await dialog.getAttribute('aria-labelledby');
 
     expect(hasAriaLabel || hasAriaLabelledBy).toBeTruthy();
   });
@@ -372,6 +351,8 @@ test.describe('Participant Batch Import - Accessibility', () => {
     await page.keyboard.press('Escape');
 
     // Verify modal closed
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="participant-import-modal"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 });

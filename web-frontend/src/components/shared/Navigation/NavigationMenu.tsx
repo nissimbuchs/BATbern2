@@ -53,6 +53,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
                 to={item.path}
                 selected={active}
                 onClick={onItemClick}
+                data-testid={`nav-${item.path.split('/').filter(Boolean).join('-')}`}
                 sx={{
                   borderRadius: 1,
                   minWidth: showText ? 'auto' : '48px',
