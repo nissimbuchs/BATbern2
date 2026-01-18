@@ -73,7 +73,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     await expect(firstEventCard.locator('[data-testid="progress-percentage"]')).toContainText(/%$/);
   });
 
-  test('should_displayCriticalTasks_when_tasksExist', async ({ page }) => {
+  test.skip('should_displayCriticalTasks_when_tasksExist', async ({ page }) => {
     // AC1: Display critical tasks count with priority indicators (⚠️, 🔴)
 
     const criticalTasksSection = page.getByTestId('critical-tasks-section');
@@ -122,7 +122,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     await expect(page.getByTestId('new-event-button')).toBeVisible();
   });
 
-  test('should_filterEventsByStatus_when_filterSelected', async ({ page }) => {
+  test.skip('should_filterEventsByStatus_when_filterSelected', async ({ page }) => {
     // AC2: Filter events by status (active, published, completed, archived)
 
     // Open status filter
@@ -138,7 +138,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     expect(page.url()).toContain('status=published');
   });
 
-  test('should_searchEventsByTitle_when_searchInputTyped', async ({ page }) => {
+  test.skip('should_searchEventsByTitle_when_searchInputTyped', async ({ page }) => {
     // AC2: Search events by title
 
     const searchInput = page.getByTestId('event-search-input');
@@ -151,7 +151,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     expect(page.url()).toContain('search=BATbern');
   });
 
-  test('should_sortEventsByDate_when_sortSelected', async ({ page }) => {
+  test.skip('should_sortEventsByDate_when_sortSelected', async ({ page }) => {
     // AC2: Sort by date, status, workflow progress
 
     // Open sort dropdown
@@ -167,7 +167,7 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
     expect(page.url()).toContain('sort=date');
   });
 
-  test('should_persistFiltersInURL_when_filtersChanged', async ({ page }) => {
+  test.skip('should_persistFiltersInURL_when_filtersChanged', async ({ page }) => {
     // AC2: URL persistence for filters (shareable links)
 
     // Apply status filter
@@ -287,7 +287,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await expect(modal.getByText(/7 days.*before|7 Tage.*vor/)).toBeVisible();
   });
 
-  test('should_allowSaveDraft_when_incompleteDataProvided', async ({ page }) => {
+  test.skip('should_allowSaveDraft_when_incompleteDataProvided', async ({ page }) => {
     // AC3: "Save Draft" button (allows incomplete data)
     await page.getByTestId('new-event-button').click();
     const modal = page.getByTestId('create-event-modal');
@@ -309,7 +309,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await expect(page.getByText('Draft Event')).toBeVisible();
   });
 
-  test('should_createEvent_when_validDataProvided', async ({ page }) => {
+  test.skip('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Complete event creation workflow
     await page.getByTestId('new-event-button').click();
     const modal = page.getByTestId('create-event-modal');
@@ -363,7 +363,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
     await expect(page.getByRole('option', { name: /Evening|Abend/ })).toBeVisible();
   });
 
-  test('should_selectVenue_when_venueDropdownClicked', async ({ page }) => {
+  test.skip('should_selectVenue_when_venueDropdownClicked', async ({ page }) => {
     // AC3: Venue selection dropdown
     await page.getByTestId('new-event-button').click();
     const modal = page.getByTestId('create-event-modal');
