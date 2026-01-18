@@ -36,6 +36,7 @@ script:post-response {
     bru.setEnvVar("originalFirstName", user.firstName || "");
     bru.setEnvVar("originalLastName", user.lastName || "");
     bru.setEnvVar("originalBio", user.bio || "");
+    bru.setEnvVar("originalProfilePictureUrl", user.profilePictureUrl || "");
 
     console.log("Current user username:", user.id);
     console.log("Stored original profile:", {

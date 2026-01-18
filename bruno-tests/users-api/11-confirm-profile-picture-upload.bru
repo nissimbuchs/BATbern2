@@ -31,9 +31,29 @@ assert {
   res.status: in [200, 404]
 }
 
+script:pre-request {
+  // IMPORTANT: Skip this test if user already has a profile picture
+  // Confirming a test upload without actually uploading a file to S3
+  // will break the user's real profile picture
+  const originalUrl = bru.getEnvVar("originalProfilePictureUrl");
+
+  if (originalUrl && originalUrl.trim() !== "") {
+    console.log("⚠️  SKIPPING TEST: User has existing profile picture:", originalUrl);
+    console.log("⚠️  Confirming test upload would replace real picture with non-existent PNG");
+    console.log("⚠️  To test profile picture upload, use a test user without existing picture");
+
+    // Abort the request by throwing an error
+    throw new Error("Test skipped to preserve existing profile picture");
+  }
+}
+
 tests {
-  test("should confirm upload or skip if not implemented (AC10)", function() {
+  test("should confirm upload or skip if profile picture exists (AC10)", function() {
     const status = res.getStatus();
+
+    // Test will be skipped (error) if user has existing profile picture
+    // This prevents breaking real profile pictures with test PNGs
+
     // 200: Success
     // 404: Endpoint not implemented yet or profile picture upload wasn't requested
     expect([200, 404]).to.include(status);
