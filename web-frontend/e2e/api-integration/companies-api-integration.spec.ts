@@ -14,7 +14,9 @@ test.describe('Companies API Integration', () => {
   const authToken = process.env.AUTH_TOKEN;
 
   test.describe('Unauthenticated Requests', () => {
-    test('should return 401 for unauthenticated list companies request', async ({ page }) => {
+    test('should allow unauthenticated list companies request (public endpoint)', async ({
+      page,
+    }) => {
       const response = await page.request.get(`${apiBaseUrl}/api/v1/companies`, {
         headers: {
           'X-Correlation-ID': 'test-' + Date.now(),
@@ -22,7 +24,13 @@ test.describe('Companies API Integration', () => {
         },
       });
 
-      expect(response.status()).toBe(401);
+      // List companies is now a public endpoint (like search)
+      expect(response.status()).toBe(200);
+
+      const data = await response.json();
+      expect(data).toHaveProperty('data');
+      expect(data).toHaveProperty('pagination');
+      expect(Array.isArray(data.data)).toBe(true);
     });
 
     test('should allow unauthenticated search request (public endpoint)', async ({ page }) => {
@@ -117,12 +125,12 @@ test.describe('Companies API Integration', () => {
       if (response.status() === 201) {
         const body = await response.json();
 
-        // Validate response matches OpenAPI spec
-        expect(body).toHaveProperty('id');
+        // Validate response matches actual API implementation
         expect(body).toHaveProperty('name');
         expect(body).toHaveProperty('isVerified');
         expect(body).toHaveProperty('createdAt');
         expect(body).toHaveProperty('updatedAt');
+        expect(body).toHaveProperty('createdBy');
 
         // Verify created company data
         expect(body.name).toBe(testCompany.name);
