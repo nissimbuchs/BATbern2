@@ -39,6 +39,24 @@ async function navigateToPartnerDirectory(page: Page) {
 
 test.describe('Partner Directory - User Journey', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    // This prevents LanguageSync from changing language to German based on backend user preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          preferences: {
+            language: 'en', // Force English for E2E tests
+          },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
   });
 
@@ -90,6 +108,19 @@ test.describe('Partner Directory - User Journey', () => {
 
 test.describe('Partner Directory - Search Functionality', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
@@ -150,6 +181,19 @@ test.describe('Partner Directory - Search Functionality', () => {
 
 test.describe('Partner Directory - Filter Functionality', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
@@ -218,6 +262,19 @@ test.describe('Partner Directory - Filter Functionality', () => {
 
 test.describe('Partner Directory - View Mode Toggle', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
@@ -249,6 +306,19 @@ test.describe('Partner Directory - View Mode Toggle', () => {
 
 test.describe('Partner Directory - Sorting', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
@@ -275,6 +345,19 @@ test.describe('Partner Directory - Sorting', () => {
 
 test.describe('Partner Directory - Pagination', () => {
   test.beforeEach(async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     await page.goto('/organizer/events');
     await navigateToPartnerDirectory(page);
   });
@@ -313,6 +396,19 @@ test.describe('Partner Directory - Pagination', () => {
 
 test.describe('Partner Directory - Error Handling', () => {
   test('should handle network errors gracefully', async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     // Intercept API calls and simulate network error
     await page.route(`${API_URL}/api/v1/partners**`, (route) => {
       route.abort('failed');
@@ -326,6 +422,19 @@ test.describe('Partner Directory - Error Handling', () => {
   });
 
   test('should handle API errors gracefully', async ({ page }) => {
+    // Mock getUserProfile to return English language preference
+    await page.route('**/api/v1/users/me*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'test-user-id',
+          email: 'test@example.com',
+          preferences: { language: 'en' },
+        }),
+      });
+    });
+
     // Intercept API calls and simulate 500 error
     await page.route(`${API_URL}/api/v1/partners**`, (route) => {
       route.fulfill({
