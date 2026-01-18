@@ -220,13 +220,18 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} disabled={recordOutreachMutation.isPending}>
+        <Button
+          onClick={onClose}
+          disabled={recordOutreachMutation.isPending}
+          data-testid="cancel-button"
+        >
           {t('common.cancel')}
         </Button>
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={recordOutreachMutation.isPending}
+          data-testid="save-button"
         >
           {recordOutreachMutation.isPending
             ? t('common.saving')

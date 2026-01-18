@@ -8,27 +8,35 @@
  * Requirements:
  * 1. Event Management Service with speaker outreach endpoints deployed
  * 2. PostgreSQL database with speaker_outreach_history table (Migration V16)
- * 3. SpeakerOutreachDashboard component
- * 4. OutreachHistoryTimeline component
- * 5. MarkContactedModal component
+ * 3. SpeakerOutreachDashboard component (NOT IMPLEMENTED - RED PHASE)
+ * 4. OutreachHistoryTimeline component (IMPLEMENTED)
+ * 5. MarkContactedModal component (IMPLEMENTED)
  * 6. SpeakerWorkflowService integration from Story 5.1a
  *
  * Setup Instructions:
  * 1. Ensure migration V16 is applied: speaker_outreach_history table
  * 2. Ensure Event Management Service is running with outreach endpoints
  * 3. Run: npx playwright test e2e/organizer/speaker-outreach.spec.ts
+ *
+ * LANGUAGE-INDEPENDENT SELECTORS (BAT-93):
+ * ✅ Fixed: "New Event" button → [data-testid="quick-action-new-event"]
+ * ✅ Fixed: "Add to Pool" button → [data-testid="add-to-pool-button"]
+ * ✅ Fixed: Event type selection → [data-testid="event-type-option-evening"]
+ * ✅ Fixed: "Create Event" → button[type="submit"]
+ * ✅ Fixed: "Save" button in modal → [data-testid="save-button"]
+ * ⏳ RED PHASE: Speaker row buttons (Mark as Contacted, View History, etc.) - SpeakerOutreachDashboard not implemented
+ * ⏳ RED PHASE: Bulk action buttons - Bulk outreach UI not implemented
  */
 
 import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
+// const API_URL = process.env.E2E_API_URL || 'http://localhost:8080'; // Reserved for future API integration tests
 
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
+// Note: loginAsOrganizer not needed - tests use global auth setup from playwright.config.ts
+// Kept for reference when implementing RED phase tests
+/* async function loginAsOrganizer(page: Page) {
   const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
   const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
 
@@ -39,14 +47,14 @@ async function loginAsOrganizer(page: Page) {
 
   // Wait for redirect to dashboard
   await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
+} */
 
 /**
  * Helper: Create a test event
  */
 async function createTestEvent(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+  await page.click('[data-testid="quick-action-new-event"]');
 
   // Fill event form
   await page.fill('input[name="title"]', `E2E Outreach Test ${Date.now()}`);
@@ -57,10 +65,10 @@ async function createTestEvent(page: Page): Promise<string> {
 
   // Select event type
   await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  await page.click('[data-testid="event-type-option-evening"]');
 
   // Submit form
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  await page.click('button[type="submit"]');
 
   // Wait for success and extract event code
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
@@ -86,7 +94,7 @@ async function addSpeakerToPool(
   await page.fill('input[name="company"]', company);
   await page.fill('textarea[name="expertise"]', expertise);
 
-  await page.click('button:has-text("Add to Pool")');
+  await page.click('[data-testid="add-to-pool-button"]');
 
   // Wait for speaker to appear in pool
   await expect(
@@ -179,7 +187,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
 
       // Submit
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Verify modal closes
       await expect(page.locator('[data-testid="mark-contacted-modal"]')).not.toBeVisible();
@@ -205,7 +213,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
 
       // Try to submit without date (clear default)
       await page.fill('[data-testid="contact-date"]', '');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Verify validation error
       await expect(page.locator('[role="alert"]')).toContainText('Contact date is required');
@@ -226,7 +234,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         .click();
       await page.selectOption('[data-testid="contact-method-select"]', 'email');
       await page.fill('[data-testid="contact-notes"]', 'Initial email sent');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Record second outreach
       await page
@@ -235,7 +243,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         .click();
       await page.selectOption('[data-testid="contact-method-select"]', 'phone');
       await page.fill('[data-testid="contact-notes"]', 'Follow-up call - confirmed interest');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Click to view timeline
       await page
@@ -263,7 +271,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         .locator('button:has-text("Mark as Contacted")')
         .click();
       await page.fill('[data-testid="contact-notes"]', 'First contact');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       await page.waitForTimeout(1000); // Ensure different timestamps
 
@@ -272,7 +280,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         .locator('button:has-text("Mark as Contacted")')
         .click();
       await page.fill('[data-testid="contact-notes"]', 'Second contact');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // View timeline
       await page
@@ -410,7 +418,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       // Record outreach
       await speakerRow.locator('button:has-text("Mark as Contacted")').click();
       await page.fill('[data-testid="contact-notes"]', 'Test workflow transition');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Verify state transitioned to CONTACTED
       await expect(speakerRow.locator('[data-testid="outreach-status"]')).toContainText(
@@ -418,7 +426,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
     });
 
-    test('should prevent marking speaker as contacted if in invalid state', async ({ page }) => {
+    test('should prevent marking speaker as contacted if in invalid state', async ({ page: _page }) => {
       // This test requires API-level validation
       // The frontend should handle 409 CONFLICT response from backend
       // when speaker is in DECLINED or other invalid state
@@ -426,7 +434,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
   });
 
   test.describe('AC12: REST API Integration', () => {
-    test('should POST outreach record via API', async ({ page, request }) => {
+    test('should POST outreach record via API', async ({ page, request: _request }) => {
       const eventCode = await createTestEvent(page);
       await addSpeakerToPool(page, eventCode, 'API Test Speaker', 'API Corp', 'API Testing');
 
@@ -444,7 +452,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
         (response) => response.url().includes('/outreach') && response.status() === 201
       );
 
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       const response = await responsePromise;
       expect(response.status()).toBe(201);
@@ -466,7 +474,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
       await speakerRow.locator('button:has-text("Mark as Contacted")').click();
       await page.fill('[data-testid="contact-notes"]', 'First outreach');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // View history (triggers GET /outreach)
       const responsePromise = page.waitForResponse(
@@ -499,7 +507,7 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       const speakerRow = page.locator('[data-testid="speaker-row"]:has-text("Error Test Speaker")');
       await speakerRow.locator('button:has-text("Mark as Contacted")').click();
       await page.fill('[data-testid="contact-notes"]', 'This should fail');
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-button"]');
 
       // Verify error message (implementation-dependent)
       // await expect(page.locator('[role="alert"]')).toContainText('Failed to record outreach');
