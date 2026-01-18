@@ -25,17 +25,22 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
-// Test data
-const TEST_PARTNER = {
-  companyName: `test-partner-${Date.now()}`,
-  partnershipLevel: 'GOLD',
-  partnershipStartDate: new Date().toISOString().split('T')[0],
-};
-
-const TEST_COMPANY = {
-  name: `test-company-${Date.now()}`,
-  displayName: 'Test Partner Company',
-  industry: 'Technology',
+// Test data factory - creates unique data per test
+const createTestData = () => {
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return {
+    company: {
+      name: `test-company-${timestamp}-${randomSuffix}`,
+      displayName: `Test Partner Co ${randomSuffix}`,
+      industry: 'Technology',
+    },
+    partner: {
+      companyName: `test-partner-${timestamp}-${randomSuffix}`,
+      partnershipLevel: 'GOLD' as const,
+      partnershipStartDate: new Date().toISOString().split('T')[0],
+    },
+  };
 };
 
 /**
@@ -58,7 +63,7 @@ function getAuthToken(): string {
  */
 async function createCompanyViaAPI(
   authToken: string,
-  companyData: typeof TEST_COMPANY
+  companyData: ReturnType<typeof createTestData>['company']
 ): Promise<void> {
   const response = await fetch(`${API_URL}/api/v1/companies`, {
     method: 'POST',
@@ -131,7 +136,8 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
   test('AC1, AC8: Create partnership workflow - full flow', async ({ page }) => {
     // Setup: Create a test company
     const authToken = getAuthToken();
-    await createCompanyViaAPI(authToken, TEST_COMPANY);
+    const testData = createTestData();
+    await createCompanyViaAPI(authToken, testData.company);
 
     try {
       // Navigate to Partner Directory
@@ -146,12 +152,12 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
       // AC3: Company Autocomplete - Search for company
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(TEST_COMPANY.displayName);
+      await companyInput.fill(testData.company.name);
 
       // Wait for autocomplete results (debounce 300ms + API response)
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
         .first()
         .click();
 
@@ -175,15 +181,16 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await page.waitForSelector('[data-testid="partner-detail-header"]', { timeout: 5000 });
     } finally {
       // Cleanup: Delete created partner and company
-      await deletePartnerViaAPI(authToken, TEST_COMPANY.name);
-      await deleteCompanyViaAPI(authToken, TEST_COMPANY.name);
+      await deletePartnerViaAPI(authToken, testData.company.name);
+      await deleteCompanyViaAPI(authToken, testData.company.name);
     }
   });
 
   test('AC2: Edit partnership workflow', async ({ page }) => {
     // Setup: Create company and partnership
     const authToken = getAuthToken();
-    await createCompanyViaAPI(authToken, TEST_COMPANY);
+    const testData = createTestData();
+    await createCompanyViaAPI(authToken, testData.company);
 
     // Create partnership via API
     await fetch(`${API_URL}/api/v1/partners`, {
@@ -193,15 +200,15 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
         Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
-        companyName: TEST_COMPANY.name,
+        companyName: testData.company.name,
         partnershipLevel: 'BRONZE',
-        partnershipStartDate: TEST_PARTNER.partnershipStartDate,
+        partnershipStartDate: testData.partner.partnershipStartDate,
       }),
     });
 
     try {
       // Navigate to partner detail page
-      await page.goto(`${BASE_URL}/organizer/partners/${TEST_COMPANY.name}`);
+      await page.goto(`${BASE_URL}/organizer/partners/${testData.company.name}`);
 
       // AC2: Click [Edit Partner] button to open edit modal
       await page.click('[data-testid="edit-partner-button"]');
@@ -211,7 +218,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
       // Verify company name is displayed (read-only, shown in modal content)
       await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toContainText(
-        TEST_COMPANY.name
+        testData.company.name
       );
 
       // Change tier from Bronze to Platinum
@@ -230,8 +237,8 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await expect(page.locator('[data-testid="partner-detail-header"]')).toBeVisible();
     } finally {
       // Cleanup
-      await deletePartnerViaAPI(authToken, TEST_COMPANY.name);
-      await deleteCompanyViaAPI(authToken, TEST_COMPANY.name);
+      await deletePartnerViaAPI(authToken, testData.company.name);
+      await deleteCompanyViaAPI(authToken, testData.company.name);
     }
   });
 
@@ -253,7 +260,8 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
   test('AC7: Form validation - date range', async ({ page }) => {
     const authToken = getAuthToken();
-    await createCompanyViaAPI(authToken, TEST_COMPANY);
+    const testData = createTestData();
+    await createCompanyViaAPI(authToken, testData.company);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
@@ -263,10 +271,10 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
       // Fill in company
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(TEST_COMPANY.displayName);
+      await companyInput.fill(testData.company.name);
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
         .first()
         .click();
 
@@ -283,13 +291,15 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       // Verify modal stays open (validation failed)
       await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
     } finally {
-      await deleteCompanyViaAPI(authToken, TEST_COMPANY.name);
+      await deleteCompanyViaAPI(authToken, testData.company.name);
     }
   });
 
   test('AC3: Company autocomplete - search and selection', async ({ page }) => {
     const authToken = getAuthToken();
-    await createCompanyViaAPI(authToken, TEST_COMPANY);
+    const testData = createTestData();
+
+    await createCompanyViaAPI(authToken, testData.company);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
@@ -297,9 +307,9 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await page.click('[data-testid="add-partner-button"]');
       await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
 
-      // Test autocomplete search
+      // Test autocomplete search - use the unique suffix to find the exact company
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill('Test'); // Partial search
+      await companyInput.fill(testData.company.name); // Search by technical name for precision
 
       // Wait for debounce and results
       await page.waitForTimeout(1000);
@@ -307,7 +317,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       // Verify company appears (getByRole works for autocomplete options)
       const companyOption = page
         .getByRole('option', {
-          name: new RegExp(TEST_COMPANY.displayName, 'i'),
+          name: new RegExp(testData.company.displayName, 'i'),
         })
         .first();
       await expect(companyOption).toBeVisible();
@@ -316,15 +326,16 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await companyOption.click();
 
       // Verify company selected (input shows technical name)
-      await expect(companyInput).toHaveValue(TEST_COMPANY.name);
+      await expect(companyInput).toHaveValue(testData.company.name);
     } finally {
-      await deleteCompanyViaAPI(authToken, TEST_COMPANY.name);
+      await deleteCompanyViaAPI(authToken, testData.company.name);
     }
   });
 
   test('AC10: Modal UX - unsaved changes warning', async ({ page }) => {
     const authToken = getAuthToken();
-    await createCompanyViaAPI(authToken, TEST_COMPANY);
+    const testData = createTestData();
+    await createCompanyViaAPI(authToken, testData.company);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
@@ -334,10 +345,10 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
       // Make changes to form
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
-      await companyInput.fill(TEST_COMPANY.displayName);
+      await companyInput.fill(testData.company.name);
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
         .first()
         .click();
 
@@ -357,7 +368,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
         await expect(page.locator('[data-testid="partner-create-edit-modal"]')).toBeVisible();
       }
     } finally {
-      await deleteCompanyViaAPI(authToken, TEST_COMPANY.name);
+      await deleteCompanyViaAPI(authToken, testData.company.name);
     }
   });
 
