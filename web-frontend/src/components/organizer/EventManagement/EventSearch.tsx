@@ -158,12 +158,13 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
 
   return (
     <Box data-testid="filter-container">
-      <Stack spacing={2}>
+      <Stack spacing={2} data-testid="event-filters">
         {/* Row 1: Search and Filters */}
         <Stack spacing={2} direction={{ xs: 'column', sm: 'row' }} alignItems="stretch">
           {/* Search Input */}
           <FormControl fullWidth>
             <TextField
+              data-testid="event-search-input"
               placeholder={t('dashboard.searchEvents')}
               value={searchQuery}
               onChange={handleSearchChange}
@@ -191,6 +192,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
               {t('dashboard.filter.workflowState')}
             </InputLabel>
             <Select
+              data-testid="filter-status"
               labelId="workflow-state-filter-label"
               multiple
               value={filters.workflowState || []}
@@ -223,6 +225,7 @@ export const EventSearch: React.FC<EventSearchProps> = ({ onFiltersChange, filte
           {/* Year Filter */}
           <FormControl sx={{ minWidth: 150 }}>
             <TextField
+              data-testid="filter-year"
               type="number"
               label={t('dashboard.filter.year')}
               placeholder={t('dashboard.filter.allYears')}

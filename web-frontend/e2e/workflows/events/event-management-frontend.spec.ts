@@ -17,31 +17,10 @@
  * Run: npx playwright test e2e/workflows/events/event-management-frontend.spec.ts
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const TEST_ORGANIZER_EMAIL = `organizer-${Date.now()}@batbern.ch`;
-const TEST_PASSWORD = 'TestPassword123!';
-
-/**
- * Helper: Login as organizer
- */
-async function loginAsOrganizer(page: Page): Promise<void> {
-  await page.goto(`${BASE_URL}/auth/login`);
-  await page.fill('input[name="email"]', TEST_ORGANIZER_EMAIL);
-  await page.fill('input[name="password"]', TEST_PASSWORD);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(/\/organizer\/dashboard/);
-}
-
-/**
- * Helper: Navigate to Event Management Dashboard
- */
-async function navigateToEventDashboard(page: Page): Promise<void> {
-  await page.goto(`${BASE_URL}/organizer/events`);
-  await page.waitForLoadState('networkidle');
-}
 
 // ============================================================================
 // TEST GROUP 1: Event Dashboard Display (AC: 1, 2)
@@ -55,27 +34,22 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_displayEventDashboard_when_navigated', async ({ page }) => {
     // AC1: Display active events pipeline with progress bars
-    await navigateToEventDashboard(page);
 
-    // Verify dashboard title is visible
-    await expect(page.getByTestId('event-dashboard-title')).toBeVisible();
-    await expect(page.getByTestId('event-dashboard-title')).toContainText(
-      /Event Management|Veranstaltungsverwaltung/
-    );
+    // Verify dashboard container is visible
+    await expect(page.getByTestId('dashboard-container')).toBeVisible();
 
     // Verify main dashboard sections
-    await expect(page.getByTestId('event-list-section')).toBeVisible();
+    await expect(page.getByTestId('event-list-container')).toBeVisible();
     await expect(page.getByTestId('critical-tasks-section')).toBeVisible();
     await expect(page.getByTestId('team-activity-section')).toBeVisible();
-    await expect(page.getByTestId('quick-actions-section')).toBeVisible();
+    await expect(page.getByTestId('quick-actions')).toBeVisible();
   });
 
   test('should_displayActiveEvents_when_eventsExist', async ({ page }) => {
     // AC1: Display active events pipeline with progress bars (65%, 15%, etc.)
-    await navigateToEventDashboard(page);
 
-    // Verify event cards are displayed
-    const eventCards = page.locator('[data-testid="event-card"]');
+    // Verify event cards are displayed (using dynamic data-testid with event code)
+    const eventCards = page.locator('[data-testid^="event-card-"]');
     await expect(eventCards.first()).toBeVisible();
 
     // Verify progress bar is displayed
@@ -90,9 +64,8 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_displayProgressPercentage_when_workflowActive', async ({ page }) => {
     // AC1: Show workflow step (Step 7/16, Step 2/16) for each event
-    await navigateToEventDashboard(page);
 
-    const firstEventCard = page.locator('[data-testid="event-card"]').first();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
     await firstEventCard.waitFor({ state: 'visible' });
 
     // Verify progress percentage is displayed (e.g., "65%", "15%")
@@ -102,7 +75,6 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_displayCriticalTasks_when_tasksExist', async ({ page }) => {
     // AC1: Display critical tasks count with priority indicators (⚠️, 🔴)
-    await navigateToEventDashboard(page);
 
     const criticalTasksSection = page.getByTestId('critical-tasks-section');
     await expect(criticalTasksSection).toBeVisible();
@@ -123,7 +95,6 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
   test('should_displayTeamActivity_when_activityExists', async ({ page }) => {
     // AC1: Implement team activity feed with real-time updates (manual reload)
     // AC13: Display team actions with timestamps
-    await navigateToEventDashboard(page);
 
     const teamActivitySection = page.getByTestId('team-activity-section');
     await expect(teamActivitySection).toBeVisible();
@@ -143,18 +114,16 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_displayQuickActions_when_dashboardLoaded', async ({ page }) => {
     // AC1: Quick actions sidebar ([+ New Event], [📊 Analytics], [👥 Speakers], etc.)
-    await navigateToEventDashboard(page);
 
-    const quickActionsSection = page.getByTestId('quick-actions-section');
+    const quickActionsSection = page.getByTestId('quick-actions');
     await expect(quickActionsSection).toBeVisible();
 
     // Verify New Event button
-    await expect(page.getByTestId('quick-action-new-event')).toBeVisible();
+    await expect(page.getByTestId('new-event-button')).toBeVisible();
   });
 
   test('should_filterEventsByStatus_when_filterSelected', async ({ page }) => {
     // AC2: Filter events by status (active, published, completed, archived)
-    await navigateToEventDashboard(page);
 
     // Open status filter
     await page.getByTestId('filter-status').click();
@@ -171,7 +140,6 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_searchEventsByTitle_when_searchInputTyped', async ({ page }) => {
     // AC2: Search events by title
-    await navigateToEventDashboard(page);
 
     const searchInput = page.getByTestId('event-search-input');
     await searchInput.fill('BATbern');
@@ -185,7 +153,6 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_sortEventsByDate_when_sortSelected', async ({ page }) => {
     // AC2: Sort by date, status, workflow progress
-    await navigateToEventDashboard(page);
 
     // Open sort dropdown
     await page.getByTestId('sort-dropdown').click();
@@ -202,7 +169,6 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 
   test('should_persistFiltersInURL_when_filtersChanged', async ({ page }) => {
     // AC2: URL persistence for filters (shareable links)
-    await navigateToEventDashboard(page);
 
     // Apply status filter
     await page.getByTestId('filter-status').click();
@@ -237,12 +203,11 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 test.describe('Event Management Frontend - Create Event Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/organizer/events');
-    await navigateToEventDashboard(page);
   });
 
   test('should_openCreateModal_when_newEventClicked', async ({ page }) => {
     // AC3: Modal form with event fields
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
 
     // Verify create event modal is visible
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
@@ -257,7 +222,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_validateRequiredFields_when_saveClicked', async ({ page }) => {
     // AC3: "Save & Create" button (full validation)
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     // Click save without filling required fields
@@ -269,7 +234,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_validateEventDate_when_dateTooSoon', async ({ page }) => {
     // AC3: Date picker with validation (min 30 days in future)
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     // Fill title
@@ -290,7 +255,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_validateRegistrationDeadline_when_deadlineTooClose', async ({ page }) => {
     // AC3: Registration deadline picker (min 7 days before event)
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     // Fill title
@@ -317,7 +282,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_allowSaveDraft_when_incompleteDataProvided', async ({ page }) => {
     // AC3: "Save Draft" button (allows incomplete data)
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     // Fill only title (minimal data)
@@ -338,7 +303,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Complete event creation workflow
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     // Fill all required fields
@@ -377,7 +342,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_selectEventType_when_typeDropdownClicked', async ({ page }) => {
     // AC3: Event type selection (Full Day, Afternoon, Evening)
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     await page.getByLabel(/Event Type|Veranstaltungstyp/).click();
@@ -390,7 +355,7 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 
   test('should_selectVenue_when_venueDropdownClicked', async ({ page }) => {
     // AC3: Venue selection dropdown
-    await page.getByTestId('quick-action-new-event').click();
+    await page.getByTestId('new-event-button').click();
     await expect(page.getByTestId('create-event-modal')).toBeVisible();
 
     await page.getByLabel(/Venue|Veranstaltungsort/).click();
@@ -409,12 +374,11 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 test.describe('Event Management Frontend - Edit Event Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/organizer/events');
-    await navigateToEventDashboard(page);
   });
 
   test('should_openEditForm_when_eventClicked', async ({ page }) => {
     // AC4: Pre-fill form with existing event data
-    const firstEventCard = page.locator('[data-testid="event-card"]').first();
+    const firstEventCard = page.locator('[data-testid^="event-card-"]').first();
     await firstEventCard.waitFor({ state: 'visible' });
 
     // Get event title before clicking
@@ -433,7 +397,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_prefillAllFields_when_editFormOpened', async ({ page }) => {
     // AC4: Pre-fill form with existing event data
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify all major fields are pre-filled
@@ -445,7 +409,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
   test('should_enableAutoSave_when_fieldChanged', async ({ page }) => {
     // AC20: Auto-save always enabled for all organizers (5-second debounce)
     // AC20: NOT configurable per user (stakeholder decision)
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change title
@@ -464,7 +428,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_displaySavingIndicator_when_autoSaveTriggered', async ({ page }) => {
     // AC20: Visual indicator showing "Saving..." and "Last saved at [timestamp]"
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change description
@@ -486,7 +450,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_sendPartialUpdate_when_onlyTitleChanged', async ({ page }) => {
     // AC4: Partial update support (only changed fields sent to backend)
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Change only title
@@ -502,7 +466,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_showUnsavedWarning_when_modalClosedWithChanges', async ({ page }) => {
     // AC4: Unsaved changes warning on modal close
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Make a change
@@ -526,7 +490,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
     // In a real scenario, this would require logging in as a different user
 
     // For now, we'll just verify the edit form checks for organizer role
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
 
     // Verify edit form is accessible for organizer
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
@@ -534,7 +498,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_displayErrorBanner_when_autoSaveFails', async ({ page }) => {
     // AC20: Error banner if auto-save fails
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Simulate network failure by going offline
@@ -556,7 +520,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_detectConflict_when_concurrentEdit', async ({ page }) => {
     // AC20: Auto-save conflict detection (concurrent edit warning)
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Make a change
@@ -573,7 +537,7 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 
   test('should_editInline_when_fieldsChanged', async ({ page }) => {
     // AC4: Inline editing for title, description, theme
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify inline editing fields
@@ -591,12 +555,11 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 test.describe('Event Management Frontend - Workflow Visualization', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/organizer/events');
-    await navigateToEventDashboard(page);
   });
 
   test('should_displayProgressBar_when_eventOpened', async ({ page }) => {
     // AC5: Progress bar showing completion percentage
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Verify workflow progress bar in event detail
@@ -609,7 +572,7 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
 
   test('should_showCurrentStep_when_workflowActive', async ({ page }) => {
     // AC5: Current step indicator (Step X/16: Step Name)
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     const stepIndicator = page.getByTestId('workflow-current-step');
@@ -619,7 +582,7 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
 
   test('should_navigateToWorkflow_when_progressBarClicked', async ({ page }) => {
     // AC5: Clickable progress bar navigates to Workflow Visualization
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Click on workflow progress bar
@@ -638,7 +601,7 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
 
   test('should_displayWarningIndicators_when_blockersExist', async ({ page }) => {
     // AC5: Warning indicators for blockers (⚠️)
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Check if warning indicators exist (they may or may not depending on event state)
@@ -653,7 +616,7 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
 
   test('should_openWorkflowDetails_when_viewDetailsClicked', async ({ page }) => {
     // AC5: [View Workflow Details] button
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await expect(page.getByTestId('event-edit-form')).toBeVisible();
 
     // Click View Workflow Details button
@@ -665,7 +628,7 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
 
   test('should_display16Steps_when_workflowVisualizationOpened', async ({ page }) => {
     // AC5: 16-step workflow progress
-    await page.locator('[data-testid="event-card"]').first().click();
+    await page.locator('[data-testid^="event-card-"]').first().click();
     await page.getByTestId('workflow-progress-bar-detail').click();
 
     await expect(page.getByTestId('workflow-visualization-page')).toBeVisible();
@@ -680,36 +643,6 @@ test.describe('Event Management Frontend - Workflow Visualization', () => {
       await expect(step).toBeVisible();
       await expect(step.locator('[data-testid="step-name"]')).toBeVisible();
       await expect(step.locator('[data-testid="step-status"]')).toBeVisible();
-    }
-  });
-});
-
-// ============================================================================
-// TEST GROUP 5: Verify Tests Fail (RED Phase Confirmation)
-// ============================================================================
-
-test.describe('Event Management Frontend - Verify RED Phase', () => {
-  test('should_fail_when_componentsNotImplemented', async ({ page }) => {
-    // This test group verifies that all above tests FAIL because components aren't implemented yet
-    // This is the RED phase of TDD - tests should fail with meaningful error messages
-
-    await page.goto('/organizer/events');
-    await navigateToEventDashboard(page);
-
-    // Verify expected failure: Dashboard components don't exist yet
-    // In TDD RED phase, this should throw an error like:
-    // "locator.waitFor: Timeout 30000ms exceeded waiting for selector [data-testid="event-dashboard-title"]"
-
-    try {
-      await page.getByTestId('event-dashboard-title').waitFor({ timeout: 1000 });
-      // If this succeeds, components are already implemented (not RED phase)
-      console.log(
-        '⚠️  WARNING: Components may already be implemented. Expected RED phase failure.'
-      );
-    } catch (error) {
-      // Expected: Components not found (RED phase)
-      console.log('✓ RED Phase confirmed: Components not implemented yet');
-      expect(error).toBeTruthy();
     }
   });
 });

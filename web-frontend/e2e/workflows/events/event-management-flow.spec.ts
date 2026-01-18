@@ -27,9 +27,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
-const TEST_ORGANIZER_EMAIL = `organizer-${Date.now()}@batbern.ch`;
-const TEST_PASSWORD = 'TestPassword123!';
+const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 // Type definitions
 interface Event {
@@ -64,28 +62,22 @@ interface Session {
 }
 
 /**
- * Helper: Login as organizer and get auth token
+ * Helper: Get auth token from localStorage (injected by global-setup.ts)
  */
-async function loginAsOrganizer(page: Page): Promise<string> {
-  await page.goto(`${BASE_URL}/auth/login`);
-  await page.fill('input[name="email"]', TEST_ORGANIZER_EMAIL);
-  await page.fill('input[name="password"]', TEST_PASSWORD);
-  await page.click('button[type="submit"]');
-
-  await page.waitForURL(/\/organizer\/dashboard/);
-
-  const token = await page.evaluate(() => localStorage.getItem('authToken'));
+async function getAuthToken(page: Page): Promise<string> {
+  const token = await page.evaluate(() => localStorage.getItem('idToken'));
   return token || '';
 }
 
 /**
- * Helper: Make authenticated API request
+ * Helper: Make authenticated API request using page.request (uses auth from storage state)
  */
 async function apiRequest(
+  page: Page,
   endpoint: string,
-  token: string,
   options: RequestInit = {}
 ): Promise<Response> {
+  const token = await getAuthToken(page);
   return fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -99,13 +91,15 @@ async function apiRequest(
 /**
  * Helper: Create test event via API
  */
-async function createTestEvent(token: string, title: string = 'BATbern Test 2025'): Promise<Event> {
-  const response = await apiRequest('/api/v1/events', token, {
+async function createTestEvent(page: Page, title: string = 'BATbern Test 2025'): Promise<Event> {
+  const response = await apiRequest(page, '/api/v1/events', {
     method: 'POST',
     body: JSON.stringify({
       title,
-      date: '2025-05-15T09:00:00Z',
-      status: 'draft',
+      eventType: 'FULL_DAY',
+      eventDate: '2025-05-15',
+      registrationDeadline: '2025-05-08',
+      maxAttendees: 200,
       description: 'Test event for API consolidation',
     }),
   });
@@ -118,14 +112,6 @@ async function createTestEvent(token: string, title: string = 'BATbern Test 2025
 // ============================================================================
 
 test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
-  let authToken: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    await page.close();
-  });
-
   test('should_loadEventDashboard_when_usingNewListAPI', async ({ page }) => {
     // AC1 & AC17: Event dashboard loads using consolidated API
     // BEFORE: 30 API calls to load dashboard
@@ -134,19 +120,19 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
     await page.goto(`${BASE_URL}/organizer/events`);
 
     // Wait for event list to load
-    await expect(page.getByTestId('event-list')).toBeVisible();
+    await expect(page.getByTestId('event-list-container')).toBeVisible();
 
     // Verify events are displayed
-    const events = page.locator('[data-testid="event-card"]');
+    const events = page.locator('[data-testid^="event-card-"]');
     await expect(events.first()).toBeVisible();
 
     // Verify consolidated API was called (check network requests)
     // In real implementation, verify only 1 call to /api/v1/events?include=...
   });
 
-  test('should_filterByStatus_when_filterProvided', async () => {
+  test('should_filterByStatus_when_filterProvided', async ({ page }) => {
     // AC1: Filter events by status
-    const response = await apiRequest('/api/v1/events?filter={"status":"published"}', authToken);
+    const response = await apiRequest(page, '/api/v1/events?filter={"status":"published"}');
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -159,11 +145,11 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
     });
   });
 
-  test('should_filterByYear_when_dateFilterProvided', async () => {
+  test('should_filterByYear_when_dateFilterProvided', async ({ page }) => {
     // AC1: Filter events by year
     const response = await apiRequest(
-      '/api/v1/events?filter={"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}',
-      authToken
+      page,
+      '/api/v1/events?filter={"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}'
     );
     const data = await response.json();
 
@@ -176,9 +162,9 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
     });
   });
 
-  test('should_sortByDate_when_sortParamProvided', async () => {
+  test('should_sortByDate_when_sortParamProvided', async ({ page }) => {
     // AC1: Sort events by date descending
-    const response = await apiRequest('/api/v1/events?sort=-date', authToken);
+    const response = await apiRequest(page, '/api/v1/events?sort=-date');
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -190,9 +176,9 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
     }
   });
 
-  test('should_paginateResults_when_pageParamProvided', async () => {
+  test('should_paginateResults_when_pageParamProvided', async ({ page }) => {
     // AC1: Pagination support
-    const response = await apiRequest('/api/v1/events?page=1&limit=10', authToken);
+    const response = await apiRequest(page, '/api/v1/events?page=1&limit=10');
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -210,13 +196,12 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
 // ============================================================================
 
 test.describe('Events API Consolidation - Event Detail (AC2)', () => {
-  let authToken: string;
   let testEvent: Event;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    testEvent = await createTestEvent(authToken);
+    await page.goto('/organizer/events');
+    testEvent = await createTestEvent(page);
     await page.close();
   });
 
@@ -232,9 +217,9 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
     await expect(page.getByText(testEvent.title)).toBeVisible();
   });
 
-  test('should_getEventBasic_when_noIncludesProvided', async () => {
+  test('should_getEventBasic_when_noIncludesProvided', async ({ page }) => {
     // AC2: Basic event without includes
-    const response = await apiRequest(`/api/v1/events/${testEvent.id}`, authToken);
+    const response = await apiRequest(page, `/api/v1/events/${testEvent.id}`);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -249,9 +234,9 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
     expect(data.sessions).toBeUndefined();
   });
 
-  test('should_includeVenue_when_includeVenueRequested', async () => {
+  test('should_includeVenue_when_includeVenueRequested', async ({ page }) => {
     // AC2: Include venue in response
-    const response = await apiRequest(`/api/v1/events/${testEvent.id}?include=venue`, authToken);
+    const response = await apiRequest(page, `/api/v1/events/${testEvent.id}?include=venue`);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -261,9 +246,9 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
     expect(data.venue.capacity).toBeDefined();
   });
 
-  test('should_includeSpeakers_when_includeSpeakersRequested', async () => {
+  test('should_includeSpeakers_when_includeSpeakersRequested', async ({ page }) => {
     // AC2: Include speakers in response
-    const response = await apiRequest(`/api/v1/events/${testEvent.id}?include=speakers`, authToken);
+    const response = await apiRequest(page, `/api/v1/events/${testEvent.id}?include=speakers`);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -271,11 +256,11 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
     expect(Array.isArray(data.speakers)).toBe(true);
   });
 
-  test('should_includeMultiple_when_multipleIncludesRequested', async () => {
+  test('should_includeMultiple_when_multipleIncludesRequested', async ({ page }) => {
     // AC2: Include multiple resources
     const response = await apiRequest(
-      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions,topics,workflow`,
-      authToken
+      page,
+      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions,topics,workflow`
     );
     const data = await response.json();
 
@@ -287,9 +272,9 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
     expect(data.workflow).toBeDefined();
   });
 
-  test('should_return404_when_eventNotFound', async () => {
+  test('should_return404_when_eventNotFound', async ({ page }) => {
     // AC2: Error handling for non-existent event
-    const response = await apiRequest('/api/v1/events/non-existent-id', authToken);
+    const response = await apiRequest(page, '/api/v1/events/non-existent-id');
 
     expect(response.status).toBe(404);
   });
@@ -300,22 +285,16 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
 // ============================================================================
 
 test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
-  let authToken: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    await page.close();
-  });
-
-  test('should_createEvent_when_validDataProvided', async () => {
+  test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Create event
-    const response = await apiRequest('/api/v1/events', authToken, {
+    const response = await apiRequest(page, '/api/v1/events', {
       method: 'POST',
       body: JSON.stringify({
         title: 'New Test Event',
-        date: '2025-06-01T09:00:00Z',
-        status: 'draft',
+        eventType: 'FULL_DAY',
+        eventDate: '2025-06-01',
+        registrationDeadline: '2025-05-25',
+        maxAttendees: 200,
         description: 'Test event creation',
       }),
     });
@@ -326,29 +305,31 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
     expect(data.title).toBe('New Test Event');
   });
 
-  test('should_return400_when_invalidDataProvided', async () => {
+  test('should_return400_when_invalidDataProvided', async ({ page }) => {
     // AC3: Validation error for invalid data
-    const response = await apiRequest('/api/v1/events', authToken, {
+    const response = await apiRequest(page, '/api/v1/events', {
       method: 'POST',
       body: JSON.stringify({
         // Missing required fields
-        status: 'draft',
+        description: 'Incomplete event data',
       }),
     });
 
     expect(response.status).toBe(400);
   });
 
-  test('should_replaceEvent_when_putRequested', async () => {
+  test('should_replaceEvent_when_putRequested', async ({ page }) => {
     // AC4: Update event (full replacement)
-    const event = await createTestEvent(authToken, 'Event to Replace');
+    const event = await createTestEvent(page, 'Event to Replace');
 
-    const response = await apiRequest(`/api/v1/events/${event.id}`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}`, {
       method: 'PUT',
       body: JSON.stringify({
         title: 'Replaced Event',
-        date: '2025-07-01T09:00:00Z',
-        status: 'draft',
+        eventType: 'FULL_DAY',
+        eventDate: '2025-07-01',
+        registrationDeadline: '2025-06-24',
+        maxAttendees: 200,
         description: 'Event replaced via PUT',
       }),
     });
@@ -358,11 +339,11 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
     expect(data.title).toBe('Replaced Event');
   });
 
-  test('should_patchFields_when_patchRequested', async () => {
+  test('should_patchFields_when_patchRequested', async ({ page }) => {
     // AC5: Partial update
-    const event = await createTestEvent(authToken, 'Event to Patch');
+    const event = await createTestEvent(page, 'Event to Patch');
 
-    const response = await apiRequest(`/api/v1/events/${event.id}`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         title: 'Patched Title Only',
@@ -372,21 +353,21 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.title).toBe('Patched Title Only');
-    expect(data.date).toBe(event.date); // Date unchanged
+    expect(data.eventDate).toBe(event.eventDate); // Date unchanged
   });
 
-  test('should_deleteEvent_when_deleteRequested', async () => {
+  test('should_deleteEvent_when_deleteRequested', async ({ page }) => {
     // AC6: Delete event
-    const event = await createTestEvent(authToken, 'Event to Delete');
+    const event = await createTestEvent(page, 'Event to Delete');
 
-    const response = await apiRequest(`/api/v1/events/${event.id}`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}`, {
       method: 'DELETE',
     });
 
     expect(response.status).toBe(204);
 
     // Verify event no longer exists
-    const getResponse = await apiRequest(`/api/v1/events/${event.id}`, authToken);
+    const getResponse = await apiRequest(page, `/api/v1/events/${event.id}`);
     expect(getResponse.status).toBe(404);
   });
 });
@@ -396,19 +377,11 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
 // ============================================================================
 
 test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
-  let authToken: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    await page.close();
-  });
-
-  test('should_publishEvent_when_validationPasses', async () => {
+  test('should_publishEvent_when_validationPasses', async ({ page }) => {
     // AC7: Publish event
-    const event = await createTestEvent(authToken, 'Event to Publish');
+    const event = await createTestEvent(page, 'Event to Publish');
 
-    const response = await apiRequest(`/api/v1/events/${event.id}/publish`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}/publish`, {
       method: 'POST',
     });
 
@@ -417,23 +390,23 @@ test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
     expect(data.status).toBe('published');
   });
 
-  test('should_return422_when_validationFails', async () => {
+  test('should_return422_when_validationFails', async ({ page }) => {
     // AC7: Publish validation failure
-    const event = await createTestEvent(authToken, 'Incomplete Event');
+    const event = await createTestEvent(page, 'Incomplete Event');
     // Event missing required fields for publishing
 
-    const response = await apiRequest(`/api/v1/events/${event.id}/publish`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}/publish`, {
       method: 'POST',
     });
 
     expect(response.status).toBe(422);
   });
 
-  test('should_advanceWorkflow_when_transitionValid', async () => {
+  test('should_advanceWorkflow_when_transitionValid', async ({ page }) => {
     // AC8: Advance workflow to next state
-    const event = await createTestEvent(authToken, 'Workflow Event');
+    const event = await createTestEvent(page, 'Workflow Event');
 
-    const response = await apiRequest(`/api/v1/events/${event.id}/workflow/advance`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}/workflow/advance`, {
       method: 'POST',
     });
 
@@ -443,12 +416,12 @@ test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
     expect(data.workflow.currentStep).toBeGreaterThan(1);
   });
 
-  test('should_return422_when_transitionInvalid', async () => {
+  test('should_return422_when_transitionInvalid', async ({ page }) => {
     // AC8: Invalid workflow transition
-    const event = await createTestEvent(authToken, 'Invalid Workflow Event');
+    const event = await createTestEvent(page, 'Invalid Workflow Event');
     // Try to advance workflow when prerequisites not met
 
-    const response = await apiRequest(`/api/v1/events/${event.id}/workflow/advance`, authToken, {
+    const response = await apiRequest(page, `/api/v1/events/${event.id}/workflow/advance`, {
       method: 'POST',
     });
 
@@ -461,17 +434,16 @@ test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
 // ============================================================================
 
 test.describe('Events API Consolidation - Performance (AC15-16)', () => {
-  let authToken: string;
   let testEvent: Event;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    testEvent = await createTestEvent(authToken);
+    await page.goto('/organizer/events');
+    testEvent = await createTestEvent(page);
     await page.close();
   });
 
-  test('should_respondUnder500ms_when_fullIncludesRequested', async () => {
+  test('should_respondUnder500ms_when_fullIncludesRequested', async ({ page }) => {
     // AC16: Performance requirement - event detail with all includes <500ms P95
     const measurements: number[] = [];
 
@@ -479,8 +451,8 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
     for (let i = 0; i < 10; i++) {
       const startTime = Date.now();
       const response = await apiRequest(
-        `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics`,
-        authToken
+        page,
+        `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics`
       );
       const endTime = Date.now();
 
@@ -501,11 +473,11 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
     );
   });
 
-  test('should_returnCached_when_withinTTL', async () => {
+  test('should_returnCached_when_withinTTL', async ({ page }) => {
     // AC15: Redis caching for expanded resources
     const firstResponse = await apiRequest(
-      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions`,
-      authToken
+      page,
+      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions`
     );
     expect(firstResponse.status).toBe(200);
     const firstData = await firstResponse.json();
@@ -513,8 +485,8 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
     // Second request should be cached (faster)
     const startTime = Date.now();
     const cachedResponse = await apiRequest(
-      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions`,
-      authToken
+      page,
+      `/api/v1/events/${testEvent.id}?include=venue,speakers,sessions`
     );
     const cachedLatency = Date.now() - startTime;
 
@@ -534,30 +506,22 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
 // ============================================================================
 
 test.describe('Events API Consolidation - Wireframe Migration (AC17)', () => {
-  let authToken: string;
-
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    authToken = await page.goto('/organizer/events');
-    await page.close();
-  });
-
   test('should_loadEventManagementDashboard_when_migratedToNewAPIs', async ({ page }) => {
     // AC17: story-1.16-event-management-dashboard.md uses new APIs
     await page.goto(`${BASE_URL}/organizer/events`);
 
-    await expect(page.getByTestId('event-list')).toBeVisible();
+    await expect(page.getByTestId('event-list-container')).toBeVisible();
     await expect(page.getByTestId('event-search')).toBeVisible();
     await expect(page.getByTestId('event-filters')).toBeVisible();
 
     // Verify page loads successfully with consolidated APIs
-    const events = page.locator('[data-testid="event-card"]');
+    const events = page.locator('[data-testid^="event-card-"]');
     await expect(events.count()).resolves.toBeGreaterThan(0);
   });
 
   test('should_loadEventDetailEdit_when_migratedToNewAPIs', async ({ page }) => {
     // AC17: story-1.16-event-detail-edit.md uses new APIs
-    const event = await createTestEvent(authToken);
+    const event = await createTestEvent(page);
 
     await page.goto(`${BASE_URL}/organizer/events/${event.id}/edit`);
 
