@@ -94,6 +94,7 @@ const AppHeader = React.memo(function AppHeader({
   return (
     <>
       <AppBar
+        component="header"
         position="sticky"
         elevation={1}
         sx={{

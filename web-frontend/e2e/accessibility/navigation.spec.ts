@@ -76,17 +76,18 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
   test('should have semantic HTML landmarks', async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
-    // Verify header landmark
-    const header = page.locator('header');
+    // Verify header landmark (AppBar renders with banner role, which is equivalent to header)
+    const header = page.locator('header, [role="banner"]');
     await expect(header).toBeAttached();
 
     // Verify main landmark
     const main = page.locator('main');
     await expect(main).toBeAttached();
 
-    // Verify navigation landmark
-    const nav = page.locator('nav');
+    // Verify navigation landmark (check for main navigation specifically)
+    const nav = page.locator('nav[aria-label="main navigation"]');
     await expect(nav).toBeAttached();
   });
 
