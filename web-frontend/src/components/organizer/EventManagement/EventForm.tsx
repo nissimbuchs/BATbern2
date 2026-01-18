@@ -618,7 +618,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         onClose={handleCloseClick}
         maxWidth="md"
         fullWidth
-        data-testid={mode === 'create' ? 'create-event-modal' : 'edit-event-modal'}
+        data-testid={mode === 'create' ? 'create-event-modal' : 'event-edit-modal'}
       >
         <DialogTitle>{mode === 'create' ? t('form.createEvent') : t('form.editEvent')}</DialogTitle>
 
@@ -637,7 +637,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         <DialogContent>
           {/* Tab Panel 0: Info (Event Form) */}
           {currentTab === 0 && (
-            <Box sx={{ pt: 2 }} data-testid={mode === 'create' ? 'create-event-form' : 'edit-event-form'}>
+            <Box
+              sx={{ pt: 2 }}
+              data-testid={mode === 'create' ? 'create-event-form' : 'event-edit-form'}
+            >
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}
