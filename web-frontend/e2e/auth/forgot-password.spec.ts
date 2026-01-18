@@ -24,6 +24,10 @@ const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
 const MAILHOG_URL = process.env.MAILHOG_URL || 'http://localhost:8025';
 
+// Skip tests that require Cognito/MailHog integration in local dev
+const HAS_EMAIL_INTEGRATION =
+  process.env.CI === 'true' || process.env.ENABLE_EMAIL_TESTS === 'true';
+
 /**
  * Helper: Navigate to forgot password page
  */
@@ -121,18 +125,23 @@ test.describe('Forgot Password - Basic Flow', () => {
     await expect(submitButton).not.toBeDisabled();
   });
 
-  test('should_showConfirmation_when_resetLinkSent', async ({ page }) => {
-    // AC6: Display confirmation with masked email address
-    await navigateToForgotPassword(page);
+  test.skip(
+    !HAS_EMAIL_INTEGRATION,
+    'should_showConfirmation_when_resetLinkSent',
+    async ({ page }) => {
+      // AC6: Display confirmation with masked email address
+      // Requires Cognito integration
+      await navigateToForgotPassword(page);
 
-    await submitForgotPasswordForm(page, TEST_EMAIL);
+      await submitForgotPasswordForm(page, TEST_EMAIL);
 
-    // Wait for confirmation screen
-    await expect(page.getByText(/check your email/i)).toBeVisible();
+      // Wait for confirmation screen
+      await expect(page.getByText(/check your email/i)).toBeVisible();
 
-    // Email should be masked (e.g., t***@batbern.ch)
-    await expect(page.getByText(/t\*+@batbern\.ch/i)).toBeVisible();
-  });
+      // Email should be masked (e.g., t***@batbern.ch)
+      await expect(page.getByText(/t\*+@batbern\.ch/i)).toBeVisible();
+    }
+  );
 
   test('should_navigateToLogin_when_backLinkClicked', async ({ page }) => {
     // AC5: Back to Login navigation
@@ -149,6 +158,10 @@ test.describe('Forgot Password - Basic Flow', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Email Delivery', () => {
+  // Skip entire group if email integration not available
+  if (!HAS_EMAIL_INTEGRATION) {
+    test.skip();
+  }
   test('should_sendGermanEmail_when_userLanguageIsGerman', async ({ page }) => {
     // AC15: German email template
     // Set Accept-Language header to German
@@ -220,6 +233,10 @@ test.describe('Forgot Password - Email Delivery', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Resend Functionality', () => {
+  // Skip entire group if email integration not available
+  if (!HAS_EMAIL_INTEGRATION) {
+    test.skip();
+  }
   test('should_showResendButton_when_confirmationDisplayed', async ({ page }) => {
     // AC7: Resend functionality available on confirmation screen
     await navigateToForgotPassword(page);
@@ -291,6 +308,10 @@ test.describe('Forgot Password - Resend Functionality', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Security', () => {
+  // Skip entire group if email integration not available
+  if (!HAS_EMAIL_INTEGRATION) {
+    test.skip();
+  }
   test('should_showSameResponse_when_emailDoesNotExist', async ({ page }) => {
     // AC12: Email enumeration prevention
     const nonExistentEmail = 'nonexistent@example.com';
@@ -329,6 +350,10 @@ test.describe('Forgot Password - Security', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Rate Limiting', () => {
+  // Skip entire group if email integration not available
+  if (!HAS_EMAIL_INTEGRATION) {
+    test.skip();
+  }
   test('should_showRateLimitError_when_limitExceeded', async ({ page }) => {
     // AC13: Rate limiting - 3 requests per hour per email
     await navigateToForgotPassword(page);
@@ -367,6 +392,10 @@ test.describe('Forgot Password - Rate Limiting', () => {
 // ============================================================================
 
 test.describe('Forgot Password - Error Handling', () => {
+  // Skip entire group if email integration not available
+  if (!HAS_EMAIL_INTEGRATION) {
+    test.skip();
+  }
   test('should_displayNetworkError_when_serverUnreachable', async ({ page, context }) => {
     // AC21: Network error with retry option
     // Simulate network failure

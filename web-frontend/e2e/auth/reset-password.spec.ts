@@ -25,6 +25,10 @@ const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
 // or integrate with AWS Cognito to get a valid test code
 const TEST_CODE = process.env.E2E_TEST_CODE || '123456';
 
+// Skip tests that require Cognito integration in local dev
+const HAS_COGNITO_INTEGRATION =
+  process.env.CI === 'true' || process.env.ENABLE_COGNITO_TESTS === 'true';
+
 /**
  * Helper: Navigate to reset password page with email parameter
  */
@@ -265,6 +269,10 @@ test.describe('Reset Password - Accessibility', () => {
 // ============================================================================
 
 test.describe('Reset Password - Integration', () => {
+  // Skip entire group if Cognito integration not available
+  if (!HAS_COGNITO_INTEGRATION) {
+    test.skip();
+  }
   test('should_linkBackToForgotPassword_when_codeExpired', async ({ page }) => {
     // AC18: Link to request new code when code is expired
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -283,6 +291,10 @@ test.describe('Reset Password - Integration', () => {
 // ============================================================================
 
 test.describe('Reset Password - Error Handling', () => {
+  // Skip entire group if Cognito integration not available
+  if (!HAS_COGNITO_INTEGRATION) {
+    test.skip();
+  }
   test.skip('should_showError_when_codeInvalidFromCognito', async ({ page }) => {
     // AC17: Show error for invalid code from Cognito
     // This test requires actual Cognito integration
