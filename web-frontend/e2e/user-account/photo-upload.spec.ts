@@ -37,32 +37,32 @@ test.describe('Photo Upload Flow', () => {
     await page.click('[data-testid="upload-photo-button"]');
   });
 
-  test.skip('should_uploadFileInThreePhases_when_cropConfirmed', async ({ page }) => {
+  test.skip('should_uploadFileInThreePhases_when_cropConfirmed', async () => {
     // AC12: Profile photo upload uses ADR-002 3-phase pattern
     // SKIPPED: Implementation uses simple file input without visible progress UI
     // Photo upload handled by useUploadProfilePicture hook with S3 presigned URLs
   });
 
-  test.skip('should_trackUploadProgress_when_uploadingToS3', async ({ page }) => {
+  test.skip('should_trackUploadProgress_when_uploadingToS3', async () => {
     // AC12: Upload progress tracking during S3 upload
     // SKIPPED: Implementation doesn't show progress UI to user
     // Upload handled automatically by browser after file selection
   });
 
-  test.skip('should_removePhoto_when_removeButtonClicked', async ({ page }) => {
+  test.skip('should_removePhoto_when_removeButtonClicked', async () => {
     // AC13: Remove Photo button deletes profile picture
     // SKIPPED: Remove button only appears when user has a profile photo
     // Test user may not have a profile photo, and we cannot reliably upload one
     // Implementation uses browser confirm() dialog, not a custom dialog
   });
 
-  test.skip('should_validateFileSize_when_photoSelected', async ({ page }) => {
+  test.skip('should_validateFileSize_when_photoSelected', async () => {
     // AC39: File size validation (<5MB, JPEG/PNG only)
     // SKIPPED: Requires test fixture files that don't exist
     // File size validation happens server-side during S3 upload
   });
 
-  test.skip('should_validateFileType_when_photoSelected', async ({ page }) => {
+  test.skip('should_validateFileType_when_photoSelected', async () => {
     // AC39: File type validation (JPEG/PNG only)
     // SKIPPED: Requires test fixture files that don't exist
     // File type validation handled by input accept attribute: accept="image/jpeg,image/png"
