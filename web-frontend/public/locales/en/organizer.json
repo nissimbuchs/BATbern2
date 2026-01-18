@@ -360,5 +360,21 @@
     "completedOn": "Completed on",
     "completedBy": "Completed by",
     "noTasks": "No tasks"
+  },
+  "sendInvitation": {
+    "title": "Send Speaker Invitation",
+    "speakerInfo": "Speaker",
+    "personalMessage": "Personal Message",
+    "personalMessagePlaceholder": "Tell the speaker why you chose them and what makes them a great fit for this event...",
+    "personalMessageHelp": "This message will be included in the invitation email",
+    "expirationDays": "Response Deadline",
+    "expirationOption": "{{days}} days",
+    "send": "Send Invitation",
+    "error": {
+      "failed": "Failed to send invitation. Please try again.",
+      "noEmail": "This speaker does not have an email address. Please add an email before sending an invitation.",
+      "noUsername": "This speaker is not linked to a user account. Please link the speaker to a user before sending an invitation."
+    },
+    "success": "Invitation sent successfully"
   }
 }

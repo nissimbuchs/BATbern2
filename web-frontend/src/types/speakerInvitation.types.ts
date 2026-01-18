@@ -70,3 +70,17 @@ export interface InvitationResponse {
   /** Speaker preferences (populated after ACCEPTED response) */
   preferences?: SpeakerResponsePreferences;
 }
+
+/**
+ * Request body for sending an invitation (organizer action) - Story 6.3
+ */
+export interface SendInvitationRequest {
+  /** Speaker username to invite */
+  username: string;
+  /** Event code */
+  eventCode?: string;
+  /** Personal message explaining why the speaker was chosen */
+  personalMessage?: string;
+  /** Number of days until invitation expires (default: 14) */
+  expirationDays?: number;
+}

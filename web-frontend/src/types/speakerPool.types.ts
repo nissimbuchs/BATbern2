@@ -16,6 +16,7 @@ export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState']
 export interface SpeakerPoolEntry {
   id: string;
   eventId: string;
+  username?: string; // Username for linked/authenticated speakers (Story 6.3)
   speakerName: string;
   company?: string;
   expertise?: string;

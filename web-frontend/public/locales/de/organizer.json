@@ -360,5 +360,21 @@
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
     "noTasks": "Keine Aufgaben"
+  },
+  "sendInvitation": {
+    "title": "Speaker-Einladung senden",
+    "speakerInfo": "Speaker",
+    "personalMessage": "Persönliche Nachricht",
+    "personalMessagePlaceholder": "Erklären Sie dem Speaker, warum Sie ihn ausgewählt haben und was ihn zu einem idealen Redner für diese Veranstaltung macht...",
+    "personalMessageHelp": "Diese Nachricht wird in der Einladungs-E-Mail enthalten sein",
+    "expirationDays": "Antwortfrist",
+    "expirationOption": "{{days}} Tage",
+    "send": "Einladung senden",
+    "error": {
+      "failed": "Einladung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+      "noEmail": "Dieser Speaker hat keine E-Mail-Adresse. Bitte fügen Sie eine E-Mail hinzu, bevor Sie eine Einladung senden.",
+      "noUsername": "Dieser Speaker ist nicht mit einem Benutzerkonto verknüpft. Bitte verknüpfen Sie den Speaker mit einem Benutzer, bevor Sie eine Einladung senden."
+    },
+    "success": "Einladung erfolgreich gesendet"
   }
 }

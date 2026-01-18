@@ -17,7 +17,9 @@ import ch.batbern.events.event.InvitationRespondedEvent;
 import ch.batbern.events.event.SpeakerInvitedEvent;
 import ch.batbern.events.exception.InvitationExpiredException;
 import ch.batbern.events.exception.InvitationNotFoundException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.util.InvitationTokenGenerator;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -54,6 +56,8 @@ import java.util.List;
 public class InvitationService {
 
     private final SpeakerInvitationRepository invitationRepository;
+    private final SpeakerPoolRepository speakerPoolRepository;
+    private final EventRepository eventRepository;
     private final SpeakerService speakerService;
     private final InvitationTokenGenerator tokenGenerator;
     private final DomainEventPublisher domainEventPublisher;
@@ -79,13 +83,33 @@ public class InvitationService {
      * Separated to allow use from bulk operations with separate transactions.
      */
     private InvitationResponse sendInvitationInternal(SendInvitationRequest request, String organizerUsername) {
-        log.info("Sending invitation to speaker {} for event {}", request.getUsername(), request.getEventCode());
+        log.info("Sending invitation to speaker {} for event {}",
+                request.getUsername(), request.getEventCode());
 
         // Validate speaker exists
         Speaker speaker = speakerService.getSpeakerEntityByUsername(request.getUsername());
 
+        // Story 6.3: Validate speaker has email address in speaker pool
+        var event = eventRepository.findByEventCode(request.getEventCode())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Event not found: " + request.getEventCode()));
+
+        var speakerPool = speakerPoolRepository.findByEventIdAndUsername(
+                event.getId(), request.getUsername());
+
+        if (speakerPool.isPresent()) {
+            String email = speakerPool.get().getEmail();
+            if (email == null || email.isBlank()) {
+                throw new IllegalStateException(
+                        String.format("Speaker %s does not have an email address. "
+                                + "Please add an email before sending an invitation.",
+                                request.getUsername()));
+            }
+        }
+
         // Check for existing active invitation
-        if (invitationRepository.existsActiveInvitation(request.getUsername(), request.getEventCode())) {
+        if (invitationRepository.existsActiveInvitation(
+                request.getUsername(), request.getEventCode())) {
             throw new IllegalStateException(
                     String.format("An active invitation already exists for speaker %s and event %s",
                             request.getUsername(), request.getEventCode()));

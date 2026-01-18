@@ -33,6 +33,7 @@ import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
 import { QualityReviewDrawer } from './QualityReviewDrawer';
+import { SendInvitationModal } from '@/components/organizer/SendInvitation';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { components } from '@/types/generated/speakers-api.types';
 import type { SessionUI } from '@/types/event.types';
@@ -98,6 +99,10 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   // Quality review drawer state (Story 5.5 Phase 4)
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
   const [reviewSpeaker, setReviewSpeaker] = useState<SpeakerPoolEntry | null>(null);
+
+  // Send invitation modal state (Story 6.3)
+  const [invitationModalOpen, setInvitationModalOpen] = useState(false);
+  const [invitationSpeaker, setInvitationSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Drag-and-drop sensors
   const sensors = useSensors(
@@ -204,7 +209,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     setDialogState({ open: false });
   };
 
-  // Handle speaker card click (Story 5.5 + 5.6)
+  // Handle speaker card click (Story 5.5 + 5.6 + 6.3)
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
     // Open content submission drawer for ACCEPTED speakers
     if (speaker.status === 'ACCEPTED') {
@@ -216,7 +221,16 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
       setReviewSpeaker(speaker);
       setReviewDrawerOpen(true);
     }
-    // For other statuses (IDENTIFIED, CONTACTED, READY, etc.), use callback if provided
+    // Open send invitation modal for IDENTIFIED, CONTACTED, READY speakers (Story 6.3)
+    else if (
+      speaker.status === 'IDENTIFIED' ||
+      speaker.status === 'CONTACTED' ||
+      speaker.status === 'READY'
+    ) {
+      setInvitationSpeaker(speaker);
+      setInvitationModalOpen(true);
+    }
+    // For other statuses, use callback if provided
     else if (onSpeakerClick) {
       onSpeakerClick(speaker);
     }
@@ -292,6 +306,15 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         open={reviewDrawerOpen}
         onClose={() => setReviewDrawerOpen(false)}
         speaker={reviewSpeaker}
+        eventCode={eventCode}
+      />
+
+      {/* Send Invitation Modal (Story 6.3) */}
+      <SendInvitationModal
+        open={invitationModalOpen}
+        onClose={() => setInvitationModalOpen(false)}
+        onSuccess={() => setInvitationModalOpen(false)}
+        speaker={invitationSpeaker}
         eventCode={eventCode}
       />
     </Box>

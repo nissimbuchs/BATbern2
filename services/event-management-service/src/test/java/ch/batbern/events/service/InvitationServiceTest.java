@@ -1,9 +1,11 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.InvitationStatus;
 import ch.batbern.events.domain.ResponseType;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerInvitation;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.InvitationResponse;
 import ch.batbern.events.dto.RespondToInvitationRequest;
 import ch.batbern.events.dto.SendInvitationRequest;
@@ -11,7 +13,9 @@ import ch.batbern.events.event.InvitationRespondedEvent;
 import ch.batbern.events.event.SpeakerInvitedEvent;
 import ch.batbern.events.exception.InvitationExpiredException;
 import ch.batbern.events.exception.InvitationNotFoundException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.util.InvitationTokenGenerator;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -34,7 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +52,12 @@ class InvitationServiceTest {
 
     @Mock
     private SpeakerInvitationRepository invitationRepository;
+
+    @Mock
+    private SpeakerPoolRepository speakerPoolRepository;
+
+    @Mock
+    private EventRepository eventRepository;
 
     @Mock
     private SpeakerService speakerService;
@@ -96,9 +105,25 @@ class InvitationServiceTest {
                     .workflowState(SpeakerWorkflowState.IDENTIFIED)
                     .build();
 
+            Event event = Event.builder()
+                    .id(UUID.randomUUID())
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            SpeakerPool speakerPool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .eventId(event.getId())
+                    .username(TEST_USERNAME)
+                    .email("john.doe@example.com")
+                    .build();
+
             when(speakerService.getSpeakerEntityByUsername(TEST_USERNAME)).thenReturn(speaker);
+            when(eventRepository.findByEventCode(TEST_EVENT_CODE)).thenReturn(Optional.of(event));
+            when(speakerPoolRepository.findByEventIdAndUsername(event.getId(), TEST_USERNAME))
+                    .thenReturn(Optional.of(speakerPool));
             when(tokenGenerator.generateToken()).thenReturn(TEST_TOKEN);
-            when(invitationRepository.existsActiveInvitation(TEST_USERNAME, TEST_EVENT_CODE)).thenReturn(false);
+            when(invitationRepository.existsActiveInvitation(TEST_USERNAME, TEST_EVENT_CODE))
+                    .thenReturn(false);
             when(invitationRepository.save(any(SpeakerInvitation.class))).thenAnswer(inv -> {
                 SpeakerInvitation saved = inv.getArgument(0);
                 saved.setId(UUID.randomUUID());
@@ -133,7 +158,22 @@ class InvitationServiceTest {
                     .workflowState(SpeakerWorkflowState.IDENTIFIED)
                     .build();
 
+            Event event = Event.builder()
+                    .id(UUID.randomUUID())
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            SpeakerPool speakerPool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .eventId(event.getId())
+                    .username(TEST_USERNAME)
+                    .email("john.doe@example.com")
+                    .build();
+
             when(speakerService.getSpeakerEntityByUsername(TEST_USERNAME)).thenReturn(speaker);
+            when(eventRepository.findByEventCode(TEST_EVENT_CODE)).thenReturn(Optional.of(event));
+            when(speakerPoolRepository.findByEventIdAndUsername(event.getId(), TEST_USERNAME))
+                    .thenReturn(Optional.of(speakerPool));
             when(tokenGenerator.generateToken()).thenReturn(TEST_TOKEN);
             when(invitationRepository.existsActiveInvitation(anyString(), anyString())).thenReturn(false);
             when(invitationRepository.save(any())).thenAnswer(inv -> {
@@ -162,7 +202,22 @@ class InvitationServiceTest {
                     .workflowState(SpeakerWorkflowState.IDENTIFIED)
                     .build();
 
+            Event event = Event.builder()
+                    .id(UUID.randomUUID())
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            SpeakerPool speakerPool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .eventId(event.getId())
+                    .username(TEST_USERNAME)
+                    .email("john.doe@example.com")
+                    .build();
+
             when(speakerService.getSpeakerEntityByUsername(TEST_USERNAME)).thenReturn(speaker);
+            when(eventRepository.findByEventCode(TEST_EVENT_CODE)).thenReturn(Optional.of(event));
+            when(speakerPoolRepository.findByEventIdAndUsername(event.getId(), TEST_USERNAME))
+                    .thenReturn(Optional.of(speakerPool));
             when(tokenGenerator.generateToken()).thenReturn(TEST_TOKEN);
             when(invitationRepository.existsActiveInvitation(anyString(), anyString())).thenReturn(false);
             when(invitationRepository.save(any())).thenAnswer(inv -> {
@@ -176,9 +231,9 @@ class InvitationServiceTest {
 
             // Then
             verify(domainEventPublisher).publish(speakerInvitedEventCaptor.capture());
-            SpeakerInvitedEvent event = speakerInvitedEventCaptor.getValue();
-            assertThat(event.getUsername()).isEqualTo(TEST_USERNAME);
-            assertThat(event.getEventCode()).isEqualTo(TEST_EVENT_CODE);
+            SpeakerInvitedEvent publishedEvent = speakerInvitedEventCaptor.getValue();
+            assertThat(publishedEvent.getUsername()).isEqualTo(TEST_USERNAME);
+            assertThat(publishedEvent.getEventCode()).isEqualTo(TEST_EVENT_CODE);
         }
 
         @Test
@@ -190,13 +245,60 @@ class InvitationServiceTest {
                     .build();
 
             Speaker speaker = Speaker.builder().username(TEST_USERNAME).build();
+            Event event = Event.builder()
+                    .id(UUID.randomUUID())
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            SpeakerPool speakerPool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .eventId(event.getId())
+                    .username(TEST_USERNAME)
+                    .email("john.doe@example.com")
+                    .build();
+
             when(speakerService.getSpeakerEntityByUsername(TEST_USERNAME)).thenReturn(speaker);
+            when(eventRepository.findByEventCode(TEST_EVENT_CODE)).thenReturn(Optional.of(event));
+            when(speakerPoolRepository.findByEventIdAndUsername(event.getId(), TEST_USERNAME))
+                    .thenReturn(Optional.of(speakerPool));
             when(invitationRepository.existsActiveInvitation(TEST_USERNAME, TEST_EVENT_CODE)).thenReturn(true);
 
             // When/Then
             assertThatThrownBy(() -> invitationService.sendInvitation(request, TEST_ORGANIZER))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("already exists");
+        }
+
+        @Test
+        void should_rejectInvitation_when_speakerHasNoEmail() {
+            // Given
+            SendInvitationRequest request = SendInvitationRequest.builder()
+                    .username(TEST_USERNAME)
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            Speaker speaker = Speaker.builder().username(TEST_USERNAME).build();
+            Event event = Event.builder()
+                    .id(UUID.randomUUID())
+                    .eventCode(TEST_EVENT_CODE)
+                    .build();
+
+            SpeakerPool speakerPool = SpeakerPool.builder()
+                    .id(UUID.randomUUID())
+                    .eventId(event.getId())
+                    .username(TEST_USERNAME)
+                    .email(null) // No email
+                    .build();
+
+            when(speakerService.getSpeakerEntityByUsername(TEST_USERNAME)).thenReturn(speaker);
+            when(eventRepository.findByEventCode(TEST_EVENT_CODE)).thenReturn(Optional.of(event));
+            when(speakerPoolRepository.findByEventIdAndUsername(event.getId(), TEST_USERNAME))
+                    .thenReturn(Optional.of(speakerPool));
+
+            // When/Then
+            assertThatThrownBy(() -> invitationService.sendInvitation(request, TEST_ORGANIZER))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("does not have an email address");
         }
     }
 

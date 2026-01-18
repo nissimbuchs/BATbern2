@@ -64,4 +64,15 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return optional speaker pool entry
      */
     java.util.Optional<SpeakerPool> findBySessionId(UUID sessionId);
+
+    /**
+     * Find speaker pool entry by event ID and username.
+     *
+     * Story 6.3: Used for email validation when sending invitations.
+     *
+     * @param eventId the event ID
+     * @param username the speaker username
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findByEventIdAndUsername(UUID eventId, String username);
 }
