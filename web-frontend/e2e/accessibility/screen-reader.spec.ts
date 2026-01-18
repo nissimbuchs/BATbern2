@@ -56,6 +56,19 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', () => {
     const inputs = await page.locator('input').all();
 
     for (const input of inputs) {
+      const type = await input.getAttribute('type');
+
+      // Skip hidden inputs (not user-facing)
+      if (type === 'hidden') {
+        continue;
+      }
+
+      // Skip inputs that are not visible (internal MUI components)
+      const isVisible = await input.isVisible();
+      if (!isVisible) {
+        continue;
+      }
+
       const ariaLabel = await input.getAttribute('aria-label');
       const ariaLabelledBy = await input.getAttribute('aria-labelledby');
       const id = await input.getAttribute('id');
