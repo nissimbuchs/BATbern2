@@ -130,9 +130,10 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
     // Open mobile drawer
-    const menuButton = page.getByRole('button', { name: /menu/i });
+    const menuButton = page.getByRole('button', { name: /mobile navigation menu/i });
     await menuButton.click();
 
     // Verify drawer is announced to screen readers
