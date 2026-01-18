@@ -21,6 +21,8 @@ public class InvitationResponse {
 
     private UUID id;
     private String username;
+    private UUID speakerPoolId;
+    private String speakerName;
     private String eventCode;
     private InvitationStatus invitationStatus;
     private Instant sentAt;

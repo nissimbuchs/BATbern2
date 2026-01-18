@@ -49,9 +49,32 @@ public class SpeakerInvitation {
      * Speaker username - meaningful identifier (ADR-003).
      * References Speaker in Event Management Service.
      * NO foreign key constraint (cross-service per ADR-004).
+     * Now nullable - invitations can use speakerPoolId instead.
      */
-    @Column(name = "username", nullable = false, length = 100)
+    @Column(name = "username", length = 100)
     private String username;
+
+    /**
+     * Speaker Pool entry ID - references SpeakerPool.id.
+     * Used for speakers without user accounts.
+     * Either username OR speakerPoolId must be present.
+     */
+    @Column(name = "speaker_pool_id", columnDefinition = "UUID")
+    private UUID speakerPoolId;
+
+    /**
+     * Denormalized speaker email for invitation delivery.
+     * Stored at invitation time to avoid cross-table lookups.
+     */
+    @Column(name = "speaker_email", length = 255)
+    private String speakerEmail;
+
+    /**
+     * Denormalized speaker name for email personalization.
+     * Stored at invitation time to avoid cross-table lookups.
+     */
+    @Column(name = "speaker_name", length = 255)
+    private String speakerName;
 
     /**
      * Event code - meaningful identifier (ADR-003).

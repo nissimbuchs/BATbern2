@@ -36,29 +36,40 @@ public class InvitationEmailService {
     /**
      * Send invitation email to speaker.
      *
+     * Uses denormalized speakerEmail and speakerName from the invitation entity
+     * to avoid cross-table lookups.
+     *
      * @param invitation The speaker invitation
      * @param organizerName Name of the organizer sending the invitation
      * @param personalMessage Optional personal message from organizer
      */
     public void sendInvitationEmail(SpeakerInvitation invitation, String organizerName, String personalMessage) {
+        String speakerIdentifier = invitation.getSpeakerName() != null
+                ? invitation.getSpeakerName()
+                : invitation.getUsername();
+
         if (!emailEnabled) {
-            log.info("Email sending disabled - skipping invitation email for {}", invitation.getUsername());
+            log.info("Email sending disabled - skipping invitation email for {}", speakerIdentifier);
             return;
         }
 
         try {
-            // Get speaker details for personalization
-            var speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
-            String speakerEmail = getSpeakerEmail(speaker.getUsername());
+            // Use denormalized email from invitation (set during invitation creation)
+            String speakerEmail = invitation.getSpeakerEmail();
 
             if (speakerEmail == null || speakerEmail.isBlank()) {
-                log.warn("No email found for speaker {} - skipping email", invitation.getUsername());
+                log.warn("No email found for speaker {} - skipping email", speakerIdentifier);
                 return;
             }
 
+            // Use denormalized name from invitation
+            String speakerName = invitation.getSpeakerName() != null
+                    ? invitation.getSpeakerName()
+                    : invitation.getUsername();
+
             // Build template variables
             Map<String, String> variables = new HashMap<>();
-            variables.put("speakerName", speaker.getUsername()); // TODO: Get actual name from user service
+            variables.put("speakerName", speakerName);
             variables.put("eventCode", invitation.getEventCode());
             variables.put("organizerName", organizerName);
             variables.put("responseUrl", buildResponseUrl(invitation.getResponseToken()));
@@ -72,7 +83,7 @@ public class InvitationEmailService {
             log.info("Invitation email sent to {} for event {}", speakerEmail, invitation.getEventCode());
 
         } catch (Exception e) {
-            log.error("Failed to send invitation email to {}: {}", invitation.getUsername(), e.getMessage());
+            log.error("Failed to send invitation email to {}: {}", speakerIdentifier, e.getMessage());
             // Don't throw - email failure shouldn't block invitation creation
         }
     }
@@ -80,25 +91,36 @@ public class InvitationEmailService {
     /**
      * Send reminder email for pending invitation.
      *
+     * Uses denormalized speakerEmail and speakerName from the invitation entity.
+     *
      * @param invitation The speaker invitation
      */
     public void sendReminderEmail(SpeakerInvitation invitation) {
+        String speakerIdentifier = invitation.getSpeakerName() != null
+                ? invitation.getSpeakerName()
+                : invitation.getUsername();
+
         if (!emailEnabled) {
-            log.info("Email sending disabled - skipping reminder email for {}", invitation.getUsername());
+            log.info("Email sending disabled - skipping reminder email for {}", speakerIdentifier);
             return;
         }
 
         try {
-            var speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
-            String speakerEmail = getSpeakerEmail(speaker.getUsername());
+            // Use denormalized email from invitation
+            String speakerEmail = invitation.getSpeakerEmail();
 
             if (speakerEmail == null || speakerEmail.isBlank()) {
-                log.warn("No email found for speaker {} - skipping reminder", invitation.getUsername());
+                log.warn("No email found for speaker {} - skipping reminder", speakerIdentifier);
                 return;
             }
 
+            // Use denormalized name from invitation
+            String speakerName = invitation.getSpeakerName() != null
+                    ? invitation.getSpeakerName()
+                    : invitation.getUsername();
+
             Map<String, String> variables = new HashMap<>();
-            variables.put("speakerName", speaker.getUsername());
+            variables.put("speakerName", speakerName);
             variables.put("eventCode", invitation.getEventCode());
             variables.put("responseUrl", buildResponseUrl(invitation.getResponseToken()));
             variables.put("expirationDate", formatExpirationDate(invitation));
@@ -110,7 +132,7 @@ public class InvitationEmailService {
             log.info("Reminder email sent to {} for event {}", speakerEmail, invitation.getEventCode());
 
         } catch (Exception e) {
-            log.error("Failed to send reminder email to {}: {}", invitation.getUsername(), e.getMessage());
+            log.error("Failed to send reminder email to {}: {}", speakerIdentifier, e.getMessage());
         }
     }
 
@@ -199,6 +221,8 @@ public class InvitationEmailService {
     /**
      * Send notification to organizer when speaker responds to invitation - Story 6.2 AC6.
      *
+     * Uses denormalized speakerName from the invitation entity.
+     *
      * @param invitation The speaker invitation
      * @param responseType The speaker's response (ACCEPTED, DECLINED, TENTATIVE)
      * @param organizerEmail Email of the organizer to notify
@@ -218,10 +242,13 @@ public class InvitationEmailService {
         }
 
         try {
-            var speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
+            // Use denormalized name from invitation
+            String speakerName = invitation.getSpeakerName() != null
+                    ? invitation.getSpeakerName()
+                    : invitation.getUsername();
 
             Map<String, String> variables = new HashMap<>();
-            variables.put("speakerName", speaker.getUsername());
+            variables.put("speakerName", speakerName);
             variables.put("eventCode", invitation.getEventCode());
             variables.put("responseType", formatResponseType(responseType));
             variables.put("declineReason", invitation.getDeclineReason() != null ? invitation.getDeclineReason() : "");
@@ -238,7 +265,7 @@ public class InvitationEmailService {
             variables.put("preferencesSummary", buildPreferencesSummary(invitation));
 
             String subject = String.format("Speaker Response: %s %s for %s",
-                    speaker.getUsername(), formatResponseType(responseType).toLowerCase(), invitation.getEventCode());
+                    speakerName, formatResponseType(responseType).toLowerCase(), invitation.getEventCode());
             String htmlBody = buildOrganizerNotificationHtml(variables);
 
             emailService.sendHtmlEmail(organizerEmail, subject, htmlBody);

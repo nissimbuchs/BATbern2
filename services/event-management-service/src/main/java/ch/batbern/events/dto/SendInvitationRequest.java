@@ -1,27 +1,39 @@
 package ch.batbern.events.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import ch.batbern.events.validation.ValidSpeakerIdentifier;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Request DTO for sending a speaker invitation - Story 6.1.
+ *
+ * Either username OR speakerPoolId must be provided (validated by @ValidSpeakerIdentifier).
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ValidSpeakerIdentifier
 public class SendInvitationRequest {
 
     /**
      * Username of the speaker to invite (ADR-003 meaningful identifier).
+     * Optional if speakerPoolId is provided.
      */
-    @NotBlank(message = "Username is required")
     @Size(max = 100, message = "Username must be at most 100 characters")
     private String username;
+
+    /**
+     * Speaker Pool entry ID (UUID).
+     * Preferred method - allows invitations to speakers without user accounts.
+     * Optional if username is provided.
+     */
+    private UUID speakerPoolId;
 
     /**
      * Event code for the invitation (ADR-003 meaningful identifier).

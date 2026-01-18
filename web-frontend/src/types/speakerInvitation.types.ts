@@ -55,7 +55,14 @@ export interface RespondToInvitationRequest {
  */
 export interface InvitationResponse {
   id: string;
-  username: string;
+  /** Speaker username (may be null for speakers without accounts) */
+  username?: string;
+  /** Speaker pool entry ID */
+  speakerPoolId?: string;
+  /** Denormalized speaker name for display */
+  speakerName?: string;
+  /** Denormalized speaker email */
+  speakerEmail?: string;
   eventCode: string;
   invitationStatus: InvitationStatus;
   responseType?: ResponseType;
@@ -73,10 +80,15 @@ export interface InvitationResponse {
 
 /**
  * Request body for sending an invitation (organizer action) - Story 6.3
+ *
+ * Either username OR speakerPoolId must be provided.
+ * speakerPoolId is preferred as it allows inviting speakers without user accounts.
  */
 export interface SendInvitationRequest {
-  /** Speaker username to invite */
-  username: string;
+  /** Speaker username to invite (optional if speakerPoolId is provided) */
+  username?: string;
+  /** Speaker pool entry ID (UUID) - preferred method */
+  speakerPoolId?: string;
   /** Event code */
   eventCode?: string;
   /** Personal message explaining why the speaker was chosen */

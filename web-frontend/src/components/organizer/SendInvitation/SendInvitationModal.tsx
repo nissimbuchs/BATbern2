@@ -73,7 +73,9 @@ const SendInvitationModal: React.FC<SendInvitationModalProps> = ({
   }, [open]);
 
   const handleSubmit = async () => {
-    if (!speaker?.username) {
+    // Use speaker pool ID (speaker.id) instead of username
+    // This allows sending invitations to speakers without user accounts
+    if (!speaker?.id) {
       return;
     }
 
@@ -81,7 +83,7 @@ const SendInvitationModal: React.FC<SendInvitationModalProps> = ({
       await sendInvitationMutation.mutateAsync({
         eventCode,
         request: {
-          username: speaker.username,
+          speakerPoolId: speaker.id,
           personalMessage: formData.personalMessage || undefined,
           expirationDays: formData.expirationDays,
         },
@@ -102,11 +104,11 @@ const SendInvitationModal: React.FC<SendInvitationModalProps> = ({
     setFormData({ ...formData, expirationDays: value });
   };
 
-  // Check if speaker has email
+  // Check if speaker has email (required for invitation)
   const hasEmail = speaker?.email && speaker.email.trim() !== '';
 
-  // Check if speaker has username (required for invitation)
-  const hasUsername = speaker?.username && speaker.username.trim() !== '';
+  // Check if speaker has a valid ID (always true for pool entries)
+  const hasSpeakerId = !!speaker?.id;
 
   return (
     <Dialog
@@ -131,11 +133,7 @@ const SendInvitationModal: React.FC<SendInvitationModalProps> = ({
             <Alert severity="error">{t('organizer:sendInvitation.error.failed')}</Alert>
           )}
 
-          {!hasUsername && (
-            <Alert severity="warning">{t('organizer:sendInvitation.error.noUsername')}</Alert>
-          )}
-
-          {hasUsername && !hasEmail && (
+          {!hasEmail && (
             <Alert severity="warning">{t('organizer:sendInvitation.error.noEmail')}</Alert>
           )}
 
@@ -200,7 +198,7 @@ const SendInvitationModal: React.FC<SendInvitationModalProps> = ({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={sendInvitationMutation.isPending || !hasEmail || !hasUsername}
+          disabled={sendInvitationMutation.isPending || !hasEmail || !hasSpeakerId}
           data-testid="send-invitation-button"
         >
           {sendInvitationMutation.isPending

@@ -372,8 +372,7 @@
     "send": "Send Invitation",
     "error": {
       "failed": "Failed to send invitation. Please try again.",
-      "noEmail": "This speaker does not have an email address. Please add an email before sending an invitation.",
-      "noUsername": "This speaker is not linked to a user account. Please link the speaker to a user before sending an invitation."
+      "noEmail": "This speaker does not have an email address. Please add an email before sending an invitation."
     },
     "success": "Invitation sent successfully"
   }

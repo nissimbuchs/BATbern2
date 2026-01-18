@@ -372,8 +372,7 @@
     "send": "Einladung senden",
     "error": {
       "failed": "Einladung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
-      "noEmail": "Dieser Speaker hat keine E-Mail-Adresse. Bitte fügen Sie eine E-Mail hinzu, bevor Sie eine Einladung senden.",
-      "noUsername": "Dieser Speaker ist nicht mit einem Benutzerkonto verknüpft. Bitte verknüpfen Sie den Speaker mit einem Benutzer, bevor Sie eine Einladung senden."
+      "noEmail": "Dieser Speaker hat keine E-Mail-Adresse. Bitte fügen Sie eine E-Mail hinzu, bevor Sie eine Einladung senden."
     },
     "success": "Einladung erfolgreich gesendet"
   }

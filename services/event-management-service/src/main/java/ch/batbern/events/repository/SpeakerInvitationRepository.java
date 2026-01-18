@@ -50,7 +50,7 @@ public interface SpeakerInvitationRepository extends JpaRepository<SpeakerInvita
     Optional<SpeakerInvitation> findByUsernameAndEventCode(String username, String eventCode);
 
     /**
-     * Check if an active invitation exists for speaker and event.
+     * Check if an active invitation exists for speaker and event (by username).
      */
     @Query("""
         SELECT COUNT(i) > 0 FROM SpeakerInvitation i
@@ -59,6 +59,24 @@ public interface SpeakerInvitationRepository extends JpaRepository<SpeakerInvita
           AND i.invitationStatus NOT IN ('EXPIRED')
         """)
     boolean existsActiveInvitation(@Param("username") String username, @Param("eventCode") String eventCode);
+
+    /**
+     * Check if an active invitation exists for speaker pool entry and event.
+     * Used for invitations to speakers without user accounts.
+     */
+    @Query("""
+        SELECT COUNT(i) > 0 FROM SpeakerInvitation i
+        WHERE i.speakerPoolId = :speakerPoolId
+          AND i.eventCode = :eventCode
+          AND i.invitationStatus NOT IN ('EXPIRED')
+        """)
+    boolean existsActiveInvitationBySpeakerPoolId(@Param("speakerPoolId") UUID speakerPoolId,
+                                                   @Param("eventCode") String eventCode);
+
+    /**
+     * Find invitation by speaker pool ID and event code.
+     */
+    Optional<SpeakerInvitation> findBySpeakerPoolIdAndEventCode(UUID speakerPoolId, String eventCode);
 
     /**
      * Find invitations by status.

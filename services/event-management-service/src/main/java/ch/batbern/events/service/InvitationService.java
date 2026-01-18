@@ -4,6 +4,7 @@ import ch.batbern.events.domain.InvitationStatus;
 import ch.batbern.events.domain.ResponseType;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerInvitation;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.PreferredTimeSlot;
 import ch.batbern.events.domain.TechnicalRequirement;
 import ch.batbern.events.domain.TravelRequirement;
@@ -81,38 +82,105 @@ public class InvitationService {
     /**
      * Internal implementation of sending an invitation.
      * Separated to allow use from bulk operations with separate transactions.
+     *
+     * Supports two flows:
+     * 1. By speakerPoolId (preferred) - for speakers with or without user accounts
+     * 2. By username (legacy) - for backward compatibility
      */
     private InvitationResponse sendInvitationInternal(SendInvitationRequest request, String organizerUsername) {
-        log.info("Sending invitation to speaker {} for event {}",
-                request.getUsername(), request.getEventCode());
+        // Determine which identifier to use
+        boolean useSpeakerPoolId = request.getSpeakerPoolId() != null;
 
-        // Validate speaker exists
-        Speaker speaker = speakerService.getSpeakerEntityByUsername(request.getUsername());
+        log.info("Sending invitation to speaker {} for event {} (using {})",
+                useSpeakerPoolId ? request.getSpeakerPoolId() : request.getUsername(),
+                request.getEventCode(),
+                useSpeakerPoolId ? "speakerPoolId" : "username");
 
-        // Story 6.3: Validate speaker has email address in speaker pool
+        // Get event for validation
         var event = eventRepository.findByEventCode(request.getEventCode())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Event not found: " + request.getEventCode()));
 
-        var speakerPool = speakerPoolRepository.findByEventIdAndUsername(
-                event.getId(), request.getUsername());
+        // Variables to populate from either flow
+        String speakerEmail;
+        String speakerName;
+        String username = request.getUsername();
+        SpeakerPool speakerPoolEntry = null;
+        Speaker speaker = null;
 
-        if (speakerPool.isPresent()) {
-            String email = speakerPool.get().getEmail();
-            if (email == null || email.isBlank()) {
+        if (useSpeakerPoolId) {
+            // NEW FLOW: Use speakerPoolId to find speaker pool entry directly
+            speakerPoolEntry = speakerPoolRepository.findById(request.getSpeakerPoolId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Speaker pool entry not found: " + request.getSpeakerPoolId()));
+
+            // Validate speaker pool entry belongs to this event
+            if (!speakerPoolEntry.getEventId().equals(event.getId())) {
+                throw new IllegalArgumentException(
+                        "Speaker pool entry does not belong to event " + request.getEventCode());
+            }
+
+            // Get email and name from speaker pool
+            speakerEmail = speakerPoolEntry.getEmail();
+            speakerName = speakerPoolEntry.getSpeakerName();
+            username = speakerPoolEntry.getUsername(); // May be null
+
+            if (speakerEmail == null || speakerEmail.isBlank()) {
                 throw new IllegalStateException(
                         String.format("Speaker %s does not have an email address. "
                                 + "Please add an email before sending an invitation.",
-                                request.getUsername()));
+                                speakerName));
             }
-        }
 
-        // Check for existing active invitation
-        if (invitationRepository.existsActiveInvitation(
-                request.getUsername(), request.getEventCode())) {
-            throw new IllegalStateException(
-                    String.format("An active invitation already exists for speaker %s and event %s",
-                            request.getUsername(), request.getEventCode()));
+            // Check for existing active invitation by speakerPoolId
+            if (invitationRepository.existsActiveInvitationBySpeakerPoolId(
+                    request.getSpeakerPoolId(), request.getEventCode())) {
+                throw new IllegalStateException(
+                        String.format("An active invitation already exists for speaker %s and event %s",
+                                speakerName, request.getEventCode()));
+            }
+
+            // If speaker has username, also get Speaker entity for workflow state update
+            if (username != null && !username.isBlank()) {
+                try {
+                    speaker = speakerService.getSpeakerEntityByUsername(username);
+                } catch (Exception e) {
+                    log.debug("Speaker entity not found for username {}, proceeding without workflow update",
+                            username);
+                }
+            }
+        } else {
+            // LEGACY FLOW: Use username to find speaker
+            speaker = speakerService.getSpeakerEntityByUsername(request.getUsername());
+
+            // Get speaker pool entry for email
+            var speakerPoolOpt = speakerPoolRepository.findByEventIdAndUsername(
+                    event.getId(), request.getUsername());
+
+            if (speakerPoolOpt.isPresent()) {
+                speakerPoolEntry = speakerPoolOpt.get();
+                speakerEmail = speakerPoolEntry.getEmail();
+                speakerName = speakerPoolEntry.getSpeakerName();
+
+                if (speakerEmail == null || speakerEmail.isBlank()) {
+                    throw new IllegalStateException(
+                            String.format("Speaker %s does not have an email address. "
+                                    + "Please add an email before sending an invitation.",
+                                    request.getUsername()));
+                }
+            } else {
+                // Fallback to username as identifier
+                speakerEmail = null;
+                speakerName = request.getUsername();
+            }
+
+            // Check for existing active invitation by username
+            if (invitationRepository.existsActiveInvitation(
+                    request.getUsername(), request.getEventCode())) {
+                throw new IllegalStateException(
+                        String.format("An active invitation already exists for speaker %s and event %s",
+                                request.getUsername(), request.getEventCode()));
+            }
         }
 
         // Generate unique response token
@@ -125,9 +193,12 @@ public class InvitationService {
         Instant expiresAt = Instant.now().plus(expirationDays, ChronoUnit.DAYS);
         Instant sentAt = Instant.now();
 
-        // Create invitation with personalMessage (Story 6.2)
+        // Create invitation with all fields (Story 6.2 + speakerPoolId support)
         SpeakerInvitation invitation = SpeakerInvitation.builder()
-                .username(request.getUsername())
+                .username(username)
+                .speakerPoolId(request.getSpeakerPoolId())
+                .speakerEmail(speakerEmail)
+                .speakerName(speakerName)
                 .eventCode(request.getEventCode())
                 .responseToken(responseToken)
                 .invitationStatus(InvitationStatus.SENT)
@@ -140,13 +211,22 @@ public class InvitationService {
         // Save invitation
         SpeakerInvitation saved = invitationRepository.save(invitation);
 
-        // Update speaker workflow state to CONTACTED
-        speaker.setWorkflowState(SpeakerWorkflowState.CONTACTED);
+        // Update speaker workflow state to CONTACTED (if we have a Speaker entity)
+        if (speaker != null) {
+            speaker.setWorkflowState(SpeakerWorkflowState.CONTACTED);
+        }
 
-        // Publish domain event
+        // Update speaker pool status to CONTACTED
+        if (speakerPoolEntry != null) {
+            speakerPoolEntry.setStatus(SpeakerWorkflowState.CONTACTED);
+            speakerPoolRepository.save(speakerPoolEntry);
+        }
+
+        // Publish domain event (use speakerName if username is null)
+        String speakerIdentifier = username != null ? username : speakerName;
         domainEventPublisher.publish(new SpeakerInvitedEvent(
                 saved.getId(),
-                saved.getUsername(),
+                speakerIdentifier,
                 saved.getEventCode(),
                 saved.getExpiresAt(),
                 saved.getSentAt(),
@@ -247,24 +327,45 @@ public class InvitationService {
 
         SpeakerInvitation saved = invitationRepository.save(invitation);
 
-        // Update speaker workflow state
-        Speaker speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
+        // Update speaker workflow state (only if we have a username)
         SpeakerWorkflowState newState = mapResponseToWorkflowState(request.getResponseType());
-        speaker.setWorkflowState(newState);
+        if (invitation.getUsername() != null && !invitation.getUsername().isBlank()) {
+            try {
+                Speaker speaker = speakerService.getSpeakerEntityByUsername(invitation.getUsername());
+                speaker.setWorkflowState(newState);
+            } catch (Exception e) {
+                log.debug("Speaker entity not found for username {}, skipping workflow update",
+                        invitation.getUsername());
+            }
+        }
+
+        // Update speaker pool entry status (if we have speakerPoolId)
+        if (invitation.getSpeakerPoolId() != null) {
+            speakerPoolRepository.findById(invitation.getSpeakerPoolId())
+                    .ifPresent(poolEntry -> {
+                        poolEntry.setStatus(newState);
+                        speakerPoolRepository.save(poolEntry);
+                    });
+        }
+
+        // Use speakerName as fallback if username is null
+        String speakerIdentifier = invitation.getUsername() != null
+                ? invitation.getUsername()
+                : invitation.getSpeakerName();
 
         // Publish domain event
         domainEventPublisher.publish(new InvitationRespondedEvent(
                 saved.getId(),
-                saved.getUsername(),
+                speakerIdentifier,
                 saved.getEventCode(),
                 saved.getResponseType().name(),
                 saved.getDeclineReason(),
                 respondedAt,
-                saved.getUsername() // Speaker username as triggeredBy
+                speakerIdentifier // Speaker identifier as triggeredBy
         ));
 
         log.info("Invitation response recorded: {} for speaker {}",
-                request.getResponseType(), invitation.getUsername());
+                request.getResponseType(), speakerIdentifier);
 
         return toResponse(saved);
     }
@@ -379,6 +480,9 @@ public class InvitationService {
         return InvitationResponse.builder()
                 .id(invitation.getId())
                 .username(invitation.getUsername())
+                .speakerPoolId(invitation.getSpeakerPoolId())
+                .speakerName(invitation.getSpeakerName())
+                .speakerEmail(invitation.getSpeakerEmail())
                 .eventCode(invitation.getEventCode())
                 .invitationStatus(invitation.getInvitationStatus())
                 .sentAt(invitation.getSentAt())
