@@ -2,21 +2,32 @@
  * E2E Tests for Topic Selection & Heat Map Visualization
  * Story 5.2: Topic Selection & Speaker Brainstorming (AC1-8, AC14-16)
  *
- * IMPORTANT: These tests are RED PHASE tests (TDD). They should FAIL until
- * the Topic Selection functionality is fully implemented.
+ * STATUS: Story 5.2 is IMPLEMENTED (Done)
+ *
+ * Implementation Status:
+ * - TopicBacklogManager component ✅ IMPLEMENTED
+ * - TopicHeatMap component ✅ IMPLEMENTED
+ * - TopicDetailsPanel ✅ IMPLEMENTED
+ * - TopicList and filtering ✅ IMPLEMENTED
  *
  * Requirements:
  * 1. Event Management Service with topics endpoints deployed
  * 2. PostgreSQL database with topics and topic_usage_history tables (Migration V14)
- * 3. TopicBacklogManager component with filter panel
- * 4. TopicHeatMap component with Recharts visualization
- * 5. TopicDetailsPanel with staleness scores and similarity warnings
- * 6. EventWorkflowStateMachine integration from Story 5.1a
+ * 3. TopicBacklogManager component with filter panel ✅ IMPLEMENTED
+ * 4. TopicHeatMap component with Recharts visualization ✅ IMPLEMENTED
+ * 5. TopicDetailsPanel with staleness scores and similarity warnings ✅ IMPLEMENTED
+ * 6. EventWorkflowStateMachine integration from Story 5.1a ✅ IMPLEMENTED
  *
  * Setup Instructions:
  * 1. Ensure migration V14 is applied: topics, topic_usage_history tables
  * 2. Ensure Event Management Service is running
  * 3. Run: npx playwright test e2e/organizer/topic-selection.spec.ts
+ *
+ * LANGUAGE-INDEPENDENT SELECTORS (BAT-93):
+ * ✅ Fixed: "New Event" button → [data-testid="quick-action-new-event"]
+ * ✅ Fixed: Event type "Evening Event" → [data-testid="event-type-option-evening"]
+ * ✅ Fixed: "Create Event" → button[type="submit"]
+ * ⚠️  TODO: Many button selectors in test body still use :has-text() and need testid attributes
  */
 
 import { test, expect, type Page } from '@playwright/test';
@@ -37,25 +48,25 @@ interface TopicResponse {
 /**
  * Helper: Login as an organizer
  */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
+// async function loginAsOrganizer(page: Page) {
+//   const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
+//   const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
+//
+//   await page.goto(`${BASE_URL}/login`);
+//   await page.fill('input[name="email"]', testEmail);
+//   await page.fill('input[name="password"]', testPassword);
+//   await page.click('button[type="submit"]');
+//
+//   // Wait for redirect to dashboard
+//   await page.waitForURL(`${BASE_URL}/organizer/events`);
+// }
 
 /**
  * Helper: Create a test event
  */
 async function createTestEvent(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+  await page.click('[data-testid="quick-action-new-event"]');
 
   // Fill event form
   await page.fill('input[name="title"]', `E2E Test Event ${Date.now()}`);
@@ -66,10 +77,10 @@ async function createTestEvent(page: Page): Promise<string> {
 
   // Select event type
   await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  await page.click('[role="option"][data-testid="event-type-option-evening"]');
 
   // Submit form
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  await page.click('button[type="submit"]');
 
   // Wait for success and extract event code
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
