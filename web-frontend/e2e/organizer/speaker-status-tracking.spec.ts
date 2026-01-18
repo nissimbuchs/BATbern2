@@ -2,21 +2,35 @@
  * E2E Tests for Speaker Status Management
  * Story 5.4: Speaker Status Management (AC1-18)
  *
- * IMPORTANT: These tests are RED PHASE tests (TDD). They should FAIL until
- * the Speaker Status Management functionality is fully implemented.
+ * STATUS: Story 5.4 is IMPLEMENTED with drag-and-drop lanes (not dropdowns)
+ *
+ * Implementation Notes:
+ * - SpeakerStatusDashboard component IMPLEMENTED (drag-and-drop lanes)
+ * - SpeakerStatusLanes component IMPLEMENTED (drag-and-drop UI)
+ * - StatusChangeDialog component IMPLEMENTED (confirmation on drag)
+ * - Tests originally expected dropdown UI, but implementation uses drag-and-drop
  *
  * Requirements:
  * 1. Speaker Coordination Service with status endpoints deployed
  * 2. PostgreSQL database with speaker_status_history table (Migration V19)
- * 3. SpeakerStatusDashboard component with drag-and-drop
- * 4. Status ChangeDialog component
- * 5. StatusHistoryTimeline component
- * 6. SpeakerWorkflowService integration from Story 5.1a
+ * 3. SpeakerStatusDashboard component with drag-and-drop ✅ IMPLEMENTED
+ * 4. StatusChangeDialog component ✅ IMPLEMENTED
+ * 5. StatusHistoryTimeline component ✅ IMPLEMENTED
+ * 6. SpeakerWorkflowService integration from Story 5.1a ✅ IMPLEMENTED
  *
  * Setup Instructions:
  * 1. Ensure migration V19 is applied: speaker_status_history table
  * 2. Ensure Speaker Coordination Service is running with status endpoints
  * 3. Run: npx playwright test e2e/organizer/speaker-status-tracking.spec.ts
+ *
+ * LANGUAGE-INDEPENDENT SELECTORS (BAT-93):
+ * ✅ Fixed: "New Event" button → [data-testid="quick-action-new-event"]
+ * ✅ Fixed: Event type selection → [data-testid="event-type-option-evening"]
+ * ✅ Fixed: "Add to Pool" button → [data-testid="add-to-pool-button"]
+ * ✅ Fixed: "Create Event" → button[type="submit"]
+ * ✅ Fixed: Status lane testids → uppercase (status-lane-OPEN, status-lane-CONTACTED, etc.)
+ * ✅ Component testids added: speaker-status-dashboard, speaker-card, status-change-dialog, status-change-reason
+ * ⚠️  NOTE: Tests expect dropdown UI, but implementation uses drag-and-drop - tests need updating
  */
 
 import { test, expect, type Page } from '@playwright/test';
@@ -24,10 +38,8 @@ import { test, expect, type Page } from '@playwright/test';
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
+// Note: loginAsOrganizer not needed - tests use global auth setup from playwright.config.ts
+/* async function loginAsOrganizer(page: Page) {
   const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
   const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
 
@@ -38,14 +50,14 @@ async function loginAsOrganizer(page: Page) {
 
   // Wait for redirect to dashboard
   await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
+} */
 
 /**
  * Helper: Create a test event with speakers
  */
 async function createTestEventWithSpeakers(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+  await page.click('[data-testid="quick-action-new-event"]');
 
   // Fill event form
   await page.fill('input[name="title"]', `E2E Status Test ${Date.now()}`);
@@ -56,10 +68,10 @@ async function createTestEventWithSpeakers(page: Page): Promise<string> {
 
   // Select event type
   await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  await page.click('[data-testid="event-type-option-evening"]');
 
   // Submit form
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  await page.click('button[type="submit"]');
 
   // Wait for success and extract event code
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });
@@ -85,7 +97,7 @@ async function addSpeakerToPool(
   await page.fill('input[name="company"]', company);
   await page.fill('textarea[name="expertise"]', expertise);
 
-  await page.click('button:has-text("Add to Pool")');
+  await page.click('[data-testid="add-to-pool-button"]');
 
   // Wait for speaker to appear in pool
   await expect(
