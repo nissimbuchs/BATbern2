@@ -181,6 +181,12 @@ export default defineConfig({
       'msw/node': resolve(__dirname, './node_modules/msw/lib/node/index.mjs'),
     },
   },
+  // Fix circular dependency between @emotion and React (MUI v6.1.0+)
+  // https://github.com/emotion-js/emotion/issues/3322
+  // https://github.com/mui/material-ui/issues/43817
+  optimizeDeps: {
+    include: ['@emotion/react', '@emotion/styled', '@mui/material', '@mui/icons-material'],
+  },
   server: {
     // Support dynamic port configuration for parallel instances
     // Instance 1: PORT=3000 (default), Instance 2: PORT=4000
@@ -210,56 +216,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // Manual chunks for code splitting (Task 13b + Story 4.1.8a)
-        manualChunks: (id) => {
-          // Split node_modules by package
-          if (id.includes('node_modules')) {
-            // MUI Icons - separate chunk (lightweight, cacheable)
-            if (id.includes('@mui/icons-material')) {
-              return 'mui-icons';
-            }
-            // MUI Core + Emotion - MUST be bundled together to avoid initialization errors
-            // MUI requires @emotion to be loaded first, so we bundle them in same chunk
-            if (
-              id.includes('@mui/material') ||
-              id.includes('@mui/system') ||
-              id.includes('@emotion/react') ||
-              id.includes('@emotion/styled') ||
-              id.includes('@emotion/cache') ||
-              id.includes('@emotion/serialize')
-            ) {
-              return 'mui';
-            }
-            // Core React vendors
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
-              return 'vendor';
-            }
-            // AWS Amplify
-            if (
-              id.includes('aws-amplify') ||
-              id.includes('@aws-amplify') ||
-              id.includes('@aws-sdk')
-            ) {
-              return 'aws';
-            }
-            // React Query
-            if (id.includes('@tanstack/react-query')) {
-              return 'query';
-            }
-            // React Router
-            if (id.includes('react-router')) {
-              return 'router';
-            }
-            // i18n
-            if (id.includes('i18next')) {
-              return 'i18n';
-            }
-            // Date utilities
-            if (id.includes('date-fns')) {
-              return 'format';
-            }
-          }
-        },
+        // DISABLED manual chunks to avoid circular dependency issues with @emotion
+        // https://github.com/mui/material-ui/issues/43817
+        // https://github.com/emotion-js/emotion/issues/3322
+        // Vite will automatically split chunks based on dependencies
+        manualChunks: undefined,
         // Asset file naming for better caching
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name?.split('.');
