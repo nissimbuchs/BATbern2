@@ -137,7 +137,7 @@ public class InvitationEmailService {
     }
 
     private String buildResponseUrl(String token) {
-        return String.format("%s/speaker/invitation/%s", frontendUrl, token);
+        return String.format("%s/respond/%s", frontendUrl, token);
     }
 
     private String formatExpirationDate(SpeakerInvitation invitation) {
