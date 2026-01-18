@@ -210,6 +210,48 @@ Content is reviewed during **Phase C: Quality Review**:
 
 See [Phase C: Quality Review](../workflow/phase-c-quality.md) for details.
 
+## Speaker Pool Management
+
+<span class="feature-status implemented">Implemented</span>
+
+During event planning, organizers can manage a pool of potential speakers with contact information.
+
+### Adding Speakers to Pool
+
+From the Event → Speakers tab, click **Add Speakers** to open the speaker pool panel:
+
+**Speaker Information**:
+- **Speaker Name*** - Full name (required)
+- **Company** - Organization (optional)
+- **Expertise** - Areas of expertise (optional)
+- **Assign to Organizer** - Assign outreach responsibility (optional)
+- **Notes** - Internal notes (optional)
+- **Email** - Contact email (optional)
+- **Phone** - Contact phone (optional)
+
+### Editing Speaker Contact Details
+
+To edit a speaker's contact information:
+
+1. Click on a speaker card in the Kanban view
+2. The speaker details drawer opens
+3. Click the **pencil icon** (✏️) next to the speaker name
+4. Edit the contact details in the modal:
+   - Speaker name, company, expertise
+   - Notes
+   - Email and phone (optional)
+5. Click **Save** - drawer closes and data refreshes
+
+### Contact Method Requirements
+
+When recording an outreach attempt, available contact methods depend on speaker data:
+
+- **Email** - Only available if speaker has an email address defined
+- **Phone** - Only available if speaker has a phone number defined
+- **In Person** - Always available
+
+This ensures organizers only use valid contact methods when marking speakers as contacted.
+
 ## Outreach Tracking
 
 <span class="feature-status implemented">Implemented</span>
