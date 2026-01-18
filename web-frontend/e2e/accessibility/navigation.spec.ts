@@ -92,9 +92,14 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
   test('should have skip to main content link', async ({ page }) => {
     await page.goto('/dashboard');
+    // Wait for potential redirects to complete
+    await page.waitForLoadState('networkidle');
 
     // Tab to first element (should be skip link)
     await page.keyboard.press('Tab');
+
+    // Wait for focus to be set
+    await page.waitForTimeout(100);
 
     const skipLink = await page.locator(':focus');
     const text = await skipLink.textContent();
@@ -102,7 +107,7 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
     // Clicking skip link should move focus to main content
     await skipLink.click();
-    const mainContent = page.locator('main');
+    const mainContent = page.locator('main#main-content');
     await expect(mainContent).toBeFocused();
   });
 

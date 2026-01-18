@@ -163,7 +163,7 @@ const CompanyManagementScreen: React.FC = () => {
   }, []);
 
   return (
-    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl">
         {/* Header Section - Only show on list view */}
         {!isDetailView && (

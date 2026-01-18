@@ -134,7 +134,7 @@ export const EventManagementDashboard: React.FC = () => {
   }
 
   return (
-    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }} data-testid="dashboard-container">
+    <Box sx={{ flexGrow: 1, p: 3 }} data-testid="dashboard-container">
       <Container maxWidth="xl">
         {/* Header */}
         <Box mb={3}>

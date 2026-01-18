@@ -72,7 +72,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
   };
 
   return (
-    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl" data-testid="partner-directory-screen">
         {/* Header */}
         <Box sx={{ mb: 3 }}>
