@@ -75,7 +75,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   const tierColor = TIER_COLORS[partner.partnershipLevel] || 'default';
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+    <Paper elevation={2} sx={{ p: 3, mb: 3 }} data-testid="partner-detail-header">
       <Stack spacing={3}>
         {/* Back Button */}
         <Box>
