@@ -219,6 +219,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               onClick={handleEdit}
               aria-label={`Edit ${event.title}`}
               color="primary"
+              data-testid="event-card-edit-button"
             >
               <EditIcon />
             </IconButton>
