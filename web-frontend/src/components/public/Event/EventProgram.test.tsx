@@ -253,7 +253,9 @@ describe('EventProgram', () => {
 
     it('should_displayMaterialsSection_when_eventIsArchived', () => {
       // For archived events (past events), materials should be displayed
-      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+      renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} eventCode="BAT142" />
+      );
 
       // Should show materials heading
       expect(screen.getByText(/materials|downloads/i)).toBeInTheDocument();
@@ -266,7 +268,9 @@ describe('EventProgram', () => {
 
     it('should_hideMaterialsSection_when_eventIsUpcoming', () => {
       // For upcoming events (future events), materials should be hidden
-      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={false} />);
+      renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={false} eventCode="BAT142" />
+      );
 
       // Should NOT show materials heading
       expect(screen.queryByText(/materials|downloads/i)).not.toBeInTheDocument();
@@ -277,7 +281,9 @@ describe('EventProgram', () => {
     });
 
     it('should_groupMaterialsByType_when_multipleTypesExist', () => {
-      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+      renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} eventCode="BAT142" />
+      );
 
       // Should show grouped material types
       expect(screen.getByText(/presentation/i)).toBeInTheDocument();
@@ -286,7 +292,9 @@ describe('EventProgram', () => {
     });
 
     it('should_displayMaterialMetadata_when_rendered', () => {
-      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
+      renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} eventCode="BAT142" />
+      );
 
       // Should show file sizes (formatted)
       expect(screen.getByText(/5(\.\d+)?\s*MB/i)).toBeInTheDocument(); // 5MB presentation
@@ -294,25 +302,24 @@ describe('EventProgram', () => {
       expect(screen.getByText(/100(\.\d+)?\s*MB/i)).toBeInTheDocument(); // 100MB video
     });
 
-    it('should_renderDownloadLinks_when_materialsDisplayed', () => {
-      renderWithProviders(<EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />);
-
-      // Should have download links with correct CloudFront URLs
-      const downloadLinks = screen.getAllByRole('link', {
-        name: /download|keynote-slides|handout|session-recording/i,
-      });
-      expect(downloadLinks.length).toBeGreaterThan(0);
-
-      // First link should have correct href
-      const presentationLink = screen.getByRole('link', { name: /keynote-slides/i });
-      expect(presentationLink).toHaveAttribute(
-        'href',
-        'https://cdn.batbern.ch/materials/2025/bat142/keynote-slides.pptx'
+    it('should_renderDownloadButtons_when_materialsDisplayed', () => {
+      renderWithProviders(
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} eventCode="BAT142" />
       );
 
-      // Links should open in new tab
-      expect(presentationLink).toHaveAttribute('target', '_blank');
-      expect(presentationLink).toHaveAttribute('rel', 'noopener noreferrer');
+      // Should have download buttons (changed from links to buttons for presigned URLs)
+      const downloadButtons = screen.getAllByRole('button', {
+        name: /download|keynote-slides|handout|session-recording/i,
+      });
+      expect(downloadButtons.length).toBeGreaterThan(0);
+
+      // First button should have correct aria-label
+      const presentationButton = screen.getByRole('button', { name: /download keynote-slides/i });
+      expect(presentationButton).toBeInTheDocument();
+      expect(presentationButton).not.toBeDisabled();
+
+      // Button should have aria-label for accessibility
+      expect(presentationButton).toHaveAttribute('aria-label', 'Download keynote-slides.pptx');
     });
 
     it('should_displayMaterialTypeIcons_when_materialsRendered', () => {
@@ -346,7 +353,9 @@ describe('EventProgram', () => {
         },
       ];
 
-      renderWithProviders(<EventProgram sessions={sessionsWithoutMaterials} isArchived={true} />);
+      renderWithProviders(
+        <EventProgram sessions={sessionsWithoutMaterials} isArchived={true} eventCode="BAT142" />
+      );
 
       // Should not show materials section for session without materials
       expect(screen.queryByText(/materials|downloads/i)).not.toBeInTheDocument();

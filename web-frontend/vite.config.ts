@@ -218,10 +218,16 @@ export default defineConfig({
             if (id.includes('@mui/icons-material')) {
               return 'mui-icons';
             }
-            // MUI Core - keep together (heavily used, better compression)
-            // Note: @emotion packages are NOT forced into this chunk to avoid circular dependencies
-            // Rollup will automatically bundle them with their dependents
-            if (id.includes('@mui/material') || id.includes('@mui/system')) {
+            // MUI Core + Emotion - MUST be bundled together to avoid initialization errors
+            // MUI requires @emotion to be loaded first, so we bundle them in same chunk
+            if (
+              id.includes('@mui/material') ||
+              id.includes('@mui/system') ||
+              id.includes('@emotion/react') ||
+              id.includes('@emotion/styled') ||
+              id.includes('@emotion/cache') ||
+              id.includes('@emotion/serialize')
+            ) {
               return 'mui';
             }
             // Core React vendors
