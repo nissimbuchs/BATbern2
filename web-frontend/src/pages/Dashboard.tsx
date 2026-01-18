@@ -7,7 +7,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
 
 const Dashboard: React.FC = () => {
@@ -30,12 +30,20 @@ const Dashboard: React.FC = () => {
     <Box
       sx={{
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '50vh',
+        gap: 2,
       }}
     >
+      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
+        Dashboard
+      </Typography>
       <CircularProgress />
+      <Typography variant="body2" color="text.primary">
+        Loading your dashboard...
+      </Typography>
     </Box>
   );
 };
