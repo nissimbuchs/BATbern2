@@ -88,12 +88,13 @@ export const ForgotPasswordForm: React.FC = () => {
           textDecoration: 'none',
           color: 'primary.main',
         }}
+        data-testid="back-to-login-link"
       >
         <ArrowBack sx={{ mr: 1 }} />
         {t('auth:forgot.backToLogin')}
       </Link>
 
-      <Typography variant="h4" align="center" gutterBottom>
+      <Typography variant="h4" align="center" gutterBottom data-testid="forgot-password-title">
         {t('auth:forgot.title')}
       </Typography>
       <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
@@ -106,7 +107,13 @@ export const ForgotPasswordForm: React.FC = () => {
           sx={{ mb: 2 }}
           action={
             isNetworkError && (
-              <Button color="inherit" size="small" onClick={handleRetry} startIcon={<Refresh />}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={handleRetry}
+                startIcon={<Refresh />}
+                data-testid="retry-button"
+              >
                 Retry
               </Button>
             )
@@ -155,6 +162,7 @@ export const ForgotPasswordForm: React.FC = () => {
           disabled={!isValid || isPending || rateLimitCountdown > 0}
           sx={{ mt: 2, mb: 2 }}
           startIcon={isPending ? <CircularProgress size={20} /> : null}
+          data-testid="forgot-password-submit"
         >
           {isPending
             ? t('common:actions.sending')

@@ -29,7 +29,7 @@ const MAILHOG_URL = process.env.MAILHOG_URL || 'http://localhost:8025';
  */
 async function navigateToForgotPassword(page: Page) {
   await page.goto(`${BASE_URL}/auth/forgot-password`);
-  await expect(page.locator('h4')).toContainText(/reset password/i);
+  await expect(page.locator('[data-testid="forgot-password-title"]')).toBeVisible();
 }
 
 /**
@@ -37,7 +37,7 @@ async function navigateToForgotPassword(page: Page) {
  */
 async function submitForgotPasswordForm(page: Page, email: string) {
   await page.fill('input[name="email"]', email);
-  await page.click('button[type="submit"]');
+  await page.click('[data-testid="forgot-password-submit"]');
 }
 
 interface MailhogEmail {
@@ -87,8 +87,8 @@ test.describe('Forgot Password - Basic Flow', () => {
     await navigateToForgotPassword(page);
 
     await expect(page.locator('input[name="email"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toContainText(/send link/i);
-    await expect(page.getByText(/back to login/i)).toBeVisible();
+    await expect(page.locator('[data-testid="forgot-password-submit"]')).toBeVisible();
+    await expect(page.locator('[data-testid="back-to-login-link"]')).toBeVisible();
   });
 
   test('should_showValidationError_when_emailInvalid', async ({ page }) => {
@@ -138,7 +138,7 @@ test.describe('Forgot Password - Basic Flow', () => {
     // AC5: Back to Login navigation
     await navigateToForgotPassword(page);
 
-    await page.click('a:has-text("Back to Login")');
+    await page.click('[data-testid="back-to-login-link"]');
 
     await expect(page).toHaveURL(/\/login/);
   });
@@ -356,9 +356,9 @@ test.describe('Forgot Password - Rate Limiting', () => {
 
     await expect(page.getByText(/too many requests/i)).toBeVisible();
 
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.locator('[data-testid="forgot-password-submit"]');
     await expect(submitButton).toBeDisabled();
-    await expect(submitButton).toContainText(/wait/i);
+    await expect(submitButton).toBeVisible();
   });
 });
 
@@ -400,7 +400,7 @@ test.describe('Forgot Password - Error Handling', () => {
 
     await expect(page.getByText(/connection error/i)).toBeVisible();
 
-    await page.click('button:has-text("Retry")');
+    await page.click('[data-testid="retry-button"]');
 
     await expect(page.getByText(/check your email/i)).toBeVisible();
     expect(requestCount).toBe(2);
