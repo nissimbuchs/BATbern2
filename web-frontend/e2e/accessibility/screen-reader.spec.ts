@@ -154,8 +154,9 @@ test.describe('Screen Reader Accessibility (WCAG 2.1 AA)', () => {
     // Wait for page to fully load
     await page.waitForTimeout(500);
 
-    // Navigate to different route (click first navigation link)
-    const link = page.getByRole('link').first();
+    // Navigate to different route (click first visible navigation link within nav)
+    const nav = page.locator('nav[aria-label="main navigation"]');
+    const link = nav.getByRole('link').first();
     await link.waitFor({ state: 'visible', timeout: 5000 });
 
     await link.click();
