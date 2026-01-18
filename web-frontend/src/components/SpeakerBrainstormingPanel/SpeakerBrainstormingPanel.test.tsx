@@ -36,6 +36,7 @@ vi.mock('@/hooks/useSpeakerPool', () => ({
     isLoading: false,
   })),
   useAddSpeakerToPool: () => ({ mutate: vi.fn(), isLoading: false }),
+  useUpdateSpeakerInPool: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 describe('SpeakerBrainstormingPanel', () => {
