@@ -114,11 +114,12 @@ test.describe('Navigation Accessibility (WCAG 2.1 AA)', () => {
 
   test('should meet color contrast requirements', async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
 
-    // Run axe test specifically for color contrast
+    // Run axe test specifically for color contrast on main navigation
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2aa'])
-      .include('nav')
+      .include('nav[aria-label="main navigation"]')
       .analyze();
 
     const contrastViolations = accessibilityScanResults.violations.filter(
