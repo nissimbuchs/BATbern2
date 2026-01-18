@@ -123,8 +123,9 @@ test.describe('Partner Directory - Search Functionality', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
   });
 
   test('should filter partners by search query', async ({ page }) => {
