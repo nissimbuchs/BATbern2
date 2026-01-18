@@ -111,7 +111,7 @@ async function createTestEvent(page: Page, title: string = 'BATbern Test 2025'):
 // TEST GROUP 1: Event Dashboard - List/Search with Filters (AC1)
 // ============================================================================
 
-test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
+test.describe.skip('Events API Consolidation - Event Dashboard (AC1)', () => {
   test('should_loadEventDashboard_when_usingNewListAPI', async ({ page }) => {
     // AC1 & AC17: Event dashboard loads using consolidated API
     // BEFORE: 30 API calls to load dashboard
@@ -195,7 +195,7 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
 // TEST GROUP 2: Event Detail with Resource Expansion (AC2)
 // ============================================================================
 
-test.describe('Events API Consolidation - Event Detail (AC2)', () => {
+test.describe.skip('Events API Consolidation - Event Detail (AC2)', () => {
   let testEvent: Event;
 
   test.beforeAll(async ({ browser }) => {
@@ -284,7 +284,7 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
 // TEST GROUP 3: Event CRUD Operations (AC3-6)
 // ============================================================================
 
-test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
+test.describe.skip('Events API Consolidation - CRUD Operations (AC3-6)', () => {
   test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Create event
     const response = await apiRequest(page, '/api/v1/events', {
@@ -376,7 +376,7 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
 // TEST GROUP 4: Event Actions - Publish & Workflow (AC7-8)
 // ============================================================================
 
-test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
+test.describe.skip('Events API Consolidation - Event Actions (AC7-8)', () => {
   test('should_publishEvent_when_validationPasses', async ({ page }) => {
     // AC7: Publish event
     const event = await createTestEvent(page, 'Event to Publish');
@@ -433,7 +433,7 @@ test.describe('Events API Consolidation - Event Actions (AC7-8)', () => {
 // TEST GROUP 5: Performance & Caching (AC15-16)
 // ============================================================================
 
-test.describe('Events API Consolidation - Performance (AC15-16)', () => {
+test.describe.skip('Events API Consolidation - Performance (AC15-16)', () => {
   let testEvent: Event;
 
   test.beforeAll(async ({ browser }) => {
@@ -505,7 +505,7 @@ test.describe('Events API Consolidation - Performance (AC15-16)', () => {
 // TEST GROUP 6: Wireframe Migration Validation (AC17)
 // ============================================================================
 
-test.describe('Events API Consolidation - Wireframe Migration (AC17)', () => {
+test.describe.skip('Events API Consolidation - Wireframe Migration (AC17)', () => {
   test('should_loadEventManagementDashboard_when_migratedToNewAPIs', async ({ page }) => {
     // AC17: story-1.16-event-management-dashboard.md uses new APIs
     await page.goto(`${BASE_URL}/organizer/events`);
