@@ -72,7 +72,7 @@ export const EventPagination: React.FC<EventPaginationProps> = ({
           <Select
             value={limit}
             onChange={handleLimitChange}
-            aria-label={t('pagination.itemsPerPage')}
+            inputProps={{ 'aria-label': t('pagination.itemsPerPage') }}
           >
             <MenuItem value={10}>10</MenuItem>
             <MenuItem value={20}>20</MenuItem>
