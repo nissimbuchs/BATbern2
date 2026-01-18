@@ -1,0 +1,117 @@
+schema: 1
+story: '6.2'
+story_title: 'Speaker Self-Service Response Portal'
+gate: PASS
+status_reason: 'Pre-implementation specification review complete - all issues resolved, ready for development'
+reviewer: 'Quinn (Test Architect)'
+updated: '2026-01-18T21:30:00Z'
+review_type: 'pre-implementation'
+
+top_issues: []  # All issues resolved
+
+resolved_issues:
+  - id: SPEC-001
+    severity: medium
+    title: '"Why we chose you" data source undefined'
+    resolution: 'personalMessage from SendInvitationRequest, now persisted in DB via V44 migration (personal_message column)'
+    status: resolved
+
+  - id: SPEC-002
+    severity: low
+    title: 'Terminology inconsistency: TENTATIVE vs "Need More Info"'
+    resolution: 'TENTATIVE enum value maps to "Need More Info" label in UI - documented in story'
+    status: resolved
+
+  - id: SPEC-003
+    severity: medium
+    title: 'InvitationResponse DTO extension not specified'
+    resolution: 'Added InvitationResponse extension to API contracts section with personalMessage and preferences fields'
+    status: resolved
+
+  - id: SPEC-004
+    severity: low
+    title: 'Potential field duplication: notes vs commentsForOrganizer'
+    resolution: 'Keep both - notes is generic, commentsForOrganizer is structured preference. Dev can consolidate if appropriate.'
+    status: acknowledged
+
+  - id: SPEC-005
+    severity: medium
+    title: 'Organizer notification mechanism unspecified'
+    resolution: 'Defined: InvitationResponseNotificationListener consuming InvitationRespondedEvent, sends email to organizer'
+    status: resolved
+
+waiver:
+  active: false
+
+quality_score: 100  # All issues resolved
+
+evidence:
+  tests_reviewed:
+    count: 0
+    note: 'Pre-implementation review - no tests exist yet'
+  risks_identified:
+    count: 3
+    categories: ['specification-gaps', 'consistency', 'integration']
+  trace:
+    ac_covered: []
+    ac_gaps: [1, 2, 3, 4, 5, 6, 7, 8]
+    note: 'Pre-implementation - no coverage yet'
+
+existing_infrastructure:
+  backend:
+    - file: 'InvitationController.java'
+      endpoints:
+        - 'GET /api/v1/invitations/respond/{token} - Public, exists'
+        - 'POST /api/v1/invitations/respond/{token} - Public, exists'
+      status: 'Ready to extend'
+    - file: 'InvitationService.java'
+      methods:
+        - 'getInvitationByToken() - exists'
+        - 'respondToInvitation() - exists, needs preference handling'
+      status: 'Ready to extend'
+  database:
+    - migration: 'V43__Create_speaker_invitations_table.sql'
+      status: 'Exists, V44 will extend'
+    - columns_to_add:
+        - 'preferred_time_slot VARCHAR(50)'
+        - 'travel_requirements VARCHAR(50)'
+        - 'technical_requirements TEXT[]'
+        - 'initial_presentation_title VARCHAR(200)'
+        - 'comments_for_organizer TEXT'
+  domain:
+    - entity: 'SpeakerInvitation.java'
+      status: 'Needs 5 new fields for preferences'
+    - enum: 'ResponseType.java'
+      values: ['ACCEPTED', 'DECLINED', 'TENTATIVE']
+      note: 'TENTATIVE maps to "Need More Info" in UI'
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'Token-based auth pattern from Story 6.1 is solid. Public endpoints use cryptographic tokens (64-char). No auth bypass concerns.'
+  performance:
+    status: PASS
+    notes: 'Simple CRUD operations. Indexed token lookup exists. No performance concerns anticipated.'
+  reliability:
+    status: CONCERNS
+    notes: 'Error handling for expired tokens specified. Need to ensure frontend gracefully handles network errors and displays appropriate messages.'
+  maintainability:
+    status: PASS
+    notes: 'Clean component structure defined. Follows existing patterns from Story 6.1. Good separation of concerns.'
+
+recommendations:
+  immediate:
+    - action: 'Clarify "Why we chose you" data source in story spec'
+      refs: ['docs/stories/6.2-speaker-response-portal.md']
+      owner: sm
+    - action: 'Add InvitationResponse DTO extension to Task 2 scope'
+      refs: ['BAT-132']
+      owner: sm
+    - action: 'Define organizer notification implementation (email/in-app/both)'
+      refs: ['docs/stories/6.2-speaker-response-portal.md#AC6']
+      owner: sm
+  future:
+    - action: 'Consider consolidating notes/commentsForOrganizer fields'
+      refs: ['RespondToInvitationRequest.java']
+    - action: 'Add rate limiting for public response endpoint'
+      refs: ['InvitationController.java']
