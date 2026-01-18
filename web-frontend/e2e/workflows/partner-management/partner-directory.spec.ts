@@ -79,7 +79,9 @@ test.describe('Partner Directory - User Journey', () => {
   });
 
   test('should display partner overview statistics', async ({ page }) => {
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
 
     // Wait for statistics to load
     await page.waitForSelector('[data-testid="stats-total-partners"]', { timeout: 10000 });
