@@ -157,7 +157,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       // Wait for autocomplete results (debounce 300ms + API response)
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
         .first()
         .click();
 
@@ -274,7 +274,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await companyInput.fill(testData.company.name);
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
         .first()
         .click();
 
@@ -348,7 +348,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await companyInput.fill(testData.company.name);
       await page.waitForTimeout(1000);
       await page
-        .getByRole('option', { name: new RegExp(testData.company.name, 'i') })
+        .getByRole('option', { name: new RegExp(testData.company.displayName, 'i') })
         .first()
         .click();
 
