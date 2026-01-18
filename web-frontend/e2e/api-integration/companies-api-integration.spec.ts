@@ -25,14 +25,19 @@ test.describe('Companies API Integration', () => {
       expect(response.status()).toBe(401);
     });
 
-    test('should return 401 for unauthenticated search request', async ({ page }) => {
+    test('should allow unauthenticated search request (public endpoint)', async ({ page }) => {
       const response = await page.request.get(`${apiBaseUrl}/api/v1/companies/search?query=test`, {
         headers: {
           'X-Correlation-ID': 'test-' + Date.now(),
         },
       });
 
-      expect(response.status()).toBe(401);
+      // Company search is now a public endpoint
+      expect(response.status()).toBe(200);
+
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(Array.isArray(data)).toBe(true);
     });
   });
 
