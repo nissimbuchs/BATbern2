@@ -3,7 +3,7 @@
 -- References Speaker/Event via username/event_code (meaningful IDs), NOT UUIDs
 -- NO foreign key constraints (cross-service references)
 
-CREATE TABLE speaker_invitations (
+CREATE TABLE IF NOT EXISTS speaker_invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     -- ADR-003: Meaningful ID references (NOT UUIDs, NO foreign keys)
@@ -46,23 +46,23 @@ CREATE TABLE speaker_invitations (
 );
 
 -- Primary lookup: unique token for response
-CREATE UNIQUE INDEX idx_speaker_invitations_token ON speaker_invitations(response_token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_speaker_invitations_token ON speaker_invitations(response_token);
 
 -- Find invitations for a speaker
-CREATE INDEX idx_speaker_invitations_username ON speaker_invitations(username);
+CREATE INDEX IF NOT EXISTS idx_speaker_invitations_username ON speaker_invitations(username);
 
 -- Find invitations for an event
-CREATE INDEX idx_speaker_invitations_event_code ON speaker_invitations(event_code);
+CREATE INDEX IF NOT EXISTS idx_speaker_invitations_event_code ON speaker_invitations(event_code);
 
 -- Filter by status
-CREATE INDEX idx_speaker_invitations_status ON speaker_invitations(invitation_status);
+CREATE INDEX IF NOT EXISTS idx_speaker_invitations_status ON speaker_invitations(invitation_status);
 
 -- Find pending invitations approaching expiration
-CREATE INDEX idx_speaker_invitations_expires_at ON speaker_invitations(expires_at)
+CREATE INDEX IF NOT EXISTS idx_speaker_invitations_expires_at ON speaker_invitations(expires_at)
     WHERE invitation_status NOT IN ('responded', 'expired');
 
 -- Composite index for checking duplicate invitations
-CREATE UNIQUE INDEX idx_speaker_invitations_unique_per_event ON speaker_invitations(username, event_code)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_speaker_invitations_unique_per_event ON speaker_invitations(username, event_code)
     WHERE invitation_status NOT IN ('expired');
 
 COMMENT ON TABLE speaker_invitations IS 'Speaker invitation tracking for automated invitation workflow. ADR-003/ADR-004 compliant (meaningful IDs, no cross-service FKs). Story 6.1.';
