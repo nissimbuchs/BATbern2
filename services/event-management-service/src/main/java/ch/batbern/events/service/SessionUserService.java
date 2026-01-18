@@ -204,7 +204,7 @@ public class SessionUserService {
      *
      * @param sessionUser SessionUser entity (must have username populated)
      * @return SessionSpeakerResponse with combined data
-     * @throws UserNotFoundException if user not found via API
+     * @throws UserNotFoundException if user not found via API (only for new assignments)
      */
     private SessionSpeakerResponse enrichWithUserData(SessionUser sessionUser) {
         // ADR-003: username is required for API-based user lookup
@@ -215,9 +215,28 @@ public class SessionUserService {
             );
         }
 
-        // Fetch user data via API using username (cached for 15 minutes)
-        UserResponse user = userApiClient.getUserByUsername(sessionUser.getUsername());
-        return enrichWithUserData(sessionUser, user);
+        try {
+            // Fetch user data via API using username (cached for 15 minutes)
+            UserResponse user = userApiClient.getUserByUsername(sessionUser.getUsername());
+            return enrichWithUserData(sessionUser, user);
+        } catch (UserNotFoundException e) {
+            // Fallback for archived/historical speakers who no longer exist in the system
+            // Use cached speaker name fields from SessionUser (populated during assignment)
+            log.warn("User not found for speaker lookup, using cached data: {}", sessionUser.getUsername());
+
+            return SessionSpeakerResponse.builder()
+                    .username(sessionUser.getUsername())
+                    .firstName(sessionUser.getSpeakerFirstName() != null
+                            ? sessionUser.getSpeakerFirstName() : "Unknown")
+                    .lastName(sessionUser.getSpeakerLastName() != null
+                            ? sessionUser.getSpeakerLastName() : "Speaker")
+                    .company(null) // No company data available for archived speakers
+                    .profilePictureUrl(null) // No profile picture for archived speakers
+                    .speakerRole(sessionUser.getSpeakerRole())
+                    .presentationTitle(sessionUser.getPresentationTitle())
+                    .isConfirmed(sessionUser.isConfirmed())
+                    .build();
+        }
     }
 
     /**
