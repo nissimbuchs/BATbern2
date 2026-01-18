@@ -10,8 +10,7 @@
     "linear": {
       "command": "npx",
       "args": [
-        "-y",
-        "@mseep/linear-mcp"
+        "@linear/mcp-server"
       ],
       "env": {
         "LINEAR_API_KEY": "${LINEAR_API_KEY}"

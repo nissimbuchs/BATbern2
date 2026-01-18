@@ -28,6 +28,7 @@ apps/*/dist
 !.vscode/extensions.json
 
 # misc
+.mcp.json
 /BATspa-old/.angular/cache
 /.sass-cache
 /connect.lock

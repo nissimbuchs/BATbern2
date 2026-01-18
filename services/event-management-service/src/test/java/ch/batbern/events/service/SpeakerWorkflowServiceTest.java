@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -46,6 +48,9 @@ class SpeakerWorkflowServiceTest {
 
     @Mock
     private SessionRepository sessionRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private SpeakerWorkflowService speakerWorkflowService;
@@ -368,5 +373,69 @@ class SpeakerWorkflowServiceTest {
 
         // Then: No error (idempotent)
         verify(speakerPoolRepository, atLeastOnce()).save(any(SpeakerPool.class));
+    }
+
+    // ==================== Domain Event Publishing Tests (Story 6.1a AC2) ====================
+
+    @Test
+    @DisplayName("Should publish SpeakerWorkflowStateChangeEvent when state transition succeeds")
+    void shouldPublishEventOnStateTransition() {
+        // Given: Speaker in IDENTIFIED state
+        testSpeaker.setStatus(SpeakerWorkflowState.IDENTIFIED);
+        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
+
+        // When: Transition to CONTACTED
+        speakerWorkflowService.updateSpeakerWorkflowState(
+                speakerId,
+                SpeakerWorkflowState.CONTACTED,
+                organizerUsername
+        );
+
+        // Then: Domain event is published with correct data
+        ArgumentCaptor<SpeakerWorkflowStateChangeEvent> eventCaptor =
+                ArgumentCaptor.forClass(SpeakerWorkflowStateChangeEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        SpeakerWorkflowStateChangeEvent event = eventCaptor.getValue();
+        assertEquals(speakerId, event.getSpeakerPoolId());
+        assertEquals(testSpeaker.getEventId(), event.getRelatedEventId());
+        assertEquals(SpeakerWorkflowState.IDENTIFIED, event.getFromState());
+        assertEquals(SpeakerWorkflowState.CONTACTED, event.getToState());
+        assertEquals(organizerUsername, event.getUsername());
+    }
+
+    @Test
+    @DisplayName("Should publish event when auto-confirming speaker with quality review and slot")
+    void shouldPublishEventOnAutoConfirmation() {
+        // Given: Speaker in CONTENT_SUBMITTED with slot assigned
+        testSpeaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
+        testSession.setStartTime(Instant.now()); // Slot assigned
+
+        when(speakerPoolRepository.findById(speakerId)).thenReturn(Optional.of(testSpeaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenReturn(testSpeaker);
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(testSession));
+
+        // When: Transition to QUALITY_REVIEWED (triggers auto-confirm)
+        speakerWorkflowService.updateSpeakerWorkflowState(
+                speakerId,
+                SpeakerWorkflowState.QUALITY_REVIEWED,
+                organizerUsername
+        );
+
+        // Then: Two events published - QUALITY_REVIEWED and CONFIRMED
+        ArgumentCaptor<SpeakerWorkflowStateChangeEvent> eventCaptor =
+                ArgumentCaptor.forClass(SpeakerWorkflowStateChangeEvent.class);
+        verify(eventPublisher, times(2)).publishEvent(eventCaptor.capture());
+
+        // First event: CONTENT_SUBMITTED → QUALITY_REVIEWED
+        SpeakerWorkflowStateChangeEvent firstEvent = eventCaptor.getAllValues().get(0);
+        assertEquals(SpeakerWorkflowState.CONTENT_SUBMITTED, firstEvent.getFromState());
+        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, firstEvent.getToState());
+
+        // Second event: QUALITY_REVIEWED → CONFIRMED (auto-confirmation)
+        SpeakerWorkflowStateChangeEvent secondEvent = eventCaptor.getAllValues().get(1);
+        assertEquals(SpeakerWorkflowState.QUALITY_REVIEWED, secondEvent.getFromState());
+        assertEquals(SpeakerWorkflowState.CONFIRMED, secondEvent.getToState());
     }
 }

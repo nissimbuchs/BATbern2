@@ -3,9 +3,11 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,13 +46,16 @@ public class SpeakerWorkflowService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SpeakerWorkflowService(
             SpeakerPoolRepository speakerPoolRepository,
-            SessionRepository sessionRepository
+            SessionRepository sessionRepository,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.sessionRepository = sessionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -89,13 +94,19 @@ public class SpeakerWorkflowService {
         speaker.setStatus(newState);
         speakerPoolRepository.save(speaker);
 
+        // Publish domain event for state transition (Story 6.1a AC2)
+        eventPublisher.publishEvent(new SpeakerWorkflowStateChangeEvent(
+                speaker.getId(),
+                speaker.getEventId(),
+                currentState,
+                newState,
+                organizerUsername
+        ));
+
         // Check for auto-confirmation when quality review completes
         if (newState == SpeakerWorkflowState.QUALITY_REVIEWED) {
             checkAndUpdateToConfirmed(speaker, organizerUsername);
         }
-
-        // TODO: Publish SpeakerWorkflowStateChangeEvent to EventBridge
-        // Will be implemented when domain event publishing is added
     }
 
     /**
@@ -196,13 +207,21 @@ public class SpeakerWorkflowService {
             LOG.info("Auto-confirming speaker {} - quality review complete and slot assigned",
                     speaker.getId());
 
+            SpeakerWorkflowState previousState = speaker.getStatus();
             speaker.setStatus(SpeakerWorkflowState.CONFIRMED);
             speakerPoolRepository.save(speaker);
 
+            // Publish domain event for auto-confirmation (Story 6.1a AC2)
+            eventPublisher.publishEvent(new SpeakerWorkflowStateChangeEvent(
+                    speaker.getId(),
+                    speaker.getEventId(),
+                    previousState,
+                    SpeakerWorkflowState.CONFIRMED,
+                    organizerUsername
+            ));
+
             LOG.info("Speaker {} auto-confirmed by system (triggered by organizer {})",
                     speaker.getId(), organizerUsername);
-
-            // TODO: Publish SpeakerConfirmedEvent
         } else {
             LOG.debug("Speaker {} quality reviewed but no slot assigned yet - staying at QUALITY_REVIEWED",
                     speaker.getId());
