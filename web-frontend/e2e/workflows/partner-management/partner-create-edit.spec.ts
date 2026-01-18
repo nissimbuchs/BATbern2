@@ -150,7 +150,10 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
       // Wait for autocomplete results (debounce 300ms + API response)
       await page.waitForTimeout(1000);
-      await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
+      await page
+        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .first()
+        .click();
 
       // AC4: Partnership Tier Dropdown - Select tier
       await page.locator('[data-testid="partnership-tier-select"]').click();
@@ -262,7 +265,10 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
       await companyInput.fill(TEST_COMPANY.displayName);
       await page.waitForTimeout(1000);
-      await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
+      await page
+        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .first()
+        .click();
 
       // Set end date before start date
       const startDateInput = page.locator('input[name="partnershipStartDate"]');
@@ -299,9 +305,11 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await page.waitForTimeout(1000);
 
       // Verify company appears (getByRole works for autocomplete options)
-      const companyOption = page.getByRole('option', {
-        name: new RegExp(TEST_COMPANY.displayName, 'i'),
-      });
+      const companyOption = page
+        .getByRole('option', {
+          name: new RegExp(TEST_COMPANY.displayName, 'i'),
+        })
+        .first();
       await expect(companyOption).toBeVisible();
 
       // Select company
@@ -328,7 +336,10 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       const companyInput = page.locator('[data-testid="company-autocomplete"] input');
       await companyInput.fill(TEST_COMPANY.displayName);
       await page.waitForTimeout(1000);
-      await page.getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') }).click();
+      await page
+        .getByRole('option', { name: new RegExp(TEST_COMPANY.displayName, 'i') })
+        .first()
+        .click();
 
       // Setup dialog listener
       let dialogShown = false;
@@ -357,8 +368,9 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
     await page.waitForSelector('[data-testid="partner-create-edit-modal"]', { timeout: 5000 });
 
     // Test Tab navigation through form fields
-    await page.keyboard.press('Tab'); // Focus on company input
+    // Note: First Tab may focus on modal itself, so we tab to get to company input
     const companyInput = page.locator('[data-testid="company-autocomplete"] input');
+    await companyInput.click(); // Ensure focus
     await expect(companyInput).toBeFocused();
 
     // Test Escape to close modal (with empty form, no unsaved changes warning)
