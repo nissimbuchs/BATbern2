@@ -426,15 +426,15 @@ test.describe('Speaker Outreach Tracking (Story 5.3)', () => {
       );
     });
 
-    test('should prevent marking speaker as contacted if in invalid state', async ({ page: _page }) => {
-      // This test requires API-level validation
+    test.skip('should prevent marking speaker as contacted if in invalid state', async () => {
+      // RED PHASE: This test requires API-level validation
       // The frontend should handle 409 CONFLICT response from backend
       // when speaker is in DECLINED or other invalid state
     });
   });
 
   test.describe('AC12: REST API Integration', () => {
-    test('should POST outreach record via API', async ({ page, request: _request }) => {
+    test('should POST outreach record via API', async ({ page }) => {
       const eventCode = await createTestEvent(page);
       await addSpeakerToPool(page, eventCode, 'API Test Speaker', 'API Corp', 'API Testing');
 
