@@ -25,14 +25,14 @@ test.describe('CORS Validation', () => {
     await page.goto(frontendOrigin);
 
     // Make API request with custom header from browser context
-    const response = await page.request.get(`${apiBaseUrl}/health`, {
+    const response = await page.request.get(`${apiBaseUrl}/actuator/health`, {
       headers: {
         'X-Correlation-ID': 'test-correlation-id-' + Date.now(),
       },
     });
 
     // Should not have CORS error
-    expect(response.ok() || response.status() === 401).toBeTruthy();
+    expect(response.ok()).toBeTruthy();
 
     // Note: CORS headers validation only applies to staging/production
     // In local development, CORS headers might not be present
@@ -42,19 +42,19 @@ test.describe('CORS Validation', () => {
   test('should allow requests with Accept-Language header', async ({ page }) => {
     await page.goto(frontendOrigin);
 
-    const response = await page.request.get(`${apiBaseUrl}/health`, {
+    const response = await page.request.get(`${apiBaseUrl}/actuator/health`, {
       headers: {
         'Accept-Language': 'de-CH',
       },
     });
 
-    expect(response.ok() || response.status() === 401).toBeTruthy();
+    expect(response.ok()).toBeTruthy();
   });
 
   test('should allow requests with multiple custom headers', async ({ page }) => {
     await page.goto(frontendOrigin);
 
-    const response = await page.request.get(`${apiBaseUrl}/health`, {
+    const response = await page.request.get(`${apiBaseUrl}/actuator/health`, {
       headers: {
         'X-Correlation-ID': 'test-' + Date.now(),
         'Accept-Language': 'de-CH',
@@ -62,7 +62,7 @@ test.describe('CORS Validation', () => {
       },
     });
 
-    expect(response.ok() || response.status() === 401).toBeTruthy();
+    expect(response.ok()).toBeTruthy();
   });
 
   test('should handle OPTIONS preflight requests', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('CORS Validation', () => {
     // Make request that should succeed
     await page.evaluate(async (apiUrl) => {
       try {
-        await fetch(`${apiUrl}/health`, {
+        await fetch(`${apiUrl}/actuator/health`, {
           headers: {
             'X-Correlation-ID': 'test-' + Date.now(),
           },
@@ -185,7 +185,7 @@ test.describe('Header Propagation Validation', () => {
     await page.evaluate(
       async ([url, corrId]) => {
         try {
-          await fetch(url + '/health', {
+          await fetch(url + '/actuator/health', {
             headers: {
               'X-Correlation-ID': corrId,
             },
