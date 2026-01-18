@@ -31,7 +31,18 @@ script:post-response {
     const user = res.getBody();
     bru.setEnvVar("currentUsername", user.id);
     bru.setEnvVar("currentUserEmail", user.email);
+
+    // Store original profile data for restoration after update tests
+    bru.setEnvVar("originalFirstName", user.firstName || "");
+    bru.setEnvVar("originalLastName", user.lastName || "");
+    bru.setEnvVar("originalBio", user.bio || "");
+
     console.log("Current user username:", user.id);
+    console.log("Stored original profile:", {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      bio: user.bio
+    });
   }
 }
 
