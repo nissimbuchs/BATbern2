@@ -203,8 +203,9 @@ test.describe('Partner Directory - Filter Functionality', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
   });
 
   test('should filter partners by tier', async ({ page }) => {
@@ -284,8 +285,9 @@ test.describe('Partner Directory - View Mode Toggle', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
   });
 
   test('should switch between grid and list views', async ({ page }) => {
@@ -328,8 +330,9 @@ test.describe('Partner Directory - Sorting', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
   });
 
   test('should sort partners by different criteria', async ({ page }) => {
@@ -367,8 +370,9 @@ test.describe('Partner Directory - Pagination', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
   });
 
   test('should navigate through pages', async ({ page }) => {
@@ -423,8 +427,9 @@ test.describe('Partner Directory - Error Handling', () => {
       route.abort('failed');
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
 
     // Wait for error message
     await expect(page.getByText(/failed to.*partners/i)).toBeVisible({ timeout: 10000 });
@@ -457,8 +462,9 @@ test.describe('Partner Directory - Error Handling', () => {
       });
     });
 
-    await page.goto('/organizer/events');
-    await navigateToPartnerDirectory(page);
+    // Navigate directly to partners page
+    await page.goto(`${BASE_URL}/organizer/partners`);
+    await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
 
     // Wait for error message
     await expect(page.getByText(/failed.*partners/i)).toBeVisible({ timeout: 10000 });
