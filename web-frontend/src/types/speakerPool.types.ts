@@ -38,8 +38,8 @@ export interface AddSpeakerToPoolRequest {
   expertise?: string;
   assignedOrganizerId?: string;
   notes?: string;
-  email?: string;
-  phone?: string;
+  email: string;
+  phone: string;
 }
 
 export type SpeakerPoolResponse = SpeakerPoolEntry;

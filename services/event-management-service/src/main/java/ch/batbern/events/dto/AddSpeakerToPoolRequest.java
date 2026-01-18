@@ -1,16 +1,25 @@
 package ch.batbern.events.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Request DTO for adding a speaker to the event speaker pool (Story 5.2 AC9-12).
  */
 public class AddSpeakerToPoolRequest {
 
+    @NotBlank(message = "Speaker name is required")
     private String speakerName;
     private String company;
     private String expertise;
     private String assignedOrganizerId;
     private String notes;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
     private String email;
+
+    @NotBlank(message = "Phone is required")
     private String phone;
 
     // Constructors

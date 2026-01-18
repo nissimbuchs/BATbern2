@@ -2028,7 +2028,7 @@ public class EventController {
             description = "Add a potential speaker to the event speaker pool during brainstorming phase")
     public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> addSpeakerToPool(
             @PathVariable String eventCode,
-            @RequestBody ch.batbern.events.dto.AddSpeakerToPoolRequest request) {
+            @Valid @RequestBody ch.batbern.events.dto.AddSpeakerToPoolRequest request) {
 
         // Add speaker to pool
         // Exceptions are handled by GlobalExceptionHandler:

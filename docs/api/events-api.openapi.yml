@@ -4478,6 +4478,8 @@ components:
         Story 5.2 - AC9-12: Speaker Pool Management
       required:
         - speakerName
+        - email
+        - phone
       properties:
         speakerName:
           type: string
@@ -4506,12 +4508,12 @@ components:
           type: string
           format: email
           maxLength: 255
-          description: Email address for contacting the speaker (optional)
+          description: Email address for contacting the speaker (required)
           example: jane.smith@techcorp.ch
         phone:
           type: string
           maxLength: 50
-          description: Phone number for contacting the speaker (optional)
+          description: Phone number for contacting the speaker (required)
           example: +41 79 123 45 67
 
     SpeakerPoolResponse:

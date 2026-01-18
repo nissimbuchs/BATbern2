@@ -63,7 +63,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
   const addSpeakerMutation = useAddSpeakerToPool();
 
   const handleAddSpeaker = () => {
-    if (!speakerName.trim()) {
+    if (!speakerName.trim() || !email.trim() || !phone.trim()) {
       return;
     }
 
@@ -83,8 +83,8 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
       expertise: expertise.trim() || undefined,
       assignedOrganizerId: assignedOrganizerId || undefined,
       notes: notes.trim() || undefined,
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
+      email: email.trim(),
+      phone: phone.trim(),
     };
 
     console.log('Request payload:', request);
@@ -174,10 +174,11 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
         />
 
         <TextField
+          required
           fullWidth
           size="small"
           type="email"
-          label={t('speakerBrainstorm.form.email', 'Email (Optional)')}
+          label={t('speakerBrainstorm.form.email', 'Email')}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={addSpeakerMutation.isPending}
@@ -185,9 +186,10 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
         />
 
         <TextField
+          required
           fullWidth
           size="small"
-          label={t('speakerBrainstorm.form.phone', 'Phone (Optional)')}
+          label={t('speakerBrainstorm.form.phone', 'Phone')}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           disabled={addSpeakerMutation.isPending}
@@ -199,7 +201,9 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          disabled={!speakerName.trim() || addSpeakerMutation.isPending}
+          disabled={
+            !speakerName.trim() || !email.trim() || !phone.trim() || addSpeakerMutation.isPending
+          }
           data-testid="add-to-pool-button"
         >
           {addSpeakerMutation.isPending
