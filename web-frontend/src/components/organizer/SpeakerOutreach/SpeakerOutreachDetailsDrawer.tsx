@@ -436,6 +436,10 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
         onClose={() => setEditModalOpen(false)}
         speaker={speaker}
         eventCode={eventCode}
+        onSuccess={() => {
+          // Close drawer after successful edit so user sees fresh data when reopening
+          onClose();
+        }}
       />
     </Drawer>
   );
