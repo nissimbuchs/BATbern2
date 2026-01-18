@@ -648,7 +648,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               )}
 
               {mode === 'edit' && (
-                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                  data-testid="auto-save-indicator"
+                >
                   <Typography variant="caption" color="text.secondary">
                     {t('autoSave.enabled')}
                   </Typography>
@@ -974,14 +977,25 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       </Dialog>
 
       {/* Unsaved Changes Warning Dialog */}
-      <Dialog open={showUnsavedWarning} onClose={handleCancelClose}>
+      <Dialog
+        open={showUnsavedWarning}
+        onClose={handleCancelClose}
+        data-testid="unsaved-changes-dialog"
+      >
         <DialogTitle>{t('confirmations.unsavedChanges')}</DialogTitle>
         <DialogContent>
           <Typography>{t('confirmations.unsavedChangesMessage')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelClose}>{t('confirmations.cancel')}</Button>
-          <Button onClick={handleConfirmClose} color="error" variant="contained">
+          <Button onClick={handleCancelClose} data-testid="keep-editing-button">
+            {t('confirmations.cancel')}
+          </Button>
+          <Button
+            onClick={handleConfirmClose}
+            color="error"
+            variant="contained"
+            data-testid="discard-changes-button"
+          >
             {t('confirmations.confirm')}
           </Button>
         </DialogActions>
