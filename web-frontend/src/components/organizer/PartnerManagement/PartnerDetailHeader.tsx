@@ -225,7 +225,13 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
             <Button variant="outlined" startIcon={<NoteAdd />} size="small">
               {t('detail.notesTab.addNote')}
             </Button>
-            <Button variant="contained" startIcon={<Edit />} onClick={handleEdit} size="small">
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              onClick={handleEdit}
+              size="small"
+              data-testid="edit-partner-button"
+            >
               {t('modal.editTitle')}
             </Button>
           </Stack>

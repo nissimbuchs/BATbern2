@@ -19,11 +19,11 @@
  * 2. Run: npx playwright test e2e/workflows/partner-management/partner-create-edit.spec.ts
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // Test configuration
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
+const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
 
 // Test data
 const TEST_PARTNER = {
@@ -38,36 +38,18 @@ const TEST_COMPANY = {
   industry: 'Technology',
 };
 
-// Type definitions
-interface PartnerResponse {
-  companyName: string;
-  companyDisplayName: string;
-  companyLogoUrl: string | null;
-  partnershipLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'STRATEGIC';
-  partnershipStartDate: string;
-  partnershipEndDate: string | null;
-}
-
 /**
- * Helper: Login as organizer user
+ * Helper: Get authentication token from environment
+ * Token is set by global-setup.ts from ~/.batbern/{environment}.json
  */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_ORGANIZER_EMAIL || 'organizer@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/auth/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(/\/dashboard/);
-}
-
-/**
- * Helper: Get authentication token from localStorage
- */
-async function getAuthToken(page: Page): Promise<string> {
-  const token = await page.evaluate(() => localStorage.getItem('authToken'));
-  return token || '';
+function getAuthToken(): string {
+  const token = process.env.AUTH_TOKEN;
+  if (!token) {
+    throw new Error(
+      'AUTH_TOKEN not found in environment. Run: ./scripts/auth/get-token.sh staging <email> <password>'
+    );
+  }
+  return token;
 }
 
 /**
@@ -77,7 +59,7 @@ async function createCompanyViaAPI(
   authToken: string,
   companyData: typeof TEST_COMPANY
 ): Promise<void> {
-  const response = await fetch(`${API_URL}/companies`, {
+  const response = await fetch(`${API_URL}/api/v1/companies`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -95,7 +77,7 @@ async function createCompanyViaAPI(
  * Helper: Delete partner via API for cleanup
  */
 async function deletePartnerViaAPI(authToken: string, companyName: string): Promise<void> {
-  await fetch(`${API_URL}/partners/${companyName}`, {
+  await fetch(`${API_URL}/api/v1/partners/${companyName}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${authToken}`,
@@ -107,7 +89,7 @@ async function deletePartnerViaAPI(authToken: string, companyName: string): Prom
  * Helper: Delete company via API for cleanup
  */
 async function deleteCompanyViaAPI(authToken: string, companyName: string): Promise<void> {
-  await fetch(`${API_URL}/companies/${companyName}`, {
+  await fetch(`${API_URL}/api/v1/companies/${companyName}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${authToken}`,
@@ -122,7 +104,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
   test('AC1, AC8: Create partnership workflow - full flow', async ({ page }) => {
     // Setup: Create a test company
-    const authToken = await getAuthToken(page);
+    const authToken = getAuthToken();
     await createCompanyViaAPI(authToken, TEST_COMPANY);
 
     try {
@@ -131,7 +113,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await expect(page.locator('h1')).toContainText('Partner Directory');
 
       // AC1: Click [+ Add Partner] button to open create modal
-      await page.click('button:has-text("Add Partner")');
+      await page.click('[data-testid="add-partner-button"]');
 
       // Verify modal opened with create title
       await expect(page.locator('h2')).toContainText('Create Partnership');
@@ -158,7 +140,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await expect(page.locator('text=Priority event access')).toBeVisible();
 
       // AC8: Submit form to create partnership
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-partner-button"]');
 
       // Verify success: Modal closed and redirected to partner detail
       await page.waitForURL(/\/partners\/.+/);
@@ -175,11 +157,11 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
   test('AC2: Edit partnership workflow', async ({ page }) => {
     // Setup: Create company and partnership
-    const authToken = await getAuthToken(page);
+    const authToken = getAuthToken();
     await createCompanyViaAPI(authToken, TEST_COMPANY);
 
     // Create partnership via API
-    await fetch(`${API_URL}/partners`, {
+    await fetch(`${API_URL}/api/v1/partners`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -197,7 +179,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await page.goto(`${BASE_URL}/organizer/partners/${TEST_COMPANY.name}`);
 
       // AC2: Click [Edit Partner] button to open edit modal
-      await page.click('button:has-text("Edit Partner")');
+      await page.click('[data-testid="edit-partner-button"]');
 
       // Verify modal opened with edit title
       await expect(page.locator('h2')).toContainText('Edit Partnership');
@@ -216,7 +198,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await expect(page.locator('text=Quarterly strategic meetings')).toBeVisible();
 
       // Submit form
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-partner-button"]');
 
       // Verify success: Modal closed and tier updated
       await page.waitForTimeout(500); // Wait for modal to close
@@ -232,22 +214,22 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
     await page.goto(`${BASE_URL}/organizer/partners`);
 
     // Open create modal
-    await page.click('button:has-text("Add Partner")');
+    await page.click('[data-testid="add-partner-button"]');
 
     // Try to submit without filling required fields
-    await page.click('button:has-text("Save")');
+    await page.click('[data-testid="save-partner-button"]');
 
     // Verify validation errors displayed
     await expect(page.locator('text=/Company.*required/i')).toBeVisible();
   });
 
   test('AC7: Form validation - date range', async ({ page }) => {
-    const authToken = await getAuthToken(page);
+    const authToken = getAuthToken();
     await createCompanyViaAPI(authToken, TEST_COMPANY);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.click('button:has-text("Add Partner")');
+      await page.click('[data-testid="add-partner-button"]');
 
       // Fill in company
       const companyInput = page.locator('input[aria-label*="Company"]');
@@ -263,7 +245,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
       await endDateInput.fill('2024-12-10'); // Before start date
 
       // Try to submit
-      await page.click('button:has-text("Save")');
+      await page.click('[data-testid="save-partner-button"]');
 
       // Verify validation error
       await expect(page.locator('text=/End date.*after.*start date/i')).toBeVisible();
@@ -273,12 +255,12 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
   });
 
   test('AC3: Company autocomplete - search and selection', async ({ page }) => {
-    const authToken = await getAuthToken(page);
+    const authToken = getAuthToken();
     await createCompanyViaAPI(authToken, TEST_COMPANY);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.click('button:has-text("Add Partner")');
+      await page.click('[data-testid="add-partner-button"]');
 
       // Test autocomplete search
       const companyInput = page.locator('input[aria-label*="Company"]');
@@ -302,12 +284,12 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
   });
 
   test('AC10: Modal UX - unsaved changes warning', async ({ page }) => {
-    const authToken = await getAuthToken(page);
+    const authToken = getAuthToken();
     await createCompanyViaAPI(authToken, TEST_COMPANY);
 
     try {
       await page.goto(`${BASE_URL}/organizer/partners`);
-      await page.click('button:has-text("Add Partner")');
+      await page.click('[data-testid="add-partner-button"]');
 
       // Make changes to form
       const companyInput = page.locator('input[aria-label*="Company"]');
@@ -333,7 +315,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
   test('AC11: Accessibility - keyboard navigation', async ({ page }) => {
     await page.goto(`${BASE_URL}/organizer/partners`);
-    await page.click('button:has-text("Add Partner")');
+    await page.click('[data-testid="add-partner-button"]');
 
     // Test Tab navigation through form fields
     await page.keyboard.press('Tab'); // Focus on company input
@@ -351,7 +333,7 @@ test.describe('Partner Create/Edit Modal - E2E Tests', () => {
 
   test('AC12: Date formatting based on locale', async ({ page }) => {
     await page.goto(`${BASE_URL}/organizer/partners`);
-    await page.click('button:has-text("Add Partner")');
+    await page.click('[data-testid="add-partner-button"]');
 
     // Verify date input exists and has locale-based format
     const startDateInput = page.locator('input[aria-label*="Start Date"]');
