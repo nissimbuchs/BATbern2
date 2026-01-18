@@ -101,7 +101,7 @@ test.describe('CORS Validation', () => {
   test('should make successful authenticated request with all headers', async ({ page }) => {
     // This test requires authentication setup
     // Skip if no auth token provided
-    const authToken = process.env.E2E_AUTH_TOKEN;
+    const authToken = process.env.AUTH_TOKEN;
     if (!authToken) {
       test.skip();
       return;
