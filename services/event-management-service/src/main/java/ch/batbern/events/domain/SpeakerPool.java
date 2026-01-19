@@ -24,6 +24,12 @@ import java.util.UUID;
  *
  * Represents potential speakers during event planning, before they become confirmed speakers.
  * Organizers brainstorm and track potential speakers here, assigning them for outreach.
+ *
+ * <p><b>ADR-004 Exemption:</b> This entity intentionally stores contact fields (speakerName,
+ * email, phone, company) that would normally be fetched from User Service per ADR-004. This is
+ * because SpeakerPool tracks POTENTIAL speakers who may not yet have user accounts. Once a
+ * speaker accepts and the {@code username} field is populated, profile data should be enriched
+ * via UserApiClient rather than relying on these local fields.
  */
 @Entity
 @Table(name = "speaker_pool")
