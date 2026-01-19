@@ -51,24 +51,32 @@ public interface SpeakerInvitationRepository extends JpaRepository<SpeakerInvita
 
     /**
      * Check if an active invitation exists for speaker and event (by username).
+     * An invitation is considered "active" if it's pending response (PENDING/SENT/OPENED)
+     * or has been ACCEPTED. DECLINED and EXPIRED invitations allow re-invitation.
+     * Note: Uses lowercase values to match database storage (via converters).
      */
     @Query("""
         SELECT COUNT(i) > 0 FROM SpeakerInvitation i
         WHERE i.username = :username
           AND i.eventCode = :eventCode
-          AND i.invitationStatus NOT IN ('EXPIRED')
+          AND i.invitationStatus NOT IN ('expired')
+          AND NOT (i.invitationStatus = 'responded' AND i.responseType = 'declined')
         """)
     boolean existsActiveInvitation(@Param("username") String username, @Param("eventCode") String eventCode);
 
     /**
      * Check if an active invitation exists for speaker pool entry and event.
      * Used for invitations to speakers without user accounts.
+     * An invitation is considered "active" if it's pending response (PENDING/SENT/OPENED)
+     * or has been ACCEPTED. DECLINED and EXPIRED invitations allow re-invitation.
+     * Note: Uses lowercase values to match database storage (via converters).
      */
     @Query("""
         SELECT COUNT(i) > 0 FROM SpeakerInvitation i
         WHERE i.speakerPoolId = :speakerPoolId
           AND i.eventCode = :eventCode
-          AND i.invitationStatus NOT IN ('EXPIRED')
+          AND i.invitationStatus NOT IN ('expired')
+          AND NOT (i.invitationStatus = 'responded' AND i.responseType = 'declined')
         """)
     boolean existsActiveInvitationBySpeakerPoolId(@Param("speakerPoolId") UUID speakerPoolId,
                                                    @Param("eventCode") String eventCode);
@@ -85,20 +93,22 @@ public interface SpeakerInvitationRepository extends JpaRepository<SpeakerInvita
 
     /**
      * Find pending invitations that have expired.
+     * Note: Uses lowercase values to match database storage (via converters).
      */
     @Query("""
         SELECT i FROM SpeakerInvitation i
-        WHERE i.invitationStatus NOT IN ('RESPONDED', 'EXPIRED')
+        WHERE i.invitationStatus NOT IN ('responded', 'expired')
           AND i.expiresAt < :now
         """)
     List<SpeakerInvitation> findExpiredInvitations(@Param("now") Instant now);
 
     /**
      * Find invitations needing reminder (sent but not responded, approaching deadline).
+     * Note: Uses lowercase values to match database storage (via converters).
      */
     @Query("""
         SELECT i FROM SpeakerInvitation i
-        WHERE i.invitationStatus = 'SENT'
+        WHERE i.invitationStatus = 'sent'
           AND i.expiresAt > :now
           AND i.expiresAt < :reminderThreshold
         """)

@@ -170,13 +170,16 @@ test.describe('Speaker Invitation Response Flow (Story 6.2, 6.3)', () => {
       await page.waitForTimeout(2000);
 
       // Check that we're either on the respond page showing an error, or a 404 page
+      // Handles both English and German error messages
       const bodyText = await page.locator('body').textContent();
       const hasErrorIndication =
         bodyText?.toLowerCase().includes('not found') ||
         bodyText?.toLowerCase().includes('invalid') ||
         bodyText?.toLowerCase().includes('expired') ||
         bodyText?.toLowerCase().includes('error') ||
-        bodyText?.toLowerCase().includes('404');
+        bodyText?.toLowerCase().includes('404') ||
+        bodyText?.toLowerCase().includes('schiefgelaufen') || // German: "went wrong"
+        bodyText?.toLowerCase().includes('konnte nicht geladen werden'); // German: "could not be loaded"
 
       expect(hasErrorIndication).toBeTruthy();
     });

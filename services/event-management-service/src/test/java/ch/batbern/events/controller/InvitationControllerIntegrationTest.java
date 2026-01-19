@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -156,6 +157,50 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestBody))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = TEST_ORGANIZER_USERNAME, roles = "ORGANIZER")
+        void should_allowReInvitation_when_previousInvitationDeclined() throws Exception {
+            // Given - Create a declined invitation first
+            String declinedToken = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
+
+            invitationRepository.save(SpeakerInvitation.builder()
+                    .username(TEST_SPEAKER_USERNAME)
+                    .eventCode(TEST_EVENT_CODE)
+                    .responseToken(declinedToken)
+                    .invitationStatus(InvitationStatus.RESPONDED)
+                    .responseType(ResponseType.DECLINED)
+                    .sentAt(Instant.now().minus(7, ChronoUnit.DAYS))
+                    .respondedAt(Instant.now().minus(1, ChronoUnit.DAYS))
+                    .expiresAt(Instant.now().plus(7, ChronoUnit.DAYS))
+                    .createdBy(TEST_ORGANIZER_USERNAME)
+                    .build());
+
+            // Create a new send request
+            String requestBody = """
+                {
+                    "username": "%s",
+                    "expirationDays": 14
+                }
+                """.formatted(TEST_SPEAKER_USERNAME);
+
+            // When/Then - Should succeed despite existing declined invitation
+            mockMvc.perform(post("/api/v1/events/{eventCode}/invitations", TEST_EVENT_CODE)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.username").value(TEST_SPEAKER_USERNAME))
+                    .andExpect(jsonPath("$.eventCode").value(TEST_EVENT_CODE))
+                    .andExpect(jsonPath("$.invitationStatus").value("SENT"));
+
+            // Verify two invitations now exist for this speaker/event
+            List<SpeakerInvitation> invitations = invitationRepository.findByEventCode(TEST_EVENT_CODE);
+            long speakerInvitationCount = invitations.stream()
+                    .filter(i -> TEST_SPEAKER_USERNAME.equals(i.getUsername()))
+                    .count();
+            assertThat(speakerInvitationCount).isEqualTo(2);
         }
     }
 
