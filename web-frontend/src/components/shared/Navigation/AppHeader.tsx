@@ -111,7 +111,7 @@ const AppHeader = React.memo(function AppHeader({
             <IconButton
               edge="start"
               color="inherit"
-              aria-label="mobile navigation menu"
+              aria-label="menu"
               onClick={handleMobileMenuToggle}
               sx={{ mr: 2 }}
             >

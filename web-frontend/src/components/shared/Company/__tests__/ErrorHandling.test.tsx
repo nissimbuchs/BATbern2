@@ -6,15 +6,52 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '../CompanyManagementScreen';
 import { CompanyList } from '../CompanyList';
 import { CompanyDetailView } from '../CompanyDetailView';
 import { CompanyForm } from '../CompanyForm';
+import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
 import type { components } from '@/types/generated/company-api.types';
 
 type Company = components['schemas']['CompanyResponse'];
+
+// Mock useAuth hook for BaseLayout
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      userId: 'user-123',
+      email: 'test@batbern.ch',
+      emailVerified: true,
+      role: 'organizer',
+      companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
+  })),
+}));
+
+// Mock useBreakpoints hook for BaseLayout
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -24,12 +61,22 @@ const createTestQueryClient = () =>
     },
   });
 
-const renderWithProviders = (component: React.ReactElement) => {
+const renderWithProviders = (component: React.ReactElement, wrapInLayout = false) => {
   const queryClient = createTestQueryClient();
+
+  const wrapped = wrapInLayout ? (
+    <BaseLayout>
+      <Routes>
+        <Route path="/organizer/companies/*" element={component} />
+      </Routes>
+    </BaseLayout>
+  ) : (
+    component
+  );
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{component}</BrowserRouter>
+      <BrowserRouter>{wrapped}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -37,7 +84,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('Error Handling & Loading States (AC 13)', () => {
   describe('AC13.1: User-Friendly Error Messages', () => {
     it('should_displayErrorMessage_when_apiFails', async () => {
-      renderWithProviders(<CompanyManagementScreen />);
+      renderWithProviders(<CompanyManagementScreen />, true);
 
       // Wait for API error to be displayed
       await waitFor(() => {
@@ -294,7 +341,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
   describe('AC13.6: Network Error Banner', () => {
     it('should_showBanner_when_networkError', () => {
       // Network error banner should appear at top of screen
-      renderWithProviders(<CompanyManagementScreen />);
+      renderWithProviders(<CompanyManagementScreen />, true);
 
       const main = screen.getByRole('main');
       expect(main).toBeInTheDocument();
@@ -303,7 +350,7 @@ describe('Error Handling & Loading States (AC 13)', () => {
 
     it('should_dismissBanner_when_retrySucceeds', () => {
       // After successful retry, banner should disappear
-      renderWithProviders(<CompanyManagementScreen />);
+      renderWithProviders(<CompanyManagementScreen />, true);
 
       const main = screen.getByRole('main');
       expect(main).toBeInTheDocument();

@@ -5,13 +5,50 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '../CompanyManagementScreen';
 import { CompanyCard } from '../CompanyCard';
+import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
 import type { components } from '@/types/generated/company-api.types';
 
 type CompanyListItem = components['schemas']['CompanyListItem'];
+
+// Mock useAuth hook for BaseLayout
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      userId: 'user-123',
+      email: 'test@batbern.ch',
+      emailVerified: true,
+      role: 'organizer',
+      companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
+  })),
+}));
+
+// Mock useBreakpoints hook for BaseLayout
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -21,12 +58,22 @@ const createTestQueryClient = () =>
     },
   });
 
-const renderWithProviders = (component: React.ReactElement) => {
+const renderWithProviders = (component: React.ReactElement, wrapInLayout = false) => {
   const queryClient = createTestQueryClient();
+
+  const wrapped = wrapInLayout ? (
+    <BaseLayout>
+      <Routes>
+        <Route path="/organizer/companies/*" element={component} />
+      </Routes>
+    </BaseLayout>
+  ) : (
+    component
+  );
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{component}</BrowserRouter>
+      <BrowserRouter>{wrapped}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -71,7 +118,7 @@ describe('Performance Tests (AC 10)', () => {
     it('should_loadPageUnder2Seconds_when_initialLoad', async () => {
       const startTime = performance.now();
 
-      renderWithProviders(<CompanyManagementScreen />);
+      renderWithProviders(<CompanyManagementScreen />, true);
 
       const main = await screen.findByRole('main');
       const loadTime = performance.now() - startTime;
