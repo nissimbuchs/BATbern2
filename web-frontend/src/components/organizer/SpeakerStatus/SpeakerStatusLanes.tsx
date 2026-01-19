@@ -480,6 +480,15 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               {speaker.expertise}
             </Typography>
           )}
+          {speaker.proposedPresentationTitle && (
+            <Typography
+              variant="caption"
+              color="primary.main"
+              sx={{ mt: 0.5, display: 'block', fontStyle: 'italic' }}
+            >
+              📋 {speaker.proposedPresentationTitle}
+            </Typography>
+          )}
         </Box>
       )}
     </Card>

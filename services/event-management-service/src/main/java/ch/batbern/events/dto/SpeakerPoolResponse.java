@@ -21,6 +21,8 @@ public class SpeakerPoolResponse {
     private String notes;
     private String email;
     private String phone;
+    private String proposedPresentationTitle;
+    private String commentsForOrganizer;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -32,6 +34,7 @@ public class SpeakerPoolResponse {
     public SpeakerPoolResponse(UUID id, UUID eventId, String speakerName, String company,
                                String expertise, String assignedOrganizerId, String status,
                                UUID sessionId, String notes, String email, String phone,
+                               String proposedPresentationTitle, String commentsForOrganizer,
                                Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.eventId = eventId;
@@ -44,6 +47,8 @@ public class SpeakerPoolResponse {
         this.notes = notes;
         this.email = email;
         this.phone = phone;
+        this.proposedPresentationTitle = proposedPresentationTitle;
+        this.commentsForOrganizer = commentsForOrganizer;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -67,6 +72,8 @@ public class SpeakerPoolResponse {
                 speakerPool.getNotes(),
                 speakerPool.getEmail(),
                 speakerPool.getPhone(),
+                speakerPool.getProposedPresentationTitle(),
+                speakerPool.getCommentsForOrganizer(),
                 speakerPool.getCreatedAt(),
                 speakerPool.getUpdatedAt()
         );
@@ -160,6 +167,22 @@ public class SpeakerPoolResponse {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getProposedPresentationTitle() {
+        return proposedPresentationTitle;
+    }
+
+    public void setProposedPresentationTitle(String proposedPresentationTitle) {
+        this.proposedPresentationTitle = proposedPresentationTitle;
+    }
+
+    public String getCommentsForOrganizer() {
+        return commentsForOrganizer;
+    }
+
+    public void setCommentsForOrganizer(String commentsForOrganizer) {
+        this.commentsForOrganizer = commentsForOrganizer;
     }
 
     public Instant getCreatedAt() {

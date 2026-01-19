@@ -248,7 +248,9 @@
     "bulkAction": {
       "title": "Mark Multiple as Contacted",
       "confirm": "Mark {{count}} speakers as contacted?"
-    }
+    },
+    "proposedTitle": "Proposed Presentation Title",
+    "speakerComments": "Speaker Comments"
   },
   "speakerStatus": {
     "title": "Speaker Status",

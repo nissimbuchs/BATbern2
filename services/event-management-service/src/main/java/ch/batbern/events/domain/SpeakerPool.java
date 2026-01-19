@@ -94,6 +94,12 @@ public class SpeakerPool {
     @Column(name = "phone", length = 50)
     private String phone;
 
+    @Column(name = "proposed_presentation_title", length = 200)
+    private String proposedPresentationTitle;
+
+    @Column(name = "comments_for_organizer", columnDefinition = "TEXT")
+    private String commentsForOrganizer;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -196,6 +202,22 @@ public class SpeakerPool {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getProposedPresentationTitle() {
+        return proposedPresentationTitle;
+    }
+
+    public void setProposedPresentationTitle(String proposedPresentationTitle) {
+        this.proposedPresentationTitle = proposedPresentationTitle;
+    }
+
+    public String getCommentsForOrganizer() {
+        return commentsForOrganizer;
+    }
+
+    public void setCommentsForOrganizer(String commentsForOrganizer) {
+        this.commentsForOrganizer = commentsForOrganizer;
     }
 
     public Instant getCreatedAt() {

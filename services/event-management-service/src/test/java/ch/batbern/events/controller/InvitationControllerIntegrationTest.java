@@ -7,9 +7,12 @@ import ch.batbern.events.domain.ResponseType;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerInvitation;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationRepository;
+import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerRepository;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +60,9 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
 
     private static final String TEST_EVENT_CODE = "TEST-2026-Q1";
     private static final String TEST_SPEAKER_USERNAME = "test.speaker";
@@ -276,8 +282,8 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
 
         @BeforeEach
         void setUpInvitation() {
-            validToken = UUID.randomUUID().toString().replace("-", "") +
-                         UUID.randomUUID().toString().replace("-", "");
+            validToken = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
 
             invitationRepository.save(SpeakerInvitation.builder()
                     .username(TEST_SPEAKER_USERNAME)
@@ -350,6 +356,55 @@ class InvitationControllerIntegrationTest extends AbstractIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.username").value(TEST_SPEAKER_USERNAME))
                     .andExpect(jsonPath("$.eventCode").value(TEST_EVENT_CODE));
+        }
+
+        @Test
+        void should_copyPreferencesToSpeakerPool_when_acceptedWithTitle() throws Exception {
+            // Given - Create speaker pool entry and invitation with speakerPoolId
+            SpeakerPool poolEntry = speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(testEvent.getId())
+                    .speakerName("Pool Speaker")
+                    .email("pool.speaker@example.com")
+                    .status(SpeakerWorkflowState.CONTACTED)
+                    .build());
+
+            String poolToken = UUID.randomUUID().toString().replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
+
+            invitationRepository.save(SpeakerInvitation.builder()
+                    .speakerPoolId(poolEntry.getId())
+                    .speakerEmail("pool.speaker@example.com")
+                    .speakerName("Pool Speaker")
+                    .eventCode(TEST_EVENT_CODE)
+                    .responseToken(poolToken)
+                    .invitationStatus(InvitationStatus.SENT)
+                    .sentAt(Instant.now())
+                    .expiresAt(Instant.now().plus(14, ChronoUnit.DAYS))
+                    .createdBy(TEST_ORGANIZER_USERNAME)
+                    .build());
+
+            String requestBody = """
+                {
+                    "responseType": "ACCEPTED",
+                    "preferences": {
+                        "initialPresentationTitle": "My Awesome Talk",
+                        "commentsForOrganizer": "Looking forward to it!"
+                    }
+                }
+                """;
+
+            // When
+            mockMvc.perform(post("/api/v1/invitations/respond/{token}", poolToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.responseType").value("ACCEPTED"));
+
+            // Then - Verify presentation title was copied to speaker pool
+            SpeakerPool updatedPoolEntry = speakerPoolRepository.findById(poolEntry.getId()).orElseThrow();
+            assertThat(updatedPoolEntry.getProposedPresentationTitle()).isEqualTo("My Awesome Talk");
+            assertThat(updatedPoolEntry.getCommentsForOrganizer()).isEqualTo("Looking forward to it!");
+            assertThat(updatedPoolEntry.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
         }
     }
 

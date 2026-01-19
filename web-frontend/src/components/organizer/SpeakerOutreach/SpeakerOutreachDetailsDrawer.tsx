@@ -251,6 +251,26 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 </Typography>
               </Box>
             )}
+            {speaker.proposedPresentationTitle && (
+              <Box mt={1.5}>
+                <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                  {t('speakerOutreach.proposedTitle', 'Proposed Presentation Title')}:
+                </Typography>
+                <Typography variant="body2" color="primary.main" sx={{ fontStyle: 'italic' }}>
+                  {speaker.proposedPresentationTitle}
+                </Typography>
+              </Box>
+            )}
+            {speaker.commentsForOrganizer && (
+              <Box mt={1}>
+                <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                  {t('speakerOutreach.speakerComments', 'Speaker Comments')}:
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {speaker.commentsForOrganizer}
+                </Typography>
+              </Box>
+            )}
             <Box mt={1}>
               <Chip
                 label={speaker.status}

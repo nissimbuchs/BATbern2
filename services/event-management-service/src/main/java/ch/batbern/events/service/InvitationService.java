@@ -339,11 +339,16 @@ public class InvitationService {
             }
         }
 
-        // Update speaker pool entry status (if we have speakerPoolId)
+        // Update speaker pool entry status and copy preferences (if we have speakerPoolId)
         if (invitation.getSpeakerPoolId() != null) {
             speakerPoolRepository.findById(invitation.getSpeakerPoolId())
                     .ifPresent(poolEntry -> {
                         poolEntry.setStatus(newState);
+                        // Copy presentation preferences to speaker pool for dashboard visibility
+                        if (request.getResponseType() == ResponseType.ACCEPTED) {
+                            poolEntry.setProposedPresentationTitle(invitation.getInitialPresentationTitle());
+                            poolEntry.setCommentsForOrganizer(invitation.getCommentsForOrganizer());
+                        }
                         speakerPoolRepository.save(poolEntry);
                     });
         }

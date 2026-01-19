@@ -26,6 +26,8 @@ export interface SpeakerPoolEntry {
   notes?: string;
   email?: string; // Email address for contacting the speaker
   phone?: string; // Phone number for contacting the speaker
+  proposedPresentationTitle?: string; // Title proposed by speaker when accepting invitation
+  commentsForOrganizer?: string; // Additional comments from speaker to organizer
   createdAt: string;
 }
 

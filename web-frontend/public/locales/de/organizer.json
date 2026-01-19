@@ -248,7 +248,9 @@
     "bulkAction": {
       "title": "Mehrere als kontaktiert markieren",
       "confirm": "{{count}} Referenten als kontaktiert markieren?"
-    }
+    },
+    "proposedTitle": "Vorgeschlagener Präsentationstitel",
+    "speakerComments": "Kommentare des Referenten"
   },
   "speakerStatus": {
     "title": "Sprecher-Status",
