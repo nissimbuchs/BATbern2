@@ -1,0 +1,70 @@
+meta {
+  name: Restore Current User (Cleanup)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/users/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "firstName": "{{originalFirstName}}",
+    "lastName": "{{originalLastName}}",
+    "bio": "{{originalBio}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.firstName: eq {{originalFirstName}}
+}
+
+script:post-response {
+  // Verify restoration
+  if (res.getStatus() === 200) {
+    const user = res.getBody();
+    console.log("User profile restored to original values:", {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      bio: user.bio
+    });
+  }
+}
+
+tests {
+  test("should restore original user data successfully", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should restore original firstName", function() {
+    const body = res.getBody();
+    const expected = bru.getEnvVar("originalFirstName");
+    expect(body.firstName).to.equal(expected);
+  });
+
+  test("should restore original lastName", function() {
+    const body = res.getBody();
+    const expected = bru.getEnvVar("originalLastName");
+    expect(body.lastName).to.equal(expected);
+  });
+
+  test("should restore original bio", function() {
+    const body = res.getBody();
+    const expected = bru.getEnvVar("originalBio");
+    expect(body.bio).to.equal(expected);
+  });
+}
