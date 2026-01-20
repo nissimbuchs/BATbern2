@@ -261,7 +261,8 @@ public class InvitationEmailService {
                             && !invitation.getNotes().isBlank() ? "true" : "");
 
             // Include preferences summary if accepted
-            variables.put("hasPreferences", "ACCEPTED".equals(responseType) && hasPreferences(invitation) ? "true" : "");
+            boolean hasPrefs = "ACCEPTED".equals(responseType) && hasPreferences(invitation);
+            variables.put("hasPreferences", hasPrefs ? "true" : "");
             variables.put("preferencesSummary", buildPreferencesSummary(invitation));
 
             String subject = String.format("Speaker Response: %s %s for %s",

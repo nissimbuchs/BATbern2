@@ -1,6 +1,5 @@
 package ch.batbern.events.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
