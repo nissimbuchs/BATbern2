@@ -11,11 +11,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@mseep/linear-mcp"
-      ],
-      "env": {
-        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
-      }
+        "mcp-remote",
+        "https://mcp.linear.app/mcp"
+      ]
     }
   }
 }
