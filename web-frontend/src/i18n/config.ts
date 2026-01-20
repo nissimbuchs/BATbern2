@@ -22,6 +22,8 @@ import registrationDe from '../../public/locales/de/registration.json';
 import registrationEn from '../../public/locales/en/registration.json';
 import speakerInvitationDe from '../../public/locales/de/speakerInvitation.json';
 import speakerInvitationEn from '../../public/locales/en/speakerInvitation.json';
+import adminDe from '../../public/locales/de/admin.json';
+import adminEn from '../../public/locales/en/admin.json';
 
 const resources = {
   de: {
@@ -35,6 +37,7 @@ const resources = {
     about: aboutDe,
     registration: registrationDe,
     speakerInvitation: speakerInvitationDe,
+    admin: adminDe,
   },
   en: {
     common: commonEn,
@@ -47,6 +50,7 @@ const resources = {
     about: aboutEn,
     registration: registrationEn,
     speakerInvitation: speakerInvitationEn,
+    admin: adminEn,
   },
 } as const;
 
@@ -69,6 +73,7 @@ i18n
       'about',
       'registration',
       'speakerInvitation',
+      'admin',
     ],
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],

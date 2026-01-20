@@ -9,6 +9,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
@@ -89,6 +90,16 @@ const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
 // Story 6.2: Speaker self-service response portal
 const SpeakerResponsePage = React.lazy(() => import('@pages/SpeakerResponse'));
+
+// Placeholder page component for coming-soon pages
+const PlaceholderPage: React.FC<{ translationKey: string }> = ({ translationKey }) => {
+  const { t } = useTranslation('common');
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+      {t(translationKey)}
+    </div>
+  );
+};
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -221,28 +232,16 @@ function App() {
                     <Route path="/respond/:token" element={<SpeakerResponsePage />} />
                     <Route
                       path="/search"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Search (Coming in 4.3)
-                        </div>
-                      }
+                      element={<PlaceholderPage translationKey="placeholder.search" />}
                     />
                     <Route path="/about" element={<AboutPage />} />
                     <Route
                       path="/privacy"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Privacy Policy (Coming later)
-                        </div>
-                      }
+                      element={<PlaceholderPage translationKey="placeholder.privacyPolicy" />}
                     />
                     <Route
                       path="/terms"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Terms of Service (Coming later)
-                        </div>
-                      }
+                      element={<PlaceholderPage translationKey="placeholder.termsOfService" />}
                     />
 
                     {/* Authentication routes */}

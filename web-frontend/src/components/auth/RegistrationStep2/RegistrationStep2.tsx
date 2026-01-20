@@ -117,14 +117,15 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
             control={<Checkbox {...field} checked={field.value} />}
             label={
               <Typography variant="body2">
-                {t('register.step2.termsLabel').split('Terms of Service')[0]}
+                {t('register.step2.termsPrefix')}
                 <Link href="/terms" target="_blank" rel="noopener noreferrer">
-                  Terms of Service
+                  {t('register.step2.termsOfService')}
                 </Link>
-                {' and '}
+                {t('register.step2.termsAnd')}
                 <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-                  Privacy Policy
+                  {t('register.step2.privacyPolicy')}
                 </Link>
+                {t('register.step2.termsSuffix')}
               </Typography>
             }
             sx={{ mb: 2, alignItems: 'flex-start' }}

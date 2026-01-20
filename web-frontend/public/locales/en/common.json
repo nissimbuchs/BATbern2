@@ -3,6 +3,11 @@
     "title": "BATbern Event Management Platform",
     "name": "BATbern"
   },
+  "placeholder": {
+    "search": "Search (Coming in 4.3)",
+    "privacyPolicy": "Privacy Policy (Coming later)",
+    "termsOfService": "Terms of Service (Coming later)"
+  },
   "navigation": {
     "home": "Home",
     "dashboard": "Dashboard",
@@ -354,6 +359,53 @@
     "select": "Select Organizer",
     "all": "All Organizers",
     "unassigned": "Unassigned"
+  },
+  "settings": {
+    "tabs": {
+      "account": "Account",
+      "notifications": "Notifications",
+      "privacy": "Privacy"
+    },
+    "account": {
+      "title": "Account Settings",
+      "email": "Email",
+      "emailHelperText": "Verified (managed by Cognito)",
+      "changePassword": "Change Password",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeAuto": "Auto",
+      "timezone": "Timezone",
+      "saveButton": "Save Account Settings"
+    },
+    "notifications": {
+      "title": "Notification Settings",
+      "advancedInfo": "Advanced notification settings (quiet hours, granular controls) available in Epic 7",
+      "channels": "Notification Channels",
+      "channelEmail": "Email",
+      "channelInApp": "In-app",
+      "channelPush": "Push notifications",
+      "frequency": "Frequency",
+      "frequencyImmediate": "Immediate",
+      "frequencyDaily": "Daily digest",
+      "frequencyWeekly": "Weekly digest",
+      "saveButton": "Save Notification Settings"
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "profileVisibility": "Profile Visibility",
+      "visibilityPublic": "Public",
+      "visibilityMembersOnly": "Members only",
+      "visibilityPrivate": "Private",
+      "informationDisplay": "Information Display",
+      "showEmail": "Show email",
+      "showCompany": "Show company",
+      "showActivity": "Show activity history",
+      "communication": "Communication",
+      "allowMessaging": "Allow messaging from other users",
+      "viewPrivacyPolicy": "View Privacy Policy",
+      "saveButton": "Save Privacy Settings"
+    }
   },
   "archive": {
     "title": "Past Events",

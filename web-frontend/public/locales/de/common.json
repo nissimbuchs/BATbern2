@@ -3,6 +3,11 @@
     "title": "BATbern Event Management Platform",
     "name": "BATbern"
   },
+  "placeholder": {
+    "search": "Suche (Kommt in 4.3)",
+    "privacyPolicy": "Datenschutzerklärung (Kommt später)",
+    "termsOfService": "Nutzungsbedingungen (Kommt später)"
+  },
   "navigation": {
     "home": "Startseite",
     "dashboard": "Dashboard",
@@ -355,6 +360,53 @@
     "select": "Organisator auswählen",
     "all": "Alle Organisatoren",
     "unassigned": "Nicht zugewiesen"
+  },
+  "settings": {
+    "tabs": {
+      "account": "Konto",
+      "notifications": "Benachrichtigungen",
+      "privacy": "Datenschutz"
+    },
+    "account": {
+      "title": "Kontoeinstellungen",
+      "email": "E-Mail",
+      "emailHelperText": "Verifiziert (verwaltet von Cognito)",
+      "changePassword": "Passwort ändern",
+      "theme": "Design",
+      "themeLight": "Hell",
+      "themeDark": "Dunkel",
+      "themeAuto": "Automatisch",
+      "timezone": "Zeitzone",
+      "saveButton": "Kontoeinstellungen speichern"
+    },
+    "notifications": {
+      "title": "Benachrichtigungseinstellungen",
+      "advancedInfo": "Erweiterte Benachrichtigungseinstellungen (Ruhezeiten, detaillierte Steuerung) verfügbar in Epic 7",
+      "channels": "Benachrichtigungskanäle",
+      "channelEmail": "E-Mail",
+      "channelInApp": "In-App",
+      "channelPush": "Push-Benachrichtigungen",
+      "frequency": "Häufigkeit",
+      "frequencyImmediate": "Sofort",
+      "frequencyDaily": "Tägliche Zusammenfassung",
+      "frequencyWeekly": "Wöchentliche Zusammenfassung",
+      "saveButton": "Benachrichtigungseinstellungen speichern"
+    },
+    "privacy": {
+      "title": "Datenschutzeinstellungen",
+      "profileVisibility": "Profilsichtbarkeit",
+      "visibilityPublic": "Öffentlich",
+      "visibilityMembersOnly": "Nur Mitglieder",
+      "visibilityPrivate": "Privat",
+      "informationDisplay": "Informationsanzeige",
+      "showEmail": "E-Mail anzeigen",
+      "showCompany": "Unternehmen anzeigen",
+      "showActivity": "Aktivitätsverlauf anzeigen",
+      "communication": "Kommunikation",
+      "allowMessaging": "Nachrichten von anderen Benutzern erlauben",
+      "viewPrivacyPolicy": "Datenschutzerklärung anzeigen",
+      "saveButton": "Datenschutzeinstellungen speichern"
+    }
   },
   "archive": {
     "title": "Vergangene Veranstaltungen",
