@@ -132,10 +132,18 @@ export const PartnerDirectoryScreen: React.FC = () => {
                     onChange={handleSortChange}
                     data-testid="partner-sort-select"
                   >
-                    <MenuItem value="engagement">{t('sort.engagement')}</MenuItem>
-                    <MenuItem value="name">{t('sort.name')}</MenuItem>
-                    <MenuItem value="tier">{t('sort.tier')}</MenuItem>
-                    <MenuItem value="lastEvent">{t('sort.lastEvent')}</MenuItem>
+                    <MenuItem value="engagement" data-testid="sort-option-engagement">
+                      {t('sort.engagement')}
+                    </MenuItem>
+                    <MenuItem value="name" data-testid="sort-option-name">
+                      {t('sort.name')}
+                    </MenuItem>
+                    <MenuItem value="tier" data-testid="sort-option-tier">
+                      {t('sort.tier')}
+                    </MenuItem>
+                    <MenuItem value="lastEvent" data-testid="sort-option-lastEvent">
+                      {t('sort.lastEvent')}
+                    </MenuItem>
                   </Select>
                 </FormControl>
 

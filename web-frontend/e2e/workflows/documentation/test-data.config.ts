@@ -101,31 +101,31 @@ export const testConfig = {
   speakerOutreach: [
     {
       displayName: 'N Nissim ELCA AI',
-      contactMethod: 'Telefon' as const,
+      contactMethod: 'phone' as const,
       notes: 'Hab mit ihm gesprochen. er überlegt es sich,',
       speakerIndex: 0,
     },
     {
       displayName: 'B Balti Galenica AI',
-      contactMethod: 'Persönlich' as const,
+      contactMethod: 'in_person' as const,
       notes: 'Ja, ich machs',
       speakerIndex: 1,
     },
     {
       displayName: 'A Andreas Mobiliar AI',
-      contactMethod: 'E-Mail' as const,
+      contactMethod: 'email' as const,
       notes: 'Hab mal ein eMail gesendet.\nSeine antwort war:\nIpsum larum lirum',
       speakerIndex: 2,
     },
     {
       displayName: 'D Daniel BKW AI',
-      contactMethod: 'Persönlich' as const,
+      contactMethod: 'in_person' as const,
       notes: 'OK.',
       speakerIndex: 3,
     },
     {
       displayName: 'N Nissim ELCA AI',
-      contactMethod: 'Persönlich' as const,
+      contactMethod: 'in_person' as const,
       notes: 'OK. Er machts',
       speakerIndex: 0, // Same speaker as first interaction
     },

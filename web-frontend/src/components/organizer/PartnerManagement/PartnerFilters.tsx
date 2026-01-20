@@ -81,7 +81,7 @@ export const PartnerFilters: React.FC = () => {
             data-testid="tier-filter-select"
           >
             {TIER_OPTIONS.map((tier) => (
-              <MenuItem key={tier} value={tier}>
+              <MenuItem key={tier} value={tier} data-testid={`tier-option-${tier.toLowerCase()}`}>
                 {tier === 'all'
                   ? t('filters.tierAll')
                   : `${TIER_EMOJIS[tier]} ${t(`tiers.${tier.toLowerCase()}`)}`}
@@ -103,7 +103,7 @@ export const PartnerFilters: React.FC = () => {
             data-testid="status-filter-select"
           >
             {STATUS_OPTIONS.map((status) => (
-              <MenuItem key={status} value={status}>
+              <MenuItem key={status} value={status} data-testid={`status-option-${status}`}>
                 {status === 'all'
                   ? t('filters.statusAll')
                   : status === 'active'

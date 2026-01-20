@@ -620,7 +620,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         fullWidth
         data-testid={mode === 'create' ? 'create-event-modal' : 'event-edit-modal'}
       >
-        <DialogTitle>{mode === 'create' ? t('form.createEvent') : t('form.editEvent')}</DialogTitle>
+        <DialogTitle data-testid="event-form-dialog-title">
+          {mode === 'create' ? t('form.createEvent') : t('form.editEvent')}
+        </DialogTitle>
 
         {/* Tabs - Story 5.5 Phase 6 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -686,6 +688,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.eventNumber}
                       helperText={errors.eventNumber?.message}
                       margin="normal"
+                      data-testid="event-number-field"
                       sx={{ width: '150px' }}
                     />
                   )}
@@ -701,6 +704,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.title}
                       helperText={errors.title?.message}
                       margin="normal"
+                      data-testid="event-title-field"
                     />
                   )}
                 />
@@ -719,6 +723,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     error={!!errors.description}
                     helperText={errors.description?.message}
                     margin="normal"
+                    data-testid="event-description-field"
                   />
                 )}
               />
@@ -737,6 +742,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.date}
                       helperText={errors.date?.message}
                       margin="normal"
+                      data-testid="event-date-field"
                       slotProps={{ inputLabel: { shrink: true } }}
                     />
                   )}
@@ -753,6 +759,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.registrationDeadline}
                       helperText={errors.registrationDeadline?.message}
                       margin="normal"
+                      data-testid="registration-deadline-field"
                       slotProps={{ inputLabel: { shrink: true } }}
                     />
                   )}
@@ -800,27 +807,42 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
                     <InputLabel>{t('form.status')}</InputLabel>
                     <Select {...field} label={t('form.status')} data-testid="event-status-select">
-                      <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
-                      <MenuItem value="TOPIC_SELECTION">
+                      <MenuItem value="CREATED" data-testid="status-option-CREATED">
+                        {t('workflow.states.created')}
+                      </MenuItem>
+                      <MenuItem value="TOPIC_SELECTION" data-testid="status-option-TOPIC_SELECTION">
                         {t('workflow.states.topic_selection')}
                       </MenuItem>
-                      <MenuItem value="SPEAKER_IDENTIFICATION">
+                      <MenuItem
+                        value="SPEAKER_IDENTIFICATION"
+                        data-testid="status-option-SPEAKER_IDENTIFICATION"
+                      >
                         {t('workflow.states.speaker_identification')}
                       </MenuItem>
-                      <MenuItem value="SLOT_ASSIGNMENT">
+                      <MenuItem value="SLOT_ASSIGNMENT" data-testid="status-option-SLOT_ASSIGNMENT">
                         {t('workflow.states.slot_assignment')}
                       </MenuItem>
-                      <MenuItem value="AGENDA_PUBLISHED">
+                      <MenuItem
+                        value="AGENDA_PUBLISHED"
+                        data-testid="status-option-AGENDA_PUBLISHED"
+                      >
                         {t('workflow.states.agenda_published')}
                       </MenuItem>
-                      <MenuItem value="AGENDA_FINALIZED">
+                      <MenuItem
+                        value="AGENDA_FINALIZED"
+                        data-testid="status-option-AGENDA_FINALIZED"
+                      >
                         {t('workflow.states.agenda_finalized')}
                       </MenuItem>
-                      <MenuItem value="EVENT_LIVE">{t('workflow.states.event_live')}</MenuItem>
-                      <MenuItem value="EVENT_COMPLETED">
+                      <MenuItem value="EVENT_LIVE" data-testid="status-option-EVENT_LIVE">
+                        {t('workflow.states.event_live')}
+                      </MenuItem>
+                      <MenuItem value="EVENT_COMPLETED" data-testid="status-option-EVENT_COMPLETED">
                         {t('workflow.states.event_completed')}
                       </MenuItem>
-                      <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
+                      <MenuItem value="ARCHIVED" data-testid="status-option-ARCHIVED">
+                        {t('workflow.states.archived')}
+                      </MenuItem>
                     </Select>
                     {errors.workflowState && (
                       <FormHelperText>{errors.workflowState.message}</FormHelperText>
@@ -876,6 +898,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     fullWidth
                     margin="normal"
                     placeholder="e.g., Kornhausforum Bern"
+                    data-testid="venue-name-field"
                   />
                 )}
               />
@@ -890,6 +913,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     fullWidth
                     margin="normal"
                     placeholder="e.g., Kornhausplatz 18, 3011 Bern"
+                    data-testid="venue-address-field"
                   />
                 )}
               />

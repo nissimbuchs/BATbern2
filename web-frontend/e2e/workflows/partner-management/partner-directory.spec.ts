@@ -32,8 +32,8 @@ async function navigateToPartnerDirectory(page: Page) {
   // Wait for page to be fully loaded before navigation
   await page.waitForLoadState('networkidle');
 
-  // Wait for Partners navigation link to be visible and clickable
-  const partnersLink = page.locator('a[href="/organizer/partners"]');
+  // Wait for Partners navigation link to be visible and clickable (language-independent testId)
+  const partnersLink = page.getByTestId('nav-organizer-partners');
   await partnersLink.waitFor({ state: 'visible', timeout: 10000 });
 
   // Click on Partners navigation link and wait for navigation
@@ -158,9 +158,9 @@ test.describe('Partner Directory - Search Functionality', () => {
     // Verify filtered results
     const filteredCardCount = await page.locator('[data-testid="partner-card"]').count();
 
-    // Results should either be filtered down or show "No partners found"
+    // Results should either be filtered down or show empty state
     if (filteredCardCount === 0) {
-      await expect(page.getByText(/no partners found/i)).toBeVisible();
+      await expect(page.getByTestId('partner-list-empty')).toBeVisible();
     } else {
       // Verify results are filtered (should be less than or equal to initial count)
       expect(filteredCardCount).toBeLessThanOrEqual(initialCardCount);
@@ -220,9 +220,9 @@ test.describe('Partner Directory - Filter Functionality', () => {
     // Wait for partners to load
     await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
 
-    // Select GOLD tier filter
+    // Select GOLD tier filter (language-independent)
     await page.getByTestId('tier-filter-select').click();
-    await page.getByRole('option', { name: /gold/i }).click();
+    await page.getByTestId('tier-option-gold').click();
 
     // Wait for filtered results
     await page.waitForLoadState('networkidle');
@@ -237,7 +237,7 @@ test.describe('Partner Directory - Filter Functionality', () => {
       const firstCard = partnerCards.first();
       await expect(firstCard).toContainText(/gold/i);
     } else {
-      await expect(page.getByText(/no partners found/i)).toBeVisible();
+      await expect(page.getByTestId('partner-list-empty')).toBeVisible();
     }
   });
 
@@ -245,9 +245,9 @@ test.describe('Partner Directory - Filter Functionality', () => {
     // Wait for partners to load
     await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
 
-    // Select Active status filter
+    // Select Active status filter (language-independent)
     await page.getByTestId('status-filter-select').click();
-    await page.getByRole('option', { name: /^active$/i }).click();
+    await page.getByTestId('status-option-active').click();
 
     // Wait for filtered results
     await page.waitForLoadState('networkidle');
@@ -260,9 +260,9 @@ test.describe('Partner Directory - Filter Functionality', () => {
   });
 
   test('should reset all filters', async ({ page }) => {
-    // Apply multiple filters
+    // Apply multiple filters (language-independent)
     await page.getByTestId('tier-filter-select').click();
-    await page.getByRole('option', { name: /gold/i }).click();
+    await page.getByTestId('tier-option-gold').click();
     await page.waitForTimeout(300);
 
     // Click Reset Filters
@@ -347,14 +347,22 @@ test.describe('Partner Directory - Sorting', () => {
     // Wait for partners to load
     await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
 
-    // Open sort dropdown
-    await page.getByLabel(/sort by/i).click();
+    // Open sort dropdown (language-independent)
+    await page.getByTestId('partner-sort-select').click();
 
     // Select "Company Name" sorting
-    await page.getByRole('option', { name: /company name/i }).click();
+    await page.getByTestId('sort-option-name').click();
 
-    // Wait for sorted results
+    // Wait for sorted results - need longer wait for data to reload
     await page.waitForLoadState('networkidle');
+
+    // Wait for skeleton loaders to disappear
+    await page
+      .waitForSelector('[data-testid="partner-skeleton"]', { state: 'detached', timeout: 10000 })
+      .catch(() => {});
+
+    // Wait for actual partner cards to load
+    await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
     await page.waitForTimeout(500);
 
     // Verify partners are displayed (sorting order verified by API integration tests)
@@ -387,13 +395,13 @@ test.describe('Partner Directory - Pagination', () => {
     // Wait for partners to load
     await page.waitForSelector('[data-testid="partner-card"]', { timeout: 10000 });
 
-    // Check if pagination is present (only if more than one page exists)
-    const paginationNav = page.getByRole('navigation', { name: /pagination/i });
+    // Check if pagination is present (only if more than one page exists) - language-independent
+    const paginationNav = page.getByTestId('partner-pagination');
     const paginationExists = (await paginationNav.count()) > 0;
 
     if (paginationExists) {
       // Click next page button
-      const nextButton = page.getByLabel(/next page/i);
+      const nextButton = page.getByTestId('next-page-button');
       const isEnabled = !(await nextButton.isDisabled());
 
       if (isEnabled) {
@@ -402,14 +410,15 @@ test.describe('Partner Directory - Pagination', () => {
         await page.waitForTimeout(500);
 
         // Verify page changed
-        await expect(page.getByText(/page 2 of/i)).toBeVisible();
+        const paginationInfo = page.getByTestId('pagination-info');
+        await expect(paginationInfo).toContainText('Page 2');
 
         // Click previous page button
-        await page.getByLabel(/previous page/i).click();
+        await page.getByTestId('prev-page-button').click();
         await page.waitForLoadState('networkidle');
 
         // Verify back on page 1
-        await expect(page.getByText(/page 1 of/i)).toBeVisible();
+        await expect(paginationInfo).toContainText('Page 1');
       }
     }
   });
@@ -439,8 +448,8 @@ test.describe('Partner Directory - Error Handling', () => {
     await page.goto(`${BASE_URL}/organizer/partners`);
     await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
 
-    // Wait for error message
-    await expect(page.getByText(/failed to.*partners/i)).toBeVisible({ timeout: 10000 });
+    // Wait for error state (language-independent)
+    await expect(page.getByTestId('partner-list-error')).toBeVisible({ timeout: 10000 });
   });
 
   test('should handle API errors gracefully', async ({ page }) => {
@@ -474,10 +483,11 @@ test.describe('Partner Directory - Error Handling', () => {
     await page.goto(`${BASE_URL}/organizer/partners`);
     await page.waitForSelector('[data-testid="partner-directory-screen"]', { timeout: 10000 });
 
-    // Wait for error message
-    await expect(page.getByText(/failed.*partners/i)).toBeVisible({ timeout: 10000 });
+    // Wait for error state (language-independent)
+    const errorContainer = page.getByTestId('partner-list-error');
+    await expect(errorContainer).toBeVisible({ timeout: 10000 });
 
-    // Verify correlation ID is displayed
-    await expect(page.getByText(/correlation id/i)).toBeVisible();
+    // Verify correlation ID is displayed in error (technical field, can use text match)
+    await expect(errorContainer).toContainText('Correlation ID');
   });
 });

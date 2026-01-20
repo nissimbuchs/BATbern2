@@ -89,7 +89,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
 
     if (includeAllOption) {
       items.push(
-        <MenuItem key="all" value="all">
+        <MenuItem key="all" value="all" data-testid="organizer-option-all">
           {t('organizer.all', 'All Organizers')}
         </MenuItem>
       );
@@ -97,7 +97,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
 
     if (includeUnassigned) {
       items.push(
-        <MenuItem key="unassigned" value="">
+        <MenuItem key="unassigned" value="" data-testid="organizer-option-unassigned">
           <em>{t('organizer.unassigned', 'Unassigned')}</em>
         </MenuItem>
       );
@@ -105,7 +105,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
 
     organizers.forEach((org) => {
       items.push(
-        <MenuItem key={org.id} value={org.id}>
+        <MenuItem key={org.id} value={org.id} data-testid={`organizer-option-${org.id}`}>
           {org.name}
         </MenuItem>
       );
