@@ -19,10 +19,13 @@ export const RegistrationWizard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentStep = parseInt(searchParams.get('step') || '1', 10);
 
+  // Story 6.3: Pre-fill email from URL query parameter (speaker invitation flow)
+  const prefilledEmail = searchParams.get('email') || '';
+
   const methods = useForm({
     defaultValues: {
       fullName: '',
-      email: '',
+      email: prefilledEmail,
       password: '',
       confirmPassword: '',
       agreedToTerms: false,
