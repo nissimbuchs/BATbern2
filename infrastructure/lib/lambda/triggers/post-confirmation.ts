@@ -2,6 +2,7 @@
  * PostConfirmation Lambda Trigger
  * Story 1.2.5: User Sync and Reconciliation Implementation
  * Story 1.2.6: Updated for ADR-001 Database-centric architecture
+ * Story 6.3: Speaker Account Creation and Linking
  *
  * This Lambda function is triggered by AWS Cognito after a user confirms their email address.
  * It syncs the user to the PostgreSQL database and assigns an initial role.
@@ -11,14 +12,24 @@
  * - Then a corresponding user record is created in the `user_profiles` table
  * - And default ATTENDEE role is assigned (ADR-001: All self-registered users get ATTENDEE)
  * - And the operation completes within 1 second (p95 latency)
+ *
+ * Story 6.3 Extension:
+ * - Links any SpeakerPool entries with matching email to the new user's username
+ * - Enables external speakers to access speaker dashboard after registration
+ * - Publishes SpeakerPoolLinked event to EventBridge for Speaker entity creation
  */
 
 import { PostConfirmationTriggerEvent, PostConfirmationTriggerHandler } from 'aws-lambda';
 import { getDbClient, executeTransaction } from './common/database';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
+import { PoolClient } from 'pg';
 
 // CloudWatch client for metrics
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
+
+// EventBridge client for domain events (Story 6.3)
+const eventBridgeClient = new EventBridgeClient({ region: process.env.AWS_REGION || 'eu-central-1' });
 
 /**
  * Valid user roles in the system
@@ -156,6 +167,103 @@ async function publishMetric(metricName: string, value: number, unit: string = '
 }
 
 /**
+ * Result of linking speaker pool entries
+ * Story 6.3: Speaker Account Creation and Linking
+ */
+interface SpeakerPoolLinkResult {
+  linkedCount: number;
+  linkedEntries: Array<{ id: string; eventId: string }>;
+}
+
+/**
+ * Link speaker pool entries to newly registered user.
+ * Story 6.3: Speaker Account Creation and Linking
+ *
+ * ARCHITECTURE NOTE: This follows the established pattern of the Lambda
+ * directly updating domain tables during user creation. The existing Lambda
+ * already writes to user_profiles and role_assignments tables.
+ *
+ * An event is published for Event Management Service to create the Speaker
+ * entity (which requires service-level business logic).
+ *
+ * @param client - Database client (within transaction)
+ * @param email - User's email address
+ * @param username - User's username for linking
+ * @returns Number of linked entries and their IDs
+ */
+async function linkSpeakerPoolEntries(
+  client: PoolClient,
+  email: string,
+  username: string
+): Promise<SpeakerPoolLinkResult> {
+  // Case-insensitive email match, only unlinked entries
+  // AC5: Links ALL matching entries (multiple events)
+  // AC7: WHERE username IS NULL ensures idempotency
+  const result = await client.query(
+    `UPDATE speaker_pool
+     SET username = $1, updated_at = NOW()
+     WHERE LOWER(email) = LOWER($2)
+       AND username IS NULL
+     RETURNING id, event_id`,
+    [username, email]
+  );
+
+  const linkedEntries = result.rows.map(row => ({
+    id: row.id,
+    eventId: row.event_id,
+  }));
+
+  console.log('Speaker pool linking result', {
+    username,
+    email,
+    linkedCount: result.rowCount,
+    linkedEntries,
+  });
+
+  return {
+    linkedCount: result.rowCount || 0,
+    linkedEntries,
+  };
+}
+
+/**
+ * Publish SpeakerPoolLinked event to EventBridge.
+ * Event Management Service listens and creates Speaker entity.
+ * Story 6.3: Speaker Account Creation and Linking
+ *
+ * @param username - Linked user's username
+ * @param email - User's email address
+ * @param linkedEntries - Array of linked speaker pool entry IDs
+ */
+async function publishSpeakerPoolLinkedEvent(
+  username: string,
+  email: string,
+  linkedEntries: Array<{ id: string; eventId: string }>
+): Promise<void> {
+  const event = {
+    Source: 'batbern.cognito',
+    DetailType: 'SpeakerPoolLinked',
+    Detail: JSON.stringify({
+      username,
+      email,
+      linkedCount: linkedEntries.length,
+      linkedEntries,
+      timestamp: new Date().toISOString(),
+    }),
+    EventBusName: process.env.EVENT_BUS_NAME || 'default',
+  };
+
+  try {
+    await eventBridgeClient.send(new PutEventsCommand({ Entries: [event] }));
+    console.log('Published SpeakerPoolLinked event', { username, linkedCount: linkedEntries.length });
+  } catch (error) {
+    // Log but don't fail - event publishing is best-effort
+    // Manual linking fallback (AC6) handles cases where Speaker entity isn't created
+    console.error('Failed to publish SpeakerPoolLinked event', { error, username });
+  }
+}
+
+/**
  * Create user in database with email-based matching for historical participants
  * Story 1.2.3: Extract user profile data from custom:preferences JSON per ADR-001
  * ADR-005: Auto-link historical participants when they create Cognito accounts
@@ -193,6 +301,7 @@ async function createUser(
     );
 
     let userId: string | null = null;
+    let actualUsername: string = username; // Track username for speaker pool linking
 
     if (existingUserResult.rows.length > 0) {
       const existingUser = existingUserResult.rows[0];
@@ -213,6 +322,7 @@ async function createUser(
         );
 
         userId = existingUser.id;
+        actualUsername = existingUser.username; // Use existing username for speaker pool linking
         console.log('Linked existing historical participant to Cognito account', {
           userId,
           cognitoId,
@@ -227,6 +337,7 @@ async function createUser(
       } else if (existingUser.cognito_user_id === cognitoId) {
         // Idempotent: Same Cognito ID already linked (Lambda retry)
         userId = existingUser.id;
+        actualUsername = existingUser.username; // Use existing username
         console.log('User already linked (idempotent - Lambda retry)', {
           userId,
           cognitoId,
@@ -279,9 +390,20 @@ async function createUser(
       await publishMetric('NewUserCreated', 1, 'Count');
     }
 
+    // STEP 2c: Link any SpeakerPool entries with matching email (Story 6.3)
+    // This must happen before COMMIT to be in the same transaction
+    const speakerPoolResult = await linkSpeakerPoolEntries(client, email, actualUsername);
+
     await client.query('COMMIT');
 
-    // STEP 3: Assign initial role (idempotent in assignUserRole)
+    // STEP 3: Publish SpeakerPoolLinked event AFTER commit (Story 6.3)
+    // Event publishing must happen after commit to ensure data is persisted
+    if (speakerPoolResult.linkedCount > 0) {
+      await publishSpeakerPoolLinkedEvent(actualUsername, email, speakerPoolResult.linkedEntries);
+      await publishMetric('SpeakerPoolEntriesLinked', speakerPoolResult.linkedCount, 'Count');
+    }
+
+    // STEP 4: Assign initial role (idempotent in assignUserRole)
     if (userId) {
       await assignUserRole(userId, role);
     }

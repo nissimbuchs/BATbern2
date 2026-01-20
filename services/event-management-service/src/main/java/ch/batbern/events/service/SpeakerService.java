@@ -326,6 +326,51 @@ public class SpeakerService {
     }
 
     /**
+     * Ensure a Speaker entity exists for the given username (Story 6.3: Speaker Account Linking).
+     * Creates a minimal Speaker profile if one doesn't exist. Idempotent operation.
+     *
+     * <p>This method is called after a new user registers and their SpeakerPool entries
+     * are linked. It ensures there's a corresponding Speaker entity for the user to
+     * manage their speaker profile.
+     *
+     * @param username The username (ADR-003 identifier) of the user
+     * @return The existing or newly created Speaker entity
+     */
+    public Speaker ensureSpeakerExists(String username) {
+        return speakerRepository.findByUsernameAndDeletedAtIsNull(username)
+                .orElseGet(() -> {
+                    log.info("Creating Speaker entity for newly registered user: {}", username);
+
+                    Speaker speaker = Speaker.builder()
+                            .username(username)
+                            .workflowState(SpeakerWorkflowState.ACCEPTED)
+                            .availability(SpeakerAvailability.AVAILABLE)
+                            .expertiseAreas(new ArrayList<>())
+                            .speakingTopics(new ArrayList<>())
+                            .certifications(new ArrayList<>())
+                            .languages(new ArrayList<>(List.of("de", "en")))
+                            .build();
+
+                    Speaker saved = speakerRepository.save(speaker);
+                    log.info("Created Speaker entity with ID {} for username {}", saved.getId(), username);
+
+                    // Publish domain event for speaker creation
+                    domainEventPublisher.publish(new SpeakerCreatedEvent(
+                            saved.getId(),
+                            saved.getUsername(),
+                            saved.getAvailability() != null ? saved.getAvailability().name() : null,
+                            saved.getWorkflowState() != null ? saved.getWorkflowState().name() : null,
+                            saved.getExpertiseAreas(),
+                            saved.getSpeakingTopics(),
+                            saved.getLanguages(),
+                            username
+                    ));
+
+                    return saved;
+                });
+    }
+
+    /**
      * Build JPA Specification for basic filtering (availability, workflowState).
      * Array filters use native query via findWithAdvancedFilters.
      */

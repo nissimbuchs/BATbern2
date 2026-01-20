@@ -509,4 +509,115 @@ class SpeakerServiceTest {
         assertThat(response.getSpeakingHistory()).hasSize(1);
         assertThat(response.getSpeakingHistory().get(0).getEventId()).isEqualTo("evt-1");
     }
+
+    // ensureSpeakerExists tests - Story 6.3
+
+    @Test
+    void should_returnExistingSpeaker_when_speakerAlreadyExists() {
+        // Given - speaker already exists
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("john.doe"))
+                .thenReturn(Optional.of(mockSpeaker));
+
+        // When
+        Speaker result = speakerService.ensureSpeakerExists("john.doe");
+
+        // Then - returns existing speaker without creating new one
+        assertThat(result).isEqualTo(mockSpeaker);
+        verify(speakerRepository, never()).save(any());
+        verify(domainEventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void should_createNewSpeaker_when_speakerDoesNotExist() {
+        // Given - speaker doesn't exist
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("new.speaker"))
+                .thenReturn(Optional.empty());
+
+        Speaker newSpeaker = Speaker.builder()
+                .id(UUID.randomUUID())
+                .username("new.speaker")
+                .workflowState(SpeakerWorkflowState.ACCEPTED)
+                .availability(SpeakerAvailability.AVAILABLE)
+                .expertiseAreas(List.of())
+                .speakingTopics(List.of())
+                .languages(List.of("de", "en"))
+                .build();
+
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(newSpeaker);
+
+        // When
+        Speaker result = speakerService.ensureSpeakerExists("new.speaker");
+
+        // Then - creates new speaker with default values
+        assertThat(result.getUsername()).isEqualTo("new.speaker");
+        assertThat(result.getWorkflowState()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+        assertThat(result.getAvailability()).isEqualTo(SpeakerAvailability.AVAILABLE);
+
+        // Verify save was called
+        ArgumentCaptor<Speaker> speakerCaptor = ArgumentCaptor.forClass(Speaker.class);
+        verify(speakerRepository).save(speakerCaptor.capture());
+
+        Speaker savedSpeaker = speakerCaptor.getValue();
+        assertThat(savedSpeaker.getUsername()).isEqualTo("new.speaker");
+        assertThat(savedSpeaker.getWorkflowState()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+        assertThat(savedSpeaker.getExpertiseAreas()).isEmpty();
+        assertThat(savedSpeaker.getSpeakingTopics()).isEmpty();
+        assertThat(savedSpeaker.getLanguages()).containsExactly("de", "en");
+    }
+
+    @Test
+    void should_publishSpeakerCreatedEvent_when_newSpeakerCreatedViaEnsure() {
+        // Given - speaker doesn't exist
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("new.speaker"))
+                .thenReturn(Optional.empty());
+
+        Speaker newSpeaker = Speaker.builder()
+                .id(UUID.randomUUID())
+                .username("new.speaker")
+                .workflowState(SpeakerWorkflowState.ACCEPTED)
+                .availability(SpeakerAvailability.AVAILABLE)
+                .expertiseAreas(List.of())
+                .speakingTopics(List.of())
+                .languages(List.of("de", "en"))
+                .build();
+
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(newSpeaker);
+
+        // When
+        speakerService.ensureSpeakerExists("new.speaker");
+
+        // Then - verify SpeakerCreatedEvent is published
+        ArgumentCaptor<SpeakerCreatedEvent> eventCaptor = ArgumentCaptor.forClass(SpeakerCreatedEvent.class);
+        verify(domainEventPublisher).publish(eventCaptor.capture());
+
+        SpeakerCreatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUsername()).isEqualTo("new.speaker");
+        assertThat(event.getWorkflowState()).isEqualTo(SpeakerWorkflowState.ACCEPTED.name());
+        assertThat(event.getAggregateId()).isEqualTo(newSpeaker.getId());
+    }
+
+    @Test
+    void should_beIdempotent_when_ensureSpeakerExistsCalledMultipleTimes() {
+        // Given - first call creates, second call finds existing
+        when(speakerRepository.findByUsernameAndDeletedAtIsNull("idempotent.user"))
+                .thenReturn(Optional.empty()) // First call: not found
+                .thenReturn(Optional.of(mockSpeaker)); // Second call: found
+
+        Speaker newSpeaker = Speaker.builder()
+                .id(UUID.randomUUID())
+                .username("idempotent.user")
+                .workflowState(SpeakerWorkflowState.ACCEPTED)
+                .build();
+
+        when(speakerRepository.save(any(Speaker.class))).thenReturn(newSpeaker);
+
+        // When - call twice
+        Speaker first = speakerService.ensureSpeakerExists("idempotent.user");
+        Speaker second = speakerService.ensureSpeakerExists("idempotent.user");
+
+        // Then - save only called once (first call), second returns existing
+        verify(speakerRepository).save(any(Speaker.class));
+        assertThat(first.getUsername()).isEqualTo("idempotent.user");
+        assertThat(second).isEqualTo(mockSpeaker);
+    }
 }

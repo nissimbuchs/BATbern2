@@ -2087,4 +2087,34 @@ public class EventController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Manually link a speaker pool entry to a user account.
+     * Story 6.3: Speaker Account Linking - Manual Fallback for Organizers
+     *
+     * POST /api/v1/events/{eventCode}/speakers/pool/{speakerPoolId}/link
+     *
+     * Allows organizers to manually link a speaker pool entry to a registered
+     * user account when automatic linking (via email match during registration)
+     * was not possible (e.g., different email addresses).
+     *
+     * The operation is idempotent - if already linked to the same username, no change occurs.
+     */
+    @PostMapping("/{eventCode}/speakers/pool/{speakerPoolId}/link")
+    @Operation(summary = "Link speaker pool entry to user",
+            description = "Manually link a speaker pool entry to a registered user account")
+    public ResponseEntity<ch.batbern.events.dto.SpeakerPoolResponse> linkSpeakerPoolToUser(
+            @PathVariable String eventCode,
+            @PathVariable String speakerPoolId,
+            @Valid @RequestBody ch.batbern.events.dto.LinkSpeakerPoolRequest request) {
+
+        // Link speaker pool entry to user
+        // Exceptions are handled by GlobalExceptionHandler:
+        // - EventNotFoundException → HTTP 404
+        // - IllegalArgumentException → HTTP 400 (speaker not found, wrong event, or already linked)
+        ch.batbern.events.dto.SpeakerPoolResponse response =
+                speakerPoolService.linkToUser(eventCode, speakerPoolId, request.getUsername());
+
+        return ResponseEntity.ok(response);
+    }
 }

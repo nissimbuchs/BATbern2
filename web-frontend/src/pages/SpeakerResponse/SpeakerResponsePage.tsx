@@ -11,7 +11,7 @@ import { useParams, Link } from 'react-router-dom';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
-import { Loader2, XCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Loader2, XCircle, ArrowLeft, CheckCircle2, UserPlus } from 'lucide-react';
 import { speakerInvitationService } from '@/services/speakerInvitationService';
 import { InvitationDetails } from '@/components/speaker/InvitationDetails';
 import { WhyWeChoseYou } from '@/components/speaker/WhyWeChoseYou';
@@ -294,6 +294,51 @@ const SpeakerResponsePage = () => {
                 </p>
               )}
             </Card>
+
+            {/* Account Creation CTA - Story 6.3 */}
+            {invitation.responseType === 'ACCEPTED' && invitation.speakerEmail && (
+              <Card className="p-6 mb-8 bg-blue-950/30 border-blue-500/30">
+                <div className="flex items-start gap-4">
+                  <UserPlus className="h-6 w-6 text-blue-400 flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium mb-2">
+                      {t(
+                        'success.createAccount.title',
+                        'Create an account to manage your speaker participation'
+                      )}
+                    </h3>
+                    <p className="text-sm text-zinc-400 mb-4">
+                      {t(
+                        'success.createAccount.description',
+                        'With an account, you can access the speaker dashboard to:'
+                      )}
+                    </p>
+                    <ul className="text-sm text-zinc-400 mb-4 space-y-1">
+                      <li>
+                        {t(
+                          'success.createAccount.benefit1',
+                          '• View your session details and schedule'
+                        )}
+                      </li>
+                      <li>
+                        {t('success.createAccount.benefit2', '• Upload presentation materials')}
+                      </li>
+                      <li>
+                        {t('success.createAccount.benefit3', '• Communicate with organizers')}
+                      </li>
+                    </ul>
+                    <Button asChild>
+                      <Link
+                        to={`/auth/register?email=${encodeURIComponent(invitation.speakerEmail)}&flow=speaker`}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        {t('success.createAccount.button', 'Create Account')}
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             <div className="flex justify-center">
               <Button asChild variant="outline">

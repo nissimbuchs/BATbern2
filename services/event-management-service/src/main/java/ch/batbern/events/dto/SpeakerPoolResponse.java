@@ -12,6 +12,7 @@ public class SpeakerPoolResponse {
 
     private UUID id;
     private UUID eventId;
+    private String username; // Story 6.3: Linked user account username (ADR-003)
     private String speakerName;
     private String company;
     private String expertise;
@@ -31,13 +32,14 @@ public class SpeakerPoolResponse {
     public SpeakerPoolResponse() {
     }
 
-    public SpeakerPoolResponse(UUID id, UUID eventId, String speakerName, String company,
+    public SpeakerPoolResponse(UUID id, UUID eventId, String username, String speakerName, String company,
                                String expertise, String assignedOrganizerId, String status,
                                UUID sessionId, String notes, String email, String phone,
                                String proposedPresentationTitle, String commentsForOrganizer,
                                Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.eventId = eventId;
+        this.username = username;
         this.speakerName = speakerName;
         this.company = company;
         this.expertise = expertise;
@@ -63,6 +65,7 @@ public class SpeakerPoolResponse {
         return new SpeakerPoolResponse(
                 speakerPool.getId(),
                 speakerPool.getEventId(),
+                speakerPool.getUsername(), // Story 6.3: Include linked username
                 speakerPool.getSpeakerName(),
                 speakerPool.getCompany(),
                 speakerPool.getExpertise(),
@@ -95,6 +98,14 @@ public class SpeakerPoolResponse {
 
     public void setEventId(UUID eventId) {
         this.eventId = eventId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getSpeakerName() {

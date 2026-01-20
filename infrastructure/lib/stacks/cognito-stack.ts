@@ -5,6 +5,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as kms from 'aws-cdk-lib/aws-kms';
+import * as events from 'aws-cdk-lib/aws-events';
 import { Construct } from 'constructs';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
@@ -18,6 +19,7 @@ export interface CognitoStackProps extends cdk.StackProps {
   lambdaTriggersSecurityGroup?: ec2.ISecurityGroup; // For Lambda triggers
   databaseSecret?: secretsmanager.ISecret; // For Lambda triggers to access database
   databaseEndpoint?: string; // For Lambda triggers to access database
+  eventBus?: events.IEventBus; // Story 6.3: For SpeakerPoolLinked event publishing
 }
 
 /**
@@ -291,6 +293,7 @@ export class CognitoStack extends cdk.Stack {
         databaseSecret: props.databaseSecret,
         databaseEndpoint: props.databaseEndpoint,
         envName: props.config.envName,
+        eventBus: props.eventBus, // Story 6.3: For SpeakerPoolLinked event publishing
       });
       // Note: Lambda security group and database ingress rule are created in NetworkStack
       // Tables are created by CompanyManagementStack Flyway migrations at runtime

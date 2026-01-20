@@ -5,6 +5,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as events from 'aws-cdk-lib/aws-events';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as path from 'path';
@@ -16,6 +17,7 @@ export interface CognitoUserSyncTriggersProps {
   databaseSecret: secretsmanager.ISecret;
   databaseEndpoint: string;
   envName: string;
+  eventBus?: events.IEventBus; // Story 6.3: EventBridge for SpeakerPoolLinked events
 }
 
 /**
@@ -45,12 +47,17 @@ export class CognitoUserSyncTriggers extends Construct {
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time
     // Note: AWS_REGION is automatically provided by Lambda runtime and cannot be set manually
-    const commonEnv = {
+    const commonEnv: { [key: string]: string } = {
       DB_HOST: props.databaseEndpoint,
       DB_NAME: 'batbern',
       DB_SECRET_ARN: props.databaseSecret.secretArn,
       LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
     };
+
+    // Story 6.3: Add EventBus name for SpeakerPoolLinked event publishing
+    if (props.eventBus) {
+      commonEnv.EVENT_BUS_NAME = props.eventBus.eventBusName;
+    }
 
     // Common Lambda props
     const commonLambdaProps = {
@@ -149,6 +156,12 @@ export class CognitoUserSyncTriggers extends Construct {
     this.preTokenGenerationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.preAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
     this.postAuthenticationTrigger.addToRolePolicy(cloudWatchPolicy);
+
+    // Story 6.3: Grant EventBridge publish permission to PostConfirmation trigger
+    // This allows the Lambda to publish SpeakerPoolLinked events after linking
+    if (props.eventBus) {
+      props.eventBus.grantPutEventsTo(this.postConfirmationTrigger);
+    }
 
     // Note: Database security group ingress rule is configured in VpcConstruct
     // to avoid cyclic dependency (Network -> CompanyManagement -> Network)
