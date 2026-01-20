@@ -220,6 +220,22 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
                 primaryTypographyProps={{ variant: 'body2' }}
               />
             </ListItem>
+            <ListItem>
+              <ListItemIcon>
+                {requirements.hasSpecialChar ? (
+                  <CheckCircle color="success" fontSize="small" />
+                ) : (
+                  <RadioButtonUnchecked fontSize="small" />
+                )}
+              </ListItemIcon>
+              <ListItemText
+                primary={t(
+                  'register.passwordRequirements.hasSpecialChar',
+                  'Special character (!@#$%^&*)'
+                )}
+                primaryTypographyProps={{ variant: 'body2' }}
+              />
+            </ListItem>
           </List>
         </Box>
       )}
