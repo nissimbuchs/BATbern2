@@ -83,7 +83,11 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
 
   // Fetch speaker pool with polling (using hook for proper cache invalidation)
   // Note: useSpeakerPool has 2-min staleTime but we need real-time updates for status changes
-  const { data: speakers, isLoading: speakersLoading } = useQuery({
+  const {
+    data: speakers,
+    isLoading: speakersLoading,
+    error: speakersError,
+  } = useQuery({
     queryKey: ['speakerPool', 'list', eventCode],
     queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
     enabled: !!eventCode,
@@ -206,6 +210,16 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
         <CircularProgress />
       </Box>
+    );
+  }
+
+  // Error state
+  if (speakersError) {
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {t('organizer:tasks.errorLoadingTasks', 'Failed to load speakers')}:{' '}
+        {speakersError instanceof Error ? speakersError.message : 'Unknown error'}
+      </Alert>
     );
   }
 
