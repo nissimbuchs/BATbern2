@@ -122,12 +122,14 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
           {t('modal.editRoles.selectRoles')}:
         </Typography>
 
-        <FormGroup>
+        <FormGroup data-testid="role-manager-checkboxes">
           {roleOptions.map((role) => (
             <FormControlLabel
               key={role.value}
               control={
                 <Checkbox
+                  data-testid={`role-manager-role-${role.value}`}
+                  value={role.value}
                   checked={selectedRoles.includes(role.value)}
                   onChange={() => handleRoleToggle(role.value)}
                 />
@@ -139,7 +141,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
 
         {/* Validation Error */}
         {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
+          <Alert severity="error" sx={{ mt: 2 }} data-testid="role-manager-error">
             {error}
           </Alert>
         )}
@@ -153,7 +155,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={onClose} variant="outlined" data-testid="role-manager-cancel">
           {t('actions.cancel')}
         </Button>
         <Button
@@ -161,6 +163,7 @@ const RoleManagerModal: React.FC<RoleManagerModalProps> = ({ user, open, onClose
           variant="contained"
           color="primary"
           disabled={updateRolesMutation.isPending}
+          data-testid="role-manager-save"
         >
           {updateRolesMutation.isPending ? t('modal.editRoles.saving') : t('actions.save')}
         </Button>
