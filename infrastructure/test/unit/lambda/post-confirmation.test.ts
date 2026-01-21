@@ -125,6 +125,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user by email
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
@@ -171,6 +172,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -193,6 +195,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -215,6 +218,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -243,6 +247,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no existing user
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
@@ -274,6 +279,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -296,6 +302,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -328,6 +335,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -607,6 +615,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -627,6 +636,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // Check existing role
         .mockRejectedValueOnce(new Error('Role insert failed')); // Role INSERT fails
@@ -647,6 +657,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 
@@ -673,6 +684,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
@@ -725,6 +737,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user
         .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check existing role
 
@@ -884,6 +897,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT - no user found
         .mockResolvedValueOnce({ rows: [{ id: 'new-user-999' }], rowCount: 1 }) // INSERT new user
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // linkSpeakerPoolEntries SELECT - no matches
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // Check role
 

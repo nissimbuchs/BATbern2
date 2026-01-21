@@ -286,6 +286,10 @@ export class CognitoStack extends cdk.Stack {
     // These triggers sync user creation/authentication between Cognito and PostgreSQL
     // Only deploy if VPC and database are configured (not available in local development)
     if (props.vpc && props.lambdaTriggersSecurityGroup && props.databaseSecret && props.databaseEndpoint) {
+      // Story 6.3: Event Management Service URL via Service Connect DNS
+      // Service Connect namespace: batbern-{env}, service: event-management, port: 8080
+      const eventManagementServiceUrl = `http://event-management.batbern-${envName}:8080`;
+
       new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
         userPool: this.userPool,
         vpc: props.vpc,
@@ -294,6 +298,7 @@ export class CognitoStack extends cdk.Stack {
         databaseEndpoint: props.databaseEndpoint,
         envName: props.config.envName,
         eventBus: props.eventBus, // Story 6.3: For SpeakerPoolLinked event publishing
+        eventManagementServiceUrl, // Story 6.3: For Speaker entity creation via API
       });
       // Note: Lambda security group and database ingress rule are created in NetworkStack
       // Tables are created by CompanyManagementStack Flyway migrations at runtime

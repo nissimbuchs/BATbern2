@@ -264,6 +264,51 @@ async function publishSpeakerPoolLinkedEvent(
 }
 
 /**
+ * Ensure Speaker entity exists by calling Event Management Service API.
+ * Story 6.3: Speaker Account Creation and Linking
+ *
+ * <p>This directly calls the Event Management Service to create a Speaker entity
+ * for the newly registered user. This enables the speaker to access their
+ * dashboard immediately after registration.
+ *
+ * @param username - The username to ensure a Speaker entity for
+ */
+async function ensureSpeakerEntityExists(username: string): Promise<void> {
+  const serviceUrl = process.env.EVENT_MANAGEMENT_SERVICE_URL;
+
+  if (!serviceUrl) {
+    console.warn('EVENT_MANAGEMENT_SERVICE_URL not configured, skipping Speaker entity creation');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${serviceUrl}/api/v1/speakers/ensure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    });
+
+    if (response.ok) {
+      console.log('Speaker entity ensured successfully', { username, status: response.status });
+    } else {
+      const body = await response.text();
+      console.error('Failed to ensure Speaker entity', {
+        username,
+        status: response.status,
+        body: body.substring(0, 500), // Truncate for logging
+      });
+    }
+  } catch (error) {
+    // Log but don't fail - manual linking fallback (AC6) handles cases where Speaker entity isn't created
+    console.error('Error calling Speaker ensure API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      username,
+      serviceUrl,
+    });
+  }
+}
+
+/**
  * Create user in database with email-based matching for historical participants
  * Story 1.2.3: Extract user profile data from custom:preferences JSON per ADR-001
  * ADR-005: Auto-link historical participants when they create Cognito accounts
@@ -396,9 +441,13 @@ async function createUser(
 
     await client.query('COMMIT');
 
-    // STEP 3: Publish SpeakerPoolLinked event AFTER commit (Story 6.3)
-    // Event publishing must happen after commit to ensure data is persisted
+    // STEP 3: Create Speaker entity and publish event AFTER commit (Story 6.3)
+    // These must happen after commit to ensure data is persisted
     if (speakerPoolResult.linkedCount > 0) {
+      // Call Event Management Service to create Speaker entity
+      await ensureSpeakerEntityExists(actualUsername);
+
+      // Publish event for any downstream consumers
       await publishSpeakerPoolLinkedEvent(actualUsername, email, speakerPoolResult.linkedEntries);
       await publishMetric('SpeakerPoolEntriesLinked', speakerPoolResult.linkedCount, 'Count');
     }

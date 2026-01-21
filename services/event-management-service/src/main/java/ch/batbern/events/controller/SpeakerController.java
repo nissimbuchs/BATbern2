@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.SpeakerAvailability;
+import ch.batbern.events.dto.EnsureSpeakerRequest;
 import ch.batbern.events.dto.SpeakerRequest;
 import ch.batbern.events.dto.SpeakerResponse;
 import ch.batbern.events.service.SpeakerService;
@@ -190,6 +191,32 @@ public class SpeakerController {
     public ResponseEntity<Void> speakerExists(@PathVariable String username) {
         boolean exists = speakerService.speakerExists(username);
         return exists ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Ensure a speaker profile exists for the given username (Story 6.3).
+     *
+     * <p>This endpoint is called by the PostConfirmation Lambda after linking
+     * SpeakerPool entries to a newly registered user. It creates a Speaker entity
+     * if one doesn't already exist.
+     *
+     * <p>The operation is idempotent - calling multiple times is safe.
+     *
+     * <p>No authentication required - this is an internal service-to-service call.
+     *
+     * @param request Contains the username to ensure
+     * @return Created or existing speaker profile with enriched user data
+     */
+    @PostMapping("/ensure")
+    public ResponseEntity<SpeakerResponse> ensureSpeaker(@Valid @RequestBody EnsureSpeakerRequest request) {
+        log.info("POST /api/v1/speakers/ensure - username={}", request.getUsername());
+
+        // Ensure speaker exists (creates if needed, idempotent)
+        speakerService.ensureSpeakerExists(request.getUsername());
+
+        // Return enriched speaker response
+        SpeakerResponse speaker = speakerService.getSpeakerByUsername(request.getUsername());
+        return ResponseEntity.ok(speaker);
     }
 
     /**

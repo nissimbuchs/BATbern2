@@ -18,6 +18,7 @@ export interface CognitoUserSyncTriggersProps {
   databaseEndpoint: string;
   envName: string;
   eventBus?: events.IEventBus; // Story 6.3: EventBridge for SpeakerPoolLinked events
+  eventManagementServiceUrl?: string; // Story 6.3: URL to call ensure speaker endpoint
 }
 
 /**
@@ -57,6 +58,11 @@ export class CognitoUserSyncTriggers extends Construct {
     // Story 6.3: Add EventBus name for SpeakerPoolLinked event publishing
     if (props.eventBus) {
       commonEnv.EVENT_BUS_NAME = props.eventBus.eventBusName;
+    }
+
+    // Story 6.3: Add Event Management Service URL for Speaker entity creation
+    if (props.eventManagementServiceUrl) {
+      commonEnv.EVENT_MANAGEMENT_SERVICE_URL = props.eventManagementServiceUrl;
     }
 
     // Common Lambda props

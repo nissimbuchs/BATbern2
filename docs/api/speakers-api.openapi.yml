@@ -179,6 +179,44 @@ paths:
         '404':
           description: User not found
 
+  /speakers/ensure:
+    post:
+      tags:
+        - Speakers
+      summary: Ensure speaker exists
+      description: |
+        Ensure a speaker profile exists for the given username.
+        Story 6.3: Speaker Account Creation and Linking
+
+        **Purpose**: Called by PostConfirmation Lambda after linking SpeakerPool
+        entries to a newly registered user. Creates a Speaker entity if one
+        doesn't already exist.
+
+        **Idempotent**: Calling multiple times with the same username is safe
+        and will return the existing speaker.
+
+        **No authentication required**: This is an internal service-to-service
+        call from the Cognito Lambda trigger.
+
+      operationId: ensureSpeaker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnsureSpeakerRequest'
+      responses:
+        '200':
+          description: Speaker exists or was created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerResponse'
+        '400':
+          description: Bad request - validation errors
+        '500':
+          description: Internal server error
+
   /speakers/{username}:
     get:
       tags:
@@ -744,6 +782,22 @@ components:
         presentedAt:
           type: string
           format: date-time
+
+    EnsureSpeakerRequest:
+      type: object
+      description: |
+        Request to ensure a speaker profile exists.
+        Story 6.3: Speaker Account Creation and Linking
+
+        Called by PostConfirmation Lambda after linking SpeakerPool entries
+        to create a Speaker entity if one doesn't exist.
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: Username of user to ensure speaker for (ADR-003)
+          example: john.doe
 
     CreateSpeakerRequest:
       type: object

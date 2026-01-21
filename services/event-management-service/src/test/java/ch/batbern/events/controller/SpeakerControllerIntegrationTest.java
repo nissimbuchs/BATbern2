@@ -621,6 +621,83 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // =========================================================================
+    // POST /api/v1/speakers/ensure - Ensure speaker exists (Story 6.3)
+    // =========================================================================
+
+    @Test
+    void should_createSpeaker_when_ensureCalledForNewUser() throws Exception {
+        // Given - no speaker exists for this username
+        String requestBody = """
+            {
+                "username": "new.speaker"
+            }
+            """;
+
+        // When/Then - should create speaker and return 200
+        mockMvc.perform(post("/api/v1/speakers/ensure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username", is("john.doe"))) // from mock
+                .andExpect(jsonPath("$.availability", is("AVAILABLE")))
+                .andExpect(jsonPath("$.workflowState", is("ACCEPTED"))); // default for auto-created speakers
+    }
+
+    @Test
+    void should_returnExistingSpeaker_when_ensureCalledForExistingUser() throws Exception {
+        // Given - speaker already exists
+        Speaker existing = createTestSpeaker("existing.speaker");
+        existing.setAvailability(SpeakerAvailability.BUSY);
+        speakerRepository.save(existing);
+
+        String requestBody = """
+            {
+                "username": "existing.speaker"
+            }
+            """;
+
+        // When/Then - should return existing speaker (idempotent)
+        mockMvc.perform(post("/api/v1/speakers/ensure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username", is("john.doe"))) // from mock
+                .andExpect(jsonPath("$.availability", is("BUSY"))); // existing value preserved
+    }
+
+    @Test
+    void should_return400_when_ensureCalledWithoutUsername() throws Exception {
+        // Given - empty username
+        String requestBody = """
+            {
+                "username": ""
+            }
+            """;
+
+        // When/Then
+        mockMvc.perform(post("/api/v1/speakers/ensure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void should_allowAnonymousAccess_when_callingEnsureEndpoint() throws Exception {
+        // Given - no authentication (simulates Lambda call)
+        String requestBody = """
+            {
+                "username": "lambda.created"
+            }
+            """;
+
+        // When/Then - should succeed without authentication
+        mockMvc.perform(post("/api/v1/speakers/ensure")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk());
+    }
+
     // Helper method
 
     private Speaker createTestSpeaker(String username) {
