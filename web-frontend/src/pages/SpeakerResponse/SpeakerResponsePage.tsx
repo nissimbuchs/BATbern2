@@ -195,7 +195,9 @@ const SpeakerResponsePage = () => {
           <>
             <InvitationDetails invitation={invitation} />
 
-            {invitation.personalMessage && <WhyWeChoseYou message={invitation.personalMessage} />}
+            {invitation.personalMessage?.trim() && (
+              <WhyWeChoseYou message={invitation.personalMessage} />
+            )}
 
             <ResponseButtons
               onSelect={handleResponseSelect}
