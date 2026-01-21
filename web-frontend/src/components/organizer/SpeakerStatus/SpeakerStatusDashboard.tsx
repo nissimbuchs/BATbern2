@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { speakerPoolService } from '@/services/speakerPoolService';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 import { useEvent } from '@/hooks/useEvents';
 import { SpeakerStatusLanes } from './SpeakerStatusLanes';
 
@@ -63,7 +64,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
 
   // Fetch speaker pool data for lanes
   const { data: speakers, isLoading: speakersLoading } = useQuery({
-    queryKey: ['speakerPool', eventCode],
+    queryKey: speakerPoolKeys.list(eventCode),
     queryFn: () => speakerPoolService.getSpeakerPool(eventCode),
     refetchInterval: 30000, // Poll every 30 seconds
     staleTime: 15000,
