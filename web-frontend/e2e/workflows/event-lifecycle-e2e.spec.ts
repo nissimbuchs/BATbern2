@@ -136,6 +136,7 @@ test.describe.serial('Event Lifecycle E2E', () => {
         eventType: testConfig.event.eventType as 'EVENING' | 'AFTERNOON' | 'FULL_DAY',
         venueName: testConfig.event.venue.name,
         venueAddress: testConfig.event.venue.address,
+        venueCapacity: 200,
       });
 
       await page.waitForTimeout(500);

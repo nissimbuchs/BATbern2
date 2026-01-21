@@ -35,6 +35,7 @@ export class EventWorkflowPage {
   readonly registrationDeadlineField: Locator;
   readonly venueNameField: Locator;
   readonly venueAddressField: Locator;
+  readonly venueCapacityField: Locator;
   readonly fileDropzone: Locator;
   readonly saveAndCreateButton: Locator;
 
@@ -78,6 +79,7 @@ export class EventWorkflowPage {
       .locator('input');
     this.venueNameField = page.getByTestId('venue-name-field').locator('input');
     this.venueAddressField = page.getByTestId('venue-address-field').locator('input');
+    this.venueCapacityField = page.getByTestId('venue-capacity-field').locator('input');
     this.fileDropzone = page.getByTestId('file-dropzone');
     this.saveAndCreateButton = page.getByTestId('save-create-event-button');
 
@@ -178,6 +180,7 @@ export class EventWorkflowPage {
       eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY';
       venueName: string;
       venueAddress: string;
+      venueCapacity: number;
       venueImagePath?: string;
     },
     options?: {
@@ -211,6 +214,8 @@ export class EventWorkflowPage {
     await this.venueNameField.fill(eventData.venueName);
     console.log('    → Filling venue address');
     await this.venueAddressField.fill(eventData.venueAddress);
+    console.log('    → Filling venue capacity');
+    await this.venueCapacityField.fill(eventData.venueCapacity.toString());
 
     // Upload venue image if provided
     if (eventData.venueImagePath) {

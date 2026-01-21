@@ -701,6 +701,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       {...field}
                       label={t('form.title')}
                       fullWidth
+                      required
                       error={!!errors.title}
                       helperText={errors.title?.message}
                       margin="normal"
@@ -792,9 +793,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       label={t('form.capacity')}
                       type="number"
                       fullWidth
+                      required
                       error={!!errors.venueCapacity}
                       helperText={errors.venueCapacity?.message}
                       margin="normal"
+                      data-testid="venue-capacity-field"
                     />
                   )}
                 />
