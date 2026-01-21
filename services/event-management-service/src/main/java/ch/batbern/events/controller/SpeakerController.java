@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerAvailability;
 import ch.batbern.events.dto.EnsureSpeakerRequest;
 import ch.batbern.events.dto.SpeakerRequest;
@@ -212,11 +213,21 @@ public class SpeakerController {
         log.info("POST /api/v1/speakers/ensure - username={}", request.getUsername());
 
         // Ensure speaker exists (creates if needed, idempotent)
-        speakerService.ensureSpeakerExists(request.getUsername());
+        Speaker speaker = speakerService.ensureSpeakerExists(request.getUsername());
 
-        // Return enriched speaker response
-        SpeakerResponse speaker = speakerService.getSpeakerByUsername(request.getUsername());
-        return ResponseEntity.ok(speaker);
+        // Return minimal response without user enrichment
+        // User data may not be synced yet when called from Lambda post-confirmation
+        SpeakerResponse response = SpeakerResponse.builder()
+                .username(speaker.getUsername())
+                .availability(speaker.getAvailability())
+                .workflowState(speaker.getWorkflowState())
+                .expertiseAreas(speaker.getExpertiseAreas())
+                .speakingTopics(speaker.getSpeakingTopics())
+                .languages(speaker.getLanguages())
+                .createdAt(speaker.getCreatedAt())
+                .updatedAt(speaker.getUpdatedAt())
+                .build();
+        return ResponseEntity.ok(response);
     }
 
     /**

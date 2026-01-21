@@ -65,6 +65,9 @@ public class DomainRouter {
         if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
             return "event-management-service";
+        // Story 6.3: Speaker ensure endpoint for Lambda auto-linking
+        } else if (cleanPath.equals("/api/v1/speakers/ensure")) {
+            return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/events")
                 || cleanPath.startsWith("/api/v1/registrations")
                 || cleanPath.startsWith("/api/v1/topics")

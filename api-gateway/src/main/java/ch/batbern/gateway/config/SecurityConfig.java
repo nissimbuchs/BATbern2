@@ -156,6 +156,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/invitations/respond/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/invitations/respond/*").permitAll()
 
+                        // Story 6.3: Internal speaker ensure endpoint (called by Lambda, no auth)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speakers/ensure").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

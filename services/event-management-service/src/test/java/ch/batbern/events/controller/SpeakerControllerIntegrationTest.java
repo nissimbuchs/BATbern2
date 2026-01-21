@@ -635,11 +635,12 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
             """;
 
         // When/Then - should create speaker and return 200
+        // Note: Response contains speaker data without user enrichment (user may not be synced yet)
         mockMvc.perform(post("/api/v1/speakers/ensure")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username", is("john.doe"))) // from mock
+                .andExpect(jsonPath("$.username", is("new.speaker"))) // actual username, not enriched
                 .andExpect(jsonPath("$.availability", is("AVAILABLE")))
                 .andExpect(jsonPath("$.workflowState", is("ACCEPTED"))); // default for auto-created speakers
     }
@@ -658,11 +659,12 @@ class SpeakerControllerIntegrationTest extends AbstractIntegrationTest {
             """;
 
         // When/Then - should return existing speaker (idempotent)
+        // Note: Response contains speaker data without user enrichment
         mockMvc.perform(post("/api/v1/speakers/ensure")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username", is("john.doe"))) // from mock
+                .andExpect(jsonPath("$.username", is("existing.speaker"))) // actual username, not enriched
                 .andExpect(jsonPath("$.availability", is("BUSY"))); // existing value preserved
     }
 
