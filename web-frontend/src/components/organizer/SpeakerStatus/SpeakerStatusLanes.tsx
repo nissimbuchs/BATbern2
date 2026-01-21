@@ -12,7 +12,18 @@
  */
 
 import React, { useState } from 'react';
-import { Grid, Card, Typography, Avatar, Box, Chip, Paper, Stack } from '@mui/material';
+import {
+  Grid,
+  Card,
+  Typography,
+  Avatar,
+  Box,
+  Chip,
+  Paper,
+  Stack,
+  Alert,
+  Snackbar,
+} from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
@@ -104,6 +115,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   const [invitationModalOpen, setInvitationModalOpen] = useState(false);
   const [invitationSpeaker, setInvitationSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
+  // Error snackbar state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // Drag-and-drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -158,6 +172,11 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
     if (speaker && speaker.status !== newStatus) {
       // Special handling for IDENTIFIED → CONTACTED - trigger callback (Story 5.6)
       if (speaker.status === 'IDENTIFIED' && newStatus === 'CONTACTED') {
+        // Validate that speaker has an email address before contacting
+        if (!speaker.email?.trim()) {
+          setErrorMessage(t('organizer:speakerStatus.emailRequiredForContact'));
+          return;
+        }
         // First update the status
         updateStatusMutation.mutate(
           {
@@ -317,6 +336,18 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         speaker={invitationSpeaker}
         eventCode={eventCode}
       />
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={() => setErrorMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setErrorMessage(null)} severity="error" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

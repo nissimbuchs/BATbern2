@@ -282,7 +282,8 @@
     "confirmChangeMessage": "Change status of {{speaker}} from {{from}} to {{to}}?",
     "reasonHelperText": "Optional (max {{max}} characters)",
     "reasonPlaceholder": "e.g., Speaker confirmed via email",
-    "reasonTooLong": "Reason is too long ({{current}}/{{max}} characters)"
+    "reasonTooLong": "Reason is too long ({{current}}/{{max}} characters)",
+    "emailRequiredForContact": "Cannot move to Contacted: speaker email address is required"
   },
   "speakerContent": {
     "submitContent": "Submit Speaker Content",

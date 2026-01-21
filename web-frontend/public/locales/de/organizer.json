@@ -282,7 +282,8 @@
     "confirmChangeMessage": "Status von {{speaker}} von {{from}} zu {{to}} ändern?",
     "reasonHelperText": "Optional (max. {{max}} Zeichen)",
     "reasonPlaceholder": "z.B. Sprecher hat per E-Mail zugesagt",
-    "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)"
+    "reasonTooLong": "Grund ist zu lang ({{current}}/{{max}} Zeichen)",
+    "emailRequiredForContact": "Kann nicht zu Kontaktiert verschoben werden: E-Mail-Adresse des Sprechers erforderlich"
   },
   "speakerContent": {
     "submitContent": "Sprecher-Inhalt einreichen",
