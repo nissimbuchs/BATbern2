@@ -57,7 +57,7 @@ interface EventResponse {
 async function createTopicViaAPI(
   request: APIRequestContext,
   title: string,
-  category: string = 'Technical',
+  category: string = 'technical',
   description: string = 'Test topic description'
 ): Promise<TopicResponse> {
   const authToken = process.env.AUTH_TOKEN;
@@ -105,6 +105,8 @@ async function createEventViaAPI(
     data: {
       title,
       eventNumber,
+      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+      registrationDeadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days from now
       venueName: 'Test Venue',
       venueAddress: 'Test Address, Bern',
       venueCapacity: 100,
@@ -181,9 +183,9 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   test.describe('AC1: Topic Backlog Display', () => {
     test('should display searchable list of all available topics', async ({ page, request }) => {
       // Create test topics
-      const topic1 = await createTopicViaAPI(request, 'Cloud Architecture', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'Sustainable Design', 'Design');
-      const topic3 = await createTopicViaAPI(request, 'AI in Construction', 'Technical');
+      const topic1 = await createTopicViaAPI(request, 'Cloud Architecture', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'Sustainable Design', 'design');
+      const topic3 = await createTopicViaAPI(request, 'AI in Construction', 'technical');
       createdTopics.push(topic1.topicCode, topic2.topicCode, topic3.topicCode);
 
       // Navigate to topic management
@@ -208,9 +210,9 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
     test('should filter topics by category', async ({ page, request }) => {
       // Create topics in different categories
-      const topic1 = await createTopicViaAPI(request, 'DevOps Best Practices', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'User Experience Design', 'Design');
-      const topic3 = await createTopicViaAPI(request, 'Cloud Security', 'Technical');
+      const topic1 = await createTopicViaAPI(request, 'DevOps Best Practices', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'User Experience Design', 'design');
+      const topic3 = await createTopicViaAPI(request, 'Cloud Security', 'technical');
       createdTopics.push(topic1.topicCode, topic2.topicCode, topic3.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -254,7 +256,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   test.describe('AC2: Heat Map Visualization', () => {
     test('should display usage heat map for selected topic', async ({ page, request }) => {
       // Create topic
-      const topic = await createTopicViaAPI(request, 'Microservices Architecture', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Microservices Architecture', 'technical');
       createdTopics.push(topic.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -272,7 +274,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
     test('should show quarterly usage frequency in heat map', async ({ page, request }) => {
       // Create topic
-      const topic = await createTopicViaAPI(request, 'Test Topic for Heat Map', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Test Topic for Heat Map', 'technical');
       createdTopics.push(topic.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -289,7 +291,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       request,
     }) => {
       // Create topic
-      const topic = await createTopicViaAPI(request, 'Tooltip Test Topic', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Tooltip Test Topic', 'technical');
       createdTopics.push(topic.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -317,7 +319,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       request,
     }) => {
       // Create fresh topic (staleness score should be 100)
-      const topic = await createTopicViaAPI(request, 'Brand New Topic', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Brand New Topic', 'technical');
       createdTopics.push(topic.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -332,7 +334,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
     test('should display staleness score badge', async ({ page, request }) => {
       // Create topic
-      const topic = await createTopicViaAPI(request, 'Staleness Score Test', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Staleness Score Test', 'technical');
       createdTopics.push(topic.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -349,8 +351,8 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   test.describe('AC6: Staleness Score Display', () => {
     test('should display 0-100 staleness score for each topic', async ({ page, request }) => {
       // Create multiple topics
-      const topic1 = await createTopicViaAPI(request, 'Score Test 1', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'Score Test 2', 'Design');
+      const topic1 = await createTopicViaAPI(request, 'Score Test 1', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'Score Test 2', 'design');
       createdTopics.push(topic1.topicCode, topic2.topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -414,7 +416,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   test.describe('AC14-16: Workflow Engine Integration', () => {
     test('should allow selecting topic for an event', async ({ page, request }) => {
       // Create topic and event
-      const topic = await createTopicViaAPI(request, 'Workflow Test Topic', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Workflow Test Topic', 'technical');
       const event = await createEventViaAPI(request);
       createdTopics.push(topic.topicCode);
       createdEvents.push(event.eventCode);
@@ -448,7 +450,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       request,
     }) => {
       // Create topic and event
-      const topic = await createTopicViaAPI(request, 'State Transition Test', 'Technical');
+      const topic = await createTopicViaAPI(request, 'State Transition Test', 'technical');
       const event = await createEventViaAPI(request);
       createdTopics.push(topic.topicCode);
       createdEvents.push(event.eventCode);
@@ -491,8 +493,8 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
   test.describe('GET /api/v1/topics', () => {
     test('should return topics with pagination', async ({ request }) => {
       // Create test topics
-      const topic1 = await createTopicViaAPI(request, 'API Test Topic 1', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'API Test Topic 2', 'Design');
+      const topic1 = await createTopicViaAPI(request, 'API Test Topic 1', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'API Test Topic 2', 'design');
       createdTopics.push(topic1.topicCode, topic2.topicCode);
 
       const authToken = process.env.AUTH_TOKEN;
@@ -514,13 +516,13 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
 
     test('should filter topics by category', async ({ request }) => {
       // Create topics in specific category
-      const topic1 = await createTopicViaAPI(request, 'Technical Topic 1', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'Technical Topic 2', 'Technical');
-      const topic3 = await createTopicViaAPI(request, 'Design Topic 1', 'Design');
+      const topic1 = await createTopicViaAPI(request, 'Technical Topic 1', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'Technical Topic 2', 'technical');
+      const topic3 = await createTopicViaAPI(request, 'Design Topic 1', 'design');
       createdTopics.push(topic1.topicCode, topic2.topicCode, topic3.topicCode);
 
       const authToken = process.env.AUTH_TOKEN;
-      const filter = JSON.stringify({ category: 'Technical' });
+      const filter = JSON.stringify({ category: 'technical' });
       const response = await request.get(
         `${API_URL}/api/v1/topics?filter=${encodeURIComponent(filter)}`,
         {
@@ -535,14 +537,14 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
       const result = await response.json();
       expect(result.data.length).toBeGreaterThanOrEqual(2);
       result.data.forEach((topic: TopicResponse) => {
-        expect(topic.category).toBe('Technical');
+        expect(topic.category).toBe('technical');
       });
     });
 
     test('should sort topics by staleness score descending', async ({ request }) => {
       // Create multiple topics
-      const topic1 = await createTopicViaAPI(request, 'Sort Test 1', 'Technical');
-      const topic2 = await createTopicViaAPI(request, 'Sort Test 2', 'Design');
+      const topic1 = await createTopicViaAPI(request, 'Sort Test 1', 'technical');
+      const topic2 = await createTopicViaAPI(request, 'Sort Test 2', 'design');
       createdTopics.push(topic1.topicCode, topic2.topicCode);
 
       const authToken = process.env.AUTH_TOKEN;
@@ -572,7 +574,7 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
         data: {
           title: 'Test Topic - API Contract',
           description: 'Test description',
-          category: 'Technical',
+          category: 'technical',
         },
         headers: {
           Authorization: `Bearer ${authToken}`,
@@ -597,7 +599,7 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
   test.describe('POST /api/v1/events/{eventCode}/topics', () => {
     test('should assign topic to event and return success', async ({ request }) => {
       // Create topic and event
-      const topic = await createTopicViaAPI(request, 'Assignment Test Topic', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Assignment Test Topic', 'technical');
       const event = await createEventViaAPI(request);
       createdTopics.push(topic.topicCode);
       createdEvents.push(event.eventCode);
@@ -624,7 +626,7 @@ test.describe('Topics API Contract Tests (Story 5.2)', () => {
     test('should delete unused topic', async ({ request }) => {
       const authToken = process.env.AUTH_TOKEN;
       // Create topic
-      const topic = await createTopicViaAPI(request, 'Delete Test Topic', 'Technical');
+      const topic = await createTopicViaAPI(request, 'Delete Test Topic', 'technical');
 
       // Delete topic
       const response = await request.delete(`${API_URL}/api/v1/topics/${topic.topicCode}`, {
