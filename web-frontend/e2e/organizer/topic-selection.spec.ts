@@ -295,10 +295,23 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
   test.describe('AC1: Topic Backlog Display', () => {
     test('should display searchable list of all available topics', async ({ page }) => {
-      // Create test topics via UI
-      const topicCode1 = await createTopicViaUI(page, 'Cloud Architecture', 'technical');
-      const topicCode2 = await createTopicViaUI(page, 'Sustainable Design', 'management');
-      const topicCode3 = await createTopicViaUI(page, 'AI in Construction', 'technical');
+      // Create test topics via UI with unique names
+      const timestamp = Date.now();
+      const topicCode1 = await createTopicViaUI(
+        page,
+        `Cloud Architecture ${timestamp}`,
+        'technical'
+      );
+      const topicCode2 = await createTopicViaUI(
+        page,
+        `Sustainable Design ${timestamp}`,
+        'management'
+      );
+      const topicCode3 = await createTopicViaUI(
+        page,
+        `AI in Construction ${timestamp}`,
+        'technical'
+      );
       createdTopics.push(topicCode1, topicCode2, topicCode3);
 
       // Navigate to topic management
@@ -316,16 +329,21 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await expect(page.locator('[data-testid^="topic-card-"]')).toHaveCount(3, {
         timeout: 10000,
       });
-      await expect(page.locator('text=Cloud Architecture')).toBeVisible();
-      await expect(page.locator('text=Sustainable Design')).toBeVisible();
-      await expect(page.locator('text=AI in Construction')).toBeVisible();
+      await expect(page.locator(`text=Cloud Architecture ${timestamp}`)).toBeVisible();
+      await expect(page.locator(`text=Sustainable Design ${timestamp}`)).toBeVisible();
+      await expect(page.locator(`text=AI in Construction ${timestamp}`)).toBeVisible();
     });
 
     test('should filter topics by category', async ({ page }) => {
-      // Create topics in different categories via UI
-      const topicCode1 = await createTopicViaUI(page, 'DevOps Best Practices', 'technical');
-      const topicCode2 = await createTopicViaUI(page, 'User Experience Design', 'management');
-      const topicCode3 = await createTopicViaUI(page, 'Cloud Security', 'technical');
+      // Create topics in different categories via UI with unique names
+      const timestamp = Date.now();
+      const topic1Title = `DevOps Best Practices ${timestamp}`;
+      const topic2Title = `User Experience Design ${timestamp}`;
+      const topic3Title = `Cloud Security ${timestamp}`;
+
+      const topicCode1 = await createTopicViaUI(page, topic1Title, 'technical');
+      const topicCode2 = await createTopicViaUI(page, topic2Title, 'management');
+      const topicCode3 = await createTopicViaUI(page, topic3Title, 'technical');
       createdTopics.push(topicCode1, topicCode2, topicCode3);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -340,9 +358,9 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await page.click('[role="option"]:has-text("Technical")');
 
       // Verify only technical topics are shown
-      await expect(page.locator('text=DevOps Best Practices')).toBeVisible();
-      await expect(page.locator('text=Cloud Security')).toBeVisible();
-      await expect(page.locator('text=User Experience Design')).not.toBeVisible();
+      await expect(page.locator(`text=${topic1Title}`)).toBeVisible();
+      await expect(page.locator(`text=${topic3Title}`)).toBeVisible();
+      await expect(page.locator(`text=${topic2Title}`)).not.toBeVisible();
     });
 
     test('should navigate to Topic Backlog Manager from event workflow', async ({
@@ -368,8 +386,12 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
   test.describe('AC2: Heat Map Visualization', () => {
     test('should display usage heat map for selected topic', async ({ page }) => {
-      // Create topic via UI
-      const topicCode = await createTopicViaUI(page, 'Microservices Architecture', 'technical');
+      // Create topic via UI with unique name
+      const topicCode = await createTopicViaUI(
+        page,
+        `Microservices Architecture ${Date.now()}`,
+        'technical'
+      );
       createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -386,8 +408,12 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
     });
 
     test('should show quarterly usage frequency in heat map', async ({ page }) => {
-      // Create topic via UI
-      const topicCode = await createTopicViaUI(page, 'Test Topic for Heat Map', 'technical');
+      // Create topic via UI with unique name
+      const topicCode = await createTopicViaUI(
+        page,
+        `Test Topic for Heat Map ${Date.now()}`,
+        'technical'
+      );
       createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -400,8 +426,12 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
     });
 
     test('should display tooltip on hover showing attendance and engagement', async ({ page }) => {
-      // Create topic via UI
-      const topicCode = await createTopicViaUI(page, 'Tooltip Test Topic', 'technical');
+      // Create topic via UI with unique name
+      const topicCode = await createTopicViaUI(
+        page,
+        `Tooltip Test Topic ${Date.now()}`,
+        'technical'
+      );
       createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -427,8 +457,8 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
     test('should display green color for newly created topics (not used, staleness 100)', async ({
       page,
     }) => {
-      // Create fresh topic via UI (staleness score should be 100)
-      const topicCode = await createTopicViaUI(page, 'Brand New Topic', 'technical');
+      // Create fresh topic via UI (staleness score should be 100) with unique name
+      const topicCode = await createTopicViaUI(page, `Brand New Topic ${Date.now()}`, 'technical');
       createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -442,8 +472,12 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
     });
 
     test('should display staleness score badge', async ({ page }) => {
-      // Create topic via UI
-      const topicCode = await createTopicViaUI(page, 'Staleness Score Test', 'technical');
+      // Create topic via UI with unique name
+      const topicCode = await createTopicViaUI(
+        page,
+        `Staleness Score Test ${Date.now()}`,
+        'technical'
+      );
       createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -459,9 +493,10 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
   test.describe('AC6: Staleness Score Display', () => {
     test('should display 0-100 staleness score for each topic', async ({ page }) => {
-      // Create multiple topics via UI
-      const topicCode1 = await createTopicViaUI(page, 'Score Test 1', 'technical');
-      const topicCode2 = await createTopicViaUI(page, 'Score Test 2', 'management');
+      // Create multiple topics via UI with unique names
+      const timestamp = Date.now();
+      const topicCode1 = await createTopicViaUI(page, `Score Test 1 ${timestamp}`, 'technical');
+      const topicCode2 = await createTopicViaUI(page, `Score Test 2 ${timestamp}`, 'management');
       createdTopics.push(topicCode1, topicCode2);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -524,8 +559,9 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
   test.describe('AC14-16: Workflow Engine Integration', () => {
     test('should allow selecting topic for an event', async ({ page, request }) => {
-      // Create topic via UI and event for test setup
-      const topicCode = await createTopicViaUI(page, 'Workflow Test Topic', 'technical');
+      // Create topic via UI and event for test setup with unique names
+      const topicTitle = `Workflow Test Topic ${Date.now()}`;
+      const topicCode = await createTopicViaUI(page, topicTitle, 'technical');
       const eventCode = await createEventForTest(request);
       createdTopics.push(topicCode);
       createdEvents.push(eventCode);
@@ -551,15 +587,19 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await page.goto(`${BASE_URL}/organizer/events/${eventCode}`);
 
       // Verify topic is assigned to event
-      await expect(page.locator(`text=Workflow Test Topic`)).toBeVisible();
+      await expect(page.locator(`text=${topicTitle}`)).toBeVisible();
     });
 
     test('should transition event workflow state when topic selected', async ({
       page,
       request,
     }) => {
-      // Create topic via UI and event for test setup
-      const topicCode = await createTopicViaUI(page, 'State Transition Test', 'technical');
+      // Create topic via UI and event for test setup with unique names
+      const topicCode = await createTopicViaUI(
+        page,
+        `State Transition Test ${Date.now()}`,
+        'technical'
+      );
       const eventCode = await createEventForTest(request);
       createdTopics.push(topicCode);
       createdEvents.push(eventCode);
