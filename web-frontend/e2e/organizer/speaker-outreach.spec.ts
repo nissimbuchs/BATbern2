@@ -29,10 +29,9 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { BASE_URL } from '../../playwright.config';
 
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-// const API_URL = process.env.E2E_API_URL || 'http://localhost:8080'; // Reserved for future API integration tests
+// Note: API_URL available from playwright.config when needed for future API integration tests
 
 // Note: loginAsOrganizer not needed - tests use global auth setup from playwright.config.ts
 // Kept for reference when implementing RED phase tests

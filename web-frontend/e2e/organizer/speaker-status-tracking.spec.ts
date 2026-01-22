@@ -34,9 +34,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
+import { BASE_URL } from '../../playwright.config';
 
 // Note: loginAsOrganizer not needed - tests use global auth setup from playwright.config.ts
 /* async function loginAsOrganizer(page: Page) {

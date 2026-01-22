@@ -20,9 +20,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+import { API_URL } from '../../../playwright.config';
 
 // Test data
 const TEST_COMPANIES = [
@@ -523,7 +521,7 @@ test.describe('Company Search - Advanced Query Patterns', () => {
     });
 
     const results = await response.json();
-    expect(results.every((c: any) => c.industry === 'Technology')).toBe(true);
+    expect(results.every((c: CompanySearchResponse) => c.industry === 'Technology')).toBe(true);
   });
 
   test.skip('should_sortResults_when_sortParameterProvided', async () => {

@@ -29,10 +29,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+import { BASE_URL, API_URL } from '../../playwright.config';
 
 // Test data - reference values only (NOT used for assertions)
 // Event type configurations are user-editable, so tests should NOT assert on specific values

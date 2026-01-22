@@ -18,9 +18,9 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { BASE_URL } from '../../playwright.config';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
 const MAILHOG_URL = process.env.MAILHOG_URL || 'http://localhost:8025';
 

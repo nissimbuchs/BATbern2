@@ -18,9 +18,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
+import { BASE_URL } from '../../../playwright.config';
 
 // ============================================================================
 // TEST GROUP 1: Event Dashboard Display (AC: 1, 2)

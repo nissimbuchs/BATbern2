@@ -16,9 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-
-// Test configuration
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+import { API_URL } from '../../../playwright.config';
 
 /**
  * Helper: Get authentication token from stored state

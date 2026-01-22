@@ -21,9 +21,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+import { API_URL } from '../../../playwright.config';
 
 // Test data
 // Note: Company name must not contain spaces due to Spring Security StrictHttpFirewall restrictions on URL encoding

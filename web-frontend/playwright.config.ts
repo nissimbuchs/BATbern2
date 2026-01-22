@@ -48,6 +48,11 @@ if (!envConfig) {
 
 console.log(`Running Playwright tests against: ${testEnv} (${envConfig.baseURL})`);
 
+// Export config for use in test files
+export const BASE_URL = envConfig.baseURL;
+export const API_URL = envConfig.apiURL;
+export const TEST_ENV = testEnv;
+
 export default defineConfig({
   testDir: './e2e',
 
