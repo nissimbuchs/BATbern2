@@ -34,7 +34,8 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
 
-// Test data - matches OpenAPI spec and database seed data (for future use)
+// Test data - reference values only (NOT used for assertions)
+// Event type configurations are user-editable, so tests should NOT assert on specific values
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EVENT_TYPES = {
   FULL_DAY: {
@@ -249,10 +250,23 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await expect(page.locator('[role="dialog"]')).toBeVisible();
       await expect(page.locator('h2')).toContainText('Edit Full Day Event Configuration');
 
-      // Verify all fields are editable
-      await expect(page.locator('input[name="minSlots"]')).toHaveValue('6');
-      await expect(page.locator('input[name="maxSlots"]')).toHaveValue('8');
-      await expect(page.locator('input[name="slotDuration"]')).toHaveValue('45');
+      // Verify all fields are editable (values are user-configurable)
+      const minSlotsInput = page.locator('input[name="minSlots"]');
+      const maxSlotsInput = page.locator('input[name="maxSlots"]');
+      const slotDurationInput = page.locator('input[name="slotDuration"]');
+
+      await expect(minSlotsInput).toBeVisible();
+      await expect(maxSlotsInput).toBeVisible();
+      await expect(slotDurationInput).toBeVisible();
+
+      // Verify values are numeric and valid
+      const minSlots = parseInt(await minSlotsInput.inputValue());
+      const maxSlots = parseInt(await maxSlotsInput.inputValue());
+      const slotDuration = parseInt(await slotDurationInput.inputValue());
+
+      expect(minSlots).toBeGreaterThan(0);
+      expect(maxSlots).toBeGreaterThanOrEqual(minSlots);
+      expect(slotDuration).toBeGreaterThanOrEqual(15);
     });
 
     test('should show live preview when editing configuration', async ({ page }) => {
@@ -292,12 +306,14 @@ test.describe('Event Types API Contract Tests (Story 5.1)', () => {
       const eventTypes: EventSlotConfigurationResponse[] = await response.json();
       expect(eventTypes).toHaveLength(3);
 
-      // Verify structure matches OpenAPI spec
+      // Verify structure matches OpenAPI spec (values are user-configurable)
       const fullDay = eventTypes.find((et) => et.type === 'FULL_DAY');
       expect(fullDay).toBeDefined();
-      expect(fullDay?.minSlots).toBe(6);
-      expect(fullDay?.maxSlots).toBe(8);
-      expect(fullDay?.slotDuration).toBe(45);
+
+      // After toBeDefined(), we can safely assert fullDay exists
+      expect(fullDay!.minSlots).toBeGreaterThan(0);
+      expect(fullDay!.maxSlots).toBeGreaterThanOrEqual(fullDay!.minSlots);
+      expect(fullDay!.slotDuration).toBeGreaterThanOrEqual(15);
     });
   });
 
@@ -309,8 +325,8 @@ test.describe('Event Types API Contract Tests (Story 5.1)', () => {
 
       const eventType: EventSlotConfigurationResponse = await response.json();
       expect(eventType.type).toBe('FULL_DAY');
-      expect(eventType.minSlots).toBe(6);
-      expect(eventType.maxSlots).toBe(8);
+      expect(eventType.minSlots).toBeGreaterThan(0);
+      expect(eventType.maxSlots).toBeGreaterThanOrEqual(eventType.minSlots);
     });
 
     test('should return 404 for non-existent event type', async ({ request }) => {
