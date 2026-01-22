@@ -13,12 +13,18 @@
  * IMPORTANT: Tests follow FULL CRUD lifecycle - no dependency on seed data
  * Each test creates its own topics/events and cleans up after itself.
  *
- * Test Pattern:
- * 1. Create topic (POST /api/v1/topics)
- * 2. Create event (POST /api/v1/events)
- * 3. Perform test actions
- * 4. Cleanup: Delete event (DELETE /api/v1/events/{eventCode})
- * 5. Cleanup: Delete topic (DELETE /api/v1/topics/{topicCode})
+ * Test Pattern (E2E Tests - UI-Based):
+ * 1. Create topic via UI (navigate, fill form, submit)
+ * 2. Create event via UI (navigate, fill form, submit)
+ * 3. Perform test actions through UI interactions
+ * 4. Cleanup: Delete event via UI
+ * 5. Cleanup: Delete topic via UI
+ *
+ * Test Pattern (API Contract Tests - API-Based):
+ * 1. Create topic via API (POST /api/v1/topics)
+ * 2. Create event via API (POST /api/v1/events)
+ * 3. Verify API contract and responses
+ * 4. Cleanup: Delete via API
  *
  * Setup Instructions:
  * 1. Ensure migration V14 is applied: topics, topic_usage_history tables
@@ -29,7 +35,7 @@
  * ✅ Fixed: All button selectors use data-testid attributes
  */
 
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
 import { BASE_URL, API_URL } from '../../playwright.config';
 
 // Type definitions for Story 5.2 API responses
@@ -52,8 +58,150 @@ interface EventResponse {
 }
 
 /**
- * Helper: Create a topic via API
+ * Helper: Create a topic via UI
  */
+async function createTopicViaUI(
+  page: Page,
+  title: string,
+  category: string = 'technical',
+  description: string = 'Test topic description'
+): Promise<string> {
+  await page.goto(`${BASE_URL}/organizer/topics`);
+
+  // Wait for page to load
+  await page.waitForLoadState('networkidle');
+
+  // Click "Create New Topic" button
+  await page.click('[data-testid="new-topic-button"]');
+
+  // Wait for modal to open
+  await expect(page.locator('[data-testid="create-topic-modal"]')).toBeVisible();
+
+  // Fill topic form in modal
+  await page.fill('[data-testid="topic-title-input"]', title);
+  await page.fill('[data-testid="topic-description-input"]', description);
+
+  // Select category from dropdown
+  await page.click('[data-testid="topic-category-select-input"]');
+  await page.click(`[data-testid="category-option-${category}"]`);
+
+  // Submit form
+  await page.click('[data-testid="submit-topic-button"]');
+
+  // Wait for modal to close
+  await expect(page.locator('[data-testid="create-topic-modal"]')).not.toBeVisible({
+    timeout: 10000,
+  });
+
+  // Extract topic code from the created topic card
+  const topicCard = page.locator(`[data-testid^="topic-card-"]:has-text("${title}")`);
+  await expect(topicCard).toBeVisible({ timeout: 10000 });
+  const testId = await topicCard.getAttribute('data-testid');
+  const topicCode = testId?.replace('topic-card-', '') || '';
+
+  return topicCode;
+}
+
+/**
+ * Helper: Delete a topic via UI
+ */
+async function deleteTopicViaUI(page: Page, topicCode: string): Promise<void> {
+  await page.goto(`${BASE_URL}/organizer/topics`);
+
+  // Wait for topic card to appear
+  const topicCard = page.locator(`[data-testid="topic-card-${topicCode}"]`);
+  const isVisible = await topicCard.isVisible().catch(() => false);
+
+  if (!isVisible) {
+    // Topic already deleted or doesn't exist
+    return;
+  }
+
+  // Click on the topic card to select it
+  await topicCard.click();
+
+  // Click delete button
+  await page.click('[data-testid="delete-topic-button"]');
+
+  // Confirm deletion in modal
+  await page.click('[data-testid="confirm-delete-button"]');
+
+  // Wait for success message or card to disappear
+  await page.waitForTimeout(1000);
+}
+
+/**
+ * Helper: Create an event (using API for test setup)
+ * Note: Event creation UI flow is complex and tested separately.
+ * For topic selection tests, events serve as test data setup.
+ */
+async function createEventForTest(
+  request: APIRequestContext,
+  title: string = `E2E Test Event ${Date.now()}`,
+  eventNumber: number = 999
+): Promise<string> {
+  const authToken = process.env.AUTH_TOKEN;
+  const response = await request.post(`${API_URL}/api/v1/events`, {
+    data: {
+      title,
+      eventNumber,
+      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      registrationDeadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+      venueName: 'Test Venue',
+      venueAddress: 'Test Address, Bern',
+      venueCapacity: 100,
+      eventType: 'EVENING',
+    },
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  expect(response.status()).toBe(201);
+  const event = await response.json();
+  return event.eventCode;
+}
+
+/**
+ * Helper: Delete an event (using API for test cleanup)
+ */
+async function deleteEventForTest(request: APIRequestContext, eventCode: string): Promise<void> {
+  const authToken = process.env.AUTH_TOKEN;
+  const response = await request.delete(`${API_URL}/api/v1/events/${eventCode}`, {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+    },
+  });
+
+  expect([200, 204, 404]).toContain(response.status());
+}
+
+/**
+ * Helper: Assign topic to event via UI
+ */
+async function assignTopicToEventViaUI(
+  page: Page,
+  eventCode: string,
+  topicCode: string
+): Promise<void> {
+  // Navigate to topic selection for this event
+  await page.goto(`${BASE_URL}/organizer/topics?eventCode=${eventCode}`);
+
+  // Wait for topics to load
+  await page.waitForTimeout(1000);
+
+  // Click on topic card
+  await page.click(`[data-testid="topic-card-${topicCode}"]`);
+
+  // Click "Select for Event" button
+  await page.click('[data-testid="select-topic-button"]');
+
+  // Wait for success
+  await expect(page.locator('[data-testid="success-message"]')).toBeVisible();
+}
+
+// API helpers for API contract tests only
 async function createTopicViaAPI(
   request: APIRequestContext,
   title: string,
@@ -77,9 +225,6 @@ async function createTopicViaAPI(
   return await response.json();
 }
 
-/**
- * Helper: Delete a topic via API
- */
 async function deleteTopicViaAPI(request: APIRequestContext, topicCode: string): Promise<void> {
   const authToken = process.env.AUTH_TOKEN;
   const response = await request.delete(`${API_URL}/api/v1/topics/${topicCode}`, {
@@ -88,13 +233,9 @@ async function deleteTopicViaAPI(request: APIRequestContext, topicCode: string):
     },
   });
 
-  // Accept 200 (deleted) or 404 (already deleted)
   expect([200, 204, 404]).toContain(response.status());
 }
 
-/**
- * Helper: Create an event via API
- */
 async function createEventViaAPI(
   request: APIRequestContext,
   title: string = `E2E Test Event ${Date.now()}`,
@@ -105,8 +246,8 @@ async function createEventViaAPI(
     data: {
       title,
       eventNumber,
-      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-      registrationDeadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days from now
+      date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      registrationDeadline: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
       venueName: 'Test Venue',
       venueAddress: 'Test Address, Bern',
       venueCapacity: 100,
@@ -122,9 +263,6 @@ async function createEventViaAPI(
   return await response.json();
 }
 
-/**
- * Helper: Delete an event via API
- */
 async function deleteEventViaAPI(request: APIRequestContext, eventCode: string): Promise<void> {
   const authToken = process.env.AUTH_TOKEN;
   const response = await request.delete(`${API_URL}/api/v1/events/${eventCode}`, {
@@ -133,32 +271,7 @@ async function deleteEventViaAPI(request: APIRequestContext, eventCode: string):
     },
   });
 
-  // Accept 200 (deleted) or 404 (already deleted)
   expect([200, 204, 404]).toContain(response.status());
-}
-
-/**
- * Helper: Assign topic to event via API
- */
-async function assignTopicToEventViaAPI(
-  request: APIRequestContext,
-  eventCode: string,
-  topicCode: string,
-  justification: string | null = null
-): Promise<void> {
-  const authToken = process.env.AUTH_TOKEN;
-  const response = await request.post(`${API_URL}/api/v1/events/${eventCode}/topics`, {
-    data: {
-      topicCode,
-      justification,
-    },
-    headers: {
-      Authorization: `Bearer ${authToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  expect(response.status()).toBe(200);
 }
 
 test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
@@ -166,27 +279,27 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   const createdTopics: string[] = [];
   const createdEvents: string[] = [];
 
-  test.afterEach(async ({ request }) => {
+  test.afterEach(async ({ page, request }) => {
     // Cleanup: Delete all created events first (they may reference topics)
     for (const eventCode of createdEvents) {
-      await deleteEventViaAPI(request, eventCode);
+      await deleteEventForTest(request, eventCode);
     }
     createdEvents.length = 0;
 
-    // Cleanup: Delete all created topics
+    // Cleanup: Delete all created topics via UI
     for (const topicCode of createdTopics) {
-      await deleteTopicViaAPI(request, topicCode);
+      await deleteTopicViaUI(page, topicCode);
     }
     createdTopics.length = 0;
   });
 
   test.describe('AC1: Topic Backlog Display', () => {
-    test('should display searchable list of all available topics', async ({ page, request }) => {
-      // Create test topics
-      const topic1 = await createTopicViaAPI(request, 'Cloud Architecture', 'technical');
-      const topic2 = await createTopicViaAPI(request, 'Sustainable Design', 'design');
-      const topic3 = await createTopicViaAPI(request, 'AI in Construction', 'technical');
-      createdTopics.push(topic1.topicCode, topic2.topicCode, topic3.topicCode);
+    test('should display searchable list of all available topics', async ({ page }) => {
+      // Create test topics via UI
+      const topicCode1 = await createTopicViaUI(page, 'Cloud Architecture', 'technical');
+      const topicCode2 = await createTopicViaUI(page, 'Sustainable Design', 'management');
+      const topicCode3 = await createTopicViaUI(page, 'AI in Construction', 'technical');
+      createdTopics.push(topicCode1, topicCode2, topicCode3);
 
       // Navigate to topic management
       await page.goto(`${BASE_URL}/organizer/topics`);
@@ -208,12 +321,12 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await expect(page.locator('text=AI in Construction')).toBeVisible();
     });
 
-    test('should filter topics by category', async ({ page, request }) => {
-      // Create topics in different categories
-      const topic1 = await createTopicViaAPI(request, 'DevOps Best Practices', 'technical');
-      const topic2 = await createTopicViaAPI(request, 'User Experience Design', 'design');
-      const topic3 = await createTopicViaAPI(request, 'Cloud Security', 'technical');
-      createdTopics.push(topic1.topicCode, topic2.topicCode, topic3.topicCode);
+    test('should filter topics by category', async ({ page }) => {
+      // Create topics in different categories via UI
+      const topicCode1 = await createTopicViaUI(page, 'DevOps Best Practices', 'technical');
+      const topicCode2 = await createTopicViaUI(page, 'User Experience Design', 'management');
+      const topicCode3 = await createTopicViaUI(page, 'Cloud Security', 'technical');
+      createdTopics.push(topicCode1, topicCode2, topicCode3);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
 
@@ -236,13 +349,13 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       page,
       request,
     }) => {
-      // Create event
-      const event = await createEventViaAPI(request);
-      createdEvents.push(event.eventCode);
+      // Create event for test
+      const eventCode = await createEventForTest(request);
+      createdEvents.push(eventCode);
 
       // Navigate to event details
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click(`[data-testid="event-card-${event.eventCode}"]`);
+      await page.click(`[data-testid="event-card-${eventCode}"]`);
 
       // Click "Select Topic" workflow button
       await page.click('[data-testid="workflow-button-select-topic"]');
@@ -254,15 +367,15 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   });
 
   test.describe('AC2: Heat Map Visualization', () => {
-    test('should display usage heat map for selected topic', async ({ page, request }) => {
-      // Create topic
-      const topic = await createTopicViaAPI(request, 'Microservices Architecture', 'technical');
-      createdTopics.push(topic.topicCode);
+    test('should display usage heat map for selected topic', async ({ page }) => {
+      // Create topic via UI
+      const topicCode = await createTopicViaUI(page, 'Microservices Architecture', 'technical');
+      createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
 
       // Click on the topic to view details
-      await page.click(`[data-testid="topic-card-${topic.topicCode}"]`);
+      await page.click(`[data-testid="topic-card-${topicCode}"]`);
 
       // Verify heat map component loads
       const heatMap = page.locator('[data-testid="topic-heat-map"]');
@@ -272,13 +385,13 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await expect(heatMap).toContainText('Q'); // Quarter markers
     });
 
-    test('should show quarterly usage frequency in heat map', async ({ page, request }) => {
-      // Create topic
-      const topic = await createTopicViaAPI(request, 'Test Topic for Heat Map', 'technical');
-      createdTopics.push(topic.topicCode);
+    test('should show quarterly usage frequency in heat map', async ({ page }) => {
+      // Create topic via UI
+      const topicCode = await createTopicViaUI(page, 'Test Topic for Heat Map', 'technical');
+      createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
-      await page.click(`[data-testid="topic-card-${topic.topicCode}"]`);
+      await page.click(`[data-testid="topic-card-${topicCode}"]`);
 
       // Verify heat map grid exists (4 quarters x 2 years = 8 cells)
       const heatMapCells = page.locator('[data-testid^="heat-map-cell-"]');
@@ -286,16 +399,13 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       expect(count).toBeGreaterThanOrEqual(4); // At least one year of quarters
     });
 
-    test('should display tooltip on hover showing attendance and engagement', async ({
-      page,
-      request,
-    }) => {
-      // Create topic
-      const topic = await createTopicViaAPI(request, 'Tooltip Test Topic', 'technical');
-      createdTopics.push(topic.topicCode);
+    test('should display tooltip on hover showing attendance and engagement', async ({ page }) => {
+      // Create topic via UI
+      const topicCode = await createTopicViaUI(page, 'Tooltip Test Topic', 'technical');
+      createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
-      await page.click(`[data-testid="topic-card-${topic.topicCode}"]`);
+      await page.click(`[data-testid="topic-card-${topicCode}"]`);
 
       // Hover over a heat map cell
       const heatMapCell = page.locator('[data-testid^="heat-map-cell-"]').first();
@@ -316,31 +426,30 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   test.describe('AC3: Color-Coded Freshness', () => {
     test('should display green color for newly created topics (not used, staleness 100)', async ({
       page,
-      request,
     }) => {
-      // Create fresh topic (staleness score should be 100)
-      const topic = await createTopicViaAPI(request, 'Brand New Topic', 'technical');
-      createdTopics.push(topic.topicCode);
+      // Create fresh topic via UI (staleness score should be 100)
+      const topicCode = await createTopicViaUI(page, 'Brand New Topic', 'technical');
+      createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
 
       // Wait for topic to appear
-      await expect(page.locator(`[data-testid="topic-card-${topic.topicCode}"]`)).toBeVisible();
+      await expect(page.locator(`[data-testid="topic-card-${topicCode}"]`)).toBeVisible();
 
       // Verify green freshness indicator (high staleness = fresh = green)
-      const topicCard = page.locator(`[data-testid="topic-card-${topic.topicCode}"]`);
+      const topicCard = page.locator(`[data-testid="topic-card-${topicCode}"]`);
       await expect(topicCard.locator('[data-freshness="green"]')).toBeVisible();
     });
 
-    test('should display staleness score badge', async ({ page, request }) => {
-      // Create topic
-      const topic = await createTopicViaAPI(request, 'Staleness Score Test', 'technical');
-      createdTopics.push(topic.topicCode);
+    test('should display staleness score badge', async ({ page }) => {
+      // Create topic via UI
+      const topicCode = await createTopicViaUI(page, 'Staleness Score Test', 'technical');
+      createdTopics.push(topicCode);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
 
       // Verify staleness score is displayed
-      const stalenessScore = page.locator(`[data-testid="staleness-score-${topic.topicCode}"]`);
+      const stalenessScore = page.locator(`[data-testid="staleness-score-${topicCode}"]`);
       await expect(stalenessScore).toBeVisible();
 
       // New topics should have score of 100
@@ -349,17 +458,17 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
   });
 
   test.describe('AC6: Staleness Score Display', () => {
-    test('should display 0-100 staleness score for each topic', async ({ page, request }) => {
-      // Create multiple topics
-      const topic1 = await createTopicViaAPI(request, 'Score Test 1', 'technical');
-      const topic2 = await createTopicViaAPI(request, 'Score Test 2', 'design');
-      createdTopics.push(topic1.topicCode, topic2.topicCode);
+    test('should display 0-100 staleness score for each topic', async ({ page }) => {
+      // Create multiple topics via UI
+      const topicCode1 = await createTopicViaUI(page, 'Score Test 1', 'technical');
+      const topicCode2 = await createTopicViaUI(page, 'Score Test 2', 'management');
+      createdTopics.push(topicCode1, topicCode2);
 
       await page.goto(`${BASE_URL}/organizer/topics`);
 
       // Verify staleness score badges exist
-      const score1 = page.locator(`[data-testid="staleness-score-${topic1.topicCode}"]`);
-      const score2 = page.locator(`[data-testid="staleness-score-${topic2.topicCode}"]`);
+      const score1 = page.locator(`[data-testid="staleness-score-${topicCode1}"]`);
+      const score2 = page.locator(`[data-testid="staleness-score-${topicCode2}"]`);
 
       await expect(score1).toBeVisible();
       await expect(score2).toBeVisible();
@@ -415,14 +524,14 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
 
   test.describe('AC14-16: Workflow Engine Integration', () => {
     test('should allow selecting topic for an event', async ({ page, request }) => {
-      // Create topic and event
-      const topic = await createTopicViaAPI(request, 'Workflow Test Topic', 'technical');
-      const event = await createEventViaAPI(request);
-      createdTopics.push(topic.topicCode);
-      createdEvents.push(event.eventCode);
+      // Create topic via UI and event for test setup
+      const topicCode = await createTopicViaUI(page, 'Workflow Test Topic', 'technical');
+      const eventCode = await createEventForTest(request);
+      createdTopics.push(topicCode);
+      createdEvents.push(eventCode);
 
       // Navigate to topic selection for this event
-      await page.goto(`${BASE_URL}/organizer/topics?eventCode=${event.eventCode}`);
+      await page.goto(`${BASE_URL}/organizer/topics?eventCode=${eventCode}`);
 
       // Wait for topics to load
       await expect(page.locator('[data-testid^="topic-card-"]')).toHaveCount(1, {
@@ -430,7 +539,7 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       });
 
       // Click on topic card
-      await page.click(`[data-testid="topic-card-${topic.topicCode}"]`);
+      await page.click(`[data-testid="topic-card-${topicCode}"]`);
 
       // Click "Select for Event" button
       await page.click('[data-testid="select-topic-button"]');
@@ -439,27 +548,27 @@ test.describe('Topic Selection & Heat Map (Story 5.2)', () => {
       await expect(page.locator('[data-testid="success-message"]')).toBeVisible();
 
       // Navigate back to event to verify assignment
-      await page.goto(`${BASE_URL}/organizer/events/${event.eventCode}`);
+      await page.goto(`${BASE_URL}/organizer/events/${eventCode}`);
 
       // Verify topic is assigned to event
-      await expect(page.locator(`text=${topic.title}`)).toBeVisible();
+      await expect(page.locator(`text=Workflow Test Topic`)).toBeVisible();
     });
 
     test('should transition event workflow state when topic selected', async ({
       page,
       request,
     }) => {
-      // Create topic and event
-      const topic = await createTopicViaAPI(request, 'State Transition Test', 'technical');
-      const event = await createEventViaAPI(request);
-      createdTopics.push(topic.topicCode);
-      createdEvents.push(event.eventCode);
+      // Create topic via UI and event for test setup
+      const topicCode = await createTopicViaUI(page, 'State Transition Test', 'technical');
+      const eventCode = await createEventForTest(request);
+      createdTopics.push(topicCode);
+      createdEvents.push(eventCode);
 
-      // Assign topic to event via API
-      await assignTopicToEventViaAPI(request, event.eventCode, topic.topicCode);
+      // Assign topic to event via UI
+      await assignTopicToEventViaUI(page, eventCode, topicCode);
 
       // Navigate to event details
-      await page.goto(`${BASE_URL}/organizer/events/${event.eventCode}`);
+      await page.goto(`${BASE_URL}/organizer/events/${eventCode}`);
 
       // Verify workflow state badge reflects topic selection
       const workflowBadge = page.locator('[data-testid="workflow-state-badge"]');

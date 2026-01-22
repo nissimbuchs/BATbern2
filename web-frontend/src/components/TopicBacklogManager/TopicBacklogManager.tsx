@@ -213,6 +213,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setCreateModalOpen(true)}
+          data-testid="new-topic-button"
         >
           {t('topicBacklog.createNew', 'Create New Topic')}
         </Button>
