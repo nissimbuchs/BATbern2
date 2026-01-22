@@ -156,7 +156,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
   };
 
   return (
-    <Container maxWidth="xl">
+    <Container maxWidth="xl" data-testid="topic-backlog-manager">
       {/* Title section - always visible, shows event context if available */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>

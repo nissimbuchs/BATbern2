@@ -151,7 +151,7 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
   }
 
   return (
-    <Card>
+    <Card data-testid="topic-heat-map">
       <CardContent>
         <Typography variant="h6" gutterBottom>
           {t('topicBacklog.heatMap.title', 'Usage Heat Map')}

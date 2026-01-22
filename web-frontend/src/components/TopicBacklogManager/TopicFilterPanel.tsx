@@ -57,6 +57,7 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
             value={filters.category || ''}
             onChange={handleCategoryChange}
             label={t('topicBacklog.filters.category', 'Category')}
+            data-testid="filter-category"
           >
             <MenuItem value="">
               <em>{t('topicBacklog.filters.all', 'All Categories')}</em>

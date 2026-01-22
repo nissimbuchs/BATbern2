@@ -77,9 +77,14 @@ export const TopicList: React.FC<TopicListProps> = ({
 
   return (
     <>
-      <List>
+      <List data-testid="topic-list">
         {topics.map((topic) => (
-          <ListItem key={topic.topicCode} disablePadding>
+          <ListItem
+            key={topic.topicCode}
+            disablePadding
+            data-testid={`topic-card-${topic.topicCode}`}
+            data-freshness={topic.colorZone}
+          >
             <ListItemButton
               selected={topic.topicCode === selectedTopicId}
               onClick={() => onTopicSelect(topic)}
@@ -104,6 +109,7 @@ export const TopicList: React.FC<TopicListProps> = ({
                       label={`${topic.stalenessScore}%`}
                       size="small"
                       color={getColorForStaleness(topic.stalenessScore)}
+                      data-testid={`staleness-score-${topic.topicCode}`}
                     />
                   </Box>
                 }
