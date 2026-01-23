@@ -58,6 +58,65 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle InvalidTokenException (magic link token invalid/expired/used)
+     * Returns HTTP 401 Unauthorized
+     * Story 6.2a: Invitation Response Portal
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenException(
+            InvalidTokenException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid token: {} - {}", ex.getErrorCode(), ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorCode", ex.getErrorCode());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Handle AlreadyRespondedException (speaker already responded to invitation)
+     * Returns HTTP 409 Conflict
+     * Story 6.2a: Invitation Response Portal - AC7
+     */
+    @ExceptionHandler(AlreadyRespondedException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyRespondedException(
+            AlreadyRespondedException ex,
+            HttpServletRequest request) {
+        log.warn("Already responded: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("previousResponse", ex.getPreviousResponse().toString());
+        if (ex.getRespondedAt() != null) {
+            details.put("respondedAt", ex.getRespondedAt().toString());
+        }
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle PropertyReferenceException (invalid field name in sort)
      * Returns HTTP 400 Bad Request
      */

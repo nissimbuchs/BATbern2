@@ -99,6 +99,9 @@ public class SecurityConfig {
                 // Story 6.1a: Speaker portal magic link validation (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
 
+                // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()

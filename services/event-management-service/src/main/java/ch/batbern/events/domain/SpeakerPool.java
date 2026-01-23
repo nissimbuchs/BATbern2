@@ -102,6 +102,37 @@ public class SpeakerPool {
     @Column(name = "content_deadline")
     private LocalDate contentDeadline;
 
+    // Story 6.2a: Speaker Response Portal fields
+    @Column(name = "accepted_at")
+    private Instant acceptedAt;
+
+    @Column(name = "declined_at")
+    private Instant declinedAt;
+
+    @Column(name = "decline_reason", columnDefinition = "TEXT")
+    private String declineReason;
+
+    @Column(name = "is_tentative")
+    private Boolean isTentative = false;
+
+    @Column(name = "tentative_reason", columnDefinition = "TEXT")
+    private String tentativeReason;
+
+    @Column(name = "preferred_time_slot", length = 100)
+    private String preferredTimeSlot;
+
+    @Column(name = "travel_requirements", columnDefinition = "TEXT")
+    private String travelRequirements;
+
+    @Column(name = "technical_requirements", columnDefinition = "TEXT")
+    private String technicalRequirements;
+
+    @Column(name = "initial_presentation_title", length = 500)
+    private String initialPresentationTitle;
+
+    @Column(name = "preference_comments", columnDefinition = "TEXT")
+    private String preferenceComments;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -238,6 +269,88 @@ public class SpeakerPool {
 
     public void setContentDeadline(LocalDate contentDeadline) {
         this.contentDeadline = contentDeadline;
+    }
+
+    // Story 6.2a: Speaker Response Portal getters and setters
+
+    public Instant getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(Instant acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public Instant getDeclinedAt() {
+        return declinedAt;
+    }
+
+    public void setDeclinedAt(Instant declinedAt) {
+        this.declinedAt = declinedAt;
+    }
+
+    public String getDeclineReason() {
+        return declineReason;
+    }
+
+    public void setDeclineReason(String declineReason) {
+        this.declineReason = declineReason;
+    }
+
+    public Boolean getIsTentative() {
+        return isTentative;
+    }
+
+    public void setIsTentative(Boolean isTentative) {
+        this.isTentative = isTentative;
+    }
+
+    public String getTentativeReason() {
+        return tentativeReason;
+    }
+
+    public void setTentativeReason(String tentativeReason) {
+        this.tentativeReason = tentativeReason;
+    }
+
+    public String getPreferredTimeSlot() {
+        return preferredTimeSlot;
+    }
+
+    public void setPreferredTimeSlot(String preferredTimeSlot) {
+        this.preferredTimeSlot = preferredTimeSlot;
+    }
+
+    public String getTravelRequirements() {
+        return travelRequirements;
+    }
+
+    public void setTravelRequirements(String travelRequirements) {
+        this.travelRequirements = travelRequirements;
+    }
+
+    public String getTechnicalRequirements() {
+        return technicalRequirements;
+    }
+
+    public void setTechnicalRequirements(String technicalRequirements) {
+        this.technicalRequirements = technicalRequirements;
+    }
+
+    public String getInitialPresentationTitle() {
+        return initialPresentationTitle;
+    }
+
+    public void setInitialPresentationTitle(String initialPresentationTitle) {
+        this.initialPresentationTitle = initialPresentationTitle;
+    }
+
+    public String getPreferenceComments() {
+        return preferenceComments;
+    }
+
+    public void setPreferenceComments(String preferenceComments) {
+        this.preferenceComments = preferenceComments;
     }
 
     @PrePersist

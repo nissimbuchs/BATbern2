@@ -191,6 +191,26 @@ public class MagicLinkService {
     }
 
     /**
+     * Mark a token as used without re-validating.
+     * Story 6.2a: Used after processing ACCEPT/DECLINE responses.
+     *
+     * @param plaintextToken the base64url-encoded token
+     */
+    @Transactional
+    public void markTokenAsUsed(String plaintextToken) {
+        String tokenHash = sha256(plaintextToken);
+        Optional<SpeakerInvitationToken> tokenOpt = tokenRepository.findByTokenHash(tokenHash);
+        if (tokenOpt.isPresent()) {
+            SpeakerInvitationToken token = tokenOpt.get();
+            if (!token.isUsed()) {
+                token.markAsUsed();
+                tokenRepository.save(token);
+                LOG.info("Token marked as used for speaker pool: {}", token.getSpeakerPoolId());
+            }
+        }
+    }
+
+    /**
      * Compute SHA-256 hash of the token.
      *
      * @param input the plaintext token
