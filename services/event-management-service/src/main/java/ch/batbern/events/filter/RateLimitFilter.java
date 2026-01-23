@@ -18,13 +18,13 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Rate Limiting Filter for public anonymous registration endpoints
+ * Rate Limiting Filter for public endpoints
  * <p>
  * QA Fix (SEC-001): Implements rate limiting to prevent abuse of public endpoints
  * <p>
  * Rate Limits:
- * - 10 requests per minute per IP address
- * - 5 requests per minute per email address
+ * - 10 requests per minute per IP for registration endpoints
+ * - 5 requests per minute per IP for speaker portal token validation (Story 6.1a AC5)
  * <p>
  * Uses Caffeine cache for in-memory rate limit tracking
  * <p>
@@ -38,10 +38,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int MAX_REQUESTS_PER_IP_PER_MINUTE = 10;
+    private static final int MAX_SPEAKER_PORTAL_REQUESTS_PER_IP_PER_MINUTE = 5;
     private static final Duration RATE_LIMIT_WINDOW = Duration.ofMinutes(1);
 
-    // Cache for tracking requests by IP
+    // Cache for tracking requests by IP for registration endpoints
     private final Cache<String, AtomicInteger> ipRequestCache = Caffeine.newBuilder()
+            .expireAfterWrite(RATE_LIMIT_WINDOW)
+            .maximumSize(10_000)
+            .build();
+
+    // Separate cache for speaker portal rate limiting (stricter limit)
+    private final Cache<String, AtomicInteger> speakerPortalRequestCache = Caffeine.newBuilder()
             .expireAfterWrite(RATE_LIMIT_WINDOW)
             .maximumSize(10_000)
             .build();
@@ -51,26 +58,37 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // Only apply rate limiting to public registration endpoints
         String requestUri = request.getRequestURI();
-        if (!shouldRateLimit(requestUri, request.getMethod())) {
+        String clientIp = getClientIp(request);
+
+        // Check speaker portal rate limit (stricter: 5/minute)
+        if (isSpeakerPortalEndpoint(requestUri, request.getMethod())) {
+            if (!checkSpeakerPortalRateLimit(clientIp)) {
+                log.warn("Speaker portal rate limit exceeded for IP: {}", clientIp);
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.setContentType("application/json");
+                response.getWriter().write(
+                    "{\"error\":\"Too many requests\",\"message\":\"Rate limit exceeded. "
+                    + "Please try again later.\",\"retryAfter\":60}"
+                );
+                return;
+            }
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Extract client IP address
-        String clientIp = getClientIp(request);
-
-        // Check IP-based rate limit
-        if (!checkIpRateLimit(clientIp)) {
-            log.warn("Rate limit exceeded for IP: {}", clientIp);
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType("application/json");
-            response.getWriter().write(
-                "{\"error\":\"Too many requests\",\"message\":\"Rate limit exceeded. "
-                + "Please try again later.\",\"retryAfter\":60}"
-            );
-            return;
+        // Check registration endpoint rate limit (10/minute)
+        if (isRegistrationEndpoint(requestUri, request.getMethod())) {
+            if (!checkIpRateLimit(clientIp)) {
+                log.warn("Rate limit exceeded for IP: {}", clientIp);
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.setContentType("application/json");
+                response.getWriter().write(
+                    "{\"error\":\"Too many requests\",\"message\":\"Rate limit exceeded. "
+                    + "Please try again later.\",\"retryAfter\":60}"
+                );
+                return;
+            }
         }
 
         // Proceed with request
@@ -78,10 +96,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Determine if rate limiting should be applied to this request
+     * Check if request is to speaker portal endpoint (Story 6.1a AC5)
      */
-    private boolean shouldRateLimit(String requestUri, String method) {
-        // Apply to POST requests to registration endpoints only
+    private boolean isSpeakerPortalEndpoint(String requestUri, String method) {
+        return "POST".equalsIgnoreCase(method)
+            && requestUri.contains("/api/v1/speaker-portal/validate-token");
+    }
+
+    /**
+     * Check if request is to registration endpoint
+     */
+    private boolean isRegistrationEndpoint(String requestUri, String method) {
         return "POST".equalsIgnoreCase(method)
             && requestUri.matches(".*/api/v1/events/[^/]+/registrations$");
     }
@@ -107,6 +132,33 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         log.debug("IP rate limit check passed: {} requests from IP: {}", currentCount, clientIp);
+        return true;
+    }
+
+    /**
+     * Check if IP address is within speaker portal rate limit (5/minute)
+     * Story 6.1a AC5: Rate limited: 5 requests/minute per IP
+     *
+     * @return true if request is allowed, false if limit exceeded
+     */
+    private boolean checkSpeakerPortalRateLimit(String clientIp) {
+        AtomicInteger requestCount = speakerPortalRequestCache.get(clientIp, k -> new AtomicInteger(0));
+
+        if (requestCount == null) {
+            requestCount = new AtomicInteger(0);
+            speakerPortalRequestCache.put(clientIp, requestCount);
+        }
+
+        int currentCount = requestCount.incrementAndGet();
+
+        if (currentCount > MAX_SPEAKER_PORTAL_REQUESTS_PER_IP_PER_MINUTE) {
+            log.debug("Speaker portal rate limit check failed: {} requests from IP: {}",
+                    currentCount, clientIp);
+            return false;
+        }
+
+        log.debug("Speaker portal rate limit check passed: {} requests from IP: {}",
+                currentCount, clientIp);
         return true;
     }
 
