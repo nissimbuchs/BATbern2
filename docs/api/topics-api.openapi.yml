@@ -619,7 +619,10 @@ components:
       required:
         - page
         - limit
-        - total
+        - totalItems
+        - totalPages
+        - hasNext
+        - hasPrev
       properties:
         page:
           type: integer
@@ -629,10 +632,23 @@ components:
           type: integer
           description: Items per page
           example: 20
-        total:
+        totalItems:
           type: integer
-          description: Total number of items
-          example: 42
+          format: int64
+          description: Total number of items across all pages
+          example: 87
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        hasNext:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        hasPrev:
+          type: boolean
+          description: Whether there is a previous page
+          example: false
 
     CreateTopicRequest:
       type: object

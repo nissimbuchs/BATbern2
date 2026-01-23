@@ -145,13 +145,14 @@ export const TopicList: React.FC<TopicListProps> = ({
       </List>
 
       {/* Pagination */}
-      {pagination.total > pagination.limit && (
+      {pagination.totalItems > pagination.limit && (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
           <Pagination
-            count={Math.ceil(pagination.total / pagination.limit)}
+            count={pagination.totalPages}
             page={pagination.page}
             onChange={(_, page) => onPageChange(page)}
             color="primary"
+            data-testid="topic-pagination"
           />
         </Box>
       )}

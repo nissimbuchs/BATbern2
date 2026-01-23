@@ -47,7 +47,14 @@ describe('TopicList', () => {
       <TopicList
         topics={mockTopics}
         onTopicSelect={vi.fn()}
-        pagination={{ page: 1, limit: 20, total: 2 }}
+        pagination={{
+          page: 1,
+          limit: 20,
+          totalItems: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }}
         onPageChange={vi.fn()}
       />
     );
@@ -62,7 +69,14 @@ describe('TopicList', () => {
       <TopicList
         topics={mockTopics}
         onTopicSelect={onTopicSelect}
-        pagination={{ page: 1, limit: 20, total: 2 }}
+        pagination={{
+          page: 1,
+          limit: 20,
+          totalItems: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }}
         onPageChange={vi.fn()}
       />
     );
@@ -77,7 +91,14 @@ describe('TopicList', () => {
         topics={mockTopics}
         selectedTopicId="cloud-native"
         onTopicSelect={vi.fn()}
-        pagination={{ page: 1, limit: 20, total: 2 }}
+        pagination={{
+          page: 1,
+          limit: 20,
+          totalItems: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }}
         onPageChange={vi.fn()}
       />
     );
@@ -90,7 +111,14 @@ describe('TopicList', () => {
       <TopicList
         topics={mockTopics}
         onTopicSelect={vi.fn()}
-        pagination={{ page: 1, limit: 20, total: 2 }}
+        pagination={{
+          page: 1,
+          limit: 20,
+          totalItems: 2,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }}
         onPageChange={vi.fn()}
       />
     );
@@ -105,7 +133,14 @@ describe('TopicList', () => {
       <TopicList
         topics={mockTopics}
         onTopicSelect={vi.fn()}
-        pagination={{ page: 1, limit: 20, total: 50 }}
+        pagination={{
+          page: 1,
+          limit: 20,
+          totalItems: 50,
+          totalPages: 3,
+          hasNext: true,
+          hasPrev: false,
+        }}
         onPageChange={onPageChange}
       />
     );
