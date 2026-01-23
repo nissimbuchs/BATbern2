@@ -96,6 +96,9 @@ public class SecurityConfig {
                 // Email cancellation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
+                // Story 6.1a: Speaker portal magic link validation (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()
