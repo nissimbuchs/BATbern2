@@ -33,6 +33,13 @@ public enum SpeakerWorkflowState {
     IDENTIFIED,
 
     /**
+     * Automated invitation email has been sent to the speaker.
+     * Distinct from CONTACTED (manual outreach) - used for automated invitation flow.
+     * Story 6.1b: Speaker Invitation System
+     */
+    INVITED,
+
+    /**
      * Organizer has made contact with the speaker.
      * Outreach has been recorded in speaker_outreach_history.
      * Story 5.3: Speaker Outreach Tracking workflow

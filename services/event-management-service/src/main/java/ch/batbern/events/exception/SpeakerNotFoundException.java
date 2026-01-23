@@ -19,4 +19,15 @@ public class SpeakerNotFoundException extends NotFoundException {
     public SpeakerNotFoundException(String message) {
         super(message);
     }
+
+    /**
+     * Constructor for speaker not found by username in event.
+     * Story 6.1b: Speaker Invitation System
+     *
+     * @param username the speaker's username
+     * @param eventCode the event code
+     */
+    public SpeakerNotFoundException(String username, String eventCode) {
+        super("Speaker with username '" + username + "' not found in event '" + eventCode + "'");
+    }
 }

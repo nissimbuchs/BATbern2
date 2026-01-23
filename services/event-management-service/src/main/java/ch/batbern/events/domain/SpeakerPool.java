@@ -17,6 +17,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -87,6 +88,19 @@ public class SpeakerPool {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // Story 6.1b: Speaker Invitation System fields
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "invited_at")
+    private Instant invitedAt;
+
+    @Column(name = "response_deadline")
+    private LocalDate responseDeadline;
+
+    @Column(name = "content_deadline")
+    private LocalDate contentDeadline;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -190,6 +204,40 @@ public class SpeakerPool {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Story 6.1b: Speaker Invitation System getters and setters
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Instant getInvitedAt() {
+        return invitedAt;
+    }
+
+    public void setInvitedAt(Instant invitedAt) {
+        this.invitedAt = invitedAt;
+    }
+
+    public LocalDate getResponseDeadline() {
+        return responseDeadline;
+    }
+
+    public void setResponseDeadline(LocalDate responseDeadline) {
+        this.responseDeadline = responseDeadline;
+    }
+
+    public LocalDate getContentDeadline() {
+        return contentDeadline;
+    }
+
+    public void setContentDeadline(LocalDate contentDeadline) {
+        this.contentDeadline = contentDeadline;
     }
 
     @PrePersist

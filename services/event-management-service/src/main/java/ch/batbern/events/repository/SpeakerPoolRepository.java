@@ -64,4 +64,35 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return optional speaker pool entry
      */
     java.util.Optional<SpeakerPool> findBySessionId(UUID sessionId);
+
+    // Story 6.1b: Speaker Invitation System
+
+    /**
+     * Find speaker pool entry by event and email.
+     * Used for idempotency check when inviting speakers.
+     *
+     * @param eventId the event ID
+     * @param email the speaker email
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findByEventIdAndEmail(UUID eventId, String email);
+
+    /**
+     * Find speaker pool entry by event and username.
+     * Used for sending invitations to existing speakers.
+     *
+     * @param eventId the event ID
+     * @param username the speaker username
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findByEventIdAndUsername(UUID eventId, String username);
+
+    /**
+     * Check if a speaker already exists in the pool for this event with the given email.
+     *
+     * @param eventId the event ID
+     * @param email the speaker email
+     * @return true if speaker exists
+     */
+    boolean existsByEventIdAndEmail(UUID eventId, String email);
 }
