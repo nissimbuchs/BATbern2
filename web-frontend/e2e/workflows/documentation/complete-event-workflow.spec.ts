@@ -390,7 +390,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForTimeout(1000);
 
       // Verify topic selection succeeded (should see speaker form)
-      await expect(page.getByRole('textbox', { name: /Referent Name/i })).toBeVisible({
+      await expect(page.getByTestId('speaker-name-field')).toBeVisible({
         timeout: 10000,
       });
       await capturer(page, 'topic-selection-confirmed', { scrollToTop: true });
@@ -744,7 +744,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
 
       // STEP 3: Return to Speakers tab (recording line 192)
       console.log('📍 Step 3: Return to Speakers tab');
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(1000); // Wait for tab switch and data load
 
       await capturer(page, 'speakers-tab-after-publish-topic', {
@@ -913,7 +913,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
 
       // STEP 3: Return to Speakers tab (recording line 240)
       console.log('📍 Step 3: Return to Speakers tab');
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(500);
 
       await capturer(page, 'speakers-tab-after-publish', {
@@ -989,7 +989,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       console.log('📍 Step 1: Navigate to Sessions view');
 
       // Click Speakers tab (should already be there, but ensure)
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(500);
 
       await capturer(page, 'speakers-tab-initial', {
