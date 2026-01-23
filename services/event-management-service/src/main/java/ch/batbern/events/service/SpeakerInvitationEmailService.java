@@ -134,10 +134,6 @@ public class SpeakerInvitationEmailService {
             String sessionTitle = "";
             String sessionDescription = "";
             if (speaker.getSessionId() != null) {
-                sessionRepository.findById(speaker.getSessionId())
-                        .ifPresent(session -> {
-                            // Can't modify local variables in lambda, handled differently
-                        });
                 Session session = sessionRepository.findById(speaker.getSessionId()).orElse(null);
                 if (session != null) {
                     sessionTitle = session.getTitle() != null ? session.getTitle() : "";

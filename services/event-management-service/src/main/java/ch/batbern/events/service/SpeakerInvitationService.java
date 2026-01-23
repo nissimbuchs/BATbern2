@@ -253,10 +253,33 @@ public class SpeakerInvitationService {
     private String getErrorCode(Exception e) {
         if (e instanceof IllegalArgumentException) {
             return "INVALID_REQUEST";
-        } else if (e.getClass().getSimpleName().contains("UserService")) {
+        } else if (e instanceof EventNotFoundException) {
+            return "EVENT_NOT_FOUND";
+        } else if (isUserServiceException(e)) {
             return "USER_SERVICE_ERROR";
         } else {
             return "INTERNAL_ERROR";
         }
+    }
+
+    /**
+     * Check if exception originated from UserApiClient communication.
+     */
+    private boolean isUserServiceException(Exception e) {
+        // Check exception class name for Feign/HTTP client errors
+        String className = e.getClass().getName();
+        if (className.contains("Feign") || className.contains("HttpClient")) {
+            return true;
+        }
+        // Check cause chain for user service related errors
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            String causeName = cause.getClass().getName();
+            if (causeName.contains("Feign") || causeName.contains("HttpClient")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
