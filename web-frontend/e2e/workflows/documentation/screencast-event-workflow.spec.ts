@@ -322,7 +322,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
 
-      await expect(page.getByRole('textbox', { name: /Referent Name/i })).toBeVisible({
+      await expect(page.getByTestId('speaker-name-field')).toBeVisible({
         timeout: 10000,
       });
       console.log(`    ✓ Topic selected (row ${row}, col ${column})`);
@@ -392,7 +392,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_23', 'Referenten zu READY verschieben');
       await page.waitForTimeout(1000);
 
-      const readyColumn = page.getByTestId('status-lane-ready');
+      const readyColumn = page.getByTestId('status-lane-READY');
       const speakersToMove = [
         { name: 'N Nissim ELCA AI', label: 'Nissim' },
         { name: 'B Balti Galenica AI', label: 'Balti' },
@@ -445,7 +445,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_24', 'Referenten zu ACCEPTED verschieben');
       await page.waitForTimeout(1000);
 
-      const acceptedColumn = page.getByTestId('status-lane-accepted');
+      const acceptedColumn = page.getByTestId('status-lane-ACCEPTED');
       await expect(acceptedColumn).toBeVisible({ timeout: 5000 });
 
       for (const speaker of speakersToMove) {
@@ -506,7 +506,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(1000);
       console.log('    ✓ Topic published');
 
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(1000);
       await waitForNarration('NARRATION_25', page);
 
@@ -575,7 +575,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(1000);
       console.log('    ✓ Speakers published');
 
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(500);
       await waitForNarration('NARRATION_27', page);
 
@@ -614,7 +614,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        * NARRATION_29: [instructional] Für die Slot-Zuweisung wechseln wir zur Sessions-Ansicht. Klicken Sie auf "Slot-Zuweisungen verwalten". [pause] Jetzt wird's zeitlich!
        */
       logNarration('NARRATION_29', 'Zur Sessions-Ansicht wechseln');
-      await page.getByRole('tab', { name: /Referenten|Speakers/i }).click();
+      await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(500);
 
       await page.getByTestId('sessions-view-toggle').click();
