@@ -87,6 +87,11 @@ const RegistrationConfirmationPage = React.lazy(
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
+// Story 6.2a: Speaker Portal - Invitation Response
+const InvitationResponsePage = React.lazy(
+  () => import('@pages/speaker-portal/InvitationResponsePage')
+);
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -214,6 +219,10 @@ function App() {
                     <Route path="/archive" element={<ArchivePage />} />
                     {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
                     <Route path="/archive/:eventCode" element={<HomePage />} />
+
+                    {/* Story 6.2a: Speaker Portal - Invitation Response */}
+                    <Route path="/speaker-portal/respond" element={<InvitationResponsePage />} />
+
                     <Route
                       path="/search"
                       element={
