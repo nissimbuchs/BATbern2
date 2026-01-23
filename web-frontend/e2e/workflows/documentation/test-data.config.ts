@@ -25,6 +25,7 @@ export const testConfig = {
     venue: {
       name: 'Zentrum Paul Klee',
       address: 'Monument im Fruchtland, 3000 Bern',
+      capacity: 150,
     },
     description: 'Demo Event for the Userguide',
     venueImagePath: 'ChatGPT Image 4. Jan. 2026, 21_01_32.png', // Will need to be adjusted to test fixture

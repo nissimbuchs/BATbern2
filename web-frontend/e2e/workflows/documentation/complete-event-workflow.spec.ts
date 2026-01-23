@@ -171,6 +171,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
           eventType: testConfig.event.eventType as 'EVENING' | 'AFTERNOON' | 'FULL_DAY',
           venueName: testConfig.event.venue.name,
           venueAddress: testConfig.event.venue.address,
+          venueCapacity: testConfig.event.venue.capacity,
           // venueImagePath: testConfig.event.venueImagePath  // Skip image upload for now
         },
         {
