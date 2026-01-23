@@ -1,11 +1,12 @@
 /**
- * Speaker Portal Service (Story 6.2a - Task 6)
+ * Speaker Portal Service (Story 6.2a/6.2b)
  *
  * API client for Speaker Portal endpoints.
  * These are PUBLIC endpoints authenticated via magic link token.
  * Features:
- * - Token validation
- * - Response submission (Accept/Decline/Tentative)
+ * - Token validation (6.1a)
+ * - Response submission (6.2a)
+ * - Profile management (6.2b)
  * - Error handling with correlation IDs
  */
 
@@ -91,6 +92,45 @@ export interface SpeakerPortalError {
   respondedAt?: string;
 }
 
+// ============================================================================
+// Story 6.2b: Profile Management Types
+// ============================================================================
+
+/**
+ * Combined speaker profile (User + Speaker data)
+ */
+export interface SpeakerProfile {
+  // User fields (from Company Service)
+  username: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  bio: string | null;
+  profilePictureUrl: string | null;
+  // Speaker fields (from Event Service)
+  expertiseAreas: string[];
+  speakingTopics: string[];
+  linkedInUrl: string | null;
+  languages: string[];
+  // Computed fields
+  profileCompleteness: number;
+  missingFields: string[];
+}
+
+/**
+ * Profile update request
+ */
+export interface ProfileUpdateRequest {
+  token: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  expertiseAreas?: string[];
+  speakingTopics?: string[];
+  linkedInUrl?: string;
+  languages?: string[];
+}
+
 /**
  * Speaker Portal Service Class
  *
@@ -138,6 +178,55 @@ class SpeakerPortalService {
         {
           headers: {
             // Public endpoint - skip auth header
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  // ==========================================================================
+  // Story 6.2b: Profile Management
+  // ==========================================================================
+
+  /**
+   * Get speaker profile.
+   * Story 6.2b: Profile view endpoint
+   *
+   * @param token Magic link token
+   * @returns Combined speaker profile (User + Speaker data)
+   */
+  async getProfile(token: string): Promise<SpeakerProfile> {
+    try {
+      const response = await apiClient.get<SpeakerProfile>(`${SPEAKER_PORTAL_API_PATH}/profile`, {
+        params: { token },
+        headers: {
+          'Skip-Auth': 'true',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Update speaker profile.
+   * Story 6.2b: Profile update endpoint
+   *
+   * @param request Profile update request with token and fields to update
+   * @returns Updated speaker profile
+   */
+  async updateProfile(request: ProfileUpdateRequest): Promise<SpeakerProfile> {
+    try {
+      const response = await apiClient.patch<SpeakerProfile>(
+        `${SPEAKER_PORTAL_API_PATH}/profile`,
+        request,
+        {
+          headers: {
             'Skip-Auth': 'true',
           },
         }

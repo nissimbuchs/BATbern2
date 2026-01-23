@@ -92,6 +92,9 @@ const InvitationResponsePage = React.lazy(
   () => import('@pages/speaker-portal/InvitationResponsePage')
 );
 
+// Story 6.2b: Speaker Portal - Profile Update
+const ProfileUpdatePage = React.lazy(() => import('@pages/speaker-portal/ProfileUpdatePage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -222,6 +225,9 @@ function App() {
 
                     {/* Story 6.2a: Speaker Portal - Invitation Response */}
                     <Route path="/speaker-portal/respond" element={<InvitationResponsePage />} />
+
+                    {/* Story 6.2b: Speaker Portal - Profile Update */}
+                    <Route path="/speaker-portal/profile" element={<ProfileUpdatePage />} />
 
                     <Route
                       path="/search"
