@@ -534,7 +534,7 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await capturer(page, 'kanban-contacted-state', { scrollToTop: true });
 
       // Get the READY column locator using test identifier
-      const readyColumn = page.getByTestId('status-lane-ready');
+      const readyColumn = page.getByTestId('status-lane-READY');
 
       // Drag each speaker from CONTACTED to READY
       const speakersToMove = [
@@ -609,11 +609,11 @@ test.describe.serial('Complete Event Workflow with Documentation Screenshots', (
       await page.waitForTimeout(1000);
 
       // Verify READY column is visible (to ensure we're looking at the kanban)
-      const readyColumnCheck = page.getByTestId('status-lane-ready');
+      const readyColumnCheck = page.getByTestId('status-lane-READY');
       await expect(readyColumnCheck).toBeVisible({ timeout: 5000 });
 
       // Get the ACCEPTED column locator using test identifier
-      const acceptedColumn = page.getByTestId('status-lane-accepted');
+      const acceptedColumn = page.getByTestId('status-lane-ACCEPTED');
 
       // Verify ACCEPTED column exists before starting
       await expect(acceptedColumn).toBeVisible({ timeout: 5000 });
