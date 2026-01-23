@@ -456,6 +456,74 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
+     * Update user profile fields.
+     * Story 6.2b: Speaker Profile Update Portal (AC10)
+     *
+     * @param username User's username
+     * @param updateDto fields to update
+     * @return Updated user profile
+     */
+    @Override
+    public UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto) {
+        log.debug("Updating user profile for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            headers.set("Content-Type", "application/json");
+            HttpEntity<ch.batbern.events.dto.UserUpdateDto> request = new HttpEntity<>(updateDto, headers);
+
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.PATCH,
+                    request,
+                    UserResponse.class
+            );
+
+            UserResponse user = response.getBody();
+            log.info("Successfully updated user profile for username: {}", username);
+            return user;
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found for update: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error updating user {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error updating user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for user {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for user {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error updating user {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error updating user: " + username,
+                    e
+            );
+        }
+    }
+
+    /**
      * Create HTTP headers with JWT token propagated from SecurityContext.
      *
      * Extracts the JWT token from the current security context and adds it

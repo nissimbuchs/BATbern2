@@ -101,4 +101,21 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     List<String> getOrganizerUsernames();
+
+    // Profile update methods (Story 6.2b)
+
+    /**
+     * Update user profile fields.
+     * Story 6.2b: Speaker Profile Update Portal (AC10)
+     *
+     * Used for syncing speaker profile updates to Company Service.
+     * Updates User fields: firstName, lastName, bio, profilePictureUrl.
+     *
+     * @param username User's username
+     * @param updateDto fields to update (null fields are ignored)
+     * @return Updated user profile
+     * @throws UserNotFoundException if user not found (404)
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto);
 }
