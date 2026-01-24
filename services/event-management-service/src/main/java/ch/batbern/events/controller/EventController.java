@@ -16,6 +16,7 @@ import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
+import ch.batbern.events.mapper.EventMapper;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
@@ -83,6 +84,7 @@ public class EventController {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
     private final LogoRepository logoRepository;
     private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
@@ -158,9 +160,9 @@ public class EventController {
                     // Handle registration count expansion
                     if (include != null && include.contains("registrations")) {
                         long regCount = registrationRepository.countByEventId(event.getId());
-                        response = EventResponse.fromEntity(event, regCount);
+                        response = eventMapper.toDto(event, regCount);
                     } else {
-                        response = EventResponse.fromEntity(event);
+                        response = eventMapper.toDto(event);
                     }
 
                     // Apply additional resource expansions if requested

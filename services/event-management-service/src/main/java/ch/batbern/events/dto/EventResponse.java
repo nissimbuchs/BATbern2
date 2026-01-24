@@ -55,7 +55,10 @@ public class EventResponse {
 
     /**
      * Convert Event entity to EventResponse DTO
+     * @deprecated Use {@link ch.batbern.events.mapper.EventMapper#toDto(Event)} instead.
+     *             Will be removed in Phase 3 of BAT-90.
      */
+    @Deprecated(forRemoval = true)
     public static EventResponse fromEntity(Event event) {
         return EventResponse.builder()
                 .eventCode(event.getEventCode())
@@ -92,7 +95,10 @@ public class EventResponse {
      * @param event The event entity
      * @param actualRegistrationCount The actual count from registrations table
      * @return EventResponse with accurate registration count
+     * @deprecated Use {@link ch.batbern.events.mapper.EventMapper#toDto(Event, long)} instead.
+     *             Will be removed in Phase 3 of BAT-90.
      */
+    @Deprecated(forRemoval = true)
     public static EventResponse fromEntity(Event event, long actualRegistrationCount) {
         return EventResponse.builder()
                 .eventCode(event.getEventCode())
