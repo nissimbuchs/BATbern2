@@ -497,8 +497,8 @@ describe('ArchivePage Component', () => {
       // Clear previous API calls
       vi.mocked(eventApiClient.getEvents).mockClear();
 
-      // Find and click the "Cloud Architecture" checkbox
-      const cloudCheckbox = screen.getByLabelText(/Cloud Architecture/i);
+      // Wait for topics to load and find the "Cloud Architecture" checkbox
+      const cloudCheckbox = await screen.findByLabelText(/Cloud Architecture/i);
       await user.click(cloudCheckbox);
 
       // Verify filters were applied by checking API call (URL params drive API calls)
