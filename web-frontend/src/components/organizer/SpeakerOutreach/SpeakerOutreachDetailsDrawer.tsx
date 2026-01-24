@@ -257,14 +257,15 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     value={formData.contactMethod}
                     onChange={(e) => handleContactMethodChange(e.target.value)}
                     label={t('speakerOutreach.contactMethod')}
+                    data-testid="contact-method-select"
                   >
-                    <MenuItem value="email">
+                    <MenuItem value="email" data-testid="contact-method-email">
                       {t('speakerOutreach.markContactedModal.method.email')}
                     </MenuItem>
-                    <MenuItem value="phone">
+                    <MenuItem value="phone" data-testid="contact-method-phone">
                       {t('speakerOutreach.markContactedModal.method.phone')}
                     </MenuItem>
-                    <MenuItem value="in_person">
+                    <MenuItem value="in_person" data-testid="contact-method-in_person">
                       {t('speakerOutreach.markContactedModal.method.inPerson')}
                     </MenuItem>
                   </Select>
@@ -297,6 +298,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   fullWidth
                   size="small"
                   placeholder={t('speakerOutreach.markContactedModal.notesPlaceholder')}
+                  inputProps={{ 'data-testid': 'contact-notes-field' }}
                 />
 
                 <Stack direction="row" spacing={1} justifyContent="flex-end">
@@ -308,6 +310,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     variant="contained"
                     onClick={handleSubmit}
                     disabled={recordOutreachMutation.isPending}
+                    data-testid="mark-contacted-button"
                   >
                     {recordOutreachMutation.isPending
                       ? t('common.saving')

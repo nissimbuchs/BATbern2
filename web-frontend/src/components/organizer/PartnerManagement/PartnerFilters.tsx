@@ -78,9 +78,10 @@ export const PartnerFilters: React.FC = () => {
             aria-label={t('filters.tier')}
             label={t('filters.tier')}
             onChange={handleTierChange}
+            data-testid="tier-filter-select"
           >
             {TIER_OPTIONS.map((tier) => (
-              <MenuItem key={tier} value={tier}>
+              <MenuItem key={tier} value={tier} data-testid={`tier-option-${tier.toLowerCase()}`}>
                 {tier === 'all'
                   ? t('filters.tierAll')
                   : `${TIER_EMOJIS[tier]} ${t(`tiers.${tier.toLowerCase()}`)}`}
@@ -99,9 +100,10 @@ export const PartnerFilters: React.FC = () => {
             label={t('filters.status')}
             aria-label={t('filters.status')}
             onChange={handleStatusChange}
+            data-testid="status-filter-select"
           >
             {STATUS_OPTIONS.map((status) => (
-              <MenuItem key={status} value={status}>
+              <MenuItem key={status} value={status} data-testid={`status-option-${status}`}>
                 {status === 'all'
                   ? t('filters.statusAll')
                   : status === 'active'
@@ -113,7 +115,13 @@ export const PartnerFilters: React.FC = () => {
         </FormControl>
 
         {/* Reset Filters Button */}
-        <Button variant="outlined" startIcon={<ClearIcon />} onClick={resetFilters} size="small">
+        <Button
+          variant="outlined"
+          startIcon={<ClearIcon />}
+          onClick={resetFilters}
+          size="small"
+          data-testid="reset-filters-button"
+        >
           {t('filters.reset')}
         </Button>
       </Stack>

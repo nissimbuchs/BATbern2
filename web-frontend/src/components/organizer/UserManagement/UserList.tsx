@@ -125,7 +125,7 @@ const UserList: React.FC = () => {
   const paginationData = data?.pagination;
 
   return (
-    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl">
         {/* Header */}
         <Stack
@@ -169,6 +169,7 @@ const UserList: React.FC = () => {
               color="primary"
               startIcon={<UploadIcon />}
               onClick={() => setParticipantImportModalOpen(true)}
+              data-testid="import-participants-button"
             >
               {t('participantImport.button')}
             </Button>

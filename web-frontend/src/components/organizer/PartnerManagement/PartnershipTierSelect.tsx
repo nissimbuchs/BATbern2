@@ -55,6 +55,7 @@ export const PartnershipTierSelect: React.FC<PartnershipTierSelectProps> = ({
         value={value}
         label="Partnership Tier"
         onChange={handleChange}
+        data-testid="partnership-tier-select"
         renderValue={(selected) => {
           if (!selected) return '';
           const tier = PARTNERSHIP_TIERS[selected as PartnershipLevel];

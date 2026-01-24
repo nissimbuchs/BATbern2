@@ -395,6 +395,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
             <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {/* First Name */}
               <TextField
+                name="firstName"
+                data-testid="user-create-firstName"
                 label={t('modal.createUser.firstName')}
                 value={formData.firstName}
                 onChange={handleInputChange('firstName')}
@@ -407,6 +409,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
 
               {/* Last Name */}
               <TextField
+                name="lastName"
+                data-testid="user-create-lastName"
                 label={t('modal.createUser.lastName')}
                 value={formData.lastName}
                 onChange={handleInputChange('lastName')}
@@ -421,6 +425,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
           {/* Email (only in create mode) */}
           {!isEditMode && (
             <TextField
+              name="email"
+              data-testid="user-create-email"
               label={t('modal.createUser.email')}
               type="email"
               value={formData.email}
@@ -472,6 +478,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                     key={role.value}
                     control={
                       <Checkbox
+                        data-testid={`user-create-role-${role.value}`}
+                        value={role.value}
                         checked={formData.initialRoles.includes(role.value)}
                         onChange={() => handleRoleToggle(role.value)}
                       />
@@ -481,7 +489,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                 ))}
               </FormGroup>
               {errors.initialRoles && (
-                <Typography variant="caption" color="error">
+                <Typography variant="caption" color="error" data-testid="user-create-role-error">
                   {errors.initialRoles}
                 </Typography>
               )}
@@ -498,7 +506,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={onClose} variant="outlined" data-testid="user-create-cancel">
           {t('actions.cancel')}
         </Button>
         <Button
@@ -506,6 +514,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
           variant="contained"
           color="primary"
           disabled={mutation.isPending}
+          data-testid="user-create-submit"
         >
           {mutation.isPending
             ? isEditMode

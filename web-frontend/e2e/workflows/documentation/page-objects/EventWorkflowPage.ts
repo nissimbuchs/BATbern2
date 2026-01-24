@@ -35,6 +35,7 @@ export class EventWorkflowPage {
   readonly registrationDeadlineField: Locator;
   readonly venueNameField: Locator;
   readonly venueAddressField: Locator;
+  readonly venueCapacityField: Locator;
   readonly fileDropzone: Locator;
   readonly saveAndCreateButton: Locator;
 
@@ -55,44 +56,48 @@ export class EventWorkflowPage {
   constructor(page: Page) {
     this.page = page;
 
-    // Authentication (lines 4-12 in recording)
-    this.loginLink = page.getByRole('link', { name: 'Anmelden' });
-    this.emailField = page.getByRole('textbox', { name: 'E-Mail-Adresse' });
-    this.passwordField = page.getByRole('textbox', { name: 'Passwort' });
-    this.rememberMeCheckbox = page.getByRole('checkbox', { name: 'Angemeldet bleiben' });
-    this.loginButton = page.getByRole('button', { name: 'Anmelden' });
+    // Authentication - NOT USED (global setup handles auth via localStorage)
+    this.loginLink = page.getByTestId('login-link');
+    this.emailField = page.getByTestId('email-field');
+    this.passwordField = page.getByTestId('password-field');
+    this.rememberMeCheckbox = page.getByTestId('remember-me-checkbox');
+    this.loginButton = page.getByTestId('login-button');
 
-    // Event Dashboard (lines 13-14)
-    this.createEventButton = page.getByRole('button', { name: 'Neue Veranstaltung' });
+    // Event Dashboard - Language-independent selectors
+    this.createEventButton = page.getByTestId('new-event-button');
 
-    // Event Creation Form (lines 15-34)
-    this.eventNumberField = page.getByRole('spinbutton', { name: 'Veranstaltungsnummer' });
-    this.eventTitleField = page.getByRole('textbox', { name: 'Titel' });
-    this.eventDescriptionField = page.getByRole('textbox', { name: 'Beschreibung' });
-    this.eventDateField = page.getByRole('textbox', { name: 'Veranstaltungsdatum' });
-    this.registrationDeadlineField = page.getByRole('textbox', { name: 'Anmeldefrist' });
-    this.venueNameField = page.getByRole('textbox', { name: 'Veranstaltungsort', exact: true });
-    this.venueAddressField = page.getByRole('textbox', { name: 'Adresse des Veranstaltungsorts' });
+    // Event Creation Form - Language-independent selectors (target input inside TextField)
+    this.eventNumberField = page.getByTestId('event-number-field').locator('input');
+    this.eventTitleField = page.getByTestId('event-title-field').locator('input');
+    this.eventDescriptionField = page
+      .getByTestId('event-description-field')
+      .locator('textarea')
+      .first();
+    this.eventDateField = page.getByTestId('event-date-field').locator('input');
+    this.registrationDeadlineField = page
+      .getByTestId('registration-deadline-field')
+      .locator('input');
+    this.venueNameField = page.getByTestId('venue-name-field').locator('input');
+    this.venueAddressField = page.getByTestId('venue-address-field').locator('input');
+    this.venueCapacityField = page.getByTestId('venue-capacity-field').locator('input');
     this.fileDropzone = page.getByTestId('file-dropzone');
-    this.saveAndCreateButton = page.getByRole('button', { name: 'Speichern & Erstellen' });
+    this.saveAndCreateButton = page.getByTestId('save-create-event-button');
 
-    // Workflow Navigation Tabs (lines 250, 246, 185, 257)
-    this.overviewTab = page.getByRole('tab', { name: 'Übersicht' });
-    this.speakersTab = page.getByRole('tab', { name: 'Referenten' });
-    this.publishingTab = page.getByRole('tab', { name: 'Veröffentlichung' });
-    this.settingsTab = page.getByRole('tab', { name: 'Einstellungen' });
+    // Workflow Navigation Tabs - Language-independent selectors
+    this.overviewTab = page.getByTestId('event-tab-overview');
+    this.speakersTab = page.getByTestId('event-tab-speakers');
+    this.publishingTab = page.getByTestId('event-tab-publishing');
+    this.settingsTab = page.getByTestId('event-tab-settings');
 
-    // Workflow State Management (lines 251-256)
-    this.editButton = page.getByRole('button', { name: 'Bearbeiten' });
-    this.workflowStatusSelect = page.getByRole('combobox', { name: 'Slot-Zuweisung' });
-    this.overrideValidationCheckbox = page.getByRole('checkbox', {
-      name: 'Override workflow validation',
-    });
-    this.saveButton = page.getByRole('button', { name: 'Speichern' });
+    // Workflow State Management - Language-independent selectors
+    this.editButton = page.getByTestId('edit-event-button');
+    this.workflowStatusSelect = page.getByTestId('event-status-select');
+    this.overrideValidationCheckbox = page.getByTestId('override-workflow-validation-checkbox');
+    this.saveButton = page.getByTestId('save-event-button');
 
-    // Event Deletion (lines 258-259)
-    this.deleteEventButton = page.getByRole('button', { name: 'Delete Event' });
-    this.confirmDeleteButton = page.getByRole('button', { name: 'Yes, Delete Event' });
+    // Event Deletion - Language-independent selectors
+    this.deleteEventButton = page.getByTestId('delete-event-button');
+    this.confirmDeleteButton = page.getByTestId('confirm-delete-button');
   }
 
   /**
@@ -175,6 +180,7 @@ export class EventWorkflowPage {
       eventType: 'EVENING' | 'AFTERNOON' | 'FULL_DAY';
       venueName: string;
       venueAddress: string;
+      venueCapacity: number;
       venueImagePath?: string;
     },
     options?: {
@@ -208,6 +214,8 @@ export class EventWorkflowPage {
     await this.venueNameField.fill(eventData.venueName);
     console.log('    → Filling venue address');
     await this.venueAddressField.fill(eventData.venueAddress);
+    console.log('    → Filling venue capacity');
+    await this.venueCapacityField.fill(eventData.venueCapacity.toString());
 
     // Upload venue image if provided
     if (eventData.venueImagePath) {

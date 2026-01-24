@@ -204,10 +204,15 @@ const TaskBoardPage: React.FC = () => {
               value={filter}
               onChange={(e) => setFilter(e.target.value as 'all' | 'mine')}
               label={t('tasks.filter', 'Filter')}
+              data-testid="task-filter-select"
               sx={{ minWidth: 150 }}
             >
-              <MenuItem value="mine">{t('tasks.myTasks', 'My Tasks')}</MenuItem>
-              <MenuItem value="all">{t('tasks.allTasks', 'All Tasks')}</MenuItem>
+              <MenuItem value="mine" data-testid="task-filter-option-mine">
+                {t('tasks.myTasks', 'My Tasks')}
+              </MenuItem>
+              <MenuItem value="all" data-testid="task-filter-option-all">
+                {t('tasks.allTasks', 'All Tasks')}
+              </MenuItem>
             </TextField>
 
             <TextField

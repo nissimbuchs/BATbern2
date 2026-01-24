@@ -68,4 +68,4 @@
 
 [short pause] Für Test-Zwecke können Sie die Workflow-Validierung überschreiben. Aktivieren Sie die Checkbox "Workflow-Validierung überschreiben" und klicken Sie auf "Speichern".
 
-[pause] Damit ist der vollständige Event-Workflow abgeschlossen. [satisfied] Vielen Dank für Ihre Aufmerksamkeit.
+[pause] [triumphant] Damit ist der vollständige Event-Workflow abgeschlossen! [excited] Von der ersten Idee bis zum Archiv, wir haben die ganze Reise gemeinsam gemacht! [satisfied] Sie sind jetzt ein Event-Management-Profi! [cheerful] Vielen Dank für Ihre Aufmerksamkeit! [playful] Und denken Sie daran: Events planen macht Spaß, [chuckling] zumindest mit der richtigen Software! [laughing] Tschüss! Wir sehen uns am nächsten BATbern. [cheerful] Gruss vom Creator Nissim.

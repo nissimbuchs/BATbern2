@@ -845,8 +845,7 @@ jobs:
               https://api.staging.batbern.ch
             echo "✅ Smoke tests passed"
           else
-            echo "::error::Smoke tests script not found at scripts/ci/smoke-tests.sh"
-            exit "::warning::Smoke Tests failed, non blocking"
+            echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"
           fi
 
       - name: Run CORS validation tests

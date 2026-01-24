@@ -210,7 +210,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
           onClick={onReload}
           disabled={isLoading}
           size="small"
-          aria-label="Reload notifications"
+          aria-label="reload activity feed"
         >
           <RefreshIcon />
         </IconButton>
@@ -222,7 +222,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       </Typography>
 
       {/* Notification list */}
-      <List>
+      <List data-testid="team-activity-feed">
         {displayedNotifications.map((notification) => {
           const relativeTime = formatDistanceToNow(new Date(notification.createdAt), {
             locale,
