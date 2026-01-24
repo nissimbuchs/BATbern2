@@ -52,6 +52,7 @@ export const PartnerSearch: React.FC = () => {
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       placeholder={t('searchPlaceholder')}
+      data-testid="partner-search-input"
       inputProps={{
         'aria-label': t('searchAriaLabel'),
       }}

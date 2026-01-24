@@ -1,0 +1,71 @@
+[excited] Welcome to the BATbern Event Management Platform! [playful] Today I'll show you how to plan an event without losing your mind. [chuckling] We'll go through the complete event lifecycle, from "Oh no, we need an event!" to "Finally over, off to the archive!" [pause] In this video, you'll see all the important steps an organizer takes to plan a Berner Architekten Treffen, without panicking.
+
+[cheerful] We begin at the Event Dashboard. [playful] This is basically your command center, where you keep track of all events you've ever organized or will organize in the future. [pause] Authentication via AWS Cognito is already done. [satisfied] You can see your username in the top right, and with that, you have the power to use all functions as an organizer. [dramatic] With great power comes great responsibility!
+
+[enthusiastic] Now let's create a brand new event! [excited] Click the "New Event" button in the top right. [pause] Boom! A modal form appears. [playful] Don't worry, it looks like a lot, but we'll fill it out together.
+
+[professional] Event Number. [casual] A unique identifier for this event. The system internally uses the format "BATbern" followed by the number. [playful] Basically the birth certificate of your event. This serves for identification in the database and in URLs.
+
+[short pause] Title. [cheerful] Here comes the name that should excite your participants! [playful] "Boring Architecture Event Number 47" would be honest, but maybe not the best choice. [chuckling] Choose something meaningful that people will see on the public website.
+
+[short pause] Description. [casual] A brief explanation of the event topic. [helpful] This information helps interested people understand why they absolutely should register. [playful] Or at least what it's all about.
+
+[pause] Event Type. [professional] Choose between three formats: [clear] "Evening" for after-work events, [cheerful] where you can network a bit after work. "Afternoon" for afternoon sessions, [playful] perfect for those who prefer to be on the couch in the evening. [pause] Or "Full Day" for all-day conferences. [dramatic] You'll need lots of coffee for that! [short pause] This affects scheduling and slot management.
+
+[professional] Date and Registration Deadline. [clear] The event date determines when the event takes place. [playful] Please choose a date in the future, we don't support time travel yet. [chuckling] The registration deadline is important for participant management.
+
+[short pause] Venue. [casual] Name and address of the venue. [playful] So not "in my basement," but a real place with an address. [cheerful] This information will be displayed on the public website so people can actually find their way there.
+
+[satisfied] We click "Save" and the event is created. [excited] Tada! [pause] The system automatically returns to the dashboard, and there it is! Your brand new event in the list. [playful] Your baby is born!
+
+[pause] After event creation, we navigate to the event detail page. [professional] Here we can assign tasks to team members. [playful] Because why should you do everything alone when you have a whole team? [chuckling] Click "Edit" to open the event form again.
+
+[clear] Switch to the "Tasks" tab. [professional] Here you see a predefined list of standard tasks that come up with every event. [playful] The system knows its stuff, it knows what needs to be done. [pause] For each task, we select a responsible organizer from the dropdown menu. [helpful] This ensures that all important activities are clearly assigned and nothing gets forgotten. [dramatic] Because forgotten tasks lead to chaos, and chaos leads to... well, more chaos.
+
+[confident] After assigning, we click "Save". [satisfied] The system saves all tasks and returns to the event detail page. [cheerful] Perfect!
+
+[pause] To review the tasks, we navigate to the task list. [informative] First you see the default filter "My Tasks," which only shows your own tasks. [playful] But we're curious and want to know what the others are up to. [chuckling] We change the filter to "All Tasks" to see all assignments. This gives an overview of responsibilities across the entire team. [whispers] And who might not have anything to do right now.
+
+[excited] Back on the event detail page, we begin with content planning! [enthusiastic] The first step is topic selection. Click "Select Topic".
+
+[cheerful] A view opens with various topic categories. The default view shows a list, [excited] but we use the Heat Map for a better overview. [playful] Because who doesn't love a good heat map?
+
+[curious] The Heat Map is a two-dimensional matrix that visualizes topics by their popularity and recency. [excited] Light colors show popular topics, [casual] basically the rockstars among architecture topics. [pause] Darker colors show less frequently chosen topics. [playful] The underdogs who also deserve a chance. [helpful] This helps with strategic topic planning based on participant interests.
+
+[instructional] We select a topic from the Heat Map by clicking on a cell. [satisfied] The system marks the selection and displays details. [excited] After confirmation, the system saves the chosen topic and automatically opens the speaker brainstorming view. [playful] The system is like a good assistant, it always knows what comes next!
+
+[enthusiastic] Now we collect potential speakers for the chosen topic! [professional] In this phase, we create a pool of candidates we'll contact later. [pause] We add four speaker candidates. [strategic] This gives us enough options for outreach, in case not everyone accepts. [playful] Because speakers are like cats - sometimes they just say no for no reason at all.
+
+[confident] After adding all candidates, we click "Continue to Outreach". [satisfied] The system automatically switches to the Kanban view, where we can track contact status. [excited] Kanban! That sounds important and organized!
+
+[professional] We're now in the speaker outreach phase. [informative] The Kanban board shows multiple columns that represent the workflow. [playful] From "Who's that?" through "Contacted" to "Hooray, they said yes!" [helpful] This visualization gives a quick overview of the progress in speaker acquisition.
+
+[methodical] Now we systematically contact all speaker candidates. [instructional] For each candidate, we click on the card and open the contact dialog. [professional] This documentation is important for tracking and for other team members who need to check the status. [playful] Otherwise next week someone asks: "Did we contact them already?" And nobody knows. [chuckling] Chaos avoided!
+
+[positive] After receiving positive responses, [excited] we move speakers through the workflow! [playful] It's like Tetris, but with people. [instructional] We use drag-and-drop to move cards between columns. [clear] We move four speakers to the "READY" column.
+
+[confident] In the next step, we move speakers from "READY" to "ACCEPTED". [satisfied] All four READY speakers are moved to ACCEPTED. [excited] Smooth as butter!
+
+[important] Before speakers can submit their content, we need to publish the topic. [instructional] We navigate to the "Publishing" tab and click "Publish Topic". [informative] In the lower area, there's a preview of the event on the public page. [satisfied] Nice, right?
+
+[professional] Back in the Speakers tab, we now submit presentation content for each speaker. [casual] Title, abstract, the usual suspects. [methodical] We repeat this process for all three speakers with confirmed presentations. [playful] Copy, paste, repeat. [chuckling] No, just kidding, each speaker has unique content, of course!
+
+[pause] After content submission comes quality review. [professional] Now that we have the content, we can publish the speakers. [instructional] We click "Publish Speakers". [excited] And here comes the best part! [satisfied] Now on the public website, not only the topic is visible, but also the confirmed speakers with their topics. [cheerful] The world can see it!
+
+[professional] Back in the Speakers tab, we now review and approve each submitted presentation. [playful] Now we're playing quality control. [pause] Looks good, looks good, that too. [confident] We approve all three presentations. [satisfied] Green light for everyone!
+
+[instructional] For slot assignment, we switch to the Sessions view. Click "Manage Slot Assignments". [pause] Now we're getting into the timing!
+
+[enthusiastic] For quick initial planning, we use the Auto-Assign function. [excited] The system performs automatic assignment. [playful] Magic! The system does the work. [informative] Manual assignment via drag-and-drop is also possible here. [casual] In case you don't trust the computer or just like moving things around.
+
+[calm] After slot assignment, we click "Back to Event".
+
+[dramatic] The final step is agenda publication! [enthusiastic] The grand finale! [instructional] Click "Publish Agenda". [triumphant] And... [excited] The event is now fully planned and publicly accessible including detailed agenda! [cheerful] Confetti! Fireworks! Okay, maybe just in your mind, but still! [satisfied] We made it!
+
+[pause] After conducting the event, we archive it for history. [professional] Switch to the "Overview" tab and click "Edit". [playful] Time to retire the event.
+
+[clear] In the form, select "ARCHIVED" as status. [casual] The event was great, but now it's history.
+
+[informative] For testing purposes, you can override workflow validation. [instructional] Enable the checkbox "Override Workflow Validation" and click "Save". [playful] This is basically the emergency exit, in case things don't go according to plan.
+
+[triumphant] And that completes the full event workflow! [excited] From the first idea to the archive, we've made the whole journey together! [satisfied] You're now an event management pro! [cheerful] Thank you for your attention! [playful] And remember: planning events is fun, [chuckling] at least with the right software! [laughing] See you next time. [cheerful] Greetings from Creator Nissim.

@@ -1,0 +1,71 @@
+[excited] Welcome to the BATbern Event Management Platform. In this comprehensive tutorial, we will walk through the complete event lifecycle, from initial creation to final archiving of an event. [pause] In this video, you will see all the important steps that an organizer performs to plan and execute a Berner Architekten Treffen event.
+
+[short pause] We begin at the Event Dashboard. Here you see an overview of all upcoming and past events. Authentication is handled through AWS Cognito and has already been completed. You can see your username in the top right corner and have access to all organizer functions.
+
+[pause] Now we will create a new event. Click the "New Event" button in the top right corner. A modal form opens with all the important fields. We will enter the following information.
+
+[short pause] Event number. A unique identifier for this event. The system internally uses the format "BATbern" followed by the number. This serves to identify the event in the database and in URLs.
+
+[short pause] Title. A meaningful name for the event that participants will see on the public website.
+
+[short pause] Description. A brief explanation of the event topic. This information helps interested parties during registration.
+
+[short pause] Event type. Choose between three formats: [pause] Evening for after-work events, Afternoon for afternoon events, or Full-day for all-day conferences. This influences time planning and slot management.
+
+[short pause] Date and registration deadline. The event date determines when the event takes place. The registration deadline is important for participant management.
+
+[short pause] Venue. Name and address of the event location. This information will be displayed on the public website.
+
+[pause] We click "Save" and the event is created. The system automatically returns to the dashboard, where you can see the new event in the list.
+
+[pause] After event creation, we navigate to the event detail page. Here we can assign tasks to team members. Click "Edit" to reopen the event form.
+
+[short pause] Switch to the "Tasks" tab. Here you see a predefined list of standard tasks that occur with every event. For each task, we select a responsible organizer from the dropdown menu. This ensures that all important activities are clearly assigned and nothing is forgotten.
+
+[pause] After assignment, we click "Save". The system saves all tasks and returns to the event detail page.
+
+[pause] To review the tasks, we navigate to the task list. Initially, you see the default filter "My Tasks", which shows only your own tasks. We change the filter to "All Tasks" to see all assignments. This provides an overview of responsibilities across the entire team.
+
+[pause] Back on the event detail page, we begin with content planning. The first step is topic selection. Click "Select Topic".
+
+[short pause] A view opens with various topic categories. The default view shows a list, but we use the Heat Map for a better overview.
+
+[curious] The Heat Map is a two-dimensional matrix that visualizes topics by their popularity and timeliness. [excited] Bright colors show popular topics, darker ones show less frequently chosen topics. [pause] This helps with strategic topic planning based on participant interests.
+
+[short pause] We select a topic from the Heat Map by clicking on a cell. The system marks the selection and displays details. After confirmation, the system saves the selected topic and automatically opens the speaker brainstorming view.
+
+[pause] Now we collect potential speakers for the selected topic. In this phase, we create a pool of candidates that we will contact later. We add four speaker candidates. This gives us sufficient options for outreach, in case not everyone accepts.
+
+[pause] After adding all candidates, we click "Proceed to Contact". The system automatically switches to the Kanban view, where we can track the contact status.
+
+[short pause] We are now in the speaker contact phase. The Kanban board shows several columns that represent the workflow. This visualization provides a quick overview of the progress of speaker acquisition.
+
+[pause] Now we systematically contact all speaker candidates. For each candidate, we click on the card and open the contact dialog. This documentation is important for tracking and for other team members who need to view the status.
+
+[pause] After receiving positive responses, we move speakers through the workflow. We use drag-and-drop to move cards between columns. We move four speakers to the "READY" column.
+
+[short pause] In the next step, we move speakers from "READY" to "ACCEPTED". All four READY speakers are moved to ACCEPTED.
+
+[pause] Before speakers can submit their content, we must publish the topic. We navigate to the "Publication" tab and click "Publish Topic". In the lower area, a preview of the event on the public page is visible.
+
+[pause] Back in the speakers tab, we now submit presentation content for each speaker. We repeat this process for all three speakers with confirmed presentations.
+
+[pause] After content submission comes quality review. Now that we have the content, we can publish the speakers. We click "Publish Speakers". [satisfied] Now on the public website, not only the topic but also the confirmed speakers with their topics are visible.
+
+[pause] Back in the speakers tab, we now review and approve each submitted presentation. We approve all three presentations.
+
+[pause] For slot assignment, we switch to the Sessions view. Click "Manage Slot Assignments".
+
+[short pause] For quick initial planning, we use the Auto-Assign function. The system performs automatic assignment. Manual assignment is also possible here through drag-and-drop.
+
+[short pause] After slot assignment, we click "Back to Event".
+
+[pause] The final step is agenda publication. Click "Publish Agenda". [satisfied] The event is now fully planned and publicly accessible including detailed agenda.
+
+[pause] After the event has taken place, we archive it for historical records. Switch to the "Overview" tab and click "Edit".
+
+[short pause] In the form, select "ARCHIVED" as the status.
+
+[short pause] For testing purposes, you can override the workflow validation. Activate the "Override Workflow Validation" checkbox and click "Save".
+
+[pause] [triumphant] This completes the complete event workflow! [Excited] From the first idea to the archive, we did the whole trip together! [Satisfied] You are now an event management professional! [Cheerful] Thank you for your attention! [Playful] And remember: planning events is fun, [chuckling] at least with the right software! [Laughing] Bye! See you next time. [cheerful] Greetings from Creator Nissim.

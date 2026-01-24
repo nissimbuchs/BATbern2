@@ -613,8 +613,16 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
 
   return (
     <>
-      <Dialog open={open} onClose={handleCloseClick} maxWidth="md" fullWidth>
-        <DialogTitle>{mode === 'create' ? t('form.createEvent') : t('form.editEvent')}</DialogTitle>
+      <Dialog
+        open={open}
+        onClose={handleCloseClick}
+        maxWidth="md"
+        fullWidth
+        data-testid={mode === 'create' ? 'create-event-modal' : 'event-edit-modal'}
+      >
+        <DialogTitle data-testid="event-form-dialog-title">
+          {mode === 'create' ? t('form.createEvent') : t('form.editEvent')}
+        </DialogTitle>
 
         {/* Tabs - Story 5.5 Phase 6 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -631,7 +639,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         <DialogContent>
           {/* Tab Panel 0: Info (Event Form) */}
           {currentTab === 0 && (
-            <Box sx={{ pt: 2 }}>
+            <Box
+              sx={{ pt: 2 }}
+              data-testid={mode === 'create' ? 'create-event-form' : 'event-edit-form'}
+            >
               {apiError && (
                 <Alert severity="error" sx={{ mb: 2 }}>
                   {apiError}
@@ -639,7 +650,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               )}
 
               {mode === 'edit' && (
-                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                  data-testid="auto-save-indicator"
+                >
                   <Typography variant="caption" color="text.secondary">
                     {t('autoSave.enabled')}
                   </Typography>
@@ -674,6 +688,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.eventNumber}
                       helperText={errors.eventNumber?.message}
                       margin="normal"
+                      data-testid="event-number-field"
                       sx={{ width: '150px' }}
                     />
                   )}
@@ -686,9 +701,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       {...field}
                       label={t('form.title')}
                       fullWidth
+                      required
                       error={!!errors.title}
                       helperText={errors.title?.message}
                       margin="normal"
+                      data-testid="event-title-field"
                     />
                   )}
                 />
@@ -707,6 +724,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     error={!!errors.description}
                     helperText={errors.description?.message}
                     margin="normal"
+                    data-testid="event-description-field"
                   />
                 )}
               />
@@ -725,6 +743,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.date}
                       helperText={errors.date?.message}
                       margin="normal"
+                      data-testid="event-date-field"
                       slotProps={{ inputLabel: { shrink: true } }}
                     />
                   )}
@@ -741,6 +760,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       error={!!errors.registrationDeadline}
                       helperText={errors.registrationDeadline?.message}
                       margin="normal"
+                      data-testid="registration-deadline-field"
                       slotProps={{ inputLabel: { shrink: true } }}
                     />
                   )}
@@ -773,9 +793,11 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       label={t('form.capacity')}
                       type="number"
                       fullWidth
+                      required
                       error={!!errors.venueCapacity}
                       helperText={errors.venueCapacity?.message}
                       margin="normal"
+                      data-testid="venue-capacity-field"
                     />
                   )}
                 />
@@ -788,27 +810,42 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                   <FormControl fullWidth margin="normal" error={!!errors.workflowState}>
                     <InputLabel>{t('form.status')}</InputLabel>
                     <Select {...field} label={t('form.status')} data-testid="event-status-select">
-                      <MenuItem value="CREATED">{t('workflow.states.created')}</MenuItem>
-                      <MenuItem value="TOPIC_SELECTION">
+                      <MenuItem value="CREATED" data-testid="status-option-CREATED">
+                        {t('workflow.states.created')}
+                      </MenuItem>
+                      <MenuItem value="TOPIC_SELECTION" data-testid="status-option-TOPIC_SELECTION">
                         {t('workflow.states.topic_selection')}
                       </MenuItem>
-                      <MenuItem value="SPEAKER_IDENTIFICATION">
+                      <MenuItem
+                        value="SPEAKER_IDENTIFICATION"
+                        data-testid="status-option-SPEAKER_IDENTIFICATION"
+                      >
                         {t('workflow.states.speaker_identification')}
                       </MenuItem>
-                      <MenuItem value="SLOT_ASSIGNMENT">
+                      <MenuItem value="SLOT_ASSIGNMENT" data-testid="status-option-SLOT_ASSIGNMENT">
                         {t('workflow.states.slot_assignment')}
                       </MenuItem>
-                      <MenuItem value="AGENDA_PUBLISHED">
+                      <MenuItem
+                        value="AGENDA_PUBLISHED"
+                        data-testid="status-option-AGENDA_PUBLISHED"
+                      >
                         {t('workflow.states.agenda_published')}
                       </MenuItem>
-                      <MenuItem value="AGENDA_FINALIZED">
+                      <MenuItem
+                        value="AGENDA_FINALIZED"
+                        data-testid="status-option-AGENDA_FINALIZED"
+                      >
                         {t('workflow.states.agenda_finalized')}
                       </MenuItem>
-                      <MenuItem value="EVENT_LIVE">{t('workflow.states.event_live')}</MenuItem>
-                      <MenuItem value="EVENT_COMPLETED">
+                      <MenuItem value="EVENT_LIVE" data-testid="status-option-EVENT_LIVE">
+                        {t('workflow.states.event_live')}
+                      </MenuItem>
+                      <MenuItem value="EVENT_COMPLETED" data-testid="status-option-EVENT_COMPLETED">
                         {t('workflow.states.event_completed')}
                       </MenuItem>
-                      <MenuItem value="ARCHIVED">{t('workflow.states.archived')}</MenuItem>
+                      <MenuItem value="ARCHIVED" data-testid="status-option-ARCHIVED">
+                        {t('workflow.states.archived')}
+                      </MenuItem>
                     </Select>
                     {errors.workflowState && (
                       <FormHelperText>{errors.workflowState.message}</FormHelperText>
@@ -864,6 +901,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     fullWidth
                     margin="normal"
                     placeholder="e.g., Kornhausforum Bern"
+                    data-testid="venue-name-field"
                   />
                 )}
               />
@@ -878,6 +916,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     fullWidth
                     margin="normal"
                     placeholder="e.g., Kornhausplatz 18, 3011 Bern"
+                    data-testid="venue-address-field"
                   />
                 )}
               />
@@ -941,9 +980,15 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseClick}>{t('form.cancel')}</Button>
+          <Button onClick={handleCloseClick} data-testid="close-edit-modal-button">
+            {t('form.cancel')}
+          </Button>
           {mode === 'create' && (
-            <Button onClick={handleSaveDraftClick} color="secondary">
+            <Button
+              onClick={handleSaveDraftClick}
+              color="secondary"
+              data-testid="save-draft-event-button"
+            >
               {t('form.saveDraft')}
             </Button>
           )}
@@ -951,7 +996,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             onClick={handleSaveClick}
             variant="contained"
             color="primary"
-            data-testid="save-event-button"
+            data-testid={mode === 'create' ? 'save-create-event-button' : 'save-event-button'}
           >
             {mode === 'create' ? t('form.saveCreate') : t('form.save')}
           </Button>
@@ -959,14 +1004,25 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       </Dialog>
 
       {/* Unsaved Changes Warning Dialog */}
-      <Dialog open={showUnsavedWarning} onClose={handleCancelClose}>
+      <Dialog
+        open={showUnsavedWarning}
+        onClose={handleCancelClose}
+        data-testid="unsaved-changes-dialog"
+      >
         <DialogTitle>{t('confirmations.unsavedChanges')}</DialogTitle>
         <DialogContent>
           <Typography>{t('confirmations.unsavedChangesMessage')}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelClose}>{t('confirmations.cancel')}</Button>
-          <Button onClick={handleConfirmClose} color="error" variant="contained">
+          <Button onClick={handleCancelClose} data-testid="keep-editing-button">
+            {t('confirmations.cancel')}
+          </Button>
+          <Button
+            onClick={handleConfirmClose}
+            color="error"
+            variant="contained"
+            data-testid="discard-changes-button"
+          >
             {t('confirmations.confirm')}
           </Button>
         </DialogActions>

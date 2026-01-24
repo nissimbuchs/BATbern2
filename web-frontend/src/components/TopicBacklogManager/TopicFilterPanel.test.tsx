@@ -58,4 +58,20 @@ describe('TopicFilterPanel', () => {
 
     expect(onFilterChange).toHaveBeenCalledWith({ category: undefined });
   });
+
+  it('should support newest first sort option', async () => {
+    const user = userEvent.setup();
+    const onFilterChange = vi.fn();
+    render(<TopicFilterPanel filters={{}} onFilterChange={onFilterChange} />);
+
+    // Click on sort select
+    const sortSelect = screen.getAllByRole('combobox')[2]; // Third combobox is sort
+    await user.click(sortSelect);
+
+    // Find and click "Newest First" option
+    const newestFirstOption = await screen.findByText(/Newest First/i);
+    await user.click(newestFirstOption);
+
+    expect(onFilterChange).toHaveBeenCalledWith({ sort: '-createdAt' });
+  });
 });

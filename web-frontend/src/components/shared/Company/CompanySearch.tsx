@@ -144,6 +144,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
       getOptionLabel={(option) => (typeof option === 'string' ? option : option.name)}
       filterOptions={(x) => x} // Disable built-in filtering, we handle it via API
       noOptionsText="No companies found"
+      data-testid="autocomplete-results"
       renderOption={(props, option) => {
         const { key, ...otherProps } = props;
         return (
@@ -158,6 +159,7 @@ export const CompanySearch: React.FC<CompanySearchProps> = ({
           placeholder={placeholder}
           aria-label="Search companies"
           aria-autocomplete="list"
+          data-testid="search-input"
           InputProps={{
             ...params.InputProps,
             startAdornment: (

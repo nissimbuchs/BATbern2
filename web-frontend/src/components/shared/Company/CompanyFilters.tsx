@@ -121,6 +121,7 @@ const CompanyFilters: React.FC<CompanyFiltersProps> = ({ onFilterChange, initial
         }}
         size="small"
         aria-label={t('company.search.placeholder')}
+        data-testid="company-search-input"
       />
 
       {/* Filter Controls Row */}

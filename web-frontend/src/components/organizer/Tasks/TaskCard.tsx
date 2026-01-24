@@ -79,6 +79,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       style={draggableStyle}
       {...draggableListeners}
       {...draggableAttributes}
+      data-testid={`critical-task-${task.id}`}
       sx={{
         border: 1,
         borderColor: 'divider',

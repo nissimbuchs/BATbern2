@@ -126,7 +126,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
   }
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} data-testid="user-table">
       <Table>
         <TableHead>
           <TableRow>
@@ -228,9 +228,15 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
       </Table>
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={() => handleAction('view')}>{t('actions.view')}</MenuItem>
-        <MenuItem onClick={() => handleAction('editRoles')}>{t('actions.editRoles')}</MenuItem>
-        <MenuItem onClick={() => handleAction('delete')}>{t('actions.delete')}</MenuItem>
+        <MenuItem onClick={() => handleAction('view')} data-testid="user-action-view">
+          {t('actions.view')}
+        </MenuItem>
+        <MenuItem onClick={() => handleAction('editRoles')} data-testid="user-action-edit-roles">
+          {t('actions.editRoles')}
+        </MenuItem>
+        <MenuItem onClick={() => handleAction('delete')} data-testid="user-action-delete">
+          {t('actions.delete')}
+        </MenuItem>
       </Menu>
     </TableContainer>
   );

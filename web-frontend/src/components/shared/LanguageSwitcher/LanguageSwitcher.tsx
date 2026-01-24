@@ -37,7 +37,7 @@ const LanguageSwitcher: React.FC = () => {
         onChange={handleLanguageChange}
         size="small"
         sx={{ minWidth: 100 }}
-        aria-label="Language selector"
+        inputProps={{ 'aria-label': 'Language selector' }}
       >
         <MenuItem value="de">DE</MenuItem>
         <MenuItem value="en">EN</MenuItem>

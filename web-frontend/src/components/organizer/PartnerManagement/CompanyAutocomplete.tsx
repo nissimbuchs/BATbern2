@@ -119,6 +119,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
             (value?.displayName && value.displayName !== value.name ? value.displayName : undefined)
           }
           inputRef={inputRef}
+          data-testid="company-autocomplete"
           InputProps={{
             ...params.InputProps,
             endAdornment: (

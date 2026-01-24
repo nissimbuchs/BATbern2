@@ -16,70 +16,65 @@
 
 import { test, expect, type Page } from '@playwright/test';
 
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-
-// Test data - User to be created and deleted
-const TEST_USER_TO_DELETE = {
-  firstName: `DeleteMe${Date.now()}`,
-  lastName: `TestUser${Date.now()}`,
-  email: `delete.me.${Date.now()}@example.com`,
-  roles: ['ATTENDEE'],
-};
-
-/**
- * Helper: Login as an authenticated organizer
- */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/auth/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(/\/dashboard/);
-}
-
 /**
  * Helper: Navigate to User Management page
  */
 async function navigateToUserManagement(page: Page) {
-  await page.click('text=Users');
-  await page.waitForURL(/\/organizer\/users/);
+  // Direct navigation is more reliable than clicking nav links
+  await page.goto('/organizer/users');
   await page.waitForSelector('[data-testid="user-table"]', { timeout: 10000 });
 }
 
 /**
  * Helper: Create a test user for deletion
  */
-async function createTestUserForDeletion(page: Page): Promise<string> {
+async function createTestUserForDeletion(
+  page: Page,
+  userData: { firstName: string; lastName: string; email: string; roles: string[] }
+): Promise<string> {
   // Open create user modal
   const addUserButton = page.locator('button:has-text("Add User")');
   await addUserButton.click();
   await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
-  // Fill form
-  await page.fill('input[name="firstName"]', TEST_USER_TO_DELETE.firstName);
-  await page.fill('input[name="lastName"]', TEST_USER_TO_DELETE.lastName);
-  await page.fill('input[name="email"]', TEST_USER_TO_DELETE.email);
+  // Fill form using name attributes
+  await page.fill('input[name="firstName"]', userData.firstName);
+  await page.fill('input[name="lastName"]', userData.lastName);
+  await page.fill('input[name="email"]', userData.email);
 
-  // Select ATTENDEE role
-  const attendeeCheckbox = page
-    .locator('input[type="checkbox"][value="ATTENDEE"]')
-    .or(page.locator('label:has-text("Attendee") input[type="checkbox"]'));
-  await attendeeCheckbox.check();
+  // Select ATTENDEE role using data-testid
+  const attendeeCheckbox = page.getByTestId('user-create-role-ATTENDEE');
+  const parentLabel = page.locator('label').filter({ has: attendeeCheckbox });
+  await parentLabel.click();
 
-  // Submit
-  const submitButton = page
-    .locator('button:has-text("Create")')
-    .or(page.locator('button[type="submit"]'));
+  // Submit using data-testid
+  const submitButton = page.getByTestId('user-create-submit');
   await submitButton.click();
 
-  // Wait for modal to close
+  // Wait for modal to actually close (success) or error to appear
+  const modal = page.locator('[role="dialog"]');
+
+  try {
+    await Promise.race([
+      modal.waitFor({ state: 'hidden', timeout: 15000 }),
+      page.locator('[role="alert"]').waitFor({ state: 'visible', timeout: 15000 }),
+    ]);
+  } catch {
+    console.log('User creation timeout - checking if error appeared');
+    const alertVisible = await page.locator('[role="alert"]').isVisible();
+    if (alertVisible) {
+      const errorText = await page.locator('[role="alert"]').textContent();
+      throw new Error(`User creation failed: ${errorText}`);
+    }
+  }
+
+  // Verify modal closed (will fail if error appeared above)
+  await expect(modal).not.toBeVisible({ timeout: 2000 });
+
+  // Wait for table to refresh and user to appear (give it extra time)
   await page.waitForTimeout(2000);
 
-  return TEST_USER_TO_DELETE.email;
+  return userData.email;
 }
 
 /**
@@ -104,10 +99,8 @@ async function openDeleteDialogForUser(page: Page, email: string) {
   await actionsButton.click();
   await page.waitForTimeout(300);
 
-  // Click Delete option
-  const deleteOption = page
-    .locator('text=Delete')
-    .or(page.locator('[role="menuitem"]:has-text("Delete")'));
+  // Click Delete option using data-testid
+  const deleteOption = page.getByTestId('user-action-delete');
   await deleteOption.click();
 
   // Wait for delete confirmation dialog
@@ -122,35 +115,39 @@ test.describe('User Deletion Workflow (GDPR)', () => {
     await page.goto('/organizer/events');
     await navigateToUserManagement(page);
 
+    // Generate unique test data for each test run (unique names to avoid username collisions)
+    // Use random letters only to comply with username format constraint (lowercase letters only)
+    const uniqueSuffix = Math.random().toString(36).substring(2, 8).replace(/[0-9]/g, '');
+    const TEST_USER_TO_DELETE = {
+      firstName: `Delete${uniqueSuffix}`,
+      lastName: `Test${uniqueSuffix}`,
+      email: `delete.${Date.now()}.${Math.random().toString(36).substring(7)}@example.com`,
+      roles: ['ATTENDEE'],
+    };
+
     // Create a test user to delete
-    testUserEmail = await createTestUserForDeletion(page);
+    testUserEmail = await createTestUserForDeletion(page, TEST_USER_TO_DELETE);
   });
 
   test('should_openDeleteDialog_when_deleteActionClicked', async ({ page }) => {
     await openDeleteDialogForUser(page, testUserEmail);
 
-    // Verify dialog title contains "Delete"
-    await expect(page.locator('text=/Delete.*User/i')).toBeVisible();
+    // Verify dialog title is "Delete User"
+    await expect(page.getByRole('heading', { name: 'Delete User', exact: true })).toBeVisible();
 
-    // Verify user info is displayed
-    await expect(
-      page
-        .locator(`text=${TEST_USER_TO_DELETE.firstName}`)
-        .or(page.locator(`text=${testUserEmail}`))
-    ).toBeVisible();
+    // Verify user email is displayed in the dialog
+    await expect(page.locator('[role="dialog"]').locator(`text=${testUserEmail}`)).toBeVisible();
   });
 
   test('should_displayGDPRWarning_when_deleteDialogOpens', async ({ page }) => {
     await openDeleteDialogForUser(page, testUserEmail);
 
     // Verify GDPR warning text
-    await expect(
-      page.locator('text=/GDPR/i').or(page.locator('text=/permanently delete/i'))
-    ).toBeVisible();
+    await expect(page.locator('[role="dialog"]').getByText(/GDPR/i)).toBeVisible();
 
-    // Verify warning about cascade deletion
+    // Verify warning about cascade deletion (use first() to avoid strict mode with OR selector)
     await expect(
-      page.locator('text=/associated data/i').or(page.locator('text=/cannot be undone/i'))
+      page.locator('[role="dialog"]').getByText(/associated data will also be deleted/i)
     ).toBeVisible();
   });
 
@@ -227,14 +224,12 @@ test.describe('User Deletion Workflow (GDPR)', () => {
   test('should_displayUserInfo_when_confirmationDialogOpen', async ({ page }) => {
     await openDeleteDialogForUser(page, testUserEmail);
 
-    // Verify user's name is displayed
-    await expect(
-      page
-        .locator(`text=${TEST_USER_TO_DELETE.firstName}`)
-        .or(page.locator(`text=${TEST_USER_TO_DELETE.lastName}`))
-    ).toBeVisible();
+    // Verify user's email is displayed in the dialog
+    await expect(page.locator('[role="dialog"]').locator(`text=${testUserEmail}`)).toBeVisible();
 
-    // Verify user's email is displayed
-    await expect(page.locator(`text=${testUserEmail}`)).toBeVisible();
+    // Verify dialog shows delete confirmation message
+    await expect(
+      page.locator('[role="dialog"]').getByText(/are you sure you want to delete/i)
+    ).toBeVisible();
   });
 });

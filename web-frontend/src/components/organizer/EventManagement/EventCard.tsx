@@ -136,7 +136,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
         </Stack>
 
         {/* Event Title */}
-        <Typography variant="h6" component="h3" gutterBottom noWrap>
+        <Typography variant="h6" component="h3" gutterBottom noWrap data-testid="event-title">
           {event.title}
         </Typography>
 
@@ -168,7 +168,11 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
             <Typography variant="caption" color="text.secondary">
               {workflowLabel}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              data-testid="workflow-step-indicator"
+            >
               {t('workflow.stepIndicator', {
                 current: workflowStep,
                 total: WORKFLOW_STATE_ORDER.length,
@@ -178,6 +182,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
           {/* Progress Bar with Percentage */}
           <Stack direction="row" alignItems="center" spacing={1}>
             <LinearProgress
+              data-testid="workflow-progress-bar"
               variant="determinate"
               value={progress}
               color={getProgressColor(progress)}
@@ -185,7 +190,12 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               aria-valuenow={progress}
               sx={{ height: 8, borderRadius: 1, flex: 1 }}
             />
-            <Typography variant="caption" fontWeight="bold" sx={{ minWidth: '35px' }}>
+            <Typography
+              variant="caption"
+              fontWeight="bold"
+              sx={{ minWidth: '35px' }}
+              data-testid="progress-percentage"
+            >
               {progress}%
             </Typography>
           </Stack>
@@ -209,6 +219,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onEdit, onCardClick
               onClick={handleEdit}
               aria-label={`Edit ${event.title}`}
               color="primary"
+              data-testid="event-card-edit-button"
             >
               <EditIcon />
             </IconButton>

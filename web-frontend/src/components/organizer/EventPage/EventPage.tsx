@@ -238,6 +238,7 @@ export const EventPage: React.FC = () => {
                   label={t(tab.labelKey, tab.id)}
                   icon={tab.icon}
                   iconPosition="start"
+                  data-testid={`event-tab-${tab.id}`}
                   sx={{ minHeight: 48 }}
                 />
               ))}
@@ -259,6 +260,7 @@ export const EventPage: React.FC = () => {
                 value={tab.id}
                 label={t(tab.labelKey, tab.id)}
                 icon={tab.icon}
+                data-testid={`event-tab-${tab.id}`}
               />
             ))}
           </BottomNavigation>

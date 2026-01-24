@@ -244,7 +244,13 @@ export function ParticipantBatchImportModal({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      data-testid="participant-import-modal"
+    >
       <DialogTitle>{t('participantImport.title')}</DialogTitle>
       <DialogContent dividers>
         {/* File Upload Area */}
@@ -269,7 +275,11 @@ export function ParticipantBatchImportModal({
               },
             }}
           >
-            <input {...getInputProps()} aria-label="File input for CSV upload" />
+            <input
+              {...getInputProps()}
+              aria-label="File input for CSV upload"
+              data-testid="csv-file-input"
+            />
             <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" gutterBottom>
               {isDragActive
@@ -450,7 +460,12 @@ export function ParticipantBatchImportModal({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={isImporting} aria-label="Close import modal">
+        <Button
+          onClick={handleClose}
+          disabled={isImporting}
+          aria-label="Close import modal"
+          data-testid="participant-import-cancel-button"
+        >
           {candidates.length > 0 && !isImporting ? t('actions.close') : t('actions.cancel')}
         </Button>
         {previewCandidates.length > 0 && !candidates.length && !parseError && (
@@ -459,6 +474,7 @@ export function ParticipantBatchImportModal({
             onClick={handleImport}
             disabled={isImporting}
             aria-label="Start importing participants from CSV file"
+            data-testid="participant-import-start-button"
           >
             {t('participantImport.importButton', { count: previewCandidates.length })}
           </Button>

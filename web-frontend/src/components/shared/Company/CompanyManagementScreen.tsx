@@ -163,7 +163,7 @@ const CompanyManagementScreen: React.FC = () => {
   }, []);
 
   return (
-    <Box component="main" role="main" sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3 }}>
       <Container maxWidth="xl">
         {/* Header Section - Only show on list view */}
         {!isDetailView && (
@@ -212,6 +212,7 @@ const CompanyManagementScreen: React.FC = () => {
                   startIcon={<AddIcon />}
                   onClick={handleCreateCompany}
                   aria-label={t('company.createCompany')}
+                  data-testid="create-company-button"
                 >
                   {t('company.createCompany')}
                 </Button>
@@ -231,12 +232,14 @@ const CompanyManagementScreen: React.FC = () => {
             path="/*"
             element={
               <>
-                <CompanyList
-                  companies={companiesData?.data || []}
-                  isLoading={isLoadingCompanies}
-                  viewMode={viewMode}
-                  onCompanyClick={(id) => navigate(`${id}`)}
-                />
+                <Box data-testid="company-list-view">
+                  <CompanyList
+                    companies={companiesData?.data || []}
+                    isLoading={isLoadingCompanies}
+                    viewMode={viewMode}
+                    onCompanyClick={(id) => navigate(`${id}`)}
+                  />
+                </Box>
                 {/* Pagination */}
                 {companiesData?.pagination && (
                   <CompanyPagination

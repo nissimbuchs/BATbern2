@@ -81,7 +81,12 @@ const SlotAssignmentPage: React.FC = () => {
             {t('slotAssignment.pageDescription')}
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
+        <Button
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackToEvent}
+          data-testid="back-to-event-button"
+        >
           {t('slotAssignment.backToEvent')}
         </Button>
       </Box>
@@ -97,7 +102,12 @@ const SlotAssignmentPage: React.FC = () => {
 
       {/* Return Navigation */}
       <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBackToEvent}
+          data-testid="return-to-event-button"
+        >
           {t('slotAssignment.returnToEventOverview')}
         </Button>
       </Box>
