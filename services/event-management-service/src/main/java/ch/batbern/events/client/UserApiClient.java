@@ -118,4 +118,18 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     UserResponse updateUser(String username, ch.batbern.events.dto.UserUpdateDto updateDto);
+
+    /**
+     * Update user profile picture URL.
+     * Story 6.2b: Speaker Profile Update Portal - AC7 (Profile Photo Upload)
+     *
+     * Used after successful S3 photo upload confirmation.
+     * Updates only User.profilePictureUrl field.
+     *
+     * @param username User's username
+     * @param profilePictureUrl CloudFront URL of the uploaded photo
+     * @throws UserNotFoundException if user not found (404)
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    void updateUserProfilePicture(String username, String profilePictureUrl);
 }

@@ -524,6 +524,76 @@ public class UserApiClientImpl implements UserApiClient {
     }
 
     /**
+     * Update user profile picture URL.
+     * Story 6.2b: Speaker Profile Update Portal - AC7 (Profile Photo Upload)
+     *
+     * Uses PATCH to update only the profilePictureUrl field.
+     *
+     * @param username User's username
+     * @param profilePictureUrl CloudFront URL of the uploaded photo
+     */
+    @Override
+    public void updateUserProfilePicture(String username, String profilePictureUrl) {
+        log.debug("Updating profile picture for username: {}", username);
+
+        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile-picture";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            headers.set("Content-Type", "application/json");
+
+            // Simple DTO with just the URL
+            java.util.Map<String, String> body = java.util.Map.of("profilePictureUrl", profilePictureUrl);
+            HttpEntity<java.util.Map<String, String>> request = new HttpEntity<>(body, headers);
+
+            restTemplate.exchange(
+                    url,
+                    HttpMethod.PATCH,
+                    request,
+                    Void.class
+            );
+
+            log.info("Successfully updated profile picture for username: {}", username);
+
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("User not found for profile picture update: {}", username);
+            throw new UserNotFoundException(username, e);
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error updating profile picture for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error updating profile picture for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error from User Management Service for profile picture {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error updating profile picture for user: " + username,
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error connecting to User Management Service for profile picture {}: {}",
+                    username, e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for user: " + username,
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error updating profile picture for {}: {}", username, e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error updating profile picture for user: " + username,
+                    e
+            );
+        }
+    }
+
+    /**
      * Create HTTP headers with JWT token propagated from SecurityContext.
      *
      * Extracts the JWT token from the current security context and adds it
