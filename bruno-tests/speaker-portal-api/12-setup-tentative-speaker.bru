@@ -1,0 +1,38 @@
+meta {
+  name: Setup Speaker for Tentative Test
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/invite
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "tentative-test-{{timestamp}}@example.com",
+    "speakerName": "Tentative Test Speaker",
+    "company": "Test Tentative AG",
+    "expertise": "Testing",
+    "responseDeadline": "2026-06-01T23:59:59Z"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200 || res.getStatus() === 201) {
+    bru.setVar("tentativeSpeakerUsername", res.getBody().username);
+  }
+}
+
+tests {
+  test("should create speaker for tentative test", function() {
+    const status = res.getStatus();
+    expect(status === 200 || status === 201).to.be.true;
+  });
+}

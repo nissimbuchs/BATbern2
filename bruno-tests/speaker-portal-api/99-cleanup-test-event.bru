@@ -1,0 +1,23 @@
+meta {
+  name: Cleanup Test Event
+  type: http
+  seq: 99
+}
+
+delete {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+tests {
+  test("should cleanup test event", function() {
+    // Accept 200 (deleted) or 404 (already deleted)
+    const status = res.getStatus();
+    expect(status === 200 || status === 204 || status === 404).to.be.true;
+  });
+}
