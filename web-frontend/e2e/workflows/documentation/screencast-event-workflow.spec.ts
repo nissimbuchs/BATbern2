@@ -85,7 +85,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       logNarration('NARRATION_01', 'Willkommen zur BATbern Event-Management-Plattform');
       // Show public homepage first (display while NARRATION_01 plays)
       console.log('\n🌐 Navigating to public homepage...\n');
-      await page.goto('http://localhost:8100/');
+      await page.goto('https://staging.batbern.ch/');
       await page.waitForLoadState('networkidle');
       await waitForNarration('NARRATION_01', page);
       console.log('    ✓ Homepage displayed\n');
