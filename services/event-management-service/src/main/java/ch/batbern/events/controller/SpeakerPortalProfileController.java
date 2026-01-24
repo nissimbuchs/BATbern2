@@ -1,9 +1,15 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.dto.PhotoConfirmRequest;
+import ch.batbern.events.dto.PhotoConfirmResponse;
+import ch.batbern.events.dto.PhotoUploadRequest;
+import ch.batbern.events.dto.PresignedPhotoUploadResponse;
 import ch.batbern.events.dto.ProfileUpdateRequest;
 import ch.batbern.events.dto.SpeakerProfileDto;
 import ch.batbern.events.exception.InvalidTokenException;
+import ch.batbern.events.exception.PhotoUploadNotFoundException;
 import ch.batbern.events.exception.SpeakerNotFoundException;
+import ch.batbern.events.service.SpeakerProfilePhotoService;
 import ch.batbern.events.service.SpeakerProfileService;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,6 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
  * Endpoints:
  * - GET /api/v1/speaker-portal/profile?token=xxx - Get speaker profile
  * - PATCH /api/v1/speaker-portal/profile - Update speaker profile
+ * - POST /api/v1/speaker-portal/profile/photo/presigned-url - Get presigned URL for photo upload
+ * - POST /api/v1/speaker-portal/profile/photo/confirm - Confirm photo upload
  *
  * Security:
  * - Token validated on each request
@@ -42,9 +51,13 @@ public class SpeakerPortalProfileController {
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerPortalProfileController.class);
 
     private final SpeakerProfileService speakerProfileService;
+    private final SpeakerProfilePhotoService speakerProfilePhotoService;
 
-    public SpeakerPortalProfileController(SpeakerProfileService speakerProfileService) {
+    public SpeakerPortalProfileController(
+            SpeakerProfileService speakerProfileService,
+            SpeakerProfilePhotoService speakerProfilePhotoService) {
         this.speakerProfileService = speakerProfileService;
+        this.speakerProfilePhotoService = speakerProfilePhotoService;
     }
 
     /**
@@ -149,6 +162,102 @@ public class SpeakerPortalProfileController {
     }
 
     /**
+     * Get presigned URL for profile photo upload.
+     * AC7.1: Photo upload via presigned URL
+     *
+     * @param request the photo upload request with token and file metadata
+     * @param httpRequest the HTTP request (for IP logging)
+     * @return 200 with presigned URL response if successful
+     */
+    @PostMapping("/profile/photo/presigned-url")
+    public ResponseEntity<PresignedPhotoUploadResponse> getPhotoPresignedUrl(
+            @Valid @RequestBody PhotoUploadRequest request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = getClientIp(httpRequest);
+
+        // Validate token presence
+        if (request.getToken() == null || request.getToken().isBlank()) {
+            LOG.warn("Photo presigned URL failed - missing token from IP: {}", clientIp);
+            throw new ValidationException("Token is required");
+        }
+
+        LOG.info("Photo presigned URL request received from IP: {}", clientIp);
+
+        try {
+            PresignedPhotoUploadResponse response = speakerProfilePhotoService.generatePresignedUrl(
+                    request.getToken(), request);
+
+            LOG.info("Photo presigned URL generated - uploadId: {} from IP: {}",
+                    response.getUploadId(), clientIp);
+
+            return ResponseEntity.ok(response);
+
+        } catch (InvalidTokenException e) {
+            LOG.warn("Photo presigned URL failed - invalid token: {} from IP: {}",
+                    e.getErrorCode(), clientIp);
+            throw e;
+
+        } catch (ValidationException e) {
+            LOG.warn("Photo presigned URL failed - validation error: {} from IP: {}",
+                    e.getMessage(), clientIp);
+            throw e;
+        }
+    }
+
+    /**
+     * Confirm profile photo upload and update User profile.
+     * AC7.4: Upload confirmation
+     * AC7.5: Cross-service sync
+     *
+     * @param request the confirm request with token and uploadId
+     * @param httpRequest the HTTP request (for IP logging)
+     * @return 200 with CloudFront URL if successful
+     */
+    @PostMapping("/profile/photo/confirm")
+    public ResponseEntity<PhotoConfirmResponse> confirmPhotoUpload(
+            @Valid @RequestBody PhotoConfirmRequestWithS3Key request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = getClientIp(httpRequest);
+
+        // Validate token presence
+        if (request.getToken() == null || request.getToken().isBlank()) {
+            LOG.warn("Photo confirm failed - missing token from IP: {}", clientIp);
+            throw new ValidationException("Token is required");
+        }
+
+        LOG.info("Photo confirm request received - uploadId: {} from IP: {}",
+                request.getUploadId(), clientIp);
+
+        try {
+            PhotoConfirmRequest confirmRequest = PhotoConfirmRequest.builder()
+                    .token(request.getToken())
+                    .uploadId(request.getUploadId())
+                    .build();
+
+            String profilePictureUrl = speakerProfilePhotoService.confirmUpload(
+                    request.getToken(), confirmRequest, request.getS3Key());
+
+            LOG.info("Photo upload confirmed from IP: {}", clientIp);
+
+            return ResponseEntity.ok(PhotoConfirmResponse.builder()
+                    .profilePictureUrl(profilePictureUrl)
+                    .build());
+
+        } catch (InvalidTokenException e) {
+            LOG.warn("Photo confirm failed - invalid token: {} from IP: {}",
+                    e.getErrorCode(), clientIp);
+            throw e;
+
+        } catch (PhotoUploadNotFoundException e) {
+            LOG.warn("Photo confirm failed - upload not found: {} from IP: {}",
+                    request.getUploadId(), clientIp);
+            throw e;
+        }
+    }
+
+    /**
      * Extract client IP address from request.
      * Handles X-Forwarded-For header for requests through load balancers/proxies.
      */
@@ -177,5 +286,19 @@ public class SpeakerPortalProfileController {
         private java.util.List<String> speakingTopics;
         private String linkedInUrl;
         private java.util.List<String> languages;
+    }
+
+    /**
+     * Request DTO for photo upload confirmation that includes the S3 key.
+     * The S3 key is returned from the presigned URL endpoint and must be passed back.
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class PhotoConfirmRequestWithS3Key {
+        private String token;
+        private String uploadId;
+        private String s3Key;
     }
 }
