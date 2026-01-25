@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,7 +71,7 @@ public class SpeakerInvitationEmailService {
     ) {
         try {
             log.info("Sending invitation email to: {} for event: {}",
-                    speaker.getEmail(), event.getEventCode());
+                    LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
 
             // Default to German locale if not specified
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
@@ -99,10 +100,10 @@ public class SpeakerInvitationEmailService {
                     htmlBody
             );
 
-            log.info("Invitation email sent successfully to: {}", speaker.getEmail());
+            log.info("Invitation email sent successfully to: {}", LoggingUtils.maskEmail(speaker.getEmail()));
 
         } catch (Exception e) {
-            log.error("Failed to send invitation email to: {}", speaker.getEmail(), e);
+            log.error("Failed to send invitation email to: {}", LoggingUtils.maskEmail(speaker.getEmail()), e);
             // Don't re-throw - email failure shouldn't block invitation process
         }
     }

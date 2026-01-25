@@ -1,0 +1,116 @@
+# Quality Gate: 6.1b Speaker Invitation System
+# Generated: 2026-01-25
+schema: 1
+story: "6.1b"
+story_title: "Speaker Invitation System"
+gate: PASS
+status_reason: "All issues resolved. Implementation is functional with 13 integration tests + 16 unit tests passing. SEC-001 fixed with email masking. AC4 plain text templates created. E2E Bruno tests exist in speaker-portal-api/."
+reviewer: "Quinn (Test Architect)"
+updated: "2026-01-25T14:00:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "SEC-001"
+    severity: low
+    finding: "RESOLVED: Email addresses now masked using LoggingUtils.maskEmail() in SpeakerInvitationService and SpeakerInvitationEmailService. Logs show 'j***@example.com' pattern."
+    suggested_action: "No further action required."
+    suggested_owner: dev
+    status: resolved
+
+  - id: "TEST-001"
+    severity: low
+    finding: "RESOLVED: Created SpeakerInvitationServiceTest.java with 16 unit tests covering AC1-AC6."
+    suggested_action: "No further action required."
+    suggested_owner: dev
+    status: resolved
+
+  - id: "TEST-002"
+    severity: low
+    finding: "RESOLVED: E2E Bruno tests exist in bruno-tests/speaker-portal-api/ (01-invite-speaker.bru, 02-send-invitation-email.bru). Test design documentation should be updated to reflect correct location."
+    suggested_action: "No further action required."
+    suggested_owner: dev
+    status: resolved
+
+  - id: "AC4-001"
+    severity: low
+    finding: "RESOLVED: Created speaker-invitation-en.txt and speaker-invitation-de.txt plain text email templates."
+    suggested_action: "No further action required."
+    suggested_owner: dev
+    status: resolved
+
+  - id: "TECH-001"
+    severity: low
+    finding: "No circuit breaker for Company Service calls - risk profile recommends Resilience4j circuit breaker but UserApiClient has no resilience configuration. This is a nice-to-have improvement, not blocking."
+    suggested_action: "Consider adding Resilience4j circuit breaker annotation to UserApiClient methods in future iteration."
+    suggested_owner: dev
+    status: deferred
+
+quality_score: 95  # All critical issues resolved, only TECH-001 deferred
+
+expires: "2026-02-08T00:00:00Z"  # 2 weeks from review
+
+evidence:
+  tests_reviewed: 29
+  tests_passing: 29
+  unit_tests: 16
+  integration_tests: 13
+  e2e_tests: 2
+  risks_identified: 14
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]  # All ACs covered
+    ac_gaps: []  # No gaps
+
+risk_summary:
+  totals:
+    critical: 1
+    high: 4
+    medium: 5
+    low: 4
+  highest:
+    id: SEC-001
+    score: 9
+    title: "PII exposure in email logs - speaker data and magic links"
+  recommendations:
+    must_fix:
+      - "Implement PII masking in all email-related logging"
+      - "Add plain text email template fallback"
+    monitor:
+      - "AWS SES sending quota and bounce rates"
+      - "Cross-service latency for user creation"
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "SEC-001 RESOLVED: Email addresses now masked in logs using LoggingUtils.maskEmail()"
+  performance:
+    status: PASS
+    notes: "Batch processing implemented with partial failure support"
+  reliability:
+    status: PASS
+    notes: "Idempotency implemented, workflow transitions correct"
+  maintainability:
+    status: PASS
+    notes: "16 unit tests added, good test coverage for maintainability"
+
+recommendations:
+  immediate:
+    - action: "Create plain text email templates for AC4 compliance"
+      refs:
+        - "services/event-management-service/src/main/resources/email-templates/speaker-invitation-en.txt"
+        - "services/event-management-service/src/main/resources/email-templates/speaker-invitation-de.txt"
+  resolved:
+    - action: "DONE: Mask email addresses in all log statements using LoggingUtils.maskEmail()"
+      refs:
+        - "services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationService.java"
+        - "services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java"
+  future:
+    - action: "Add unit tests for SpeakerInvitationService"
+      refs:
+        - "services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationServiceTest.java"
+    - action: "Add Bruno E2E tests"
+      refs:
+        - "bruno-tests/speaker-invitation/"
+    - action: "Add circuit breaker for UserApiClient"
+      refs:
+        - "services/event-management-service/src/main/java/ch/batbern/events/client/UserApiClient.java"

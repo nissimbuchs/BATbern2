@@ -1,0 +1,68 @@
+SPEAKER INVITATION
+==================
+
+Dear {{speakerName}},
+
+We are pleased to invite you as a speaker at our upcoming Berner Architekten Treffen event:
+
+
+EVENT DETAILS
+-------------
+{{eventTitle}}
+
+Date:    {{eventDate}}
+Time:    {{eventTime}}
+Venue:   {{venueName}}
+         {{venueAddress}}
+
+{{#sessionTitle}}
+PROPOSED TOPIC
+--------------
+{{sessionTitle}}
+{{#sessionDescription}}
+{{sessionDescription}}
+{{/sessionDescription}}
+{{/sessionTitle}}
+
+We would be honored to have you as a speaker at our event. Your expertise and knowledge would be a valuable addition for our audience.
+
+
+YOUR RESPONSE
+-------------
+Please let us know your decision by clicking one of the links below:
+
+ACCEPT INVITATION:
+{{acceptLink}}
+
+DECLINE:
+{{declineLink}}
+
+{{#responseDeadline}}
+IMPORTANT DEADLINE
+------------------
+Please respond by: {{responseDeadline}}
+{{#contentDeadline}}
+If you accept, please submit your presentation materials by: {{contentDeadline}}
+{{/contentDeadline}}
+{{/responseDeadline}}
+
+
+QUESTIONS?
+----------
+If you have any questions, please don't hesitate to contact us:
+
+{{organizerName}}
+{{organizerEmail}}
+
+
+We look forward to hearing from you!
+
+Best regards,
+The BATbern Team
+
+---
+View Event Details: {{eventUrl}}
+Contact Support: {{supportUrl}}
+
+Berner Architekten Treffen (BATbern)
+(c) {{currentYear}} BATbern. All rights reserved.

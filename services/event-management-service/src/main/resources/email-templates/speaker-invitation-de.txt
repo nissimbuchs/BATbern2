@@ -1,0 +1,68 @@
+EINLADUNG ALS REFERENT
+======================
+
+Guten Tag {{speakerName}},
+
+Wir freuen uns, Sie als Referent zu unserem kommenden Berner Architekten Treffen einzuladen:
+
+
+VERANSTALTUNGSDETAILS
+---------------------
+{{eventTitle}}
+
+Datum:              {{eventDate}}
+Uhrzeit:            {{eventTime}}
+Veranstaltungsort:  {{venueName}}
+                    {{venueAddress}}
+
+{{#sessionTitle}}
+VORGESEHENES THEMA
+------------------
+{{sessionTitle}}
+{{#sessionDescription}}
+{{sessionDescription}}
+{{/sessionDescription}}
+{{/sessionTitle}}
+
+Wir wuerden uns sehr freuen, Sie als Referenten bei unserem Event begruessen zu duerfen. Ihre Expertise und Ihr Wissen waeren eine wertvolle Bereicherung fuer unser Publikum.
+
+
+IHRE ANTWORT
+------------
+Bitte teilen Sie uns Ihre Entscheidung mit, indem Sie einen der folgenden Links anklicken:
+
+EINLADUNG ANNEHMEN:
+{{acceptLink}}
+
+LEIDER ABSAGEN:
+{{declineLink}}
+
+{{#responseDeadline}}
+WICHTIGE FRIST
+--------------
+Bitte antworten Sie bis: {{responseDeadline}}
+{{#contentDeadline}}
+Falls Sie zusagen, bitten wir Sie, Ihre Praesentationsunterlagen bis zum {{contentDeadline}} einzureichen.
+{{/contentDeadline}}
+{{/responseDeadline}}
+
+
+FRAGEN?
+-------
+Bei Fragen stehen wir Ihnen gerne zur Verfuegung:
+
+{{organizerName}}
+{{organizerEmail}}
+
+
+Wir freuen uns auf Ihre Rueckmeldung!
+
+Mit freundlichen Gruessen,
+Das BATbern Team
+
+---
+Event-Details ansehen: {{eventUrl}}
+Support kontaktieren: {{supportUrl}}
+
+Berner Architekten Treffen (BATbern)
+(c) {{currentYear}} BATbern. Alle Rechte vorbehalten.

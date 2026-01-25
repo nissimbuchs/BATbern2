@@ -19,6 +19,7 @@ import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -66,7 +67,7 @@ public class SpeakerInvitationService {
      */
     @Transactional
     public InviteSpeakerResponse inviteSpeaker(String eventCode, InviteSpeakerRequest request) {
-        log.info("Inviting speaker {} to event {}", request.email(), eventCode);
+        log.info("Inviting speaker {} to event {}", LoggingUtils.maskEmail(request.email()), eventCode);
 
         // 1. Find the event
         Event event = eventRepository.findByEventCode(eventCode)
@@ -78,7 +79,7 @@ public class SpeakerInvitationService {
 
         if (existingSpeaker.isPresent()) {
             SpeakerPool speaker = existingSpeaker.get();
-            log.info("Speaker {} already exists in pool for event {}", request.email(), eventCode);
+            log.info("Speaker {} already exists in pool for event {}", LoggingUtils.maskEmail(request.email()), eventCode);
             return InviteSpeakerResponse.existing(
                     speaker.getId(),
                     speaker.getUsername(),
@@ -118,7 +119,7 @@ public class SpeakerInvitationService {
         SpeakerPool saved = speakerPoolRepository.save(speakerPool);
 
         log.info("Created SpeakerPool entry {} for speaker {} in event {}",
-                saved.getId(), request.email(), eventCode);
+                saved.getId(), LoggingUtils.maskEmail(request.email()), eventCode);
 
         return InviteSpeakerResponse.created(
                 saved.getId(),
@@ -232,7 +233,7 @@ public class SpeakerInvitationService {
                 InviteSpeakerResponse response = inviteSpeaker(eventCode, speakerRequest);
                 results.add(response);
             } catch (Exception e) {
-                log.warn("Failed to invite speaker {}: {}", speakerRequest.email(), e.getMessage());
+                log.warn("Failed to invite speaker {}: {}", LoggingUtils.maskEmail(speakerRequest.email()), e.getMessage());
                 errors.add(new BatchInviteResponse.BatchInviteError(
                         speakerRequest.email(),
                         getErrorCode(e),

@@ -287,5 +287,20 @@ class LoggingUtilsTest {
             assertThat(masked.get("status")).isEqualTo("ACTIVE");
             assertThat(masked.get("email")).isNotEqualTo("test@test.com");
         }
+
+        @Test
+        void should_maskEmail_when_validEmailProvided() {
+            assertThat(LoggingUtils.maskEmail("john.doe@example.com")).isEqualTo("j***@example.com");
+            assertThat(LoggingUtils.maskEmail("speaker@batbern.ch")).isEqualTo("s***@batbern.ch");
+            assertThat(LoggingUtils.maskEmail("ab@test.org")).isEqualTo("a***@test.org");
+        }
+
+        @Test
+        void should_returnMaskedValue_when_invalidEmailProvided() {
+            assertThat(LoggingUtils.maskEmail(null)).isEqualTo("***");
+            assertThat(LoggingUtils.maskEmail("")).isEqualTo("***");
+            assertThat(LoggingUtils.maskEmail("a@b")).isEqualTo("***");
+            assertThat(LoggingUtils.maskEmail("noatsign")).isEqualTo("***");
+        }
     }
 }
