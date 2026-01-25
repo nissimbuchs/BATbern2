@@ -79,7 +79,8 @@ public class SpeakerInvitationService {
 
         if (existingSpeaker.isPresent()) {
             SpeakerPool speaker = existingSpeaker.get();
-            log.info("Speaker {} already exists in pool for event {}", LoggingUtils.maskEmail(request.email()), eventCode);
+            log.info("Speaker {} already exists in pool for event {}",
+                    LoggingUtils.maskEmail(request.email()), eventCode);
             return InviteSpeakerResponse.existing(
                     speaker.getId(),
                     speaker.getUsername(),
@@ -136,6 +137,7 @@ public class SpeakerInvitationService {
      * AC3: Sends personalized email with magic links
      * AC4: Supports i18n (German/English)
      * AC6: Publishes SpeakerInvitationSentEvent
+     * Story 6.1c: Accepts email in request for speakers without email in database
      *
      * @param eventCode the event code
      * @param username the speaker's username
@@ -158,6 +160,17 @@ public class SpeakerInvitationService {
         // 2. Find the speaker pool entry
         SpeakerPool speaker = speakerPoolRepository.findByEventIdAndUsername(event.getId(), username)
                 .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
+
+        // 3. Handle email: use from request if speaker doesn't have one (Story 6.1c)
+        if (speaker.getEmail() == null && request.email() != null) {
+            log.info("Updating speaker {} email from request", username);
+            speaker.setEmail(request.email());
+        }
+
+        // Validate email exists
+        if (speaker.getEmail() == null) {
+            throw new IllegalArgumentException("Speaker email is required to send invitation");
+        }
 
         // 3. Generate magic link token for response (RESPOND action)
         String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
@@ -233,7 +246,8 @@ public class SpeakerInvitationService {
                 InviteSpeakerResponse response = inviteSpeaker(eventCode, speakerRequest);
                 results.add(response);
             } catch (Exception e) {
-                log.warn("Failed to invite speaker {}: {}", LoggingUtils.maskEmail(speakerRequest.email()), e.getMessage());
+                log.warn("Failed to invite speaker {}: {}",
+                        LoggingUtils.maskEmail(speakerRequest.email()), e.getMessage());
                 errors.add(new BatchInviteResponse.BatchInviteError(
                         speakerRequest.email(),
                         getErrorCode(e),

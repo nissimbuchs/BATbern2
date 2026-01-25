@@ -318,7 +318,9 @@ describe('SpeakerOutreachDetailsDrawer - Send Invitation (Story 6.1c)', () => {
         expect(speakerPoolService.sendInvitation).toHaveBeenCalledWith(
           eventCode,
           speakerWithEmailProp.id,
-          undefined
+          expect.objectContaining({
+            responseDeadline: expect.any(String),
+          })
         );
       });
     });

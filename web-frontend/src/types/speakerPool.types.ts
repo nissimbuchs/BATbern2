@@ -62,10 +62,12 @@ export interface SpeakerPoolFilters {
  * Request body for sending speaker invitation
  */
 export interface SendInvitationRequest {
-  /** Response deadline (ISO date, default: 30 days) */
-  responseDeadline?: string;
-  /** Custom message to include in invitation email */
-  personalMessage?: string;
+  /** Response deadline (ISO date, required, must be in the future) */
+  responseDeadline: string;
+  /** Content deadline (ISO date, optional, must be after responseDeadline) */
+  contentDeadline?: string;
+  /** Preferred language for the email (optional, defaults to German) */
+  locale?: string;
   /** Email address (for speakers without email in database) */
   email?: string;
 }

@@ -324,7 +324,7 @@ class SpeakerInvitationServiceTest {
         void should_buildEmail_when_invitationTriggered() {
             // Given
             LocalDate responseDeadline = LocalDate.now().plusDays(14);
-            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, "de");
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, "de", null);
 
             when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
@@ -345,7 +345,7 @@ class SpeakerInvitationServiceTest {
         void should_includeMagicLink_when_emailBuilt() {
             // Given
             LocalDate responseDeadline = LocalDate.now().plusDays(14);
-            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
 
             when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
@@ -367,7 +367,7 @@ class SpeakerInvitationServiceTest {
         void should_transitionToInvited_when_emailSent() {
             // Given
             LocalDate responseDeadline = LocalDate.now().plusDays(14);
-            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
 
             when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
@@ -395,7 +395,7 @@ class SpeakerInvitationServiceTest {
         void should_throwSpeakerNotFoundException_when_speakerNotFound() {
             // Given
             LocalDate responseDeadline = LocalDate.now().plusDays(14);
-            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
 
             when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventIdAndUsername(testEventId, "unknown"))
@@ -523,7 +523,7 @@ class SpeakerInvitationServiceTest {
         void should_publishEvent_when_invitationSent() {
             // Given
             LocalDate responseDeadline = LocalDate.now().plusDays(14);
-            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
 
             when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
             when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))

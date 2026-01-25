@@ -90,10 +90,18 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
     // Use locally saved email if speaker doesn't have one in the database
     const effectiveEmail = speaker.email || (emailSaved ? emailInput : undefined);
 
+    // Default response deadline: 30 days from now
+    const defaultDeadline = new Date();
+    defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+    const responseDeadline = defaultDeadline.toISOString().split('T')[0]; // YYYY-MM-DD format
+
     try {
       const result = await sendInvitationMutation.mutateAsync({
         username: speaker.id,
-        options: effectiveEmail && !speaker.email ? { email: effectiveEmail } : undefined,
+        options: {
+          responseDeadline,
+          ...(effectiveEmail && !speaker.email ? { email: effectiveEmail } : {}),
+        },
       });
       setSnackbarMessage(t('speakers.invitationSent', { email: result.email || effectiveEmail }));
       setSnackbarSeverity('success');
