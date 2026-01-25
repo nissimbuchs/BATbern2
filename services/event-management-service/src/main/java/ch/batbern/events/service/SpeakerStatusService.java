@@ -14,7 +14,9 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.SpeakerAcceptedEvent;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -54,6 +56,7 @@ public class SpeakerStatusService {
     private final EventRepository eventRepository;
     private final EventTypeService eventTypeService;
     private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher domainEventPublisher;
 
     /**
      * Update speaker status with validation
@@ -127,8 +130,45 @@ public class SpeakerStatusService {
 
         SpeakerStatusHistory saved = repository.save(historyRecord);
 
+        // Publish SpeakerWorkflowStateChangeEvent to EventBridge (Story 6.0a CODE-001)
+        publishWorkflowStateChangeEvent(speaker, currentStatus, request.getNewStatus(), organizerUsername);
+
         // Build response
         return mapToResponse(saved);
+    }
+
+    /**
+     * Publish a speaker workflow state change event to EventBridge.
+     * Story 6.0a CODE-001: Domain event publishing
+     *
+     * @param speaker The speaker pool entry
+     * @param fromState Previous workflow state
+     * @param toState New workflow state
+     * @param organizerUsername Username of the organizer making the change
+     */
+    private void publishWorkflowStateChangeEvent(
+            SpeakerPool speaker,
+            SpeakerWorkflowState fromState,
+            SpeakerWorkflowState toState,
+            String organizerUsername
+    ) {
+        try {
+            SpeakerWorkflowStateChangeEvent event = new SpeakerWorkflowStateChangeEvent(
+                    speaker.getId(),
+                    speaker.getEventId(),
+                    fromState,
+                    toState,
+                    speaker.getUsername() != null ? speaker.getUsername() : organizerUsername
+            );
+
+            domainEventPublisher.publish(event);
+            log.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
+                    fromState, toState, speaker.getId());
+        } catch (Exception e) {
+            // Log but don't fail the transaction if event publishing fails
+            log.warn("Failed to publish SpeakerWorkflowStateChangeEvent for speaker {}: {}",
+                    speaker.getId(), e.getMessage());
+        }
     }
 
     /**

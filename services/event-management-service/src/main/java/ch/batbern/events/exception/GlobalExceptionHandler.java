@@ -2,6 +2,7 @@ package ch.batbern.events.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -387,6 +388,31 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(java.util.NoSuchElementException.class)
     public ResponseEntity<ErrorResponse> handleNoSuchElementException(
             java.util.NoSuchElementException ex,
+            HttpServletRequest request) {
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle NotFoundException (generic not found from shared-kernel)
+     * Returns HTTP 404 Not Found
+     * Story 5.4: Speaker Status Management
+     * Story 6.0a: Speaker Workflow State Machine Foundation
+     */
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(
+            NotFoundException ex,
             HttpServletRequest request) {
         log.warn("Resource not found: {}", ex.getMessage());
 

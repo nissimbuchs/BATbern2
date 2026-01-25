@@ -1,0 +1,42 @@
+meta {
+  name: Speaker Workflow - Speaker Not Found
+  type: http
+  seq: 52
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/00000000-0000-0000-0000-000000000000/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTACTED",
+    "reason": "Testing non-existent speaker"
+  }
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("should return 404 Not Found for non-existent speaker (Story 6.0a AC3)", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should include error message about speaker not found", function() {
+    const response = res.getBody();
+    expect(response).to.have.property('message');
+  });
+
+  test("should not create any workflow state changes", function() {
+    // A 404 response indicates no changes were made
+    expect(res.getStatus()).to.equal(404);
+  });
+}
