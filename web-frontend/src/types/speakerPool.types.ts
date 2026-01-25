@@ -66,6 +66,8 @@ export interface SendInvitationRequest {
   responseDeadline?: string;
   /** Custom message to include in invitation email */
   personalMessage?: string;
+  /** Email address (for speakers without email in database) */
+  email?: string;
 }
 
 /**

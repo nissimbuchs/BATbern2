@@ -87,11 +87,15 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   const handleSendInvitation = async () => {
     if (!speaker) return;
 
+    // Use locally saved email if speaker doesn't have one in the database
+    const effectiveEmail = speaker.email || (emailSaved ? emailInput : undefined);
+
     try {
       const result = await sendInvitationMutation.mutateAsync({
         username: speaker.id,
+        options: effectiveEmail && !speaker.email ? { email: effectiveEmail } : undefined,
       });
-      setSnackbarMessage(t('speakers.invitationSent', { email: result.email }));
+      setSnackbarMessage(t('speakers.invitationSent', { email: result.email || effectiveEmail }));
       setSnackbarSeverity('success');
       setSnackbarOpen(true);
     } catch {
@@ -113,6 +117,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   const [emailInput, setEmailInput] = useState('');
   const [emailError, setEmailError] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false); // Track when email has been locally saved
 
   // Email validation
   const validateEmail = (email: string): boolean => {
@@ -142,6 +147,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
       setEmailInput('');
       setEmailError('');
       setEmailTouched(false);
+      setEmailSaved(false);
     }
   }, [open, speaker?.id]);
 
@@ -338,7 +344,9 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     size="small"
                     disabled={!isEmailValid}
                     onClick={() => {
-                      // For now, just show feedback - actual save would need API
+                      // Mark email as saved locally - enables Send Invitation button
+                      // Note: Full backend support for updating speaker email is pending
+                      setEmailSaved(true);
                       setSnackbarMessage(t('speakers.emailSaved'));
                       setSnackbarSeverity('success');
                       setSnackbarOpen(true);
@@ -364,7 +372,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     )
                   }
                   onClick={handleSendInvitation}
-                  disabled={sendInvitationMutation.isPending || !hasEmail}
+                  disabled={sendInvitationMutation.isPending || (!hasEmail && !emailSaved)}
                   fullWidth
                 >
                   {sendInvitationMutation.isPending
