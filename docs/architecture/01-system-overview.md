@@ -335,9 +335,9 @@ graph TB
 **Responsibility:** Enhanced speaker management with complex workflow states, slot preferences collection, material collection with quality control, and seamless coordination between organizers and speakers including waitlist management.
 
 **Enhanced Speaker Workflow Features:**
-- **Workflow State Management** - 8-state progression: open → contacted → ready → declined/accepted → slot-assigned → quality-reviewed → final agenda
+- **Workflow State Management** - 11-state progression with parallel paths: identified → contacted → ready → accepted/declined; then content_submitted → quality_reviewed ∥ slot_assigned → confirmed; plus overflow and withdrew states
 - **Slot Preferences Collection** - Time slot preferences, technical requirements, accessibility needs
-- **Quality Review Integration** - Abstract validation (1000 char limit)
+- **Quality Review Integration** - Abstract validation (1000 char limit), moderator review workflow
 - **Overflow Management** - Separate tracking of overflow speakers with automatic promotion on dropouts
 
 **Key Interfaces:**

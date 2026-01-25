@@ -3,17 +3,18 @@
 > Archive completed events and manage publication workflows
 
 <div class="workflow-phase phase-e">
-<strong>Phase E: Archival & Publishing</strong><br>
-Archival Status: <span class="feature-status implemented">Implemented</span><br>
-Publishing Status: <span class="feature-status planned">Planned</span><br>
-State Transitions: AGENDA_PUBLISHED → ARCHIVED
+<strong>Phase E: Event Lifecycle & Archival</strong><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
+Event State Transitions: AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED<br>
+Auto-Publishing: Implemented (30-day speaker publish, 14-day agenda publish)<br>
+Auto-Transitions: Implemented (EVENT_LIVE on event day, EVENT_COMPLETED after event ends)
 </div>
 
 ## Overview
 
-Phase E currently supports event archival for completed events. Future enhancements will include progressive publishing workflows and dropout handling.
+Phase E manages the event lifecycle from agenda finalization through execution to archival. The system includes automated publishing (speakers @ 30 days, agenda @ 14 days) and automated state transitions (EVENT_LIVE on event day, EVENT_COMPLETED after event ends).
 
-**Key Deliverable**: Archived events with preserved historical data
+**Key Deliverable**: Executed event with complete historical archive and automated lifecycle management
 
 ## Event Archival (Implemented)
 
@@ -91,9 +92,65 @@ Archived events are:
 - Excluded from active event workflows
 - Available for reporting and analytics
 
-Event state: AGENDA_PUBLISHED → **ARCHIVED**
+Event state: Any workflow state → **ARCHIVED**
+
+**Note**: Events can be archived from any state using the override validation checkbox (useful for cancelled events).
 
 </div>
+
+## Automated Publishing (Implemented)
+
+<span class="feature-status implemented">Implemented</span>
+
+### Auto-Publishing Schedule
+
+BATbern automatically publishes event content on a fixed schedule to reduce manual work and ensure timely publication:
+
+**Speaker Profiles** (30 days before event):
+- Cron job runs daily at 00:00 UTC
+- Checks all events in AGENDA_PUBLISHED or AGENDA_FINALIZED states
+- For events exactly 30 days away (or past this date if not yet published):
+  - Publishes all confirmed speaker profiles to public website
+  - Sets speaker.publishedAt timestamp
+  - Auto-creates "Newsletter: Speakers" task (if not exists)
+
+**Full Agenda** (14 days before event):
+- Cron job runs daily at 00:00 UTC
+- Checks all events in AGENDA_FINALIZED state
+- For events exactly 14 days away (or past this date if not yet published):
+  - Publishes complete session schedule with time slots
+  - Sets event.agendaPublishedAt timestamp
+  - Auto-creates "Newsletter: Final" task (if not exists)
+
+**Manual Override**:
+- Organizers can manually publish speakers/agenda before auto-publish dates
+- Use Publishing tab → "Publish Speakers Now" or "Publish Agenda Now"
+- Prevents duplicate auto-publishing (checks publishedAt timestamps)
+
+### Automated State Transitions (Implemented)
+
+<span class="feature-status implemented">Implemented</span>
+
+**EVENT_LIVE Transition** (on event day):
+- Cron job runs hourly
+- Checks all events in AGENDA_FINALIZED state
+- For events where current date/time >= event start time:
+  - Automatically transitions event to EVENT_LIVE state
+  - Sends real-time notification to organizers
+  - Triggers day-of-event systems (check-in, live updates)
+
+**EVENT_COMPLETED Transition** (after event ends):
+- Cron job runs hourly
+- Checks all events in EVENT_LIVE state
+- For events where current date/time >= event end time:
+  - Automatically transitions event to EVENT_COMPLETED state
+  - Sends post-event notification to organizers
+  - Triggers post-event workflows (feedback collection, archival preparation)
+
+**Configuration**:
+- Auto-transitions enabled by default (can be disabled in event settings)
+- Uses event.eventDate and event.eventTime for transition triggers
+- Handles timezone correctly (all times stored as UTC)
 
 ### Archival Best Practices
 
@@ -116,25 +173,69 @@ Event state: AGENDA_PUBLISHED → **ARCHIVED**
 
 ---
 
+## Agenda Finalization
+
+<span class="feature-status implemented">Implemented</span>
+
+### Purpose
+
+Lock the final agenda approximately 2 weeks before the event to allow for printing and final communications.
+
+### When to Finalize
+
+Typically 14 days before the event, after:
+- All speakers confirmed and reconfirmed
+- All slot assignments complete
+- Any last-minute dropouts resolved
+- Ready to send to printer
+
+### How to Finalize
+
+<div class="step" data-step="1">
+
+**Review Agenda Completeness**
+
+Verify all slots filled and all speakers confirmed (quality_reviewed AND slot assigned = confirmed state).
+
+</div>
+
+<div class="step" data-step="2">
+
+**Finalize Agenda**
+
+In the event edit modal, advance event state from AGENDA_PUBLISHED to **AGENDA_FINALIZED**.
+
+Event state: AGENDA_PUBLISHED → **AGENDA_FINALIZED**
+
+**Auto-created Tasks**:
+- Newsletter: Final (due: 14 days before event)
+- Catering (due: 30 days before event)
+
+</div>
+
+<div class="step" data-step="3">
+
+**Automatic Publishing Triggers**
+
+Once finalized, the 14-day auto-publish countdown begins:
+- System will auto-publish full agenda at 00:00 UTC 14 days before event
+- Or you can manually publish immediately via Publishing tab
+
+</div>
+
 ## Future Enhancements
 
 The following features are planned for future releases:
 
-## Step 11: Progressive Publishing
+## Step 11: Progressive Publishing (Manual Control)
 
 <span class="feature-status planned">Planned</span>
 
 ### Purpose
 
-Gradually release event information to build anticipation while allowing flexibility for minor adjustments.
+Manually control publishing timing for special cases where automated 30/14-day schedule doesn't fit.
 
-### Acceptance Criteria
-
-- ✅ Event landing page published with basic info
-- ✅ Topic list published (without speaker names initially)
-- ✅ Speaker profiles published
-- ✅ Complete agenda published with schedule
-- ✅ Event state = **PUBLISHED**
+### Manual Publishing Options
 
 ### Publishing Strategy
 
@@ -570,13 +671,14 @@ Anna
 
 ## Phase E Completion
 
-### Success Criteria (Archival)
+### Success Criteria (Complete Lifecycle)
 
-- ✅ Event has concluded
+- ✅ Agenda finalized (AGENDA_FINALIZED state)
+- ✅ Auto-publishing configured (speakers @ 30 days, agenda @ 14 days)
+- ✅ Event executed successfully (EVENT_LIVE → EVENT_COMPLETED auto-transitions)
 - ✅ Post-event activities completed
-- ✅ Event status changed to ARCHIVED
+- ✅ Event archived (ARCHIVED state)
 - ✅ Historical data preserved
-- ✅ Event state = **ARCHIVED**
 
 ### What Happens Next
 

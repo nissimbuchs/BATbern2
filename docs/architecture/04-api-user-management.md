@@ -128,7 +128,7 @@ description: |
   Retrieve a paginated list of users with optional filtering, sorting,
   field selection, and resource expansion.
 
-  **Authorization**: ADMIN or ORGANIZER role required
+  **Authorization**: ORGANIZER role required
 
   **Filter Syntax Examples**:
   - Single filter: {"role":"SPEAKER"}
@@ -235,7 +235,7 @@ responses:
   '401':
     description: Unauthorized
   '403':
-    description: Forbidden - requires ADMIN or ORGANIZER role
+    description: Forbidden - requires ORGANIZER role
   '500':
     description: Internal server error
 ```
@@ -499,7 +499,7 @@ operationId: getUserRoles
 description: |
   Retrieve roles for a specific user.
 
-  **Authorization**: ADMIN or ORGANIZER role required
+  **Authorization**: ORGANIZER role required
 
 security:
   - BearerAuth: []
@@ -531,7 +531,7 @@ responses:
   '401':
     description: Unauthorized
   '403':
-    description: Forbidden - requires ADMIN or ORGANIZER role
+    description: Forbidden - requires ORGANIZER role
   '404':
     description: User not found
   '500':
@@ -548,7 +548,7 @@ operationId: updateUserRoles
 description: |
   Update roles for a specific user.
 
-  **Authorization**: ADMIN or ORGANIZER role required
+  **Authorization**: ORGANIZER role required
 
   **Business Rules**:
   - System must maintain at least 2 active ORGANIZER role users
@@ -604,7 +604,7 @@ responses:
   '401':
     description: Unauthorized
   '403':
-    description: Forbidden - requires ADMIN or ORGANIZER role
+    description: Forbidden - requires ORGANIZER role
   '404':
     description: User not found
   '409':
@@ -685,7 +685,7 @@ responses:
   '401':
     description: Unauthorized
   '403':
-    description: Forbidden - can only view own activity unless ADMIN/ORGANIZER
+    description: Forbidden - can only view own activity unless ORGANIZER
   '404':
     description: User not found
   '500':
@@ -835,7 +835,7 @@ operationId: deleteUser
 description: |
   Delete a user and cascade deletion across all domain services.
 
-  **Authorization**: ADMIN role or self-deletion
+  **Authorization**: ORGANIZER role or self-deletion
 
   **Business Rules**:
   - Cannot delete last ORGANIZER user
@@ -1363,8 +1363,7 @@ PaginationMetadata:
 
 **Authorization Levels**:
 - Public (authenticated): GET /users/me, PUT /users/me, preferences, settings
-- ADMIN/ORGANIZER: GET /users (list all), GET /users/{id}, role management
-- ADMIN only: DELETE /users (GDPR deletion)
+- ORGANIZER: GET /users (list all), GET /users/{id}, role management, DELETE /users (GDPR deletion)
 - Self-service: Users can delete their own account
 
 **Role-Based Access Control**:

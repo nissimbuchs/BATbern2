@@ -93,8 +93,11 @@ Complete the event creation form:
 
 **Basic Information**:
 - **Event Name*** - Unique name (e.g., "BATbern 2025")
+- **Event Code*** - Auto-generated public identifier (e.g., "BAT-2025-001") - used in URLs and QR codes
 - **Event Type*** - Select: Full-Day, Afternoon, or Evening
 - **Description** - Event overview (optional, supports Markdown)
+- **Max Attendees** - Registration capacity limit (optional)
+- **Waitlist Enabled** - Allow waitlist when capacity reached
 
 **Timeline**:
 - **Event Date*** - Main conference date
@@ -109,9 +112,11 @@ Complete the event creation form:
 - **Canton** - Swiss canton (BE, ZH, etc.)
 - **Postal Code** - Swiss postal code
 
-**Capacity**:
-- **Max Attendees** - Registration limit (optional)
-- **Waitlist Enabled** - Allow waitlist when full
+**Publishing Settings**:
+- **Auto-publish Speakers** - Automatically publish speaker profiles 30 days before event (default: enabled)
+- **Auto-publish Agenda** - Automatically publish full agenda 14 days before event (default: enabled)
+- **Auto-transition to Live** - Automatically transition to EVENT_LIVE state on event day (default: enabled)
+- **Auto-transition to Completed** - Automatically transition to EVENT_COMPLETED state after event ends (default: enabled)
 
 </div>
 

@@ -91,10 +91,10 @@ For documentation purposes, we organize the 9 states into user-friendly phases:
 - Actions: Archive completed event, preserve historical data
 - [Learn more →](phase-e-publishing.md)
 
-**Phase F: Communication** <span class="feature-status planned">Planned</span>
+**Phase F: Communication** <span class="feature-status implemented">Implemented</span>
 
 - States: Tasks triggered at various event states
-- Actions: Send newsletters, assign moderators, coordinate logistics
+- Actions: Send newsletters, assign moderators, coordinate logistics, auto-publishing
 - [Learn more →](phase-f-communication.md)
 
 ---
