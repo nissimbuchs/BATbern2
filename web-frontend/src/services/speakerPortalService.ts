@@ -131,6 +131,47 @@ export interface ProfileUpdateRequest {
   languages?: string[];
 }
 
+// ============================================================================
+// Story 6.2b: Photo Upload Types (AC7)
+// ============================================================================
+
+/**
+ * Request to get presigned URL for photo upload
+ */
+export interface PhotoUploadRequest {
+  token: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+}
+
+/**
+ * Response from presigned URL endpoint
+ */
+export interface PresignedPhotoUploadResponse {
+  uploadUrl: string;
+  uploadId: string;
+  s3Key: string;
+  expiresIn: number;
+  maxSizeBytes: number;
+}
+
+/**
+ * Request to confirm photo upload
+ */
+export interface PhotoConfirmRequest {
+  token: string;
+  uploadId: string;
+  s3Key: string;
+}
+
+/**
+ * Response from photo confirm endpoint
+ */
+export interface PhotoConfirmResponse {
+  profilePictureUrl: string;
+}
+
 /**
  * Speaker Portal Service Class
  *
@@ -235,6 +276,118 @@ class SpeakerPortalService {
     } catch (error) {
       throw this.transformError(error);
     }
+  }
+
+  // ==========================================================================
+  // Story 6.2b: Photo Upload (AC7)
+  // ==========================================================================
+
+  /**
+   * Get presigned URL for profile photo upload.
+   * Story 6.2b AC7: Photo upload via presigned URL
+   *
+   * @param request Photo upload request with token and file metadata
+   * @returns Presigned URL response with upload details
+   */
+  async getPhotoPresignedUrl(request: PhotoUploadRequest): Promise<PresignedPhotoUploadResponse> {
+    try {
+      const response = await apiClient.post<PresignedPhotoUploadResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/profile/photo/presigned-url`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Confirm profile photo upload and update User profile.
+   * Story 6.2b AC7: Upload confirmation
+   *
+   * @param request Confirm request with token, uploadId, and s3Key
+   * @returns CloudFront URL of the uploaded photo
+   */
+  async confirmPhotoUpload(request: PhotoConfirmRequest): Promise<PhotoConfirmResponse> {
+    try {
+      const response = await apiClient.post<PhotoConfirmResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/profile/photo/confirm`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Upload profile photo using the 3-phase presigned URL flow.
+   * This is a convenience method that handles the full upload flow.
+   *
+   * @param token Magic link token
+   * @param file File to upload
+   * @param onProgress Optional progress callback (0-100)
+   * @returns CloudFront URL of the uploaded photo
+   */
+  async uploadProfilePhoto(
+    token: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
+    // Phase 1: Get presigned URL
+    const presignedResponse = await this.getPhotoPresignedUrl({
+      token,
+      fileName: file.name,
+      fileSize: file.size,
+      contentType: file.type,
+    });
+
+    // Phase 2: Upload directly to S3
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          reject(new Error(`S3 upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('S3 upload failed'));
+      });
+
+      xhr.open('PUT', presignedResponse.uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+
+    // Phase 3: Confirm upload
+    const confirmResponse = await this.confirmPhotoUpload({
+      token,
+      uploadId: presignedResponse.uploadId,
+      s3Key: presignedResponse.s3Key,
+    });
+
+    return confirmResponse.profilePictureUrl;
   }
 
   /**

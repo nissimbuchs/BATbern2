@@ -30,6 +30,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { speakerPortalService, ProfileUpdateRequest } from '@/services/speakerPortalService';
+import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 
 type PageState = 'loading' | 'form' | 'error';
 
@@ -66,6 +67,9 @@ const ProfileUpdatePage = () => {
 
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Photo upload state
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
 
   // Fetch profile
   const {
@@ -128,6 +132,22 @@ const ProfileUpdatePage = () => {
   // Mark form as dirty when values change
   const markDirty = useCallback(() => {
     setHasUnsavedChanges(true);
+  }, []);
+
+  // Handle photo upload success - refresh profile to get new photo URL
+  const handlePhotoUploaded = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (url: string) => {
+      setPhotoUploadError(null);
+      // Refresh the profile to get the updated photo URL
+      queryClient.invalidateQueries({ queryKey: ['speaker-profile', token] });
+    },
+    [queryClient, token]
+  );
+
+  // Handle photo upload error
+  const handlePhotoError = useCallback((error: { type: string; message: string }) => {
+    setPhotoUploadError(error.message);
   }, []);
 
   // Validate form
@@ -353,6 +373,19 @@ const ProfileUpdatePage = () => {
               </div>
 
               <div className="space-y-4">
+                {/* Profile Photo Upload (AC7) */}
+                <div className="flex justify-center mb-6">
+                  <ProfilePhotoUpload
+                    token={token!}
+                    currentPhotoUrl={profile.profilePictureUrl}
+                    onPhotoUploaded={handlePhotoUploaded}
+                    onError={handlePhotoError}
+                  />
+                </div>
+                {photoUploadError && (
+                  <div className="text-center text-sm text-red-400 mb-4">{photoUploadError}</div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="firstName" className="block text-sm text-zinc-400 mb-2">
