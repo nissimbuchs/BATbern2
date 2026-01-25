@@ -57,6 +57,10 @@ async function globalSetup() {
 
   console.log('[Global Setup] ✓ Tokens loaded from file, setting up authenticated state');
 
+  // Export AUTH_TOKEN to environment for API integration tests
+  process.env.AUTH_TOKEN = idToken;
+  console.log('[Global Setup] ✓ AUTH_TOKEN exported to environment');
+
   // Create browser and page to set up auth state
   const browser = await chromium.launch();
   const context = await browser.newContext();

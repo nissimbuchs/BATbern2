@@ -1,0 +1,468 @@
+1
+00:00:00,000 --> 00:00:10,333
+Welcome to the BATbern Event Management Platform!
+
+2
+00:00:10,333 --> 00:00:20,666
+Today I'll show you how to plan an event without losing your mind.
+
+3
+00:00:20,666 --> 00:00:31,000
+We'll walk through the complete event lifecycle, from "Oh god, we need an event" to "Finally over, into the archive it goes!" You'll see all the important steps an organizer takes to plan a Berner Architekten Treffen without panicking.
+
+4
+00:00:31,000 --> 00:00:37,200
+We begin at the Event Dashboard.
+
+5
+00:00:37,200 --> 00:00:43,400
+This is your command center, where you keep track of all events you've ever organized or will organize.
+
+6
+00:00:43,400 --> 00:00:49,600
+Authentication via AWS Cognito is already done.
+
+7
+00:00:49,600 --> 00:00:55,800
+You see your username in the top right, giving you the power to use all organizer functions.
+
+8
+00:00:55,800 --> 00:01:02,000
+With great power comes great responsibility!
+
+9
+00:01:02,000 --> 00:01:10,500
+Now we're creating a brand new event! Click the "New Event" button in the top right. Boom!
+
+10
+00:01:10,500 --> 00:01:19,000
+A modal form appears. Don't worry, it looks like a lot, but we'll fill it out together.
+
+11
+00:01:19,000 --> 00:01:25,333
+Event number. A unique identifier for this event.
+
+12
+00:01:25,333 --> 00:01:31,666
+The system internally uses the format "BATbern" followed by the number. Like a birth certificate for your event.
+
+13
+00:01:31,666 --> 00:01:38,000
+This serves to identify it in the database and URLs.
+
+14
+00:01:38,000 --> 00:01:45,333
+Title. This is the name that should excite your participants!
+
+15
+00:01:45,333 --> 00:01:52,666
+"Boring Architecture Event Number 47" would be honest, but maybe not the best choice.
+
+16
+00:01:52,666 --> 00:02:00,000
+Choose something meaningful that people will see on the public website.
+
+17
+00:02:00,000 --> 00:02:05,000
+Description. A brief explanation of the event topic.
+
+18
+00:02:05,000 --> 00:02:10,000
+This information helps interested parties understand why they should definitely register.
+
+19
+00:02:10,000 --> 00:02:15,000
+Or at least, what it's about.
+
+20
+00:02:15,000 --> 00:02:21,200
+Event type.
+
+21
+00:02:21,200 --> 00:02:27,400
+Choose between three formats: "Evening" for after-work events, where you can network after work.
+
+22
+00:02:27,400 --> 00:02:33,600
+"Afternoon" for afternoon events, perfect for those who prefer the couch in the evening.
+
+23
+00:02:33,600 --> 00:02:39,800
+Or "Full-day" for all-day conferences. You'll need lots of coffee for that!
+
+24
+00:02:39,800 --> 00:02:46,000
+This influences time planning and slot management.
+
+25
+00:02:46,000 --> 00:02:51,666
+Date and registration deadline. The event date determines when the event takes place.
+
+26
+00:02:51,666 --> 00:02:57,332
+Please choose a date in the future, we don't support time travel yet.
+
+27
+00:02:57,332 --> 00:03:03,000
+The registration deadline is important for participant management.
+
+28
+00:03:03,000 --> 00:03:09,333
+Venue. Name and address of the event location.
+
+29
+00:03:09,333 --> 00:03:15,666
+So not "my basement", but a real place with an address.
+
+30
+00:03:15,666 --> 00:03:22,000
+This information will be displayed on the public website, so people can actually go there.
+
+31
+00:03:22,000 --> 00:03:27,666
+We click "Save" and the event is created. Tada!
+
+32
+00:03:27,666 --> 00:03:33,332
+The system automatically returns to the dashboard, and there it is! Your brand new event in the list.
+
+33
+00:03:33,332 --> 00:03:39,000
+Your baby is born!
+
+34
+00:03:39,000 --> 00:03:45,000
+After event creation, we navigate to the event detail page. Here we can assign tasks to team members.
+
+35
+00:03:45,000 --> 00:03:51,000
+Because why should you do everything alone when you have a whole team?
+
+36
+00:03:51,000 --> 00:03:57,000
+Click "Edit" to reopen the event form.
+
+37
+00:03:57,000 --> 00:04:03,500
+Switch to the "Tasks" tab.
+
+38
+00:04:03,500 --> 00:04:10,000
+Here you see a predefined list of standard tasks that occur with every event.
+
+39
+00:04:10,000 --> 00:04:16,500
+The system knows its stuff, it knows what needs to be done.
+
+40
+00:04:16,500 --> 00:04:23,000
+For each task, we select a responsible organizer from the dropdown menu.
+
+41
+00:04:23,000 --> 00:04:29,500
+This ensures all important activities are clearly assigned and nothing is forgotten.
+
+42
+00:04:29,500 --> 00:04:36,000
+Because forgotten tasks lead to chaos, and chaos leads to... well, more chaos.
+
+43
+00:04:36,000 --> 00:04:40,500
+After assignment, we click "Save".
+
+44
+00:04:40,500 --> 00:04:45,000
+The system saves all tasks and returns to the event detail page. Perfect!
+
+45
+00:04:45,000 --> 00:04:51,400
+To review the tasks, we navigate to the task list.
+
+46
+00:04:51,400 --> 00:04:57,800
+Initially, you see the default filter "My Tasks", showing only your own tasks.
+
+47
+00:04:57,800 --> 00:05:04,200
+But we're curious and want to know what the others are up to.
+
+48
+00:05:04,200 --> 00:05:10,600
+We change the filter to "All Tasks" to see all assignments.
+
+49
+00:05:10,600 --> 00:05:17,000
+This gives an overview of responsibilities across the team. And who might have nothing to do.
+
+50
+00:05:17,000 --> 00:05:22,500
+Back on the event detail page, we begin content planning! The first step is topic selection.
+
+51
+00:05:22,500 --> 00:05:28,000
+Click "Select Topic".
+
+52
+00:05:28,000 --> 00:05:32,333
+A view opens with various topic categories.
+
+53
+00:05:32,333 --> 00:05:36,666
+The default view shows a list, but we use the Heat Map for a better overview.
+
+54
+00:05:36,666 --> 00:05:41,000
+Because who doesn't love a good Heat Map?
+
+55
+00:05:41,000 --> 00:05:48,250
+The Heat Map is a two-dimensional matrix that visualizes topics by popularity and timeliness.
+
+56
+00:05:48,250 --> 00:05:55,500
+Bright colors show popular topics, the rockstars among architecture topics.
+
+57
+00:05:55,500 --> 00:06:02,750
+Darker colors show less frequently chosen topics. The underdogs that also deserve a chance.
+
+58
+00:06:02,750 --> 00:06:10,000
+This helps with strategic topic planning based on participant interests.
+
+59
+00:06:10,000 --> 00:06:15,500
+We select a topic from the Heat Map by clicking on a cell.
+
+60
+00:06:15,500 --> 00:06:21,000
+The system marks the selection and displays details.
+
+61
+00:06:21,000 --> 00:06:26,500
+After confirmation, the system saves the selected topic and automatically opens the speaker brainstorming view.
+
+62
+00:06:26,500 --> 00:06:32,000
+The system is like a good assistant, it always knows what comes next!
+
+63
+00:06:32,000 --> 00:06:37,200
+Now we collect potential speakers for the selected topic!
+
+64
+00:06:37,200 --> 00:06:42,400
+In this phase, we create a pool of candidates we'll contact later.
+
+65
+00:06:42,400 --> 00:06:47,600
+We add four speaker candidates.
+
+66
+00:06:47,600 --> 00:06:52,800
+This gives us enough options for outreach, in case not everyone accepts.
+
+67
+00:06:52,800 --> 00:06:58,000
+Because speakers are like cats, sometimes they just say no, for no reason.
+
+68
+00:06:58,000 --> 00:07:03,666
+After adding all candidates, we click "Proceed to Contact".
+
+69
+00:07:03,666 --> 00:07:09,332
+The system automatically switches to the Kanban view, where we can track contact status. Kanban!
+
+70
+00:07:09,332 --> 00:07:15,000
+That sounds important and organized!
+
+71
+00:07:15,000 --> 00:07:22,666
+We're now in the speaker contact phase.
+
+72
+00:07:22,666 --> 00:07:30,332
+The Kanban board shows several columns representing the workflow.
+
+73
+00:07:30,332 --> 00:07:38,000
+From "Who is this?" through "Contacted" to "Hurray, they accepted!" This visualization gives a quick overview of speaker acquisition progress.
+
+74
+00:07:38,000 --> 00:07:44,000
+Now we systematically contact all speaker candidates.
+
+75
+00:07:44,000 --> 00:07:50,000
+For each candidate, we click on the card and open the contact dialog.
+
+76
+00:07:50,000 --> 00:07:56,000
+This documentation is important for tracking and for other team members who need to check the status.
+
+77
+00:07:56,000 --> 00:08:02,000
+Otherwise, next week someone asks: "Did we contact them already?" And nobody knows. Chaos avoided!
+
+78
+00:08:02,000 --> 00:08:08,000
+After receiving positive responses, we move speakers through the workflow!
+
+79
+00:08:08,000 --> 00:08:14,000
+It's like Tetris, but with people. We use drag-and-drop to move cards between columns.
+
+80
+00:08:14,000 --> 00:08:20,000
+We move four speakers to the "READY" column.
+
+81
+00:08:20,000 --> 00:08:26,000
+In the next step, we move speakers from "READY" to "ACCEPTED".
+
+82
+00:08:26,000 --> 00:08:32,000
+All four READY speakers are moved to ACCEPTED. Running like clockwork!
+
+83
+00:08:32,000 --> 00:08:38,666
+Before speakers can submit their content, we must publish the topic.
+
+84
+00:08:38,666 --> 00:08:45,332
+We navigate to the "Publication" tab and click "Publish Topic".
+
+85
+00:08:45,332 --> 00:08:52,000
+In the lower area, a preview of the event on the public page is visible. Nice, right?
+
+86
+00:08:52,000 --> 00:08:58,500
+Back in the speakers tab, we now submit presentation content for each speaker.
+
+87
+00:08:58,500 --> 00:09:05,000
+Title, abstract, the usual suspects.
+
+88
+00:09:05,000 --> 00:09:11,500
+We repeat this process for all three speakers with confirmed presentations. Copy, paste, repeat.
+
+89
+00:09:11,500 --> 00:09:18,000
+Just kidding, each speaker has unique content of course!
+
+90
+00:09:18,000 --> 00:09:23,000
+After content submission comes quality review.
+
+91
+00:09:23,000 --> 00:09:28,000
+Now that we have the content, we can publish the speakers. We click "Publish Speakers".
+
+92
+00:09:28,000 --> 00:09:33,000
+And here it comes!
+
+93
+00:09:33,000 --> 00:09:38,000
+Now on the public website, not only the topic but also the confirmed speakers with their topics are visible.
+
+94
+00:09:38,000 --> 00:09:43,000
+The world can see it!
+
+95
+00:09:43,000 --> 00:09:49,666
+Back in the speakers tab, we now review and approve each submitted presentation.
+
+96
+00:09:49,666 --> 00:09:56,332
+We're playing quality control now. Looks good, looks good, that too. We approve all three presentations.
+
+97
+00:09:56,332 --> 00:10:03,000
+Green light for all!
+
+98
+00:10:03,000 --> 00:10:09,000
+For slot assignment, we switch to the Sessions view. Click "Manage Slot Assignments".
+
+99
+00:10:09,000 --> 00:10:15,000
+Now it's getting scheduled!
+
+100
+00:10:15,000 --> 00:10:21,000
+For quick initial planning, we use the Auto-Assign function.
+
+101
+00:10:21,000 --> 00:10:27,000
+The system performs automatic assignment. Magic! The system does the work.
+
+102
+00:10:27,000 --> 00:10:33,000
+Manual assignment is also possible here through drag-and-drop.
+
+103
+00:10:33,000 --> 00:10:39,000
+In case you don't trust the computer or just like moving things around.
+
+104
+00:10:39,000 --> 00:10:44,000
+After slot assignment, we click "Back to Event".
+
+105
+00:10:44,000 --> 00:10:53,000
+The final step is agenda publication! The grand finale! Click "Publish Agenda". And...
+
+106
+00:10:53,000 --> 00:11:02,000
+The event is now fully planned and publicly accessible including detailed agenda! Confetti! Fireworks!
+
+107
+00:11:02,000 --> 00:11:11,000
+Okay, maybe just in our minds, but still! We made it!
+
+108
+00:11:11,000 --> 00:11:18,000
+After the event has taken place, we archive it for historical records.
+
+109
+00:11:18,000 --> 00:11:25,000
+Switch to the "Overview" tab and click "Edit". Time to retire the event.
+
+110
+00:11:25,000 --> 00:11:34,000
+In the form, select "ARCHIVED" as the status. The event was great, but now it's history.
+
+111
+00:11:34,000 --> 00:11:39,666
+For testing purposes, you can override the workflow validation.
+
+112
+00:11:39,666 --> 00:11:45,332
+Activate the "Override Workflow Validation" checkbox and click "Save".
+
+113
+00:11:45,332 --> 00:11:51,000
+This is like the emergency exit, in case things don't go according to plan.
+
+114
+00:11:51,000 --> 00:11:57,750
+With that, the complete event workflow is finished!
+
+115
+00:11:57,750 --> 00:12:04,500
+From the first idea to the archive, we've made the whole journey together!
+
+116
+00:12:04,500 --> 00:12:11,250
+You're now an event management pro! Thank you for your attention!
+
+117
+00:12:11,250 --> 00:12:18,000
+And remember: Event planning is fun, at least with the right software! Goodbye! See you at the next BATbern. Geetings from the Creator Nissim.
+

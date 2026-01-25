@@ -142,7 +142,13 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   const modalPrefix = isEditMode ? 'editModal' : 'createModal';
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      data-testid="create-topic-modal"
+    >
       <DialogTitle>
         {t(`topicBacklog.${modalPrefix}.title`, isEditMode ? 'Edit Topic' : 'Create New Topic')}
       </DialogTitle>
@@ -150,7 +156,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
           {createTopicMutation.isError && (
-            <Alert severity="error">
+            <Alert severity="error" data-testid="topic-form-error">
               {t(
                 `topicBacklog.${modalPrefix}.errors.${isEditMode ? 'updateFailed' : 'createFailed'}`,
                 `Failed to ${isEditMode ? 'update' : 'create'} topic. Please try again.`
@@ -167,7 +173,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
             required
             fullWidth
             disabled={createTopicMutation.isPending}
-            inputProps={{ maxLength: 255 }}
+            inputProps={{ maxLength: 255, 'data-testid': 'topic-title-input' }}
           />
 
           <TextField
@@ -180,6 +186,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
             multiline
             rows={4}
             disabled={createTopicMutation.isPending}
+            inputProps={{ 'data-testid': 'topic-description-input' }}
           />
 
           <FormControl
@@ -187,26 +194,28 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
             required
             error={!!errors.category}
             disabled={createTopicMutation.isPending}
+            data-testid="topic-category-select"
           >
             <InputLabel>{t(`topicBacklog.${modalPrefix}.fields.category`, 'Category')}</InputLabel>
             <Select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               label={t(`topicBacklog.${modalPrefix}.fields.category`, 'Category')}
+              data-testid="topic-category-select-input"
             >
-              <MenuItem value="technical">
+              <MenuItem value="technical" data-testid="category-option-technical">
                 {t('topicBacklog.filters.categories.technical', 'Technical')}
               </MenuItem>
-              <MenuItem value="management">
+              <MenuItem value="management" data-testid="category-option-management">
                 {t('topicBacklog.filters.categories.management', 'Management')}
               </MenuItem>
-              <MenuItem value="soft_skills">
+              <MenuItem value="soft_skills" data-testid="category-option-soft-skills">
                 {t('topicBacklog.filters.categories.softSkills', 'Soft Skills')}
               </MenuItem>
-              <MenuItem value="industry_trends">
+              <MenuItem value="industry_trends" data-testid="category-option-industry-trends">
                 {t('topicBacklog.filters.categories.industryTrends', 'Industry Trends')}
               </MenuItem>
-              <MenuItem value="tools_platforms">
+              <MenuItem value="tools_platforms" data-testid="category-option-tools-platforms">
                 {t('topicBacklog.filters.categories.toolsPlatforms', 'Tools & Platforms')}
               </MenuItem>
             </Select>
@@ -216,7 +225,11 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={createTopicMutation.isPending}>
+        <Button
+          onClick={handleClose}
+          disabled={createTopicMutation.isPending}
+          data-testid="cancel-topic-button"
+        >
           {t('common.cancel', 'Cancel')}
         </Button>
         <Button
@@ -224,6 +237,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
           onClick={handleSubmit}
           disabled={createTopicMutation.isPending}
           startIcon={createTopicMutation.isPending ? <CircularProgress size={20} /> : undefined}
+          data-testid="submit-topic-button"
         >
           {createTopicMutation.isPending
             ? t(

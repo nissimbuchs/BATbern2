@@ -353,10 +353,26 @@ export interface components {
        */
       limit: number;
       /**
-       * @description Total number of items
-       * @example 42
+       * Format: int64
+       * @description Total number of items across all pages
+       * @example 87
        */
-      total: number;
+      totalItems: number;
+      /**
+       * @description Total number of pages
+       * @example 5
+       */
+      totalPages: number;
+      /**
+       * @description Whether there is a next page
+       * @example true
+       */
+      hasNext: boolean;
+      /**
+       * @description Whether there is a previous page
+       * @example false
+       */
+      hasPrev: boolean;
     };
     CreateTopicRequest: {
       /**

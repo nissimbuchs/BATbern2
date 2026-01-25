@@ -75,9 +75,14 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    if (iframeRef.current?.contentWindow) {
-      // Reload iframe
-      iframeRef.current.contentWindow.location.reload();
+    if (iframeRef.current?.contentWindow && typeof window !== 'undefined') {
+      // Reload iframe (only in browser environment)
+      try {
+        iframeRef.current.contentWindow.location.reload();
+      } catch (error) {
+        // Ignore errors in test environment
+        console.warn('Failed to reload iframe:', error);
+      }
     }
     // Simulate refresh delay
     await new Promise((resolve) => setTimeout(resolve, 500));

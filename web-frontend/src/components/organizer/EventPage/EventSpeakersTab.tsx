@@ -301,7 +301,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
             onChange={handleViewChange}
             aria-label={t('events:eventPage.speakers.viewMode', 'View mode')}
           >
-            <ToggleButton value="kanban" aria-label="Kanban view">
+            <ToggleButton value="kanban" aria-label="Kanban view" data-testid="kanban-view-toggle">
               <KanbanIcon sx={{ mr: 1 }} />
               {t('events:eventPage.speakers.kanban', 'Kanban')}
             </ToggleButton>

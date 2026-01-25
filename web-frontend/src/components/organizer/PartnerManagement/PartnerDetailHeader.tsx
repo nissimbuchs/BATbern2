@@ -75,7 +75,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   const tierColor = TIER_COLORS[partner.partnershipLevel] || 'default';
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+    <Paper elevation={2} sx={{ p: 3, mb: 3 }} data-testid="partner-detail-header">
       <Stack spacing={3}>
         {/* Back Button */}
         <Box>
@@ -225,7 +225,13 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
             <Button variant="outlined" startIcon={<NoteAdd />} size="small">
               {t('detail.notesTab.addNote')}
             </Button>
-            <Button variant="contained" startIcon={<Edit />} onClick={handleEdit} size="small">
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              onClick={handleEdit}
+              size="small"
+              data-testid="edit-partner-button"
+            >
               {t('modal.editTitle')}
             </Button>
           </Stack>

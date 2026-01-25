@@ -57,6 +57,7 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
             value={filters.category || ''}
             onChange={handleCategoryChange}
             label={t('topicBacklog.filters.category', 'Category')}
+            data-testid="filter-category"
           >
             <MenuItem value="">
               <em>{t('topicBacklog.filters.all', 'All Categories')}</em>
@@ -109,12 +110,16 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
             value={filters.sort || '-stalenessScore'}
             onChange={handleSortChange}
             label={t('topicBacklog.filters.sort', 'Sort By')}
+            data-testid="filter-sort"
           >
             <MenuItem value="-stalenessScore">
               {t('topicBacklog.filters.sortOptions.safestFirst', 'Safest First (Staleness ↓)')}
             </MenuItem>
             <MenuItem value="stalenessScore">
               {t('topicBacklog.filters.sortOptions.recentFirst', 'Recent First (Staleness ↑)')}
+            </MenuItem>
+            <MenuItem value="-createdAt">
+              {t('topicBacklog.filters.sortOptions.newestFirst', 'Newest First (Recently Added)')}
             </MenuItem>
             <MenuItem value="title">
               {t('topicBacklog.filters.sortOptions.titleAZ', 'Title (A-Z)')}

@@ -19,26 +19,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
-
-/**
- * Helper: Login as an organizer
- */
-async function loginAsOrganizer(page: Page) {
-  const testEmail = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
-  const testPassword = process.env.E2E_TEST_PASSWORD || 'Test123!@#';
-
-  await page.goto(`${BASE_URL}/login`);
-  await page.fill('input[name="email"]', testEmail);
-  await page.fill('input[name="password"]', testPassword);
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL(`${BASE_URL}/organizer/events`);
-}
+import { BASE_URL, API_URL } from '../../playwright.config';
 
 // Type definitions for Story 5.2 API responses
 interface SpeakerPoolResponse {
@@ -52,7 +33,14 @@ interface SpeakerPoolResponse {
  */
 async function createTestEvent(page: Page): Promise<string> {
   await page.goto(`${BASE_URL}/organizer/events`);
-  await page.click('button:has-text("New Event")');
+
+  // Wait for dashboard to load (Quick Actions sidebar must be visible)
+  await page.waitForSelector('[data-testid="quick-actions"]', { timeout: 10000 });
+
+  await page.click('[data-testid="new-event-button"]');
+
+  // Wait for event form modal to open
+  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
 
   // Fill event form
   await page.fill('input[name="title"]', `E2E Speaker Test ${Date.now()}`);
@@ -63,10 +51,10 @@ async function createTestEvent(page: Page): Promise<string> {
 
   // Select event type
   await page.click('[data-testid="event-type-selector"]');
-  await page.click('[role="option"]:has-text("Evening Event")');
+  await page.click('[data-testid="event-type-option-evening"]');
 
   // Submit form
-  await page.click('button[type="submit"]:has-text("Create Event")');
+  await page.click('button[type="submit"]');
 
   // Wait for success and extract event code
   await page.waitForSelector('[data-testid="event-card"]', { timeout: 5000 });

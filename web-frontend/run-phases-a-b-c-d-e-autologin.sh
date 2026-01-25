@@ -28,6 +28,7 @@ export TEST_ENV="development"
 export E2E_BASE_URL="http://localhost:8100"
 export E2E_API_URL="http://localhost:8000"
 export E2E_AWS_REGION="eu-central-1"
+export INCLUDE_DOCS_TESTS="true"
 
 echo "Test Configuration:"
 echo "  Environment: $TEST_ENV"

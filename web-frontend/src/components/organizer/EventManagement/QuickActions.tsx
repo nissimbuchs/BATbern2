@@ -56,6 +56,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           fullWidth
           onClick={onNewEvent}
           aria-label={t('dashboard.actions.newEvent')}
+          data-testid="new-event-button"
         >
           {t('dashboard.actions.newEvent')}
         </Button>
@@ -67,6 +68,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           fullWidth
           onClick={handleEventTypesClick}
           aria-label={t('dashboard.actions.eventTypes')}
+          data-testid="event-types-button"
         >
           {t('dashboard.actions.eventTypes')}
         </Button>
@@ -78,6 +80,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           fullWidth
           onClick={onBatchImport}
           aria-label="Import historical events"
+          data-testid="batch-import-button"
         >
           {t('common:event.batchImport.button')}
         </Button>
@@ -89,6 +92,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           fullWidth
           onClick={onBatchImportSessions}
           aria-label="Import historical sessions"
+          data-testid="session-batch-import-button"
         >
           {t('common:session.batchImport.button')}
         </Button>
@@ -100,6 +104,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           fullWidth
           onClick={handleManageTopicsClick}
           aria-label={t('dashboard.actions.manageTopics')}
+          data-testid="manage-topics-button"
         >
           {t('dashboard.actions.manageTopics')}
         </Button>

@@ -322,7 +322,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   return (
     <Paper
       ref={setNodeRef}
-      data-testid={`status-lane-${status.toLowerCase()}`}
+      data-testid={`status-lane-${status}`}
       sx={{
         p: 2,
         height: '100%',
@@ -334,11 +334,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography
-          variant="h6"
-          sx={{ color }}
-          data-testid={`status-lane-heading-${status.toLowerCase()}`}
-        >
+        <Typography variant="h6" sx={{ color }} data-testid={`status-lane-heading-${status}`}>
           {t(`organizer:speakerStatus.${status}`)}
         </Typography>
         <Chip
@@ -405,6 +401,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
       {...listeners}
       {...attributes}
       onClick={handleClick}
+      data-testid="speaker-card"
       sx={{
         p: 2,
         cursor: 'grab',
