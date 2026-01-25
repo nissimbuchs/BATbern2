@@ -39,7 +39,8 @@ Click the **+ Create New Company** button (top-right).
 Complete the company creation form:
 
 **Basic Information**:
-- **Company Name*** - Legal name (e.g., "Müller Architekten AG")
+- **Name*** - Legal name (e.g., "Müller Architekten AG") - used as internal identifier
+- **Display Name** - Optional public-facing name (defaults to Name if not provided)
 - **Swiss UID*** - CHE-xxx.xxx.xxx format (Swiss companies only)
 - **Country*** - Switzerland or international
 - **Canton** - For Swiss companies (ZH, BE, VD, etc.)
@@ -181,7 +182,7 @@ Use the search box at the top of the company list:
 ```
 
 Searches across:
-- Company name
+- Company name (both internal name and display name)
 - Swiss UID
 - City
 - Canton

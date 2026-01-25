@@ -2,8 +2,16 @@
 
 **Story**: Epic 1, Story 1.16 - Event Management Service
 **Screen**: Main Organizer Dashboard
-**User Role**: Organizer
-**Related FR**: FR2 (16-Step Workflow Management), FR20 (Intelligent Notifications)
+**User Role**: ORGANIZER
+**Status**: ✅ **IMPLEMENTED IN MVP** (with redesigned workflow)
+**Related FR**: FR2 (Event Workflow Management), FR20 (Intelligent Notifications)
+
+---
+
+## ⚠️ WIREFRAME SHOWS ORIGINAL 16-STEP CONCEPT
+
+**Actual Implementation**: 9-state event workflow + per-speaker states + task system
+See `/docs/architecture/06a-workflow-state-machines.md` for details.
 
 ---
 
@@ -65,13 +73,14 @@
 - **Quick Actions**: One-click access to frequent tasks
 - **Team Feed**: Live updates with @mentions and notifications
 
-## Functional Requirements Met
+## Functional Requirements Met (Actual Implementation)
 
-- **FR2**: Display 16-step workflow progress for multiple events
+- **FR2**: Display 9-state event workflow progress for multiple events
 - **FR20**: Show intelligent notifications and critical task alerts
-- **Event Pipeline**: Visual representation of all active events
-- **Task Management**: Prioritized critical tasks with action buttons
-- **Team Collaboration**: Real-time activity feed
+- **Event Pipeline**: Visual representation of all active events with state indicators
+- **Task Management**: Configurable task system (not workflow states)
+- **Speaker Workflow**: Per-speaker state tracking (10 possible states)
+- **Team Collaboration**: Activity tracking and task assignment
 
 ## User Interactions
 

@@ -2,8 +2,11 @@
 
 **Story**: Epic 2, Story 5 - React Frontend CRUD Foundation (User Management)
 **Screen**: User Management Screen (Organizer-only)
-**User Role**: Organizer
+**User Role**: ORGANIZER
+**Status**: ✅ **IMPLEMENTED IN MVP**
 **Related FR**: FR23 (User Management interface), FR22 (User role management)
+
+**Roles**: ORGANIZER, SPEAKER, PARTNER, ATTENDEE (no ADMIN role - organizers have admin privileges)
 
 ---
 

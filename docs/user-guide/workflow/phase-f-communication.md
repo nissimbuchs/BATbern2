@@ -3,32 +3,103 @@
 > Execute event and archive for historical reference
 
 <div class="workflow-phase phase-f">
-<strong>Phase F: Communication & Archival</strong><br>
-Status: <span class="feature-status planned">Planned</span><br>
-Duration: 2-4 weeks (pre and post-event)<br>
-State Transitions: FINALIZED → EXECUTED → ARCHIVED
+<strong>Phase F: Task Management & Communications</strong><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
+Duration: Throughout event lifecycle<br>
+Task System: Auto-creating tasks based on event state transitions
 </div>
 
 ## Overview
 
-Phase F handles final pre-event communications, day-of-event logistics, and post-event archival for historical data.
+Phase F represents the **Task System** - a separate workflow from event states and speaker states. Tasks are assignable work items that auto-create when events reach specific states and must be completed by organizers.
 
-**Key Deliverable**: Executed event with complete historical archive
+**Key Concept**: Tasks are NOT workflow states. They are parallel work items managed via a Kanban-style task board.
+
+**Key Deliverable**: Completed tasks ensuring smooth event execution (newsletters, venue booking, catering, moderator assignment, etc.)
+
+## Task System Architecture
+
+<span class="feature-status implemented">Implemented</span>
+
+### Default System Tasks (7 Auto-Creating Tasks)
+
+BATbern includes 7 pre-configured tasks that automatically create when events reach specific workflow states:
+
+**Triggered at TOPIC_SELECTION**:
+1. **Venue Booking** - Due: 90 days before event
+2. **Partner Meeting** - Due: event day
+3. **Moderator Assignment** - Due: 14 days before event
+4. **Newsletter: Topic** - Due: immediately
+
+**Triggered at AGENDA_PUBLISHED**:
+5. **Newsletter: Speakers** - Due: 30 days before event
+
+**Triggered at AGENDA_FINALIZED**:
+6. **Newsletter: Final** - Due: 14 days before event
+7. **Catering** - Due: 30 days before event
+
+### Task States
+
+All tasks progress through 4 states:
+
+- **TODO** - Not started (overdue tasks highlighted in red)
+- **IN_PROGRESS** - Currently working on
+- **COMPLETED** - Finished with completion notes
+- **CANCELLED** - Not needed (event cancelled or task no longer relevant)
+
+### Task Dashboard
+
+<span class="feature-status implemented">Implemented</span>
+
+Access tasks via the Task Board (Kanban-style interface):
+
+**Columns**:
+- TODO (with overdue indicator)
+- IN_PROGRESS
+- COMPLETED
+
+**Filters**:
+- My Tasks (assigned to me)
+- All Tasks (team-wide view)
+- By Event (tasks for specific event)
+- By Due Date (this week, next week, overdue)
+
+**Actions**:
+- Drag-and-drop between states
+- Assign/reassign tasks to organizers
+- Add completion notes
+- Create custom tasks
 
 ## Step 13: Newsletter Distribution
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented via Task System</span>
 
 ### Purpose
 
-Send targeted email communications to attendees, speakers, and partners before and after the event.
+Send targeted email communications to attendees, speakers, and partners at key milestones.
 
-### Acceptance Criteria
+### Auto-Created Newsletter Tasks
 
-- ✅ Pre-event newsletter sent (3 days before)
-- ✅ Day-before reminder sent
-- ✅ Day-of-event welcome sent
-- ✅ Post-event thank you and survey sent
+The following newsletter tasks auto-create as the event progresses:
+
+**Newsletter: Topic** - Auto-created when event reaches TOPIC_SELECTION
+- Due: Immediately
+- Purpose: Announce event topics to build interest
+- Recipients: Mailing list subscribers, past attendees
+
+**Newsletter: Speakers** - Auto-created when event reaches AGENDA_PUBLISHED
+- Due: 30 days before event
+- Purpose: Announce confirmed speakers
+- Recipients: Registered attendees, mailing list
+- **Note**: Works with auto-publishing feature (speakers auto-publish @ 30 days)
+
+**Newsletter: Final** - Auto-created when event reaches AGENDA_FINALIZED
+- Due: 14 days before event
+- Purpose: Send final details, logistics, full schedule
+- Recipients: Registered attendees, speakers, partners
+- **Note**: Works with auto-publishing feature (agenda auto-publishes @ 14 days)
+
+### How Newsletters Work with Tasks
 
 ### Newsletter Types
 
@@ -226,7 +297,14 @@ Top Links:
 
 ## Step 14: Moderator Assignment
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented via Task System</span>
+
+### Auto-Created Task
+
+**Moderator Assignment** task auto-creates when event reaches TOPIC_SELECTION state:
+- Due: 14 days before event
+- Trigger state: TOPIC_SELECTION
+- Purpose: Assign moderators to all sessions
 
 ### Purpose
 
@@ -352,7 +430,14 @@ BATbern Team
 
 ## Step 15: Catering Coordination
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented via Task System</span>
+
+### Auto-Created Task
+
+**Catering** task auto-creates when event reaches AGENDA_FINALIZED state:
+- Due: 30 days before event
+- Trigger state: AGENDA_FINALIZED
+- Purpose: Coordinate catering with vendor
 
 ### Purpose
 
@@ -455,238 +540,189 @@ Catering Schedule
 ```
 </div>
 
-## Step 16: Event Archival
+## Custom Tasks
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 ### Purpose
 
-Archive event data for historical reference, heat map updates, and future planning.
+Organizers can create custom tasks for organization-specific needs beyond the 7 default system tasks.
 
-### Acceptance Criteria
-
-- ✅ Event marked as EXECUTED (day after event)
-- ✅ Session recordings uploaded
-- ✅ Attendance data recorded
-- ✅ Feedback collected and summarized
-- ✅ Event archived with state = ARCHIVED
-
-### Archival Data
-
-**Event Metadata**:
-- Final attendance count
-- Session attendance breakdown
-- Speaker ratings (from feedback)
-- Overall satisfaction score
-
-**Content Assets**:
-- Session recordings (video/audio)
-- Presentation slides (PDF)
-- Speaker photos
-- Event photos
-
-**Historical Data**:
-- Topics presented (for heat map)
-- Speaker list (for future invitations)
-- Partner participation (for relationship tracking)
-- Lessons learned (for organizers)
-
-### How to Complete
+### Creating Custom Tasks
 
 <div class="step" data-step="1">
 
-**Mark Event as EXECUTED** (day after event)
+**Navigate to Task Board**
 
-```
-Event: BATbern 2025
-Status: FINALIZED → EXECUTED
+Click Task Board in the sidebar.
 
-Event Date: March 15, 2025
-Archival Date: March 16, 2025
-
-[Mark as Executed]
-```
-
-Event state: FINALIZED → **EXECUTED**
 </div>
 
 <div class="step" data-step="2">
 
-**Upload Recordings** (1 week after)
+**Create Custom Task**
+
+Click **+ Create Custom Task**
+
+Fill in task details:
 
 ```
-Session Recordings
+Task Creation Form
 ────────────────────────────────────────
-Total Sessions: 12
-Recorded: 12 ✅
-Uploaded: 8 (67%)
-Pending: 4 (33%)
+Task Name *
+[Photographer Booking]
 
-[Upload Pending Recordings]
+Event *
+[▼ BATbern 2025]
 
-Recordings available at:
-https://www.batbern.ch/events/batbern-2025/recordings
+Trigger State *
+[▼ TOPIC_SELECTION]
+When event reaches this state, task will be created
+
+Due Date *
+○ Immediately when created
+○ Relative to event date: [30] days before
+● Absolute date: [2025-02-15]
+
+Assigned To
+[▼ Anna Schmidt (Organizer)]
+
+Description (optional)
+[Book professional photographer for event day.
+Budget: CHF 1,500 for full-day coverage.]
+
+[Create Task] [Cancel]
 ```
+
 </div>
 
 <div class="step" data-step="3">
 
-**Collect Feedback**
+**Manage Task**
 
-Review post-event survey results:
+Task appears in Task Board when event reaches trigger state:
 
-```
-Post-Event Survey Results
-────────────────────────────────────────
-Responses: 187 / 287 (65% response rate)
+- Drag between TODO → IN_PROGRESS → COMPLETED columns
+- Add completion notes when marking COMPLETED
+- Reassign to different organizer if needed
+- Update due date if timeline changes
 
-Overall Satisfaction: 4.6 / 5.0 ⭐⭐⭐⭐⭐
-
-Top Rated Sessions:
-1. Hans Müller - Sustainable Materials (4.8/5)
-2. Anna Schmidt - Digital Transform (4.7/5)
-3. Peter Weber - Urban Planning (4.6/5)
-
-Areas for Improvement:
-- Longer lunch break (42% mentioned)
-- More networking time (38%)
-- Earlier session recordings (25%)
-
-[View Full Report]
-```
 </div>
 
-<div class="step" data-step="4">
+### Task Management Best Practices
 
-**Update Heat Map**
+**Assign Ownership**:
+- Every task should have a specific assignee
+- Don't leave tasks unassigned (work falls through cracks)
+- Reassign if original assignee unavailable
 
-Add topics to historical heat map:
+**Set Realistic Due Dates**:
+- Use relative dates ("14 days before event") for flexibility
+- Add buffer for unexpected delays
+- Adjust if event date changes
 
-```
-Heat Map Update - 2025
-────────────────────────────────────────
-New Topics to Archive:
-✅ Sustainable Building Materials (presented)
-✅ Digital Transformation (presented)
-✅ Urban Planning Innovations (presented)
-... (9 more)
+**Track Progress**:
+- Update task state as work progresses (don't leave in TODO if started)
+- Add completion notes for historical reference
+- Mark CANCELLED if task no longer needed
 
-Updated Heat Map:
-- 2025 column now populated
-- Topic frequencies recalculated
-- Available for BATbern 2026 planning
-
-[Commit to Heat Map Database]
-```
-</div>
-
-<div class="step" data-step="5">
-
-**Archive Event**
-
-Complete archival process:
-
-```
-[Archive Event]
-
-Archive Summary:
-────────────────────────────────────────
-Event: BATbern 2025
-Date: March 15, 2025
-Attendance: 287 / 300 (96%)
-Sessions: 12
-Speakers: 12
-Satisfaction: 4.6 / 5.0
-
-Archived Data:
-✅ Event metadata
-✅ Session recordings (12)
-✅ Presentation slides (12 PDFs)
-✅ Attendance records
-✅ Feedback summary
-✅ Financial report
-✅ Lessons learned document
-
-Event state: EXECUTED → ARCHIVED
-
-[Complete Archival]
-```
-
-Event state: **ARCHIVED**
-
-**16-Step Workflow Complete!** 🎉
-</div>
+**Review Daily**:
+- Check "My Tasks" filter daily during active planning
+- Sort by due date to prioritize urgent items
+- Address overdue tasks immediately
 
 ## Phase F Completion
 
 ### Success Criteria
 
-- ✅ All newsletters sent
-- ✅ Moderators assigned and briefed
-- ✅ Catering coordinated
-- ✅ Event executed successfully
-- ✅ Event archived with complete data
-- ✅ Event state = **ARCHIVED**
+- ✅ All auto-created tasks addressed (7 default tasks)
+- ✅ Custom tasks created as needed
+- ✅ All tasks assigned to organizers
+- ✅ Overdue tasks completed or rescheduled
+- ✅ Task board reflects current work status
+
+### Task System Benefits
+
+**Clear Ownership**:
+- Each task has specific assignee
+- No confusion about who's responsible
+- Easy to track individual workloads
+
+**Automated Creation**:
+- Tasks auto-create at right workflow moments
+- No manual checklist needed
+- Never forget critical steps
+
+**Flexible Due Dates**:
+- Relative dates adjust if event date changes
+- Absolute dates for fixed deadlines
+- Immediate tasks for urgent work
+
+**Historical Record**:
+- Completion notes document what was done
+- Track time spent on different task types
+- Inform planning for future events
 
 ### What Happens Next
 
-Event cycle complete! Key outcomes:
+**Continue Event Execution**:
+- Monitor task board for upcoming deadlines
+- Complete tasks as event approaches
+- Event automatically transitions through lifecycle (AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED)
+- Archive event after completion (see Phase E)
 
-- **Historical Data**: Topics added to heat map for future planning
-- **Speaker Database**: Updated with performance ratings
-- **Lessons Learned**: Document improvements for next event
-- **Content Library**: Recordings available for attendees and marketing
+**For Task Management**: This is an ongoing process throughout the event lifecycle, not a single phase.
 
-**Next Event**: Begin planning BATbern 2026 using updated heat map and historical insights!
+## Troubleshooting Task System
 
-## Troubleshooting Phase F
+### "Tasks not auto-creating"
 
-### "Survey response rate too low"
-
-**Problem**: Less than 40% of attendees completed survey.
-
-**Solution**:
-- Send reminder email (3 days after initial)
-- Offer incentive (prize draw for completers)
-- Shorten survey (target 5 minutes max)
-- Make survey mobile-friendly
-
-### "Recording upload failed"
-
-**Problem**: Large video files failing to upload.
+**Problem**: Event transitioned to TOPIC_SELECTION but no tasks created.
 
 **Solution**:
-- Compress videos (reduce resolution to 720p)
-- Use chunked upload for large files
-- Provide temporary download link
-- Upload to YouTube/Vimeo, embed on site
+- Verify 7 default task templates exist in system
+- Check task templates have correct trigger_state configured
+- Review application event logs for task creation errors
+- Manually create missing tasks as workaround
 
-### "Missing attendance data"
+### "Task overdue but can't complete"
 
-**Problem**: Check-in system didn't capture all attendees.
+**Problem**: Task deadline passed but work blocked.
 
 **Solution**:
-- Use registration count as proxy
-- Estimate from session headcounts
-- Cross-reference with badge pickups
-- Note limitation in archive report
+- Update due date to new realistic deadline
+- Add notes explaining delay
+- Reassign to different organizer if needed
+- Mark CANCELLED if task no longer needed (e.g., event cancelled)
+
+### "Too many tasks for one organizer"
+
+**Problem**: One person assigned to most tasks, creating bottleneck.
+
+**Solution**:
+- Review task board by assignee
+- Reassign tasks to balance workload
+- Create custom tasks to break large tasks into smaller pieces
+- Assign to different team members based on expertise
 
 ## Related Topics
 
-- [Phase E: Publishing →](phase-e-publishing.md) - Previous phase
-- [Workflow Overview →](README.md) - Complete 16-step guide
-- [Topic Heat Map →](../features/heat-maps.md) - Using historical data
+- [Workflow Overview →](README.md) - Understanding the 3 workflow systems
+- [Phase A: Setup →](phase-a-setup.md) - Where tasks first auto-create
+- [Phase E: Archival →](phase-e-publishing.md) - Event lifecycle completion
+- [Event Management →](../entity-management/events.md) - Event configuration
 
 ## API Reference
 
 ```
-POST /api/events/{id}/workflow/step-13    Complete Step 13 (Newsletters)
-POST /api/events/{id}/workflow/step-14    Complete Step 14 (Moderators)
-POST /api/events/{id}/workflow/step-15    Complete Step 15 (Catering)
-POST /api/events/{id}/workflow/step-16    Complete Step 16 (Archival)
-PUT  /api/events/{id}/execute             Mark event as executed
-PUT  /api/events/{id}/archive             Archive event
-POST /api/events/{id}/recordings          Upload session recordings
+GET    /api/tasks                           List all tasks (filterable by event, assignee, status)
+POST   /api/tasks                           Create custom task
+GET    /api/tasks/{id}                      Get task details
+PUT    /api/tasks/{id}                      Update task (status, assignee, due date)
+PUT    /api/tasks/{id}/status               Update task status (TODO/IN_PROGRESS/COMPLETED/CANCELLED)
+DELETE /api/tasks/{id}                      Delete custom task
+GET    /api/tasks/templates                 Get default task templates (7 system tasks)
+POST   /api/tasks/templates                 Create custom task template
 ```
 
 See [API Documentation](../../api/) for complete specifications.

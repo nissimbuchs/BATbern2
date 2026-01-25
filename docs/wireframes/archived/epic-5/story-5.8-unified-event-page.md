@@ -2,8 +2,11 @@
 
 **Story**: Epic 5, Story 5.6 - Event & Speaker Page Consolidation
 **Screen**: Unified Event Page with Tab-Based Navigation
-**User Role**: Organizer
+**User Role**: ORGANIZER
+**Status**: ✅ **IMPLEMENTED IN MVP** (6 tabs, not all wireframed features)
 **Related FR**: FR2 (Workflow Management), FR17 (Speaker Management), FR12 (Logistics), FR5 (Publishing)
+
+**Actual Implementation**: 6 tabs (Overview, Speakers, Sessions, Tasks, Publishing, Settings) at `/organizer/events/:eventCode`
 
 ---
 
@@ -57,8 +60,9 @@ Consolidate into one tabbed page at `/organizer/events/:eventCode` that provides
 │  ═════════                                                                           │
 │                                                                                      │
 │  ┌─── STATUS BAR ──────────────────────────────────────────────────────────────────┐│
-│  │ [SPEAKER_OUTREACH ●]  Step 8/16  ████████░░░░░░░░ 50%       [Advance Workflow →]││
+│  │ [SPEAKER_IDENTIFICATION ●]  9-State Workflow  ████████░░░░░░░░░  [View Details →]││
 │  └─────────────────────────────────────────────────────────────────────────────────┘│
+│  Note: Actual implementation shows event workflow state (9 states), not step count
 │                                                                                      │
 │  ┌─── THEME IMAGE ─────────────────────────────────────────────────────────────────┐│
 │  │                                                                                  ││

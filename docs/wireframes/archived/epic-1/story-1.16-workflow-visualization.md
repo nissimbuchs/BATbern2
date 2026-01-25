@@ -1,71 +1,80 @@
-# Story 1.16: 16-Step Workflow Visualization - Wireframe
+# Story 1.16: Event Workflow Visualization - Wireframe
 
 **Story**: Epic 1, Story 1.16 - Event Management Service
-**Screen**: 16-Step Workflow Visualization (Event Detail View)
-**User Role**: Organizer
-**Related FR**: FR2 (16-Step Workflow Management), FR20 (Intelligent Notifications)
+**Screen**: Event Workflow Visualization (Event Detail View)
+**User Role**: ORGANIZER
+**Status**: ✅ **IMPLEMENTED IN MVP** (with significant redesign)
+**Related FR**: FR2 (Event Workflow Management), FR20 (Intelligent Notifications)
 
 ---
 
-## 16-Step Workflow Visualization (Event Detail View)
+## ⚠️ ACTUAL IMPLEMENTATION DIFFERS FROM ORIGINAL WIREFRAME
+
+**Original Concept**: 16-step linear workflow
+**Actual Implementation**: 9-state event workflow + per-speaker workflow + task system
+
+See `/docs/architecture/06a-workflow-state-machines.md` for actual implementation details.
+
+---
+
+## 9-State Event Workflow Visualization (Actual Implementation)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│ ← Back to Dashboard        Spring Conference 2025 - Workflow Manager                 │
+│ ← Back to Dashboard        Spring Conference 2025 - Event Workflow                  │
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                       │
-│  Event: Cloud Native Architecture        Status: Active       Progress: 7/16 (44%)   │
-│  Date: May 15, 2025                     Deadline: March 15                           │
+│  Event: Cloud Native Architecture    Current State: SPEAKER_IDENTIFICATION          │
+│  Date: May 15, 2025                  Speakers: 8 identified, 5 accepted             │
 │                                                                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────────┐ │
-│  │                         16-STEP EVENT WORKFLOW                                   │ │
+│  │                         9-STATE EVENT WORKFLOW                                   │ │
 │  │                                                                                   │ │
-│  │   Planning Phase          Speaker Phase           Publishing Phase    Final Phase│ │
-│  │   ═══════════            ════════════            ═══════════════    ═══════════ │ │
+│  │   Setup Phase        Speaker Phase       Publishing Phase      Final Phase      │ │
+│  │   ═══════════       ═══════════════      ═══════════════      ═══════════       │ │
 │  │                                                                                   │ │
-│  │   ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐        │ │
-│  │   │ ✓ │───▶│ ✓ │───▶│ ✓ │───▶│ ✓ │───▶│ ✓ │───▶│ ✓ │───▶│ ● │───▶│   │ ...    │ │
-│  │   └───┘    └───┘    └───┘    └───┘    └───┘    └───┘    └───┘    └───┘        │ │
-│  │    1        2        3        4        5        6        7        8             │ │
-│  │   Topic   Speaker  Assign  Outreach Status  Collect  Review  Threshold         │ │
-│  │   Select  Research Contact           Track   Content  Quality  Check            │ │
-│  │   ✓ Done  ✓ Done   ✓ Done  ✓ Done  ✓ Done  ✓ Done   ● Active  ○ Pending      │ │
-│  │   Jan 5   Jan 12   Jan 15  Jan 20  Ongoing Feb 10   NOW      Mar 1            │ │
+│  │   ┌────────┐    ┌────────┐    ┌────────┐    ┌────────┐    ┌────────┐           │ │
+│  │   │   ✓    │───▶│   ✓    │───▶│   ●    │───▶│        │───▶│        │           │ │
+│  │   └────────┘    └────────┘    └────────┘    └────────┘    └────────┘           │ │
+│  │    CREATED      TOPIC_SEL   SPEAKER_ID   SLOT_ASSIGN   AGENDA_PUB               │ │
+│  │   ✓ Complete    ✓ Complete   ● ACTIVE    ○ Pending     ○ Pending               │ │
+│  │   Jan 5         Jan 12       NOW          March 1       April 1                  │ │
 │  │                                                                                   │ │
-│  │   ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐    ┌───┐        │ │
-│  │   │   │───▶│   │───▶│   │───▶│   │───▶│   │───▶│   │───▶│   │───▶│   │        │ │
-│  │   └───┘    └───┘    └───┘    └───┘    └───┘    └───┘    └───┘    └───┘        │ │
-│  │    9        10       11       12       13       14       15       16            │ │
-│  │   Select   Assign   Publish  Finalize News    Assign   Catering Partner        │ │
-│  │   Speaker  Slots    Progress  Agenda   letter  Moder.   & Venue  Meeting       │ │
-│  │   ○ Wait   ○ Wait   ○ Wait   ○ Apr 1  ○ Apr 5 ○ Apr 10 ○ Done   ○ May 20      │ │
-│  │                                                          2023                    │ │
+│  │   ┌────────┐    ┌────────┐    ┌────────┐    ┌────────┐                          │ │
+│  │   │        │───▶│        │───▶│        │───▶│        │                          │ │
+│  │   └────────┘    └────────┘    └────────┘    └────────┘                          │ │
+│  │   AGENDA_FIN     EVENT_LIVE  EVENT_COMP     ARCHIVED                             │ │
+│  │   ○ Apr 15       ○ May 15     ○ May 16      ○ June 1                             │ │
+│  │                                                                                   │ │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── STEP 7: CONTENT QUALITY REVIEW (CURRENT) ────────────────────────────────────┐ │
+│  ┌─── STATE: SPEAKER_IDENTIFICATION (CURRENT) ──────────────────────────────────────┐ │
 │  │                                                                                   │ │
-│  │  Status: IN PROGRESS                    Started: Feb 10    Due: Feb 20           │ │
-│  │  Owner: Anna M.                         Progress: 60%                            │ │
+│  │  Status: IN PROGRESS                    Entered: Jan 12    Min Speakers: 6       │ │
+│  │  Coordinator: Anna M.                   Progress: 5/8 accepted                   │ │
 │  │                                                                                   │ │
-│  │  Tasks:                                                                          │ │
-│  │  ☑ Review abstract length (8/8 complete)                                        │ │
-│  │  ☑ Verify lessons learned included (8/8 complete)                               │ │
-│  │  ☐ Technical accuracy check (5/8 complete)                                      │ │
-│  │  ☐ Final approval from moderator (0/8 complete)                                 │ │
+│  │  Speaker Workflow Summary:                                                       │ │
+│  │  ☑ 8 speakers identified in pool                                                │ │
+│  │  ☑ 7 speakers contacted                                                         │ │
+│  │  ☐ 5 speakers accepted (need 1 more)                                            │ │
+│  │  ☐ 3 content submissions received                                               │ │
+│  │  ☐ 1 quality review completed                                                   │ │
 │  │                                                                                   │ │
-│  │  Blockers:                                                                       │ │
-│  │  ⚠️ 3 abstracts need revision - awaiting speaker response                       │ │
+│  │  Next Actions:                                                                   │ │
+│  │  • Contact 1 remaining speaker                                                   │ │
+│  │  • Follow up with 2 pending speakers                                             │ │
+│  │  • Review 3 submitted abstracts                                                  │ │
 │  │                                                                                   │ │
-│  │  [View Details] [Reassign] [Mark Complete] [Skip Step] [Get Help]              │ │
+│  │  [View Speaker Board] [Add Speaker] [Review Content] [View Tasks]               │ │
 │  └─────────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                       │
-│  ┌─── AUTOMATION STATUS ────────────────┬─── DEPENDENCIES ─────────────────────────┐ │
+│  ┌─── TASKS TRIGGERED BY THIS STATE ────┬─── TRANSITION CONDITIONS ────────────────┐ │
 │  │                                       │                                          │ │
-│  │  🤖 Auto-reminders: Active            │  Step 8 blocked by: Step 7 completion   │ │
-│  │  📧 Email sequences: 3 sent           │  Step 11 requires: Min. 6 speakers      │ │
-│  │  📊 Progress tracking: Real-time      │  Step 12 depends on: Venue confirmation │ │
-│  │  🔄 Workflow rules: 12 active         │                                          │ │
-│  │                                       │  [View Dependency Graph →]               │ │
+│  │  📋 Venue Booking (due: 90 days)      │  Next State: SLOT_ASSIGNMENT            │ │
+│  │  📧 Topic Newsletter (due: immediate) │  Requires: Min 6 accepted speakers      │ │
+│  │  👥 Moderator Assignment (in progress)│           All content quality-reviewed   │ │
+│  │                                       │                                          │ │
+│  │  [View All Tasks →]                   │  Current: 5/6 speakers accepted         │ │
 │  └───────────────────────────────────────┴──────────────────────────────────────────┘ │
 │                                                                                       │
 └─────────────────────────────────────────────────────────────────────────────────────┘
@@ -80,21 +89,36 @@
 - **Dependency Graph**: Visual representation of step dependencies
 - **Phase Grouping**: Steps organized by logical phases
 
-## Workflow States
+## Workflow States (Actual Implementation)
 
-- **✓ Done**: Completed steps (green)
-- **● Active**: Current step (blue, pulsing)
-- **○ Pending**: Future steps (gray)
-- **⚠️ Blocked**: Steps with issues (orange)
-- **🔴 Overdue**: Past deadline (red)
+**Event States (9 total):**
+1. **CREATED** - Event created, ready for setup
+2. **TOPIC_SELECTION** - Topics being selected
+3. **SPEAKER_IDENTIFICATION** - Building speaker pool (consolidates original steps 2-8)
+4. **SLOT_ASSIGNMENT** - Assigning speakers to time slots
+5. **AGENDA_PUBLISHED** - Public agenda live
+6. **AGENDA_FINALIZED** - Agenda locked for printing
+7. **EVENT_LIVE** - Event currently happening
+8. **EVENT_COMPLETED** - Event finished
+9. **ARCHIVED** - Historical record
+
+**Per-Speaker States (10 possible):**
+- identified → contacted → ready → accepted/declined
+- accepted → content_submitted → quality_reviewed → confirmed
+- Special: overflow, withdrew
+
+**Visual Indicators:**
+- **✓ Complete**: Completed states (green)
+- **● ACTIVE**: Current state (blue, pulsing)
+- **○ Pending**: Future states (gray)
 
 ## Functional Requirements Met
 
-- **FR2**: Complete 16-step workflow visualization with progress tracking
-- **FR20**: Automated notifications and reminders integrated into workflow
-- **Dependency Management**: Clear visualization of step dependencies
-- **Team Collaboration**: Owner assignment and task distribution
-- **Workflow Rules**: Configurable automation rules
+- **FR2**: Event workflow visualization with 9-state state machine
+- **FR20**: Automated notifications and task triggers
+- **Parallel Workflows**: Speakers progress independently
+- **Task System**: Separate configurable tasks (not workflow states)
+- **State Transitions**: Automatic and manual transitions with validation
 
 ## User Interactions
 

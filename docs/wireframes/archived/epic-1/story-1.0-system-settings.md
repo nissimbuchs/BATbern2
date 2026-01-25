@@ -4,8 +4,11 @@
 
 **Story:** Epic 1 - Foundation & Core Infrastructure
 **Screen:** System Settings/Configuration Screen
-**User Role:** Organizer (Admin-level)
+**User Role:** ORGANIZER (organizers have admin privileges)
+**Status**: 🔄 **PARTIALLY IMPLEMENTED** (basic configuration exists, full admin panel deferred)
 **Related FR:** FR1 (Role-based authentication), FR2 (Event workflow management), FR5 (Progressive publishing)
+
+**Note:** There is no separate "ADMIN" role - organizers have administrative privileges for event management.
 
 ---
 
@@ -61,20 +64,21 @@
 │                                                                            │
 │  ┌─── WORKFLOW CONFIGURATION ──────────────────────────────────┐         │
 │  │                                                               │         │
-│  │  Event Workflow Steps (16-Step Process)                      │         │
+│  │  ⚠️ ACTUAL IMPLEMENTATION: 9-State Event Workflow            │         │
+│  │  (Not configurable - hard-coded state machine)               │         │
 │  │  ┌──────────────────────────────────────────────────────┐   │         │
-│  │  │  Step  Name                    Duration   Auto-Skip  │   │         │
+│  │  │  State               Description                     │   │         │
 │  │  │  ──────────────────────────────────────────────────  │   │         │
-│  │  │  1.  Topic Definition           7 days    ☐         │   │         │
-│  │  │  2.  Speaker Outreach          14 days    ☐         │   │         │
-│  │  │  3.  Speaker Confirmation      21 days    ☐         │   │         │
-│  │  │  4.  Slot Assignment            7 days    ☐         │   │         │
-│  │  │  5.  Content Submission        30 days    ☐         │   │         │
-│  │  │  6.  Quality Review            14 days    ☐         │   │         │
-│  │  │  7.  Preliminary Publish        3 days    ☐         │   │         │
-│  │  │  ...                                                 │   │         │
-│  │  │  16. Post-Event Archive         ∞        ☐         │   │         │
-│  │  │                                [Edit Workflow Steps] │   │         │
+│  │  │  1.  CREATED         Event created                   │   │         │
+│  │  │  2.  TOPIC_SELECTION Topics selected                 │   │         │
+│  │  │  3.  SPEAKER_ID      Building speaker pool           │   │         │
+│  │  │  4.  SLOT_ASSIGNMENT Assigning to time slots         │   │         │
+│  │  │  5.  AGENDA_PUBLISHED Public agenda live             │   │         │
+│  │  │  6.  AGENDA_FINALIZED Agenda locked                  │   │         │
+│  │  │  7.  EVENT_LIVE      Event happening now             │   │         │
+│  │  │  8.  EVENT_COMPLETED Event finished                  │   │         │
+│  │  │  9.  ARCHIVED        Historical record               │   │         │
+│  │  │                      See docs/architecture/06a-*     │   │         │
 │  │  └──────────────────────────────────────────────────────┘   │         │
 │  │                                                               │         │
 │  │  Deadline Management                                          │         │
