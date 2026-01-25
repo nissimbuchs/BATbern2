@@ -157,8 +157,18 @@ public class SpeakerInvitationService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
 
-        // 2. Find the speaker pool entry
+        // 2. Find the speaker pool entry (try by username first, then by ID for brainstormed speakers)
         SpeakerPool speaker = speakerPoolRepository.findByEventIdAndUsername(event.getId(), username)
+                .or(() -> {
+                    // Brainstormed speakers may not have username, try finding by ID
+                    try {
+                        java.util.UUID speakerId = java.util.UUID.fromString(username);
+                        return speakerPoolRepository.findById(speakerId)
+                                .filter(s -> s.getEventId().equals(event.getId()));
+                    } catch (IllegalArgumentException e) {
+                        return java.util.Optional.empty();
+                    }
+                })
                 .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
 
         // 3. Handle email: use from request if speaker doesn't have one (Story 6.1c)
@@ -180,7 +190,7 @@ public class SpeakerInvitationService {
         speaker.setInvitedAt(invitedAt);
         speaker.setResponseDeadline(request.responseDeadline());
         speaker.setContentDeadline(request.contentDeadline());
-        speaker.setStatus(SpeakerWorkflowState.INVITED);
+        speaker.setStatus(SpeakerWorkflowState.CONTACTED);
 
         SpeakerPool updated = speakerPoolRepository.save(speaker);
 
