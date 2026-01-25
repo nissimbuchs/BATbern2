@@ -67,7 +67,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-
 // Mock services
 vi.mock('@/services/speakerPoolService', () => ({
   speakerPoolService: {

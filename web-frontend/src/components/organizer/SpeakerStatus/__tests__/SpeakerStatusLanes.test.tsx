@@ -133,11 +133,7 @@ describe('SpeakerStatusLanes - Invite Quick Action (Story 6.1c)', () => {
   const renderLanes = (speakers: SpeakerPoolEntry[] = [speakerWithEmail]) => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <SpeakerStatusLanes
-          eventCode={eventCode}
-          speakers={speakers}
-          sessions={[]}
-        />
+        <SpeakerStatusLanes eventCode={eventCode} speakers={speakers} sessions={[]} />
       </QueryClientProvider>
     );
   };
@@ -152,7 +148,9 @@ describe('SpeakerStatusLanes - Invite Quick Action (Story 6.1c)', () => {
 
       // Should have an invite icon/button with specific testid
       await waitFor(() => {
-        const inviteButton = within(identifiedLane).queryByTestId(`invite-button-${speakerWithEmail.id}`);
+        const inviteButton = within(identifiedLane).queryByTestId(
+          `invite-button-${speakerWithEmail.id}`
+        );
         expect(inviteButton).toBeInTheDocument();
       });
     });
@@ -164,7 +162,9 @@ describe('SpeakerStatusLanes - Invite Quick Action (Story 6.1c)', () => {
       const identifiedLane = screen.getByTestId('status-lane-identified');
 
       await waitFor(() => {
-        const inviteButton = within(identifiedLane).queryByTestId(`invite-button-${speakerWithoutEmail.id}`);
+        const inviteButton = within(identifiedLane).queryByTestId(
+          `invite-button-${speakerWithoutEmail.id}`
+        );
         expect(inviteButton).toBeInTheDocument();
         expect(inviteButton).toBeDisabled();
       });
@@ -201,11 +201,15 @@ describe('SpeakerStatusLanes - Invite Quick Action (Story 6.1c)', () => {
       const identifiedLane = screen.getByTestId('status-lane-identified');
 
       await waitFor(() => {
-        const inviteButton = within(identifiedLane).queryByTestId(`invite-button-${speakerWithEmail.id}`);
+        const inviteButton = within(identifiedLane).queryByTestId(
+          `invite-button-${speakerWithEmail.id}`
+        );
         expect(inviteButton).toBeInTheDocument();
       });
 
-      const inviteButton = within(identifiedLane).getByTestId(`invite-button-${speakerWithEmail.id}`);
+      const inviteButton = within(identifiedLane).getByTestId(
+        `invite-button-${speakerWithEmail.id}`
+      );
       await user.click(inviteButton);
 
       // Should show confirmation or directly send (depending on implementation)
@@ -232,7 +236,9 @@ describe('SpeakerStatusLanes - Invite Quick Action (Story 6.1c)', () => {
       const acceptedLane = screen.getByTestId('status-lane-accepted');
 
       await waitFor(() => {
-        const inviteButton = within(acceptedLane).queryByTestId(`invite-button-${speakerAccepted.id}`);
+        const inviteButton = within(acceptedLane).queryByTestId(
+          `invite-button-${speakerAccepted.id}`
+        );
         expect(inviteButton).not.toBeInTheDocument();
       });
     });
