@@ -334,6 +334,24 @@
       "unknown": "An unknown error occurred"
     }
   },
+  "speakers": {
+    "invite": "Invite",
+    "sendInvite": "Send Invite",
+    "sendInvitation": "Send Invitation",
+    "confirmInvite": "Send invitation to this speaker?",
+    "noEmailTooltip": "Add email to invite",
+    "inviting": "Sending...",
+    "sending": "Sending...",
+    "inviteSent": "Invitation sent",
+    "invitationSent": "Invitation sent to {{email}}",
+    "inviteFailed": "Failed to send",
+    "invitationFailed": "Failed to send invitation",
+    "email": "Email Address",
+    "emailRequired": "Email is required to send invitation",
+    "invalidEmail": "Please enter a valid email address",
+    "saveEmail": "Save Email",
+    "emailSaved": "Email saved"
+  },
   "tasks": {
     "taskBoard": "Task Board",
     "filter": "Filter",

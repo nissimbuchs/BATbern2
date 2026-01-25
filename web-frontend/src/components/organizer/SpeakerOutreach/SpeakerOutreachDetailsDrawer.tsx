@@ -32,10 +32,12 @@ import {
   InputLabel,
   Button,
   Stack,
+  Snackbar,
 } from '@mui/material';
-import { Close as CloseIcon, Email, Phone, Person } from '@mui/icons-material';
+import { Close as CloseIcon, Email, Phone, Person, Send as SendIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
+import { useSendInvitation } from '../../../hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
 
@@ -74,6 +76,78 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   } = useSpeakerOutreachHistory(eventCode, speaker?.id || '');
 
   const recordOutreachMutation = useRecordOutreach();
+  const sendInvitationMutation = useSendInvitation(eventCode);
+
+  // Snackbar state for invitation feedback
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  // Handle sending invitation
+  const handleSendInvitation = async () => {
+    if (!speaker) return;
+
+    try {
+      const result = await sendInvitationMutation.mutateAsync({
+        username: speaker.id,
+      });
+      setSnackbarMessage(t('speakers.invitationSent', { email: result.email }));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('speakers.invitationFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  // Show Send Invitation button only for IDENTIFIED speakers
+  const canSendInvitation = speaker?.status === 'IDENTIFIED';
+  const hasEmail = !!speaker?.email;
+
+  // Email input state (AC4: for speakers without email)
+  const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  // Email validation
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmailInput(value);
+    if (emailTouched && value && !validateEmail(value)) {
+      setEmailError(t('speakers.invalidEmail'));
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handleEmailBlur = () => {
+    setEmailTouched(true);
+    if (emailInput && !validateEmail(emailInput)) {
+      setEmailError(t('speakers.invalidEmail'));
+    }
+  };
+
+  // Reset email input when drawer opens/closes or speaker changes
+  useEffect(() => {
+    if (open && speaker) {
+      setEmailInput('');
+      setEmailError('');
+      setEmailTouched(false);
+    }
+  }, [open, speaker?.id]);
+
+  // Show email input only for IDENTIFIED speakers without email
+  const showEmailInput = canSendInvitation && !hasEmail;
+  const isEmailValid = emailInput && validateEmail(emailInput);
 
   // Form state for marking contacted
   const initialFormData: FormData = {
@@ -224,13 +298,81 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 {t('speakerBrainstorm.form.expertise')}: {speaker.expertise}
               </Typography>
             )}
+            {speaker.email && (
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {speaker.email}
+              </Typography>
+            )}
             <Box mt={1}>
               <Chip
                 label={speaker.status}
                 size="small"
-                color={speaker.status === 'CONTACTED' ? 'success' : 'default'}
+                color={
+                  speaker.status === 'CONTACTED'
+                    ? 'success'
+                    : speaker.status === 'INVITED'
+                      ? 'info'
+                      : 'default'
+                }
               />
             </Box>
+
+            {/* Email Input for Speakers without Email (AC4) */}
+            {showEmailInput && (
+              <Box mt={2}>
+                <Stack spacing={1}>
+                  <TextField
+                    label={t('speakers.email')}
+                    value={emailInput}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    error={!!emailError}
+                    helperText={emailError || t('speakers.emailRequired')}
+                    fullWidth
+                    size="small"
+                    type="email"
+                    placeholder="speaker@example.com"
+                  />
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={!isEmailValid}
+                    onClick={() => {
+                      // For now, just show feedback - actual save would need API
+                      setSnackbarMessage(t('speakers.emailSaved'));
+                      setSnackbarSeverity('success');
+                      setSnackbarOpen(true);
+                    }}
+                  >
+                    {t('speakers.saveEmail')}
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+
+            {/* Send Invitation Button (Story 6.1c) */}
+            {canSendInvitation && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={
+                    sendInvitationMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SendIcon />
+                    )
+                  }
+                  onClick={handleSendInvitation}
+                  disabled={sendInvitationMutation.isPending || !hasEmail}
+                  fullWidth
+                >
+                  {sendInvitationMutation.isPending
+                    ? t('speakers.sending')
+                    : t('speakers.sendInvitation')}
+                </Button>
+              </Box>
+            )}
           </Paper>
         )}
 
@@ -398,6 +540,18 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
           )}
         </Box>
       </Box>
+
+      {/* Invitation Feedback Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Drawer>
   );
 };

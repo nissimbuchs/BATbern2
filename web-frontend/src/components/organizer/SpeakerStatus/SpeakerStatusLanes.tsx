@@ -12,7 +12,22 @@
  */
 
 import React, { useState } from 'react';
-import { Grid, Card, Typography, Avatar, Box, Chip, Paper, Stack } from '@mui/material';
+import {
+  Grid,
+  Card,
+  Typography,
+  Avatar,
+  Box,
+  Chip,
+  Paper,
+  Stack,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import { Send as SendIcon, Email as EmailIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
@@ -29,7 +44,7 @@ import {
 } from '@dnd-kit/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
-import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
+import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
 import { QualityReviewDrawer } from './QualityReviewDrawer';
@@ -253,6 +268,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                 status={status}
                 speakers={speakersByStatus[status] || []}
                 sessions={sessions}
+                eventCode={eventCode}
                 color={STATUS_COLORS[status]}
                 onSpeakerClick={handleSpeakerClick}
               />
@@ -262,7 +278,12 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 
         <DragOverlay>
           {activeSpeaker ? (
-            <SpeakerCard speaker={activeSpeaker} sessions={sessions} isDragging />
+            <SpeakerCard
+              speaker={activeSpeaker}
+              sessions={sessions}
+              eventCode={eventCode}
+              isDragging
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -303,6 +324,7 @@ interface StatusLaneProps {
   status: SpeakerWorkflowState;
   speakers: SpeakerPoolEntry[];
   sessions: SessionUI[];
+  eventCode: string;
   color: string;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -311,6 +333,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   status,
   speakers,
   sessions,
+  eventCode,
   color,
   onSpeakerClick,
 }) => {
@@ -355,6 +378,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               key={speaker.id}
               speaker={speaker}
               sessions={sessions}
+              eventCode={eventCode}
               onSpeakerClick={onSpeakerClick}
             />
           ))}
@@ -368,6 +392,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
 interface SpeakerCardProps {
   speaker: SpeakerPoolEntry;
   sessions: SessionUI[];
+  eventCode: string;
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -375,12 +400,20 @@ interface SpeakerCardProps {
 const SpeakerCard: React.FC<SpeakerCardProps> = ({
   speaker,
   sessions,
+  eventCode,
   isDragging = false,
   onSpeakerClick,
 }) => {
+  const { t } = useTranslation(['organizer']);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
   });
+
+  // Invitation mutation (Story 6.1c)
+  const sendInvitationMutation = useSendInvitation(eventCode);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const style = transform
     ? {
@@ -396,70 +429,144 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     }
   };
 
+  // Handle invite click (Story 6.1c - AC3)
+  const handleInviteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    try {
+      await sendInvitationMutation.mutateAsync({
+        username: speaker.id,
+      });
+      setSnackbarMessage(t('organizer:speakers.inviteSent'));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('organizer:speakers.inviteFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Show invite button only for IDENTIFIED speakers
+  const canInvite = speaker.status === 'IDENTIFIED';
+  const hasEmail = !!speaker.email;
+
   // Find the session if speaker has sessionId (Story 5.6)
   const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
 
   return (
-    <Card
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={handleClick}
-      sx={{
-        p: 2,
-        cursor: 'grab',
-        opacity: isDragging ? 0.5 : 1,
-        '&:hover': {
-          boxShadow: 3,
-        },
-        ...style,
-      }}
-    >
-      {session && session.speakers && session.speakers.length > 0 ? (
-        // Display session details when speaker has sessionId
-        <Box>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            {session.title}
-          </Typography>
-          <Stack direction="column" spacing={0.5}>
-            {session.speakers.map((spk) => (
-              <UserAvatar
-                key={spk.username}
-                firstName={spk.firstName}
-                lastName={spk.lastName}
-                company={spk.company}
-                profilePictureUrl={spk.profilePictureUrl}
-                size={32}
-                showCompany={true}
-                horizontal={true}
-              />
-            ))}
-          </Stack>
-        </Box>
-      ) : (
-        // Display speaker pool info when no session
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-              {speaker.speakerName.charAt(0).toUpperCase()}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2">{speaker.speakerName}</Typography>
-              {speaker.company && (
-                <Typography variant="caption" color="text.secondary">
-                  {speaker.company}
-                </Typography>
+    <>
+      <Card
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        onClick={handleClick}
+        sx={{
+          p: 2,
+          cursor: 'grab',
+          opacity: isDragging ? 0.5 : 1,
+          '&:hover': {
+            boxShadow: 3,
+          },
+          ...style,
+        }}
+      >
+        {session && session.speakers && session.speakers.length > 0 ? (
+          // Display session details when speaker has sessionId
+          <Box>
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+              {session.title}
+            </Typography>
+            <Stack direction="column" spacing={0.5}>
+              {session.speakers.map((spk) => (
+                <UserAvatar
+                  key={spk.username}
+                  firstName={spk.firstName}
+                  lastName={spk.lastName}
+                  company={spk.company}
+                  profilePictureUrl={spk.profilePictureUrl}
+                  size={32}
+                  showCompany={true}
+                  horizontal={true}
+                />
+              ))}
+            </Stack>
+          </Box>
+        ) : (
+          // Display speaker pool info when no session
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                {speaker.speakerName.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+                {speaker.company && (
+                  <Typography variant="caption" color="text.secondary">
+                    {speaker.company}
+                  </Typography>
+                )}
+              </Box>
+              {/* Invite Quick Action (Story 6.1c - AC3) */}
+              {canInvite && (
+                <Tooltip
+                  title={
+                    hasEmail
+                      ? t('organizer:speakers.invite')
+                      : t('organizer:speakers.noEmailTooltip')
+                  }
+                >
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleInviteClick}
+                      disabled={!hasEmail || sendInvitationMutation.isPending}
+                      aria-label={t('organizer:speakers.invite')}
+                      data-testid={`invite-button-${speaker.id}`}
+                      sx={{ ml: 'auto' }}
+                    >
+                      {sendInvitationMutation.isPending ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SendIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+              {/* Email sent badge for CONTACTED speakers (AC3.6) - CONTACTED means invitation sent */}
+              {speaker.status === 'CONTACTED' && (
+                <Tooltip title={t('organizer:speakers.inviteSent')}>
+                  <EmailIcon fontSize="small" color="info" data-testid="invite-sent-badge" />
+                </Tooltip>
               )}
             </Box>
+            {speaker.expertise && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                {speaker.expertise}
+              </Typography>
+            )}
           </Box>
-          {speaker.expertise && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {speaker.expertise}
-            </Typography>
-          )}
-        </Box>
-      )}
-    </Card>
+        )}
+      </Card>
+
+      {/* Invitation Feedback Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

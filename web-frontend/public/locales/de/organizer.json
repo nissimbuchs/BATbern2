@@ -334,6 +334,24 @@
       "unknown": "Ein unbekannter Fehler ist aufgetreten"
     }
   },
+  "speakers": {
+    "invite": "Einladen",
+    "sendInvite": "Einladung senden",
+    "sendInvitation": "Einladung senden",
+    "confirmInvite": "Einladung an diesen Sprecher senden?",
+    "noEmailTooltip": "E-Mail hinzufügen zum Einladen",
+    "inviting": "Wird gesendet...",
+    "sending": "Wird gesendet...",
+    "inviteSent": "Einladung gesendet",
+    "invitationSent": "Einladung gesendet an {{email}}",
+    "inviteFailed": "Senden fehlgeschlagen",
+    "invitationFailed": "Einladung konnte nicht gesendet werden",
+    "email": "E-Mail-Adresse",
+    "emailRequired": "E-Mail ist erforderlich zum Senden der Einladung",
+    "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "saveEmail": "E-Mail speichern",
+    "emailSaved": "E-Mail gespeichert"
+  },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",
     "filter": "Filter",

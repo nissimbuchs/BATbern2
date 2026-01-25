@@ -19,6 +19,7 @@ export interface SpeakerPoolEntry {
   speakerName: string;
   company?: string;
   expertise?: string;
+  email?: string; // Speaker email - required for sending invitations (Story 6.1c)
   assignedOrganizerId?: string | null;
   status: SpeakerWorkflowState;
   sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
@@ -51,4 +52,32 @@ export interface SpeakerPoolUI extends SpeakerPoolEntry {
 export interface SpeakerPoolFilters {
   status?: SpeakerWorkflowState;
   assignedOrganizerId?: string;
+}
+
+// ============================================================================
+// Send Invitation Types (Story 6.1c)
+// ============================================================================
+
+/**
+ * Request body for sending speaker invitation
+ */
+export interface SendInvitationRequest {
+  /** Response deadline (ISO date, default: 30 days) */
+  responseDeadline?: string;
+  /** Custom message to include in invitation email */
+  personalMessage?: string;
+}
+
+/**
+ * Response from send invitation endpoint
+ */
+export interface SendInvitationResponse {
+  /** Magic link token (for testing/debugging) */
+  token: string;
+  /** New workflow state (should be INVITED) */
+  workflowState: string;
+  /** Timestamp when invitation was sent */
+  invitedAt: string;
+  /** Email address invitation was sent to */
+  email: string;
 }

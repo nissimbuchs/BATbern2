@@ -14,6 +14,8 @@ import type {
   SpeakerPoolEntry,
   AddSpeakerToPoolRequest,
   SpeakerPoolResponse,
+  SendInvitationRequest,
+  SendInvitationResponse,
 } from '@/types/speakerPool.types';
 
 // API base path
@@ -69,6 +71,31 @@ class SpeakerPoolService {
    */
   async deleteSpeakerFromPool(eventCode: string, speakerId: string): Promise<void> {
     await apiClient.delete(`${EVENTS_API_PATH}/${eventCode}/speakers/pool/${speakerId}`);
+  }
+
+  /**
+   * Send invitation to speaker (Story 6.1c)
+   *
+   * Transitions speaker from IDENTIFIED to INVITED state and sends invitation email
+   * with magic link for speaker portal access.
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param username Speaker UUID or username
+   * @param options Optional invitation options (deadline, personal message)
+   * @returns Response with magic link token, new state, and email sent to
+   * @throws Error if speaker not found, already invited, or in invalid state
+   */
+  async sendInvitation(
+    eventCode: string,
+    username: string,
+    options?: SendInvitationRequest
+  ): Promise<SendInvitationResponse> {
+    const response = await apiClient.post<SendInvitationResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/speakers/${username}/send-invitation`,
+      options || {}
+    );
+
+    return response.data;
   }
 }
 
