@@ -172,6 +172,20 @@ class LoggingUtilsTest {
 
             assertThat(context.getFields().get("key")).isEqualTo("value2");
         }
+
+        @Test
+        void should_formatContextAsString_when_toStringCalled() {
+            LogContext context = LoggingUtils.context()
+                .add("eventId", "123")
+                .add("action", "test")
+                .build();
+
+            String result = context.toString();
+
+            assertThat(result)
+                .contains("eventId=\"123\"")
+                .contains("action=\"test\"");
+        }
     }
 
     @Nested
