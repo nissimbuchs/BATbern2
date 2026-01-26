@@ -9,6 +9,7 @@ import ch.batbern.events.dto.UserUpdateDto;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.exception.SpeakerNotFoundException;
+import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -119,14 +120,22 @@ public class SpeakerProfileService {
         validateUpdateRequest(request);
 
         // 4. Update User fields in Company Service (if any)
+        // Note: This may fail in speaker portal context (no JWT auth) - gracefully continue
         if (hasUserFields(request)) {
             UserUpdateDto userUpdate = UserUpdateDto.builder()
                     .firstName(request.getFirstName())
                     .lastName(request.getLastName())
                     .bio(request.getBio())
                     .build();
-            userApiClient.updateUser(username, userUpdate);
-            log.debug("Updated user fields in Company Service for: {}", username);
+            try {
+                userApiClient.updateUser(username, userUpdate);
+                log.debug("Updated user fields in Company Service for: {}", username);
+            } catch (UserServiceException e) {
+                // In speaker portal context (token-based, no JWT), user service calls fail
+                // Log warning but continue - speaker fields will still be saved
+                log.warn("Could not update user fields in Company Service for {} "
+                        + "(speaker portal has no JWT auth): {}", username, e.getMessage());
+            }
         }
 
         // 5. Update Speaker fields locally (if any)
@@ -163,7 +172,8 @@ public class SpeakerProfileService {
         if (user.getBio() != null && !user.getBio().isBlank()) {
             score += 20;
         }
-        if (user.getProfilePictureUrl() != null) {
+        // Check both Speaker's and User's profile picture URL
+        if (speaker.getProfilePictureUrl() != null || user.getProfilePictureUrl() != null) {
             score += 20;
         }
 

@@ -560,7 +560,8 @@ public class UserApiClientImpl implements UserApiClient {
             throw new UserNotFoundException(username, e);
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error updating profile picture for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
+            log.error("Client error updating profile picture for {}: {} - {}",
+                    username, e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
                     "Client error updating profile picture for user: " + username,
                     e.getStatusCode().value(),

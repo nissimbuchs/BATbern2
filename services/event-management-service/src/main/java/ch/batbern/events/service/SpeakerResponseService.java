@@ -93,6 +93,8 @@ public class SpeakerResponseService {
             case ACCEPT -> processAcceptResponse(speaker, request);
             case DECLINE -> processDeclineResponse(speaker, request);
             case TENTATIVE -> processTentativeResponse(speaker, request);
+            default -> throw new IllegalArgumentException(
+                    "Unsupported response type: " + request.getResponse());
         }
 
         // Step 7: Save updated speaker

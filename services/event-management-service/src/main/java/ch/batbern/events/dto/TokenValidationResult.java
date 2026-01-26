@@ -50,7 +50,9 @@ public record TokenValidationResult(
 ) {
     /**
      * Create a valid result with full speaker context.
+     * All parameters needed to provide context for speaker portal frontend.
      */
+    // CHECKSTYLE.OFF: ParameterNumber - record factory needs all fields
     public static TokenValidationResult valid(
             UUID speakerPoolId,
             String username,
@@ -71,6 +73,7 @@ public record TokenValidationResult(
                 responseDeadline, invitationMessage,
                 alreadyResponded, previousResponse, previousResponseDate, action);
     }
+    // CHECKSTYLE.ON: ParameterNumber
 
     /**
      * Create a valid result with minimal context (backwards compatible).

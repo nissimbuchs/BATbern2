@@ -33,7 +33,8 @@ public class InvalidTokenException extends RuntimeException {
      * Create exception for expired token.
      */
     public static InvalidTokenException expired() {
-        return new InvalidTokenException("EXPIRED", "Token has expired. Please contact the organizer for a new invitation.");
+        return new InvalidTokenException("EXPIRED",
+                "Token has expired. Please contact the organizer for a new invitation.");
     }
 
     /**
@@ -47,6 +48,7 @@ public class InvalidTokenException extends RuntimeException {
      * Create exception for not found token.
      */
     public static InvalidTokenException notFound() {
-        return new InvalidTokenException("NOT_FOUND", "Invalid invitation link. Please check the URL or contact the organizer.");
+        return new InvalidTokenException("NOT_FOUND",
+                "Invalid invitation link. Please check the URL or contact the organizer.");
     }
 }
