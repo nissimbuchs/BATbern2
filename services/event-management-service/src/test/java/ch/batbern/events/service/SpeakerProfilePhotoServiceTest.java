@@ -1,7 +1,8 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.dto.PhotoConfirmRequest;
+import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.events.dto.PhotoUploadRequest;
 import ch.batbern.events.dto.PresignedPhotoUploadResponse;
 import ch.batbern.events.dto.TokenValidationResult;
@@ -30,6 +31,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,7 +67,7 @@ class SpeakerProfilePhotoServiceTest {
     private MagicLinkService magicLinkService;
 
     @Mock
-    private UserApiClient userApiClient;
+    private SpeakerRepository speakerRepository;
 
     private SpeakerProfilePhotoService service;
 
@@ -81,7 +83,7 @@ class SpeakerProfilePhotoServiceTest {
                 s3Presigner,
                 s3Client,
                 magicLinkService,
-                userApiClient,
+                speakerRepository,
                 BUCKET_NAME,
                 CLOUDFRONT_DOMAIN
         );
@@ -323,12 +325,17 @@ class SpeakerProfilePhotoServiceTest {
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                     .thenReturn(HeadObjectResponse.builder().build());
 
+            // Mock speaker repository
+            Speaker speaker = Speaker.builder().username(TEST_USERNAME).build();
+            when(speakerRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(speaker));
+
             // When
             String cloudFrontUrl = service.confirmUpload(VALID_TOKEN, request, s3Key);
 
             // Then
             assertThat(cloudFrontUrl).isEqualTo(CLOUDFRONT_DOMAIN + "/" + s3Key);
-            verify(userApiClient).updateUserProfilePicture(TEST_USERNAME, cloudFrontUrl);
+            verify(speakerRepository).save(speaker);
+            assertThat(speaker.getProfilePictureUrl()).isEqualTo(cloudFrontUrl);
         }
 
         @Test
@@ -347,7 +354,7 @@ class SpeakerProfilePhotoServiceTest {
             assertThatThrownBy(() -> service.confirmUpload("invalid-token", request, "some/key"))
                     .isInstanceOf(InvalidTokenException.class);
 
-            verify(userApiClient, never()).updateUserProfilePicture(anyString(), anyString());
+            verify(speakerRepository, never()).save(any(Speaker.class));
         }
 
         @Test
@@ -373,12 +380,12 @@ class SpeakerProfilePhotoServiceTest {
                     .isInstanceOf(PhotoUploadNotFoundException.class)
                     .hasMessageContaining(uploadId);
 
-            verify(userApiClient, never()).updateUserProfilePicture(anyString(), anyString());
+            verify(speakerRepository, never()).save(any(Speaker.class));
         }
 
         @Test
-        @DisplayName("should sync to Company Service with correct CloudFront URL - AC7.5")
-        void shouldSyncToCompanyServiceWithCorrectUrl() {
+        @DisplayName("should save to Speaker entity with correct CloudFront URL - AC7.5")
+        void shouldSaveToSpeakerWithCorrectUrl() {
             // Given
             String uploadId = "sync-test";
             String s3Key = "speaker-profiles/2026/test-speaker/photo-sync-test.jpg";
@@ -393,19 +400,20 @@ class SpeakerProfilePhotoServiceTest {
             when(s3Client.headObject(any(HeadObjectRequest.class)))
                     .thenReturn(HeadObjectResponse.builder().build());
 
+            // Mock speaker repository
+            Speaker speaker = Speaker.builder().username(TEST_USERNAME).build();
+            when(speakerRepository.findByUsername(TEST_USERNAME)).thenReturn(Optional.of(speaker));
+
             // When
             service.confirmUpload(VALID_TOKEN, request, s3Key);
 
             // Then
-            ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
-            verify(userApiClient).updateUserProfilePicture(
-                    org.mockito.ArgumentMatchers.eq(TEST_USERNAME),
-                    urlCaptor.capture()
-            );
+            ArgumentCaptor<Speaker> speakerCaptor = ArgumentCaptor.forClass(Speaker.class);
+            verify(speakerRepository).save(speakerCaptor.capture());
 
-            String capturedUrl = urlCaptor.getValue();
-            assertThat(capturedUrl).startsWith(CLOUDFRONT_DOMAIN);
-            assertThat(capturedUrl).contains(s3Key);
+            Speaker savedSpeaker = speakerCaptor.getValue();
+            assertThat(savedSpeaker.getProfilePictureUrl()).startsWith(CLOUDFRONT_DOMAIN);
+            assertThat(savedSpeaker.getProfilePictureUrl()).contains(s3Key);
         }
     }
 }

@@ -10,6 +10,7 @@ import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerRepository;
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -123,6 +125,17 @@ class SpeakerResponseServiceTest {
                 .createdAt(Instant.now().minus(10, ChronoUnit.DAYS))
                 .updatedAt(Instant.now().minus(5, ChronoUnit.DAYS))
                 .build();
+
+        // Default mock for UserApiClient (used when speaker accepts)
+        // Use lenient() since this mock is only used in Accept tests
+        GetOrCreateUserResponse userResponse = new GetOrCreateUserResponse();
+        userResponse.setUsername("jane.speaker");
+        userResponse.setCreated(false);
+        lenient().when(userApiClient.getOrCreateUser(any())).thenReturn(userResponse);
+
+        // Default mock for SpeakerRepository (speaker record creation)
+        // Use lenient() since this mock is only used in Accept tests
+        lenient().when(speakerRepository.findByUsername(anyString())).thenReturn(Optional.empty());
     }
 
     // ==================== AC3: Accept Response Flow Tests ====================

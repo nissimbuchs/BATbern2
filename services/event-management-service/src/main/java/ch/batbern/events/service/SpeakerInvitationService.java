@@ -171,10 +171,15 @@ public class SpeakerInvitationService {
                 })
                 .orElseThrow(() -> new SpeakerNotFoundException(username, eventCode));
 
-        // 3. Handle email: use from request if speaker doesn't have one (Story 6.1c)
-        if (speaker.getEmail() == null && request.email() != null) {
-            log.info("Updating speaker {} email from request", username);
-            speaker.setEmail(request.email());
+        // 3. Handle email: use from request if provided (overrides stored email)
+        if (request.email() != null && !request.email().isBlank()) {
+            if (!request.email().equals(speaker.getEmail())) {
+                log.info("Updating speaker {} email from '{}' to '{}'",
+                        username,
+                        LoggingUtils.maskEmail(speaker.getEmail()),
+                        LoggingUtils.maskEmail(request.email()));
+                speaker.setEmail(request.email());
+            }
         }
 
         // Validate email exists

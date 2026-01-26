@@ -99,6 +99,13 @@ public class Speaker {
     private List<String> speakingTopics = new ArrayList<>();
 
     /**
+     * Speaker profile photo URL (CloudFront).
+     * Managed via speaker portal photo upload.
+     */
+    @Column(name = "profile_picture_url", length = 1000)
+    private String profilePictureUrl;
+
+    /**
      * LinkedIn profile URL.
      */
     @Column(name = "linkedin_url", length = 500)

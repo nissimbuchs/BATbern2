@@ -194,7 +194,8 @@ public class SpeakerProfileService {
         if (user.getBio() == null || user.getBio().isBlank()) {
             missing.add("bio");
         }
-        if (user.getProfilePictureUrl() == null) {
+        // Check both Speaker's and User's profilePictureUrl
+        if (speaker.getProfilePictureUrl() == null && user.getProfilePictureUrl() == null) {
             missing.add("profilePictureUrl");
         }
 
@@ -218,6 +219,12 @@ public class SpeakerProfileService {
             int completeness,
             List<String> missingFields) {
 
+        // Prefer Speaker's local profilePictureUrl (uploaded via speaker portal)
+        // Fall back to User's profilePictureUrl if Speaker doesn't have one
+        String profilePictureUrl = speaker.getProfilePictureUrl() != null
+                ? speaker.getProfilePictureUrl()
+                : (user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null);
+
         return SpeakerProfileDto.builder()
                 // User fields
                 .username(user.getId())  // 'id' contains username per Story 1.16.2
@@ -225,9 +232,7 @@ public class SpeakerProfileService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .bio(user.getBio())
-                .profilePictureUrl(user.getProfilePictureUrl() != null
-                        ? user.getProfilePictureUrl().toString()
-                        : null)
+                .profilePictureUrl(profilePictureUrl)
                 // Speaker fields
                 .expertiseAreas(speaker.getExpertiseAreas())
                 .speakingTopics(speaker.getSpeakingTopics())

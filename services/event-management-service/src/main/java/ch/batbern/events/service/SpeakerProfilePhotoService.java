@@ -1,6 +1,6 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.dto.PhotoConfirmRequest;
 import ch.batbern.events.dto.PhotoUploadRequest;
 import ch.batbern.events.dto.PresignedPhotoUploadResponse;
@@ -9,6 +9,7 @@ import ch.batbern.events.exception.FileSizeExceededException;
 import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.exception.PhotoUploadNotFoundException;
+import ch.batbern.events.repository.SpeakerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 
 import java.time.Duration;
 import java.time.Year;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,7 +50,7 @@ public class SpeakerProfilePhotoService {
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
     private final MagicLinkService magicLinkService;
-    private final UserApiClient userApiClient;
+    private final SpeakerRepository speakerRepository;
     private final String bucketName;
     private final String cloudFrontDomain;
 
@@ -66,13 +68,13 @@ public class SpeakerProfilePhotoService {
             S3Presigner s3Presigner,
             S3Client s3Client,
             MagicLinkService magicLinkService,
-            UserApiClient userApiClient,
+            SpeakerRepository speakerRepository,
             @Value("${aws.s3.bucket-name:batbern-development-company-logos}") String bucketName,
             @Value("${aws.cloudfront.domain:https://cdn.batbern.ch}") String cloudFrontDomain) {
         this.s3Presigner = s3Presigner;
         this.s3Client = s3Client;
         this.magicLinkService = magicLinkService;
-        this.userApiClient = userApiClient;
+        this.speakerRepository = speakerRepository;
         this.bucketName = bucketName;
         this.cloudFrontDomain = cloudFrontDomain;
     }
@@ -200,9 +202,16 @@ public class SpeakerProfilePhotoService {
         // 3. Build CloudFront URL
         String cloudFrontUrl = cloudFrontDomain + "/" + s3Key;
 
-        // 4. Sync to Company Service (AC7.5)
-        userApiClient.updateUserProfilePicture(username, cloudFrontUrl);
-        log.info("Photo upload confirmed and synced - user: {}, url: {}", username, cloudFrontUrl);
+        // 4. Update Speaker entity with photo URL (stored locally, no auth required)
+        Optional<Speaker> speakerOpt = speakerRepository.findByUsername(username);
+        if (speakerOpt.isPresent()) {
+            Speaker speaker = speakerOpt.get();
+            speaker.setProfilePictureUrl(cloudFrontUrl);
+            speakerRepository.save(speaker);
+            log.info("Photo upload confirmed - user: {}, url: {}", username, cloudFrontUrl);
+        } else {
+            log.warn("Speaker not found for username: {} - photo URL not saved to profile", username);
+        }
 
         return cloudFrontUrl;
     }

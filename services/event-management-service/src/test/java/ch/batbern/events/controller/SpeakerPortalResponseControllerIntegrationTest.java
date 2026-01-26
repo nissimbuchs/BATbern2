@@ -1,9 +1,11 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -18,8 +20,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -64,6 +70,9 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockitoBean
+    private UserApiClient userApiClient;
+
     private UUID testSpeakerPoolId;
     private UUID testEventId;
     private Event testEvent;
@@ -76,6 +85,12 @@ class SpeakerPortalResponseControllerIntegrationTest extends AbstractIntegration
         tokenRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
+
+        // Mock UserApiClient for accept response flow
+        GetOrCreateUserResponse userResponse = new GetOrCreateUserResponse();
+        userResponse.setUsername("jane.speaker");
+        userResponse.setCreated(false);
+        when(userApiClient.getOrCreateUser(any())).thenReturn(userResponse);
 
         // Create test event
         testEvent = Event.builder()
