@@ -119,8 +119,14 @@ public class SpeakerProfileService {
         // 3. Validate request
         validateUpdateRequest(request);
 
-        // 4. Update User fields in Company Service (if any)
-        // Note: This may fail in speaker portal context (no JWT auth) - gracefully continue
+        // 4. Update all fields locally in Speaker entity
+        // Speaker portal uses token auth (not JWT), so we store everything locally
+        updateSpeakerFields(speaker, request);
+        speakerRepository.save(speaker);
+        log.debug("Updated speaker profile fields locally for: {}", username);
+
+        // 5. Try to sync User fields to Company Service (best effort)
+        // This will fail in speaker portal context (no JWT auth) - that's OK
         if (hasUserFields(request)) {
             UserUpdateDto userUpdate = UserUpdateDto.builder()
                     .firstName(request.getFirstName())
@@ -129,20 +135,12 @@ public class SpeakerProfileService {
                     .build();
             try {
                 userApiClient.updateUser(username, userUpdate);
-                log.debug("Updated user fields in Company Service for: {}", username);
+                log.debug("Synced user fields to Company Service for: {}", username);
             } catch (UserServiceException e) {
-                // In speaker portal context (token-based, no JWT), user service calls fail
-                // Log warning but continue - speaker fields will still be saved
-                log.warn("Could not update user fields in Company Service for {} "
-                        + "(speaker portal has no JWT auth): {}", username, e.getMessage());
+                // Expected in speaker portal context - local storage is authoritative
+                log.debug("Could not sync to Company Service (speaker portal context): {}",
+                        e.getMessage());
             }
-        }
-
-        // 5. Update Speaker fields locally (if any)
-        if (hasSpeakerFields(request)) {
-            updateSpeakerFields(speaker, request);
-            speakerRepository.save(speaker);
-            log.debug("Updated speaker fields for: {}", username);
         }
 
         // 6. Return updated profile
@@ -158,29 +156,41 @@ public class SpeakerProfileService {
      * - profilePhoto - 20%
      * - expertiseAreas (at least 1) - 15%
      * - languages (at least 1) - 15%
+     *
+     * Prefers local Speaker values over User service values.
      */
     private int calculateCompleteness(UserResponse user, Speaker speaker) {
         int score = 0;
 
-        // User fields
-        if (user.getFirstName() != null && !user.getFirstName().isBlank()) {
+        // First name: prefer local Speaker value, fall back to User service
+        String firstName = speaker.getFirstName() != null ? speaker.getFirstName() : user.getFirstName();
+        if (firstName != null && !firstName.isBlank()) {
             score += 15;
         }
-        if (user.getLastName() != null && !user.getLastName().isBlank()) {
+
+        // Last name: prefer local Speaker value, fall back to User service
+        String lastName = speaker.getLastName() != null ? speaker.getLastName() : user.getLastName();
+        if (lastName != null && !lastName.isBlank()) {
             score += 15;
         }
-        if (user.getBio() != null && !user.getBio().isBlank()) {
+
+        // Bio: prefer local Speaker value, fall back to User service
+        String bio = speaker.getBio() != null ? speaker.getBio() : user.getBio();
+        if (bio != null && !bio.isBlank()) {
             score += 20;
         }
-        // Check both Speaker's and User's profile picture URL
+
+        // Profile picture: prefer local Speaker value, fall back to User service
         if (speaker.getProfilePictureUrl() != null || user.getProfilePictureUrl() != null) {
             score += 20;
         }
 
-        // Speaker fields
+        // Expertise areas
         if (speaker.getExpertiseAreas() != null && !speaker.getExpertiseAreas().isEmpty()) {
             score += 15;
         }
+
+        // Languages
         if (speaker.getLanguages() != null && !speaker.getLanguages().isEmpty()) {
             score += 15;
         }
@@ -190,29 +200,40 @@ public class SpeakerProfileService {
 
     /**
      * Get list of missing fields for 100% completeness.
+     * Prefers local Speaker values over User service values.
      */
     private List<String> getMissingFields(UserResponse user, Speaker speaker) {
         List<String> missing = new ArrayList<>();
 
-        // User fields
-        if (user.getFirstName() == null || user.getFirstName().isBlank()) {
+        // First name: prefer local Speaker value, fall back to User service
+        String firstName = speaker.getFirstName() != null ? speaker.getFirstName() : user.getFirstName();
+        if (firstName == null || firstName.isBlank()) {
             missing.add("firstName");
         }
-        if (user.getLastName() == null || user.getLastName().isBlank()) {
+
+        // Last name: prefer local Speaker value, fall back to User service
+        String lastName = speaker.getLastName() != null ? speaker.getLastName() : user.getLastName();
+        if (lastName == null || lastName.isBlank()) {
             missing.add("lastName");
         }
-        if (user.getBio() == null || user.getBio().isBlank()) {
+
+        // Bio: prefer local Speaker value, fall back to User service
+        String bio = speaker.getBio() != null ? speaker.getBio() : user.getBio();
+        if (bio == null || bio.isBlank()) {
             missing.add("bio");
         }
-        // Check both Speaker's and User's profilePictureUrl
+
+        // Profile picture: prefer local Speaker value, fall back to User service
         if (speaker.getProfilePictureUrl() == null && user.getProfilePictureUrl() == null) {
             missing.add("profilePictureUrl");
         }
 
-        // Speaker fields
+        // Expertise areas
         if (speaker.getExpertiseAreas() == null || speaker.getExpertiseAreas().isEmpty()) {
             missing.add("expertiseAreas");
         }
+
+        // Languages
         if (speaker.getLanguages() == null || speaker.getLanguages().isEmpty()) {
             missing.add("languages");
         }
@@ -222,6 +243,7 @@ public class SpeakerProfileService {
 
     /**
      * Build combined profile DTO from User and Speaker data.
+     * Prefers local Speaker values over User service values.
      */
     private SpeakerProfileDto buildProfileDto(
             UserResponse user,
@@ -229,21 +251,27 @@ public class SpeakerProfileService {
             int completeness,
             List<String> missingFields) {
 
-        // Prefer Speaker's local profilePictureUrl (uploaded via speaker portal)
-        // Fall back to User's profilePictureUrl if Speaker doesn't have one
+        // Prefer local Speaker values, fall back to User service values
+        String firstName = speaker.getFirstName() != null
+                ? speaker.getFirstName() : user.getFirstName();
+        String lastName = speaker.getLastName() != null
+                ? speaker.getLastName() : user.getLastName();
+        String bio = speaker.getBio() != null
+                ? speaker.getBio() : user.getBio();
+        String email = speaker.getEmail() != null
+                ? speaker.getEmail() : user.getEmail();
         String profilePictureUrl = speaker.getProfilePictureUrl() != null
                 ? speaker.getProfilePictureUrl()
                 : (user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null);
 
         return SpeakerProfileDto.builder()
-                // User fields
                 .username(user.getId())  // 'id' contains username per Story 1.16.2
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .bio(user.getBio())
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .bio(bio)
                 .profilePictureUrl(profilePictureUrl)
-                // Speaker fields
+                // Speaker-specific fields (always from Speaker entity)
                 .expertiseAreas(speaker.getExpertiseAreas())
                 .speakingTopics(speaker.getSpeakingTopics())
                 .linkedInUrl(speaker.getLinkedInUrl())
@@ -306,8 +334,20 @@ public class SpeakerProfileService {
 
     /**
      * Update Speaker entity fields from request.
+     * Stores all profile fields locally (both "user" and "speaker" fields).
      */
     private void updateSpeakerFields(Speaker speaker, ProfileUpdateRequest request) {
+        // User-type fields (stored locally for speaker portal)
+        if (request.getFirstName() != null) {
+            speaker.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            speaker.setLastName(request.getLastName());
+        }
+        if (request.getBio() != null) {
+            speaker.setBio(request.getBio());
+        }
+        // Speaker-specific fields
         if (request.getExpertiseAreas() != null) {
             speaker.setExpertiseAreas(request.getExpertiseAreas());
         }
