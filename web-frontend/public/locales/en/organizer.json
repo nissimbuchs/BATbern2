@@ -350,7 +350,20 @@
     "emailRequired": "Email is required to send invitation",
     "invalidEmail": "Please enter a valid email address",
     "saveEmail": "Save Email",
-    "emailSaved": "Email saved"
+    "emailSaved": "Email saved",
+    "tentative": "Tentative",
+    "responseDetails": "Response Details",
+    "acceptedAt": "Accepted",
+    "preferredTimeSlot": "Preferred Time Slot",
+    "travelRequirements": "Travel Requirements",
+    "technicalRequirements": "Technical Requirements",
+    "initialTitle": "Presentation Title",
+    "comments": "Comments",
+    "declineDetails": "Decline Details",
+    "declinedAt": "Declined",
+    "declineReason": "Reason",
+    "tentativeDetails": "Tentative Details",
+    "tentativeReason": "Reason"
   },
   "tasks": {
     "taskBoard": "Task Board",

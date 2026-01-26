@@ -350,7 +350,20 @@
     "emailRequired": "E-Mail ist erforderlich zum Senden der Einladung",
     "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
     "saveEmail": "E-Mail speichern",
-    "emailSaved": "E-Mail gespeichert"
+    "emailSaved": "E-Mail gespeichert",
+    "tentative": "Vorläufig",
+    "responseDetails": "Antwort-Details",
+    "acceptedAt": "Zugesagt am",
+    "preferredTimeSlot": "Bevorzugte Zeit",
+    "travelRequirements": "Reiseanforderungen",
+    "technicalRequirements": "Technische Anforderungen",
+    "initialTitle": "Präsentationstitel",
+    "comments": "Kommentare",
+    "declineDetails": "Absage-Details",
+    "declinedAt": "Abgelehnt am",
+    "declineReason": "Grund",
+    "tentativeDetails": "Vorläufig-Details",
+    "tentativeReason": "Grund"
   },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",

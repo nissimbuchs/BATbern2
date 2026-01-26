@@ -322,14 +322,90 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 label={speaker.status}
                 size="small"
                 color={
-                  speaker.status === 'CONTACTED'
+                  speaker.status === 'ACCEPTED'
                     ? 'success'
-                    : speaker.status === 'INVITED'
-                      ? 'info'
-                      : 'default'
+                    : speaker.status === 'DECLINED'
+                      ? 'error'
+                      : speaker.status === 'INVITED'
+                        ? 'info'
+                        : speaker.status === 'CONTACTED'
+                          ? 'warning'
+                          : 'default'
                 }
               />
+              {speaker.isTentative && (
+                <Chip label={t('speakers.tentative')} size="small" color="warning" sx={{ ml: 1 }} />
+              )}
             </Box>
+
+            {/* Response Details - Story 6.2a */}
+            {/* Show for any speaker who has accepted (acceptedAt is set), not just current ACCEPTED status */}
+            {speaker.acceptedAt && (
+              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+                <Typography variant="subtitle2" color="success.dark" gutterBottom>
+                  {t('speakers.responseDetails')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('speakers.acceptedAt')}: {formatDate(speaker.acceptedAt)}
+                </Typography>
+                {speaker.preferredTimeSlot && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
+                  </Typography>
+                )}
+                {speaker.travelRequirements && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.travelRequirements')}: {speaker.travelRequirements}
+                  </Typography>
+                )}
+                {speaker.technicalRequirements && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.technicalRequirements')}: {speaker.technicalRequirements}
+                  </Typography>
+                )}
+                {speaker.initialPresentationTitle && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.initialTitle')}: {speaker.initialPresentationTitle}
+                  </Typography>
+                )}
+                {speaker.preferenceComments && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, fontStyle: 'italic' }}
+                  >
+                    {t('speakers.comments')}: {speaker.preferenceComments}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {speaker.status === 'DECLINED' && speaker.declineReason && (
+              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+                <Typography variant="subtitle2" color="error.dark" gutterBottom>
+                  {t('speakers.declineDetails')}
+                </Typography>
+                {speaker.declinedAt && (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('speakers.declinedAt')}: {formatDate(speaker.declinedAt)}
+                  </Typography>
+                )}
+                <Typography variant="body2" color="text.secondary">
+                  {t('speakers.declineReason')}: {speaker.declineReason}
+                </Typography>
+              </Box>
+            )}
+
+            {speaker.isTentative && speaker.tentativeReason && (
+              <Box mt={2} sx={{ bgcolor: 'warning.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+                <Typography variant="subtitle2" color="warning.dark" gutterBottom>
+                  {t('speakers.tentativeDetails')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t('speakers.tentativeReason')}: {speaker.tentativeReason}
+                </Typography>
+              </Box>
+            )}
 
             {/* Email Input for Speakers without Email (AC4) */}
             {showEmailInput && (

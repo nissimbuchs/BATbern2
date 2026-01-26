@@ -48,11 +48,8 @@ import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
 import { QualityReviewDrawer } from './QualityReviewDrawer';
-import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
-import type { components } from '@/types/generated/speakers-api.types';
+import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
-
-type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 export interface SpeakerStatusLanesProps {
   eventCode: string;
@@ -546,6 +543,65 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 {speaker.expertise}
               </Typography>
+            )}
+
+            {/* Speaker Response Details (Story 6.2a) - Show for any speaker who accepted */}
+            {speaker.acceptedAt &&
+              (speaker.preferredTimeSlot ||
+                speaker.travelRequirements ||
+                speaker.initialPresentationTitle) && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                  {speaker.initialPresentationTitle && (
+                    <Typography
+                      variant="caption"
+                      color="primary.main"
+                      sx={{ display: 'block', fontWeight: 500 }}
+                    >
+                      {speaker.initialPresentationTitle}
+                    </Typography>
+                  )}
+                  {speaker.preferredTimeSlot && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
+                    </Typography>
+                  )}
+                  {speaker.travelRequirements && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.travelRequirements')}: {speaker.travelRequirements}
+                    </Typography>
+                  )}
+                  {speaker.technicalRequirements && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.technicalRequirements')}:{' '}
+                      {speaker.technicalRequirements}
+                    </Typography>
+                  )}
+                  {speaker.preferenceComments && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', fontStyle: 'italic', mt: 0.5 }}
+                    >
+                      "{speaker.preferenceComments}"
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+            {speaker.status === 'DECLINED' && speaker.declineReason && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography variant="caption" color="error.main" sx={{ display: 'block' }}>
+                  {t('organizer:speakers.declineReason')}: {speaker.declineReason}
+                </Typography>
+              </Box>
+            )}
+
+            {speaker.isTentative && speaker.tentativeReason && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
+                  {t('organizer:speakers.tentativeReason')}: {speaker.tentativeReason}
+                </Typography>
+              </Box>
             )}
           </Box>
         )}

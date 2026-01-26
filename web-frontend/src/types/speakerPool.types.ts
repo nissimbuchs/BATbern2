@@ -6,8 +6,14 @@
 
 import type { components } from '@/types/generated/speakers-api.types';
 
-// Use OpenAPI generated workflow state type
-export type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
+// Use OpenAPI generated workflow state type, extended with INVITED state from Story 6.1b
+// The generated types from speakers-api.types.ts may not include all states
+export type SpeakerWorkflowState =
+  | components['schemas']['SpeakerWorkflowState']
+  | 'INVITED'
+  | 'SLOT_ASSIGNED'
+  | 'WITHDREW'
+  | 'OVERFLOW';
 
 // ============================================================================
 // Speaker Pool Types
@@ -25,6 +31,25 @@ export interface SpeakerPoolEntry {
   sessionId?: string; // Session UUID - set when speaker submits content (Story 5.5)
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+
+  // Story 6.1b: Speaker Invitation System fields
+  username?: string;
+  invitedAt?: string;
+  responseDeadline?: string;
+  contentDeadline?: string;
+
+  // Story 6.2a: Speaker Response Portal fields
+  acceptedAt?: string;
+  declinedAt?: string;
+  declineReason?: string;
+  isTentative?: boolean;
+  tentativeReason?: string;
+  preferredTimeSlot?: string;
+  travelRequirements?: string;
+  technicalRequirements?: string;
+  initialPresentationTitle?: string;
+  preferenceComments?: string;
 }
 
 // ============================================================================
