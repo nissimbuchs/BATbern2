@@ -1,10 +1,15 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.TokenValidationResult;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +21,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -42,16 +50,35 @@ public class MagicLinkService {
     private static final Logger LOG = LoggerFactory.getLogger(MagicLinkService.class);
     private static final int TOKEN_LENGTH_BYTES = 32;
     private static final long DEFAULT_EXPIRY_DAYS = 30;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
+
+    // Workflow states indicating speaker has responded
+    private static final Set<SpeakerWorkflowState> RESPONDED_STATES = Set.of(
+            SpeakerWorkflowState.ACCEPTED,
+            SpeakerWorkflowState.DECLINED,
+            SpeakerWorkflowState.CONTENT_SUBMITTED,
+            SpeakerWorkflowState.QUALITY_REVIEWED,
+            SpeakerWorkflowState.SLOT_ASSIGNED,
+            SpeakerWorkflowState.CONFIRMED,
+            SpeakerWorkflowState.WITHDREW
+    );
 
     private final SpeakerInvitationTokenRepository tokenRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
+    private final EventRepository eventRepository;
+    private final SessionRepository sessionRepository;
     private final SecureRandom secureRandom;
 
     public MagicLinkService(
             SpeakerInvitationTokenRepository tokenRepository,
-            SpeakerPoolRepository speakerPoolRepository) {
+            SpeakerPoolRepository speakerPoolRepository,
+            EventRepository eventRepository,
+            SessionRepository sessionRepository) {
         this.tokenRepository = tokenRepository;
         this.speakerPoolRepository = speakerPoolRepository;
+        this.eventRepository = eventRepository;
+        this.sessionRepository = sessionRepository;
         this.secureRandom = new SecureRandom();
     }
 
@@ -108,6 +135,7 @@ public class MagicLinkService {
     /**
      * Validate a magic link token without consuming it.
      * AC2: Token validation
+     * Story 6.2a: Enhanced to return full speaker context for frontend display
      *
      * @param plaintextToken the base64url-encoded token from the magic link
      * @return validation result with speaker context if valid
@@ -150,12 +178,69 @@ public class MagicLinkService {
 
         SpeakerPool speakerPool = speakerPoolOpt.get();
 
-        // AC2: Return valid result with context
+        // Fetch Event details for display
+        String eventCode = null;
+        String eventTitle = null;
+        String eventDate = null;
+        Optional<Event> eventOpt = eventRepository.findById(speakerPool.getEventId());
+        if (eventOpt.isPresent()) {
+            Event event = eventOpt.get();
+            eventCode = event.getEventCode();
+            eventTitle = event.getTitle();
+            if (event.getDate() != null) {
+                eventDate = event.getDate().atZone(SWISS_ZONE).format(DATE_FORMATTER);
+            }
+        }
+
+        // Fetch Session title if speaker is assigned to a session
+        String sessionTitle = null;
+        if (speakerPool.getSessionId() != null) {
+            Optional<Session> sessionOpt = sessionRepository.findById(speakerPool.getSessionId());
+            if (sessionOpt.isPresent()) {
+                sessionTitle = sessionOpt.get().getTitle();
+            }
+        }
+
+        // Format response deadline
+        String responseDeadline = null;
+        if (speakerPool.getResponseDeadline() != null) {
+            responseDeadline = speakerPool.getResponseDeadline().format(DATE_FORMATTER);
+        }
+
+        // Determine if already responded and get previous response details
+        boolean alreadyResponded = RESPONDED_STATES.contains(speakerPool.getStatus());
+        String previousResponse = null;
+        Instant previousResponseDate = null;
+
+        if (alreadyResponded) {
+            if (speakerPool.getAcceptedAt() != null) {
+                previousResponse = "ACCEPTED";
+                previousResponseDate = speakerPool.getAcceptedAt();
+            } else if (speakerPool.getDeclinedAt() != null) {
+                previousResponse = "DECLINED";
+                previousResponseDate = speakerPool.getDeclinedAt();
+            } else if (Boolean.TRUE.equals(speakerPool.getIsTentative())) {
+                previousResponse = "TENTATIVE";
+                // No specific timestamp for tentative, use updated timestamp
+                previousResponseDate = speakerPool.getUpdatedAt();
+            }
+        }
+
+        // AC2: Return valid result with full context
         LOG.info("Token validated successfully for speaker pool: {}", token.getSpeakerPoolId());
         return TokenValidationResult.valid(
                 token.getSpeakerPoolId(),
                 speakerPool.getUsername(),
-                null, // eventCode would require Event lookup, handled by controller
+                speakerPool.getSpeakerName(),
+                eventCode,
+                eventTitle,
+                eventDate,
+                sessionTitle,
+                responseDeadline,
+                null, // invitationMessage - could be added to SpeakerPool if needed
+                alreadyResponded,
+                previousResponse,
+                previousResponseDate,
                 token.getAction()
         );
     }

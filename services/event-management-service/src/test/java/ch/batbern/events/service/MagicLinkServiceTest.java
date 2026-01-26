@@ -3,6 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.TokenValidationResult;
+import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -50,6 +52,12 @@ class MagicLinkServiceTest {
     @Mock
     private SpeakerPoolRepository speakerPoolRepository;
 
+    @Mock
+    private EventRepository eventRepository;
+
+    @Mock
+    private SessionRepository sessionRepository;
+
     private MagicLinkService magicLinkService;
 
     private UUID testSpeakerPoolId;
@@ -57,7 +65,8 @@ class MagicLinkServiceTest {
 
     @BeforeEach
     void setUp() {
-        magicLinkService = new MagicLinkService(tokenRepository, speakerPoolRepository);
+        magicLinkService = new MagicLinkService(
+                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository);
 
         testSpeakerPoolId = UUID.randomUUID();
         testSpeakerPool = SpeakerPool.builder()
