@@ -190,7 +190,7 @@ public class SpeakerInvitationService {
         speaker.setInvitedAt(invitedAt);
         speaker.setResponseDeadline(request.responseDeadline());
         speaker.setContentDeadline(request.contentDeadline());
-        speaker.setStatus(SpeakerWorkflowState.CONTACTED);
+        speaker.setStatus(SpeakerWorkflowState.INVITED);
 
         SpeakerPool updated = speakerPoolRepository.save(speaker);
 
