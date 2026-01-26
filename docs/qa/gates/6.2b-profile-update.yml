@@ -1,0 +1,104 @@
+# Quality Gate: 6.2b Speaker Profile Update Portal
+# Generated: 2026-01-26
+schema: 1
+story: "6.2b"
+story_title: "Speaker Profile Update Portal"
+gate: PASS
+status_reason: "Implementation complete. All 10 ACs covered with 100 tests passing. Backend profile service with HTTP enrichment pattern. Frontend ProfileUpdatePage (635 lines) with ProfilePhotoUpload component. Cross-service sync to Company Service working."
+reviewer: "Quinn (QA Agent)"
+updated: "2026-01-26T17:32:00Z"
+
+waiver: { active: false }
+
+top_issues:
+  - id: "DOC-001"
+    severity: low
+    finding: "QA gate file was not created during implementation. Created retroactively during QA review."
+    suggested_action: "No action needed - file now exists."
+    suggested_owner: qa
+    status: resolved
+
+quality_score: 92
+
+expires: "2026-02-09T00:00:00Z"  # 2 weeks from review
+
+evidence:
+  tests_reviewed: 100
+  tests_passing: 100
+  unit_tests: 33  # 21 profile service + 12 photo service
+  integration_tests: 19
+  frontend_tests: 46  # 18 ProfileUpdatePage + 28 ProfilePhotoUpload
+  e2e_tests: 2  # Bruno tests
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ac_gaps: []
+
+risk_summary:
+  totals:
+    critical: 0
+    high: 0
+    medium: 0
+    low: 1
+  highest:
+    id: DOC-001
+    score: 2
+    title: "Missing QA gate file - now resolved"
+  recommendations:
+    must_fix: []
+    monitor:
+      - "Cross-service sync latency to Company Service"
+      - "S3 presigned URL expiration handling"
+      - "Photo upload success rate"
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Magic link token authentication enforced. Photo upload uses presigned URLs (no direct S3 credentials exposed)."
+  performance:
+    status: PASS
+    notes: "Photo upload uses 3-phase presigned URL pattern per ADR-002. Direct S3 upload avoids backend proxy."
+  reliability:
+    status: PASS
+    notes: "52 backend tests verify profile operations and cross-service sync"
+  maintainability:
+    status: PASS
+    notes: "100 tests provide comprehensive coverage. Clear separation between User and Speaker fields."
+  accessibility:
+    status: PASS
+    notes: "Form labels, ARIA attributes, keyboard navigation implemented"
+
+completion_by_phase:
+  backend_service: 100%
+  backend_controller: 100%
+  photo_upload: 100%
+  frontend_components: 100%
+  e2e_testing: 100%
+
+architecture_notes:
+  - "HTTP Enrichment: GET profile combines User (Company Service) + Speaker (Event Service) data"
+  - "Field Routing: PATCH routes User fields to Company Service, Speaker fields stored locally"
+  - "Photo Upload: 3-phase flow (getPresignedUrl -> PUT to S3 -> confirmUpload) per ADR-002"
+  - "Profile Completeness: Calculated from 6 weighted fields (firstName 15%, lastName 15%, bio 20%, photo 20%, expertise 15%, languages 15%)"
+  - "Inline Components: ExpertiseTagInput, LanguageSelector, ProfileCompleteness implemented inline in ProfileUpdatePage.tsx"
+
+files_created:
+  - "services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerProfileService.java"
+  - "services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerProfilePhotoService.java"
+  - "services/event-management-service/src/main/java/ch/batbern/events/controller/SpeakerPortalProfileController.java"
+  - "services/event-management-service/src/main/java/ch/batbern/events/dto/SpeakerProfileDto.java"
+  - "services/event-management-service/src/main/java/ch/batbern/events/dto/PhotoUploadRequest.java"
+  - "services/event-management-service/src/main/java/ch/batbern/events/dto/PresignedPhotoUploadResponse.java"
+  - "services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerProfileServiceTest.java"
+  - "services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerProfilePhotoServiceTest.java"
+  - "services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerPortalProfileControllerIntegrationTest.java"
+  - "web-frontend/src/pages/speaker-portal/ProfileUpdatePage.tsx"
+  - "web-frontend/src/pages/speaker-portal/__tests__/ProfileUpdatePage.test.tsx"
+  - "web-frontend/src/components/speaker-portal/ProfilePhotoUpload.tsx"
+  - "web-frontend/src/components/speaker-portal/__tests__/ProfilePhotoUpload.test.tsx"
+  - "bruno-tests/speaker-portal-api/05-get-profile.bru"
+  - "bruno-tests/speaker-portal-api/16-update-profile.bru"
+
+files_modified:
+  - "services/event-management-service/src/main/java/ch/batbern/events/client/UserApiClient.java"
+  - "web-frontend/src/services/speakerPortalService.ts"
