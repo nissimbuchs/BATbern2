@@ -607,7 +607,12 @@ const InvitationResponsePage = () => {
               )}
             </Card>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
+              {responseResult.profileUrl && (
+                <Button asChild>
+                  <a href={responseResult.profileUrl}>Complete Your Profile</a>
+                </Button>
+              )}
               <Button asChild variant="outline">
                 <Link to="/">
                   <ArrowLeft className="h-4 w-4 mr-2" />

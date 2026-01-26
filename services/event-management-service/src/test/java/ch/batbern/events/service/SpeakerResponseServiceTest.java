@@ -9,8 +9,10 @@ import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.events.SpeakerResponseReceivedEvent;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -59,6 +61,9 @@ class SpeakerResponseServiceTest {
     private SpeakerPoolRepository speakerPoolRepository;
 
     @Mock
+    private SpeakerRepository speakerRepository;
+
+    @Mock
     private EventRepository eventRepository;
 
     @Mock
@@ -69,6 +74,9 @@ class SpeakerResponseServiceTest {
 
     @Mock
     private OrganizerNotificationService notificationService;
+
+    @Mock
+    private UserApiClient userApiClient;
 
     private SpeakerResponseService speakerResponseService;
 
@@ -82,10 +90,12 @@ class SpeakerResponseServiceTest {
     void setUp() {
         speakerResponseService = new SpeakerResponseService(
                 speakerPoolRepository,
+                speakerRepository,
                 eventRepository,
                 magicLinkService,
                 eventPublisher,
-                notificationService
+                notificationService,
+                userApiClient
         );
 
         testSpeakerPoolId = UUID.randomUUID();

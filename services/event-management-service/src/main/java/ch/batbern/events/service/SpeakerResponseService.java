@@ -10,13 +10,21 @@ import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.Speaker;
+import ch.batbern.events.domain.SpeakerAvailability;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
+import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.events.SpeakerResponseReceivedEvent;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +47,15 @@ public class SpeakerResponseService {
     private static final Logger LOG = LoggerFactory.getLogger(SpeakerResponseService.class);
 
     private final SpeakerPoolRepository speakerPoolRepository;
+    private final SpeakerRepository speakerRepository;
     private final EventRepository eventRepository;
     private final MagicLinkService magicLinkService;
     private final ApplicationEventPublisher eventPublisher;
     private final OrganizerNotificationService notificationService;
+    private final UserApiClient userApiClient;
+
+    @Value("${app.base-url:http://localhost:8100}")
+    private String appBaseUrl;
 
     /**
      * Process a speaker's response to an invitation.
@@ -152,6 +165,8 @@ public class SpeakerResponseService {
 
     /**
      * Process ACCEPT response.
+     * - Create/link User account via UserApiClient
+     * - Create Speaker record if needed
      * - Transition to ACCEPTED state
      * - Set accepted_at timestamp
      * - Clear tentative flag
@@ -159,6 +174,13 @@ public class SpeakerResponseService {
      * - Consume token (single-use)
      */
     private void processAcceptResponse(SpeakerPool speaker, SpeakerResponseRequest request) {
+        // Create/get User account for the speaker (enables profile management)
+        String username = createOrLinkUser(speaker);
+        speaker.setUsername(username);
+
+        // Create Speaker record if it doesn't exist
+        createSpeakerIfNeeded(username);
+
         speaker.setStatus(SpeakerWorkflowState.ACCEPTED);
         speaker.setAcceptedAt(Instant.now());
         speaker.setIsTentative(false);
@@ -172,8 +194,67 @@ public class SpeakerResponseService {
         // Consume token (single-use for ACCEPT)
         magicLinkService.markTokenAsUsed(request.getToken());
 
-        LOG.info("Speaker {} accepted invitation for event {}",
-                speaker.getSpeakerName(), speaker.getEventId());
+        LOG.info("Speaker {} (username: {}) accepted invitation for event {}",
+                speaker.getSpeakerName(), username, speaker.getEventId());
+    }
+
+    /**
+     * Create or link a User account for the speaker.
+     * Uses the speaker's email and name to create an anonymous user.
+     *
+     * @param speaker the speaker pool entry
+     * @return the username of the created/linked user
+     */
+    private String createOrLinkUser(SpeakerPool speaker) {
+        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
+            throw new ValidationException("Speaker email is required for acceptance");
+        }
+
+        // Split speaker name into first/last name
+        String[] nameParts = splitName(speaker.getSpeakerName());
+        String firstName = nameParts[0];
+        String lastName = nameParts[1];
+
+        GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();
+        userRequest.setFirstName(firstName);
+        userRequest.setLastName(lastName);
+        userRequest.setEmail(speaker.getEmail());
+        userRequest.setCognitoSync(false); // Anonymous user
+
+        GetOrCreateUserResponse userResponse = userApiClient.getOrCreateUser(userRequest);
+        LOG.info("Got/created user for speaker: email={}, username={}, created={}",
+                speaker.getEmail(), userResponse.getUsername(), userResponse.getCreated());
+
+        return userResponse.getUsername();
+    }
+
+    /**
+     * Split a full name into first and last name parts.
+     */
+    private String[] splitName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return new String[]{"Speaker", "Unknown"};
+        }
+        String[] parts = fullName.trim().split("\\s+", 2);
+        if (parts.length == 1) {
+            return new String[]{parts[0], ""};
+        }
+        return parts;
+    }
+
+    /**
+     * Create a Speaker record if it doesn't exist for this username.
+     */
+    private void createSpeakerIfNeeded(String username) {
+        if (speakerRepository.findByUsername(username).isEmpty()) {
+            Speaker speaker = Speaker.builder()
+                    .username(username)
+                    .availability(SpeakerAvailability.AVAILABLE)
+                    .workflowState(SpeakerWorkflowState.ACCEPTED)
+                    .build();
+            speakerRepository.save(speaker);
+            LOG.info("Created Speaker record for username: {}", username);
+        }
     }
 
     /**
@@ -257,13 +338,18 @@ public class SpeakerResponseService {
      */
     private SpeakerResponseResult buildResult(SpeakerPool speaker, Event event, SpeakerResponseType responseType) {
         List<String> nextSteps = new ArrayList<>();
+        String profileUrl = null;
 
         if (responseType == SpeakerResponseType.ACCEPT) {
             nextSteps.add("Complete your speaker profile");
             if (speaker.getContentDeadline() != null) {
                 nextSteps.add("Submit your presentation title and abstract by " + speaker.getContentDeadline());
             }
-            nextSteps.add("Check your email for further instructions");
+
+            // Generate a VIEW token for profile access (reusable, 30-day expiry)
+            String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
+            profileUrl = appBaseUrl + "/speaker-portal/profile?token=" + viewToken;
+            LOG.info("Generated profile URL for speaker {}: {}", speaker.getSpeakerName(), profileUrl);
         } else if (responseType == SpeakerResponseType.TENTATIVE) {
             nextSteps.add("Return to this link when you're ready to confirm");
             nextSteps.add("Contact the organizer if you have questions");
@@ -275,6 +361,7 @@ public class SpeakerResponseService {
                 .eventName(event.getTitle())
                 .nextSteps(nextSteps)
                 .contentDeadline(speaker.getContentDeadline())
+                .profileUrl(profileUrl)
                 .build();
     }
 }

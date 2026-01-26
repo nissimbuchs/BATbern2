@@ -79,6 +79,7 @@ export interface SpeakerResponseResult {
   nextSteps: string[];
   contentDeadline?: string;
   dashboardUrl?: string;
+  profileUrl?: string;
   message?: string;
 }
 

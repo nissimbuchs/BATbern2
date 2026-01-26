@@ -63,6 +63,12 @@ public class SpeakerResponseResult {
     private String dashboardUrl;
 
     /**
+     * URL to complete/update speaker profile (if accepted).
+     * Uses the same token for authentication.
+     */
+    private String profileUrl;
+
+    /**
      * Error message if response failed.
      */
     private String errorMessage;

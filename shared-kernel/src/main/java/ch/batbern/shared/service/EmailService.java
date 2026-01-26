@@ -180,8 +180,8 @@ public class EmailService {
      * - If the variable has a non-empty value: the block tags are removed but content is kept
      *
      * Example:
-     * replaceVariables("Hello {{firstName}}{{#lastName}}, {{lastName}}{{/lastName}}", Map.of("firstName", "John", "lastName", ""))
-     * returns "Hello John"
+     * replaceVariables("Hello {{firstName}}{{#lastName}}, {{lastName}}{{/lastName}}",
+     *     Map.of("firstName", "John", "lastName", "")) returns "Hello John"
      *
      * @param template Email template with {{variable}} and {{#variable}}...{{/variable}} placeholders
      * @param variables Map of variable names to values
@@ -202,7 +202,8 @@ public class EmailService {
             String closeTag = "\\{\\{/" + java.util.regex.Pattern.quote(varName) + "\\}\\}";
             String conditionalPattern = openTag + "(.*?)" + closeTag;
 
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(conditionalPattern, java.util.regex.Pattern.DOTALL);
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                    conditionalPattern, java.util.regex.Pattern.DOTALL);
             java.util.regex.Matcher matcher = pattern.matcher(result);
 
             if (isEmpty) {
