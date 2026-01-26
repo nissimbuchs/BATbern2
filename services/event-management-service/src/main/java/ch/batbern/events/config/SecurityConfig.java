@@ -102,6 +102,13 @@ public class SecurityConfig {
                 // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
 
+                // Story 6.2b: Speaker portal profile endpoints (no auth required, token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()

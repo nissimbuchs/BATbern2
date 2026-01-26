@@ -321,7 +321,7 @@ describe('InvitationResponsePage Component', () => {
             token: 'valid-token',
             response: 'ACCEPT',
             preferences: expect.objectContaining({
-              preferredTimeSlot: 'morning',
+              timeSlot: 'morning',
               technicalRequirements: 'Need HDMI adapter',
             }),
           })

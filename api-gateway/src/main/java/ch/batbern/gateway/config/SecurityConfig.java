@@ -152,6 +152,15 @@ public class SecurityConfig {
                         // Public organizers endpoint for About page
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
 
+                        // Story 6.1a/6.2a/6.2b: Speaker portal endpoints (token-protected, no JWT auth)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

@@ -380,14 +380,11 @@ const InvitationResponsePage = () => {
                     <select
                       id="timeSlot"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      value={preferences.preferredTimeSlot || ''}
+                      value={preferences.timeSlot || ''}
                       onChange={(e) =>
                         setPreferences({
                           ...preferences,
-                          preferredTimeSlot: e.target.value as
-                            | 'morning'
-                            | 'afternoon'
-                            | 'no_preference',
+                          timeSlot: e.target.value as 'morning' | 'afternoon' | 'no_preference',
                         })
                       }
                     >
@@ -448,11 +445,11 @@ const InvitationResponsePage = () => {
                       type="text"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
                       placeholder="Working title for your presentation"
-                      value={preferences.initialPresentationTitle || ''}
+                      value={preferences.initialTitle || ''}
                       onChange={(e) =>
                         setPreferences({
                           ...preferences,
-                          initialPresentationTitle: e.target.value,
+                          initialTitle: e.target.value,
                         })
                       }
                     />
@@ -466,10 +463,8 @@ const InvitationResponsePage = () => {
                       id="comments"
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[80px]"
                       placeholder="Any questions or comments for the organizers..."
-                      value={preferences.preferenceComments || ''}
-                      onChange={(e) =>
-                        setPreferences({ ...preferences, preferenceComments: e.target.value })
-                      }
+                      value={preferences.comments || ''}
+                      onChange={(e) => setPreferences({ ...preferences, comments: e.target.value })}
                     />
                   </div>
                 </div>

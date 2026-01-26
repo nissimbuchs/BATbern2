@@ -50,11 +50,11 @@ export interface TokenValidationResult {
  * Speaker preferences submitted with ACCEPT response
  */
 export interface SpeakerResponsePreferences {
-  preferredTimeSlot?: 'morning' | 'afternoon' | 'no_preference';
+  timeSlot?: 'morning' | 'afternoon' | 'no_preference';
   travelRequirements?: 'local' | 'accommodation' | 'virtual';
   technicalRequirements?: string;
-  initialPresentationTitle?: string;
-  preferenceComments?: string;
+  initialTitle?: string;
+  comments?: string;
 }
 
 /**
