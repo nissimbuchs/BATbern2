@@ -1,0 +1,579 @@
+/**
+ * E2E Tests for Complete Speaker Onboarding Flow
+ * Stories: 6.2a, 6.2b, 6.3
+ *
+ * Tests the complete speaker journey:
+ * 1. Access invitation via magic link
+ * 2. Accept invitation
+ * 3. Navigate to profile page and update profile
+ * 4. Navigate to content submission page
+ * 5. Submit presentation content
+ *
+ * Environment Variables Required:
+ * - E2E_SPEAKER_ONBOARDING_TOKEN: Valid token for a speaker with session assigned
+ *   (must be in INVITED status, not yet responded)
+ *
+ * Note: This test modifies data. For CI, use a dedicated test speaker
+ * that can be reset between runs.
+ */
+
+import { test, expect } from '@playwright/test';
+
+// Test configuration
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
+const ONBOARDING_TOKEN = process.env.E2E_SPEAKER_ONBOARDING_TOKEN || 'test-onboarding-token';
+
+// Test data
+const TEST_PROFILE = {
+  firstName: 'E2E',
+  lastName: 'TestSpeaker',
+  bio: 'Experienced software architect with expertise in cloud-native applications and microservices.',
+  expertise: ['Cloud Architecture', 'Microservices'],
+  topics: ['Kubernetes', 'Event-Driven Design'],
+  linkedIn: 'https://linkedin.com/in/e2e-test-speaker',
+  languages: ['English', 'German'],
+};
+
+const TEST_CONTENT = {
+  title: 'Building Scalable Cloud-Native Applications with Kubernetes',
+  abstract:
+    'This presentation explores best practices for building and deploying cloud-native applications using Kubernetes. We will cover container orchestration, service mesh implementation, observability patterns, and strategies for achieving high availability in distributed systems.',
+};
+
+test.describe('Speaker Onboarding Complete Flow', () => {
+  test.describe.configure({ mode: 'serial' }); // Run tests in sequence
+
+  let viewToken: string | null = null;
+
+  test('should complete full speaker onboarding journey', async ({ page }) => {
+    test.setTimeout(120000); // 2 minutes for complete flow
+
+    // Step 1: Access invitation page
+    await test.step('Access invitation via magic link', async () => {
+      await page.goto(`${BASE_URL}/speaker-portal/respond?token=${ONBOARDING_TOKEN}`);
+      await page.waitForLoadState('networkidle');
+
+      // Verify invitation details are shown
+      await expect(page.locator('text=/Invited to Speak|BATbern/i').first()).toBeVisible({
+        timeout: 15000,
+      });
+
+      // Verify response buttons are available
+      await expect(page.locator('button').filter({ hasText: /Accept/i })).toBeVisible();
+    });
+
+    // Step 2: Accept invitation
+    await test.step('Accept invitation', async () => {
+      // Click Accept button
+      const acceptButton = page.locator('button').filter({ hasText: /Accept/i });
+      await acceptButton.click();
+
+      // Fill optional preferences if shown
+      const timeSlotSelect = page.locator('select').first();
+      if (await timeSlotSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await timeSlotSelect.selectOption({ index: 1 });
+      }
+
+      // Submit response
+      const submitButton = page.locator('button').filter({ hasText: /Submit Response/i });
+      await expect(submitButton).toBeEnabled();
+      await submitButton.click();
+
+      // Wait for success and extract the view token from the profile URL
+      await expect(page.locator('text=/Response Submitted|Thank you/i').first()).toBeVisible({
+        timeout: 15000,
+      });
+
+      // Look for profile URL link and extract token
+      const profileLink = page.locator('a[href*="/speaker-portal/profile"]');
+      if (await profileLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+        const href = await profileLink.getAttribute('href');
+        if (href) {
+          const url = new URL(href, BASE_URL);
+          viewToken = url.searchParams.get('token');
+        }
+      }
+    });
+
+    // Step 3: Navigate to profile page
+    await test.step('Navigate to profile page', async () => {
+      // Use extracted token or click the link
+      const profileLink = page.locator('a[href*="/speaker-portal/profile"]');
+      if (await profileLink.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await profileLink.click();
+      } else if (viewToken) {
+        await page.goto(`${BASE_URL}/speaker-portal/profile?token=${viewToken}`);
+      } else {
+        // Fallback: use original token (VIEW token should be same as RESPOND token structure)
+        await page.goto(`${BASE_URL}/speaker-portal/profile?token=${ONBOARDING_TOKEN}`);
+      }
+
+      await page.waitForLoadState('networkidle');
+
+      // Verify profile page loaded
+      await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+    });
+
+    // Step 4: Update profile
+    await test.step('Update speaker profile', async () => {
+      // Wait for form to be ready
+      await expect(page.locator('#firstName')).toBeVisible({ timeout: 10000 });
+
+      // Update First Name
+      const firstNameInput = page.locator('#firstName');
+      await firstNameInput.clear();
+      await firstNameInput.fill(TEST_PROFILE.firstName);
+
+      // Update Last Name
+      const lastNameInput = page.locator('#lastName');
+      await lastNameInput.clear();
+      await lastNameInput.fill(TEST_PROFILE.lastName);
+
+      // Update Bio
+      const bioTextarea = page.locator('#bio');
+      await bioTextarea.clear();
+      await bioTextarea.fill(TEST_PROFILE.bio);
+
+      // Add Expertise Areas
+      for (const expertise of TEST_PROFILE.expertise) {
+        const expertiseInput = page.locator('input[placeholder*="Add expertise"]');
+        await expertiseInput.fill(expertise);
+        await page.locator('button').filter({ hasText: /^Add$/ }).first().click();
+        // Wait for tag to appear
+        await expect(page.locator(`text=${expertise}`)).toBeVisible();
+      }
+
+      // Add Speaking Topics
+      for (const topic of TEST_PROFILE.topics) {
+        const topicInput = page.locator('input[placeholder*="Add speaking topic"]');
+        await topicInput.fill(topic);
+        await page.locator('button').filter({ hasText: /^Add$/ }).nth(1).click();
+        // Wait for tag to appear
+        await expect(page.locator(`text=${topic}`)).toBeVisible();
+      }
+
+      // Select Languages
+      for (const lang of TEST_PROFILE.languages) {
+        const langButton = page.locator('button').filter({ hasText: new RegExp(`^${lang}$`, 'i') });
+        // Only click if not already selected
+        const isSelected = await langButton.evaluate(
+          (el) => el.classList.contains('bg-blue-600') || el.getAttribute('aria-pressed') === 'true'
+        );
+        if (!isSelected) {
+          await langButton.click();
+        }
+      }
+
+      // Add LinkedIn URL
+      const linkedInInput = page.locator('#linkedIn');
+      await linkedInInput.clear();
+      await linkedInInput.fill(TEST_PROFILE.linkedIn);
+
+      // Save profile
+      const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+      await expect(saveButton).toBeEnabled();
+      await saveButton.click();
+
+      // Verify success message
+      await expect(page.locator('text=/Profile updated successfully/i')).toBeVisible({
+        timeout: 10000,
+      });
+    });
+
+    // Step 5: Navigate to content submission (AC10)
+    await test.step('Navigate to content submission page', async () => {
+      // Look for the content submission navigation card
+      const contentLink = page.locator('a[href*="/speaker-portal/content"]');
+      await expect(contentLink).toBeVisible({ timeout: 10000 });
+      await contentLink.click();
+
+      await page.waitForLoadState('networkidle');
+
+      // Verify content page loaded
+      await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+    });
+
+    // Step 6: Submit content
+    await test.step('Submit presentation content', async () => {
+      // Fill title
+      const titleInput = page.locator('#title');
+      await expect(titleInput).toBeVisible({ timeout: 10000 });
+      await titleInput.fill(TEST_CONTENT.title);
+
+      // Fill abstract
+      const abstractTextarea = page.locator('#abstract');
+      await abstractTextarea.fill(TEST_CONTENT.abstract);
+
+      // Verify character counts are shown
+      await expect(page.locator(`text=${TEST_CONTENT.title.length} / 200`)).toBeVisible();
+      await expect(page.locator(`text=${TEST_CONTENT.abstract.length} / 1000`)).toBeVisible();
+
+      // Submit content
+      const submitButton = page.locator('button').filter({ hasText: /Submit Content/i });
+      await expect(submitButton).toBeEnabled();
+      await submitButton.click();
+
+      // Verify success
+      await expect(page.locator('text=/Content Submitted Successfully/i')).toBeVisible({
+        timeout: 15000,
+      });
+    });
+
+    // Step 7: Verify completion
+    await test.step('Verify submission confirmation', async () => {
+      // Verify submission details are shown
+      await expect(page.locator('text=/Version:/i')).toBeVisible();
+      await expect(page.locator('text=/Status:/i')).toBeVisible();
+
+      // Should see the session title in confirmation
+      await expect(page.locator('text=/submitted for review/i')).toBeVisible();
+    });
+  });
+});
+
+test.describe('Speaker Profile Update Flow (Isolated)', () => {
+  const PROFILE_TOKEN = process.env.E2E_SPEAKER_PROFILE_TOKEN || 'test-profile-token';
+
+  test('should update speaker profile with all fields', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    // Handle error states gracefully
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    // Wait for form
+    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+
+    // Verify form fields are present
+    await expect(page.locator('#firstName')).toBeVisible();
+    await expect(page.locator('#lastName')).toBeVisible();
+    await expect(page.locator('#bio')).toBeVisible();
+    await expect(page.locator('#linkedIn')).toBeVisible();
+
+    // Verify profile completeness indicator
+    await expect(page.locator('text=/Profile Completeness/i')).toBeVisible();
+  });
+
+  test('should show validation errors for invalid LinkedIn URL', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    await expect(page.locator('#linkedIn')).toBeVisible({ timeout: 15000 });
+
+    // Enter invalid LinkedIn URL
+    const linkedInInput = page.locator('#linkedIn');
+    await linkedInInput.fill('not-a-valid-url');
+
+    // Trigger validation by trying to save
+    // First make a change to enable save button
+    const bioField = page.locator('#bio');
+    const currentBio = await bioField.inputValue();
+    await bioField.fill(currentBio + ' ');
+
+    const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+    await saveButton.click();
+
+    // Verify validation error
+    await expect(page.locator('text=/valid LinkedIn URL/i')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should navigate from profile to content submission when session assigned', async ({
+    page,
+  }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+
+    // Check if content submission link is visible (only shown when session assigned)
+    const contentLink = page.locator('a[href*="/speaker-portal/content"]');
+    const hasSessionAssigned = await contentLink.isVisible({ timeout: 5000 }).catch(() => false);
+
+    if (hasSessionAssigned) {
+      await contentLink.click();
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('text=/Submit Your Content|Session Not Assigned/i')).toBeVisible({
+        timeout: 10000,
+      });
+    } else {
+      // No session assigned - verify content submission card is not shown
+      await expect(contentLink).not.toBeVisible();
+    }
+  });
+});
+
+test.describe('Content Submission Flow (Isolated)', () => {
+  const CONTENT_TOKEN = process.env.E2E_SPEAKER_CONTENT_TOKEN || 'test-content-token';
+
+  test('should display session not assigned message when no session', async ({ page }) => {
+    // Use a token for a speaker without session assigned
+    const noSessionToken = process.env.E2E_SPEAKER_NO_SESSION_TOKEN || 'test-no-session-token';
+
+    await page.goto(`${BASE_URL}/speaker-portal/content?token=${noSessionToken}`);
+    await page.waitForLoadState('networkidle');
+
+    // Should show either "Session Not Assigned" or an error
+    await expect(
+      page.locator('text=/Session Not Assigned|Invalid Link|Error/i').first()
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should show content form when session is assigned', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/content?token=${CONTENT_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    // Handle error states gracefully
+    const errorOrNoSession = await page
+      .locator('text=/Invalid Link|Link Expired|Session Not Assigned/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorOrNoSession) {
+      test.skip(true, 'No valid content token with session assigned');
+      return;
+    }
+
+    // Verify form elements
+    await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#title')).toBeVisible();
+    await expect(page.locator('#abstract')).toBeVisible();
+    await expect(page.locator('button').filter({ hasText: /Submit Content/i })).toBeVisible();
+  });
+
+  test('should validate required fields before submission', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/content?token=${CONTENT_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorOrNoSession = await page
+      .locator('text=/Invalid Link|Link Expired|Session Not Assigned/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorOrNoSession) {
+      test.skip(true, 'No valid content token with session assigned');
+      return;
+    }
+
+    await expect(page.locator('#title')).toBeVisible({ timeout: 15000 });
+
+    // Clear fields and try to submit
+    await page.locator('#title').clear();
+    await page.locator('#abstract').clear();
+
+    const submitButton = page.locator('button').filter({ hasText: /Submit Content/i });
+    await submitButton.click();
+
+    // Verify validation errors
+    await expect(page.locator('text=/Title is required/i')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=/Abstract is required/i')).toBeVisible();
+  });
+
+  test('should navigate from content page to profile via Edit Profile link', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/content?token=${CONTENT_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorOrNoSession = await page
+      .locator('text=/Invalid Link|Link Expired|Session Not Assigned/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorOrNoSession) {
+      test.skip(true, 'No valid content token with session assigned');
+      return;
+    }
+
+    await expect(page.locator('text=/Submit Your Content/i')).toBeVisible({ timeout: 15000 });
+
+    // Click Edit Profile link (AC10)
+    const editProfileLink = page.locator('a').filter({ hasText: /Edit Profile/i });
+    await expect(editProfileLink).toBeVisible();
+    await editProfileLink.click();
+
+    await page.waitForLoadState('networkidle');
+
+    // Should be on profile page
+    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 10000 });
+  });
+});
+
+test.describe('Draft Auto-Save (AC4)', () => {
+  const CONTENT_TOKEN = process.env.E2E_SPEAKER_CONTENT_TOKEN || 'test-content-token';
+
+  test('should show draft save status', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/content?token=${CONTENT_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorOrNoSession = await page
+      .locator('text=/Invalid Link|Link Expired|Session Not Assigned/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorOrNoSession) {
+      test.skip(true, 'No valid content token with session assigned');
+      return;
+    }
+
+    await expect(page.locator('#title')).toBeVisible({ timeout: 15000 });
+
+    // Type in the title field
+    await page.locator('#title').fill('Test Draft Title');
+
+    // Should show "Unsaved changes" indicator
+    await expect(page.locator('text=/Unsaved changes/i')).toBeVisible({ timeout: 5000 });
+
+    // Wait for auto-save (30 seconds) - or trigger manually if available
+    // For this test, we just verify the indicator changes
+    // In a real environment, we'd wait for the save to complete
+  });
+});
+
+test.describe('Mobile Responsiveness', () => {
+  const PROFILE_TOKEN = process.env.E2E_SPEAKER_PROFILE_TOKEN || 'test-profile-token';
+
+  test('should be usable on mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    // Verify elements are visible and accessible on mobile
+    await expect(page.locator('text=/Your Speaker Profile/i')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#firstName')).toBeVisible();
+    await expect(page.locator('#bio')).toBeVisible();
+
+    // Save button should be accessible
+    const saveButton = page.locator('button').filter({ hasText: /Save Changes/i });
+    await expect(saveButton).toBeVisible();
+
+    // Verify adequate tap target size
+    const buttonBox = await saveButton.boundingBox();
+    if (buttonBox) {
+      expect(buttonBox.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
+test.describe('Accessibility', () => {
+  const PROFILE_TOKEN = process.env.E2E_SPEAKER_PROFILE_TOKEN || 'test-profile-token';
+
+  test('should have proper heading structure on profile page', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    // Should have main heading
+    await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
+
+    // Should have section headings
+    const headings = page.locator('h1, h2, h3');
+    const count = await headings.count();
+    expect(count).toBeGreaterThan(1);
+  });
+
+  test('should have labeled form fields', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    await expect(page.locator('#firstName')).toBeVisible({ timeout: 15000 });
+
+    // Verify labels are associated with inputs
+    await expect(page.locator('label[for="firstName"]')).toBeVisible();
+    await expect(page.locator('label[for="lastName"]')).toBeVisible();
+    await expect(page.locator('label[for="bio"]')).toBeVisible();
+    await expect(page.locator('label[for="linkedIn"]')).toBeVisible();
+  });
+
+  test('should support keyboard navigation', async ({ page }) => {
+    await page.goto(`${BASE_URL}/speaker-portal/profile?token=${PROFILE_TOKEN}`);
+    await page.waitForLoadState('networkidle');
+
+    const errorVisible = await page
+      .locator('text=/Invalid Link|Link Expired|Error/i')
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+
+    if (errorVisible) {
+      test.skip(true, 'No valid profile token available');
+      return;
+    }
+
+    await expect(page.locator('#firstName')).toBeVisible({ timeout: 15000 });
+
+    // Tab through form fields
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+
+    // Verify an interactive element is focused
+    const focusedTag = await page.evaluate(() => document.activeElement?.tagName);
+    expect(['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SELECT']).toContain(focusedTag);
+  });
+});
