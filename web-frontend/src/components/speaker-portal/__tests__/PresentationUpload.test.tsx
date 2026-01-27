@@ -67,8 +67,11 @@ describe('PresentationUpload', () => {
     it('should accept PPTX files', async () => {
       const mockResponse: MaterialConfirmResponse = {
         materialId: 'mat-123',
+        uploadId: 'upload-123',
         fileName: 'presentation.pptx',
-        materialUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        materialType: 'PRESENTATION',
+        uploadedAt: new Date().toISOString(),
       };
       mockUploadMaterial.mockResolvedValue(mockResponse);
 
@@ -91,8 +94,11 @@ describe('PresentationUpload', () => {
     it('should accept PDF files', async () => {
       const mockResponse: MaterialConfirmResponse = {
         materialId: 'mat-123',
+        uploadId: 'upload-123',
         fileName: 'presentation.pdf',
-        materialUrl: 'https://cdn.example.com/materials/presentation.pdf',
+        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pdf',
+        materialType: 'PRESENTATION',
+        uploadedAt: new Date().toISOString(),
       };
       mockUploadMaterial.mockResolvedValue(mockResponse);
 
@@ -113,8 +119,11 @@ describe('PresentationUpload', () => {
     it('should accept KEY files', async () => {
       const mockResponse: MaterialConfirmResponse = {
         materialId: 'mat-123',
+        uploadId: 'upload-123',
         fileName: 'presentation.key',
-        materialUrl: 'https://cdn.example.com/materials/presentation.key',
+        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.key',
+        materialType: 'PRESENTATION',
+        uploadedAt: new Date().toISOString(),
       };
       mockUploadMaterial.mockResolvedValue(mockResponse);
 
@@ -158,8 +167,11 @@ describe('PresentationUpload', () => {
     it('should accept files under 50MB', async () => {
       const mockResponse: MaterialConfirmResponse = {
         materialId: 'mat-123',
+        uploadId: 'upload-123',
         fileName: 'large-presentation.pptx',
-        materialUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        materialType: 'PRESENTATION',
+        uploadedAt: new Date().toISOString(),
       };
       mockUploadMaterial.mockResolvedValue(mockResponse);
 
@@ -288,8 +300,11 @@ describe('PresentationUpload', () => {
     it('should call onMaterialUploaded after successful upload', async () => {
       const mockResponse: MaterialConfirmResponse = {
         materialId: 'mat-123',
+        uploadId: 'upload-123',
         fileName: 'presentation.pptx',
-        materialUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        cloudFrontUrl: 'https://cdn.example.com/materials/presentation.pptx',
+        materialType: 'PRESENTATION',
+        uploadedAt: new Date().toISOString(),
       };
       mockUploadMaterial.mockResolvedValue(mockResponse);
       const onMaterialUploaded = vi.fn();
