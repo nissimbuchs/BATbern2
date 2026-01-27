@@ -133,6 +133,13 @@ public class SpeakerPool {
     @Column(name = "preference_comments", columnDefinition = "TEXT")
     private String preferenceComments;
 
+    // Story 6.3: Speaker Content Submission Portal fields
+    @Column(name = "content_status", length = 50)
+    private String contentStatus = "PENDING"; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
+
+    @Column(name = "content_submitted_at")
+    private Instant contentSubmittedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -351,6 +358,24 @@ public class SpeakerPool {
 
     public void setPreferenceComments(String preferenceComments) {
         this.preferenceComments = preferenceComments;
+    }
+
+    // Story 6.3: Speaker Content Submission Portal getters and setters
+
+    public String getContentStatus() {
+        return contentStatus;
+    }
+
+    public void setContentStatus(String contentStatus) {
+        this.contentStatus = contentStatus;
+    }
+
+    public Instant getContentSubmittedAt() {
+        return contentSubmittedAt;
+    }
+
+    public void setContentSubmittedAt(Instant contentSubmittedAt) {
+        this.contentSubmittedAt = contentSubmittedAt;
     }
 
     @PrePersist

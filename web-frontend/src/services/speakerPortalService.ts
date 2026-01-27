@@ -1,5 +1,5 @@
 /**
- * Speaker Portal Service (Story 6.2a/6.2b)
+ * Speaker Portal Service (Story 6.2a/6.2b/6.3)
  *
  * API client for Speaker Portal endpoints.
  * These are PUBLIC endpoints authenticated via magic link token.
@@ -7,6 +7,7 @@
  * - Token validation (6.1a)
  * - Response submission (6.2a)
  * - Profile management (6.2b)
+ * - Content submission (6.3)
  * - Error handling with correlation IDs
  */
 
@@ -171,6 +172,119 @@ export interface PhotoConfirmRequest {
  */
 export interface PhotoConfirmResponse {
   profilePictureUrl: string;
+}
+
+// ============================================================================
+// Story 6.3: Content Submission Types
+// ============================================================================
+
+/**
+ * Content info returned from the API (AC1, AC4, AC7, AC8)
+ */
+export interface SpeakerContentInfo {
+  speakerName: string;
+  eventCode: string;
+  eventTitle: string;
+  hasSessionAssigned: boolean;
+  sessionTitle: string | null;
+  canSubmitContent: boolean;
+  contentStatus: string | null;
+  hasDraft: boolean;
+  draftTitle: string | null;
+  draftAbstract: string | null;
+  draftVersion: number | null;
+  lastSavedAt: string | null;
+  needsRevision: boolean;
+  reviewerFeedback: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  // AC7: Material upload
+  hasMaterial: boolean;
+  materialUrl: string | null;
+  materialFileName: string | null;
+}
+
+/**
+ * Request to save content draft (AC4)
+ */
+export interface ContentDraftRequest {
+  token: string;
+  title: string | null;
+  contentAbstract: string | null;
+}
+
+/**
+ * Response from draft save endpoint (AC4)
+ */
+export interface ContentDraftResponse {
+  draftId: string;
+  savedAt: string;
+}
+
+/**
+ * Request to submit content (AC5)
+ */
+export interface ContentSubmitRequest {
+  token: string;
+  title: string;
+  contentAbstract: string;
+}
+
+/**
+ * Response from content submit endpoint (AC5)
+ */
+export interface ContentSubmitResponse {
+  submissionId: string;
+  version: number;
+  status: string;
+  sessionTitle: string;
+}
+
+/**
+ * Request to get presigned URL for material upload (AC7)
+ */
+export interface MaterialUploadRequest {
+  token: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+}
+
+/**
+ * Response from material presigned URL endpoint (AC7)
+ */
+export interface MaterialUploadResponse {
+  uploadUrl: string;
+  uploadId: string;
+  s3Key: string;
+  fileExtension: string;
+  expiresInMinutes: number;
+  requiredHeaders: Record<string, string>;
+}
+
+/**
+ * Request to confirm material upload (AC7)
+ */
+export interface MaterialConfirmRequest {
+  token: string;
+  uploadId: string;
+  fileName: string;
+  fileExtension: string;
+  fileSize: number;
+  mimeType: string;
+  materialType: string;
+}
+
+/**
+ * Response from material confirm endpoint (AC7)
+ */
+export interface MaterialConfirmResponse {
+  materialId: string;
+  uploadId: string;
+  fileName: string;
+  cloudFrontUrl: string;
+  materialType: string;
+  uploadedAt: string;
 }
 
 /**
@@ -389,6 +503,200 @@ class SpeakerPortalService {
     });
 
     return confirmResponse.profilePictureUrl;
+  }
+
+  // ==========================================================================
+  // Story 6.3: Content Submission
+  // ==========================================================================
+
+  /**
+   * Get content info for the speaker portal.
+   * Story 6.3 AC1: Session assignment check
+   * Story 6.3 AC4: Draft restoration
+   * Story 6.3 AC8: Revision feedback display
+   *
+   * @param token Magic link token
+   * @returns Content info including session status, draft, and revision feedback
+   */
+  async getContentInfo(token: string): Promise<SpeakerContentInfo> {
+    try {
+      const response = await apiClient.get<SpeakerContentInfo>(
+        `${SPEAKER_PORTAL_API_PATH}/content`,
+        {
+          params: { token },
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Save content draft.
+   * Story 6.3 AC4: Draft auto-save every 30 seconds
+   *
+   * @param request Draft request with token, title, and abstract
+   * @returns Draft response with save timestamp
+   */
+  async saveDraft(request: ContentDraftRequest): Promise<ContentDraftResponse> {
+    try {
+      const response = await apiClient.post<ContentDraftResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/content/draft`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Submit content for organizer review.
+   * Story 6.3 AC5: Content submission with validation
+   *
+   * @param request Submit request with token, title, and abstract
+   * @returns Submit response with submission ID and version
+   */
+  async submitContent(request: ContentSubmitRequest): Promise<ContentSubmitResponse> {
+    try {
+      const response = await apiClient.post<ContentSubmitResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/content/submit`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Get presigned URL for material upload.
+   * Story 6.3 AC7: File upload with 50MB limit
+   *
+   * @param request Upload request with token and file metadata
+   * @returns Presigned URL response with upload details
+   */
+  async getMaterialPresignedUrl(request: MaterialUploadRequest): Promise<MaterialUploadResponse> {
+    try {
+      const response = await apiClient.post<MaterialUploadResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/materials/presigned-url`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Confirm material upload and associate with session.
+   * Story 6.3 AC7: Material association after upload
+   *
+   * @param request Confirm request with token and upload details
+   * @returns Confirm response with material info
+   */
+  async confirmMaterialUpload(request: MaterialConfirmRequest): Promise<MaterialConfirmResponse> {
+    try {
+      const response = await apiClient.post<MaterialConfirmResponse>(
+        `${SPEAKER_PORTAL_API_PATH}/materials/confirm`,
+        request,
+        {
+          headers: {
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Upload presentation material using the 3-phase presigned URL flow.
+   * Story 6.3 AC7: Material upload convenience method
+   *
+   * @param token Magic link token
+   * @param file File to upload
+   * @param onProgress Optional progress callback (0-100)
+   * @returns Material confirm response with CloudFront URL
+   */
+  async uploadMaterial(
+    token: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<MaterialConfirmResponse> {
+    // Phase 1: Get presigned URL
+    const presignedResponse = await this.getMaterialPresignedUrl({
+      token,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type,
+    });
+
+    // Phase 2: Upload directly to S3
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          onProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          reject(new Error(`S3 upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('S3 upload failed'));
+      });
+
+      xhr.open('PUT', presignedResponse.uploadUrl);
+      // Set required headers from response
+      Object.entries(presignedResponse.requiredHeaders).forEach(([key, value]) => {
+        xhr.setRequestHeader(key, value);
+      });
+      xhr.send(file);
+    });
+
+    // Phase 3: Confirm upload
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    const confirmResponse = await this.confirmMaterialUpload({
+      token,
+      uploadId: presignedResponse.uploadId,
+      fileName: file.name,
+      fileExtension,
+      fileSize: file.size,
+      mimeType: file.type,
+      materialType: 'PRESENTATION',
+    });
+
+    return confirmResponse;
   }
 
   /**

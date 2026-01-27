@@ -52,4 +52,17 @@ tests {
     const body = res.getBody();
     expect(body.tokenConsumed).to.be.true;
   });
+
+  test("should return profileUrl with VIEW token - Story 6.2a AC3", function() {
+    const body = res.getBody();
+    if (body.profileUrl) {
+      // Extract VIEW token from profileUrl for use in content submission tests
+      const url = new URL(body.profileUrl);
+      const viewToken = url.searchParams.get('token');
+      if (viewToken) {
+        bru.setVar("speakerViewToken", viewToken);
+        console.log("Extracted VIEW token for content submission tests");
+      }
+    }
+  });
 }
