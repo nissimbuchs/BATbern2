@@ -40,4 +40,9 @@ public class SpeakerProfileDto {
     // Computed fields
     private Integer profileCompleteness;
     private List<String> missingFields;
+
+    // Navigation context (Story 6.3 AC10)
+    private Boolean hasSessionAssigned;
+    private String sessionTitle;
+    private String eventCode;
 }

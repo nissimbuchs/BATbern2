@@ -28,6 +28,8 @@ import {
   Briefcase,
   Languages,
   AlertCircle,
+  FileText,
+  ArrowRight,
 } from 'lucide-react';
 import { speakerPortalService, ProfileUpdateRequest } from '@/services/speakerPortalService';
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
@@ -135,15 +137,11 @@ const ProfileUpdatePage = () => {
   }, []);
 
   // Handle photo upload success - refresh profile to get new photo URL
-  const handlePhotoUploaded = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (url: string) => {
-      setPhotoUploadError(null);
-      // Refresh the profile to get the updated photo URL
-      queryClient.invalidateQueries({ queryKey: ['speaker-profile', token] });
-    },
-    [queryClient, token]
-  );
+  const handlePhotoUploaded = useCallback(() => {
+    setPhotoUploadError(null);
+    // Refresh the profile to get the updated photo URL
+    queryClient.invalidateQueries({ queryKey: ['speaker-profile', token] });
+  }, [queryClient, token]);
 
   // Handle photo upload error
   const handlePhotoError = useCallback((error: { type: string; message: string }) => {
@@ -615,6 +613,29 @@ const ProfileUpdatePage = () => {
                 )}
               </div>
             </Card>
+
+            {/* Content Submission Navigation (AC10) */}
+            {profile.hasSessionAssigned && (
+              <Card className="p-6 mb-6 border-blue-800 bg-blue-900/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="h-5 w-5 text-blue-400" />
+                  <h2 className="text-lg font-light text-zinc-100">Content Submission</h2>
+                </div>
+                <p className="text-zinc-400 mb-4">
+                  You&apos;re assigned to:{' '}
+                  <span className="text-zinc-100">{profile.sessionTitle}</span>
+                </p>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Submit your presentation title, abstract, and materials for review.
+                </p>
+                <Button asChild className="w-full sm:w-auto">
+                  <Link to={`/speaker-portal/content?token=${token}`}>
+                    Submit Your Content
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Link>
+                </Button>
+              </Card>
+            )}
 
             {/* Save Button */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">

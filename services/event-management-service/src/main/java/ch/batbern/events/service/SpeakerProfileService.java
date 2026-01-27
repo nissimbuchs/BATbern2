@@ -83,8 +83,8 @@ public class SpeakerProfileService {
         int completeness = calculateCompleteness(user, speaker);
         List<String> missingFields = getMissingFields(user, speaker);
 
-        // 5. Build combined response
-        return buildProfileDto(user, speaker, completeness, missingFields);
+        // 5. Build combined response with session context (AC10)
+        return buildProfileDto(user, speaker, completeness, missingFields, tokenResult);
     }
 
     /**
@@ -249,7 +249,8 @@ public class SpeakerProfileService {
             UserResponse user,
             Speaker speaker,
             int completeness,
-            List<String> missingFields) {
+            List<String> missingFields,
+            TokenValidationResult tokenResult) {
 
         // Prefer local Speaker values, fall back to User service values
         String firstName = speaker.getFirstName() != null
@@ -263,6 +264,10 @@ public class SpeakerProfileService {
         String profilePictureUrl = speaker.getProfilePictureUrl() != null
                 ? speaker.getProfilePictureUrl()
                 : (user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null);
+
+        // AC10: Session context for navigation
+        boolean hasSession = tokenResult.sessionTitle() != null
+                && !tokenResult.sessionTitle().isBlank();
 
         return SpeakerProfileDto.builder()
                 .username(user.getId())  // 'id' contains username per Story 1.16.2
@@ -279,6 +284,10 @@ public class SpeakerProfileService {
                 // Computed
                 .profileCompleteness(completeness)
                 .missingFields(missingFields)
+                // Navigation context (AC10)
+                .hasSessionAssigned(hasSession)
+                .sessionTitle(tokenResult.sessionTitle())
+                .eventCode(tokenResult.eventCode())
                 .build();
     }
 

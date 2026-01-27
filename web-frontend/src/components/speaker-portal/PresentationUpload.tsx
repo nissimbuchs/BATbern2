@@ -135,7 +135,7 @@ const PresentationUpload = ({
         setUploadProgress(0);
         setSelectedFileName(null);
         setShowDropzone(false);
-        onMaterialUploaded(response.materialUrl, response.fileName);
+        onMaterialUploaded(response.cloudFrontUrl, response.fileName);
       } catch (err) {
         // Handle error
         setIsUploading(false);

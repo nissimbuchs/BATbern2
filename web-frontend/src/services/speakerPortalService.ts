@@ -117,6 +117,10 @@ export interface SpeakerProfile {
   // Computed fields
   profileCompleteness: number;
   missingFields: string[];
+  // Navigation context (Story 6.3 AC10)
+  hasSessionAssigned?: boolean;
+  sessionTitle?: string | null;
+  eventCode?: string | null;
 }
 
 /**

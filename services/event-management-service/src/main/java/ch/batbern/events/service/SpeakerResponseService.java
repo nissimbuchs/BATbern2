@@ -53,6 +53,7 @@ public class SpeakerResponseService {
     private final ApplicationEventPublisher eventPublisher;
     private final OrganizerNotificationService notificationService;
     private final UserApiClient userApiClient;
+    private final SpeakerAcceptanceEmailService acceptanceEmailService;
 
     @Value("${app.base-url:http://localhost:8100}")
     private String appBaseUrl;
@@ -352,6 +353,9 @@ public class SpeakerResponseService {
             String viewToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
             profileUrl = appBaseUrl + "/speaker-portal/profile?token=" + viewToken;
             LOG.info("Generated profile URL for speaker {}: {}", speaker.getSpeakerName(), profileUrl);
+
+            // AC9: Send acceptance confirmation email with portal links (async)
+            sendAcceptanceConfirmationEmail(speaker, event, viewToken);
         } else if (responseType == SpeakerResponseType.TENTATIVE) {
             nextSteps.add("Return to this link when you're ready to confirm");
             nextSteps.add("Contact the organizer if you have questions");
@@ -365,5 +369,18 @@ public class SpeakerResponseService {
                 .contentDeadline(speaker.getContentDeadline())
                 .profileUrl(profileUrl)
                 .build();
+    }
+
+    /**
+     * Send acceptance confirmation email with portal links.
+     * Story 6.2a AC9: Allows speaker to return to portal via email link.
+     */
+    private void sendAcceptanceConfirmationEmail(SpeakerPool speaker, Event event, String viewToken) {
+        // Determine locale (default to German for Swiss audience)
+        java.util.Locale locale = java.util.Locale.GERMAN;
+
+        // Send email asynchronously
+        acceptanceEmailService.sendAcceptanceConfirmationEmail(speaker, event, viewToken, locale);
+        LOG.info("Triggered acceptance confirmation email for speaker: {}", speaker.getSpeakerName());
     }
 }

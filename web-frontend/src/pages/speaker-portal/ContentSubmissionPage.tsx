@@ -14,11 +14,12 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { speakerPortalService, ContentSubmitResponse } from '@/services/speakerPortalService';
 import PresentationUpload from '@/components/speaker-portal/PresentationUpload';
+import { User } from 'lucide-react';
 
 // Constants
 const MAX_TITLE_LENGTH = 200;
@@ -323,10 +324,22 @@ export default function ContentSubmissionPage() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Submit Your Content</h1>
-            <p className="text-gray-400">
-              {contentInfo.eventTitle} - {contentInfo.sessionTitle}
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-2">Submit Your Content</h1>
+                <p className="text-gray-400">
+                  {contentInfo.eventTitle} - {contentInfo.sessionTitle}
+                </p>
+              </div>
+              {/* AC10: Edit Profile Navigation */}
+              <Link
+                to={`/speaker-portal/profile?token=${token}`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm"
+              >
+                <User className="h-4 w-4" />
+                Edit Profile
+              </Link>
+            </div>
           </div>
 
           {/* AC8: Revision Feedback */}

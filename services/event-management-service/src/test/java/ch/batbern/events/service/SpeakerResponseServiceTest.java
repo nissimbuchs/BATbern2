@@ -80,6 +80,9 @@ class SpeakerResponseServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
+    @Mock
+    private SpeakerAcceptanceEmailService acceptanceEmailService;
+
     private SpeakerResponseService speakerResponseService;
 
     private UUID testSpeakerPoolId;
@@ -97,7 +100,8 @@ class SpeakerResponseServiceTest {
                 magicLinkService,
                 eventPublisher,
                 notificationService,
-                userApiClient
+                userApiClient,
+                acceptanceEmailService
         );
 
         testSpeakerPoolId = UUID.randomUUID();
