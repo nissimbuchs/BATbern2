@@ -201,6 +201,54 @@ BEGIN
 
     RAISE NOTICE '✅ Created/Updated speaker profile records';
 
+    -- Create corresponding user_profiles records (needed for speaker portal profile API)
+    INSERT INTO user_profiles (
+        id, username, email, first_name, last_name, bio
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000301',
+        'test.invited',
+        'test.invited@example.com',
+        'Test',
+        'Invited',
+        'E2E test speaker for onboarding flow'
+    )
+    ON CONFLICT (username) DO UPDATE SET
+        first_name = 'Test',
+        last_name = 'Invited',
+        bio = 'E2E test speaker for onboarding flow';
+
+    INSERT INTO user_profiles (
+        id, username, email, first_name, last_name, bio
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000302',
+        'test.withsession',
+        'test.withsession@example.com',
+        'Test',
+        'Withsession',
+        'E2E test speaker with session assigned'
+    )
+    ON CONFLICT (username) DO UPDATE SET
+        first_name = 'Test',
+        last_name = 'Withsession',
+        bio = 'E2E test speaker with session assigned';
+
+    INSERT INTO user_profiles (
+        id, username, email, first_name, last_name, bio
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000303',
+        'test.nosession',
+        'test.nosession@example.com',
+        'Test',
+        'Nosession',
+        'E2E test speaker without session'
+    )
+    ON CONFLICT (username) DO UPDATE SET
+        first_name = 'Test',
+        last_name = 'Nosession',
+        bio = 'E2E test speaker without session';
+
+    RAISE NOTICE '✅ Created/Updated user_profiles records';
+
     -- Clean up any old tokens for these speakers (to ensure fresh tokens)
     DELETE FROM speaker_invitation_tokens
     WHERE speaker_pool_id IN (
