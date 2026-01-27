@@ -161,6 +161,9 @@ public class SecurityConfig {
                                 "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
+                        // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
+                        .requestMatchers("/api/v1/e2e-test/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
