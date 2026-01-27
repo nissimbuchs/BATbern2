@@ -95,4 +95,71 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return true if speaker exists
      */
     boolean existsByEventIdAndEmail(UUID eventId, String email);
+
+    // E2E Test Support Methods (Story 6.3)
+
+    /**
+     * Find speaker by event code and username.
+     * Used for E2E test token generation.
+     *
+     * @param eventCode the event code
+     * @param username the speaker username
+     * @return optional speaker pool entry
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode AND s.username = :username")
+    java.util.Optional<SpeakerPool> findByEventCodeAndUsername(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            @org.springframework.data.repository.query.Param("username") String username);
+
+    /**
+     * Find speakers by event code and status.
+     * Used for E2E test token generation with Pageable for limit.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode AND CAST(s.status AS string) = :status "
+                    + "ORDER BY s.createdAt DESC")
+    List<SpeakerPool> findByEventCodeAndStatusOrderByCreatedAtDesc(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            @org.springframework.data.repository.query.Param("status") String status,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Find speakers by event code and status with session assigned.
+     * Used for E2E test token generation with Pageable for limit.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode AND CAST(s.status AS string) = :status "
+                    + "AND s.sessionId IS NOT NULL ORDER BY s.createdAt DESC")
+    List<SpeakerPool> findByEventCodeAndStatusAndSessionIdIsNotNullOrderByCreatedAtDesc(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            @org.springframework.data.repository.query.Param("status") String status,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Find speakers by event code and status without session assigned.
+     * Used for E2E test token generation with Pageable for limit.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode AND CAST(s.status AS string) = :status "
+                    + "AND s.sessionId IS NULL ORDER BY s.createdAt DESC")
+    List<SpeakerPool> findByEventCodeAndStatusAndSessionIdIsNullOrderByCreatedAtDesc(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            @org.springframework.data.repository.query.Param("status") String status,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Find speakers by event code.
+     * Used for E2E test token generation fallback with Pageable for limit.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode ORDER BY s.createdAt DESC")
+    List<SpeakerPool> findByEventCodeOrderByCreatedAtDesc(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            org.springframework.data.domain.Pageable pageable);
 }

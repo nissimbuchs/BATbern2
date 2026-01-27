@@ -109,6 +109,9 @@ public class SecurityConfig {
                         "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
+                // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
+                .requestMatchers("/api/v1/e2e-test/**").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()
