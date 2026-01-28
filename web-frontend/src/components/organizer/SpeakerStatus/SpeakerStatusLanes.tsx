@@ -459,6 +459,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
         {...listeners}
         {...attributes}
         onClick={handleClick}
+        data-testid={`speaker-card-${speaker.id}`}
         sx={{
           p: 2,
           cursor: 'grab',
