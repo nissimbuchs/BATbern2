@@ -42,6 +42,12 @@ public class SpeakerPoolResponse {
     private String initialPresentationTitle;
     private String preferenceComments;
 
+    // Story 6.3: Speaker Content Submission Portal fields
+    private String contentStatus;
+    private Instant contentSubmittedAt;
+    private String submittedTitle;
+    private String submittedAbstract;
+
     // Constructors
 
     public SpeakerPoolResponse() {
@@ -86,6 +92,28 @@ public class SpeakerPoolResponse {
         response.initialPresentationTitle = speakerPool.getInitialPresentationTitle();
         response.preferenceComments = speakerPool.getPreferenceComments();
 
+        // Story 6.3: Speaker Content Submission Portal fields
+        response.contentStatus = speakerPool.getContentStatus();
+        response.contentSubmittedAt = speakerPool.getContentSubmittedAt();
+
+        return response;
+    }
+
+    /**
+     * Create response DTO from SpeakerPool entity with content submission data.
+     *
+     * @param speakerPool the speaker pool entity
+     * @param submittedTitle the submitted presentation title (from ContentSubmission)
+     * @param submittedAbstract the submitted presentation abstract (from ContentSubmission)
+     * @return the response DTO
+     */
+    public static SpeakerPoolResponse fromEntityWithContent(
+            SpeakerPool speakerPool,
+            String submittedTitle,
+            String submittedAbstract) {
+        SpeakerPoolResponse response = fromEntity(speakerPool);
+        response.submittedTitle = submittedTitle;
+        response.submittedAbstract = submittedAbstract;
         return response;
     }
 
@@ -301,5 +329,39 @@ public class SpeakerPoolResponse {
 
     public void setPreferenceComments(String preferenceComments) {
         this.preferenceComments = preferenceComments;
+    }
+
+    // Story 6.3: Speaker Content Submission Portal getters and setters
+
+    public String getContentStatus() {
+        return contentStatus;
+    }
+
+    public void setContentStatus(String contentStatus) {
+        this.contentStatus = contentStatus;
+    }
+
+    public Instant getContentSubmittedAt() {
+        return contentSubmittedAt;
+    }
+
+    public void setContentSubmittedAt(Instant contentSubmittedAt) {
+        this.contentSubmittedAt = contentSubmittedAt;
+    }
+
+    public String getSubmittedTitle() {
+        return submittedTitle;
+    }
+
+    public void setSubmittedTitle(String submittedTitle) {
+        this.submittedTitle = submittedTitle;
+    }
+
+    public String getSubmittedAbstract() {
+        return submittedAbstract;
+    }
+
+    public void setSubmittedAbstract(String submittedAbstract) {
+        this.submittedAbstract = submittedAbstract;
     }
 }

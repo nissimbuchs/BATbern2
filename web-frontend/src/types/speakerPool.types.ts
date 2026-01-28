@@ -50,6 +50,12 @@ export interface SpeakerPoolEntry {
   technicalRequirements?: string;
   initialPresentationTitle?: string;
   preferenceComments?: string;
+
+  // Story 6.3: Speaker Content Submission Portal fields
+  contentStatus?: string; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
+  contentSubmittedAt?: string;
+  submittedTitle?: string;
+  submittedAbstract?: string;
 }
 
 // ============================================================================

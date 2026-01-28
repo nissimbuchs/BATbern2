@@ -407,6 +407,56 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
               </Box>
             )}
 
+            {/* Story 6.3: Submitted Content Display */}
+            {speaker.submittedTitle && (
+              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+                <Typography variant="subtitle2" color="success.dark" gutterBottom>
+                  {t('speakers.submittedContent', 'Submitted Content')}
+                  {speaker.contentStatus && (
+                    <Chip
+                      label={speaker.contentStatus}
+                      size="small"
+                      color={
+                        speaker.contentStatus === 'APPROVED'
+                          ? 'success'
+                          : speaker.contentStatus === 'SUBMITTED'
+                            ? 'info'
+                            : 'warning'
+                      }
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+                <Typography variant="body2" fontWeight="medium" gutterBottom>
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      mt: 1,
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: 150,
+                      overflow: 'auto',
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+                {speaker.contentSubmittedAt && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: 'block' }}
+                  >
+                    {t('speakers.submittedAt', 'Submitted')}:{' '}
+                    {formatDate(speaker.contentSubmittedAt)}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
             {/* Email Input for Speakers without Email (AC4) */}
             {showEmailInput && (
               <Box mt={2}>
