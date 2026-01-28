@@ -109,6 +109,14 @@ public class SecurityConfig {
                         "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
+                // Story 6.3: Speaker portal content submission endpoints (no auth required, token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/v1/speaker-portal/materials/presigned-url").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
+
                 // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
                 .requestMatchers("/api/v1/e2e-test/**").permitAll()
 
