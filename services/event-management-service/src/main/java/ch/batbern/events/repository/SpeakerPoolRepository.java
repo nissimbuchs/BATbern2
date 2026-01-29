@@ -162,4 +162,16 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     List<SpeakerPool> findByEventCodeOrderByCreatedAtDesc(
             @org.springframework.data.repository.query.Param("eventCode") String eventCode,
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Find speakers by event code with session assigned (any status).
+     * Used for E2E test token generation - finds speakers who can submit content.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT s FROM SpeakerPool s JOIN Event e ON s.eventId = e.id "
+                    + "WHERE e.eventCode = :eventCode AND s.sessionId IS NOT NULL "
+                    + "ORDER BY s.createdAt DESC")
+    List<SpeakerPool> findByEventCodeAndSessionIdIsNotNullOrderByCreatedAtDesc(
+            @org.springframework.data.repository.query.Param("eventCode") String eventCode,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -17,7 +17,7 @@ set -e
 
 # Default values
 API_URL="${E2E_API_URL:-http://localhost:8002}"
-EVENT_CODE="${1:-BAT-SEED-2026}"
+EVENT_CODE="${1:-BATbern998}"
 
 # Colors for output
 RED='\033[0;31m'

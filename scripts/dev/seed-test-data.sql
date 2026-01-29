@@ -25,7 +25,7 @@ BEGIN
             'Kultur Casino Bern',
             'Herrengasse 25, 3011 Bern',
             250,
-            'BAT-SEED-2026',
+            'BATbern998',
             'full_day',
             'speaker_identification',
             1,

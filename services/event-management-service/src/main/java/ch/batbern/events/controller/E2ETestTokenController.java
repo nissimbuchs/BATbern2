@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -126,7 +125,7 @@ public class E2ETestTokenController {
      */
     @PostMapping("/tokens/generate-e2e-set")
     public ResponseEntity<Map<String, Object>> generateE2ETokenSet(
-            @RequestParam(defaultValue = "BAT-SEED-2026") String eventCode) {
+            @RequestParam(defaultValue = "BATbern998") String eventCode) {
 
         LOG.warn("E2E TEST ENDPOINT: Generating full E2E token set for event={}", eventCode);
 
@@ -138,24 +137,25 @@ public class E2ETestTokenController {
 
         // Find speakers with different states for testing
         // Speaker in INVITED status (for full onboarding flow)
-        List<SpeakerPool> invitedList = speakerPoolRepository
-                .findByEventCodeAndStatusOrderByCreatedAtDesc(eventCode, "invited", limitOne);
-        Optional<SpeakerPool> invitedSpeaker = invitedList.isEmpty() ? Optional.empty() : Optional.of(invitedList.get(0));
+        Optional<SpeakerPool> invitedSpeaker = speakerPoolRepository
+                .findByEventCodeAndStatusOrderByCreatedAtDesc(eventCode, "invited", limitOne)
+                .stream().findFirst();
 
-        // Speaker in ACCEPTED status with session (for profile/content tests)
-        List<SpeakerPool> acceptedWithSessionList = speakerPoolRepository
-                .findByEventCodeAndStatusAndSessionIdIsNotNullOrderByCreatedAtDesc(eventCode, "accepted", limitOne);
-        Optional<SpeakerPool> acceptedWithSession = acceptedWithSessionList.isEmpty() ? Optional.empty() : Optional.of(acceptedWithSessionList.get(0));
+        // Speaker with session (any status - for profile/content tests)
+        // Speakers with sessions may be in various statuses: accepted, quality_reviewed, confirmed, etc.
+        Optional<SpeakerPool> speakerWithSession = speakerPoolRepository
+                .findByEventCodeAndSessionIdIsNotNullOrderByCreatedAtDesc(eventCode, limitOne)
+                .stream().findFirst();
 
         // Speaker in ACCEPTED status without session (for no-session test)
-        List<SpeakerPool> acceptedWithoutSessionList = speakerPoolRepository
-                .findByEventCodeAndStatusAndSessionIdIsNullOrderByCreatedAtDesc(eventCode, "accepted", limitOne);
-        Optional<SpeakerPool> acceptedWithoutSession = acceptedWithoutSessionList.isEmpty() ? Optional.empty() : Optional.of(acceptedWithoutSessionList.get(0));
+        Optional<SpeakerPool> acceptedWithoutSession = speakerPoolRepository
+                .findByEventCodeAndStatusAndSessionIdIsNullOrderByCreatedAtDesc(eventCode, "accepted", limitOne)
+                .stream().findFirst();
 
         // Fallback: Use any speaker if specific states not found
-        List<SpeakerPool> anyList = speakerPoolRepository
-                .findByEventCodeOrderByCreatedAtDesc(eventCode, limitOne);
-        Optional<SpeakerPool> anySpeaker = anyList.isEmpty() ? Optional.empty() : Optional.of(anyList.get(0));
+        Optional<SpeakerPool> anySpeaker = speakerPoolRepository
+                .findByEventCodeOrderByCreatedAtDesc(eventCode, limitOne)
+                .stream().findFirst();
 
         Map<String, String> tokens = new HashMap<>();
 
@@ -172,7 +172,7 @@ public class E2ETestTokenController {
         }
 
         // Generate PROFILE token (for accepted speaker, prefer one with session)
-        SpeakerPool profileSpeaker = acceptedWithSession.orElse(anySpeaker.orElse(null));
+        SpeakerPool profileSpeaker = speakerWithSession.orElse(anySpeaker.orElse(null));
         if (profileSpeaker != null) {
             String token = magicLinkService.generateToken(profileSpeaker.getId(), TokenAction.VIEW, 30);
             tokens.put("E2E_SPEAKER_PROFILE_TOKEN", token);
@@ -185,8 +185,8 @@ public class E2ETestTokenController {
         }
 
         // Generate CONTENT token (same as profile, needs session)
-        if (acceptedWithSession.isPresent()) {
-            SpeakerPool speaker = acceptedWithSession.get();
+        if (speakerWithSession.isPresent()) {
+            SpeakerPool speaker = speakerWithSession.get();
             String token = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
             tokens.put("E2E_SPEAKER_CONTENT_TOKEN", token);
             result.put("contentSpeaker", Map.of(

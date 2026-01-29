@@ -15,7 +15,7 @@ DECLARE
     test_session_id UUID;
 BEGIN
     -- Get or create the test event
-    SELECT id INTO test_event_id FROM events WHERE event_code = 'BAT-SEED-2026' LIMIT 1;
+    SELECT id INTO test_event_id FROM events WHERE event_code = 'BATbern998' LIMIT 1;
 
     IF test_event_id IS NULL THEN
         -- Create the test event if it doesn't exist
@@ -33,7 +33,7 @@ BEGIN
             'Test Venue',
             'Test Address, Bern',
             100,
-            'BAT-SEED-2026',
+            'BATbern998',
             'full_day',
             'speaker_identification',
             1,
@@ -41,7 +41,7 @@ BEGIN
         )
         RETURNING id INTO test_event_id;
 
-        RAISE NOTICE '✅ Created test event: BAT-SEED-2026';
+        RAISE NOTICE '✅ Created test event: BATbern998';
     END IF;
 
     -- Create a test session for content submission tests
@@ -60,7 +60,7 @@ BEGIN
             50,
             'en',
             'e2e-test-session-cloud-architecture',
-            'BAT-SEED-2026'
+            'BATbern998'
         )
         RETURNING id INTO test_session_id;
 
