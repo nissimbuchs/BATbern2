@@ -490,6 +490,48 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                 />
               ))}
             </Stack>
+
+            {/* Story 6.3: Submitted Content Display (also shown when session assigned) */}
+            {speaker.submittedTitle && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <Chip
+                    label={speaker.contentStatus || 'SUBMITTED'}
+                    size="small"
+                    color={
+                      speaker.contentStatus === 'APPROVED'
+                        ? 'success'
+                        : speaker.contentStatus === 'REVISION_NEEDED'
+                          ? 'warning'
+                          : 'info'
+                    }
+                    sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  color="success.dark"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      mt: 0.5,
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
         ) : (
           // Display speaker pool info when no session

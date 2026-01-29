@@ -120,10 +120,12 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      // Find the speaker card by test ID or by speaker name
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find the speaker card by test ID (speaker ID)
+      // Note: When speaker has a session, the card shows session title, not speaker name
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+
+      // Wait for the card to be visible first
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
 
       // Verify submitted title is displayed
       await expect(speakerCard).toContainText(TEST_CONTENT.title, { timeout: 10000 });
@@ -152,9 +154,11 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find the speaker card by test ID (speaker ID)
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+
+      // Wait for the card to be visible first
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
 
       // Verify abstract preview is shown (first part of abstract)
       // The abstract should be truncated to 2 lines, so check for the beginning
@@ -185,9 +189,11 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find the speaker card by test ID (speaker ID)
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+
+      // Wait for the card to be visible first
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
 
       // Verify content status chip is displayed
       const statusChip = speakerCard.locator('.MuiChip-root').filter({ hasText: /SUBMITTED/i });
@@ -198,7 +204,7 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       page,
     }) => {
       const testData = await generateE2ETokens(page);
-      if (!testData || !testData.noSessionSpeakerName) {
+      if (!testData || !testData.noSessionSpeakerId) {
         test.skip(true, 'E2E token generation not available or no noSession speaker');
         return;
       }
@@ -208,10 +214,10 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      // Use the noSession speaker who hasn't submitted content
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.noSessionSpeakerName });
+      // Use the noSession speaker who hasn't submitted content - find by ID
+      const speakerCard = page.locator(
+        `[data-testid="speaker-card-${testData.noSessionSpeakerId}"]`
+      );
 
       // Speaker card should exist
       await expect(speakerCard).toBeVisible({ timeout: 10000 });
@@ -254,10 +260,9 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      // Find and click the speaker card to open details drawer
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find and click the speaker card to open details drawer - use speaker ID
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
       await speakerCard.click();
 
       // Wait for drawer to open
@@ -298,9 +303,9 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find and click the speaker card to open details drawer - use speaker ID
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
       await speakerCard.click();
 
       const drawer = page.locator('[data-testid="speaker-details-drawer"], .MuiDrawer-root');
@@ -314,7 +319,7 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       page,
     }) => {
       const testData = await generateE2ETokens(page);
-      if (!testData || !testData.noSessionSpeakerName) {
+      if (!testData || !testData.noSessionSpeakerId) {
         test.skip(true, 'E2E token generation not available or no noSession speaker');
         return;
       }
@@ -324,10 +329,11 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      // Use the noSession speaker who hasn't submitted content
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.noSessionSpeakerName });
+      // Use the noSession speaker who hasn't submitted content - find by ID
+      const speakerCard = page.locator(
+        `[data-testid="speaker-card-${testData.noSessionSpeakerId}"]`
+      );
+      await expect(speakerCard).toBeVisible({ timeout: 10000 });
       await speakerCard.click();
 
       const drawer = page.locator('[data-testid="speaker-details-drawer"], .MuiDrawer-root');
@@ -362,9 +368,11 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
       await page.goto(`${BASE_URL}/organizer/events/${testData.eventCode}?tab=speakers`);
       await page.waitForLoadState('networkidle');
 
-      const speakerCard = page
-        .locator(`[data-testid^="speaker-card-"]`)
-        .filter({ hasText: testData.speakerName });
+      // Find the speaker card by test ID (speaker ID)
+      const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+
+      // Wait for the card to be visible first
+      await expect(speakerCard).toBeVisible({ timeout: 15000 });
 
       // Find the status chip and verify it has info/blue color class
       const statusChip = speakerCard.locator('.MuiChip-root').filter({ hasText: /SUBMITTED/i });
@@ -417,18 +425,16 @@ test.describe('Speaker Content Display on Organizer Dashboard (Story 6.3)', () =
         ]);
       } catch {
         // If we didn't catch the API call, verify the data is displayed on the page instead
-        const speakerCard = page
-          .locator(`[data-testid^="speaker-card-"]`)
-          .filter({ hasText: testData.speakerName });
+        const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+        await expect(speakerCard).toBeVisible({ timeout: 10000 });
         await expect(speakerCard).toContainText(TEST_CONTENT.title, { timeout: 5000 });
         return; // Test passes if content is displayed
       }
 
       if (!response) {
         // Fallback: verify content is displayed
-        const speakerCard = page
-          .locator(`[data-testid^="speaker-card-"]`)
-          .filter({ hasText: testData.speakerName });
+        const speakerCard = page.locator(`[data-testid="speaker-card-${testData.speakerId}"]`);
+        await expect(speakerCard).toBeVisible({ timeout: 10000 });
         await expect(speakerCard).toContainText(TEST_CONTENT.title, { timeout: 5000 });
         return;
       }
