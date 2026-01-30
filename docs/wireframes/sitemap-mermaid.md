@@ -1,18 +1,20 @@
 # BATbern Event Management Platform - Site Map (Mermaid Diagrams)
 
-**Generated:** 2025-10-01
-**Version:** 1.0
-**Purpose:** Visual representation of platform architecture using Mermaid diagrams
+**Generated:** 2026-01-25
+**Version:** 2.0 (MVP Completion Update)
+**Purpose:** Visual representation of actual MVP implementation (Epics 1-5) and Phase 2+ deferrals
 
 ---
 
 ## Legend
 
-### Status & Priority Colors
-- 🟢 **Green** - Existing/Documented screens
-- 🔴 **Red** - Missing HIGH priority screens
-- 🟡 **Yellow** - Missing MEDIUM priority screens
-- ⚪ **White** - Missing LOW priority screens
+### Status & Implementation Colors
+- 🟢 **Green** - ✅ IMPLEMENTED IN MVP (Epics 1-5)
+- 🔵 **Blue** - 🔄 PARTIAL/PLACEHOLDER (basic implementation, full features deferred)
+- 🟡 **Yellow** - 📦 DEFERRED TO EPIC 6 (Speaker Self-Service Portal)
+- 🟠 **Orange** - 📦 DEFERRED TO EPIC 7 (Attendee Experience Enhancements)
+- 🟣 **Purple** - 📦 DEFERRED TO EPIC 8 (Partner Analytics & Voting)
+- 🔴 **Red** - ❌ NOT IMPLEMENTED IN MVP (planned but not built)
 
 ### Role Indicators
 - 🎯 Organizer
@@ -23,1174 +25,888 @@
 
 ---
 
-## 1. Platform Architecture Overview
+## 1. Platform Architecture Overview (MVP Reality)
 
 ```mermaid
 graph TB
-    Root[BATbern Platform]
+    Root[BATbern Platform<br/>MVP COMPLETE]
 
-    Root --> Public[🌐 Public Layer]
-    Root --> Auth[🔒 Authentication]
-    Root --> Global[🌐 Global/Shared]
-    Root --> Organizer[🎯 Organizer Portal]
-    Root --> Partner[💼 Partner Portal]
-    Root --> Speaker[🎤 Speaker Portal]
-    Root --> Attendee[👤 Attendee Portal]
+    Root --> Public[🌐 Public Layer<br/>✅ 100% COMPLETE]
+    Root --> Auth[🔒 Authentication<br/>✅ 100% COMPLETE]
+    Root --> Global[🌐 Global/Shared<br/>✅ CORE COMPLETE]
+    Root --> Organizer[🎯 Organizer Portal<br/>✅ 90% COMPLETE]
+    Root --> Partner[💼 Partner Portal<br/>🔄 10% BASIC ONLY<br/>📦 Epic 8 Deferred]
+    Root --> Speaker[🎤 Speaker Portal<br/>📦 DEFERRED Epic 6]
+    Root --> Attendee[👤 Attendee Portal<br/>🔄 PUBLIC ONLY<br/>📦 Epic 7 Deferred]
 
-    style Root fill:#e1f5ff
-    style Public fill:#fff9e6
-    style Auth fill:#ffe6e6
-    style Global fill:#e6ffe6
-    style Organizer fill:#fff0e6
-    style Partner fill:#f0e6ff
-    style Speaker fill:#ffe6f0
-    style Attendee fill:#e6f0ff
+    style Root fill:#e1f5ff,stroke:#333,stroke-width:3px
+    style Public fill:#90EE90,stroke:#333,stroke-width:2px
+    style Auth fill:#90EE90,stroke:#333,stroke-width:2px
+    style Global fill:#90EE90,stroke:#333,stroke-width:2px
+    style Organizer fill:#90EE90,stroke:#333,stroke-width:2px
+    style Partner fill:#87CEEB,stroke:#333,stroke-width:2px
+    style Speaker fill:#FFD700,stroke:#333,stroke-width:2px
+    style Attendee fill:#FFA500,stroke:#333,stroke-width:2px
 ```
 
 ---
 
-## 2. Public Layer & Authentication
+## 2. Public Layer & Authentication (✅ 100% IMPLEMENTED)
 
 ```mermaid
-graph LR
-    subgraph "🌐 Public Access"
-        Homepage[Public Homepage<br/>❌ MISSING 🟡]
-        EventLanding[Current Event Landing<br/>✅ EXISTS]
-        Registration[Event Registration<br/>🔄 PARTIAL]
+graph TB
+    subgraph "🌐 Public Access - FULLY IMPLEMENTED"
+        Homepage[HomePage<br/>✅ Current/Archived Display<br/>/]
+        Registration[Event Registration<br/>✅ 3-Step Wizard<br/>/register/:eventCode]
+        RegSuccess[Registration Success<br/>✅ Confirmation Page<br/>/registration-success]
+        ConfirmReg[Confirm Registration<br/>✅ Email Link<br/>/events/:eventCode/confirm-registration]
+        CancelReg[Cancel Registration<br/>✅ Email Link<br/>/events/:eventCode/cancel-registration]
+        Archive[Archive Page<br/>✅ Historical Events<br/>/archive]
+        About[About Page<br/>✅ Information<br/>/about]
+        Search[Search Page<br/>🔄 Placeholder<br/>/search]
     end
 
-    subgraph "🔒 Authentication"
-        Login[Login Screen<br/>❌ MISSING 🔴]
-        Forgot[Forgot Password<br/>❌ MISSING 🟡]
-        CreateAcct[Create Account<br/>❌ MISSING 🟡]
-        Verify[Email Verification<br/>❌ MISSING 🟡]
+    subgraph "🔒 Authentication - FULLY IMPLEMENTED"
+        Login[Login Screen<br/>✅ AWS Cognito<br/>/login]
+        Forgot[Forgot Password<br/>✅ Reset Flow<br/>/auth/forgot-password]
+        ResetPwd[Reset Password<br/>✅ Code Verification<br/>/auth/reset-password]
+        CreateAcct[Account Creation<br/>✅ Registration Wizard<br/>/auth/register]
+        Verify[Email Verification<br/>✅ Email Confirm<br/>/auth/verify-email]
     end
 
-    subgraph "Registration Flow"
-        RegStep1[Step 1: Personal Info<br/>✅ EXISTS]
-        RegStep2[Step 2: Session Selection<br/>❌ MISSING 🔴]
-        RegStep3[Step 3: Review & Confirm<br/>❌ MISSING 🔴]
-        Confirmation[Confirmation Page<br/>❌ MISSING 🔴]
-        Ticket[Ticket/QR Code<br/>❌ MISSING 🔴]
-    end
-
-    Homepage --> EventLanding
-    Homepage --> Login
-    EventLanding --> Registration
+    Homepage --> Registration
+    Homepage --> Archive
+    Homepage --> About
+    Registration --> RegSuccess
+    RegSuccess --> ConfirmReg
+    RegSuccess --> CancelReg
 
     Login --> Forgot
+    Forgot --> ResetPwd
     Login --> CreateAcct
     CreateAcct --> Verify
 
-    Registration --> RegStep1
-    RegStep1 --> RegStep2
-    RegStep2 --> RegStep3
-    RegStep3 --> Confirmation
-    Confirmation --> Ticket
+    style Homepage fill:#90EE90
+    style Registration fill:#90EE90
+    style RegSuccess fill:#90EE90
+    style ConfirmReg fill:#90EE90
+    style CancelReg fill:#90EE90
+    style Archive fill:#90EE90
+    style About fill:#90EE90
+    style Search fill:#87CEEB
+    style Login fill:#90EE90
+    style Forgot fill:#90EE90
+    style ResetPwd fill:#90EE90
+    style CreateAcct fill:#90EE90
+    style Verify fill:#90EE90
+```
 
-    style Homepage fill:#ffcccc
-    style EventLanding fill:#ccffcc
-    style Login fill:#ffcccc
-    style RegStep1 fill:#ccffcc
-    style RegStep2 fill:#ffcccc
-    style RegStep3 fill:#ffcccc
-    style Confirmation fill:#ffcccc
-    style Ticket fill:#ffcccc
+### 2.1 Public Features NOT Implemented
+
+```mermaid
+graph LR
+    subgraph "❌ NOT IMPLEMENTED IN MVP"
+        SessionModal[Session Details Modal<br/>❌ Detailed View]
+        QRCode[Ticket/QR Code Page<br/>❌ Check-in System]
+        AttendeeList[Attendee List Modal<br/>❌ Networking]
+    end
+
+    style SessionModal fill:#ffcccc
+    style QRCode fill:#ffcccc
+    style AttendeeList fill:#ffcccc
 ```
 
 ---
 
-## 3. Global/Shared Screens
+## 3. Global/Shared Screens (✅ CORE COMPLETE)
 
 ```mermaid
 graph TB
-    subgraph "🌐 Global Navigation"
-        Nav[Main Navigation<br/>❌ MISSING 🔴]
-        Profile[User Profile<br/>❌ MISSING 🟡]
-        Settings[User Settings<br/>❌ MISSING 🟡]
-        Notifications[Notification Center<br/>✅ EXISTS]
-        Help[Help Center<br/>❌ MISSING 🟡]
-        Support[Support Ticket<br/>❌ MISSING 🟢]
+    subgraph "🌐 Global Navigation - IMPLEMENTED"
+        Nav[Main Navigation<br/>✅ BaseLayout<br/>All Pages]
+        Account[User Account Page<br/>✅ Profile + Settings<br/>/account]
+        Notifications[Notification Center<br/>✅ Basic System<br/>Integrated]
     end
 
-    Nav --> Profile
-    Nav --> Settings
+    Nav --> Account
     Nav --> Notifications
-    Nav --> Help
 
-    Profile --> Settings
-    Help --> Support
+    subgraph "❌ NOT IMPLEMENTED"
+        Help[Help Center<br/>❌ Not Built]
+        Support[Support Tickets<br/>❌ Not Built]
+    end
 
-    style Notifications fill:#ccffcc
-    style Nav fill:#ffcccc
-    style Profile fill:#ffffcc
-    style Settings fill:#ffffcc
-    style Help fill:#ffffcc
-    style Support fill:#ffffff
+    style Nav fill:#90EE90
+    style Account fill:#90EE90
+    style Notifications fill:#90EE90
+    style Help fill:#ffcccc
+    style Support fill:#ffcccc
 ```
 
 ---
 
-## 4. Organizer Portal - Complete Structure
+## 4. Organizer Portal - Complete Structure (✅ 90% IMPLEMENTED)
 
 ### 4.1 Main Dashboard Hub
 
 ```mermaid
 graph TB
-    Dashboard[🎯 Event Management Dashboard<br/>✅ EXISTS]
+    Dashboard[🎯 Event Management Dashboard<br/>✅ IMPLEMENTED<br/>/organizer/events]
 
-    Dashboard --> Events[Event Management]
-    Dashboard --> Content[Content Management]
-    Dashboard --> Speakers[Speaker Management]
-    Dashboard --> Logistics[Logistics & Venues]
-    Dashboard --> Admin[Administrative]
+    Dashboard --> EventPage[Event Page<br/>✅ Unified Tabs<br/>/organizer/events/:eventCode]
+    Dashboard --> EventTypes[Event Type Config<br/>✅ IMPLEMENTED<br/>/organizer/event-types]
+    Dashboard --> Topics[Topic Management<br/>✅ IMPLEMENTED<br/>/organizer/topics]
+    Dashboard --> Tasks[Task Board<br/>✅ Kanban<br/>/organizer/tasks]
+    Dashboard --> Speakers[Speaker Mgmt<br/>🔄 Placeholder<br/>/organizer/speakers]
+    Dashboard --> Partners[Partner Directory<br/>✅ IMPLEMENTED<br/>/organizer/partners]
+    Dashboard --> Companies[Company Mgmt<br/>✅ IMPLEMENTED<br/>/organizer/companies/*]
+    Dashboard --> Users[User Management<br/>✅ IMPLEMENTED<br/>/organizer/users/*]
 
-    style Dashboard fill:#ccffcc
-    style Events fill:#e6f3ff
-    style Content fill:#e6f3ff
-    style Speakers fill:#e6f3ff
-    style Logistics fill:#e6f3ff
-    style Admin fill:#e6f3ff
+    style Dashboard fill:#90EE90,stroke:#333,stroke-width:3px
+    style EventPage fill:#90EE90
+    style EventTypes fill:#90EE90
+    style Topics fill:#90EE90
+    style Tasks fill:#90EE90
+    style Speakers fill:#87CEEB
+    style Partners fill:#90EE90
+    style Companies fill:#90EE90
+    style Users fill:#90EE90
 ```
 
-### 4.2 Event Management Section
+### 4.2 Event Management Section (✅ FULLY IMPLEMENTED)
 
 ```mermaid
 graph TB
-    subgraph "🎯 Event Management"
-        Dashboard[Event Dashboard<br/>✅ EXISTS]
-        EventDetail[Event Detail/Edit<br/>❌ MISSING 🔴]
-        EventSettings[Event Settings<br/>❌ MISSING 🟡]
-        Workflow[Workflow Visualization<br/>✅ EXISTS]
-        Archive[Historical Archive<br/>✅ EXISTS]
+    subgraph "🎯 Event Management - FULLY IMPLEMENTED"
+        EventDash[Event Dashboard<br/>✅ Event List<br/>/organizer/events]
+        EventPage[Event Page<br/>✅ Unified Interface<br/>/organizer/events/:eventCode]
+        SlotAssign[Slot Assignment<br/>✅ Drag-Drop UI<br/>/organizer/events/:eventCode/slot-assignment]
+        EventTypes[Event Type Config<br/>✅ CRUD Admin<br/>/organizer/event-types]
     end
 
-    Dashboard --> EventDetail
-    Dashboard --> Workflow
-    Dashboard --> Archive
+    subgraph "Event Page Tabs - ALL IMPLEMENTED"
+        DetailTab[Details Tab<br/>✅ Edit Event Info]
+        SpeakerTab[Speakers Tab<br/>✅ Assignments]
+        TaskTab[Tasks Tab<br/>✅ Event Tasks]
+    end
 
-    EventDetail --> EventSettings
-    Workflow --> EventDetail
+    subgraph "🔄 Placeholders"
+        EventCreate[Event Create<br/>🔄 May use Event Page<br/>/organizer/events/create]
+        EventTimeline[Event Timeline<br/>🔄 Integrated in Event Page<br/>/organizer/events/timeline]
+    end
 
-    style Dashboard fill:#ccffcc
-    style Workflow fill:#ccffcc
-    style Archive fill:#ccffcc
-    style EventDetail fill:#ffcccc
-    style EventSettings fill:#ffffcc
+    EventDash --> EventPage
+    EventPage --> SlotAssign
+    EventPage --> DetailTab
+    EventPage --> SpeakerTab
+    EventPage --> TaskTab
+
+    style EventDash fill:#90EE90
+    style EventPage fill:#90EE90
+    style SlotAssign fill:#90EE90
+    style EventTypes fill:#90EE90
+    style DetailTab fill:#90EE90
+    style SpeakerTab fill:#90EE90
+    style TaskTab fill:#90EE90
+    style EventCreate fill:#87CEEB
+    style EventTimeline fill:#87CEEB
 ```
 
-### 4.3 Content Management Section
+### 4.3 Topic & Task Management (✅ FULLY IMPLEMENTED)
 
 ```mermaid
 graph TB
-    subgraph "🎯 Content Management"
-        TopicBacklog[Topic Backlog<br/>✅ EXISTS]
-        Publishing[Publishing Engine<br/>✅ EXISTS]
-        Progressive[Progressive Publishing<br/>✅ EXISTS]
-        ContentLib[Content Library<br/>❌ MISSING 🟡]
-        ContentDetail[Content Detail/Edit<br/>❌ MISSING 🟡]
-        ModQueue[Moderator Review Queue<br/>❌ MISSING 🟡]
+    subgraph "🎯 Content & Task Management - FULLY IMPLEMENTED"
+        Topics[Topic Management<br/>✅ CRUD + Backlog<br/>/organizer/topics]
+        Tasks[Task Board<br/>✅ Kanban 4 Columns<br/>/organizer/tasks]
     end
 
-    TopicBacklog --> ContentLib
-    Publishing --> ContentDetail
-    Progressive --> ContentDetail
-    ContentLib --> ContentDetail
-    Publishing --> ModQueue
+    subgraph "Topic Features - ALL IMPLEMENTED"
+        TopicCRUD[Topic CRUD<br/>✅ Create/Edit/Delete]
+        TopicAssign[Assign to Events<br/>✅ Event Mapping]
+        TopicHistory[Usage History<br/>✅ Staleness Tracking]
+    end
 
-    style TopicBacklog fill:#ccffcc
-    style Publishing fill:#ccffcc
-    style Progressive fill:#ccffcc
-    style ContentLib fill:#ffffcc
-    style ContentDetail fill:#ffffcc
-    style ModQueue fill:#ffffcc
+    subgraph "Task Features - ALL IMPLEMENTED"
+        TaskBoard[Kanban Board<br/>✅ To Do/In Progress/Review/Done]
+        TaskDrag[Drag-Drop<br/>✅ Status Updates]
+        TaskFilter[Filtering<br/>✅ Event/Assignee/Priority]
+    end
+
+    Topics --> TopicCRUD
+    Topics --> TopicAssign
+    Topics --> TopicHistory
+    Tasks --> TaskBoard
+    Tasks --> TaskDrag
+    Tasks --> TaskFilter
+
+    style Topics fill:#90EE90
+    style Tasks fill:#90EE90
+    style TopicCRUD fill:#90EE90
+    style TopicAssign fill:#90EE90
+    style TopicHistory fill:#90EE90
+    style TaskBoard fill:#90EE90
+    style TaskDrag fill:#90EE90
+    style TaskFilter fill:#90EE90
 ```
 
-### 4.4 Speaker Management Section
+### 4.4 Company & User Management (✅ FULLY IMPLEMENTED)
 
 ```mermaid
 graph TB
-    subgraph "🎯 Speaker Management"
-        Matching[Speaker Matching<br/>✅ EXISTS]
-        SpeakerDetail[Speaker Detail View<br/>❌ MISSING 🔴]
-        InviteMgmt[Invitation Management<br/>❌ MISSING 🟡]
-        InviteResp[Invitation Response<br/>✅ EXISTS]
-        CompanyMgmt[Company Management<br/>❌ MISSING 🟡]
+    subgraph "🎯 Company & User Management - FULLY IMPLEMENTED"
+        Companies[Company Management<br/>✅ Nested Routing<br/>/organizer/companies/*]
+        Users[User Management<br/>✅ Nested Routing<br/>/organizer/users/*]
+        Partners[Partner Directory<br/>✅ List + Detail<br/>/organizer/partners]
+        PartnerDetail[Partner Detail<br/>✅ Full View<br/>/organizer/partners/:companyName]
     end
 
-    Matching --> SpeakerDetail
-    Matching --> InviteMgmt
-    Matching --> CompanyMgmt
-    InviteMgmt --> InviteResp
+    subgraph "Company Features - ALL IMPLEMENTED"
+        CompanyCRUD[Company CRUD<br/>✅ Create/Edit/Delete]
+        LogoUpload[Logo Upload<br/>✅ S3 Presigned URLs]
+        UIDVerify[Swiss UID Verify<br/>✅ Validation]
+        PartnerToggle[Partner Status<br/>✅ Toggle]
+    end
 
-    style Matching fill:#ccffcc
-    style InviteResp fill:#ccffcc
-    style SpeakerDetail fill:#ffcccc
-    style InviteMgmt fill:#ffffcc
-    style CompanyMgmt fill:#ffffcc
+    subgraph "User Features - ALL IMPLEMENTED"
+        UserList[User List<br/>✅ Search/Filter]
+        UserDetail[User Detail<br/>✅ With userId]
+        RoleMgmt[Role Management<br/>✅ Assign Roles]
+        CompanyAssoc[Company Association<br/>✅ Link Users]
+    end
+
+    Companies --> CompanyCRUD
+    Companies --> LogoUpload
+    Companies --> UIDVerify
+    Companies --> PartnerToggle
+
+    Users --> UserList
+    Users --> UserDetail
+    Users --> RoleMgmt
+    Users --> CompanyAssoc
+
+    Partners --> PartnerDetail
+
+    style Companies fill:#90EE90
+    style Users fill:#90EE90
+    style Partners fill:#90EE90
+    style PartnerDetail fill:#90EE90
+    style CompanyCRUD fill:#90EE90
+    style LogoUpload fill:#90EE90
+    style UIDVerify fill:#90EE90
+    style PartnerToggle fill:#90EE90
+    style UserList fill:#90EE90
+    style UserDetail fill:#90EE90
+    style RoleMgmt fill:#90EE90
+    style CompanyAssoc fill:#90EE90
 ```
 
-### 4.5 Logistics & Venue Section
+### 4.5 Organizer Features NOT Implemented
 
 ```mermaid
 graph TB
-    subgraph "🎯 Logistics & Venues"
-        LogisticsCoord[Logistics Coordination<br/>✅ EXISTS]
-        VenueDetail[Venue Details<br/>❌ MISSING 🔴]
-        VenueBooking[Venue Booking<br/>❌ MISSING 🔴]
-        Catering[Catering Management<br/>❌ MISSING 🟡]
+    subgraph "❌ NOT IMPLEMENTED IN MVP"
+        WorkflowViz[Workflow Visualization<br/>❌ Status in Event Page]
+        ProgressivePub[Progressive Publishing UI<br/>❌ Auto-publish BAT-16]
+        ContentLib[Content Library<br/>❌ Epic 7]
+        ModQueue[Moderator Review Queue<br/>❌ Not Built]
+        SysSettings[System Settings<br/>❌ Backend Config]
+        Logistics[Logistics Coordination<br/>❌ Minimal Features]
     end
 
-    LogisticsCoord --> VenueDetail
-    VenueDetail --> VenueBooking
-    LogisticsCoord --> Catering
-
-    style LogisticsCoord fill:#ccffcc
-    style VenueDetail fill:#ffcccc
-    style VenueBooking fill:#ffcccc
-    style Catering fill:#ffffcc
+    style WorkflowViz fill:#ffcccc
+    style ProgressivePub fill:#ffcccc
+    style ContentLib fill:#ffcccc
+    style ModQueue fill:#ffcccc
+    style SysSettings fill:#ffcccc
+    style Logistics fill:#ffcccc
 ```
 
 ---
 
-## 5. Partner Portal - Complete Structure
+## 5. Partner Portal (🔄 10% BASIC - Epic 8 Deferred)
 
-### 5.1 Main Dashboard Hub
-
-```mermaid
-graph TB
-    PartnerDash[💼 Partner Analytics Dashboard<br/>✅ EXISTS]
-
-    PartnerDash --> Analytics[Analytics & Metrics]
-    PartnerDash --> Brand[Brand & Exposure]
-    PartnerDash --> Budget[Budget & Finance]
-    PartnerDash --> Strategic[Strategic Planning]
-    PartnerDash --> Meetings[Meetings & Collaboration]
-
-    style PartnerDash fill:#ccffcc
-    style Analytics fill:#f0e6ff
-    style Brand fill:#f0e6ff
-    style Budget fill:#f0e6ff
-    style Strategic fill:#f0e6ff
-    style Meetings fill:#f0e6ff
-```
-
-### 5.2 Analytics & Metrics Section
+### 5.1 What Was Implemented (Basic)
 
 ```mermaid
 graph TB
-    subgraph "💼 Analytics & Metrics"
-        Dashboard[Analytics Dashboard<br/>✅ EXISTS]
-        SwitchAcct[Switch Account<br/>❌ MISSING 🟡]
-        MetricDetail[Metric Details<br/>❌ MISSING 🔴]
-        EmpAnalytics[Employee Analytics<br/>✅ EXISTS]
-        EmpDetail[Employee Detail<br/>❌ MISSING 🟡]
+    subgraph "💼 Partner Portal - BASIC ONLY"
+        PartnerPage[Partner Page<br/>🔄 Placeholder<br/>/partners]
+        BasicMeeting[Basic Meeting Coord<br/>✅ Story 5.15<br/>Via Organizer Portal]
     end
 
-    Dashboard --> SwitchAcct
-    Dashboard --> MetricDetail
-    Dashboard --> EmpAnalytics
-    EmpAnalytics --> MetricDetail
-    EmpAnalytics --> EmpDetail
+    subgraph "Basic Meeting Features - Story 5.15"
+        Schedule[Schedule Meetings<br/>✅ Date/Time Field]
+        Agenda[Meeting Agenda<br/>✅ Template 3 Sections]
+        Notes[Meeting Notes<br/>✅ Free-text]
+        History[Meeting History<br/>✅ View Past]
+    end
 
-    style Dashboard fill:#ccffcc
-    style EmpAnalytics fill:#ccffcc
-    style MetricDetail fill:#ffcccc
-    style SwitchAcct fill:#ffffcc
-    style EmpDetail fill:#ffffcc
+    PartnerPage -.-> BasicMeeting
+    BasicMeeting --> Schedule
+    BasicMeeting --> Agenda
+    BasicMeeting --> Notes
+    BasicMeeting --> History
+
+    style PartnerPage fill:#87CEEB
+    style BasicMeeting fill:#90EE90
+    style Schedule fill:#90EE90
+    style Agenda fill:#90EE90
+    style Notes fill:#90EE90
+    style History fill:#90EE90
 ```
 
-### 5.3 Brand & Exposure Section
+### 5.2 What Was Deferred (Epic 8)
 
 ```mermaid
 graph TB
-    subgraph "💼 Brand & Exposure"
-        BrandExp[Brand Exposure<br/>✅ EXISTS]
-        ExposureDetail[Exposure Details<br/>❌ MISSING 🟡]
-        WebAnalytics[Website Analytics<br/>❌ MISSING 🟡]
-        SocialReport[Social Media Report<br/>❌ MISSING 🟡]
-        Competitor[Competitor Benchmarking<br/>❌ MISSING 🟡]
-        ContentPerf[Content Performance<br/>❌ MISSING 🟡]
-        ROITrend[ROI Trend Analysis<br/>❌ MISSING 🟡]
-        PackageUpgrade[Package Upgrade<br/>❌ MISSING 🟡]
+    subgraph "📦 DEFERRED TO EPIC 8 - Partner Analytics & Voting"
+        Analytics[Partner Analytics Dashboard<br/>📦 Story 8.1<br/>Wireframed]
+        EmpAnalytics[Employee Analytics<br/>📦 Story 8.1<br/>Wireframed]
+        TopicVote[Topic Voting<br/>📦 Story 8.2<br/>Weighted by Tier]
+        TopicBrowser[All Topics Browser<br/>📦 Story 8.2<br/>Wireframed]
+        PartnerSettings[Partner Settings<br/>📦 Wireframed<br/>Preferences/Billing]
+        AdvMeetings[Advanced Meetings<br/>📦 Story 8.3<br/>Calendar Integration]
     end
 
-    BrandExp --> ExposureDetail
-    BrandExp --> WebAnalytics
-    BrandExp --> SocialReport
-    BrandExp --> Competitor
-    BrandExp --> ContentPerf
-    BrandExp --> ROITrend
-    BrandExp --> PackageUpgrade
-
-    style BrandExp fill:#ccffcc
-    style ExposureDetail fill:#ffffcc
-    style WebAnalytics fill:#ffffcc
-    style SocialReport fill:#ffffcc
-    style Competitor fill:#ffffcc
-    style ContentPerf fill:#ffffcc
-    style ROITrend fill:#ffffcc
-    style PackageUpgrade fill:#ffffcc
-```
-
-### 5.4 Budget & Finance Section
-
-```mermaid
-graph TB
-    subgraph "💼 Budget & Finance"
-        BudgetMgmt[Budget Management<br/>✅ EXISTS]
-        Forecasting[Budget Forecasting<br/>❌ MISSING 🟡]
-        YoYComp[Year-over-Year Comparison<br/>❌ MISSING 🟡]
-        ReportBuilder[Report Builder<br/>✅ EXISTS]
-        ReportPreview[Report Preview<br/>❌ MISSING 🟡]
-        ReportSchedule[Report Scheduling<br/>❌ MISSING 🟡]
-    end
-
-    BudgetMgmt --> Forecasting
-    BudgetMgmt --> YoYComp
-    BudgetMgmt --> ReportBuilder
-    ReportBuilder --> ReportPreview
-    ReportBuilder --> ReportSchedule
-
-    style BudgetMgmt fill:#ccffcc
-    style ReportBuilder fill:#ccffcc
-    style Forecasting fill:#ffffcc
-    style YoYComp fill:#ffffcc
-    style ReportPreview fill:#ffffcc
-    style ReportSchedule fill:#ffffcc
-```
-
-### 5.5 Strategic Planning Section
-
-```mermaid
-graph TB
-    subgraph "💼 Strategic Planning"
-        StratPlan[Strategic Planning<br/>✅ EXISTS]
-        GoalsMgmt[Goals Management<br/>❌ MISSING 🔴]
-        GoalDetail[Goal Details<br/>❌ MISSING 🟡]
-        NewGoal[New Goal Creation<br/>❌ MISSING 🟡]
-        TopicVote[Topic Voting<br/>✅ EXISTS]
-        TopicBrowser[Topic Browser<br/>❌ MISSING 🟡]
-        CertPaths[Certification Paths<br/>❌ MISSING 🟡]
-        SkillDev[Skill Development<br/>❌ MISSING 🟡]
-    end
-
-    StratPlan --> GoalsMgmt
-    GoalsMgmt --> GoalDetail
-    GoalsMgmt --> NewGoal
-    StratPlan --> TopicVote
+    Analytics --> EmpAnalytics
+    Analytics --> TopicVote
     TopicVote --> TopicBrowser
-    StratPlan --> CertPaths
-    StratPlan --> SkillDev
+    Analytics --> PartnerSettings
+    Analytics --> AdvMeetings
 
-    style StratPlan fill:#ccffcc
-    style TopicVote fill:#ccffcc
-    style GoalsMgmt fill:#ffcccc
-    style GoalDetail fill:#ffffcc
-    style NewGoal fill:#ffffcc
-    style TopicBrowser fill:#ffffcc
-    style CertPaths fill:#ffffcc
-    style SkillDev fill:#ffffcc
-```
-
-### 5.6 Meetings & Collaboration Section
-
-```mermaid
-graph TB
-    subgraph "💼 Meetings & Collaboration"
-        Meetings[Partner Meetings<br/>✅ EXISTS]
-        Calendar[Calendar View<br/>❌ MISSING 🔴]
-        MeetingDetail[Meeting Details<br/>❌ MISSING 🟡]
-        Materials[Materials Library<br/>❌ MISSING 🟡]
-        Agenda[Agenda Proposal<br/>❌ MISSING 🟡]
-        PastMeeting[Past Meetings<br/>❌ MISSING 🟡]
-        ActionItems[Action Items<br/>❌ MISSING 🟡]
-    end
-
-    Meetings --> Calendar
-    Calendar --> MeetingDetail
-    Meetings --> Materials
-    Meetings --> Agenda
-    Meetings --> PastMeeting
-    Meetings --> ActionItems
-
-    style Meetings fill:#ccffcc
-    style Calendar fill:#ffcccc
-    style MeetingDetail fill:#ffffcc
-    style Materials fill:#ffffcc
-    style Agenda fill:#ffffcc
-    style PastMeeting fill:#ffffcc
-    style ActionItems fill:#ffffcc
+    style Analytics fill:#DDA0DD
+    style EmpAnalytics fill:#DDA0DD
+    style TopicVote fill:#DDA0DD
+    style TopicBrowser fill:#DDA0DD
+    style PartnerSettings fill:#DDA0DD
+    style AdvMeetings fill:#DDA0DD
 ```
 
 ---
 
-## 6. Speaker Portal - Complete Structure
+## 6. Speaker Portal (📦 DEFERRED TO EPIC 6)
 
-### 6.1 Main Dashboard Hub
-
-```mermaid
-graph TB
-    SpeakerDash[🎤 Speaker Dashboard<br/>✅ EXISTS]
-
-    SpeakerDash --> Content[Content & Materials]
-    SpeakerDash --> Profile[Profile & Community]
-    SpeakerDash --> Communication[Communication]
-    SpeakerDash --> Events[Events & Timeline]
-
-    style SpeakerDash fill:#ccffcc
-    style Content fill:#ffe6f0
-    style Profile fill:#ffe6f0
-    style Communication fill:#ffe6f0
-    style Events fill:#ffe6f0
-```
-
-### 6.2 Content & Materials Section
+### 6.1 All Speaker Features Deferred
 
 ```mermaid
 graph TB
-    subgraph "🎤 Content & Materials"
-        MatWizard[Material Submission Wizard<br/>✅ EXISTS]
-        PresUpload[Presentation Upload<br/>✅ EXISTS]
-        ContentLib[My Presentations<br/>🔗 to Content Library]
+    subgraph "📦 DEFERRED TO EPIC 6 - Speaker Self-Service Portal"
+        SpeakerDash[Speaker Dashboard<br/>📦 Story 6.1<br/>Not Created]
+        MatWizard[Material Submission Wizard<br/>📦 Story 6.2<br/>Wireframed]
+        PresUpload[Presentation Upload<br/>📦 Story 6.2<br/>S3 Upload]
+        ProfileMgmt[Profile Management<br/>📦 Story 6.3<br/>Wireframed]
+        Timeline[Event Timeline<br/>📦 Story 6.4<br/>Speaker View]
+        InviteResp[Invitation Response<br/>📦 Story 6.5<br/>Accept/Decline]
+        Community[Speaker Community<br/>📦 Not Scoped<br/>Forums/Network]
     end
 
-    MatWizard --> PresUpload
-    MatWizard --> ContentLib
+    SpeakerDash --> MatWizard
+    SpeakerDash --> PresUpload
+    SpeakerDash --> ProfileMgmt
+    SpeakerDash --> Timeline
+    SpeakerDash --> InviteResp
+    SpeakerDash --> Community
 
-    style MatWizard fill:#ccffcc
-    style PresUpload fill:#ccffcc
+    style SpeakerDash fill:#FFD700
+    style MatWizard fill:#FFD700
+    style PresUpload fill:#FFD700
+    style ProfileMgmt fill:#FFD700
+    style Timeline fill:#FFD700
+    style InviteResp fill:#FFD700
+    style Community fill:#FFD700
 ```
 
-### 6.3 Profile & Community Section
+### 6.2 MVP Workaround (Organizer-Driven)
 
 ```mermaid
 graph TB
-    subgraph "🎤 Profile & Community"
-        ProfileMgmt[Profile Management<br/>✅ EXISTS]
-        ProfileEdit[Profile Edit<br/>❌ MISSING 🟡]
-        ProfilePreview[Public Preview<br/>❌ MISSING 🟢]
-        Community[Speaker Community<br/>✅ EXISTS]
-        SpeakerNetwork[Speaker Network<br/>❌ MISSING 🔴]
-        Discussion[Discussion Thread<br/>❌ MISSING 🔴]
-        NewDiscussion[New Discussion<br/>❌ MISSING 🟡]
-        MentorProfile[Mentor Profile<br/>❌ MISSING 🟡]
-        ResourceViewer[Resource Viewer<br/>❌ MISSING 🟡]
-        CommunityFeatures[Community Features<br/>✅ EXISTS]
-        DiscussionBrowser[Discussion Browser<br/>❌ MISSING 🟡]
-        MyDiscussions[My Discussions<br/>❌ MISSING 🟡]
-        StudyGroup[Study Group<br/>❌ MISSING 🟢]
+    subgraph "✅ MVP APPROACH - Organizer-Driven Speaker Management"
+        OrgEmail[Organizer Emails Speakers<br/>✅ Manual Contact]
+        OrgRecords[Organizer Records Status<br/>✅ Event Page Speakers Tab]
+        OrgUploads[Organizer Uploads Materials<br/>✅ S3 on Behalf of Speaker]
+        OrgManages[Organizer Manages Profile<br/>✅ Company Management]
     end
 
-    ProfileMgmt --> ProfileEdit
-    ProfileMgmt --> ProfilePreview
+    OrgEmail --> OrgRecords
+    OrgRecords --> OrgUploads
+    OrgUploads --> OrgManages
 
-    Community --> SpeakerNetwork
-    Community --> Discussion
-    Community --> NewDiscussion
-    Community --> MentorProfile
-    Community --> ResourceViewer
-
-    CommunityFeatures --> DiscussionBrowser
-    CommunityFeatures --> MyDiscussions
-    CommunityFeatures --> StudyGroup
-
-    style ProfileMgmt fill:#ccffcc
-    style Community fill:#ccffcc
-    style CommunityFeatures fill:#ccffcc
-    style SpeakerNetwork fill:#ffcccc
-    style Discussion fill:#ffcccc
-    style ProfileEdit fill:#ffffcc
-    style NewDiscussion fill:#ffffcc
-    style MentorProfile fill:#ffffcc
-    style ResourceViewer fill:#ffffcc
-    style DiscussionBrowser fill:#ffffcc
-    style MyDiscussions fill:#ffffcc
-    style ProfilePreview fill:#ffffff
-    style StudyGroup fill:#ffffff
-```
-
-### 6.4 Communication Section
-
-```mermaid
-graph TB
-    subgraph "🎤 Communication"
-        CommHub[Communication Hub<br/>✅ EXISTS]
-        Announcements[Announcement Details<br/>❌ MISSING 🟡]
-        Messages[Messages]
-        Notifications[Notifications]
-    end
-
-    CommHub --> Announcements
-    CommHub --> Messages
-    CommHub --> Notifications
-
-    style CommHub fill:#ccffcc
-    style Announcements fill:#ffffcc
-```
-
-### 6.5 Events & Timeline Section
-
-```mermaid
-graph TB
-    subgraph "🎤 Events & Timeline"
-        Timeline[Event Timeline<br/>✅ EXISTS]
-        InviteResp[Invitation Response<br/>✅ EXISTS]
-        EventDetail[Event Details<br/>🔗 Speaker View]
-    end
-
-    Timeline --> EventDetail
-    InviteResp --> Timeline
-
-    style Timeline fill:#ccffcc
-    style InviteResp fill:#ccffcc
+    style OrgEmail fill:#90EE90
+    style OrgRecords fill:#90EE90
+    style OrgUploads fill:#90EE90
+    style OrgManages fill:#90EE90
 ```
 
 ---
 
-## 7. Attendee Portal - Complete Structure
+## 7. Attendee Portal (🔄 PUBLIC ONLY - Epic 7 Deferred)
 
-### 7.1 Main Dashboard Hub
-
-```mermaid
-graph TB
-    AttendeeDash[👤 Personal Dashboard<br/>✅ EXISTS]
-
-    AttendeeDash --> Discovery[Discovery & Content]
-    AttendeeDash --> Events[Events & Registration]
-    AttendeeDash --> Learning[Learning & Progress]
-    AttendeeDash --> Mobile[Mobile & Offline]
-    AttendeeDash --> Community[Community & Social]
-
-    style AttendeeDash fill:#ccffcc
-    style Discovery fill:#e6f0ff
-    style Events fill:#e6f0ff
-    style Learning fill:#e6f0ff
-    style Mobile fill:#e6f0ff
-    style Community fill:#e6f0ff
-```
-
-### 7.2 Discovery & Content Section
+### 7.1 What Was Implemented (Public Access)
 
 ```mermaid
 graph TB
-    subgraph "👤 Discovery & Content"
-        ContentDisc[Content Discovery<br/>✅ EXISTS]
-        ContentViewer[Content Viewer<br/>❌ MISSING 🔴]
-        LibraryMgmt[Library Management<br/>❌ MISSING 🟡]
-        FilterModal[Filter Modal<br/>❌ MISSING 🟡]
-        AllReviews[All Reviews<br/>❌ MISSING 🟢]
-        TopRated[Top Rated Content<br/>❌ MISSING 🟢]
+    subgraph "👤 Attendee Features - PUBLIC ACCESS ONLY"
+        PublicHome[Public HomePage<br/>✅ Browse Events<br/>/]
+        PublicReg[Public Registration<br/>✅ 3-Step Wizard<br/>/register/:eventCode]
+        Archive[Archive Browsing<br/>✅ 20+ Years<br/>/archive]
+        ArchiveDetail[Archive Detail<br/>✅ Timeline Only<br/>/archive/:eventCode]
     end
 
-    ContentDisc --> ContentViewer
-    ContentDisc --> FilterModal
-    ContentDisc --> AllReviews
-    ContentDisc --> TopRated
-    ContentViewer --> LibraryMgmt
+    PublicHome --> PublicReg
+    PublicHome --> Archive
+    Archive --> ArchiveDetail
 
-    style ContentDisc fill:#ccffcc
-    style ContentViewer fill:#ffcccc
-    style LibraryMgmt fill:#ffffcc
-    style FilterModal fill:#ffffcc
-    style AllReviews fill:#ffffff
-    style TopRated fill:#ffffff
+    style PublicHome fill:#90EE90
+    style PublicReg fill:#90EE90
+    style Archive fill:#90EE90
+    style ArchiveDetail fill:#90EE90
 ```
 
-### 7.3 Events & Registration Section
+### 7.2 What Was Deferred (Epic 7)
 
 ```mermaid
 graph TB
-    subgraph "👤 Events & Registration"
-        EventList[Event Listing<br/>❌ MISSING 🟡]
-        EventDetail[Event Details<br/>❌ MISSING 🔴]
-        EventLanding[Event Landing<br/>✅ EXISTS]
-        Registration[Registration Flow<br/>🔄 PARTIAL]
-        SessionModal[Session Details<br/>❌ MISSING 🔴]
-        SpeakerList[Speaker List<br/>❌ MISSING 🟡]
-        Schedule[Complete Schedule<br/>❌ MISSING 🟡]
-        Confirmation[Confirmation Page<br/>❌ MISSING 🔴]
-        Ticket[Ticket/QR Code<br/>❌ MISSING 🔴]
-        AttendeeList[Attendee List<br/>❌ MISSING 🟢]
+    subgraph "📦 DEFERRED TO EPIC 7 - Attendee Experience Enhancements"
+        PersonalDash[Personal Dashboard<br/>📦 Story 7.1<br/>Wireframed]
+        ContentDisc[Content Discovery<br/>📦 Story 7.2<br/>Advanced Search]
+        ContentView[Content Viewer<br/>📦 Story 7.2<br/>PDF/Video Player]
+        LibraryMgmt[Library Management<br/>📦 Story 7.3<br/>Bookmarks/Collections]
+        EventList[Event Listing<br/>📦 Story 7.4<br/>Wireframed]
+        EventDetail[Event Details<br/>📦 Story 7.4<br/>Personal Schedule]
+        FilterModal[Filter Modal<br/>📦 Wireframed<br/>Multi-Criteria]
+        PWA[Mobile PWA<br/>📦 Story 7.5<br/>Offline Access]
+        UserSettings[User Settings<br/>📦 Wireframed<br/>Attendee-Specific]
     end
 
+    PersonalDash --> ContentDisc
+    ContentDisc --> ContentView
+    ContentView --> LibraryMgmt
+    PersonalDash --> EventList
     EventList --> EventDetail
-    EventDetail --> EventLanding
-    EventLanding --> SessionModal
-    EventLanding --> Registration
-    Registration --> Confirmation
-    Confirmation --> Ticket
-    EventDetail --> SpeakerList
-    EventDetail --> Schedule
-    EventDetail --> AttendeeList
+    ContentDisc --> FilterModal
+    PersonalDash --> PWA
+    PersonalDash --> UserSettings
 
-    style EventLanding fill:#ccffcc
-    style EventDetail fill:#ffcccc
-    style SessionModal fill:#ffcccc
-    style Confirmation fill:#ffcccc
-    style Ticket fill:#ffcccc
-    style EventList fill:#ffffcc
-    style SpeakerList fill:#ffffcc
-    style Schedule fill:#ffffcc
-    style AttendeeList fill:#ffffff
-```
-
-### 7.4 Learning & Progress Section
-
-```mermaid
-graph TB
-    subgraph "👤 Learning & Progress"
-        Dashboard[Personal Dashboard<br/>✅ EXISTS]
-        LearningPath[Learning Path Details<br/>❌ MISSING 🟡]
-        PathSelection[Path Selection<br/>❌ MISSING 🟡]
-        Achievements[Achievements Gallery<br/>❌ MISSING 🟢]
-        Leaderboard[Leaderboard<br/>❌ MISSING 🟢]
-    end
-
-    Dashboard --> LearningPath
-    Dashboard --> PathSelection
-    Dashboard --> Achievements
-    Dashboard --> Leaderboard
-
-    style Dashboard fill:#ccffcc
-    style LearningPath fill:#ffffcc
-    style PathSelection fill:#ffffcc
-    style Achievements fill:#ffffff
-    style Leaderboard fill:#ffffff
-```
-
-### 7.5 Mobile & Offline Section
-
-```mermaid
-graph TB
-    subgraph "👤 Mobile & Offline"
-        PWA[Mobile PWA<br/>✅ EXISTS]
-        OfflineContent[Offline Content Manager<br/>✅ EXISTS]
-        StorageMgmt[Storage Management<br/>❌ MISSING 🟡]
-        OfflineSettings[Offline Settings<br/>❌ MISSING 🟡]
-        BundleList[Bundle Content List<br/>❌ MISSING 🟡]
-        SyncRules[Smart Sync Rules<br/>❌ MISSING 🟢]
-        SyncHistory[Sync History<br/>❌ MISSING 🟡]
-        OfflineViewer[Offline Viewer<br/>❌ MISSING 🔴]
-    end
-
-    PWA --> OfflineContent
-    OfflineContent --> StorageMgmt
-    OfflineContent --> OfflineSettings
-    OfflineContent --> BundleList
-    OfflineContent --> SyncRules
-    OfflineContent --> SyncHistory
-    OfflineContent --> OfflineViewer
-
-    style PWA fill:#ccffcc
-    style OfflineContent fill:#ccffcc
-    style OfflineViewer fill:#ffcccc
-    style StorageMgmt fill:#ffffcc
-    style OfflineSettings fill:#ffffcc
-    style BundleList fill:#ffffcc
-    style SyncHistory fill:#ffffcc
-    style SyncRules fill:#ffffff
-```
-
-### 7.6 Community & Social Section
-
-```mermaid
-graph TB
-    subgraph "👤 Community & Social"
-        Forum[Community Forum<br/>❌ MISSING 🟡]
-        DiscussionThread[Discussion Thread<br/>🔗 Shared]
-        TopicBrowser[Topic Browser<br/>❌ MISSING 🟡]
-        MyDiscussions[My Discussions<br/>❌ MISSING 🟡]
-        StudyGroup[Study Group<br/>❌ MISSING 🟢]
-    end
-
-    Forum --> DiscussionThread
-    Forum --> TopicBrowser
-    Forum --> MyDiscussions
-    Forum --> StudyGroup
-
-    style Forum fill:#ffffcc
-    style TopicBrowser fill:#ffffcc
-    style MyDiscussions fill:#ffffcc
-    style StudyGroup fill:#ffffff
+    style PersonalDash fill:#FFA500
+    style ContentDisc fill:#FFA500
+    style ContentView fill:#FFA500
+    style LibraryMgmt fill:#FFA500
+    style EventList fill:#FFA500
+    style EventDetail fill:#FFA500
+    style FilterModal fill:#FFA500
+    style PWA fill:#FFA500
+    style UserSettings fill:#FFA500
 ```
 
 ---
 
 ## 8. User Journey Flows
 
-### 8.1 Organizer Journey: Event Creation to Publishing
+### 8.1 Organizer Journey: Event Creation to Publishing (✅ IMPLEMENTED)
 
 ```mermaid
 flowchart TD
     Start([Organizer Logs In])
-    Dashboard[Event Management Dashboard]
-    CreateEvent[Create Event<br/>Event Detail/Edit]
-    AssignTopics[Assign Topics<br/>Topic Backlog]
-    MatchSpeakers[Match Speakers<br/>Speaker Matching]
-    SendInvites[Send Invitations]
-    TrackResp[Track Responses]
-    ConfigVenue[Configure Venue<br/>Logistics Coordination]
-    BookVenue[Book Venue]
-    PublishEvent[Publish Event<br/>Progressive Publishing]
-    Monitor[Monitor Registration]
+    Dashboard[Event Management Dashboard<br/>✅ /organizer/events]
+    CreateEvent[Create/Edit Event<br/>✅ Event Page - Details Tab]
+    AssignTopics[Assign Topics<br/>✅ Topic Management]
+    AssignSpeakers[Assign Speakers<br/>✅ Event Page - Speakers Tab]
+    SlotAssign[Slot Assignment<br/>✅ Drag-Drop Interface]
+    ManageTasks[Manage Tasks<br/>✅ Task Board or Event Tasks Tab]
+    AutoPublish[Auto-Publish<br/>✅ BAT-16: Speakers @ 30d, Agenda @ 14d]
+    Monitor[Monitor Public Display<br/>✅ HomePage]
     End([Event Live])
 
     Start --> Dashboard
     Dashboard --> CreateEvent
     CreateEvent --> AssignTopics
-    CreateEvent --> MatchSpeakers
-    MatchSpeakers --> SendInvites
-    SendInvites --> TrackResp
-    CreateEvent --> ConfigVenue
-    ConfigVenue --> BookVenue
-    CreateEvent --> PublishEvent
-    PublishEvent --> Monitor
+    CreateEvent --> AssignSpeakers
+    AssignSpeakers --> SlotAssign
+    CreateEvent --> ManageTasks
+    SlotAssign --> AutoPublish
+    AutoPublish --> Monitor
     Monitor --> End
 
-    style Dashboard fill:#ccffcc
-    style CreateEvent fill:#ffcccc
-    style AssignTopics fill:#ccffcc
-    style MatchSpeakers fill:#ccffcc
-    style ConfigVenue fill:#ccffcc
-    style PublishEvent fill:#ccffcc
-    style BookVenue fill:#ffcccc
+    style Dashboard fill:#90EE90
+    style CreateEvent fill:#90EE90
+    style AssignTopics fill:#90EE90
+    style AssignSpeakers fill:#90EE90
+    style SlotAssign fill:#90EE90
+    style ManageTasks fill:#90EE90
+    style AutoPublish fill:#90EE90
+    style Monitor fill:#90EE90
 ```
 
-### 8.2 Partner Journey: Analytics to Strategic Planning
+### 8.2 Public Attendee Journey: Discovery to Registration (✅ IMPLEMENTED)
 
 ```mermaid
 flowchart TD
-    Start([Partner Logs In])
-    Dashboard[Partner Analytics Dashboard]
-    ReviewEmp[Review Employee Analytics]
-    IdentifyNeeds[Identify Training Needs]
-    SetGoals[Set Goals<br/>Goals Management]
-    VoteTopics[Vote on Topics<br/>Topic Voting]
-    TrackROI[Track ROI<br/>Budget Management]
-    GenReports[Generate Reports<br/>Report Builder]
-    Schedule[Schedule Meetings<br/>Partner Meetings]
-    End([Strategic Plan Complete])
+    Start([Visitor Arrives])
+    Home[HomePage<br/>✅ View Current Event<br/>/]
+    Timeline[View Timeline<br/>✅ Sessions & Speakers]
+    Browse[Browse Sessions<br/>✅ Event Details]
+    Register[Register<br/>✅ /register/:eventCode]
+    Step1[Step 1: Personal Info<br/>✅]
+    Step2[Step 2: Session Selection<br/>✅]
+    Step3[Step 3: Review & Confirm<br/>✅]
+    Success[Registration Success<br/>✅ /registration-success]
+    Email[Email Confirmation<br/>✅ Confirm/Cancel Links]
+    End([Registered])
 
-    Start --> Dashboard
-    Dashboard --> ReviewEmp
-    ReviewEmp --> IdentifyNeeds
-    IdentifyNeeds --> SetGoals
-    SetGoals --> VoteTopics
-    Dashboard --> TrackROI
-    TrackROI --> GenReports
-    Dashboard --> Schedule
-    VoteTopics --> End
-
-    style Dashboard fill:#ccffcc
-    style ReviewEmp fill:#ccffcc
-    style SetGoals fill:#ffcccc
-    style VoteTopics fill:#ccffcc
-    style TrackROI fill:#ccffcc
-    style GenReports fill:#ccffcc
-    style Schedule fill:#ccffcc
-```
-
-### 8.3 Speaker Journey: Invitation to Presentation
-
-```mermaid
-flowchart TD
-    Start([Receives Invitation])
-    InviteResp[Invitation Response]
-    Accept{Accept?}
-    Dashboard[Speaker Dashboard]
-    UpdateProfile[Update Profile<br/>Profile Management]
-    SubmitMat[Submit Materials<br/>Material Wizard]
-    UploadPres[Upload Presentation]
-    ReviewTime[Review Timeline<br/>Event Timeline]
-    Community[Engage Community]
-    Present([Presentation Day])
-
-    Start --> InviteResp
-    InviteResp --> Accept
-    Accept -->|Yes| Dashboard
-    Accept -->|No| End([Declined])
-    Dashboard --> UpdateProfile
-    Dashboard --> SubmitMat
-    SubmitMat --> UploadPres
-    Dashboard --> ReviewTime
-    Dashboard --> Community
-    UploadPres --> Present
-
-    style InviteResp fill:#ccffcc
-    style Dashboard fill:#ccffcc
-    style UpdateProfile fill:#ccffcc
-    style SubmitMat fill:#ccffcc
-    style UploadPres fill:#ccffcc
-    style ReviewTime fill:#ccffcc
-    style Community fill:#ccffcc
-```
-
-### 8.4 Attendee Journey: Discovery to Attendance
-
-```mermaid
-flowchart TD
-    Start([Browses Public Site])
-    Landing[Event Landing Page]
-    Register[Registration Flow]
-    Step1[Step 1: Personal Info]
-    Step2[Step 2: Session Selection]
-    Step3[Step 3: Confirm]
-    Confirm[Confirmation Page]
-    Ticket[Get Ticket/QR Code]
-    Discover[Discover Content]
-    View[View Content]
-    Save[Save to Library]
-    Track[Track Progress<br/>Personal Dashboard]
-    Attend([Event Day])
-
-    Start --> Landing
-    Landing --> Register
+    Start --> Home
+    Home --> Timeline
+    Timeline --> Browse
+    Browse --> Register
     Register --> Step1
     Step1 --> Step2
     Step2 --> Step3
-    Step3 --> Confirm
-    Confirm --> Ticket
-    Landing --> Discover
-    Discover --> View
-    View --> Save
-    Save --> Track
-    Ticket --> Attend
+    Step3 --> Success
+    Success --> Email
+    Email --> End
 
-    style Landing fill:#ccffcc
-    style Step1 fill:#ccffcc
-    style Step2 fill:#ffcccc
-    style Step3 fill:#ffcccc
-    style Confirm fill:#ffcccc
-    style Ticket fill:#ffcccc
-    style Discover fill:#ccffcc
-    style View fill:#ffcccc
-    style Track fill:#ccffcc
+    style Home fill:#90EE90
+    style Timeline fill:#90EE90
+    style Browse fill:#90EE90
+    style Register fill:#90EE90
+    style Step1 fill:#90EE90
+    style Step2 fill:#90EE90
+    style Step3 fill:#90EE90
+    style Success fill:#90EE90
+    style Email fill:#90EE90
+```
+
+### 8.3 Historical Archive Journey (✅ IMPLEMENTED)
+
+```mermaid
+flowchart TD
+    Start([Visitor Wants History])
+    Archive[Archive Page<br/>✅ /archive]
+    Filter[Filter by Date/Topics<br/>✅ Search & Filter]
+    Browse[Browse Events<br/>✅ 20+ Years]
+    Select[Select Event<br/>✅ Click Event Card]
+    Detail[Archived Event Detail<br/>✅ /archive/:eventCode]
+    Timeline[Timeline Display<br/>✅ Read-Only View]
+    End([Content Viewed])
+
+    Start --> Archive
+    Archive --> Filter
+    Filter --> Browse
+    Browse --> Select
+    Select --> Detail
+    Detail --> Timeline
+    Timeline --> End
+
+    style Archive fill:#90EE90
+    style Filter fill:#90EE90
+    style Browse fill:#90EE90
+    style Select fill:#90EE90
+    style Detail fill:#90EE90
+    style Timeline fill:#90EE90
+```
+
+### 8.4 Deferred User Journeys (Epic 6-8)
+
+```mermaid
+flowchart TD
+    subgraph "📦 DEFERRED - Partner Journey (Epic 8)"
+        P1[Partner Analytics Dashboard] --> P2[Review Employee Analytics]
+        P2 --> P3[Vote on Topics]
+        P3 --> P4[Schedule Meetings]
+        P4 --> P5[View ROI Reports]
+    end
+
+    subgraph "📦 DEFERRED - Speaker Journey (Epic 6)"
+        S1[Invitation Response] --> S2[Accept Invitation]
+        S2 --> S3[Update Profile]
+        S3 --> S4[Submit Materials Wizard]
+        S4 --> S5[Upload Presentation]
+        S5 --> S6[Review Timeline]
+    end
+
+    subgraph "📦 DEFERRED - Attendee Journey (Epic 7)"
+        A1[Personal Dashboard] --> A2[Discover Content]
+        A2 --> A3[View Content Viewer]
+        A3 --> A4[Save to Library]
+        A4 --> A5[Rate & Review]
+        A5 --> A6[Track Learning Progress]
+    end
+
+    style P1 fill:#DDA0DD
+    style P2 fill:#DDA0DD
+    style P3 fill:#DDA0DD
+    style P4 fill:#DDA0DD
+    style P5 fill:#DDA0DD
+
+    style S1 fill:#FFD700
+    style S2 fill:#FFD700
+    style S3 fill:#FFD700
+    style S4 fill:#FFD700
+    style S5 fill:#FFD700
+    style S6 fill:#FFD700
+
+    style A1 fill:#FFA500
+    style A2 fill:#FFA500
+    style A3 fill:#FFA500
+    style A4 fill:#FFA500
+    style A5 fill:#FFA500
+    style A6 fill:#FFA500
 ```
 
 ---
 
-## 9. Cross-Role Navigation Patterns
+## 9. Screen Implementation Summary
 
-### 9.1 Shared Content Access
+### 9.1 MVP Implementation Status by Portal
 
 ```mermaid
-graph TB
-    subgraph "Multi-Role Content Access"
-        Content[Content Item]
-
-        OrgView[🎯 Organizer View<br/>Full Edit Access]
-        SpeakerView[🎤 Speaker View<br/>Own Content Edit]
-        AttendeeView[👤 Attendee View<br/>Read Only]
-        PartnerView[💼 Partner View<br/>Analytics]
-    end
-
-    Content --> OrgView
-    Content --> SpeakerView
-    Content --> AttendeeView
-    Content --> PartnerView
-
-    style Content fill:#e1f5ff
-    style OrgView fill:#fff0e6
-    style SpeakerView fill:#ffe6f0
-    style AttendeeView fill:#e6f0ff
-    style PartnerView fill:#f0e6ff
+%%{init: {'theme':'base'}}%%
+pie title MVP Screen Implementation Status (Epics 1-5)
+    "✅ Implemented" : 38
+    "🔄 Partial/Placeholder" : 5
+    "❌ Not Implemented (Low Priority)" : 10
 ```
 
-### 9.2 Event Details - Role-Specific Views
+### 9.2 Implementation Coverage by Role Portal
 
 ```mermaid
-graph TB
-    Event[Event Entity]
-
-    OrgEdit[🎯 Event Detail/Edit<br/>Full Management]
-    PartnerAnalytics[💼 Event in Analytics<br/>ROI & Metrics]
-    SpeakerTimeline[🎤 Event Timeline<br/>Tasks & Dates]
-    AttendeePublic[👤 Event Details Page<br/>Public Info]
-    PublicLanding[🌐 Event Landing<br/>Registration]
-
-    Event --> OrgEdit
-    Event --> PartnerAnalytics
-    Event --> SpeakerTimeline
-    Event --> AttendeePublic
-    Event --> PublicLanding
-
-    style Event fill:#e1f5ff
-    style OrgEdit fill:#ffcccc
-    style PartnerAnalytics fill:#ccffcc
-    style SpeakerTimeline fill:#ccffcc
-    style AttendeePublic fill:#ffcccc
-    style PublicLanding fill:#ccffcc
+%%{init: {'theme':'base'}}%%
+xychart-beta
+    title "Portal Implementation Coverage (%)"
+    x-axis [Public, Auth, Global, Organizer, Partner, Speaker, Attendee]
+    y-axis "Completion %" 0 --> 100
+    bar [100, 100, 95, 90, 10, 0, 20]
 ```
 
-### 9.3 Profile & Directory Access
+### 9.3 Deferred Features by Epic
 
 ```mermaid
-graph TB
-    Speaker[Speaker Profile]
-
-    OrgDetail[🎯 Speaker Detail View<br/>Search & Match]
-    SpeakerMgmt[🎤 Profile Management<br/>Edit Own Profile]
-    AttendeeView[👤 Speaker in Directory<br/>Public View]
-    PublicView[🌐 Public Profile<br/>Bio & Sessions]
-
-    Speaker --> OrgDetail
-    Speaker --> SpeakerMgmt
-    Speaker --> AttendeeView
-    Speaker --> PublicView
-
-    style Speaker fill:#e1f5ff
-    style OrgDetail fill:#ffcccc
-    style SpeakerMgmt fill:#ccffcc
-    style AttendeeView fill:#ffffcc
+%%{init: {'theme':'base'}}%%
+xychart-beta
+    title "Deferred Features by Epic (Screen Count)"
+    x-axis ["Epic 6 (Speaker)", "Epic 7 (Attendee)", "Epic 8 (Partner)", "Low Priority MVP"]
+    y-axis "Number of Screens" 0 --> 15
+    bar [6, 9, 6, 10]
 ```
 
 ---
 
-## 10. Screen Implementation Status Overview
+## 10. Architecture Decision Visualization
 
-### 10.1 Status Distribution
-
-```mermaid
-pie title Screen Status Distribution (157+ Total Screens)
-    "Existing/Documented" : 40
-    "Missing - HIGH Priority" : 28
-    "Missing - MEDIUM Priority" : 52
-    "Missing - LOW Priority" : 16
-    "Partial/Referenced" : 21
-```
-
-### 10.2 Coverage by Role Portal
+### 10.1 What Was Built (MVP Architecture)
 
 ```mermaid
-%%{init: {'theme':'base'}}%%
 graph TB
-    subgraph "Portal Coverage Analysis"
-        Org["🎯 Organizer Portal<br/>~35% Complete<br/>10 Existing / 18 Missing"]
-        Part["💼 Partner Portal<br/>~22% Complete<br/>8 Existing / 29 Missing"]
-        Speak["🎤 Speaker Portal<br/>~29% Complete<br/>7 Existing / 17 Missing"]
-        Attend["👤 Attendee Portal<br/>~16% Complete<br/>5 Existing / 27 Missing"]
-        Global["🌐 Global/Shared<br/>~17% Complete<br/>1 Existing / 5 Missing"]
+    subgraph "✅ MVP ARCHITECTURE - FULLY OPERATIONAL"
+        EventWorkflow[9-State Event Workflow<br/>✅ DRAFT → COMPLETED]
+        UnifiedEvent[Unified Event Page<br/>✅ Tabs: Details/Speakers/Tasks]
+        AutoPublish[Auto-Publishing<br/>✅ BAT-16 Lifecycle]
+        SlotDragDrop[Slot Assignment<br/>✅ Drag-Drop UI]
+        OrganizerDriven[Organizer-Driven<br/>✅ Manual Coordination]
+        PublicFirst[Public-First Content<br/>✅ 20+ Years Archive]
+        RoleBasedAuth[Role-Based Access<br/>✅ AWS Cognito]
+        ModernFrontend[React 19 + TypeScript<br/>✅ Code Splitting]
     end
 
-    style Org fill:#ffddaa
-    style Part fill:#ffaaaa
-    style Speak fill:#ffccaa
-    style Attend fill:#ff9999
-    style Global fill:#ffcccc
+    EventWorkflow --> UnifiedEvent
+    UnifiedEvent --> SlotDragDrop
+    UnifiedEvent --> AutoPublish
+    OrganizerDriven --> PublicFirst
+    RoleBasedAuth --> ModernFrontend
+
+    style EventWorkflow fill:#90EE90
+    style UnifiedEvent fill:#90EE90
+    style AutoPublish fill:#90EE90
+    style SlotDragDrop fill:#90EE90
+    style OrganizerDriven fill:#90EE90
+    style PublicFirst fill:#90EE90
+    style RoleBasedAuth fill:#90EE90
+    style ModernFrontend fill:#90EE90
 ```
 
-### 10.3 Priority Matrix
+### 10.2 What Was Deferred (Scope Reductions)
 
 ```mermaid
-%%{init: {'theme':'base'}}%%
+graph TB
+    subgraph "📦 DEFERRED - OPTIONAL ENHANCEMENTS"
+        SpeakerSelfService[Speaker Self-Service<br/>📦 Epic 6<br/>40% Workload Reduction]
+        PartnerAnalytics[Partner Analytics<br/>📦 Epic 8<br/>ROI Visibility]
+        AttendeePersonal[Attendee Personal Features<br/>📦 Epic 7<br/>Bookmarks/PWA]
+        ContentCMS[Content Management System<br/>❌ Not in MVP<br/>Manual S3 Upload]
+        WorkflowViz[Workflow Visualization<br/>❌ Not in MVP<br/>Status Indicators Sufficient]
+    end
+
+    SpeakerSelfService -.->|Gather Feedback| Decide1{Implement?}
+    PartnerAnalytics -.->|Assess Demand| Decide2{Implement?}
+    AttendeePersonal -.->|User Demand| Decide3{Implement?}
+
+    style SpeakerSelfService fill:#FFD700
+    style PartnerAnalytics fill:#DDA0DD
+    style AttendeePersonal fill:#FFA500
+    style ContentCMS fill:#ffcccc
+    style WorkflowViz fill:#ffcccc
+```
+
+---
+
+## 11. Implementation Priority Matrix
+
+### 11.1 MVP Features vs Deferred Features
+
+```mermaid
 quadrantChart
-    title Screen Priority & Complexity Matrix
+    title Screen Priority & Implementation Matrix
     x-axis Low Complexity --> High Complexity
-    y-axis Low Priority --> High Priority
-    quadrant-1 Build First (High Pri, High Complex)
-    quadrant-2 Quick Wins (High Pri, Low Complex)
-    quadrant-3 Nice to Have (Low Pri, Low Complex)
-    quadrant-4 Plan Carefully (Low Pri, High Complex)
-    Event Detail/Edit: [0.7, 0.9]
-    Speaker Profile Detail: [0.6, 0.9]
-    Content Viewer: [0.5, 0.9]
-    Goals Management: [0.6, 0.8]
-    Metric Details: [0.7, 0.8]
-    Session Details Modal: [0.3, 0.9]
-    User Settings: [0.4, 0.8]
-    Filter Modal: [0.2, 0.6]
-    Help Center: [0.4, 0.5]
-    Achievements Gallery: [0.5, 0.3]
-    Study Group Details: [0.6, 0.3]
-    Smart Sync Rules: [0.8, 0.3]
-    Venue Booking: [0.8, 0.9]
-    Meeting Calendar: [0.7, 0.7]
-    Report Builder: [0.8, 0.6]
+    y-axis Deferred --> Implemented
+    quadrant-1 MVP Core Features
+    quadrant-2 Quick Wins (Implemented)
+    quadrant-3 Low Priority (Deferred)
+    quadrant-4 Complex (Deferred to Phase 2)
+
+    Event Page Tabs: [0.6, 0.9]
+    Slot Assignment: [0.7, 0.9]
+    Topic Management: [0.5, 0.9]
+    Task Board: [0.6, 0.9]
+    Public Registration: [0.5, 0.9]
+    Archive Browsing: [0.4, 0.9]
+    User Account: [0.3, 0.9]
+    Company CRUD: [0.4, 0.9]
+
+    Speaker Portal: [0.7, 0.3]
+    Partner Analytics: [0.8, 0.2]
+    Content Viewer: [0.6, 0.3]
+    Mobile PWA: [0.8, 0.2]
+    Topic Voting: [0.6, 0.2]
+    Workflow Viz: [0.5, 0.3]
+    QR Codes: [0.4, 0.4]
+    Help Center: [0.3, 0.4]
 ```
 
 ---
 
-## 11. Implementation Roadmap (Visual)
+## 12. Cross-Role Navigation Patterns
 
-### 11.1 Phase-Based Implementation
+### 12.1 Shared Multi-Role Components
+
+```mermaid
+graph TB
+    subgraph "Multi-Role Shared Components"
+        Company[Company Management<br/>✅ IMPLEMENTED]
+        UserAccount[User Account Page<br/>✅ IMPLEMENTED]
+    end
+
+    subgraph "Role-Specific Access"
+        OrgCompany[Organizer Access<br/>/organizer/companies/*<br/>✅ Full CRUD]
+        SpeakerCompany[Speaker Access<br/>/speaker/company/*<br/>✅ Own Company Only]
+
+        AllRoles[All Authenticated Roles<br/>/account<br/>✅ Profile + Settings]
+    end
+
+    Company --> OrgCompany
+    Company --> SpeakerCompany
+    UserAccount --> AllRoles
+
+    style Company fill:#90EE90
+    style UserAccount fill:#90EE90
+    style OrgCompany fill:#90EE90
+    style SpeakerCompany fill:#90EE90
+    style AllRoles fill:#90EE90
+```
+
+---
+
+## 13. Deployment & Release Timeline
+
+### 13.1 MVP Implementation Timeline (Epics 1-5)
 
 ```mermaid
 gantt
-    title Screen Implementation Roadmap
+    title BATbern MVP Implementation (Epics 1-5 - COMPLETE)
     dateFormat YYYY-MM-DD
-    section Phase 1: MVP Critical
-    Event Detail/Edit           :crit, p1_1, 2025-10-01, 2w
-    Speaker Profile Detail      :crit, p1_2, 2025-10-01, 2w
-    Content Viewer              :crit, p1_3, 2025-10-15, 2w
-    Venue Details & Booking     :crit, p1_4, 2025-10-15, 2w
-    Session Details Modal       :crit, p1_5, 2025-10-29, 1w
-    Registration Steps 2&3      :crit, p1_6, 2025-10-29, 2w
-    Ticket/QR Code              :crit, p1_7, 2025-11-12, 1w
 
-    section Phase 2: Core Features
-    Metric Detail Screens       :p2_1, 2025-11-19, 2w
-    Goals Management            :p2_2, 2025-11-19, 2w
-    Speaker Network             :p2_3, 2025-12-03, 1w
-    Discussion Threads          :p2_4, 2025-12-03, 2w
-    Meeting Calendar            :p2_5, 2025-12-17, 1w
+    section Epic 1: Foundation
+    Core Infrastructure           :done, epic1, 2025-08-01, 4w
+    API Gateway & Auth            :done, 2025-08-01, 4w
+    React Frontend Foundation     :done, 2025-08-15, 3w
 
-    section Phase 3: Enhancement
-    Content Library             :p3_1, 2025-12-24, 2w
-    Learning Paths              :p3_2, 2026-01-07, 2w
-    Partner Analytics Details   :p3_3, 2026-01-21, 2w
+    section Epic 2: Entity CRUD
+    Company/User Management       :done, epic2, 2025-09-01, 6w
+    Event Service Core            :done, 2025-09-01, 6w
+    Partner Service Foundation    :done, 2025-09-15, 4w
 
-    section Phase 4: Polish
-    Community Features          :p4_1, 2026-02-04, 3w
-    Admin Settings              :p4_2, 2026-02-25, 2w
-    Help & Support              :p4_3, 2026-03-11, 1w
+    section Epic 3: Historical Data
+    Migration Tooling             :done, epic3, 2025-10-15, 3w
+    Data Import (Production)      :milestone, 2026-01-31, 0d
+
+    section Epic 4: Public Website
+    Public Event Display          :done, epic4, 2025-11-01, 4w
+    Registration Flow             :done, 2025-11-08, 3w
+    Archive Browsing              :done, 2025-11-15, 3w
+
+    section Epic 5: Enhanced Workflows
+    Event Type Config             :done, epic5, 2025-11-22, 6w
+    Topic Management              :done, 2025-11-22, 3w
+    Task Management               :done, 2025-12-06, 3w
+    Unified Event Page            :done, 2025-12-13, 4w
+    Slot Assignment               :done, 2025-12-20, 3w
+    Auto-Publishing (BAT-16)      :done, 2025-12-27, 2w
+
+    section MVP Complete
+    MVP Launch                    :milestone, mvp, 2026-01-10, 0d
 ```
 
-### 11.2 Dependency Flow
+### 13.2 Phase 2+ Deferred Epics
 
 ```mermaid
-graph LR
-    subgraph "Foundation Layer"
-        Auth[Authentication Screens]
-        UserProf[User Profile/Settings]
-        Nav[Main Navigation]
-    end
+gantt
+    title Phase 2+ Optional Enhancements (Epics 6-8)
+    dateFormat YYYY-MM-DD
 
-    subgraph "Core Layer"
-        EventDetail[Event Detail/Edit]
-        SpeakerDetail[Speaker Detail]
-        ContentView[Content Viewer]
-        Dashboard[Role Dashboards]
-    end
+    section Epic 6: Speaker Portal
+    Speaker Service Foundation    :epic6, 2026-02-01, 2.5w
+    Material Submission           :2026-02-18, 3w
+    Profile Management            :2026-03-11, 2w
+    Invitation Response           :2026-03-25, 3w
+    Speaker Dashboard             :2026-04-15, 2w
 
-    subgraph "Feature Layer"
-        Analytics[Analytics & Metrics]
-        Community[Community Features]
-        Meetings[Meetings & Scheduling]
-        Offline[Offline & Mobile]
-    end
+    section Epic 7: Attendee Experience
+    Personal Dashboard            :epic7, 2026-05-01, 2w
+    Content Discovery             :2026-05-15, 3w
+    Content Viewer                :2026-06-05, 2w
+    Mobile PWA                    :2026-06-19, 3w
 
-    subgraph "Enhancement Layer"
-        Advanced[Advanced Features]
-        Reports[Custom Reports]
-        Gamification[Gamification]
-    end
-
-    Auth --> UserProf
-    Auth --> Nav
-    UserProf --> Dashboard
-    Nav --> Dashboard
-
-    Dashboard --> EventDetail
-    Dashboard --> SpeakerDetail
-    Dashboard --> ContentView
-
-    EventDetail --> Analytics
-    SpeakerDetail --> Community
-    ContentView --> Offline
-    Dashboard --> Meetings
-
-    Analytics --> Reports
-    Community --> Gamification
-    Meetings --> Advanced
-
-    style Auth fill:#ffcccc
-    style UserProf fill:#ffcccc
-    style Nav fill:#ffcccc
-    style EventDetail fill:#ffcccc
-    style SpeakerDetail fill:#ffcccc
-    style ContentView fill:#ffcccc
-```
-
----
-
-## 12. Navigation Depth Analysis
-
-### 12.1 Maximum Click Depth by Portal
-
-```mermaid
-graph LR
-    subgraph "🎯 Organizer Portal - Max 4 Clicks"
-        O1[Dashboard]
-        O2[Event Mgmt]
-        O3[Event Detail]
-        O4[Event Settings]
-        O1 --> O2 --> O3 --> O4
-    end
-
-    subgraph "💼 Partner Portal - Max 4 Clicks"
-        P1[Dashboard]
-        P2[Strategic Planning]
-        P3[Goals Management]
-        P4[Goal Details]
-        P1 --> P2 --> P3 --> P4
-    end
-
-    subgraph "🎤 Speaker Portal - Max 3 Clicks"
-        S1[Dashboard]
-        S2[Community]
-        S3[Discussion Thread]
-        S1 --> S2 --> S3
-    end
-
-    subgraph "👤 Attendee Portal - Max 3 Clicks"
-        A1[Dashboard]
-        A2[Content Discovery]
-        A3[Content Viewer]
-        A1 --> A2 --> A3
-    end
-```
-
----
-
-## 13. Summary Statistics
-
-### 13.1 Screen Count by Category
-
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Screens by Category"
-    x-axis [Event Mgmt, Speaker Mgmt, Content, Analytics, Community, Logistics, Admin, Settings]
-    y-axis "Number of Screens" 0 --> 25
-    bar [12, 15, 18, 22, 14, 8, 6, 10]
-```
-
-### 13.2 Missing Screens by Priority
-
-```mermaid
-%%{init: {'theme':'base'}}%%
-xychart-beta
-    title "Missing Screens by Priority Level"
-    x-axis [HIGH Priority, MEDIUM Priority, LOW Priority]
-    y-axis "Number of Screens" 0 --> 60
-    bar [28, 52, 16]
+    section Epic 8: Partner Analytics
+    Analytics Dashboard           :epic8, 2026-07-10, 2w
+    Topic Voting System           :2026-07-24, 2w
+    Meeting Automation            :2026-08-07, 2w
 ```
 
 ---
 
 ## Notes on Diagram Usage
 
-### Best Practices
-1. **Mermaid Rendering**: These diagrams render in GitHub, GitLab, most markdown viewers, and documentation platforms
-2. **Color Coding**: Consistent color scheme across all diagrams for status/priority
-3. **Interactive Navigation**: In supported viewers, nodes can be clickable
-4. **Scalability**: Large diagrams may need to be viewed individually
+### Color Coding Reference
+- 🟢 Green (`#90EE90`) = ✅ IMPLEMENTED IN MVP (Epics 1-5)
+- 🔵 Light Blue (`#87CEEB`) = 🔄 PARTIAL/PLACEHOLDER
+- 🟡 Gold (`#FFD700`) = 📦 DEFERRED TO EPIC 6 (Speaker Portal)
+- 🟠 Orange (`#FFA500`) = 📦 DEFERRED TO EPIC 7 (Attendee Experience)
+- 🟣 Purple (`#DDA0DD`) = 📦 DEFERRED TO EPIC 8 (Partner Analytics)
+- 🔴 Red (`#ffcccc`) = ❌ NOT IMPLEMENTED IN MVP
 
-### Limitations
-- Some very large diagrams may not render well in all viewers
-- Complex flows simplified for clarity
-- Cross-references indicated with 🔗 symbol
+### Rendering Notes
+- These diagrams render in GitHub, GitLab, most markdown viewers
+- Use [Mermaid Live Editor](https://mermaid.live) for editing/testing
+- VS Code: Install "Mermaid Preview" extension for local viewing
+- Confluence: Use Mermaid plugin for embedding
 
-### Recommended Tools
-- **GitHub/GitLab**: Native rendering
-- **VS Code**: Mermaid Preview extension
-- **Confluence**: Mermaid plugin
-- **Notion**: Embed as code blocks
-- **Mermaid Live Editor**: https://mermaid.live for editing
+### Implementation Truth
+- This sitemap reflects **actual implementation** as of 2026-01-25
+- Routes verified against `/Users/nissim/dev/bat/BATbern-main/web-frontend/src/App.tsx`
+- Epic status verified against `/Users/nissim/dev/bat/BATbern-main/docs/prd/epic-*.md`
+- All ✅ IMPLEMENTED features are production-ready and deployed
 
 ---
 
 **End of Mermaid Site Map**
 
-*This document provides visual representations of the complete BATbern platform architecture. Use in conjunction with sitemap.md for detailed screen specifications.*
+*This document provides visual representations of the BATbern platform as implemented in MVP (Epics 1-5) and planned for Phase 2+ (Epics 6-8). Use in conjunction with sitemap.md for detailed textual descriptions.*

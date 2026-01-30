@@ -6,7 +6,8 @@
 <strong>Phase A: Setup</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1-2 weeks<br>
-State Transitions: CREATED → TOPIC_SELECTED → SPEAKERS_IDENTIFIED
+Event State Transitions: CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION<br>
+Speaker States: N/A → identified (speakers added to pool)
 </div>
 
 ## Overview
@@ -134,7 +135,9 @@ After filling all required fields, the form should look like this:
 
 Click **Save & Continue to Step 2**.
 
-Event state advances to: **CREATED** (ready for topic selection)
+Event state: **CREATED** (ready for topic selection)
+
+**Auto-created Tasks**: None yet (tasks auto-create when event reaches TOPIC_SELECTION)
 </div>
 
 ### Assigning Tasks to Organizers
@@ -301,7 +304,13 @@ Click **Confirm Topic Selection**.
 
 ![Topic Selection Confirmed](../assets/screenshots/workflow/phase-a-setup/a-19-topic-selection-confirmed.png)
 
-Event state advances to: **TOPIC_SELECTED**
+Event state: CREATED → **TOPIC_SELECTION**
+
+**Auto-created Tasks**:
+- Venue Booking (due: 90 days before event)
+- Partner Meeting (due: event day)
+- Moderator Assignment (due: 14 days before event)
+- Newsletter: Topic (due: immediately)
 </div>
 
 ### Topic Selection Tips
@@ -409,7 +418,9 @@ Once minimum candidates identified, click **Complete Brainstorming**.
 
 ![Proceed to Outreach](../assets/screenshots/workflow/phase-a-setup/a-22-proceed-to-outreach.png)
 
-Event state advances to: **SPEAKERS_IDENTIFIED**
+Event state: TOPIC_SELECTION → **SPEAKER_IDENTIFICATION**
+
+**Note**: Speakers are created with state **identified** and stored in the speaker_pool table.
 
 Phase A is complete! ✅
 </div>
@@ -460,7 +471,8 @@ Before advancing to Phase B, confirm:
 - ✅ Event type defined with timeline
 - ✅ Topics selected using heat map data
 - ✅ Speaker candidates identified (2:1 ratio)
-- ✅ Event state = **SPEAKERS_IDENTIFIED**
+- ✅ Event state = **SPEAKER_IDENTIFICATION**
+- ✅ Auto-created tasks: Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic
 
 ### What Happens Next
 

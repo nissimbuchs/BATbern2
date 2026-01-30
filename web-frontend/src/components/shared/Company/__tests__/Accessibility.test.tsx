@@ -13,8 +13,45 @@ import * as matchers from 'vitest-axe/matchers';
 import CompanyManagementScreen from '../CompanyManagementScreen';
 import { CompanyForm } from '../CompanyForm';
 import CompanyFilters from '../CompanyFilters';
+import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
 
 expect.extend(matchers);
+
+// Mock useAuth hook for BaseLayout
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      userId: 'user-123',
+      email: 'test@batbern.ch',
+      emailVerified: true,
+      role: 'organizer',
+      companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
+  })),
+}));
+
+// Mock useBreakpoints hook for BaseLayout
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
 
 // Mock useCompanies hook
 vi.mock('@/hooks/useCompanies/useCompanies', () => ({
@@ -84,9 +121,11 @@ const renderWithProviders = (component: React.ReactElement, useRoutes = false) =
   const queryClient = createTestQueryClient();
 
   const wrappedComponent = useRoutes ? (
-    <Routes>
-      <Route path="/organizer/companies/*" element={component} />
-    </Routes>
+    <BaseLayout>
+      <Routes>
+        <Route path="/organizer/companies/*" element={component} />
+      </Routes>
+    </BaseLayout>
   ) : (
     component
   );

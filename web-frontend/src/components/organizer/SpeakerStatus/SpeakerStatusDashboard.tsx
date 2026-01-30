@@ -98,7 +98,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
       : 0;
 
   return (
-    <Box sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ mt: 4, mb: 4 }} data-testid="speaker-status-dashboard">
       <Typography variant="h4" gutterBottom>
         {t('organizer:speakerStatus.title')}
       </Typography>

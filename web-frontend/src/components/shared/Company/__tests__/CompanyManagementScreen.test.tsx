@@ -10,6 +10,7 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompanyManagementScreen from '@/components/shared/Company/CompanyManagementScreen';
+import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
 
 // Mock hooks
 vi.mock('@/hooks/useCompanies/useCompanies', () => ({
@@ -23,6 +24,42 @@ vi.mock('@/hooks/useCompanies/useCompanies', () => ({
 vi.mock('@/hooks/useCompanyMutations/useCompanyMutations', () => ({
   useCreateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useUpdateCompany: vi.fn(() => ({ mutateAsync: vi.fn() })),
+}));
+
+// Mock useAuth hook for BaseLayout
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      userId: 'user-123',
+      email: 'test@batbern.ch',
+      emailVerified: true,
+      role: 'organizer',
+      companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
+  })),
+}));
+
+// Mock useBreakpoints hook for BaseLayout
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
 }));
 
 // Mock child components to isolate testing
@@ -46,9 +83,11 @@ const renderWithProviders = (ui: React.ReactElement, { route = '/organizer/compa
   return render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/organizer/companies/*" element={ui} />
-        </Routes>
+        <BaseLayout>
+          <Routes>
+            <Route path="/organizer/companies/*" element={ui} />
+          </Routes>
+        </BaseLayout>
       </BrowserRouter>
     </QueryClientProvider>
   );

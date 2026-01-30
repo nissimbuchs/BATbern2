@@ -4,16 +4,19 @@
 
 <div class="workflow-phase phase-b">
 <strong>Phase B: Outreach</strong><br>
-Status: <span class="feature-status in-progress">In Progress</span><br>
+Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 4-6 weeks<br>
-State Transitions: SPEAKERS_IDENTIFIED → OUTREACH_INITIATED → CONTENT_COLLECTED
+Event State: SPEAKER_IDENTIFICATION (event remains in this state while speakers progress)<br>
+Speaker States: identified → contacted → ready → accepted → content_submitted
 </div>
 
 ## Overview
 
-Phase B focuses on speaker engagement. You'll contact identified candidates, track their responses through status states, and collect presentation content from interested speakers.
+Phase B focuses on speaker engagement. You'll contact identified candidates, track their responses through their individual speaker workflows, and collect presentation content from accepted speakers.
 
-**Key Deliverable**: Confirmed speakers with submitted content meeting minimum requirements
+**Key Concept**: The event remains in SPEAKER_IDENTIFICATION state while individual speakers progress through their own parallel workflows (identified → contacted → ready → accepted → content_submitted).
+
+**Key Deliverable**: Accepted speakers with submitted content ready for quality review
 
 ## Step 4: Speaker Outreach Tracking
 
@@ -85,7 +88,8 @@ Before contacting a speaker:
 ![Before Contact](../assets/screenshots/workflow/phase-b-outreach/b-02-before-contact-speaker-1.png)
 
 After sending, speaker status updates:
-- Status: IDENTIFIED → **CONTACTED**
+- Speaker Status: identified → **contacted**
+- Event Status: Still SPEAKER_IDENTIFICATION (unchanged)
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
 
@@ -166,28 +170,32 @@ Track speaker progression from interest through content submission, ensuring tim
 
 ```mermaid
 graph LR
-    A[IDENTIFIED] --> B[CONTACTED]
-    B --> C[INTERESTED]
-    C --> D[CONTENT_SUBMITTED]
-    D --> E[CONFIRMED]
-    E --> F[PUBLISHED]
+    A[identified] --> B[contacted]
+    B --> C[ready]
+    C --> D[accepted]
+    D --> E[content_submitted]
+    E --> F[quality_reviewed]
+    F --> G[confirmed]
 
-    B -.->|Declined| G[DROPOUT]
-    C -.->|Withdrew| G
-    E -.->|Withdrew| G
+    C -.->|Declined| H[declined]
+    D -.->|Withdrew| I[withdrew]
+    F -.->|No slots| J[overflow]
 ```
 
 ### Status Definitions
 
 | Status | Meaning | Organizer Action | Speaker Action |
 |--------|---------|------------------|----------------|
-| **IDENTIFIED** | Potential candidate | Send invitation | - |
-| **CONTACTED** | Invitation sent | Await response | Respond to invitation |
-| **INTERESTED** | Expressed interest | Send content guidelines | Review guidelines |
-| **CONTENT_SUBMITTED** | Content received | Review content (Phase C) | - |
-| **CONFIRMED** | Approved for event | Assign time slot (Phase D) | - |
-| **PUBLISHED** | On public agenda | Monitor for changes | - |
-| **DROPOUT** | Withdrew participation | Find replacement | - |
+| **identified** | Potential candidate | Send invitation | - |
+| **contacted** | Invitation sent | Await response | Respond to invitation |
+| **ready** | Ready to accept/decline | Get acceptance | Decide to accept or decline |
+| **accepted** | Committed to presenting | Send content guidelines | Submit content |
+| **declined** | Not available | Contact backup candidate | - |
+| **content_submitted** | Content received | Review content (Phase C) | - |
+| **quality_reviewed** | Content approved | Assign time slot (Phase D) | - |
+| **confirmed** | Quality reviewed AND slot assigned | Ready for publication | - |
+| **overflow** | Accepted but no slots | Backup speaker | - |
+| **withdrew** | Dropped out after accepting | Find replacement | - |
 
 ### How to Complete
 
@@ -300,7 +308,8 @@ Anna
 **Update Status on Submission**
 
 When content received, status automatically updates:
-- Status: INTERESTED → **CONTENT_SUBMITTED**
+- Speaker Status: accepted → **content_submitted**
+- Event Status: Still SPEAKER_IDENTIFICATION (unchanged)
 - Content flagged for review (Phase C)
 
 ```
@@ -310,7 +319,7 @@ Title: "Innovations in Sustainable Building Materials"
 Abstract: 287 characters / 1000 ✅
 Learning Objectives: 4 ✅
 
-Status: CONTENT_SUBMITTED
+Status: content_submitted
 Next: Quality Review (Phase C)
 
 [View Content] [Request Revision]
@@ -329,9 +338,9 @@ For speakers missing deadline:
 New deadline: March 4, 2025
 ```
 
-**Option 2**: Mark as Dropout
+**Option 2**: Mark as Withdrew
 ```
-[Mark as DROPOUT]
+[Mark as withdrew]
 Reason: Missed content deadline
 → Contact backup candidate
 ```
@@ -339,11 +348,11 @@ Reason: Missed content deadline
 
 <div class="step" data-step="7">
 
-**Complete Status Management**
+**Complete Outreach**
 
-Once minimum speakers at **CONTENT_SUBMITTED**, advance:
+Once minimum speakers at **content_submitted** state, you're ready for Phase C (Quality Review).
 
-Event state: OUTREACH_INITIATED → **CONTENT_COLLECTED**
+**Note**: Event state remains **SPEAKER_IDENTIFICATION** throughout Phase B and Phase C. It only advances to SLOT_ASSIGNMENT in Phase D after all speakers are assigned to time slots.
 </div>
 
 ### Status Management Tips
@@ -567,11 +576,9 @@ Speaker notified via email, can resubmit via same portal link.
 
 Once all required speakers submitted content:
 
-Click **Complete Content Collection**
-
-Event state: **CONTENT_COLLECTED**
-
 Phase B complete! ✅ Ready for Phase C (Quality Review)
+
+**Note**: Event state remains **SPEAKER_IDENTIFICATION** (unchanged). Speakers have progressed to **content_submitted** state individually.
 </div>
 
 ### Content Quality Tips
@@ -611,9 +618,10 @@ Phase B complete! ✅ Ready for Phase C (Quality Review)
 Before advancing to Phase C, confirm:
 
 - ✅ All high-priority candidates contacted
-- ✅ Minimum speakers reached **INTERESTED** status
-- ✅ All interested speakers submitted content
-- ✅ Event state = **CONTENT_COLLECTED**
+- ✅ Minimum speakers reached **accepted** state
+- ✅ All accepted speakers submitted content
+- ✅ Minimum speakers at **content_submitted** state
+- ✅ Event state = **SPEAKER_IDENTIFICATION** (unchanged - progresses in Phase D)
 
 ### Minimum Speaker Requirements
 

@@ -73,7 +73,7 @@ export const PartnerOverviewStats: React.FC = () => {
       <Grid container spacing={2}>
         {/* Total Partners */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card data-testid="stats-total-partners">
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
                 Total Partners
@@ -87,7 +87,7 @@ export const PartnerOverviewStats: React.FC = () => {
 
         {/* Active Partners */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card data-testid="stats-active-partners">
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
                 Active Partners
@@ -101,7 +101,7 @@ export const PartnerOverviewStats: React.FC = () => {
 
         {/* Engaged Partners - Placeholder for Epic 8 */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card data-testid="stats-engaged-partners">
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
                 Engaged Partners
@@ -115,7 +115,7 @@ export const PartnerOverviewStats: React.FC = () => {
 
         {/* Tier Distribution */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card data-testid="stats-tier-distribution">
             <CardContent>
               <Typography color="text.secondary" variant="body2" gutterBottom>
                 Tier Distribution

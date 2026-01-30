@@ -4,15 +4,15 @@
 
 This page tracks implementation status of all BATbern features. Use this to understand what's available now, what's in progress, and what's coming soon.
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-01-25
 
-**MVP Status**: ✅ **PRODUCTION READY** - Core platform complete, minor features pending
+**MVP Status**: ✅ **100% COMPLETE & PRODUCTION READY** - All 5 MVP epics (1-5) complete
 
 **Platform Readiness:**
 - **Epics 1-2**: 100% Complete (Foundation, Entity CRUD)
 - **Epic 3**: 100% Complete (Historical data migration tooling ready, production import pending)
-- **Epic 4**: 85% Complete (Event registration done, archive browsing & search pending)
-- **Epic 5**: 87.5% Complete (7/8 stories done, newsletter integration pending - BAT-16)
+- **Epic 4**: 100% Complete (Public website, registration, archive browsing, content search)
+- **Epic 5**: 100% Complete (8/8 stories done, event workflow, speaker coordination, auto-publishing, lifecycle automation)
 
 **Status Definitions**:
 - `[IMPLEMENTED]` - Feature is live and available for use
@@ -124,7 +124,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 ## Event Workflow Management (Epic 5)
 
-**Status**: ✅ 87.5% Complete (7/8 stories)
+**Status**: ✅ 100% Complete (8/8 stories)
 
 **Note:** Epic 5 workflow is now a **parallel workflow architecture** with event states, per-speaker workflows, and configurable tasks - not a linear 16-step process.
 
@@ -168,18 +168,60 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 11: Topic Publishing | ✅ `[IMPLEMENTED]` | Progressive disclosure: Topics first | [Phase E](../workflow/phase-e-publishing.md#step-11) |
 | Step 12: Speaker Publishing | ✅ `[IMPLEMENTED]` | Speaker profiles → Agenda finalization | [Phase E](../workflow/phase-e-publishing.md#step-12) |
 | Dropout Handling | ✅ `[IMPLEMENTED]` | Manage last-minute withdrawals | [Phase E](../workflow/phase-e-publishing.md#dropout-handling) |
+| Auto-Publishing Engine | ✅ `[IMPLEMENTED]` | CDN integration, scheduled publishing | Part of Event Lifecycle |
+| Event Finalization | ✅ `[IMPLEMENTED]` | AGENDA_FINALIZED state transition | Part of Event Lifecycle |
+| Event Completion | ✅ `[IMPLEMENTED]` | EVENT_COMPLETED→ARCHIVED automation | Part of Event Lifecycle |
 
 ### Phase F: Event Completion & Communication
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
-| Newsletter Integration | 📋 `[PLANNED]` | BAT-16 pending, 3 templates defined | Part of Event Lifecycle |
-| Overflow Management | 📋 `[PLANNED]` | BAT-16 pending, speaker voting | Part of Event Lifecycle |
-| Auto-Publishing Engine | 📋 `[PLANNED]` | BAT-16 pending, CDN integration | Part of Event Lifecycle |
-| Event Finalization | 📋 `[PLANNED]` | BAT-16 pending, AGENDA_FINALIZED state | Part of Event Lifecycle |
-| Event Completion | 📋 `[PLANNED]` | BAT-16 pending, EVENT_COMPLETED→ARCHIVED | Part of Event Lifecycle |
+| Newsletter Integration | ✅ `[IMPLEMENTED]` | 3 newsletter task templates | Part of Event Lifecycle |
+| Overflow Management | ✅ `[IMPLEMENTED]` | Speaker voting and backup slots | Part of Event Lifecycle |
 | Task System | ✅ `[IMPLEMENTED]` | Configurable tasks with triggers | [Task System](../workflow/task-system.md) |
 | Partner Meetings | ✅ `[IMPLEMENTED]` | Coordinate sponsor logistics | [Task System](../workflow/task-system.md) |
+
+---
+
+## Deferred Features (Phase 2+)
+
+**Status**: 📦 Deferred to Phase 2+ (Post-MVP)
+
+The following features were planned but deferred to Phase 2+ to deliver MVP faster:
+
+### Epic 6: Speaker Self-Service Portal
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Automated Speaker Invitations | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Automated email invitations with unique response links |
+| Speaker Self-Service Response Portal | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Web form for speakers to respond to invitations |
+| Speaker Material Self-Submission | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Direct speaker upload of presentations |
+| Speaker Dashboard (View-Only) | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Speaker view of upcoming/past presentations |
+| Automated Deadline Reminders | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Auto-reminders for material submission deadlines |
+
+**Current Workflow**: Organizers manually coordinate all speaker activities (Epic 5).
+
+### Epic 7: Attendee Experience Enhancements
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Personal Attendee Dashboard | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Bookmarks, learning progress, recommendations |
+| Content Discovery (Advanced) | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Personal content bookmarks and collections |
+| Mobile PWA | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Progressive Web App with offline capabilities |
+| Advanced User Preferences | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Content language, experience level, formats |
+| Language & Accessibility | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | UI language, date formats, accessibility options |
+
+**Current Functionality**: Public archive browsing and registration flow operational (Epic 4).
+
+### Epic 8: Partner Analytics & Voting
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Partner Analytics Dashboard | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Employee attendance, engagement, ROI metrics |
+| Sophisticated Topic Voting | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Weighted voting based on partnership tier |
+| Automated Meeting Coordination | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Calendar integration, RSVP tracking |
+
+**Current Functionality**: Basic partner meeting coordination operational (Epic 5 Story 5.15).
 
 ---
 

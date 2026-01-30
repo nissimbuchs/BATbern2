@@ -148,6 +148,7 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 label={getWorkflowStateLabel(event.workflowState || 'CREATED', t)}
                 color="primary"
                 size="small"
+                data-testid="workflow-status-badge"
               />
               <Typography variant="body2" color="text.secondary">
                 {t('eventPage.overview.step', 'Step')} {eventUI.workflowStep || 1}/16

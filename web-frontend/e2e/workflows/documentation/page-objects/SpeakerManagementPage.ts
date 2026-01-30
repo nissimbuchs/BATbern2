@@ -62,37 +62,30 @@ export class SpeakerManagementPage {
     this.addToPoolButton = page.getByTestId('add-to-pool-button');
     this.proceedToOutreachButton = page.getByTestId('proceed-to-outreach-button');
 
-    // Speaker Outreach (lines 90-123)
-    this.contactMethodSelect = page.getByRole('combobox');
-    this.contactNotesField = page.getByRole('textbox', { name: 'Notizen' });
-    this.markAsContactedButton = page.getByRole('button', { name: 'Als kontaktiert markieren' });
+    // Speaker Outreach (language-independent testIds)
+    this.contactMethodSelect = page.getByTestId('contact-method-select');
+    this.contactNotesField = page.getByTestId('contact-notes-field');
+    this.markAsContactedButton = page.getByTestId('mark-contacted-button');
     this.backdropClose = page.locator('.MuiBackdrop-root');
 
-    // Speaker Status (lines 171, 189-191)
-    this.changeStatusButton = page.getByRole('button', { name: 'Status ändern' });
-    this.kanbanViewButton = page.getByRole('button', { name: 'Kanban' });
-    this.sessionsViewButton = page.getByRole('button', { name: 'Sessions view' });
+    // Speaker Status (language-independent testIds)
+    this.changeStatusButton = page.getByTestId('status-change-confirm');
+    this.kanbanViewButton = page.getByTestId('kanban-view-toggle');
+    this.sessionsViewButton = page.getByTestId('sessions-view-toggle');
 
-    // Content Submission (lines 195-232)
-    this.speakerSearchField = page.getByRole('combobox', { name: 'Sprecher suchen' });
-    this.presentationTitleField = page.getByRole('textbox', { name: 'Präsentationstitel' });
-    this.presentationAbstractField = page.getByRole('textbox', {
-      name: 'Präsentationszusammenfassung',
-    });
-    this.submitContentButton = page.getByRole('button', { name: 'Sprecher-Inhalt einreichen' });
+    // Content Submission (language-independent testIds)
+    this.speakerSearchField = page.getByTestId('speaker-search-field');
+    this.presentationTitleField = page.getByTestId('presentation-title-field');
+    this.presentationAbstractField = page.getByTestId('presentation-abstract-field');
+    this.submitContentButton = page.getByTestId('submit-speaker-content-button');
 
-    // Content Approval (lines 237-241)
-    this.approveButton = page.getByRole('button', { name: 'Genehmigen' });
+    // Content Approval (language-independent testIds)
+    this.approveButton = page.getByTestId('approve-content-button');
 
-    // Slot Assignment (lines 243-245)
-    this.manageSlotAssignmentsButton = page.getByRole('button', {
-      name: 'Slot-Zuweisungen verwalten',
-    });
+    // Slot Assignment (language-independent testIds)
+    this.manageSlotAssignmentsButton = page.getByTestId('manage-slot-assignments-button');
     this.dragHandle = page.getByTestId('drag-handle');
-    this.backToEventButton = page.getByRole('button', {
-      name: 'Zurück zur Veranstaltung',
-      exact: true,
-    });
+    this.backToEventButton = page.getByTestId('back-to-event-button');
   }
 
   /**
@@ -172,16 +165,17 @@ export class SpeakerManagementPage {
    */
   async contactSpeaker(
     displayName: string,
-    contactMethod: 'Telefon' | 'E-Mail' | 'Persönlich',
+    contactMethod: 'phone' | 'email' | 'in_person',
     notes: string
   ): Promise<void> {
     // Click speaker card to open contact dialog
     await this.getSpeakerCard(displayName).click();
     await this.page.waitForTimeout(300);
 
-    // Select contact method
+    // Select contact method (language-independent testIds)
     await this.contactMethodSelect.click();
-    await this.page.getByRole('option', { name: contactMethod }).click();
+    await this.page.waitForTimeout(300);
+    await this.page.getByTestId(`contact-method-${contactMethod}`).click();
 
     // Add notes
     await this.contactNotesField.fill(notes);

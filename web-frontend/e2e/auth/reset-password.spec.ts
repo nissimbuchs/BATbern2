@@ -17,20 +17,24 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { BASE_URL } from '../../playwright.config';
 
 // Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@batbern.ch';
 // Note: In real scenarios, the code would come from email. For testing, you may need to use a test code
 // or integrate with AWS Cognito to get a valid test code
 const TEST_CODE = process.env.E2E_TEST_CODE || '123456';
+
+// Skip tests that require Cognito integration in local dev
+const HAS_COGNITO_INTEGRATION =
+  process.env.CI === 'true' || process.env.ENABLE_COGNITO_TESTS === 'true';
 
 /**
  * Helper: Navigate to reset password page with email parameter
  */
 async function navigateToResetPassword(page: Page, email: string) {
   await page.goto(`${BASE_URL}/auth/reset-password?email=${encodeURIComponent(email)}`);
-  await expect(page.locator('h4')).toContainText(/set new password/i);
+  await expect(page.locator('[data-testid="reset-password-title"]')).toBeVisible();
 }
 
 /**
@@ -67,7 +71,7 @@ test.describe('Reset Password - Basic Flow', () => {
     await expect(page.getByLabel(/6-digit.*code/i)).toBeVisible();
     await expect(page.getByLabel(/new password/i)).toBeVisible();
     await expect(page.getByLabel(/confirm password/i)).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toContainText(/reset password/i);
+    await expect(page.locator('[data-testid="reset-password-submit"]')).toBeVisible();
     await expect(page.getByText(/back to login/i)).toBeVisible();
   });
 
@@ -265,6 +269,10 @@ test.describe('Reset Password - Accessibility', () => {
 // ============================================================================
 
 test.describe('Reset Password - Integration', () => {
+  // Skip entire group if Cognito integration not available
+  if (!HAS_COGNITO_INTEGRATION) {
+    test.skip();
+  }
   test('should_linkBackToForgotPassword_when_codeExpired', async ({ page }) => {
     // AC18: Link to request new code when code is expired
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -283,6 +291,10 @@ test.describe('Reset Password - Integration', () => {
 // ============================================================================
 
 test.describe('Reset Password - Error Handling', () => {
+  // Skip entire group if Cognito integration not available
+  if (!HAS_COGNITO_INTEGRATION) {
+    test.skip();
+  }
   test.skip('should_showError_when_codeInvalidFromCognito', async ({ page }) => {
     // AC17: Show error for invalid code from Cognito
     // This test requires actual Cognito integration

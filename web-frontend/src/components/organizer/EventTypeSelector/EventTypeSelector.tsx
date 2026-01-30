@@ -116,7 +116,11 @@ export const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
         data-testid="event-type-selector"
       >
         {eventTypes?.map((config) => (
-          <MenuItem key={config.type} value={config.type}>
+          <MenuItem
+            key={config.type}
+            value={config.type}
+            data-testid={`event-type-option-${config.type.toLowerCase()}`}
+          >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 2 }}>
               <Typography variant="body1">{formatEventTypeName(config.type, t)}</Typography>
               <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>

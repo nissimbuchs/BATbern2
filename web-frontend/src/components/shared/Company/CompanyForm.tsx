@@ -314,6 +314,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       fullWidth
       aria-labelledby="company-form-title"
       aria-describedby="company-form-description"
+      data-testid="company-form-dialog"
     >
       <DialogTitle id="company-form-title">
         {mode === 'create' ? t('company.form.createTitle') : t('company.form.editTitle')}
@@ -346,7 +347,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 error={!!errors.name}
                 helperText={errors.name?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': t('company.fields.name') }}
+                inputProps={{
+                  'aria-label': t('company.fields.name'),
+                  'data-testid': 'company-name-field',
+                }}
               />
             )}
           />
@@ -364,7 +368,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 error={!!errors.displayName}
                 helperText={errors.displayName?.message}
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': t('company.fields.displayName') }}
+                inputProps={{
+                  'aria-label': t('company.fields.displayName'),
+                  'data-testid': 'company-display-name-field',
+                }}
               />
             )}
           />
@@ -383,7 +390,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 helperText={errors.swissUID?.message || t('company.form.helpText.swissUID')}
                 disabled={!hasEditPermission}
                 placeholder={t('company.placeholders.swissUID')}
-                inputProps={{ 'aria-label': t('company.fields.swissUID') }}
+                inputProps={{
+                  'aria-label': t('company.fields.swissUID'),
+                  'data-testid': 'company-swiss-uid-field',
+                }}
               />
             )}
           />
@@ -402,7 +412,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 helperText={errors.website?.message}
                 disabled={!hasEditPermission}
                 placeholder={t('company.placeholders.website')}
-                inputProps={{ 'aria-label': t('company.fields.website') }}
+                inputProps={{
+                  'aria-label': t('company.fields.website'),
+                  'data-testid': 'company-website-field',
+                }}
               />
             )}
           />
@@ -430,6 +443,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                     inputProps={{
                       ...params.inputProps,
                       'aria-label': t('company.fields.industry'),
+                      'data-testid': 'company-industry-field',
                     }}
                   />
                 )}
@@ -456,7 +470,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                   t('company.form.characterCount', { count: description.length, max: 500 })
                 }
                 disabled={!hasEditPermission}
-                inputProps={{ 'aria-label': t('company.fields.description') }}
+                inputProps={{
+                  'aria-label': t('company.fields.description'),
+                  'data-testid': 'company-description-field',
+                }}
               />
             )}
           />
@@ -499,6 +516,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           aria-label={
             mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')
           }
+          data-testid="submit-company-button"
         >
           {mode === 'create' ? t('company.form.saveCreate') : t('company.form.saveChanges')}
         </Button>

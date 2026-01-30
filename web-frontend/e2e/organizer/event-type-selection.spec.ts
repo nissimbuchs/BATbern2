@@ -2,32 +2,37 @@
  * E2E Tests for Event Type Selection
  * Story 5.1: Event Type Definition
  *
- * IMPORTANT: These tests are RED PHASE tests (TDD). They should FAIL until
- * the Event Type functionality is fully implemented.
+ * STATUS: Story 5.1 EventTypeSelector is IMPLEMENTED
+ *
+ * Implementation Status:
+ * - EventTypeSelector component ✅ IMPLEMENTED (with data-testid)
+ * - Event type options ✅ IMPLEMENTED (with data-testid="event-type-option-{type}")
+ * - EventForm integration ✅ IMPLEMENTED
  *
  * Requirements:
  * 1. Event Management Service with event types endpoints deployed
  * 2. PostgreSQL database with event_types table
- * 3. EventForm component with EventTypeSelector
+ * 3. EventForm component with EventTypeSelector ✅ IMPLEMENTED
  * 4. SlotTemplatePreview component
- * 5. QuickActions sidebar with Event Types button
+ * 5. QuickActions sidebar with Event Types button ✅ IMPLEMENTED
  * 6. EventTypeConfigurationAdmin page
  *
  * Setup Instructions:
- * 1. Install Playwright: npm install -D @playwright/test
- * 2. Initialize Playwright: npx playwright install
- * 3. Configure playwright.config.ts with base URL
- * 4. Set up test environment variables (see .env.test.example)
- * 5. Run: npx playwright test e2e/organizer/event-type-selection.spec.ts
+ * 1. Run: npx playwright test e2e/organizer/event-type-selection.spec.ts
+ *
+ * LANGUAGE-INDEPENDENT SELECTORS (BAT-93):
+ * ✅ Fixed: "New Event" button → [data-testid="quick-action-new-event"]
+ * ✅ Fixed: Event type "Evening Event" → [data-testid="event-type-option-evening"]
+ * ✅ Fixed: "Create Event" → button[type="submit"]
+ * ✅ EventTypeSelector already has data-testid="event-type-selector"
+ * ⚠️  TODO: Some button selectors in test body still use :has-text() and need testid attributes
  */
 
 import { test, expect } from '@playwright/test';
+import { BASE_URL, API_URL } from '../../playwright.config';
 
-// Test configuration
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:8100';
-const API_URL = process.env.E2E_API_URL || 'http://localhost:8080';
-
-// Test data - matches OpenAPI spec and database seed data (for future use)
+// Test data - reference values only (NOT used for assertions)
+// Event type configurations are user-editable, so tests should NOT assert on specific values
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EVENT_TYPES = {
   FULL_DAY: {
@@ -93,7 +98,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await page.goto(`${BASE_URL}/organizer/events`);
 
       // Click "New Event" button
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Wait for EventForm modal to open
       await expect(page.locator('[role="dialog"]')).toBeVisible();
@@ -108,7 +113,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
 
     test('should show all three event types in dropdown', async ({ page }) => {
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Open event type dropdown
       await page.click('[data-testid="event-type-selector"]');
@@ -116,12 +121,14 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       // Verify all three event types are present
       await expect(page.locator('[role="option"]:has-text("Full Day Event")')).toBeVisible();
       await expect(page.locator('[role="option"]:has-text("Afternoon Event")')).toBeVisible();
-      await expect(page.locator('[role="option"]:has-text("Evening Event")')).toBeVisible();
+      await expect(
+        page.locator('[role="option"][data-testid="event-type-option-evening"]')
+      ).toBeVisible();
     });
 
     test('should display slot configuration details for selected event type', async ({ page }) => {
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Select "Full Day Event"
       await page.click('[data-testid="event-type-selector"]');
@@ -174,7 +181,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       );
 
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Verify API was called
       const request = await apiRequest;
@@ -188,7 +195,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       });
 
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Verify loading indicator appears
       const loading = page.locator('[data-testid="event-type-selector-loading"]');
@@ -209,7 +216,7 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       });
 
       await page.goto(`${BASE_URL}/organizer/events`);
-      await page.click('button:has-text("New Event")');
+      await page.click('[data-testid="quick-action-new-event"]');
 
       // Verify error message is displayed
       await expect(page.locator('[role="alert"]')).toContainText('Failed to load event types');
@@ -240,10 +247,23 @@ test.describe('Event Type Selection (Story 5.1)', () => {
       await expect(page.locator('[role="dialog"]')).toBeVisible();
       await expect(page.locator('h2')).toContainText('Edit Full Day Event Configuration');
 
-      // Verify all fields are editable
-      await expect(page.locator('input[name="minSlots"]')).toHaveValue('6');
-      await expect(page.locator('input[name="maxSlots"]')).toHaveValue('8');
-      await expect(page.locator('input[name="slotDuration"]')).toHaveValue('45');
+      // Verify all fields are editable (values are user-configurable)
+      const minSlotsInput = page.locator('input[name="minSlots"]');
+      const maxSlotsInput = page.locator('input[name="maxSlots"]');
+      const slotDurationInput = page.locator('input[name="slotDuration"]');
+
+      await expect(minSlotsInput).toBeVisible();
+      await expect(maxSlotsInput).toBeVisible();
+      await expect(slotDurationInput).toBeVisible();
+
+      // Verify values are numeric and valid
+      const minSlots = parseInt(await minSlotsInput.inputValue());
+      const maxSlots = parseInt(await maxSlotsInput.inputValue());
+      const slotDuration = parseInt(await slotDurationInput.inputValue());
+
+      expect(minSlots).toBeGreaterThan(0);
+      expect(maxSlots).toBeGreaterThanOrEqual(minSlots);
+      expect(slotDuration).toBeGreaterThanOrEqual(15);
     });
 
     test('should show live preview when editing configuration', async ({ page }) => {
@@ -283,12 +303,14 @@ test.describe('Event Types API Contract Tests (Story 5.1)', () => {
       const eventTypes: EventSlotConfigurationResponse[] = await response.json();
       expect(eventTypes).toHaveLength(3);
 
-      // Verify structure matches OpenAPI spec
+      // Verify structure matches OpenAPI spec (values are user-configurable)
       const fullDay = eventTypes.find((et) => et.type === 'FULL_DAY');
       expect(fullDay).toBeDefined();
-      expect(fullDay?.minSlots).toBe(6);
-      expect(fullDay?.maxSlots).toBe(8);
-      expect(fullDay?.slotDuration).toBe(45);
+
+      // After toBeDefined(), we can safely assert fullDay exists
+      expect(fullDay!.minSlots).toBeGreaterThan(0);
+      expect(fullDay!.maxSlots).toBeGreaterThanOrEqual(fullDay!.minSlots);
+      expect(fullDay!.slotDuration).toBeGreaterThanOrEqual(15);
     });
   });
 
@@ -300,8 +322,8 @@ test.describe('Event Types API Contract Tests (Story 5.1)', () => {
 
       const eventType: EventSlotConfigurationResponse = await response.json();
       expect(eventType.type).toBe('FULL_DAY');
-      expect(eventType.minSlots).toBe(6);
-      expect(eventType.maxSlots).toBe(8);
+      expect(eventType.minSlots).toBeGreaterThan(0);
+      expect(eventType.maxSlots).toBeGreaterThanOrEqual(eventType.minSlots);
     });
 
     test('should return 404 for non-existent event type', async ({ request }) => {

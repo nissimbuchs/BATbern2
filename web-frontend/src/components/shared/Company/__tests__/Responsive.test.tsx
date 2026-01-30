@@ -11,6 +11,43 @@ import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import CompanyManagementScreen from '../CompanyManagementScreen';
 import CompanyFilters from '../CompanyFilters';
+import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
+
+// Mock useAuth hook for BaseLayout
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      userId: 'user-123',
+      email: 'test@batbern.ch',
+      emailVerified: true,
+      role: 'organizer',
+      companyId: 'company-123',
+      preferences: {
+        language: 'de',
+        theme: 'light',
+        notifications: { email: true, sms: false, push: true },
+        privacy: { showProfile: true, allowMessages: true },
+      },
+      issuedAt: 0,
+      expiresAt: 0,
+      tokenId: '',
+    },
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    signOut: vi.fn(),
+  })),
+}));
+
+// Mock useBreakpoints hook for BaseLayout
+vi.mock('@/hooks/useBreakpoints', () => ({
+  useBreakpoints: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+    isLargeDesktop: false,
+  })),
+}));
 
 // Mock the hooks
 vi.mock('@/hooks/useCompanies/useCompanies', () => ({
@@ -105,9 +142,11 @@ const renderWithProviders = (component: React.ReactElement, options: { width?: n
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <BrowserRouter>
-          <Routes>
-            <Route path="/organizer/companies/*" element={component} />
-          </Routes>
+          <BaseLayout>
+            <Routes>
+              <Route path="/organizer/companies/*" element={component} />
+            </Routes>
+          </BaseLayout>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

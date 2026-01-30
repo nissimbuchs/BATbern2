@@ -6,14 +6,17 @@
 <strong>Phase D: Assignment</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
 Duration: 1 week<br>
-State Transitions: QUALITY_REVIEWED → SLOTS_ASSIGNED → AGENDA_PUBLISHED
+Event State Transitions: SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED<br>
+Speaker States: quality_reviewed → confirmed (auto-triggered when slot assigned)
 </div>
 
 ## Overview
 
 Phase D assigns approved speakers to specific time slots and publishes the finalized agenda.
 
-**Key Deliverable**: Published event agenda with complete schedule
+**Key Concept**: When you assign a quality_reviewed speaker to a time slot (sets session.startTime), the speaker automatically transitions to **confirmed** state.
+
+**Key Deliverable**: Published event agenda with complete schedule and all speakers auto-confirmed
 
 ### Slot Assignment
 
@@ -118,7 +121,9 @@ All changes are validated to prevent conflicts.
 
 Once satisfied with the schedule, save the assignments.
 
-Event state: QUALITY_REVIEWED → **SLOTS_ASSIGNED**
+Event state: SPEAKER_IDENTIFICATION → **SLOT_ASSIGNMENT**
+
+**Auto-confirmation**: All quality_reviewed speakers with assigned slots (session.startTime exists) automatically transition to **confirmed** state.
 
 </div>
 
@@ -168,7 +173,10 @@ Attendees can now view:
 - Speaker information
 - Track assignments
 
-Event state: SLOTS_ASSIGNED → **AGENDA_PUBLISHED**
+Event state: SLOT_ASSIGNMENT → **AGENDA_PUBLISHED**
+
+**Auto-created Tasks**:
+- Newsletter: Speakers (due: 30 days before event)
 
 Phase D complete! ✅
 

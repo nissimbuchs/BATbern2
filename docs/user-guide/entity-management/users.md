@@ -1,6 +1,6 @@
 # User Management
 
-> Manage organizers, speakers, attendees, and administrators
+> Manage organizers, speakers, attendees, and partners
 
 <span class="feature-status implemented">Implemented</span>
 
@@ -11,21 +11,6 @@ Users are individuals with BATbern accounts. Each user has exactly one **role** 
 ## User Roles
 
 BATbern supports 4 distinct roles:
-
-### 🔴 Admin
-
-<span style="background: #E74C3C; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">ADMIN</span>
-
-**Full system access** - Complete control over all platform features.
-
-**Permissions**:
-- ✅ All Organizer permissions
-- ✅ Manage user roles (promote/demote)
-- ✅ System configuration
-- ✅ Access audit logs
-- ✅ Manage authentication settings
-
-**Typical Users**: System administrators, platform maintainers
 
 ### 🔵 Organizer
 
@@ -40,7 +25,7 @@ BATbern supports 4 distinct roles:
 - ✅ Coordinate speaker outreach
 - ✅ Manage partner relationships
 - ✅ View analytics and reports
-- ❌ Cannot promote users to Admin
+- ✅ Full system access
 
 **Typical Users**: BATbern event coordinators, conference planners
 
@@ -78,6 +63,22 @@ BATbern supports 4 distinct roles:
 
 **Typical Users**: Architects attending BATbern conferences
 
+### 🟣 Partner
+
+<span style="background: #9B59B6; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">PARTNER</span>
+
+**Partner portal access** - Manage partner profile and coordinate with event organizers.
+
+**Permissions**:
+- ✅ View and edit own partner profile
+- ✅ View events where partner is involved
+- ✅ Schedule meetings with attendees
+- ✅ Access attendee lists (GDPR-compliant)
+- ❌ Cannot access entity management
+- ❌ Cannot access workflow
+
+**Typical Users**: Sponsoring companies, collaborating organizations
+
 ## Creating a User
 
 <div class="alert info">
@@ -111,10 +112,11 @@ Complete the user creation form:
 - **Phone** - Contact number (optional)
 
 **Profile Information**:
-- **Role*** - Select one: Admin, Organizer, Speaker, Attendee
+- **Role*** - Select one: Organizer, Speaker, Attendee, Partner
 - **Company** - Select from autocomplete dropdown (optional)
 - **Job Title** - Position at company (optional)
 - **Bio** - Short biography (for speakers)
+- **Cognito User ID** - Automatically populated from AWS Cognito authentication (read-only)
 
 **Account Settings**:
 - **Send Welcome Email** - Check to send invitation email
@@ -142,8 +144,9 @@ Increase a user's role level:
 **Allowed Promotions** (by Organizers):
 - ✅ Attendee → Speaker
 - ✅ Attendee → Organizer
+- ✅ Attendee → Partner
 - ✅ Speaker → Organizer
-- ❌ Anyone → Admin (requires existing Admin)
+- ✅ Partner → Organizer
 
 <div class="step" data-step="1">
 
@@ -195,21 +198,17 @@ Decrease a user's role level:
 **Allowed Demotions** (by Organizers):
 - ✅ Organizer → Speaker
 - ✅ Organizer → Attendee
+- ✅ Organizer → Partner
 - ✅ Speaker → Attendee
-- ❌ Admin → Anyone (requires existing Admin)
+- ✅ Partner → Attendee
 
 Process is the same as promotion, with appropriate confirmation dialog.
 
 ### Role Restrictions
 
-<div class="alert warning">
-⚠️ <strong>Warning:</strong> Only Admins can create or demote other Admins. This prevents accidental lockout.
+<div class="alert info">
+ℹ️ <strong>Note:</strong> All role changes are performed by Organizers who have full system access.
 </div>
-
-**Minimum Admin Rule**:
-- System must have at least 1 Admin at all times
-- Cannot demote or delete the last Admin account
-- Prevents system lockout scenarios
 
 ## User Sync from Cognito
 
@@ -468,10 +467,10 @@ User list view shows statistics:
 
 ```
 Total Users: 237
-├─ Admins: 2
 ├─ Organizers: 8
 ├─ Speakers: 45
-└─ Attendees: 182
+├─ Attendees: 172
+└─ Partners: 12
 ```
 
 User detail view shows activity:
@@ -556,14 +555,14 @@ Behavior:
 - Check if user exists (search by email)
 - User may need to use a different email
 
-### "Cannot demote last Admin"
+### "Role change not allowed"
 
-**Problem**: Attempting to demote or delete the only Admin account.
+**Problem**: System prevents certain role changes.
 
 **Solution**:
-- Promote another user to Admin first
-- Then demote or delete the original Admin
-- System always requires at least 1 Admin
+- Verify you have Organizer permissions
+- Some role changes may have business logic restrictions
+- Check user's current assignments (e.g., active speaker cannot be demoted during event)
 
 ### "User sync failed"
 

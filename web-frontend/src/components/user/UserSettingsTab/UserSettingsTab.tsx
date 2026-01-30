@@ -108,7 +108,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
             label="Email"
             value={email || ''}
             InputProps={{ readOnly: true }}
-            helperText="Verified (managed by Cognito)"
+            helperText={<span data-testid="email-status">Verified (managed by Cognito)</span>}
             margin="normal"
             data-testid="email-field"
           />

@@ -158,6 +158,7 @@ export const PartnerCreateEditModal: React.FC = () => {
         fullWidth
         fullScreen={window.innerWidth < 640}
         TransitionProps={{ timeout: 200 }}
+        data-testid="partner-create-edit-modal"
       >
         <DialogTitle>{isCreate ? t('modal.createTitle') : t('modal.editTitle')}</DialogTitle>
 
@@ -250,7 +251,7 @@ export const PartnerCreateEditModal: React.FC = () => {
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={handleClose} disabled={isPending}>
+          <Button onClick={handleClose} disabled={isPending} data-testid="cancel-partner-button">
             {t('modal.actions.cancel')}
           </Button>
           <Button
@@ -258,6 +259,7 @@ export const PartnerCreateEditModal: React.FC = () => {
             variant="contained"
             disabled={isPending || (!isCreate && !isDirty)}
             startIcon={isPending ? <CircularProgress size={20} role="progressbar" /> : null}
+            data-testid="save-partner-button"
           >
             {isPending ? t('modal.actions.saving') : t('modal.actions.save')}
           </Button>

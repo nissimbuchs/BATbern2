@@ -111,6 +111,7 @@ export const PartnerList: React.FC = () => {
             component="nav"
             role="navigation"
             aria-label="Partner list pagination"
+            data-testid="partner-pagination"
             sx={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -121,22 +122,42 @@ export const PartnerList: React.FC = () => {
               borderColor: 'divider',
             }}
           >
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
               Page {(pagination?.page || 0) + 1} of {pagination?.totalPages || 1} •{' '}
               {pagination?.totalElements || 0} partners
             </Typography>
 
             <ButtonGroup variant="outlined" size="small">
-              <Button onClick={handleFirstPage} disabled={isFirstPage} aria-label="First page">
+              <Button
+                onClick={handleFirstPage}
+                disabled={isFirstPage}
+                aria-label="First page"
+                data-testid="first-page-button"
+              >
                 <FirstPage />
               </Button>
-              <Button onClick={handlePrevPage} disabled={isFirstPage} aria-label="Previous page">
+              <Button
+                onClick={handlePrevPage}
+                disabled={isFirstPage}
+                aria-label="Previous page"
+                data-testid="prev-page-button"
+              >
                 <NavigateBefore />
               </Button>
-              <Button onClick={handleNextPage} disabled={isLastPage} aria-label="Next page">
+              <Button
+                onClick={handleNextPage}
+                disabled={isLastPage}
+                aria-label="Next page"
+                data-testid="next-page-button"
+              >
                 <NavigateNext />
               </Button>
-              <Button onClick={handleLastPage} disabled={isLastPage} aria-label="Last page">
+              <Button
+                onClick={handleLastPage}
+                disabled={isLastPage}
+                aria-label="Last page"
+                data-testid="last-page-button"
+              >
                 <LastPage />
               </Button>
             </ButtonGroup>
@@ -160,6 +181,7 @@ export const PartnerList: React.FC = () => {
           component="nav"
           role="navigation"
           aria-label="Partner list pagination"
+          data-testid="partner-pagination"
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
@@ -170,22 +192,42 @@ export const PartnerList: React.FC = () => {
             borderColor: 'divider',
           }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" data-testid="pagination-info">
             Page {(pagination?.page || 0) + 1} of {pagination?.totalPages || 1} •{' '}
             {pagination?.totalElements || 0} partners
           </Typography>
 
           <ButtonGroup variant="outlined" size="small">
-            <Button onClick={handleFirstPage} disabled={isFirstPage} aria-label="First page">
+            <Button
+              onClick={handleFirstPage}
+              disabled={isFirstPage}
+              aria-label="First page"
+              data-testid="first-page-button"
+            >
               <FirstPage />
             </Button>
-            <Button onClick={handlePrevPage} disabled={isFirstPage} aria-label="Previous page">
+            <Button
+              onClick={handlePrevPage}
+              disabled={isFirstPage}
+              aria-label="Previous page"
+              data-testid="prev-page-button"
+            >
               <NavigateBefore />
             </Button>
-            <Button onClick={handleNextPage} disabled={isLastPage} aria-label="Next page">
+            <Button
+              onClick={handleNextPage}
+              disabled={isLastPage}
+              aria-label="Next page"
+              data-testid="next-page-button"
+            >
               <NavigateNext />
             </Button>
-            <Button onClick={handleLastPage} disabled={isLastPage} aria-label="Last page">
+            <Button
+              onClick={handleLastPage}
+              disabled={isLastPage}
+              aria-label="Last page"
+              data-testid="last-page-button"
+            >
               <LastPage />
             </Button>
           </ButtonGroup>
