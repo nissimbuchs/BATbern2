@@ -48,12 +48,14 @@ interface ResponseFormData {
 const InvitationResponsePage = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const actionParam = searchParams.get('action'); // 'accept' or 'decline' from email link
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [selectedResponse, setSelectedResponse] = useState<SpeakerResponseType | null>(null);
   const [reason, setReason] = useState('');
   const [preferences, setPreferences] = useState<SpeakerResponsePreferences>({});
   const [responseResult, setResponseResult] = useState<SpeakerResponseResult | null>(null);
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
 
   // Validate token on load
   const {
@@ -98,6 +100,18 @@ const InvitationResponsePage = () => {
       setPageState('error');
     }
   }, [isLoading, validationError, invitation]);
+
+  // Auto-select response based on action parameter from email link
+  useEffect(() => {
+    if (pageState === 'form' && actionParam && !hasAutoSelected) {
+      setHasAutoSelected(true);
+      if (actionParam === 'accept') {
+        setSelectedResponse('ACCEPT');
+      } else if (actionParam === 'decline') {
+        setSelectedResponse('DECLINE');
+      }
+    }
+  }, [pageState, actionParam, hasAutoSelected]);
 
   // No token in URL
   if (!token) {

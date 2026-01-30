@@ -60,9 +60,10 @@ export interface SpeakerStatusLanesProps {
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void; // Callback for speaker card clicks (for statuses without specific drawers)
 }
 
-// Status color mapping (Story 5.5 - Extended to 7 lanes)
+// Status color mapping (Story 5.5 - Extended to 8 lanes, Story 6.1b added INVITED)
 const STATUS_COLORS: Record<string, string> = {
   IDENTIFIED: '#9e9e9e', // Grey
+  INVITED: '#2196f3', // Blue (NEW - Story 6.1b: automated invitation sent)
   CONTACTED: '#ffc107', // Amber
   READY: '#ff9800', // Orange
   ACCEPTED: '#4caf50', // Green
@@ -72,9 +73,10 @@ const STATUS_COLORS: Record<string, string> = {
   DECLINED: '#f44336', // Red
 };
 
-// Status lanes to display (Story 5.5 - Extended from 5 to 7 lanes)
+// Status lanes to display (Story 5.5 - Extended from 5 to 8 lanes, Story 6.1b added INVITED)
 const STATUS_LANES: SpeakerWorkflowState[] = [
   'IDENTIFIED',
+  'INVITED', // NEW - Story 6.1b: automated invitation sent
   'CONTACTED',
   'READY',
   'ACCEPTED',

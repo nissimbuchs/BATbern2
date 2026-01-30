@@ -37,7 +37,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -185,11 +184,13 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         }
 
         /**
-         * AC1: Should indicate no session when speaker has no session assigned
+         * AC1: ACCEPTED speaker without session can still submit content
+         * Note: With Story 6.3 changes, ACCEPTED speakers can submit content even without
+         * a pre-assigned session. The session will be created on-the-fly during submission.
          */
         @Test
-        void should_indicateNoSession_when_speakerHasNoSession() throws Exception {
-            // Given - Speaker without session
+        void should_allowContentSubmission_when_acceptedSpeakerHasNoSession() throws Exception {
+            // Given - ACCEPTED speaker without session
             testSpeakerPool.setSessionId(null);
             speakerPoolRepository.save(testSpeakerPool);
 
@@ -197,8 +198,8 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                             .param("token", validToken))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.hasSessionAssigned", is(false)))
-                    .andExpect(jsonPath("$.canSubmitContent", is(false)))
-                    .andExpect(jsonPath("$.sessionTitle", nullValue()));
+                    .andExpect(jsonPath("$.canSubmitContent", is(true))) // ACCEPTED speakers can submit
+                    .andExpect(jsonPath("$.sessionTitle", is("Your Presentation"))); // Default title for sessionless
         }
 
         /**
@@ -581,11 +582,13 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
         }
 
         /**
-         * AC1: Should return 400 when no session assigned
+         * AC1: ACCEPTED speaker without session can submit and session is created
+         * Note: With Story 6.3 changes, ACCEPTED speakers can submit content even without
+         * a pre-assigned session. The session will be created on-the-fly during submission.
          */
         @Test
-        void should_return400_when_noSessionAssigned() throws Exception {
-            // Given - Remove session assignment
+        void should_createSessionOnSubmit_when_acceptedSpeakerHasNoSession() throws Exception {
+            // Given - ACCEPTED speaker without session
             testSpeakerPool.setSessionId(null);
             speakerPoolRepository.save(testSpeakerPool);
 
@@ -598,7 +601,11 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                                     "contentAbstract": "My abstract"
                                 }
                                 """.formatted(validToken)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isCreated()); // Session created on-the-fly
+
+            // Verify session was created and linked
+            SpeakerPool updatedSpeaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
+            assertThat(updatedSpeaker.getSessionId()).isNotNull();
         }
 
         /**

@@ -267,17 +267,17 @@ export default function ContentSubmissionPage() {
     );
   }
 
-  // AC1: No session assigned
-  if (!contentInfo?.hasSessionAssigned) {
+  // AC1: Cannot submit content (speaker not in correct state)
+  if (!contentInfo?.canSubmitContent) {
     return (
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="max-w-md w-full bg-gray-800 rounded-lg p-8 text-center">
             <div className="text-yellow-400 text-6xl mb-4">!</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Session Not Assigned</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">Cannot Submit Content</h1>
             <p className="text-gray-400">
-              Your session has not been assigned yet. Please contact the organizer to have your
-              session assigned before you can submit content.
+              You cannot submit content at this time. Please accept the invitation first or contact
+              the organizer for assistance.
             </p>
             <div className="mt-6 p-4 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-400">

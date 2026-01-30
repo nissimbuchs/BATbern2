@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -14,6 +15,7 @@ import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class ContentSubmissionService {
     private final MagicLinkService magicLinkService;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
+    private final SessionUserRepository sessionUserRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SpeakerStatusHistoryRepository statusHistoryRepository;
@@ -84,7 +87,11 @@ public class ContentSubmissionService {
             }
         }
 
-        if (!hasSession) {
+        // ACCEPTED speakers can submit content even without a session
+        // (session will be created on submission via SpeakerContentSubmissionService)
+        boolean canSubmit = hasSession || speaker.getStatus() == SpeakerWorkflowState.ACCEPTED;
+
+        if (!canSubmit) {
             return SpeakerContentInfo.noSession(
                     validation.speakerName(),
                     validation.eventCode(),
@@ -113,9 +120,9 @@ public class ContentSubmissionService {
                 .speakerName(validation.speakerName())
                 .eventCode(validation.eventCode())
                 .eventTitle(validation.eventTitle())
-                .hasSessionAssigned(true)
-                .sessionTitle(sessionTitle)
-                .canSubmitContent(true)
+                .hasSessionAssigned(hasSession)
+                .sessionTitle(sessionTitle != null ? sessionTitle : "Your Presentation")
+                .canSubmitContent(canSubmit)
                 .contentStatus(speaker.getContentStatus())
                 .hasDraft(latestSubmission.isPresent())
                 .draftTitle(latestSubmission.map(ContentSubmission::getTitle).orElse(null))
@@ -214,13 +221,47 @@ public class ContentSubmissionService {
         SpeakerPool speaker = speakerPoolRepository.findById(validation.speakerPoolId())
                 .orElseThrow(() -> new IllegalArgumentException("Speaker not found"));
 
-        // AC1: Check session assignment
+        // AC1: Get or create session
+        Session session;
         if (speaker.getSessionId() == null) {
-            throw new IllegalStateException("No session assigned - contact organizer to assign your session");
-        }
+            // ACCEPTED speakers without a session: create one on content submission
+            if (speaker.getStatus() != SpeakerWorkflowState.ACCEPTED) {
+                throw new IllegalStateException("Cannot submit content - speaker must be in ACCEPTED state");
+            }
 
-        Session session = sessionRepository.findById(speaker.getSessionId())
-                .orElseThrow(() -> new IllegalStateException("Session not found - contact organizer"));
+            // Create session with presentation title and abstract
+            String sessionSlug = request.title().trim().toLowerCase()
+                    .replaceAll("[^a-z0-9]+", "-")
+                    .replaceAll("^-|-$", "");
+
+            session = Session.builder()
+                    .eventId(speaker.getEventId())
+                    .eventCode(validation.eventCode())
+                    .sessionSlug(sessionSlug)
+                    .title(request.title().trim())
+                    .description(request.contentAbstract().trim())
+                    .sessionType("presentation")
+                    .build();
+            session = sessionRepository.save(session);
+
+            // Create session_users link
+            SessionUser sessionUser = SessionUser.builder()
+                    .session(session)
+                    .username(speaker.getUsername())
+                    .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
+                    .isConfirmed(false)
+                    .build();
+            sessionUserRepository.save(sessionUser);
+
+            // Update speaker with session reference
+            speaker.setSessionId(session.getId());
+
+            log.info("Created new session {} for speaker {} on content submission",
+                    session.getId(), speaker.getId());
+        } else {
+            session = sessionRepository.findById(speaker.getSessionId())
+                    .orElseThrow(() -> new IllegalStateException("Session not found - contact organizer"));
+        }
 
         // AC8: Determine version (increment if resubmitting)
         Integer maxVersion = contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId());

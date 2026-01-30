@@ -255,6 +255,7 @@
     "statusSummary": "Status Summary",
     "lanes": "Status Lanes",
     "IDENTIFIED": "Identified",
+    "INVITED": "Invited",
     "CONTACTED": "Contacted",
     "READY": "Ready",
     "ACCEPTED": "Accepted",

@@ -255,6 +255,7 @@
     "statusSummary": "Status-Übersicht",
     "lanes": "Status-Ansicht",
     "IDENTIFIED": "Identifiziert",
+    "INVITED": "Eingeladen",
     "CONTACTED": "Kontaktiert",
     "READY": "Bereit",
     "ACCEPTED": "Angenommen",

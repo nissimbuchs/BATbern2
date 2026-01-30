@@ -141,9 +141,11 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
     class SessionAssignmentTests {
 
         @Test
-        @DisplayName("Test 1.1: should_showBlockedMessage_when_noSessionAssigned")
-        void should_returnNoSession_when_speakerHasNoSessionAssigned() {
-            // Given: Token validation returns speaker without session
+        @DisplayName("Test 1.1: ACCEPTED speaker without session can still submit content")
+        void should_allowContentSubmission_when_acceptedSpeakerHasNoSession() {
+            // Given: Token validation returns ACCEPTED speaker without session
+            // Note: With Story 6.3 changes, ACCEPTED speakers can submit content even without
+            // a pre-assigned session. The session will be created on-the-fly during submission.
             when(magicLinkService.validateToken(validToken))
                     .thenReturn(TokenValidationResult.valid(
                             speakerWithoutSession.getId(),
@@ -164,10 +166,10 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
             // When
             SpeakerContentInfo result = contentSubmissionService.getContentInfo(validToken);
 
-            // Then
+            // Then: ACCEPTED speakers without sessions CAN submit content (session created on submit)
             assertThat(result).isNotNull();
             assertThat(result.hasSessionAssigned()).isFalse();
-            assertThat(result.canSubmitContent()).isFalse();
+            assertThat(result.canSubmitContent()).isTrue(); // Changed: ACCEPTED speakers can submit
         }
 
         @Test
@@ -202,9 +204,11 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
         }
 
         @Test
-        @DisplayName("Test 1.3: should_returnError400_when_submitWithoutSession")
-        void should_throwException_when_submitWithoutSession() {
-            // Given: Token validation returns speaker without session
+        @DisplayName("Test 1.3: ACCEPTED speaker without session can submit and creates session")
+        void should_createSessionOnSubmit_when_acceptedSpeakerHasNoSession() {
+            // Given: Token validation returns ACCEPTED speaker without session
+            // Note: With Story 6.3 changes, ACCEPTED speakers can submit content and
+            // a session will be created on-the-fly during submission.
             when(magicLinkService.validateToken(validToken))
                     .thenReturn(TokenValidationResult.valid(
                             speakerWithoutSession.getId(),
@@ -228,10 +232,13 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
                     "Test Abstract that is long enough to be valid."
             );
 
-            // When/Then
-            assertThatThrownBy(() -> contentSubmissionService.submitContent(request))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("session");
+            // When: Submitting content for ACCEPTED speaker without session
+            contentSubmissionService.submitContent(request);
+
+            // Then: Session should be created and linked to speaker
+            SpeakerPool updatedSpeaker = speakerPoolRepository.findById(speakerWithoutSession.getId()).orElseThrow();
+            assertThat(updatedSpeaker.getSessionId()).isNotNull();
+            assertThat(updatedSpeaker.getStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
         }
     }
 

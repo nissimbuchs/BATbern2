@@ -181,13 +181,14 @@ describe('ContentSubmissionPage', () => {
 
   // AC1: Session Assignment Check
   describe('AC1: Session Assignment Check', () => {
-    it('should show blocked message when no session assigned', async () => {
+    it('should show blocked message when cannot submit content', async () => {
+      // When canSubmitContent is false (e.g., speaker not in ACCEPTED state)
       mockGetContentInfo.mockResolvedValue(mockContentInfoNoSession);
 
       renderWithProviders();
 
       await waitFor(() => {
-        expect(screen.getByText(/session not assigned/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /cannot submit content/i })).toBeInTheDocument();
         expect(screen.getByText(/contact.*organizer/i)).toBeInTheDocument();
       });
     });
