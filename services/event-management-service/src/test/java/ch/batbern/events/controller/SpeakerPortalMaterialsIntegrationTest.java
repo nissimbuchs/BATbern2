@@ -1,6 +1,8 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.config.TestAwsConfig;
+import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * NOTE: These are PUBLIC endpoints - no authentication required.
  * The magic link token IS the authentication mechanism.
  */
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 @Transactional
 class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
 
