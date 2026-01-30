@@ -56,14 +56,15 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
     long countByEventIdAndStatus(UUID eventId, SpeakerWorkflowState status);
 
     /**
-     * Find speaker assigned to a specific session.
+     * Find speakers assigned to a specific session.
      *
      * Story 5.7 (BAT-11): Speaker auto-confirmation when session timing assigned
+     * Note: Sessions can have multiple speakers (e.g., panel discussions, co-presenters)
      *
      * @param sessionId the session ID
-     * @return optional speaker pool entry
+     * @return list of speaker pool entries assigned to this session
      */
-    java.util.Optional<SpeakerPool> findBySessionId(UUID sessionId);
+    List<SpeakerPool> findBySessionId(UUID sessionId);
 
     // Story 6.1b: Speaker Invitation System
 

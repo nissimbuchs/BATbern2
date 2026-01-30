@@ -3,6 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.dto.ContentDraftRequest;
 import ch.batbern.events.dto.ContentDraftResponse;
 import ch.batbern.events.dto.ContentSubmitRequest;
@@ -13,6 +15,7 @@ import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,6 +50,7 @@ public class ContentSubmissionService {
     private final SessionRepository sessionRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final SpeakerStatusHistoryRepository statusHistoryRepository;
 
     /**
      * Get content information for the speaker portal.
@@ -222,6 +226,9 @@ public class ContentSubmissionService {
         Integer maxVersion = contentSubmissionRepository.findMaxVersionBySpeakerPoolId(speaker.getId());
         int newVersion = (maxVersion != null) ? maxVersion + 1 : 1;
 
+        // Capture previous status for history tracking
+        SpeakerWorkflowState previousStatus = speaker.getStatus();
+
         // Create submission record
         ContentSubmission submission = ContentSubmission.builder()
                 .speakerPool(speaker)
@@ -235,10 +242,29 @@ public class ContentSubmissionService {
 
         submission = contentSubmissionRepository.save(submission);
 
-        // AC5: Update speaker pool content status
+        // AC5: Update speaker pool status and content status
+        Instant now = Instant.now();
+        speaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);  // Move to "Inhalt eingereicht" column in Kanban
         speaker.setContentStatus("SUBMITTED");
-        speaker.setContentSubmittedAt(Instant.now());
+        speaker.setContentSubmittedAt(now);
         speakerPoolRepository.save(speaker);
+
+        // Record status history for content submission
+        if (previousStatus != SpeakerWorkflowState.CONTENT_SUBMITTED) {
+            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
+            statusHistory.setSpeakerPoolId(speaker.getId());
+            statusHistory.setEventId(session.getEventId());
+            statusHistory.setSessionId(session.getId());
+            statusHistory.setPreviousStatus(previousStatus);
+            statusHistory.setNewStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
+            String changedBy = speaker.getUsername() != null
+                    ? speaker.getUsername() : validation.speakerName();
+            statusHistory.setChangedByUsername(changedBy);
+            statusHistory.setChangeReason("Content submitted via speaker portal (version " + newVersion + ")");
+            statusHistory.setChangedAt(now);
+            statusHistoryRepository.save(statusHistory);
+            log.debug("Created status history for speaker {} transition to CONTENT_SUBMITTED", speaker.getId());
+        }
 
         // AC6: Publish domain event for organizer notification
         SpeakerContentSubmittedEvent event = new SpeakerContentSubmittedEvent(

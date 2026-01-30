@@ -2,7 +2,9 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.BatchInviteRequest;
 import ch.batbern.events.dto.BatchInviteResponse;
 import ch.batbern.events.dto.InviteSpeakerRequest;
@@ -14,7 +16,9 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -54,6 +58,8 @@ public class SpeakerInvitationService {
     private final SpeakerInvitationEmailService emailService;
     private final SecurityContextHelper securityContextHelper;
     private final ApplicationEventPublisher eventPublisher;
+    private final OutreachHistoryRepository outreachHistoryRepository;
+    private final SpeakerStatusHistoryRepository statusHistoryRepository;
 
     /**
      * Invite a speaker to an event.
@@ -190,7 +196,10 @@ public class SpeakerInvitationService {
         // 3. Generate magic link token for response (RESPOND action)
         String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
 
-        // 4. Update speaker pool entry with invitation details
+        // 4. Capture previous status for history tracking
+        SpeakerWorkflowState previousStatus = speaker.getStatus();
+
+        // 5. Update speaker pool entry with invitation details
         Instant invitedAt = Instant.now();
         speaker.setInvitedAt(invitedAt);
         speaker.setResponseDeadline(request.responseDeadline());
@@ -211,8 +220,32 @@ public class SpeakerInvitationService {
                 locale
         );
 
-        // 6. Publish domain event (AC6)
+        // 6. Record outreach history for the automated email invitation
         String currentUser = securityContextHelper.getCurrentUsername();
+        OutreachHistory outreach = new OutreachHistory();
+        outreach.setSpeakerPoolId(updated.getId());
+        outreach.setContactDate(invitedAt);
+        outreach.setContactMethod("email");
+        outreach.setNotes("Automated invitation email sent via speaker portal");
+        outreach.setOrganizerUsername(currentUser != null ? currentUser : "system");
+        outreachHistoryRepository.save(outreach);
+        log.debug("Created outreach history for invitation to speaker {}", username);
+
+        // 7. Record status history for the transition to INVITED
+        if (previousStatus != SpeakerWorkflowState.INVITED) {
+            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
+            statusHistory.setSpeakerPoolId(updated.getId());
+            statusHistory.setEventId(event.getId());
+            statusHistory.setPreviousStatus(previousStatus != null ? previousStatus : SpeakerWorkflowState.IDENTIFIED);
+            statusHistory.setNewStatus(SpeakerWorkflowState.INVITED);
+            statusHistory.setChangedByUsername(currentUser != null ? currentUser : "system");
+            statusHistory.setChangeReason("Invitation email sent");
+            statusHistory.setChangedAt(invitedAt);
+            statusHistoryRepository.save(statusHistory);
+            log.debug("Created status history for speaker {} transition to INVITED", username);
+        }
+
+        // 8. Publish domain event (AC6)
         SpeakerInvitationSentEvent sentEvent = new SpeakerInvitationSentEvent(
                 updated.getId(),
                 eventCode,

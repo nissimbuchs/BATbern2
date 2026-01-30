@@ -2,7 +2,9 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.BatchInviteRequest;
 import ch.batbern.events.dto.BatchInviteResponse;
 import ch.batbern.events.dto.InviteSpeakerRequest;
@@ -14,7 +16,9 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.SpeakerNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -40,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,6 +80,12 @@ class SpeakerInvitationServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private OutreachHistoryRepository outreachHistoryRepository;
+
+    @Mock
+    private SpeakerStatusHistoryRepository statusHistoryRepository;
+
     @InjectMocks
     private SpeakerInvitationService speakerInvitationService;
 
@@ -106,6 +117,12 @@ class SpeakerInvitationServiceTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+
+        // Default lenient stubs for history repositories (used in sendInvitation)
+        lenient().when(outreachHistoryRepository.save(any(OutreachHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
     }
 
     // ==========================================================================
@@ -505,6 +522,128 @@ class SpeakerInvitationServiceTest {
             // When/Then
             assertThatThrownBy(() -> speakerInvitationService.inviteBatch("non-existent", request))
                     .isInstanceOf(EventNotFoundException.class);
+        }
+    }
+
+    // ==========================================================================
+    // History Tracking Tests
+    // ==========================================================================
+
+    @Nested
+    @DisplayName("History Tracking: Outreach and Status History")
+    class HistoryTrackingTests {
+
+        @Test
+        @DisplayName("should create outreach history when invitation email is sent")
+        void should_createOutreachHistory_when_invitationEmailSent() {
+            // Given
+            LocalDate responseDeadline = LocalDate.now().plusDays(14);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
+
+            when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
+                    .thenReturn(Optional.of(testSpeaker));
+            when(magicLinkService.generateToken(any(), any())).thenReturn("token");
+            when(speakerPoolRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(securityContextHelper.getCurrentUsername()).thenReturn("organizer.test");
+
+            // When
+            speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
+
+            // Then: Outreach history should be created
+            ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
+            verify(outreachHistoryRepository).save(outreachCaptor.capture());
+
+            OutreachHistory savedOutreach = outreachCaptor.getValue();
+            assertThat(savedOutreach.getSpeakerPoolId()).isEqualTo(testSpeakerId);
+            assertThat(savedOutreach.getContactMethod()).isEqualTo("email");
+            assertThat(savedOutreach.getNotes()).contains("Automated invitation email");
+            assertThat(savedOutreach.getOrganizerUsername()).isEqualTo("organizer.test");
+        }
+
+        @Test
+        @DisplayName("should create status history when speaker transitions to INVITED")
+        void should_createStatusHistory_when_speakerTransitionsToInvited() {
+            // Given: Speaker starts in IDENTIFIED state
+            testSpeaker.setStatus(SpeakerWorkflowState.IDENTIFIED);
+
+            LocalDate responseDeadline = LocalDate.now().plusDays(14);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
+
+            when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
+                    .thenReturn(Optional.of(testSpeaker));
+            when(magicLinkService.generateToken(any(), any())).thenReturn("token");
+            when(speakerPoolRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(securityContextHelper.getCurrentUsername()).thenReturn("organizer.test");
+
+            // When
+            speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
+
+            // Then: Status history should be created
+            ArgumentCaptor<SpeakerStatusHistory> statusCaptor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+            verify(statusHistoryRepository).save(statusCaptor.capture());
+
+            SpeakerStatusHistory savedHistory = statusCaptor.getValue();
+            assertThat(savedHistory.getSpeakerPoolId()).isEqualTo(testSpeakerId);
+            assertThat(savedHistory.getEventId()).isEqualTo(testEventId);
+            assertThat(savedHistory.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.IDENTIFIED);
+            assertThat(savedHistory.getNewStatus()).isEqualTo(SpeakerWorkflowState.INVITED);
+            assertThat(savedHistory.getChangedByUsername()).isEqualTo("organizer.test");
+            assertThat(savedHistory.getChangeReason()).isEqualTo("Invitation email sent");
+        }
+
+        @Test
+        @DisplayName("should use 'system' as username when no user in security context")
+        void should_useSystemUsername_when_noUserInSecurityContext() {
+            // Given
+            LocalDate responseDeadline = LocalDate.now().plusDays(14);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
+
+            when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
+                    .thenReturn(Optional.of(testSpeaker));
+            when(magicLinkService.generateToken(any(), any())).thenReturn("token");
+            when(speakerPoolRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(securityContextHelper.getCurrentUsername()).thenReturn(null); // No user
+
+            // When
+            speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
+
+            // Then: Should use "system" as organizer username
+            ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
+            verify(outreachHistoryRepository).save(outreachCaptor.capture());
+            assertThat(outreachCaptor.getValue().getOrganizerUsername()).isEqualTo("system");
+
+            ArgumentCaptor<SpeakerStatusHistory> statusCaptor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+            verify(statusHistoryRepository).save(statusCaptor.capture());
+            assertThat(statusCaptor.getValue().getChangedByUsername()).isEqualTo("system");
+        }
+
+        @Test
+        @DisplayName("should not create duplicate status history when already INVITED")
+        void should_notCreateDuplicateStatusHistory_when_alreadyInvited() {
+            // Given: Speaker is already INVITED
+            testSpeaker.setStatus(SpeakerWorkflowState.INVITED);
+
+            LocalDate responseDeadline = LocalDate.now().plusDays(14);
+            SendInvitationRequest request = new SendInvitationRequest(responseDeadline, null, null, null);
+
+            when(eventRepository.findByEventCode(testEventCode)).thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.findByEventIdAndUsername(testEventId, testUsername))
+                    .thenReturn(Optional.of(testSpeaker));
+            when(magicLinkService.generateToken(any(), any())).thenReturn("token");
+            when(speakerPoolRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(securityContextHelper.getCurrentUsername()).thenReturn("organizer.test");
+
+            // When
+            speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
+
+            // Then: Outreach history should still be created
+            verify(outreachHistoryRepository).save(any(OutreachHistory.class));
+
+            // But status history should NOT be created (no status change)
+            verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
         }
     }
 

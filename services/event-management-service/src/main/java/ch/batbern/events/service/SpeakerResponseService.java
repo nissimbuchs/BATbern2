@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.dto.SpeakerResponsePreferences;
 import ch.batbern.events.dto.SpeakerResponseRequest;
 import ch.batbern.events.dto.SpeakerResponseResult;
@@ -10,6 +11,7 @@ import ch.batbern.events.exception.AlreadyRespondedException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerAvailability;
@@ -54,6 +56,7 @@ public class SpeakerResponseService {
     private final OrganizerNotificationService notificationService;
     private final UserApiClient userApiClient;
     private final SpeakerAcceptanceEmailService acceptanceEmailService;
+    private final SpeakerStatusHistoryRepository statusHistoryRepository;
 
     @Value("${app.base-url:http://localhost:8100}")
     private String appBaseUrl;
@@ -89,7 +92,10 @@ public class SpeakerResponseService {
         Event event = eventRepository.findById(speaker.getEventId())
                 .orElseThrow(() -> new IllegalStateException("Event not found for speaker pool"));
 
-        // Step 6: Process based on response type
+        // Step 6: Capture previous status for history tracking
+        SpeakerWorkflowState previousStatus = speaker.getStatus();
+
+        // Step 7: Process based on response type
         switch (request.getResponse()) {
             case ACCEPT -> processAcceptResponse(speaker, request);
             case DECLINE -> processDeclineResponse(speaker, request);
@@ -98,16 +104,36 @@ public class SpeakerResponseService {
                     "Unsupported response type: " + request.getResponse());
         }
 
-        // Step 7: Save updated speaker
+        // Step 8: Save updated speaker
         speaker = speakerPoolRepository.save(speaker);
 
-        // Step 8: Publish domain event
+        // Step 9: Record status history for the response
+        SpeakerWorkflowState newStatus = speaker.getStatus();
+        if (previousStatus != newStatus) {
+            Instant now = Instant.now();
+            SpeakerStatusHistory statusHistory = new SpeakerStatusHistory();
+            statusHistory.setSpeakerPoolId(speaker.getId());
+            statusHistory.setEventId(event.getId());
+            statusHistory.setSessionId(speaker.getSessionId());
+            statusHistory.setPreviousStatus(previousStatus);
+            statusHistory.setNewStatus(newStatus);
+            String changedBy = speaker.getUsername() != null
+                    ? speaker.getUsername() : speaker.getSpeakerName();
+            statusHistory.setChangedByUsername(changedBy);
+            statusHistory.setChangeReason(getStatusChangeReason(request));
+            statusHistory.setChangedAt(now);
+            statusHistoryRepository.save(statusHistory);
+            LOG.debug("Created status history for speaker {} transition from {} to {}",
+                    speaker.getSpeakerName(), previousStatus, newStatus);
+        }
+
+        // Step 10: Publish domain event
         publishResponseEvent(speaker, event, request);
 
-        // Step 9: Notify organizer
+        // Step 11: Notify organizer
         notificationService.notifyOrganizerOfResponse(speaker, event, request.getResponse());
 
-        // Step 10: Build and return result
+        // Step 12: Build and return result
         return buildResult(speaker, event, request.getResponse());
     }
 
@@ -382,5 +408,17 @@ public class SpeakerResponseService {
         // Send email asynchronously
         acceptanceEmailService.sendAcceptanceConfirmationEmail(speaker, event, viewToken, locale);
         LOG.info("Triggered acceptance confirmation email for speaker: {}", speaker.getSpeakerName());
+    }
+
+    /**
+     * Generate a human-readable reason for status change based on response type.
+     */
+    private String getStatusChangeReason(SpeakerResponseRequest request) {
+        String reason = request.getReason() != null ? request.getReason() : "No reason provided";
+        return switch (request.getResponse()) {
+            case ACCEPT -> "Accepted invitation via speaker portal";
+            case DECLINE -> "Declined invitation: " + reason;
+            case TENTATIVE -> "Marked as tentative: " + reason;
+        };
     }
 }

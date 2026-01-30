@@ -258,6 +258,134 @@ BEGIN
     );
 
     RAISE NOTICE '✅ Cleaned up old tokens for E2E speakers';
+
+    -- Clean up old history records for these speakers
+    DELETE FROM speaker_outreach_history
+    WHERE speaker_pool_id IN (
+        'e2e00000-0000-0000-0000-000000000101',
+        'e2e00000-0000-0000-0000-000000000102',
+        'e2e00000-0000-0000-0000-000000000103'
+    );
+
+    DELETE FROM speaker_status_history
+    WHERE speaker_pool_id IN (
+        'e2e00000-0000-0000-0000-000000000101',
+        'e2e00000-0000-0000-0000-000000000102',
+        'e2e00000-0000-0000-0000-000000000103'
+    );
+
+    -- Create outreach history for INVITED speaker (test.invited)
+    INSERT INTO speaker_outreach_history (
+        id, speaker_pool_id, contact_date, contact_method, notes, organizer_username
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000401',
+        'e2e00000-0000-0000-0000-000000000101',
+        NOW() - INTERVAL '3 days',
+        'email',
+        'Automated invitation email sent via speaker portal',
+        'system'
+    );
+
+    -- Create outreach history for ACCEPTED speakers
+    INSERT INTO speaker_outreach_history (
+        id, speaker_pool_id, contact_date, contact_method, notes, organizer_username
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000402',
+        'e2e00000-0000-0000-0000-000000000102',
+        NOW() - INTERVAL '5 days',
+        'email',
+        'Automated invitation email sent via speaker portal',
+        'system'
+    );
+
+    INSERT INTO speaker_outreach_history (
+        id, speaker_pool_id, contact_date, contact_method, notes, organizer_username
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000403',
+        'e2e00000-0000-0000-0000-000000000103',
+        NOW() - INTERVAL '5 days',
+        'email',
+        'Automated invitation email sent via speaker portal',
+        'system'
+    );
+
+    RAISE NOTICE '✅ Created outreach history records';
+
+    -- Create status history for INVITED speaker: IDENTIFIED → INVITED
+    INSERT INTO speaker_status_history (
+        id, speaker_pool_id, event_id, previous_status, new_status,
+        changed_by_username, change_reason, changed_at
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000501',
+        'e2e00000-0000-0000-0000-000000000101',
+        test_event_id,
+        'identified',
+        'invited',
+        'system',
+        'Invitation email sent',
+        NOW() - INTERVAL '3 days'
+    );
+
+    -- Create status history for ACCEPTED speaker with session: IDENTIFIED → INVITED → ACCEPTED
+    INSERT INTO speaker_status_history (
+        id, speaker_pool_id, event_id, previous_status, new_status,
+        changed_by_username, change_reason, changed_at
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000502',
+        'e2e00000-0000-0000-0000-000000000102',
+        test_event_id,
+        'identified',
+        'invited',
+        'system',
+        'Invitation email sent',
+        NOW() - INTERVAL '5 days'
+    );
+
+    INSERT INTO speaker_status_history (
+        id, speaker_pool_id, event_id, session_id, previous_status, new_status,
+        changed_by_username, change_reason, changed_at
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000503',
+        'e2e00000-0000-0000-0000-000000000102',
+        test_event_id,
+        test_session_id,
+        'invited',
+        'accepted',
+        'test.withsession',
+        'Accepted invitation via speaker portal',
+        NOW() - INTERVAL '1 day'
+    );
+
+    -- Create status history for ACCEPTED speaker without session: IDENTIFIED → INVITED → ACCEPTED
+    INSERT INTO speaker_status_history (
+        id, speaker_pool_id, event_id, previous_status, new_status,
+        changed_by_username, change_reason, changed_at
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000504',
+        'e2e00000-0000-0000-0000-000000000103',
+        test_event_id,
+        'identified',
+        'invited',
+        'system',
+        'Invitation email sent',
+        NOW() - INTERVAL '5 days'
+    );
+
+    INSERT INTO speaker_status_history (
+        id, speaker_pool_id, event_id, previous_status, new_status,
+        changed_by_username, change_reason, changed_at
+    ) VALUES (
+        'e2e00000-0000-0000-0000-000000000505',
+        'e2e00000-0000-0000-0000-000000000103',
+        test_event_id,
+        'invited',
+        'accepted',
+        'test.nosession',
+        'Accepted invitation via speaker portal',
+        NOW() - INTERVAL '1 day'
+    );
+
+    RAISE NOTICE '✅ Created status history records';
     RAISE NOTICE '';
     RAISE NOTICE '🎉 E2E speaker test data seeded successfully!';
     RAISE NOTICE 'Run ./scripts/e2e/generate-speaker-tokens.sh to generate tokens';
@@ -277,3 +405,34 @@ WHERE id IN (
     'e2e00000-0000-0000-0000-000000000103'
 )
 ORDER BY speaker_name;
+
+-- Display outreach history
+SELECT
+    sp.speaker_name,
+    oh.contact_method,
+    oh.contact_date::date as contacted_on,
+    oh.organizer_username
+FROM speaker_outreach_history oh
+JOIN speaker_pool sp ON sp.id = oh.speaker_pool_id
+WHERE oh.speaker_pool_id IN (
+    'e2e00000-0000-0000-0000-000000000101',
+    'e2e00000-0000-0000-0000-000000000102',
+    'e2e00000-0000-0000-0000-000000000103'
+)
+ORDER BY sp.speaker_name, oh.contact_date;
+
+-- Display status history
+SELECT
+    sp.speaker_name,
+    sh.previous_status::text as from_status,
+    sh.new_status::text as to_status,
+    sh.change_reason,
+    sh.changed_at::date as changed_on
+FROM speaker_status_history sh
+JOIN speaker_pool sp ON sp.id = sh.speaker_pool_id
+WHERE sh.speaker_pool_id IN (
+    'e2e00000-0000-0000-0000-000000000101',
+    'e2e00000-0000-0000-0000-000000000102',
+    'e2e00000-0000-0000-0000-000000000103'
+)
+ORDER BY sp.speaker_name, sh.changed_at;

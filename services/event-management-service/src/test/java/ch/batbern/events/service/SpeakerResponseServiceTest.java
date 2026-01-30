@@ -2,6 +2,8 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.domain.SpeakerStatusHistory;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.dto.SpeakerResponseRequest;
 import ch.batbern.events.dto.SpeakerResponsePreferences;
 import ch.batbern.events.dto.SpeakerResponseResult;
@@ -83,6 +85,9 @@ class SpeakerResponseServiceTest {
     @Mock
     private SpeakerAcceptanceEmailService acceptanceEmailService;
 
+    @Mock
+    private SpeakerStatusHistoryRepository statusHistoryRepository;
+
     private SpeakerResponseService speakerResponseService;
 
     private UUID testSpeakerPoolId;
@@ -101,7 +106,8 @@ class SpeakerResponseServiceTest {
                 eventPublisher,
                 notificationService,
                 userApiClient,
-                acceptanceEmailService
+                acceptanceEmailService,
+                statusHistoryRepository
         );
 
         testSpeakerPoolId = UUID.randomUUID();
@@ -896,6 +902,146 @@ class SpeakerResponseServiceTest {
                     .isInstanceOf(InvalidTokenException.class)
                     .extracting("errorCode")
                     .isEqualTo("ALREADY_USED");
+        }
+    }
+
+    // ==================== Status History Tracking Tests ====================
+
+    @Nested
+    @DisplayName("Status History Tracking")
+    class StatusHistoryTrackingTests {
+
+        /**
+         * Test: Should create status history when speaker accepts invitation
+         */
+        @Test
+        void should_createStatusHistory_when_speakerAccepts() {
+            // Given
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, "jane.speaker", "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.ACCEPT)
+                    .build();
+
+            // When
+            speakerResponseService.processResponse(request);
+
+            // Then: Status history should be created
+            ArgumentCaptor<SpeakerStatusHistory> captor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+            verify(statusHistoryRepository).save(captor.capture());
+
+            SpeakerStatusHistory history = captor.getValue();
+            assertThat(history.getSpeakerPoolId()).isEqualTo(testSpeakerPoolId);
+            assertThat(history.getEventId()).isEqualTo(testEventId);
+            assertThat(history.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.INVITED);
+            assertThat(history.getNewStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+            assertThat(history.getChangeReason()).contains("Accepted invitation via speaker portal");
+        }
+
+        /**
+         * Test: Should create status history when speaker declines invitation
+         */
+        @Test
+        void should_createStatusHistory_when_speakerDeclines() {
+            // Given
+            String declineReason = "Schedule conflict";
+
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, "jane.speaker", "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.DECLINE)
+                    .reason(declineReason)
+                    .build();
+
+            // When
+            speakerResponseService.processResponse(request);
+
+            // Then: Status history should be created
+            ArgumentCaptor<SpeakerStatusHistory> captor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+            verify(statusHistoryRepository).save(captor.capture());
+
+            SpeakerStatusHistory history = captor.getValue();
+            assertThat(history.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.INVITED);
+            assertThat(history.getNewStatus()).isEqualTo(SpeakerWorkflowState.DECLINED);
+            assertThat(history.getChangeReason()).contains("Declined invitation");
+            assertThat(history.getChangeReason()).contains(declineReason);
+        }
+
+        /**
+         * Test: Should NOT create status history when speaker marks tentative
+         * (TENTATIVE does not change the workflow state - stays INVITED)
+         */
+        @Test
+        void should_notCreateStatusHistory_when_speakerMarksTentative() {
+            // Given
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, "jane.speaker", "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.TENTATIVE)
+                    .reason("Checking calendar")
+                    .build();
+
+            // When
+            speakerResponseService.processResponse(request);
+
+            // Then: Status history should NOT be created (status stays INVITED)
+            verify(statusHistoryRepository, never()).save(any(SpeakerStatusHistory.class));
+        }
+
+        /**
+         * Test: Should use speaker name when username is null
+         */
+        @Test
+        void should_useSpeakerName_when_usernameIsNull() {
+            // Given: Speaker without username
+            testSpeakerPool.setUsername(null);
+
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, null, "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.DECLINE)
+                    .reason("Cannot attend")
+                    .build();
+
+            // When
+            speakerResponseService.processResponse(request);
+
+            // Then: Should use speaker name as changedBy
+            ArgumentCaptor<SpeakerStatusHistory> captor = ArgumentCaptor.forClass(SpeakerStatusHistory.class);
+            verify(statusHistoryRepository).save(captor.capture());
+            assertThat(captor.getValue().getChangedByUsername()).isEqualTo("Jane Speaker");
         }
     }
 

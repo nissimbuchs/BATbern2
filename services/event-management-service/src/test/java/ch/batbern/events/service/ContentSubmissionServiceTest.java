@@ -12,10 +12,12 @@ import ch.batbern.events.dto.ContentSubmitResponse;
 import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
@@ -61,6 +63,9 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private ContentSubmissionRepository contentSubmissionRepository;
+
+    @Autowired
+    private SpeakerStatusHistoryRepository statusHistoryRepository;
 
     @MockBean
     private MagicLinkService magicLinkService;
@@ -310,6 +315,91 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
             // Then: speaker_pool content_status should be SUBMITTED
             SpeakerPool updated = speakerPoolRepository.findById(speakerWithSession.getId()).orElseThrow();
             assertThat(updated.getContentStatus()).isEqualTo("SUBMITTED");
+        }
+
+        @Test
+        @DisplayName("Test 5.2b: should_updateWorkflowStatus_to_CONTENT_SUBMITTED - ensures speaker moves to 'Inhalt eingereicht' Kanban column")
+        void should_updateWorkflowStatus_to_CONTENT_SUBMITTED_when_submitted() {
+            // Given: Speaker starts in ACCEPTED status
+            assertThat(speakerWithSession.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(
+                            speakerWithSession.getId(),
+                            null,
+                            "Test Speaker",
+                            testEvent.getEventCode(),
+                            testEvent.getTitle(),
+                            null,
+                            testSession.getTitle(),
+                            null,
+                            null,
+                            false,
+                            null,
+                            null,
+                            TokenAction.SUBMIT
+                    ));
+
+            ContentSubmitRequest request = new ContentSubmitRequest(
+                    validToken,
+                    "My Presentation",
+                    "Abstract with sufficient length for testing the workflow status update."
+            );
+
+            // When
+            contentSubmissionService.submitContent(request);
+
+            // Then: speaker_pool.status should be CONTENT_SUBMITTED (not just content_status)
+            // This ensures the speaker appears in the "Inhalt eingereicht" column in the Kanban board
+            SpeakerPool updated = speakerPoolRepository.findById(speakerWithSession.getId()).orElseThrow();
+            assertThat(updated.getStatus())
+                    .as("Workflow status must be CONTENT_SUBMITTED so speaker appears in correct Kanban column")
+                    .isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+        }
+
+        @Test
+        @DisplayName("Test 5.2c: should_createStatusHistory_when_contentSubmitted - tracks workflow transition for audit")
+        void should_createStatusHistory_when_contentSubmitted() {
+            // Given: Speaker starts in ACCEPTED status
+            assertThat(speakerWithSession.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(
+                            speakerWithSession.getId(),
+                            null,
+                            "Test Speaker",
+                            testEvent.getEventCode(),
+                            testEvent.getTitle(),
+                            null,
+                            testSession.getTitle(),
+                            null,
+                            null,
+                            false,
+                            null,
+                            null,
+                            TokenAction.SUBMIT
+                    ));
+
+            ContentSubmitRequest request = new ContentSubmitRequest(
+                    validToken,
+                    "My Presentation for History Test",
+                    "Abstract with sufficient length for testing history creation."
+            );
+
+            // When
+            contentSubmissionService.submitContent(request);
+
+            // Then: Status history should be created for the ACCEPTED -> CONTENT_SUBMITTED transition
+            java.util.List<SpeakerStatusHistory> historyList = statusHistoryRepository
+                    .findBySpeakerPoolIdOrderByChangedAtDesc(speakerWithSession.getId());
+
+            assertThat(historyList).isNotEmpty();
+            SpeakerStatusHistory latestHistory = historyList.get(0);
+            assertThat(latestHistory.getPreviousStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+            assertThat(latestHistory.getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
+            assertThat(latestHistory.getEventId()).isEqualTo(testEvent.getId());
+            assertThat(latestHistory.getSessionId()).isEqualTo(testSession.getId());
+            assertThat(latestHistory.getChangeReason()).contains("Content submitted via speaker portal");
         }
 
         @Test
