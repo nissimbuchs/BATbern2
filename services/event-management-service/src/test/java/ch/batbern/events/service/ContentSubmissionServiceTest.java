@@ -26,8 +26,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -67,10 +67,10 @@ class ContentSubmissionServiceTest extends AbstractIntegrationTest {
     @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
 
-    @MockBean
+    @MockitoBean
     private MagicLinkService magicLinkService;
 
-    @MockBean
+    @MockitoBean
     private ApplicationEventPublisher eventPublisher;
 
     private Event testEvent;
