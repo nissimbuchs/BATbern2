@@ -19,12 +19,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +38,8 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -74,6 +82,13 @@ class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SessionMaterialsRepository sessionMaterialsRepository;
 
+    /**
+     * Mock S3Presigner to avoid real AWS calls in tests.
+     * This ensures presigned URL generation works without AWS credentials.
+     */
+    @MockitoBean
+    private S3Presigner s3Presigner;
+
     private UUID testSpeakerPoolId;
     private UUID testEventId;
     private UUID testSessionId;
@@ -83,7 +98,12 @@ class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
     private String validToken;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Configure S3Presigner mock to return a presigned URL
+        PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
+        when(mockPresignedRequest.url()).thenReturn(URI.create("https://test-bucket.s3.amazonaws.com/test-upload-url").toURL());
+        when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresignedRequest);
+
         // Clean up in correct order (FK constraints)
         sessionMaterialsRepository.deleteAll();
         tokenRepository.deleteAll();
