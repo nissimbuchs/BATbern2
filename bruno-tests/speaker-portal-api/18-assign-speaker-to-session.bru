@@ -1,0 +1,41 @@
+meta {
+  name: Assign Speaker to Session (Story 6.3)
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/sessions/{{contentTestSessionSlug}}/speakers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "{{invitedSpeakerUsername}}",
+    "speakerRole": "MAIN_SPEAKER",
+    "presentationTitle": "Cloud Architecture Best Practices"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.username: eq {{invitedSpeakerUsername}}
+}
+
+tests {
+  test("should assign speaker to session - Story 6.3 AC1 Setup", function() {
+    expect(res.getStatus()).to.equal(201);
+    const body = res.getBody();
+    expect(body.username).to.equal(bru.getVar("invitedSpeakerUsername"));
+  });
+
+  test("should set speaker role correctly - Story 6.3 AC1 Setup", function() {
+    const body = res.getBody();
+    expect(body.speakerRole).to.equal('MAIN_SPEAKER');
+  });
+}

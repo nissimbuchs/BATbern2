@@ -349,27 +349,28 @@ public class SessionTimingService {
      * @param organizer Username of organizer making the change
      */
     private void checkAndAutoConfirmSpeaker(Session session, String organizer) {
-        // Find speaker assigned to this session
-        speakerPoolRepository.findBySessionId(session.getId())
-                .ifPresent(speaker -> {
-                    log.debug("Found speaker {} for session {}", speaker.getId(), session.getId());
+        // Find speakers assigned to this session (can be multiple for panels/co-presentations)
+        List<SpeakerPool> speakers = speakerPoolRepository.findBySessionId(session.getId());
 
-                    // Check if speaker is in QUALITY_REVIEWED state
-                    if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED) {
-                        log.info("Speaker {} is quality reviewed and now has timing - auto-confirming",
-                                speaker.getId());
+        for (SpeakerPool speaker : speakers) {
+            log.debug("Found speaker {} for session {}", speaker.getId(), session.getId());
 
-                        // Trigger state transition to CONFIRMED
-                        speakerWorkflowService.updateSpeakerWorkflowState(
-                                speaker.getId(),
-                                ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
-                                organizer
-                        );
-                    } else {
-                        log.debug("Speaker {} not ready for auto-confirmation (state: {})",
-                                speaker.getId(), speaker.getStatus());
-                    }
-                });
+            // Check if speaker is in QUALITY_REVIEWED state
+            if (speaker.getStatus() == ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED) {
+                log.info("Speaker {} is quality reviewed and now has timing - auto-confirming",
+                        speaker.getId());
+
+                // Trigger state transition to CONFIRMED
+                speakerWorkflowService.updateSpeakerWorkflowState(
+                        speaker.getId(),
+                        ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED,
+                        organizer
+                );
+            } else {
+                log.debug("Speaker {} not ready for auto-confirmation (state: {})",
+                        speaker.getId(), speaker.getStatus());
+            }
+        }
     }
 
     /**
@@ -393,8 +394,9 @@ public class SessionTimingService {
                 return;
             }
 
-            // Get speaker details if available
-            Optional<SpeakerPool> speakerOpt = speakerPoolRepository.findBySessionId(session.getId());
+            // Get speaker details if available (use first speaker for event - sessions can have multiple)
+            List<SpeakerPool> speakers = speakerPoolRepository.findBySessionId(session.getId());
+            Optional<SpeakerPool> primarySpeaker = speakers.isEmpty() ? Optional.empty() : Optional.of(speakers.get(0));
 
             // Convert Instant to LocalDateTime
             LocalDateTime startTime = session.getStartTime() != null
@@ -420,8 +422,8 @@ public class SessionTimingService {
                     .sessionTitle(session.getTitle())
                     .startTime(startTime)
                     .duration(duration)
-                    .speakerPoolId(speakerOpt.map(SpeakerPool::getId).orElse(null))
-                    .speakerName(speakerOpt.map(SpeakerPool::getSpeakerName).orElse(null))
+                    .speakerPoolId(primarySpeaker.map(SpeakerPool::getId).orElse(null))
+                    .speakerName(primarySpeaker.map(SpeakerPool::getSpeakerName).orElse(null))
                     .assignedBy(assignedBy)
                     .build();
 

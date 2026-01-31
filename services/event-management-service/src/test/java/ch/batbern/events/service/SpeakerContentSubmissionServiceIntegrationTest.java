@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
@@ -8,6 +9,7 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerContentResponse;
 import ch.batbern.events.dto.SubmitContentRequest;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -59,6 +61,9 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
 
     @Autowired
     private SessionUserRepository sessionUserRepository;
+
+    @Autowired
+    private ContentSubmissionRepository contentSubmissionRepository;
 
     @Autowired
     private ApplicationEvents applicationEvents;
@@ -285,5 +290,113 @@ class SpeakerContentSubmissionServiceIntegrationTest extends AbstractIntegration
         SpeakerPool speaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
         assertThat(speaker.getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
         assertThat(speaker.getSessionId()).isNull();
+    }
+
+    /**
+     * Regression test: getSpeakerContent must return the submitted title from
+     * content_submissions table, NOT the session title.
+     *
+     * Bug fix: Previously returned session.getTitle() which could differ from
+     * the actual submitted presentation title stored in speaker_content_submissions.
+     *
+     * Scenario: Speaker submits content via portal (Story 6.3), which stores in
+     * speaker_content_submissions table. Organizer later edits the session title.
+     * getSpeakerContent must return the original submitted title, not the edited session title.
+     */
+    @Test
+    void should_returnSubmittedTitle_when_sessionTitleDiffers() {
+        // Given: Speaker submits content (creates session)
+        String originalTitle = "Original Session Title";
+        String originalAbstract = "Original abstract content.";
+
+        SpeakerContentResponse submitted = contentSubmissionService.submitContent(
+                testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
+                originalTitle,
+                originalAbstract,
+                "john.doe",
+                null, null, null
+        );
+
+        UUID sessionId = submitted.getSessionId();
+        assertThat(sessionId).isNotNull();
+
+        // And: A content submission record is created (simulating Story 6.3 portal submission)
+        String submittedTitle = "My Actual Submitted Presentation Title";
+        String submittedAbstract = "This is my actual submitted abstract content.";
+
+        SpeakerPool speaker = speakerPoolRepository.findById(testSpeakerPoolId).orElseThrow();
+        Session session = sessionRepository.findById(sessionId).orElseThrow();
+
+        ContentSubmission contentSubmission = ContentSubmission.builder()
+                .speakerPool(speaker)
+                .session(session)
+                .title(submittedTitle)
+                .contentAbstract(submittedAbstract)
+                .abstractCharCount(submittedAbstract.length())
+                .submissionVersion(1)
+                .submittedAt(java.time.Instant.now())
+                .build();
+        contentSubmissionRepository.save(contentSubmission);
+
+        // When: Session title is modified (organizer edits session)
+        session.setTitle("Organizer Modified Session Title");
+        session.setDescription("Organizer modified description");
+        sessionRepository.save(session);
+
+        // Then: getSpeakerContent returns the SUBMITTED title, not session title
+        SpeakerContentResponse content = contentSubmissionService.getSpeakerContent(
+                testSpeakerPoolId.toString());
+
+        assertThat(content.getPresentationTitle())
+                .as("Should return submitted title from content_submissions, not session title")
+                .isEqualTo(submittedTitle);
+        assertThat(content.getPresentationAbstract())
+                .as("Should return submitted abstract from content_submissions, not session description")
+                .isEqualTo(submittedAbstract);
+
+        // And: Session title remains different (proving we're not reading from session)
+        Session reloadedSession = sessionRepository.findById(sessionId).orElseThrow();
+        assertThat(reloadedSession.getTitle())
+                .isNotEqualTo(submittedTitle)
+                .isEqualTo("Organizer Modified Session Title");
+    }
+
+    /**
+     * Regression test: getSpeakerContent should fall back to session title when
+     * no content_submission record exists (backwards compatibility).
+     */
+    @Test
+    void should_returnSessionTitle_when_noContentSubmissionExists() {
+        // Given: Speaker submits content (older flow - no content_submissions record)
+        String sessionTitle = "Session Only Title";
+        String sessionAbstract = "Session only abstract.";
+
+        SpeakerContentResponse submitted = contentSubmissionService.submitContent(
+                testSpeakerPoolId.toString(),
+                "TEST-EVENT-01",
+                sessionTitle,
+                sessionAbstract,
+                "john.doe",
+                null, null, null
+        );
+
+        UUID sessionId = submitted.getSessionId();
+        assertThat(sessionId).isNotNull();
+
+        // And: No content submission record exists
+        assertThat(contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(testSpeakerPoolId))
+                .isEmpty();
+
+        // Then: getSpeakerContent falls back to session title
+        SpeakerContentResponse content = contentSubmissionService.getSpeakerContent(
+                testSpeakerPoolId.toString());
+
+        assertThat(content.getPresentationTitle())
+                .as("Should fall back to session title when no content_submission exists")
+                .isEqualTo(sessionTitle);
+        assertThat(content.getPresentationAbstract())
+                .as("Should fall back to session description when no content_submission exists")
+                .isEqualTo(sessionAbstract);
     }
 }

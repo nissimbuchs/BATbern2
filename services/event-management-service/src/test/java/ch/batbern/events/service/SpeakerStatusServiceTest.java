@@ -12,6 +12,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,11 +65,14 @@ public class SpeakerStatusServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, eventPublisher);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, eventPublisher, domainEventPublisher);
     }
 
     /**

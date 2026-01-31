@@ -99,6 +99,41 @@ public class Speaker {
     private List<String> speakingTopics = new ArrayList<>();
 
     /**
+     * Speaker's first name (stored locally for speaker portal).
+     * Synced from User service when possible, but editable via speaker portal.
+     */
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    /**
+     * Speaker's last name (stored locally for speaker portal).
+     * Synced from User service when possible, but editable via speaker portal.
+     */
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    /**
+     * Speaker's email (stored locally for speaker portal).
+     * Used for invitation emails.
+     */
+    @Column(name = "email", length = 255)
+    private String email;
+
+    /**
+     * Speaker's bio (stored locally for speaker portal).
+     * Synced from User service when possible, but editable via speaker portal.
+     */
+    @Column(name = "bio", length = 2000)
+    private String bio;
+
+    /**
+     * Speaker profile photo URL (CloudFront).
+     * Managed via speaker portal photo upload.
+     */
+    @Column(name = "profile_picture_url", length = 1000)
+    private String profilePictureUrl;
+
+    /**
      * LinkedIn profile URL.
      */
     @Column(name = "linkedin_url", length = 500)

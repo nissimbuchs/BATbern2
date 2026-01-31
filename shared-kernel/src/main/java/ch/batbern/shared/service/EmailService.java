@@ -173,22 +173,54 @@ public class EmailService {
 
     /**
      * Replace template variables in email content.
-     * Variables are in format {{variableName}}.
+     * Supports simple variables {{variableName}} and Mustache-style conditionals {{#variableName}}...{{/variableName}}.
+     *
+     * Conditionals:
+     * - If the variable value is null, empty, or blank: the entire block (including content) is removed
+     * - If the variable has a non-empty value: the block tags are removed but content is kept
      *
      * Example:
-     * replaceVariables("Hello {{firstName}}", Map.of("firstName", "John"))
-     * returns "Hello John"
+     * replaceVariables("Hello {{firstName}}{{#lastName}}, {{lastName}}{{/lastName}}",
+     *     Map.of("firstName", "John", "lastName", "")) returns "Hello John"
      *
-     * @param template Email template with {{variable}} placeholders
+     * @param template Email template with {{variable}} and {{#variable}}...{{/variable}} placeholders
      * @param variables Map of variable names to values
-     * @return Email content with variables replaced
+     * @return Email content with variables replaced and conditionals processed
      */
     public String replaceVariables(String template, java.util.Map<String, String> variables) {
         String result = template;
+
+        // First, process conditional blocks {{#varName}}...{{/varName}}
+        for (java.util.Map.Entry<String, String> entry : variables.entrySet()) {
+            String varName = entry.getKey();
+            String value = entry.getValue();
+            boolean isEmpty = value == null || value.trim().isEmpty();
+
+            // Pattern: {{#varName}}...{{/varName}} (including nested content)
+            // Use non-greedy matching and DOTALL mode to match across lines
+            String openTag = "\\{\\{#" + java.util.regex.Pattern.quote(varName) + "\\}\\}";
+            String closeTag = "\\{\\{/" + java.util.regex.Pattern.quote(varName) + "\\}\\}";
+            String conditionalPattern = openTag + "(.*?)" + closeTag;
+
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                    conditionalPattern, java.util.regex.Pattern.DOTALL);
+            java.util.regex.Matcher matcher = pattern.matcher(result);
+
+            if (isEmpty) {
+                // Remove entire conditional block (tags + content)
+                result = matcher.replaceAll("");
+            } else {
+                // Keep content, remove only the tags
+                result = matcher.replaceAll("$1");
+            }
+        }
+
+        // Then, replace simple variable placeholders {{varName}}
         for (java.util.Map.Entry<String, String> entry : variables.entrySet()) {
             String placeholder = "{{" + entry.getKey() + "}}";
             result = result.replace(placeholder, entry.getValue() != null ? entry.getValue() : "");
         }
+
         return result;
     }
 

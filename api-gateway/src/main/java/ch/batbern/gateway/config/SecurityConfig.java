@@ -152,6 +152,26 @@ public class SecurityConfig {
                         // Public organizers endpoint for About page
                         .requestMatchers(HttpMethod.GET, "/api/v1/public/organizers").permitAll()
 
+                        // Story 6.1a/6.2a/6.2b: Speaker portal endpoints (token-protected, no JWT auth)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
+
+                        // Story 6.3: Speaker content submission endpoints (token-protected, no JWT auth)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/speaker-portal/materials/presigned-url").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
+
+                        // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
+                        .requestMatchers("/api/v1/e2e-test/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

@@ -86,7 +86,7 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
     },
   });
 
-  // Prefill speaker from pool when drawer opens
+  // Prefill speaker and presentation title from pool when drawer opens
   useEffect(() => {
     const prefillSpeaker = async () => {
       // Only prefill if drawer is open, speaker exists, and we haven't prefilled this speaker yet
@@ -107,8 +107,14 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
           // Auto-select first match if found
           if (speakers.length > 0) {
             setSelectedUser(speakers[0]);
-            lastPrefilledSpeakerIdRef.current = speaker.id;
           }
+
+          // Prefill presentation title from speaker's initial response (Story 6.2a)
+          if (speaker.initialPresentationTitle) {
+            setPresentationTitle(speaker.initialPresentationTitle);
+          }
+
+          lastPrefilledSpeakerIdRef.current = speaker.id;
         } catch (error) {
           console.error('Failed to prefill speaker:', error);
         }

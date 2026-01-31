@@ -1,0 +1,58 @@
+meta {
+  name: Speaker Workflow - Valid Transition
+  type: http
+  seq: 50
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONTACTED",
+    "reason": "Initial outreach via email - Story 6.0a E2E test"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.currentStatus: eq CONTACTED
+}
+
+tests {
+  test("should return 200 OK for valid workflow transition", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should update status to CONTACTED (Story 6.0a AC1)", function() {
+    const response = res.getBody();
+    expect(response.currentStatus).to.equal("CONTACTED");
+  });
+
+  test("should preserve previous status", function() {
+    const response = res.getBody();
+    expect(response.previousStatus).to.equal("IDENTIFIED");
+  });
+
+  test("should include change reason", function() {
+    const response = res.getBody();
+    expect(response.changeReason).to.include("Initial outreach");
+  });
+
+  test("should include speaker ID in response", function() {
+    const response = res.getBody();
+    expect(response.speakerId).to.be.a('string');
+  });
+
+  test("should include organizer username who made the change", function() {
+    const response = res.getBody();
+    expect(response.changedByUsername).to.be.a('string');
+  });
+}

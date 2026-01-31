@@ -1,0 +1,50 @@
+meta {
+  name: Submit Content (Story 6.3)
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/content/submit
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{speakerViewToken}}",
+    "title": "Building Cloud-Native Applications",
+    "contentAbstract": "This presentation explores best practices for building scalable cloud-native applications. We will cover microservices architecture, containerization with Kubernetes, and lessons learned from real-world implementations. Attendees will gain practical insights into designing resilient systems."
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.submissionId: isDefined
+  res.body.version: isDefined
+  res.body.status: eq SUBMITTED
+}
+
+tests {
+  test("should submit content successfully - Story 6.3 AC5", function() {
+    expect(res.getStatus()).to.equal(201);
+    const body = res.getBody();
+    expect(body.submissionId).to.be.a('string');
+    bru.setVar("contentSubmissionId", body.submissionId);
+  });
+
+  test("should return version 1 for first submission - Story 6.3 AC5", function() {
+    const body = res.getBody();
+    expect(body.version).to.equal(1);
+  });
+
+  test("should set status to SUBMITTED - Story 6.3 AC5", function() {
+    const body = res.getBody();
+    expect(body.status).to.equal('SUBMITTED');
+  });
+
+  test("should return session title - Story 6.3 AC5", function() {
+    const body = res.getBody();
+    expect(body.sessionTitle).to.equal('Cloud Architecture Best Practices');
+  });
+}

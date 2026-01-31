@@ -1,0 +1,41 @@
+meta {
+  name: Tentative Speaker Can Change to Accept
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/respond
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{tentativeSpeakerToken}}",
+    "response": "ACCEPT",
+    "preferences": {
+      "comments": "Confirmed - I can make it!"
+    }
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.newWorkflowState: eq ACCEPTED
+}
+
+tests {
+  test("should allow tentative speaker to accept - Story 6.2a AC5", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.success).to.be.true;
+    expect(body.newWorkflowState).to.equal('ACCEPTED');
+  });
+
+  test("should now consume the token - Story 6.2a AC5", function() {
+    const body = res.getBody();
+    expect(body.tokenConsumed).to.be.true;
+  });
+}

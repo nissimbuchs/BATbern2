@@ -1,0 +1,26 @@
+meta {
+  name: Get Content Invalid Token (Story 6.3)
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/content?token=invalid-token-that-does-not-exist
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 for invalid token - Story 6.3 Error Handling", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should include error message - Story 6.3 Error Handling", function() {
+    const body = res.getBody();
+    expect(body.message || body.error).to.be.a('string');
+  });
+}
