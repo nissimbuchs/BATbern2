@@ -60,7 +60,7 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-reactor:2.3.0'
 
     // ThreadFactoryBuilder for bounded thread pools
-    implementation 'com.google.guava:guava:33.0.0-jre'
+    implementation 'com.google.guava:guava:33.5.0-jre'
 
     // Jakarta Mail for email MIME message creation (Story 2.2a Task B12)
     implementation 'org.eclipse.angus:angus-mail:2.0.3'
