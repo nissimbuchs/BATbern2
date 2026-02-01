@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
@@ -29,6 +30,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "speaker_pool")
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -37,6 +39,7 @@ public class SpeakerPool {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Column(name = "event_id", nullable = false, columnDefinition = "UUID")
@@ -145,238 +148,6 @@ public class SpeakerPool {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    // Getters and Setters
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(UUID eventId) {
-        this.eventId = eventId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getSpeakerName() {
-        return speakerName;
-    }
-
-    public void setSpeakerName(String speakerName) {
-        this.speakerName = speakerName;
-    }
-
-    public String getCompany() {
-        return company;
-    }
-
-    public void setCompany(String company) {
-        this.company = company;
-    }
-
-    public String getExpertise() {
-        return expertise;
-    }
-
-    public void setExpertise(String expertise) {
-        this.expertise = expertise;
-    }
-
-    public String getAssignedOrganizerId() {
-        return assignedOrganizerId;
-    }
-
-    public void setAssignedOrganizerId(String assignedOrganizerId) {
-        this.assignedOrganizerId = assignedOrganizerId;
-    }
-
-    public SpeakerWorkflowState getStatus() {
-        return status;
-    }
-
-    public void setStatus(SpeakerWorkflowState status) {
-        this.status = status;
-    }
-
-    public UUID getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(UUID sessionId) {
-        this.sessionId = sessionId;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    // Story 6.1b: Speaker Invitation System getters and setters
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public Instant getInvitedAt() {
-        return invitedAt;
-    }
-
-    public void setInvitedAt(Instant invitedAt) {
-        this.invitedAt = invitedAt;
-    }
-
-    public LocalDate getResponseDeadline() {
-        return responseDeadline;
-    }
-
-    public void setResponseDeadline(LocalDate responseDeadline) {
-        this.responseDeadline = responseDeadline;
-    }
-
-    public LocalDate getContentDeadline() {
-        return contentDeadline;
-    }
-
-    public void setContentDeadline(LocalDate contentDeadline) {
-        this.contentDeadline = contentDeadline;
-    }
-
-    // Story 6.2a: Speaker Response Portal getters and setters
-
-    public Instant getAcceptedAt() {
-        return acceptedAt;
-    }
-
-    public void setAcceptedAt(Instant acceptedAt) {
-        this.acceptedAt = acceptedAt;
-    }
-
-    public Instant getDeclinedAt() {
-        return declinedAt;
-    }
-
-    public void setDeclinedAt(Instant declinedAt) {
-        this.declinedAt = declinedAt;
-    }
-
-    public String getDeclineReason() {
-        return declineReason;
-    }
-
-    public void setDeclineReason(String declineReason) {
-        this.declineReason = declineReason;
-    }
-
-    public Boolean getIsTentative() {
-        return isTentative;
-    }
-
-    public void setIsTentative(Boolean isTentative) {
-        this.isTentative = isTentative;
-    }
-
-    public String getTentativeReason() {
-        return tentativeReason;
-    }
-
-    public void setTentativeReason(String tentativeReason) {
-        this.tentativeReason = tentativeReason;
-    }
-
-    public String getPreferredTimeSlot() {
-        return preferredTimeSlot;
-    }
-
-    public void setPreferredTimeSlot(String preferredTimeSlot) {
-        this.preferredTimeSlot = preferredTimeSlot;
-    }
-
-    public String getTravelRequirements() {
-        return travelRequirements;
-    }
-
-    public void setTravelRequirements(String travelRequirements) {
-        this.travelRequirements = travelRequirements;
-    }
-
-    public String getTechnicalRequirements() {
-        return technicalRequirements;
-    }
-
-    public void setTechnicalRequirements(String technicalRequirements) {
-        this.technicalRequirements = technicalRequirements;
-    }
-
-    public String getInitialPresentationTitle() {
-        return initialPresentationTitle;
-    }
-
-    public void setInitialPresentationTitle(String initialPresentationTitle) {
-        this.initialPresentationTitle = initialPresentationTitle;
-    }
-
-    public String getPreferenceComments() {
-        return preferenceComments;
-    }
-
-    public void setPreferenceComments(String preferenceComments) {
-        this.preferenceComments = preferenceComments;
-    }
-
-    // Story 6.3: Speaker Content Submission Portal getters and setters
-
-    public String getContentStatus() {
-        return contentStatus;
-    }
-
-    public void setContentStatus(String contentStatus) {
-        this.contentStatus = contentStatus;
-    }
-
-    public Instant getContentSubmittedAt() {
-        return contentSubmittedAt;
-    }
-
-    public void setContentSubmittedAt(Instant contentSubmittedAt) {
-        this.contentSubmittedAt = contentSubmittedAt;
-    }
 
     @PrePersist
     protected void onCreate() {

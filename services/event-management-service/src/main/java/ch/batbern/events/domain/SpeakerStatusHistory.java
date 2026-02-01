@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -36,10 +37,12 @@ import java.util.UUID;
     @Index(name = "idx_speaker_status_history_speaker_pool_id", columnList = "speaker_pool_id, changed_at")
 })
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SpeakerStatusHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @NotNull

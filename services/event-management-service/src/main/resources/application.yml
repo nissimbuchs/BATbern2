@@ -22,6 +22,8 @@ spring:
     clean-disabled: true
     locations: classpath:db/migration
     table: flyway_schema_history_event_management
+    # Allow missing migrations (migrations removed from codebase after being applied)
+    ignore-migration-patterns: "*:missing"
 
 management:
   endpoints:
