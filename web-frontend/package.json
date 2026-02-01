@@ -136,7 +136,7 @@
     "tailwindcss": "^4.1.14",
     "typescript": "^5.3.0",
     "typescript-eslint": "^8.46.2",
-    "vite": "^7.1.12",
+    "vite": "^7.3.1",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^1.0.3",
     "vite-plugin-sitemap": "^0.8.2",
