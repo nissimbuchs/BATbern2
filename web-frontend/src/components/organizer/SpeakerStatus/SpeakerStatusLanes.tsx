@@ -219,19 +219,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   };
 
   // Handle speaker card click (Story 5.5 + 5.6)
+  // Always open the outreach details drawer (which shows contact history) for all statuses
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
-    // Open content submission drawer for ACCEPTED speakers
-    if (speaker.status === 'ACCEPTED') {
-      setCurrentSpeaker(speaker);
-      setContentDrawerOpen(true);
-    }
-    // Open quality review drawer for CONTENT_SUBMITTED speakers (Story 5.5 Phase 4)
-    else if (speaker.status === 'CONTENT_SUBMITTED') {
-      setReviewSpeaker(speaker);
-      setReviewDrawerOpen(true);
-    }
-    // For other statuses (IDENTIFIED, CONTACTED, READY, etc.), use callback if provided
-    else if (onSpeakerClick) {
+    if (onSpeakerClick) {
       onSpeakerClick(speaker);
     }
   };

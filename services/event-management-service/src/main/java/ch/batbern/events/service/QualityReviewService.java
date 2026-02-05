@@ -9,6 +9,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,6 +47,7 @@ public class QualityReviewService {
     private final ContentSubmissionRepository contentSubmissionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final EmailService emailService;
+    private final MagicLinkService magicLinkService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -159,7 +161,7 @@ public class QualityReviewService {
 
     /**
      * Notify speaker that their content needs revision.
-     * Sends email with feedback. Speaker uses existing portal link to revise.
+     * Sends email with feedback and magic link to the speaker portal.
      */
     private void notifySpeakerOfRejection(SpeakerPool speaker, String feedback) {
         if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
@@ -173,18 +175,22 @@ public class QualityReviewService {
             String eventName = event != null ? event.getTitle() : "BATbern Event";
             String speakerName = speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker";
 
+            // Generate a new magic link token for the speaker portal (30-day validity)
+            String token = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
+            String portalUrl = baseUrl + "/speaker-portal/content?token=" + token;
+
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
-            String body = buildRevisionEmailBody(speakerName, eventName, feedback);
+            String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
 
             emailService.sendHtmlEmail(speaker.getEmail(), subject, body);
-            log.info("Revision notification sent to speaker: {}", speaker.getEmail());
+            log.info("Revision notification sent to speaker: {} with portal link", speaker.getEmail());
         } catch (Exception e) {
             log.error("Failed to send revision notification to speaker {}: {}",
                     speaker.getId(), e.getMessage());
         }
     }
 
-    private String buildRevisionEmailBody(String speakerName, String eventName, String feedback) {
+    private String buildRevisionEmailBody(String speakerName, String eventName, String feedback, String portalUrl) {
         return String.format("""
             <html>
             <body>
@@ -197,8 +203,18 @@ public class QualityReviewService {
             %s
             </div>
 
-            <p>Please use the original link from your invitation email to access
-            the speaker portal and update your submission.</p>
+            <p>Please click the button below to access the speaker portal and update your submission:</p>
+
+            <p style="text-align: center; margin: 25px 0;">
+            <a href="%s" style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Revise My Submission
+            </a>
+            </p>
+
+            <p style="font-size: 12px; color: #666;">
+            Or copy and paste this link into your browser:<br/>
+            <a href="%s">%s</a>
+            </p>
 
             <p>If you have questions, please contact our team.</p>
 
@@ -206,7 +222,7 @@ public class QualityReviewService {
             The BATbern Team</p>
             </body>
             </html>
-            """, speakerName, eventName, feedback.replace("\n", "<br/>"));
+            """, speakerName, eventName, feedback.replace("\n", "<br/>"), portalUrl, portalUrl, portalUrl);
     }
 
     /**

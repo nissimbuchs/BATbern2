@@ -47,6 +47,8 @@ interface SpeakerOutreachDetailsDrawerProps {
   speaker: SpeakerPoolEntry | null;
   eventCode: string;
   showMarkContactedForm?: boolean; // Show form for IDENTIFIED/CONTACTED speakers
+  onOpenContentSubmission?: (speaker: SpeakerPoolEntry) => void; // Callback for ACCEPTED speakers
+  onOpenQualityReview?: (speaker: SpeakerPoolEntry) => void; // Callback for CONTENT_SUBMITTED speakers
 }
 
 interface FormData {
@@ -66,6 +68,8 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   speaker,
   eventCode,
   showMarkContactedForm = false,
+  onOpenContentSubmission,
+  onOpenQualityReview,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -407,6 +411,18 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
               </Box>
             )}
 
+            {/* Revision Needed Feedback (when content was rejected) */}
+            {speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes && (
+              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+                <Typography variant="subtitle2" color="error.dark" gutterBottom>
+                  {t('speakers.revisionRequested', 'Revision Requested')}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {speaker.notes}
+                </Typography>
+              </Box>
+            )}
+
             {/* Story 6.3: Submitted Content Display */}
             {speaker.submittedTitle && (
               <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
@@ -512,6 +528,34 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   {sendInvitationMutation.isPending
                     ? t('speakers.sending')
                     : t('speakers.sendInvitation')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Content Submission Button for ACCEPTED speakers */}
+            {speaker.status === 'ACCEPTED' && onOpenContentSubmission && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => onOpenContentSubmission(speaker)}
+                  fullWidth
+                >
+                  {t('speakers.submitContent', 'Submit Content')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Quality Review Button for CONTENT_SUBMITTED speakers */}
+            {speaker.status === 'CONTENT_SUBMITTED' && onOpenQualityReview && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={() => onOpenQualityReview(speaker)}
+                  fullWidth
+                >
+                  {t('speakers.reviewContent', 'Review Content')}
                 </Button>
               </Box>
             )}
