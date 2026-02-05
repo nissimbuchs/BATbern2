@@ -3,12 +3,15 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +43,12 @@ public class QualityReviewService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
+    private final ContentSubmissionRepository contentSubmissionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final EmailService emailService;
+
+    @Value("${app.base-url:https://batbern.ch}")
+    private String baseUrl;
 
     /**
      * Get review queue for an event.
@@ -101,8 +109,8 @@ public class QualityReviewService {
     /**
      * Reject speaker content with feedback.
      *
-     * Status remains 'content_submitted'. Organizer can update session description and resubmit
-     * for re-review (AC15).
+     * Updates contentStatus to REVISION_NEEDED and notifies speaker via email.
+     * Speaker can revise and resubmit via portal (AC15).
      *
      * @param poolId the speaker pool ID
      * @param feedback the rejection feedback (required)
@@ -121,14 +129,84 @@ public class QualityReviewService {
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Speaker pool entry not found: " + poolId));
 
-        // Update notes with rejection feedback
+        // Store rejection feedback with timestamp
+        String timestamp = java.time.Instant.now().toString();
+        String rejectionNote = String.format("[%s] REVISION REQUESTED by %s:\n%s",
+                timestamp, moderatorUsername, feedback);
         String existingNotes = speaker.getNotes() != null ? speaker.getNotes() + "\n\n" : "";
-        speaker.setNotes(existingNotes + feedback);
+        speaker.setNotes(existingNotes + rejectionNote);
 
-        // Status remains CONTENT_SUBMITTED (AC14)
+        // Set contentStatus to REVISION_NEEDED so speaker knows to revise
+        speaker.setContentStatus("REVISION_NEEDED");
+
+        // Status remains CONTENT_SUBMITTED (AC14) - workflow state unchanged
         speakerPoolRepository.save(speaker);
 
-        log.info("Content rejected for speaker pool entry: {} with feedback", poolId);
+        // Update latest ContentSubmission with reviewer feedback for portal display
+        contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+                .ifPresent(submission -> {
+                    submission.setReviewerFeedback(feedback);
+                    submission.setReviewedAt(java.time.Instant.now());
+                    submission.setReviewedBy(moderatorUsername);
+                    contentSubmissionRepository.save(submission);
+                });
+
+        // Notify speaker via email about required revisions
+        notifySpeakerOfRejection(speaker, feedback);
+
+        log.info("Content rejected for speaker pool entry: {} - speaker notified", poolId);
+    }
+
+    /**
+     * Notify speaker that their content needs revision.
+     * Sends email with feedback. Speaker uses existing portal link to revise.
+     */
+    private void notifySpeakerOfRejection(SpeakerPool speaker, String feedback) {
+        if (speaker.getEmail() == null || speaker.getEmail().isBlank()) {
+            log.warn("Cannot notify speaker {} - no email address", speaker.getId());
+            return;
+        }
+
+        try {
+            Event event = eventRepository.findById(speaker.getEventId())
+                    .orElse(null);
+            String eventName = event != null ? event.getTitle() : "BATbern Event";
+            String speakerName = speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker";
+
+            String subject = String.format("Action Required: Please revise your submission for %s", eventName);
+            String body = buildRevisionEmailBody(speakerName, eventName, feedback);
+
+            emailService.sendHtmlEmail(speaker.getEmail(), subject, body);
+            log.info("Revision notification sent to speaker: {}", speaker.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send revision notification to speaker {}: {}",
+                    speaker.getId(), e.getMessage());
+        }
+    }
+
+    private String buildRevisionEmailBody(String speakerName, String eventName, String feedback) {
+        return String.format("""
+            <html>
+            <body>
+            <p>Dear %s,</p>
+
+            <p>Thank you for your submission for <strong>%s</strong>. Our review team has requested some revisions:</p>
+
+            <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-left: 4px solid #e74c3c;">
+            <strong>Feedback:</strong><br/>
+            %s
+            </div>
+
+            <p>Please use the original link from your invitation email to access
+            the speaker portal and update your submission.</p>
+
+            <p>If you have questions, please contact our team.</p>
+
+            <p>Best regards,<br/>
+            The BATbern Team</p>
+            </body>
+            </html>
+            """, speakerName, eventName, feedback.replace("\n", "<br/>"));
     }
 
     /**
