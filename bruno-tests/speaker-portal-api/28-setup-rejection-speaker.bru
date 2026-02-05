@@ -1,0 +1,36 @@
+meta {
+  name: Setup Rejection Test Speaker (Story 5.5)
+  type: http
+  seq: 28
+}
+
+post {
+  url: {{baseUrl}}/events/{{testEventCode}}/speakers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "username": "rejection.test.speaker",
+    "speakerName": "Rejection Test Speaker",
+    "email": "rejection.test@example.com",
+    "company": "Test Corp"
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+tests {
+  test("should create test speaker for rejection flow - Story 5.5 AC14", function() {
+    expect(res.getStatus()).to.equal(201);
+    const body = res.getBody();
+    bru.setVar("rejectionSpeakerPoolId", body.id);
+  });
+}
