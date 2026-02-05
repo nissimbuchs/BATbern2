@@ -1,12 +1,14 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.EventType;
+import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
@@ -56,6 +58,9 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private ContentSubmissionRepository contentSubmissionRepository;
 
     private Event testEvent;
     private UUID testEventId;
@@ -199,6 +204,86 @@ class QualityReviewServiceIntegrationTest extends AbstractIntegrationTest {
                 "moderator.user"
         )).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Feedback is required when rejecting content");
+    }
+
+    /**
+     * Epic 6 Fix: Reject content sets contentStatus to REVISION_NEEDED
+     */
+    @Test
+    void should_setContentStatusToRevisionNeeded_when_contentRejected() {
+        // Given: Speaker with content_submitted
+        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
+        speaker.setContentStatus("SUBMITTED");
+        speakerPoolRepository.save(speaker);
+
+        // When: Reject content with feedback
+        qualityReviewService.rejectContent(
+                speaker.getId().toString(),
+                "Please add more details about lessons learned.",
+                "moderator.user"
+        );
+
+        // Then: contentStatus set to REVISION_NEEDED
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
+        assertThat(updated.getContentStatus()).isEqualTo("REVISION_NEEDED");
+    }
+
+    /**
+     * Epic 6 Fix: Reject content stores feedback in ContentSubmission for portal display
+     */
+    @Test
+    void should_storeReviewerFeedbackInContentSubmission_when_contentRejected() {
+        // Given: Speaker with content_submitted and a ContentSubmission record
+        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
+        speaker.setEmail("john.doe@example.com");
+        speaker.setContentStatus("SUBMITTED");
+        speakerPoolRepository.save(speaker);
+
+        Session session = sessionRepository.findById(speaker.getSessionId()).orElseThrow();
+        ContentSubmission submission = new ContentSubmission();
+        submission.setSpeakerPool(speaker);
+        submission.setSession(session);
+        submission.setTitle("My Presentation");
+        submission.setContentAbstract("This is my abstract about architecture.");
+        submission.setSubmissionVersion(1);
+        contentSubmissionRepository.save(submission);
+
+        // When: Reject content with feedback
+        String feedback = "Please add more focus on lessons learned from the project.";
+        qualityReviewService.rejectContent(
+                speaker.getId().toString(),
+                feedback,
+                "moderator.user"
+        );
+
+        // Then: ContentSubmission has reviewer feedback
+        ContentSubmission updated = contentSubmissionRepository
+                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+                .orElseThrow();
+        assertThat(updated.getReviewerFeedback()).isEqualTo(feedback);
+        assertThat(updated.getReviewedBy()).isEqualTo("moderator.user");
+        assertThat(updated.getReviewedAt()).isNotNull();
+    }
+
+    /**
+     * Epic 6 Fix: Rejection feedback includes timestamp and moderator in notes
+     */
+    @Test
+    void should_includeTimestampAndModeratorInNotes_when_contentRejected() {
+        // Given: Speaker with content_submitted
+        SpeakerPool speaker = createSpeakerWithContent("john.doe", "John Doe");
+
+        // When: Reject content with feedback
+        qualityReviewService.rejectContent(
+                speaker.getId().toString(),
+                "Abstract needs improvement.",
+                "quality.reviewer"
+        );
+
+        // Then: Notes contain timestamp and moderator info
+        SpeakerPool updated = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
+        assertThat(updated.getNotes()).contains("REVISION REQUESTED by quality.reviewer");
+        assertThat(updated.getNotes()).contains("Abstract needs improvement.");
     }
 
     /**
