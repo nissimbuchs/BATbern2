@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
@@ -166,7 +167,10 @@ public class SpeakerReminderService {
                 : speaker.getContentDeadline();
 
         if (deadline == null) {
-            throw new IllegalArgumentException("No " + reminderType.toLowerCase() + " deadline set for this speaker");
+            // Fallback to event date for manual reminders without an explicit deadline
+            deadline = event.getDate().atZone(ZoneId.of("Europe/Zurich")).toLocalDate();
+            log.info("No {} deadline set for speaker {}, using event date {} as fallback",
+                    reminderType.toLowerCase(), speakerPoolId, deadline);
         }
 
         String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
