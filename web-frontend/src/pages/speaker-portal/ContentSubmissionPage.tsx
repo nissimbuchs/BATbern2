@@ -19,7 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { speakerPortalService, ContentSubmitResponse } from '@/services/speakerPortalService';
 import PresentationUpload from '@/components/speaker-portal/PresentationUpload';
-import { User } from 'lucide-react';
+import { User, LayoutDashboard } from 'lucide-react';
 
 // Constants
 const MAX_TITLE_LENGTH = 200;
@@ -312,6 +312,12 @@ export default function ContentSubmissionPage() {
             <p className="text-sm text-gray-500 mt-4">
               The organizer will review your submission and contact you if any changes are needed.
             </p>
+            <Link
+              to={`/speaker-portal/dashboard?token=${token}`}
+              className="inline-block mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Go to Speaker Dashboard
+            </Link>
           </div>
         </div>
       </PublicLayout>
@@ -331,14 +337,23 @@ export default function ContentSubmissionPage() {
                   {contentInfo.eventTitle} - {contentInfo.sessionTitle}
                 </p>
               </div>
-              {/* AC10: Edit Profile Navigation */}
-              <Link
-                to={`/speaker-portal/profile?token=${token}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm"
-              >
-                <User className="h-4 w-4" />
-                Edit Profile
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  to={`/speaker-portal/dashboard?token=${token}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                {/* AC10: Edit Profile Navigation */}
+                <Link
+                  to={`/speaker-portal/profile?token=${token}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg transition-colors text-sm"
+                >
+                  <User className="h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </div>
             </div>
           </div>
 
