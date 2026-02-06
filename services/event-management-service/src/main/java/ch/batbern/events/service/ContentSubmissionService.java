@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
@@ -14,6 +15,7 @@ import ch.batbern.events.dto.SpeakerContentInfo;
 import ch.batbern.events.dto.TokenValidationResult;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -52,6 +55,7 @@ public class ContentSubmissionService {
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SpeakerStatusHistoryRepository statusHistoryRepository;
 
@@ -116,6 +120,22 @@ public class ContentSubmissionService {
             reviewedBy = submission.getReviewedBy();
         }
 
+        // AC7: Get material info if session exists
+        boolean hasMaterial = false;
+        String materialUrl = null;
+        String materialFileName = null;
+
+        if (session != null) {
+            List<SessionMaterial> materials = sessionMaterialsRepository.findBySession_Id(session.getId());
+            if (!materials.isEmpty()) {
+                hasMaterial = true;
+                // Return the first/primary material (typically presentation)
+                SessionMaterial primaryMaterial = materials.get(0);
+                materialUrl = primaryMaterial.getCloudFrontUrl();
+                materialFileName = primaryMaterial.getFileName();
+            }
+        }
+
         return SpeakerContentInfo.builder()
                 .speakerName(validation.speakerName())
                 .eventCode(validation.eventCode())
@@ -133,6 +153,9 @@ public class ContentSubmissionService {
                 .reviewerFeedback(reviewerFeedback)
                 .reviewedAt(reviewedAt)
                 .reviewedBy(reviewedBy)
+                .hasMaterial(hasMaterial)
+                .materialUrl(materialUrl)
+                .materialFileName(materialFileName)
                 .build();
     }
 

@@ -1,0 +1,36 @@
+meta {
+  name: Approve Content (Story 5.5)
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/events/{{testEventCode}}/speakers/{{speakerPoolId}}/review
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "action": "APPROVE"
+  }
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 No Content on successful approval - Story 5.5 AC13", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should successfully approve speaker content - Story 5.5 AC13", function() {
+    // 204 indicates the content was approved and status updated to QUALITY_REVIEWED
+    expect(res.getStatus()).to.equal(204);
+  });
+}

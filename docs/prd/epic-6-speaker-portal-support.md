@@ -1,10 +1,12 @@
-# Epic 6: Speaker Self-Service Portal (Enhancement Layer) - DEFERRED
+# Epic 6: Speaker Self-Service Portal (Enhancement Layer)
 
-**Status:** 📦 **DEFERRED TO PHASE 2+** (Week 42+)
+**Status:** ✅ **DEPLOYED TO STAGING** (2026-02-03)
 
-**Strategic Repositioning (2025-11-25):** Epic 6 is now an **optional enhancement layer** on top of Epic 5. Epic 5 provides complete organizer-driven workflow where organizers manually handle all speaker coordination. Epic 6 adds self-service capabilities to reduce organizer workload.
+**Implementation Complete (2026-02-03):** Epic 6 Phase 1 (Invitation & Response) and Phase 2 (Content Submission) have been implemented and deployed to staging. The speaker self-service portal is now operational.
 
-**Dependency Change:** Epic 6 no longer blocks Epic 5. Epic 5 is self-contained and operational without Epic 6.
+**Merged:** PR #430 merged to `develop` branch, deployed via Build Pipeline run #21559151095.
+
+**Architecture:** Speaker portal functionality implemented in `event-management-service` with magic link authentication, invitation workflow, response handling, and content submission.
 
 ---
 
@@ -60,7 +62,7 @@
 
 ### Implementation Decision
 
-**Recommendation:** Implement Epic 5 first, gather organizer feedback, then decide if Epic 6 ROI justifies development effort.
+**Decision (2026-02-03):** Epic 6 Phase 1 & 2 implemented and deployed. Core speaker self-service functionality is now live on staging.
 
 ---
 
@@ -69,7 +71,7 @@
 ### Story 6.0: Speaker Coordination Service Foundation + API Consolidation (PREREQUISITE)
 **(Moved from Epic 2, Story 2.3 - formerly Story 1.19, includes 1.15a.3 Speakers API Consolidation)**
 
-**Status:** Not Started (moved from Epic 2)
+**Status:** ✅ Complete (deployed to staging 2026-02-03)
 
 **User Story:**
 As an **organizer**, I want the foundational Speaker Coordination Service with consolidated RESTful APIs, so that I can manage speaker profiles efficiently and enable self-service features in Epic 6.
@@ -154,7 +156,10 @@ Speaker Coordination Service was moved from Epic 2 to Epic 6 because:
 
 ---
 
-### Story 6.1: Automated Speaker Invitation System
+### Story 6.1: Automated Speaker Invitation System ✅
+
+**Status:** ✅ Complete (deployed to staging 2026-02-03)
+- `SpeakerInvitationController.java` - send invitation emails with magic links
 
 **User Story:**
 As an **organizer**, I want to send automated speaker invitations with unique response links, so that speakers can self-respond without manual follow-up.
@@ -195,7 +200,11 @@ As an **organizer**, I want to send automated speaker invitations with unique re
 
 ---
 
-### Story 6.2: Speaker Self-Service Response Portal
+### Story 6.2: Speaker Self-Service Response Portal ✅
+
+**Status:** ✅ Complete (deployed to staging 2026-02-03)
+- `SpeakerPortalTokenController.java` - magic link validation
+- `SpeakerPortalResponseController.java` - accept/decline/tentative responses
 
 **User Story:**
 As a **speaker**, I want to respond to invitations via a simple web form, so that I can confirm my participation without email back-and-forth with organizers.
@@ -244,7 +253,11 @@ As a **speaker**, I want to respond to invitations via a simple web form, so tha
 
 ---
 
-### Story 6.3: Speaker Material Self-Submission Portal
+### Story 6.3: Speaker Material Self-Submission Portal ✅
+
+**Status:** ✅ Complete (deployed to staging 2026-02-03)
+- `SpeakerPortalContentController.java` - title, abstract, material submission
+- `SpeakerPortalProfileController.java` - profile updates (bio, photo, CV)
 
 **User Story:**
 As a **speaker**, I want to upload my presentation materials through a self-service portal, so that organizers don't have to manually collect and upload my content.
@@ -292,7 +305,9 @@ As a **speaker**, I want to upload my presentation materials through a self-serv
 
 ---
 
-### Story 6.4: Speaker Dashboard (View-Only)
+### Story 6.4: Speaker Dashboard (View-Only) 🔄
+
+**Status:** 🔄 Partial - profile/content views available via portal controllers, dedicated dashboard pending
 
 **User Story:**
 As a **speaker**, I want to view my upcoming and past BATbern presentations, so that I can see my speaking history and event details.
@@ -328,7 +343,9 @@ As a **speaker**, I want to view my upcoming and past BATbern presentations, so 
 
 ---
 
-### Story 6.5: Automated Deadline Reminders
+### Story 6.5: Automated Deadline Reminders 📋
+
+**Status:** 📋 Not Started - scheduled for future implementation
 
 **User Story:**
 As an **organizer**, I want automated deadline reminders sent to speakers, so that I don't have to manually follow up on material submission deadlines.

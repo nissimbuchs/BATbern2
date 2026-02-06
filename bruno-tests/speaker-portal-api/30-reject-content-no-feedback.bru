@@ -1,0 +1,39 @@
+meta {
+  name: Reject Content Without Feedback (Should Fail)
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{baseUrl}}/events/{{testEventCode}}/speakers/{{rejectionSpeakerPoolId}}/review
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "action": "REJECT"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 Bad Request when rejecting without feedback - Story 5.5 AC14", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should require feedback when rejecting content - Story 5.5 AC14", function() {
+    // Feedback is mandatory for rejection to help speaker improve their submission
+    expect(res.getStatus()).to.equal(400);
+    const body = res.getBody();
+    // Error message should indicate feedback is required
+    expect(body.message || body.error).to.include('feedback');
+  });
+}

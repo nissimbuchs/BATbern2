@@ -46,6 +46,8 @@ import { SpeakerStatusLanes } from '@/components/organizer/SpeakerStatus/Speaker
 import { SpeakersSessionsTable } from '@/components/organizer/EventManagement/SpeakersSessionsTable';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import SpeakerOutreachDetailsDrawer from '@/components/organizer/SpeakerOutreach/SpeakerOutreachDetailsDrawer';
+import { ContentSubmissionDrawer } from '@/components/organizer/SpeakerStatus/ContentSubmissionDrawer';
+import { QualityReviewDrawer } from '@/components/organizer/SpeakerStatus/QualityReviewDrawer';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SessionUI, SessionSpeaker } from '@/types/event.types';
 import type { SessionUpdateData } from '@/components/organizer/EventManagement/SessionEditModal';
@@ -72,6 +74,12 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const [detailsDrawerOpen, setDetailsDrawerOpen] = useState(false);
   const [autoAssignLoading, setAutoAssignLoading] = useState(false);
   const [autoAssignError, setAutoAssignError] = useState<string | null>(null);
+
+  // Content submission and quality review drawer state
+  const [contentDrawerOpen, setContentDrawerOpen] = useState(false);
+  const [contentSpeaker, setContentSpeaker] = useState<SpeakerPoolEntry | null>(null);
+  const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false);
+  const [reviewSpeaker, setReviewSpeaker] = useState<SpeakerPoolEntry | null>(null);
 
   // Fetch speaker status summary
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -136,6 +144,18 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   const handleIdentifiedToContacted = (speaker: SpeakerPoolEntry) => {
     setSelectedSpeaker(speaker);
     setDetailsDrawerOpen(true);
+  };
+
+  // Handle opening content submission drawer (from outreach details drawer)
+  const handleOpenContentSubmission = (speaker: SpeakerPoolEntry) => {
+    setContentSpeaker(speaker);
+    setContentDrawerOpen(true);
+  };
+
+  // Handle opening quality review drawer (from outreach details drawer)
+  const handleOpenQualityReview = (speaker: SpeakerPoolEntry) => {
+    setReviewSpeaker(speaker);
+    setReviewDrawerOpen(true);
   };
 
   // Session handlers
@@ -374,7 +394,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         </Paper>
       )}
 
-      {/* Speaker Details Drawer */}
+      {/* Speaker Details Drawer (with contact history for all statuses) */}
       <SpeakerOutreachDetailsDrawer
         open={detailsDrawerOpen}
         onClose={() => setDetailsDrawerOpen(false)}
@@ -383,6 +403,24 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
         showMarkContactedForm={
           selectedSpeaker?.status === 'IDENTIFIED' || selectedSpeaker?.status === 'CONTACTED'
         }
+        onOpenContentSubmission={handleOpenContentSubmission}
+        onOpenQualityReview={handleOpenQualityReview}
+      />
+
+      {/* Content Submission Drawer (for ACCEPTED speakers) */}
+      <ContentSubmissionDrawer
+        open={contentDrawerOpen}
+        onClose={() => setContentDrawerOpen(false)}
+        speaker={contentSpeaker}
+        eventCode={eventCode}
+      />
+
+      {/* Quality Review Drawer (for CONTENT_SUBMITTED speakers) */}
+      <QualityReviewDrawer
+        open={reviewDrawerOpen}
+        onClose={() => setReviewDrawerOpen(false)}
+        speaker={reviewSpeaker}
+        eventCode={eventCode}
       />
     </Stack>
   );

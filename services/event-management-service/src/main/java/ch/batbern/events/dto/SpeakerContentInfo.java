@@ -37,7 +37,12 @@ public record SpeakerContentInfo(
         boolean needsRevision,
         String reviewerFeedback,
         Instant reviewedAt,
-        String reviewedBy
+        String reviewedBy,
+
+        // Material upload (AC7)
+        boolean hasMaterial,
+        String materialUrl,
+        String materialFileName
 ) {
     /**
      * Static factory for when no session is assigned.
@@ -52,6 +57,9 @@ public record SpeakerContentInfo(
                 .contentStatus("PENDING")
                 .hasDraft(false)
                 .needsRevision(false)
+                .hasMaterial(false)
+                .materialUrl(null)
+                .materialFileName(null)
                 .build();
     }
 }
