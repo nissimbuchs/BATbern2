@@ -56,6 +56,8 @@ export interface SpeakerPoolEntry {
   contentSubmittedAt?: string;
   submittedTitle?: string;
   submittedAbstract?: string;
+  materialFileName?: string;
+  materialCloudFrontUrl?: string;
 }
 
 // ============================================================================

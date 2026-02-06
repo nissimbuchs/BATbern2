@@ -41,6 +41,7 @@ import {
   Person,
   Send as SendIcon,
   NotificationsActive,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
@@ -491,6 +492,27 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   >
                     {speaker.submittedAbstract}
                   </Typography>
+                )}
+                {speaker.materialFileName && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+                    <AttachFileIcon sx={{ fontSize: 16, color: '#1b5e20' }} />
+                    {speaker.materialCloudFrontUrl ? (
+                      <Button
+                        variant="text"
+                        href={speaker.materialCloudFrontUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="small"
+                        sx={{ textTransform: 'none', color: '#1b5e20', p: 0, minWidth: 0 }}
+                      >
+                        {speaker.materialFileName}
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: '#212121' }}>
+                        {speaker.materialFileName}
+                      </Typography>
+                    )}
+                  </Box>
                 )}
                 {speaker.contentSubmittedAt && (
                   <Typography variant="caption" sx={{ color: '#424242', mt: 1, display: 'block' }}>

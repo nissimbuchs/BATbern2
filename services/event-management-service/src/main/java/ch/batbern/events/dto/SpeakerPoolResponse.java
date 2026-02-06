@@ -50,6 +50,8 @@ public class SpeakerPoolResponse {
     private Instant contentSubmittedAt;
     private String submittedTitle;
     private String submittedAbstract;
+    private String materialFileName;
+    private String materialCloudFrontUrl;
 
     // Constructors
 
@@ -379,5 +381,21 @@ public class SpeakerPoolResponse {
 
     public void setSubmittedAbstract(String submittedAbstract) {
         this.submittedAbstract = submittedAbstract;
+    }
+
+    public String getMaterialFileName() {
+        return materialFileName;
+    }
+
+    public void setMaterialFileName(String materialFileName) {
+        this.materialFileName = materialFileName;
+    }
+
+    public String getMaterialCloudFrontUrl() {
+        return materialCloudFrontUrl;
+    }
+
+    public void setMaterialCloudFrontUrl(String materialCloudFrontUrl) {
+        this.materialCloudFrontUrl = materialCloudFrontUrl;
     }
 }
