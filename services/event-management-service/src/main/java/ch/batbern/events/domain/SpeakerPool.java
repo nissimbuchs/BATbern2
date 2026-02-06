@@ -136,6 +136,10 @@ public class SpeakerPool {
     @Column(name = "preference_comments", columnDefinition = "TEXT")
     private String preferenceComments;
 
+    // Story 6.5: Automated Deadline Reminders
+    @Column(name = "reminders_disabled")
+    private Boolean remindersDisabled = false;
+
     // Story 6.3: Speaker Content Submission Portal fields
     @Column(name = "content_status", length = 50)
     private String contentStatus = "PENDING"; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED

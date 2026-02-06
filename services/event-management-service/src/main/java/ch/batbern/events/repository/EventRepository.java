@@ -100,6 +100,15 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     );
 
     /**
+     * Find events with a date after the given timestamp.
+     * Used for deadline reminder processing (Story 6.5) - finds active/future events.
+     *
+     * @param after Find events after this date
+     * @return List of future events
+     */
+    List<Event> findByDateAfter(Instant after);
+
+    /**
      * Find events published after a given timestamp
      * Used for in-app notifications (Story BAT-7)
      *

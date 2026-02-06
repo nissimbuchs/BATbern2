@@ -42,6 +42,9 @@ public class SpeakerPoolResponse {
     private String initialPresentationTitle;
     private String preferenceComments;
 
+    // Story 6.5: Automated Deadline Reminders
+    private Boolean remindersDisabled;
+
     // Story 6.3: Speaker Content Submission Portal fields
     private String contentStatus;
     private Instant contentSubmittedAt;
@@ -91,6 +94,9 @@ public class SpeakerPoolResponse {
         response.technicalRequirements = speakerPool.getTechnicalRequirements();
         response.initialPresentationTitle = speakerPool.getInitialPresentationTitle();
         response.preferenceComments = speakerPool.getPreferenceComments();
+
+        // Story 6.5: Automated Deadline Reminders
+        response.remindersDisabled = speakerPool.getRemindersDisabled();
 
         // Story 6.3: Speaker Content Submission Portal fields
         response.contentStatus = speakerPool.getContentStatus();
@@ -329,6 +335,16 @@ public class SpeakerPoolResponse {
 
     public void setPreferenceComments(String preferenceComments) {
         this.preferenceComments = preferenceComments;
+    }
+
+    // Story 6.5: Automated Deadline Reminders getter and setter
+
+    public Boolean getRemindersDisabled() {
+        return remindersDisabled;
+    }
+
+    public void setRemindersDisabled(Boolean remindersDisabled) {
+        this.remindersDisabled = remindersDisabled;
     }
 
     // Story 6.3: Speaker Content Submission Portal getters and setters
