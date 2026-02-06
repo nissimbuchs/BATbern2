@@ -81,35 +81,43 @@ public class SpeakerReminderService {
             List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
 
             for (SpeakerPool speaker : speakers) {
-                // Process response deadline reminders (INVITED speakers)
-                if (speaker.getStatus() == SpeakerWorkflowState.INVITED
-                        && speaker.getResponseDeadline() != null) {
-                    String tier = findMatchingTier(today, speaker.getResponseDeadline());
-                    if (tier != null) {
-                        if (shouldSendReminder(speaker, REMINDER_TYPE_RESPONSE, tier, speaker.getResponseDeadline())) {
-                            sendAndLogReminder(speaker, event, REMINDER_TYPE_RESPONSE, tier,
-                                    speaker.getResponseDeadline(), TRIGGERED_BY_SYSTEM);
-                            responseReminders++;
-                        } else {
-                            skipped++;
+                try {
+                    // Process response deadline reminders (INVITED speakers)
+                    if (speaker.getStatus() == SpeakerWorkflowState.INVITED
+                            && speaker.getResponseDeadline() != null) {
+                        String tier = findMatchingTier(today, speaker.getResponseDeadline());
+                        if (tier != null) {
+                            if (shouldSendReminder(speaker, REMINDER_TYPE_RESPONSE, tier,
+                                    speaker.getResponseDeadline())) {
+                                sendAndLogReminder(speaker, event, REMINDER_TYPE_RESPONSE, tier,
+                                        speaker.getResponseDeadline(), TRIGGERED_BY_SYSTEM);
+                                responseReminders++;
+                            } else {
+                                skipped++;
+                            }
                         }
                     }
-                }
 
-                // Process content deadline reminders (ACCEPTED speakers with PENDING content)
-                if (speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
-                        && "PENDING".equals(speaker.getContentStatus())
-                        && speaker.getContentDeadline() != null) {
-                    String tier = findMatchingTier(today, speaker.getContentDeadline());
-                    if (tier != null) {
-                        if (shouldSendReminder(speaker, REMINDER_TYPE_CONTENT, tier, speaker.getContentDeadline())) {
-                            sendAndLogReminder(speaker, event, REMINDER_TYPE_CONTENT, tier,
-                                    speaker.getContentDeadline(), TRIGGERED_BY_SYSTEM);
-                            contentReminders++;
-                        } else {
-                            skipped++;
+                    // Process content deadline reminders (ACCEPTED speakers with PENDING content)
+                    if (speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
+                            && "PENDING".equals(speaker.getContentStatus())
+                            && speaker.getContentDeadline() != null) {
+                        String tier = findMatchingTier(today, speaker.getContentDeadline());
+                        if (tier != null) {
+                            if (shouldSendReminder(speaker, REMINDER_TYPE_CONTENT, tier,
+                                    speaker.getContentDeadline())) {
+                                sendAndLogReminder(speaker, event, REMINDER_TYPE_CONTENT, tier,
+                                        speaker.getContentDeadline(), TRIGGERED_BY_SYSTEM);
+                                contentReminders++;
+                            } else {
+                                skipped++;
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    log.error("Failed to process reminders for speaker {}: {}",
+                            speaker.getId(), e.getMessage(), e);
+                    skipped++;
                 }
             }
         }
@@ -237,6 +245,13 @@ public class SpeakerReminderService {
     /**
      * Send the reminder email and log it.
      */
+    /**
+     * Send the reminder email and log it.
+     * DB records are persisted BEFORE sending email to ensure dedup safety:
+     * if email succeeds but a later operation fails, the dedup record prevents
+     * duplicate emails on the next scheduler run. If email fails, the DB record
+     * remains and the organizer can retry manually via the send-reminder endpoint.
+     */
     private void sendAndLogReminder(
             SpeakerPool speaker,
             Event event,
@@ -245,48 +260,49 @@ public class SpeakerReminderService {
             LocalDate deadline,
             String triggeredBy
     ) {
-        try {
-            // Generate VIEW token for portal link
-            String portalToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
+        // Generate VIEW token for portal link
+        String portalToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
 
-            // Send email
+        // Persist reminder log BEFORE sending email (dedup safety)
+        SpeakerReminderLog reminderLog = SpeakerReminderLog.builder()
+                .speakerPoolId(speaker.getId())
+                .eventId(event.getId())
+                .reminderType(reminderType)
+                .tier(tier)
+                .emailAddress(speaker.getEmail())
+                .deadlineDate(deadline)
+                .triggeredBy(triggeredBy)
+                .build();
+        reminderLogRepository.save(reminderLog);
+
+        // Log in outreach history
+        String contactMethod = TRIGGERED_BY_SYSTEM.equals(triggeredBy)
+                ? "automated_email" : "manual_email";
+        String notes = String.format("%s deadline reminder (%s) sent for event %s. Deadline: %s",
+                reminderType, tier, event.getEventCode(), deadline);
+
+        OutreachHistory outreach = new OutreachHistory();
+        outreach.setSpeakerPoolId(speaker.getId());
+        outreach.setContactDate(Instant.now());
+        outreach.setContactMethod(contactMethod);
+        outreach.setNotes(notes);
+        outreach.setOrganizerUsername(
+                TRIGGERED_BY_SYSTEM.equals(triggeredBy) ? "SYSTEM" : triggeredBy);
+        outreachHistoryRepository.save(outreach);
+
+        // Send email - catch failures to preserve DB records for dedup
+        // TODO: Use speaker language preference when SpeakerPool gets a locale field
+        try {
             reminderEmailService.sendReminderEmail(
                     speaker, event, reminderType, tier, deadline, portalToken, Locale.GERMAN);
-
-            // Log in reminder_log
-            SpeakerReminderLog reminderLog = SpeakerReminderLog.builder()
-                    .speakerPoolId(speaker.getId())
-                    .eventId(event.getId())
-                    .reminderType(reminderType)
-                    .tier(tier)
-                    .emailAddress(speaker.getEmail())
-                    .deadlineDate(deadline)
-                    .triggeredBy(triggeredBy)
-                    .build();
-            reminderLogRepository.save(reminderLog);
-
-            // Log in outreach history
-            String contactMethod = TRIGGERED_BY_SYSTEM.equals(triggeredBy) ? "automated_email" : "manual_email";
-            String notes = String.format("%s deadline reminder (%s) sent for event %s. Deadline: %s",
-                    reminderType, tier, event.getEventCode(), deadline);
-
-            OutreachHistory outreach = new OutreachHistory();
-            outreach.setSpeakerPoolId(speaker.getId());
-            outreach.setContactDate(Instant.now());
-            outreach.setContactMethod(contactMethod);
-            outreach.setNotes(notes);
-            outreach.setOrganizerUsername(TRIGGERED_BY_SYSTEM.equals(triggeredBy) ? "SYSTEM" : triggeredBy);
-            outreachHistoryRepository.save(outreach);
-
-            // Escalation after Tier 3
-            if ("TIER_3".equals(tier) && reminderProperties.isEscalateAfterTier3()) {
-                sendOrganizerEscalation(speaker, event, reminderType);
-            }
-
         } catch (Exception e) {
-            log.error("Failed to send reminder for speaker {}: type={}, tier={}",
+            log.error("Failed to send reminder email for speaker {}: type={}, tier={}",
                     speaker.getId(), reminderType, tier, e);
-            // Don't rethrow - continue processing other speakers
+        }
+
+        // Escalation after Tier 3
+        if ("TIER_3".equals(tier) && reminderProperties.isEscalateAfterTier3()) {
+            sendOrganizerEscalation(speaker, event, reminderType);
         }
     }
 
@@ -297,10 +313,10 @@ public class SpeakerReminderService {
                     "Speaker %s has not %s despite 3 reminders for %s. Manual follow-up recommended.",
                     speaker.getSpeakerName(), typeLabel, event.getTitle());
 
-            // Notify the assigned organizer or event creator
+            // Notify the assigned organizer, falling back to event creator
             String organizerUsername = speaker.getAssignedOrganizerId() != null
                     ? speaker.getAssignedOrganizerId()
-                    : "admin"; // fallback
+                    : event.getOrganizerUsername();
 
             notificationService.createAndSendEmailNotification(
                     NotificationRequest.builder()

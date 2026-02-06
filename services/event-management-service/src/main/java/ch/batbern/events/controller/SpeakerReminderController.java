@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Map;
 import java.util.UUID;
 
@@ -117,6 +119,7 @@ public class SpeakerReminderController {
      */
     @PatchMapping("/reminders")
     @PreAuthorize("hasRole('ORGANIZER')")
+    @Transactional
     public ResponseEntity<Map<String, Object>> updateRemindersDisabled(
             @PathVariable String eventCode,
             @PathVariable UUID speakerPoolId,
