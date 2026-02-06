@@ -425,19 +425,27 @@ export default function ContentSubmissionPage() {
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Presentation File <span className="text-gray-500">(optional)</span>
               </label>
-              <PresentationUpload
-                token={token}
-                currentMaterialUrl={materialUrl}
-                currentMaterialName={materialFileName}
-                onMaterialUploaded={(url, fileName) => {
-                  setMaterialUrl(url);
-                  setMaterialFileName(fileName);
-                  setMaterialError(null);
-                }}
-                onError={(error) => {
-                  setMaterialError(error.message);
-                }}
-              />
+              {contentInfo.hasSessionAssigned ? (
+                <PresentationUpload
+                  token={token}
+                  currentMaterialUrl={materialUrl}
+                  currentMaterialName={materialFileName}
+                  onMaterialUploaded={(url, fileName) => {
+                    setMaterialUrl(url);
+                    setMaterialFileName(fileName);
+                    setMaterialError(null);
+                  }}
+                  onError={(error) => {
+                    setMaterialError(error.message);
+                  }}
+                />
+              ) : (
+                <div className="p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg text-sm">
+                  <p className="text-yellow-400">
+                    Submit your title and abstract first to enable file uploads.
+                  </p>
+                </div>
+              )}
               {materialError && (
                 <p className="text-red-400 text-sm mt-2" role="alert">
                   {materialError}
