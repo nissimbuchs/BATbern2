@@ -13,6 +13,7 @@ import ch.batbern.shared.types.TokenAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.util.HtmlUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,15 +176,17 @@ public class QualityReviewService {
             String eventName = event != null ? event.getTitle() : "BATbern Event";
             String speakerName = speaker.getSpeakerName() != null ? speaker.getSpeakerName() : "Speaker";
 
-            // Generate a new magic link token for the speaker portal (30-day validity)
-            String token = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 30);
+            // Generate a new magic link token for the speaker portal
+            // 14-day validity aligns with typical revision deadline and reduces security exposure
+            String token = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW, 14);
             String portalUrl = baseUrl + "/speaker-portal/content?token=" + token;
 
             String subject = String.format("Action Required: Please revise your submission for %s", eventName);
             String body = buildRevisionEmailBody(speakerName, eventName, feedback, portalUrl);
 
             emailService.sendHtmlEmail(speaker.getEmail(), subject, body);
-            log.info("Revision notification sent to speaker: {} with portal link", speaker.getEmail());
+            // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
+            log.info("Revision notification sent to speaker pool entry: {} with portal link", speaker.getId());
         } catch (Exception e) {
             log.error("Failed to send revision notification to speaker {}: {}",
                     speaker.getId(), e.getMessage());
@@ -191,6 +194,11 @@ public class QualityReviewService {
     }
 
     private String buildRevisionEmailBody(String speakerName, String eventName, String feedback, String portalUrl) {
+        // Escape HTML in user-provided content to prevent XSS (defense in depth)
+        String safeSpeakerName = HtmlUtils.htmlEscape(speakerName);
+        String safeEventName = HtmlUtils.htmlEscape(eventName);
+        String safeFeedback = HtmlUtils.htmlEscape(feedback).replace("\n", "<br/>");
+
         return String.format("""
             <html>
             <body>
@@ -222,7 +230,7 @@ public class QualityReviewService {
             The BATbern Team</p>
             </body>
             </html>
-            """, speakerName, eventName, feedback.replace("\n", "<br/>"), portalUrl, portalUrl, portalUrl);
+            """, safeSpeakerName, safeEventName, safeFeedback, portalUrl, portalUrl, portalUrl);
     }
 
     /**

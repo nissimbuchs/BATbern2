@@ -258,6 +258,11 @@ public class SpeakerContentSubmissionService {
                 ? latestSubmission.getContentAbstract() : session.getDescription();
 
         // Get material info for the session
+        // Security Note: CloudFront URLs are used for material delivery. These URLs are:
+        // - Pre-event: Only accessible to authenticated organizers via this endpoint (requires ORGANIZER role)
+        // - Post-publish: Publicly accessible via CDN after event is published
+        // This is intentional - materials become public when event is published to website.
+        // If stricter pre-event access control is needed, switch to S3 presigned URLs with expiration.
         boolean hasMaterial = false;
         String materialUrl = null;
         String materialFileName = null;
