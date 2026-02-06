@@ -22,6 +22,7 @@ import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerInvitationSentEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.types.TokenAction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -352,7 +353,8 @@ class SpeakerInvitationServiceTest {
             speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
 
             // Then
-            verify(emailService).sendInvitationEmail(any(), eq(testEvent), eq("test-token-123"), any());
+            verify(emailService).sendInvitationEmail(
+                    any(), eq(testEvent), eq("test-token-123"), eq("test-token-123"), any());
         }
 
         @Test
@@ -373,8 +375,10 @@ class SpeakerInvitationServiceTest {
             speakerInvitationService.sendInvitation(testEventCode, testUsername, request);
 
             // Then
-            verify(magicLinkService).generateToken(eq(testSpeakerId), any());
-            verify(emailService).sendInvitationEmail(any(), any(), eq("magic-token-xyz"), any());
+            verify(magicLinkService).generateToken(testSpeakerId, TokenAction.RESPOND);
+            verify(magicLinkService).generateToken(testSpeakerId, TokenAction.VIEW);
+            verify(emailService).sendInvitationEmail(
+                    any(), any(), eq("magic-token-xyz"), eq("magic-token-xyz"), any());
         }
 
         @Test

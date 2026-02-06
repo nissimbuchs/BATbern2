@@ -193,8 +193,9 @@ public class SpeakerInvitationService {
             throw new IllegalArgumentException("Speaker email is required to send invitation");
         }
 
-        // 3. Generate magic link token for response (RESPOND action)
+        // 3. Generate magic link tokens
         String respondToken = magicLinkService.generateToken(speaker.getId(), TokenAction.RESPOND);
+        String dashboardToken = magicLinkService.generateToken(speaker.getId(), TokenAction.VIEW);
 
         // 4. Capture previous status for history tracking
         SpeakerWorkflowState previousStatus = speaker.getStatus();
@@ -217,6 +218,7 @@ public class SpeakerInvitationService {
                 updated,
                 event,
                 respondToken,
+                dashboardToken,
                 locale
         );
 

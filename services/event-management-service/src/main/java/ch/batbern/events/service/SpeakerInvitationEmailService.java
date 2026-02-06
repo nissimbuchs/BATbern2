@@ -60,6 +60,7 @@ public class SpeakerInvitationEmailService {
      * @param speaker the speaker pool entry
      * @param event the event
      * @param respondToken magic link token for response (accept/decline)
+     * @param dashboardToken magic link token for dashboard access (reusable VIEW token)
      * @param locale preferred language (defaults to German)
      */
     @Async
@@ -67,6 +68,7 @@ public class SpeakerInvitationEmailService {
             SpeakerPool speaker,
             Event event,
             String respondToken,
+            String dashboardToken,
             Locale locale
     ) {
         try {
@@ -85,7 +87,8 @@ public class SpeakerInvitationEmailService {
                     speaker,
                     event,
                     eventDateTime,
-                    respondToken
+                    respondToken,
+                    dashboardToken
             );
 
             // Determine subject based on locale
@@ -116,7 +119,8 @@ public class SpeakerInvitationEmailService {
             SpeakerPool speaker,
             Event event,
             ZonedDateTime eventDateTime,
-            String respondToken
+            String respondToken,
+            String dashboardToken
     ) {
         try {
             // Determine template file based on locale
@@ -130,6 +134,7 @@ public class SpeakerInvitationEmailService {
             // Build magic link URLs
             String acceptLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=accept";
             String declineLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=decline";
+            String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + dashboardToken;
 
             // Get session details if assigned
             String sessionTitle = "";
@@ -154,6 +159,7 @@ public class SpeakerInvitationEmailService {
                     Map.entry("sessionDescription", sessionDescription),
                     Map.entry("acceptLink", acceptLink),
                     Map.entry("declineLink", declineLink),
+                    Map.entry("dashboardLink", dashboardLink),
                     Map.entry("responseDeadline", speaker.getResponseDeadline() != null
                             ? speaker.getResponseDeadline().format(DATE_FORMATTER)
                             : ""),
