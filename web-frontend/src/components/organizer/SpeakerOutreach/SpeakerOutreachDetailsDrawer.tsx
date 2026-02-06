@@ -376,37 +376,37 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
             {/* Response Details - Story 6.2a */}
             {/* Show for any speaker who has accepted (acceptedAt is set), not just current ACCEPTED status */}
             {speaker.acceptedAt && (
-              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="success.dark" gutterBottom>
                   {t('speakers.responseDetails')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="success.dark">
                   {t('speakers.acceptedAt')}: {formatDate(speaker.acceptedAt)}
                 </Typography>
                 {speaker.preferredTimeSlot && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="success.dark">
                     {t('speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
                   </Typography>
                 )}
                 {speaker.travelRequirements && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="success.dark">
                     {t('speakers.travelRequirements')}: {speaker.travelRequirements}
                   </Typography>
                 )}
                 {speaker.technicalRequirements && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="success.dark">
                     {t('speakers.technicalRequirements')}: {speaker.technicalRequirements}
                   </Typography>
                 )}
                 {speaker.initialPresentationTitle && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="success.dark">
                     {t('speakers.initialTitle')}: {speaker.initialPresentationTitle}
                   </Typography>
                 )}
                 {speaker.preferenceComments && (
                   <Typography
                     variant="body2"
-                    color="text.secondary"
+                    color="success.dark"
                     sx={{ mt: 1, fontStyle: 'italic' }}
                   >
                     {t('speakers.comments')}: {speaker.preferenceComments}
@@ -416,27 +416,27 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
             )}
 
             {speaker.status === 'DECLINED' && speaker.declineReason && (
-              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="error.dark" gutterBottom>
                   {t('speakers.declineDetails')}
                 </Typography>
                 {speaker.declinedAt && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="error.dark">
                     {t('speakers.declinedAt')}: {formatDate(speaker.declinedAt)}
                   </Typography>
                 )}
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="error.dark">
                   {t('speakers.declineReason')}: {speaker.declineReason}
                 </Typography>
               </Box>
             )}
 
             {speaker.isTentative && speaker.tentativeReason && (
-              <Box mt={2} sx={{ bgcolor: 'warning.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+              <Box mt={2} sx={{ bgcolor: 'warning.light', p: 1.5, borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="warning.dark" gutterBottom>
                   {t('speakers.tentativeDetails')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="warning.dark">
                   {t('speakers.tentativeReason')}: {speaker.tentativeReason}
                 </Typography>
               </Box>
@@ -444,11 +444,11 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
             {/* Revision Needed Feedback (when content was rejected) */}
             {speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes && (
-              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="error.dark" gutterBottom>
                   {t('speakers.revisionRequested', 'Revision Requested')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                <Typography variant="body2" color="error.dark" sx={{ whiteSpace: 'pre-wrap' }}>
                   {speaker.notes}
                 </Typography>
               </Box>
@@ -456,7 +456,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
             {/* Story 6.3: Submitted Content Display */}
             {speaker.submittedTitle && (
-              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
+              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1 }}>
                 <Typography variant="subtitle2" color="success.dark" gutterBottom>
                   {t('speakers.submittedContent', 'Submitted Content')}
                   {speaker.contentStatus && (
@@ -474,13 +474,13 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     />
                   )}
                 </Typography>
-                <Typography variant="body2" fontWeight="medium" gutterBottom>
+                <Typography variant="body2" color="success.dark" fontWeight="medium" gutterBottom>
                   {speaker.submittedTitle}
                 </Typography>
                 {speaker.submittedAbstract && (
                   <Typography
                     variant="body2"
-                    color="text.secondary"
+                    color="success.dark"
                     sx={{
                       mt: 1,
                       whiteSpace: 'pre-wrap',
@@ -494,7 +494,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 {speaker.contentSubmittedAt && (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
+                    color="success.dark"
                     sx={{ mt: 1, display: 'block' }}
                   >
                     {t('speakers.submittedAt', 'Submitted')}:{' '}
