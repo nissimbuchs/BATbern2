@@ -52,22 +52,22 @@ function getDeadlineUrgency(deadline: string): 'green' | 'amber' | 'red' {
 }
 
 const urgencyColors = {
-  green: 'text-green-600 bg-green-50',
-  amber: 'text-amber-600 bg-amber-50',
-  red: 'text-red-600 bg-red-50',
+  green: 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/40',
+  amber: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40',
+  red: 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/40',
 };
 
 const statusBadgeColors: Record<string, string> = {
-  INVITED: 'bg-blue-100 text-blue-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  CONFIRMED: 'bg-emerald-100 text-emerald-800',
+  INVITED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  ACCEPTED: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
 
 const contentStatusColors: Record<string, string> = {
-  PENDING: 'bg-gray-100 text-gray-700',
-  SUBMITTED: 'bg-blue-100 text-blue-700',
-  APPROVED: 'bg-green-100 text-green-700',
-  REVISION_NEEDED: 'bg-orange-100 text-orange-700',
+  PENDING: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  SUBMITTED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  APPROVED: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  REVISION_NEEDED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
 };
 
 function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; token: string }) {
@@ -79,8 +79,8 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         {/* Event header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{event.eventTitle}</h3>
-            <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+            <h3 className="text-lg font-semibold text-foreground">{event.eventTitle}</h3>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 {event.eventDate}
@@ -95,13 +95,13 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
           </div>
           <div className="flex gap-2 flex-wrap">
             <span
-              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[event.workflowState] || 'bg-gray-100 text-gray-700'}`}
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[event.workflowState] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
             >
               {event.workflowStateLabel}
             </span>
             {event.contentStatus && (
               <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${contentStatusColors[event.contentStatus] || 'bg-gray-100 text-gray-700'}`}
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${contentStatusColors[event.contentStatus] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
               >
                 {event.contentStatusLabel}
               </span>
@@ -111,7 +111,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
 
         {/* Session title */}
         {event.sessionTitle && (
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-muted-foreground">
             <span className="font-medium">{t('speakerPortal.dashboard.session')}:</span>{' '}
             {event.sessionTitle}
           </div>
@@ -123,7 +123,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
             {event.hasTitle ? (
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
             )}
             <span>{t('speakerPortal.dashboard.titleStatus')}</span>
           </div>
@@ -131,7 +131,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
             {event.hasAbstract ? (
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
             )}
             <span>{t('speakerPortal.dashboard.abstractStatus')}</span>
           </div>
@@ -139,7 +139,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
             {event.hasMaterial ? (
               <CheckCircle2 className="w-4 h-4 text-green-500" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
             )}
             <span>{t('speakerPortal.dashboard.materialStatus')}</span>
           </div>
@@ -147,12 +147,12 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
 
         {/* Reviewer feedback (AC4) */}
         {event.reviewerFeedback && (
-          <div className="bg-orange-50 border border-orange-200 rounded-md p-3 text-sm">
-            <div className="flex items-center gap-1 font-medium text-orange-800 mb-1">
+          <div className="bg-orange-50 border border-orange-200 rounded-md p-3 text-sm dark:bg-orange-950/30 dark:border-orange-800">
+            <div className="flex items-center gap-1 font-medium text-orange-800 dark:text-orange-300 mb-1">
               <AlertTriangle className="w-4 h-4" />
               {t('speakerPortal.dashboard.revisionRequested')}
             </div>
-            <p className="text-orange-700">{event.reviewerFeedback}</p>
+            <p className="text-orange-700 dark:text-orange-400">{event.reviewerFeedback}</p>
           </div>
         )}
 
@@ -178,7 +178,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
 
         {/* Organizer contact (AC5) */}
         {event.organizerName && (
-          <div className="text-sm text-gray-600 flex items-center gap-1">
+          <div className="text-sm text-muted-foreground flex items-center gap-1">
             <User className="w-4 h-4" />
             <span>
               {t('speakerPortal.dashboard.organizer')}: {event.organizerName}
@@ -196,7 +196,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         )}
 
         {/* Quick actions (AC2) */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
           {event.respondUrl && (
             <Link
               to={`${event.respondUrl}?token=${token}`}
@@ -208,7 +208,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
           )}
           <Link
             to={`${event.profileUrl}?token=${token}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent"
           >
             <User className="w-3.5 h-3.5" />
             {t('speakerPortal.dashboard.updateProfile')}
@@ -216,7 +216,7 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
           {event.contentUrl && (
             <Link
               to={`${event.contentUrl}?token=${token}`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent"
             >
               <FileText className="w-3.5 h-3.5" />
               {t('speakerPortal.dashboard.submitContent')}
@@ -233,8 +233,8 @@ function PastEventCard({ event }: { event: DashboardPastEvent }) {
     <Card className="p-4 mb-3">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h3 className="text-base font-medium text-gray-900">{event.eventTitle}</h3>
-          <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
+          <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
               {event.eventDate}
@@ -242,14 +242,14 @@ function PastEventCard({ event }: { event: DashboardPastEvent }) {
             {event.sessionTitle && <span>{event.sessionTitle}</span>}
           </div>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-muted-foreground">
           {event.hasMaterial ? (
-            <span className="flex items-center gap-1 text-green-600">
+            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
               <FileText className="w-4 h-4" />
               {event.materialFileName}
             </span>
           ) : (
-            <span className="text-gray-400">No materials</span>
+            <span className="text-muted-foreground">No materials</span>
           )}
         </div>
       </div>
@@ -305,13 +305,13 @@ const SpeakerDashboardPage = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-background py-8 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Loading state (AC8) */}
           {pageState === 'loading' && (
             <div className="flex flex-col items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-              <p className="text-gray-500">{t('speakerPortal.dashboard.loading')}</p>
+              <p className="text-muted-foreground">{t('speakerPortal.dashboard.loading')}</p>
             </div>
           )}
 
@@ -319,10 +319,10 @@ const SpeakerDashboardPage = () => {
           {pageState === 'error' && (
             <Card className="p-8 text-center">
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-foreground mb-2">
                 {getErrorContent().title}
               </h2>
-              <p className="text-gray-600">{getErrorContent().message}</p>
+              <p className="text-muted-foreground">{getErrorContent().message}</p>
             </Card>
           )}
 
@@ -339,15 +339,15 @@ const SpeakerDashboardPage = () => {
                       className="w-16 h-16 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
-                      <User className="w-8 h-8 text-gray-400" />
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                      <User className="w-8 h-8 text-muted-foreground" />
                     </div>
                   )}
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-bold text-foreground">
                       {t('speakerPortal.dashboard.welcome', { name: dashboard.speakerName })}
                     </h1>
-                    <p className="text-gray-500">
+                    <p className="text-muted-foreground">
                       {t('speakerPortal.dashboard.profileComplete', {
                         percent: dashboard.profileCompleteness,
                       })}
@@ -358,11 +358,11 @@ const SpeakerDashboardPage = () => {
 
               {/* Upcoming Events (AC2) */}
               <section className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                <h2 className="text-xl font-semibold text-foreground mb-4">
                   {t('speakerPortal.dashboard.upcomingEvents')}
                 </h2>
                 {dashboard.upcomingEvents.length === 0 ? (
-                  <Card className="p-6 text-center text-gray-500">
+                  <Card className="p-6 text-center text-muted-foreground">
                     {t('speakerPortal.dashboard.noUpcomingEvents')}
                   </Card>
                 ) : (
@@ -374,11 +374,11 @@ const SpeakerDashboardPage = () => {
 
               {/* Past Events (AC3) */}
               <section>
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                <h2 className="text-xl font-semibold text-foreground mb-4">
                   {t('speakerPortal.dashboard.pastEvents')}
                 </h2>
                 {dashboard.pastEvents.length === 0 ? (
-                  <Card className="p-6 text-center text-gray-500">
+                  <Card className="p-6 text-center text-muted-foreground">
                     {t('speakerPortal.dashboard.noPastEvents')}
                   </Card>
                 ) : (
