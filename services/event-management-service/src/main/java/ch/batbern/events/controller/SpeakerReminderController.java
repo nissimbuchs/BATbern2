@@ -85,7 +85,8 @@ public class SpeakerReminderController {
 
         String reminderType = request.getReminderType().toUpperCase();
         if (!"RESPONSE".equals(reminderType) && !"CONTENT".equals(reminderType)) {
-            throw new IllegalArgumentException("Invalid reminderType: " + reminderType + ". Must be RESPONSE or CONTENT");
+            throw new IllegalArgumentException(
+                    "Invalid reminderType: " + reminderType + ". Must be RESPONSE or CONTENT");
         }
 
         try {
