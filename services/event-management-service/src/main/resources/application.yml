@@ -123,7 +123,8 @@ user-service:
 
 aws:
   s3:
-    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+    # For local dev, use 'materials' bucket (matches the CloudFront URL path prefix)
+    bucket-name: ${AWS_S3_BUCKET_NAME:materials}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 

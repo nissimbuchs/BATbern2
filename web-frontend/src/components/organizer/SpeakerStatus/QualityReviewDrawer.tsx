@@ -38,6 +38,7 @@ import {
   Warning as WarningIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -224,6 +225,32 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
               {content.presentationAbstract}
             </Typography>
+          </Paper>
+
+          {/* Material Upload */}
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              {t('qualityReview.material', 'Presentation Material')}
+            </Typography>
+            {content.hasMaterial && content.materialUrl ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <AttachFileIcon color="primary" fontSize="small" />
+                <Button
+                  variant="text"
+                  href={content.materialUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textTransform: 'none' }}
+                >
+                  {content.materialFileName ||
+                    t('qualityReview.downloadMaterial', 'Download Material')}
+                </Button>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                {t('qualityReview.noMaterial', 'No material uploaded yet')}
+              </Typography>
+            )}
           </Paper>
 
           {/* Quality Criteria */}

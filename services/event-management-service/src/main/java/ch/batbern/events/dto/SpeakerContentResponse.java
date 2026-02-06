@@ -83,4 +83,19 @@ public class SpeakerContentResponse {
      * When content was submitted
      */
     private Instant submittedAt;
+
+    /**
+     * Whether material has been uploaded (AC7)
+     */
+    private boolean hasMaterial;
+
+    /**
+     * Material URL (CloudFront CDN URL)
+     */
+    private String materialUrl;
+
+    /**
+     * Material filename for display
+     */
+    private String materialFileName;
 }

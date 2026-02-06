@@ -39,8 +39,12 @@ tags:
     description: Speaker profile and management operations
   - name: Speaker Preferences
     description: Slot preferences and technical requirements
+  - name: Speaker Status
+    description: Speaker workflow status management (Story 5.4)
+  - name: Speaker Content
+    description: Speaker content submission - title, abstract, materials (Story 5.5)
   - name: Quality Review
-    description: Content quality review workflow
+    description: Content quality review workflow - approve/reject (Story 5.5)
   - name: Speaker Outreach
     description: Speaker outreach tracking and contact history (Story 5.3)
 
@@ -514,6 +518,228 @@ paths:
                 $ref: '#/components/schemas/StatusSummaryResponse'
         '404':
           description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+  # Speaker Content Submission (Story 5.5)
+  /events/{eventCode}/speakers/{speakerId}/content:
+    get:
+      tags:
+        - Speaker Content
+      summary: Get speaker content
+      description: |
+        Retrieve existing presentation content for a speaker.
+        Story 5.5: Speaker Content Submission (AC34)
+
+        Handles orphaned session references by resetting speaker state.
+        Returns material information if uploaded.
+
+      operationId: getSpeakerContent
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          description: Speaker pool ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Speaker content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerContentResponse'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+    post:
+      tags:
+        - Speaker Content
+      summary: Submit speaker content
+      description: |
+        Submit speaker content (presentation title and abstract).
+        Story 5.5: Speaker Content Submission (AC6-10, AC33-34, AC37)
+
+        Creates a session with the presentation details and links the speaker.
+        Updates speaker status to CONTENT_SUBMITTED.
+
+      operationId: submitSpeakerContent
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          description: Speaker pool ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitContentRequest'
+      responses:
+        '201':
+          description: Content submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerContentResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid state - speaker must be in ACCEPTED state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+  # Quality Review Queue (Story 5.5)
+  /events/{eventCode}/speakers/review-queue:
+    get:
+      tags:
+        - Quality Review
+      summary: Get quality review queue
+      description: |
+        Get review queue showing all speakers with CONTENT_SUBMITTED status.
+        Story 5.5: Speaker Content Submission (AC11)
+
+        Returns speakers pending quality review, ordered by submission date (oldest first).
+
+      operationId: getReviewQueue
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+      responses:
+        '200':
+          description: Review queue retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeakerPoolEntry'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - requires ORGANIZER role
+
+  # Quality Review Action (Story 5.5)
+  /events/{eventCode}/speakers/{speakerId}/review:
+    post:
+      tags:
+        - Quality Review
+      summary: Approve or reject speaker content
+      description: |
+        Approve or reject speaker content quality review.
+        Story 5.5: Speaker Content Submission (AC13-14, AC17)
+
+        - APPROVE: Updates speaker status to QUALITY_REVIEWED
+        - REJECT: Requires feedback, sends notification to speaker with magic link
+
+        Auto-updates to CONFIRMED when both QUALITY_REVIEWED AND slot is assigned.
+
+      operationId: reviewSpeakerContent
+      security:
+        - CognitoAuth: [ORGANIZER]
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          description: Event code (ADR-003)
+          schema:
+            type: string
+            example: BATbern56
+        - name: speakerId
+          in: path
+          required: true
+          description: Speaker pool ID (UUID)
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '204':
+          description: Review action completed successfully
+        '400':
+          description: Validation error (e.g., feedback required for rejection)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid state - speaker must be in CONTENT_SUBMITTED state
           content:
             application/json:
               schema:
@@ -1186,3 +1412,187 @@ components:
           type: string
           maxLength: 2000
           description: Optional notes about the outreach
+
+    # Story 5.5: Speaker Content Submission Schemas
+
+    SubmitContentRequest:
+      type: object
+      description: |
+        Request to submit speaker content (Story 5.5 AC6-10).
+        Creates a session with the presentation details and links the speaker.
+      required:
+        - presentationTitle
+        - presentationAbstract
+      properties:
+        presentationTitle:
+          type: string
+          description: Presentation title (becomes session.title)
+          maxLength: 255
+          example: "Zero Trust Security in Enterprise Environments"
+        presentationAbstract:
+          type: string
+          description: Presentation abstract (becomes session.description). Max 1000 characters.
+          maxLength: 1000
+          example: "This talk explores the implementation of Zero Trust security principles in large enterprise environments, covering identity verification, micro-segmentation, and continuous monitoring strategies."
+        username:
+          type: string
+          description: Speaker username (if existing user selected, ADR-003)
+          example: john.doe
+        speakerName:
+          type: string
+          description: Speaker name (if creating new user)
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: Speaker email (if creating new user)
+          example: john.doe@example.com
+        company:
+          type: string
+          description: Speaker company (optional)
+          example: Google Switzerland
+        bio:
+          type: string
+          description: Speaker bio (optional)
+          example: "Experienced security architect with 15 years in the industry."
+
+    SpeakerContentResponse:
+      type: object
+      description: |
+        Response for speaker content operations (Story 5.5 AC6-10).
+        Returns session details and speaker status after content submission or retrieval.
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: Speaker pool entry ID
+        eventId:
+          type: string
+          format: uuid
+          description: Event ID
+        sessionId:
+          type: string
+          format: uuid
+          description: Created session ID (AC7)
+        presentationTitle:
+          type: string
+          description: Presentation title (from session.title)
+          example: "Zero Trust Security in Enterprise Environments"
+        presentationAbstract:
+          type: string
+          description: Presentation abstract (from session.description)
+          example: "This talk explores..."
+        username:
+          type: string
+          description: Speaker username (ADR-003)
+          example: john.doe
+        speakerName:
+          type: string
+          description: Speaker full name
+          example: John Doe
+        company:
+          type: string
+          description: Speaker company
+          example: Google Switzerland
+        status:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        hasContent:
+          type: boolean
+          description: Whether content exists for this speaker. False if session was deleted (AC34).
+        warning:
+          type: string
+          description: Warning message if issues detected (AC34 - "Content was lost. Please resubmit.")
+        submittedAt:
+          type: string
+          format: date-time
+          description: When content was submitted
+        hasMaterial:
+          type: boolean
+          description: Whether presentation material has been uploaded
+        materialUrl:
+          type: string
+          format: uri
+          description: Material download URL (CloudFront CDN URL)
+          example: "https://cdn.batbern.ch/materials/presentation.pdf"
+        materialFileName:
+          type: string
+          description: Material filename for display
+          example: "zero-trust-presentation.pdf"
+
+    ReviewRequest:
+      type: object
+      description: Request for quality review action (Story 5.5 AC13-14)
+      required:
+        - action
+      properties:
+        action:
+          $ref: '#/components/schemas/ReviewAction'
+        feedback:
+          type: string
+          description: Feedback for rejection (required when action is REJECT)
+          maxLength: 2000
+          example: "Please provide more technical details about the implementation approach."
+
+    ReviewAction:
+      type: string
+      enum:
+        - APPROVE
+        - REJECT
+      description: |
+        Quality review action:
+        - APPROVE: Accept the content, update status to QUALITY_REVIEWED
+        - REJECT: Reject the content, requires feedback, sends notification with magic link
+
+    SpeakerPoolEntry:
+      type: object
+      description: Speaker pool entry for review queue
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Speaker pool entry ID
+        eventId:
+          type: string
+          format: uuid
+          description: Event ID
+        speakerName:
+          type: string
+          description: Speaker name
+          example: John Doe
+        company:
+          type: string
+          description: Speaker company
+          example: Google Switzerland
+        status:
+          $ref: '#/components/schemas/SpeakerWorkflowState'
+        contentStatus:
+          type: string
+          enum:
+            - NOT_STARTED
+            - IN_PROGRESS
+            - SUBMITTED
+            - REVISION_NEEDED
+          description: Content submission status
+        sessionId:
+          type: string
+          format: uuid
+          description: Associated session ID (if content submitted)
+        submittedAt:
+          type: string
+          format: date-time
+          description: When content was submitted
+        notes:
+          type: string
+          description: Notes (e.g., rejection feedback)
+
+  securitySchemes:
+    CognitoAuth:
+      type: oauth2
+      description: AWS Cognito authentication with role-based access control
+      flows:
+        implicit:
+          authorizationUrl: https://auth.batbern.ch/oauth2/authorize
+          scopes:
+            ORGANIZER: Organizer role - can manage speakers, events, and content
+            ATTENDEE: Attendee role - read-only access to public speaker info
+            SPEAKER: Speaker role - can manage own profile and content

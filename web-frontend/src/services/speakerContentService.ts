@@ -35,6 +35,10 @@ export interface SpeakerContentResponse {
   presentationAbstract: string;
   username: string;
   warning?: string;
+  // Material fields (AC7)
+  hasMaterial?: boolean;
+  materialUrl?: string;
+  materialFileName?: string;
 }
 
 /**

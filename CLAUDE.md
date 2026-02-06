@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-01-24
+**Last Updated:** 2026-02-03
 
-**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY**
+**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epic 6 DEPLOYED TO STAGING**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are now 100% complete! The platform is fully functional and ready for production launch.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epic 6 (Speaker Self-Service Portal) Phase 1 & 2 deployed to staging.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import scheduled)
 - ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
 - ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
+- ✅ **Epic 6**: Speaker Self-Service Portal - DEPLOYED TO STAGING (Phase 1 & 2 complete)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -29,7 +30,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Next Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal (optional enhancement layer)
+**Current Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal ✅ **DEPLOYED TO STAGING** (2026-02-03)
+- Stories 6.0-6.3: Complete (invitation, response, content submission)
+- Story 6.4: Partial (dashboard views available)
+- Story 6.5: Pending (automated reminders)
 
 ## Project Overview
 
@@ -44,7 +48,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** - Ready for Phase 2 (Speaker Portal)
+**Phase:** ✅ **MVP COMPLETE** + **Epic 6 on Staging**
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -52,18 +56,19 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
 - ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
+- ✅ **Epic 6**: Speaker Self-Service Portal - **DEPLOYED TO STAGING** (Stories 6.0-6.3 complete)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
 - ✅ All core functionality delivered and tested
 - ✅ Platform ready for production launch
-- ✅ Ready to begin Phase 2 (Epic 6 - Speaker Self-Service Portal)
+- ✅ Epic 6 Speaker Portal deployed to staging (2026-02-03)
 
 **When Adding New Features:**
 - ✅ MVP platform is 100% feature-complete
-- New features should be planned as part of Epic 6+ (Phase 2: Speaker Portal)
-- Current focus: Bug fixes, performance optimization, production readiness, and historical data import
-- Prioritize production deployment preparation over new feature development
+- Epic 6 Phase 1 & 2 deployed - remaining: Story 6.4 (dashboard), Story 6.5 (reminders)
+- Current focus: Epic 6 testing on staging, bug fixes, production readiness
+- Prioritize Epic 6 completion and production deployment
 
 ## Build System
 
