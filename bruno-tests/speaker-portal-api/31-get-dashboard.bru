@@ -1,0 +1,77 @@
+meta {
+  name: Get Speaker Dashboard (Story 6.4)
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard?token={{speakerViewToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.speakerName: isDefined
+  res.body.upcomingEvents: isArray
+  res.body.pastEvents: isArray
+}
+
+tests {
+  test("should return dashboard successfully - Story 6.4 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.speakerName).to.be.a('string');
+  });
+
+  test("should include upcoming events array - Story 6.4 AC2", function() {
+    const body = res.getBody();
+    expect(body.upcomingEvents).to.be.an('array');
+  });
+
+  test("should include past events array - Story 6.4 AC3", function() {
+    const body = res.getBody();
+    expect(body.pastEvents).to.be.an('array');
+  });
+
+  test("should include profile completeness - Story 6.4 AC1", function() {
+    const body = res.getBody();
+    expect(body.profileCompleteness).to.be.a('number');
+    expect(body.profileCompleteness).to.be.at.least(0);
+    expect(body.profileCompleteness).to.be.at.most(100);
+  });
+
+  test("should show upcoming event with correct structure - Story 6.4 AC2", function() {
+    const body = res.getBody();
+    if (body.upcomingEvents.length > 0) {
+      const event = body.upcomingEvents[0];
+      expect(event.eventTitle).to.be.a('string');
+      expect(event.eventCode).to.be.a('string');
+      expect(event.eventDate).to.be.a('string');
+      expect(event.workflowState).to.be.a('string');
+      expect(event.workflowStateLabel).to.be.a('string');
+      expect(event.profileUrl).to.be.a('string');
+    }
+  });
+
+  test("should include organizer contact for upcoming events - Story 6.4 AC5", function() {
+    const body = res.getBody();
+    if (body.upcomingEvents.length > 0) {
+      const event = body.upcomingEvents[0];
+      expect(event.organizerName).to.be.a('string');
+      expect(event.organizerEmail).to.be.a('string');
+    }
+  });
+
+  test("should include content status for upcoming events - Story 6.4 AC4", function() {
+    const body = res.getBody();
+    if (body.upcomingEvents.length > 0) {
+      const event = body.upcomingEvents[0];
+      expect(event).to.have.property('hasTitle');
+      expect(event).to.have.property('hasAbstract');
+      expect(event).to.have.property('hasMaterial');
+      expect(event).to.have.property('contentStatus');
+      expect(event).to.have.property('contentStatusLabel');
+    }
+  });
+}

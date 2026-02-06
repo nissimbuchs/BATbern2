@@ -357,6 +357,33 @@
     "unassigned": "Nicht zugewiesen"
   },
   "speakerPortal": {
+    "dashboard": {
+      "loading": "Dashboard wird geladen...",
+      "invalidLink": "Ungültiger Link",
+      "invalidLinkMessage": "Diese Seite erfordert einen gültigen Dashboard-Link. Bitte verwenden Sie den Link aus Ihrer Einladungs-E-Mail.",
+      "linkExpired": "Link abgelaufen",
+      "linkExpiredMessage": "Ihr Link ist abgelaufen. Bitte kontaktieren Sie den Veranstalter für einen neuen Link.",
+      "error": "Etwas ist schiefgelaufen",
+      "errorMessage": "Ihr Dashboard konnte nicht geladen werden. Bitte versuchen Sie es später erneut.",
+      "welcome": "Willkommen, {{name}}",
+      "profileComplete": "Profil {{percent}}% vollständig",
+      "upcomingEvents": "Bevorstehende Veranstaltungen",
+      "pastEvents": "Vergangene Veranstaltungen",
+      "noUpcomingEvents": "Sie haben keine bevorstehenden Vorträge",
+      "noPastEvents": "Noch keine vergangenen Vorträge",
+      "session": "Session",
+      "titleStatus": "Titel",
+      "abstractStatus": "Abstract",
+      "materialStatus": "Material",
+      "revisionRequested": "Überarbeitung erforderlich",
+      "responseBy": "Antwort bis",
+      "contentBy": "Inhalt fällig",
+      "organizer": "Organisator",
+      "contact": "Kontakt",
+      "respond": "Antworten",
+      "updateProfile": "Profil bearbeiten",
+      "submitContent": "Inhalt einreichen"
+    },
     "content": {
       "title": "Inhalt einreichen",
       "loading": "Inhalt wird geladen...",

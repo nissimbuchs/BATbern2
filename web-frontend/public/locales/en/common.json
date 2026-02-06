@@ -356,6 +356,33 @@
     "unassigned": "Unassigned"
   },
   "speakerPortal": {
+    "dashboard": {
+      "loading": "Loading your dashboard...",
+      "invalidLink": "Invalid Link",
+      "invalidLinkMessage": "This page requires a valid dashboard link. Please use the link from your invitation email.",
+      "linkExpired": "Link Has Expired",
+      "linkExpiredMessage": "Your link has expired. Please contact the event organizer for a new link.",
+      "error": "Something Went Wrong",
+      "errorMessage": "We couldn't load your dashboard. Please try again later.",
+      "welcome": "Welcome, {{name}}",
+      "profileComplete": "Profile {{percent}}% complete",
+      "upcomingEvents": "Upcoming Events",
+      "pastEvents": "Past Events",
+      "noUpcomingEvents": "You don't have any upcoming speaking engagements",
+      "noPastEvents": "No past speaking engagements yet",
+      "session": "Session",
+      "titleStatus": "Title",
+      "abstractStatus": "Abstract",
+      "materialStatus": "Material",
+      "revisionRequested": "Revision Requested",
+      "responseBy": "Respond by",
+      "contentBy": "Content due",
+      "organizer": "Organizer",
+      "contact": "Contact",
+      "respond": "Respond",
+      "updateProfile": "Update Profile",
+      "submitContent": "Submit Content"
+    },
     "content": {
       "title": "Submit Your Content",
       "loading": "Loading content...",

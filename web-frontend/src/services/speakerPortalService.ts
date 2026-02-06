@@ -95,6 +95,60 @@ export interface SpeakerPortalError {
 }
 
 // ============================================================================
+// Story 6.4: Dashboard Types
+// ============================================================================
+
+/**
+ * Upcoming event in the speaker dashboard (AC2)
+ */
+export interface DashboardUpcomingEvent {
+  eventCode: string;
+  eventTitle: string;
+  eventDate: string;
+  eventLocation: string;
+  sessionTitle: string | null;
+  workflowState: string;
+  workflowStateLabel: string;
+  contentStatus: string | null;
+  contentStatusLabel: string | null;
+  hasTitle: boolean;
+  hasAbstract: boolean;
+  hasMaterial: boolean;
+  materialFileName: string | null;
+  responseDeadline: string | null;
+  contentDeadline: string | null;
+  reviewerFeedback: string | null;
+  organizerName: string | null;
+  organizerEmail: string | null;
+  respondUrl: string | null;
+  profileUrl: string;
+  contentUrl: string | null;
+}
+
+/**
+ * Past event in the speaker dashboard (AC3)
+ */
+export interface DashboardPastEvent {
+  eventCode: string;
+  eventTitle: string;
+  eventDate: string;
+  sessionTitle: string | null;
+  hasMaterial: boolean;
+  materialFileName: string | null;
+}
+
+/**
+ * Speaker dashboard summary (AC1-AC5)
+ */
+export interface SpeakerDashboard {
+  speakerName: string;
+  profilePictureUrl: string | null;
+  profileCompleteness: number;
+  upcomingEvents: DashboardUpcomingEvent[];
+  pastEvents: DashboardPastEvent[];
+}
+
+// ============================================================================
 // Story 6.2b: Profile Management Types
 // ============================================================================
 
@@ -338,6 +392,34 @@ class SpeakerPortalService {
         {
           headers: {
             // Public endpoint - skip auth header
+            'Skip-Auth': 'true',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  // ==========================================================================
+  // Story 6.4: Dashboard
+  // ==========================================================================
+
+  /**
+   * Get speaker dashboard summary.
+   * Story 6.4: Speaker Dashboard (View-Only)
+   *
+   * @param token Magic link token
+   * @returns Dashboard summary with upcoming and past events
+   */
+  async getDashboard(token: string): Promise<SpeakerDashboard> {
+    try {
+      const response = await apiClient.get<SpeakerDashboard>(
+        `${SPEAKER_PORTAL_API_PATH}/dashboard`,
+        {
+          params: { token },
+          headers: {
             'Skip-Auth': 'true',
           },
         }

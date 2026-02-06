@@ -109,6 +109,9 @@ public class SecurityConfig {
                         "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
+                // Story 6.4: Speaker dashboard endpoint (no auth required, token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()
+
                 // Story 6.3: Speaker portal content submission endpoints (no auth required, token-protected)
                 .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
