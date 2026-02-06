@@ -415,5 +415,49 @@ class SpeakerReminderServiceTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not found");
         }
+
+        @Test
+        @DisplayName("should fallback to event date when CONTENT deadline is null")
+        void shouldFallbackToEventDate_whenContentDeadlineNull() {
+            // Regression: sendManualReminder threw when ACCEPTED speaker had no contentDeadline
+            testSpeaker.setStatus(SpeakerWorkflowState.ACCEPTED);
+            testSpeaker.setContentStatus("PENDING");
+            testSpeaker.setContentDeadline(null); // no deadline set
+
+            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
+                    .thenReturn("test-token");
+
+            var result = speakerReminderService.sendManualReminder(
+                    speakerPoolId, "CONTENT", "TIER_1", "organizer1");
+
+            assertThat(result.tier()).isEqualTo("TIER_1");
+            assertThat(result.emailAddress()).isEqualTo("john@example.com");
+
+            // Verify email was sent (not thrown)
+            verify(reminderEmailService).sendReminderEmail(
+                    eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_1"),
+                    any(LocalDate.class), eq("test-token"), eq(Locale.GERMAN));
+        }
+
+        @Test
+        @DisplayName("should fallback to event date when RESPONSE deadline is null")
+        void shouldFallbackToEventDate_whenResponseDeadlineNull() {
+            testSpeaker.setResponseDeadline(null); // no deadline set
+
+            when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(testSpeaker));
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
+            when(magicLinkService.generateToken(any(UUID.class), any(TokenAction.class)))
+                    .thenReturn("test-token");
+
+            var result = speakerReminderService.sendManualReminder(
+                    speakerPoolId, "RESPONSE", "TIER_1", "organizer1");
+
+            assertThat(result.tier()).isEqualTo("TIER_1");
+            verify(reminderEmailService).sendReminderEmail(
+                    eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
+                    any(LocalDate.class), eq("test-token"), eq(Locale.GERMAN));
+        }
     }
 }
