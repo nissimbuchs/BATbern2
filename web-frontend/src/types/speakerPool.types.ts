@@ -116,3 +116,29 @@ export interface SendInvitationResponse {
   /** Email address invitation was sent to */
   email: string;
 }
+
+// ============================================================================
+// Send Reminder Types (Story 6.5)
+// ============================================================================
+
+/**
+ * Request body for sending speaker reminder
+ */
+export interface SendReminderRequest {
+  /** Type of reminder: RESPONSE (for invited speakers) or CONTENT (for accepted speakers) */
+  reminderType: 'RESPONSE' | 'CONTENT';
+  /** Optional tier override (TIER_1, TIER_2, TIER_3) - auto-detected if omitted */
+  tier?: string;
+}
+
+/**
+ * Response from send reminder endpoint
+ */
+export interface SendReminderResponse {
+  /** Success message */
+  message: string;
+  /** Tier used for the reminder */
+  tier: string;
+  /** Email address reminder was sent to */
+  emailAddress: string;
+}

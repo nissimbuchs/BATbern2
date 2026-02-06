@@ -34,10 +34,17 @@ import {
   Stack,
   Snackbar,
 } from '@mui/material';
-import { Close as CloseIcon, Email, Phone, Person, Send as SendIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  Email,
+  Phone,
+  Person,
+  Send as SendIcon,
+  NotificationsActive,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
-import { useSendInvitation } from '../../../hooks/useSpeakerPool';
+import { useSendInvitation, useSendReminder } from '../../../hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
 
@@ -81,6 +88,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
   const recordOutreachMutation = useRecordOutreach();
   const sendInvitationMutation = useSendInvitation(eventCode);
+  const sendReminderMutation = useSendReminder(eventCode);
 
   // Snackbar state for invitation feedback
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -124,6 +132,29 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   // Show Send Invitation button only for IDENTIFIED speakers
   const canSendInvitation = speaker?.status === 'IDENTIFIED';
   const hasEmail = !!speaker?.email;
+
+  // Show Send Reminder button for INVITED or ACCEPTED speakers (Story 6.5)
+  const canSendReminder = speaker?.status === 'INVITED' || speaker?.status === 'ACCEPTED';
+
+  const handleSendReminder = async () => {
+    if (!speaker) return;
+
+    const reminderType = speaker.status === 'INVITED' ? 'RESPONSE' : 'CONTENT';
+
+    try {
+      const result = await sendReminderMutation.mutateAsync({
+        speakerPoolId: speaker.id,
+        request: { reminderType },
+      });
+      setSnackbarMessage(t('speakers.reminderSent', { email: result.emailAddress }));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('speakers.reminderFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
 
   // Email input state (AC4: for speakers without email)
   const [emailInput, setEmailInput] = useState('');
@@ -528,6 +559,30 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   {sendInvitationMutation.isPending
                     ? t('speakers.sending')
                     : t('speakers.sendInvitation')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Send Reminder Button (Story 6.5) */}
+            {canSendReminder && (
+              <Box mt={2}>
+                <Button
+                  variant="outlined"
+                  color="info"
+                  startIcon={
+                    sendReminderMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <NotificationsActive />
+                    )
+                  }
+                  onClick={handleSendReminder}
+                  disabled={sendReminderMutation.isPending}
+                  fullWidth
+                >
+                  {sendReminderMutation.isPending
+                    ? t('speakers.sendingReminder')
+                    : t('speakers.sendReminder')}
                 </Button>
               </Box>
             )}

@@ -16,6 +16,8 @@ import type {
   SpeakerPoolResponse,
   SendInvitationRequest,
   SendInvitationResponse,
+  SendReminderRequest,
+  SendReminderResponse,
 } from '@/types/speakerPool.types';
 
 // API base path
@@ -93,6 +95,30 @@ class SpeakerPoolService {
     const response = await apiClient.post<SendInvitationResponse>(
       `${EVENTS_API_PATH}/${eventCode}/speakers/${username}/send-invitation`,
       options || {}
+    );
+
+    return response.data;
+  }
+
+  /**
+   * Send reminder to speaker (Story 6.5)
+   *
+   * Sends a deadline reminder email to an invited or accepted speaker.
+   *
+   * @param eventCode Event code (e.g., "BATbern56")
+   * @param speakerPoolId Speaker pool entry UUID
+   * @param request Reminder type and optional tier override
+   * @returns Response with tier used and email sent to
+   * @throws Error if speaker not found, no email, or reminder cannot be sent
+   */
+  async sendReminder(
+    eventCode: string,
+    speakerPoolId: string,
+    request: SendReminderRequest
+  ): Promise<SendReminderResponse> {
+    const response = await apiClient.post<SendReminderResponse>(
+      `${EVENTS_API_PATH}/${eventCode}/speaker-pool/${speakerPoolId}/send-reminder`,
+      request
     );
 
     return response.data;

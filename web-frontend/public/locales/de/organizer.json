@@ -364,7 +364,11 @@
     "declinedAt": "Abgelehnt am",
     "declineReason": "Grund",
     "tentativeDetails": "Vorläufig-Details",
-    "tentativeReason": "Grund"
+    "tentativeReason": "Grund",
+    "sendReminder": "Erinnerung senden",
+    "sendingReminder": "Wird gesendet...",
+    "reminderSent": "Erinnerung gesendet an {{email}}",
+    "reminderFailed": "Erinnerung konnte nicht gesendet werden"
   },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",
