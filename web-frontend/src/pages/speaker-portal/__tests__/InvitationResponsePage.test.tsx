@@ -322,7 +322,7 @@ describe('InvitationResponsePage Component', () => {
             response: 'ACCEPT',
             preferences: expect.objectContaining({
               timeSlot: 'morning',
-              technicalRequirements: 'Need HDMI adapter',
+              technicalRequirements: ['Need HDMI adapter'],
             }),
           })
         );

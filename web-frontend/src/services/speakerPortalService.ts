@@ -53,7 +53,7 @@ export interface TokenValidationResult {
 export interface SpeakerResponsePreferences {
   timeSlot?: 'morning' | 'afternoon' | 'no_preference';
   travelRequirements?: 'local' | 'accommodation' | 'virtual';
-  technicalRequirements?: string;
+  technicalRequirements?: string | string[];
   initialTitle?: string;
   comments?: string;
 }

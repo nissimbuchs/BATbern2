@@ -156,7 +156,11 @@ const InvitationResponsePage = () => {
     }
 
     if (selectedResponse === 'ACCEPT') {
-      data.preferences = preferences;
+      const techReq = preferences.technicalRequirements as string | undefined;
+      data.preferences = {
+        ...preferences,
+        technicalRequirements: techReq ? [techReq] : undefined,
+      };
     }
 
     respondMutation.mutate(data);
