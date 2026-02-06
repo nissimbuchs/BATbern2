@@ -164,6 +164,23 @@ class SpeakerAcceptanceEmailServiceTest {
         }
 
         @Test
+        @DisplayName("should include dashboard link in confirmation email")
+        void should_includeDashboardLink_in_confirmationEmail() {
+            // Given
+            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+            // When
+            acceptanceEmailService.sendAcceptanceConfirmationEmail(
+                    speaker, event, viewToken, Locale.ENGLISH);
+
+            // Then
+            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            String emailBody = bodyCaptor.getValue();
+            assertThat(emailBody).contains("/speaker-portal/dashboard?token=" + viewToken);
+        }
+
+        @Test
         @DisplayName("Test 2.13: should use correct language (German) in confirmation email")
         void should_useCorrectLanguage_when_germanLocale() {
             // Given
