@@ -133,8 +133,8 @@ cp /Users/nissim/dev/bat/BATbern-feature/web-frontend/e2e/workflows/documentatio
 
 # Kombiniere mit FFmpeg (Separate Subtitle Track)
 ffmpeg -i raw/video.webm \
-       -i narration-raw-de.m4a \
-       -i subtitles-de.srt \
+       -i raw/narration-raw-en.m4a \
+       -i raw/subtitles-en.srt \
        -c:v libx264 \
        -preset medium \
        -crf 23 \
@@ -144,7 +144,27 @@ ffmpeg -i raw/video.webm \
        -metadata:s:s:0 language=deu \
        -metadata:s:s:0 title="Deutsch" \
        -movflags +faststart \
-       event-workflow-schulung-de.mp4
+       event-workflow-schulung-en.mp4
+
+ffmpeg -i raw/video.webm \
+         -i raw/narration-raw-en.m4a \
+         -i raw/subtitles-en-de.srt \
+         -i raw/subtitles-en.srt \
+         -map 0:v -map 1:a -map 2:s -map 3:s \
+         -c:v libx264 \
+         -preset medium \
+         -crf 23 \
+         -c:a aac \
+         -b:a 128k \
+         -c:s mov_text \
+         -metadata:s:s:0 language=deu \
+         -metadata:s:s:0 title="Deutsch" \
+         -metadata:s:s:1 language=eng \
+         -metadata:s:s:1 title="English" \
+         -disposition:s:0 default \
+         -movflags +faststart \
+         event-workflow-schulung-en.mp4
+
 ```
 
 **Überprüfen**:

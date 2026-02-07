@@ -4,10 +4,10 @@
  *
  * This script reads:
  * - timing-config.ts: Cumulative timing for each narration segment
- * - NARRATION-MAPPING.md: Full German text for each narration
+ * - script-for-tts-en-funny-with-emotions.txt: Full English text with emotion markers (one narration per line)
  *
  * And generates:
- * - subtitles-de.srt: Standard SRT subtitle file for the screencast video
+ * - subtitles-en.srt: Standard SRT subtitle file for the screencast video
  *
  * Usage:
  *   cd web-frontend/e2e/workflows/documentation/screencast/scripts
@@ -110,22 +110,22 @@ function cleanNarrationText(text: string): string[] {
 }
 
 /**
- * Extract narration text from NARRATION-MAPPING.md
+ * Extract narration text from script-for-tts-en-funny-with-emotions.txt
+ * Each line represents one narration segment (line 1 = NARRATION_01, line 2 = NARRATION_02, etc.)
  */
-function parseNarrationMapping(filePath: string): Map<string, string> {
+function parseNarrationScript(filePath: string): Map<string, string> {
   const content = fs.readFileSync(filePath, 'utf-8');
   const narrationMap = new Map<string, string>();
 
-  // Match ### NARRATION_XX sections with triple-backtick content
-  // Handles both "### NARRATION_XX (Line YY)" and "### NARRATION_XX (Line YY - Details)"
-  const narrationRegex = /### (NARRATION_\d+) \([^)]+\)\s*\n\s*```\s*\n([\s\S]*?)\n\s*```/g;
+  // Split into lines and map each line to a narration marker
+  const lines = content.split('\n').filter((line) => line.trim().length > 0);
 
-  let match;
-  while ((match = narrationRegex.exec(content)) !== null) {
-    const marker = match[1];
-    const text = match[2].trim();
-    narrationMap.set(marker, text);
-  }
+  lines.forEach((line, index) => {
+    // Line 1 = NARRATION_01, Line 2 = NARRATION_02, etc.
+    const narrationNumber = String(index + 1).padStart(2, '0');
+    const marker = `NARRATION_${narrationNumber}`;
+    narrationMap.set(marker, line.trim());
+  });
 
   return narrationMap;
 }
@@ -159,11 +159,11 @@ function generateSrtFile(): void {
 
   console.log(`   ✓ Loaded ${timingSegments.length} timing segments\n`);
 
-  // Read narration mapping
-  const narrationMappingPath = path.join(__dirname, '../../NARRATION-MAPPING.md');
-  console.log(`📄 Reading narration text: ${narrationMappingPath}`);
+  // Read narration script
+  const narrationScriptPath = path.join(__dirname, '../script-for-tts-de-funny-with-emotions.txt');
+  console.log(`📄 Reading narration text: ${narrationScriptPath}`);
 
-  const narrationMap = parseNarrationMapping(narrationMappingPath);
+  const narrationMap = parseNarrationScript(narrationScriptPath);
   console.log(`   ✓ Loaded ${narrationMap.size} narration texts\n`);
 
   // Generate subtitle entries
@@ -220,13 +220,13 @@ function generateSrtFile(): void {
   }
 
   // Write SRT file
-  const outputPath = path.join(__dirname, '../subtitles-de.srt');
+  const outputPath = path.join(__dirname, '../subtitles-en-de.srt');
   fs.writeFileSync(outputPath, srtContent, 'utf-8');
 
   console.log(`✅ SRT file generated: ${outputPath}`);
   console.log(`   Total entries: ${subtitles.length}`);
   console.log(`   Duration: ${millisecondsToSrtTime(cumulativeTime)}`);
-  console.log(`   Encoding: UTF-8 (supports German umlauts: ä, ö, ü, ß)\n`);
+  console.log(`   Encoding: UTF-8\n`);
 }
 
 // Run the generator
