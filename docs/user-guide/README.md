@@ -26,7 +26,9 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 New to BATbern? Start here:
 
-- 🎥 **[Video Tutorial (12 min, Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)** - Complete workflow demonstration from event creation to archival
+- 🎥 **Video Tutorials** - Complete workflow demonstration from event creation to archival
+  - **[German Version (12 min)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)** - Full workflow with German narration
+  - **[English Version (12 min)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-en.mp4)** - Full workflow with English narration
 - [Platform Overview](getting-started/README.md) - Understand the BATbern platform
 - [Login & Authentication](getting-started/login.md) - Access your organizer account
 - [Dashboard Navigation](getting-started/dashboard.md) - Navigate the organizer interface

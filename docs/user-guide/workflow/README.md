@@ -2,13 +2,15 @@
 
 > Event lifecycle management through state machines and task coordination
 
-## 🎥 Video Tutorial
+## 🎥 Video Tutorials
 
-**Complete Workflow Demonstration** (12 minutes, German with subtitles):
+**Complete Workflow Demonstration** (12 minutes each):
 
-📹 **[Event-Workflow Schulungsvideo (Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)**
+📹 **[German Version - Event-Workflow Schulungsvideo](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)**
 
-This screencast demonstrates the complete event lifecycle from creation to archival, showing all workflow phases in action:
+📹 **[English Version - Event Workflow Training Video](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-en.mp4)**
+
+These screencasts demonstrate the complete event lifecycle from creation to archival, showing all workflow phases in action:
 
 - Phase A: Event setup, topic selection, speaker brainstorming
 - Phase B: Speaker outreach with Kanban board
@@ -16,7 +18,7 @@ This screencast demonstrates the complete event lifecycle from creation to archi
 - Phase D: Slot assignment and agenda publishing
 - Phase E: Event archival
 
-**Features**: Full HD (1920x1080), German narration with toggleable subtitles, 36 workflow steps demonstrated in real-time.
+**Features**: Full HD (1920x1080), professional narration in both languages, dual subtitle tracks (German + English), 36 workflow steps demonstrated in real-time.
 
 ---
 
