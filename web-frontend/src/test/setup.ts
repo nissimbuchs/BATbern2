@@ -1,5 +1,34 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+
+// Mock localStorage before importing i18n (which uses localStorage for language detection)
+// This is needed because Node.js 22+ has built-in localStorage that conflicts with jsdom
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value.toString();
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: (index: number) => Object.keys(store)[index] ?? null,
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
+// Now import i18n after localStorage is mocked
 import i18n from '../i18n/config'; // Initialize i18n for all tests
 
 // Set test language to English for consistent test assertions

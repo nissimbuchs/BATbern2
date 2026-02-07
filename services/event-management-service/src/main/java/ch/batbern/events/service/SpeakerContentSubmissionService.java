@@ -1,10 +1,14 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.SpeakerContentResponse;
+import ch.batbern.events.repository.ContentSubmissionRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -14,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,6 +44,8 @@ public class SpeakerContentSubmissionService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
+    private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final UserApiClient userApiClient;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -239,18 +246,51 @@ public class SpeakerContentSubmissionService {
         java.util.List<SessionUser> sessionUsers = sessionUserRepository.findBySessionId(session.getId());
         String username = sessionUsers.isEmpty() ? null : sessionUsers.get(0).getUsername();
 
+        // Get the latest content submission for the actual submitted title/abstract
+        ContentSubmission latestSubmission = contentSubmissionRepository
+                .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
+                .orElse(null);
+
+        // Use submitted content if available, otherwise fall back to session data
+        String presentationTitle = latestSubmission != null
+                ? latestSubmission.getTitle() : session.getTitle();
+        String presentationAbstract = latestSubmission != null
+                ? latestSubmission.getContentAbstract() : session.getDescription();
+
+        // Get material info for the session
+        // Security Note: CloudFront URLs are used for material delivery. These URLs are:
+        // - Pre-event: Only accessible to authenticated organizers via this endpoint (requires ORGANIZER role)
+        // - Post-publish: Publicly accessible via CDN after event is published
+        // This is intentional - materials become public when event is published to website.
+        // If stricter pre-event access control is needed, switch to S3 presigned URLs with expiration.
+        boolean hasMaterial = false;
+        String materialUrl = null;
+        String materialFileName = null;
+
+        List<SessionMaterial> materials = sessionMaterialsRepository.findBySession_Id(session.getId());
+        if (!materials.isEmpty()) {
+            hasMaterial = true;
+            // Return the first/primary material (typically presentation)
+            SessionMaterial primaryMaterial = materials.get(0);
+            materialUrl = primaryMaterial.getCloudFrontUrl();
+            materialFileName = primaryMaterial.getFileName();
+        }
+
         return SpeakerContentResponse.builder()
                 .speakerPoolId(speaker.getId())
                 .eventId(speaker.getEventId())
                 .sessionId(session.getId())
-                .presentationTitle(session.getTitle())
-                .presentationAbstract(session.getDescription())
+                .presentationTitle(presentationTitle)
+                .presentationAbstract(presentationAbstract)
                 .username(username)
                 .speakerName(speaker.getSpeakerName())
                 .company(speaker.getCompany())
                 .status(speaker.getStatus())
                 .hasContent(true)
                 .submittedAt(session.getCreatedAt())
+                .hasMaterial(hasMaterial)
+                .materialUrl(materialUrl)
+                .materialFileName(materialFileName)
                 .build();
     }
 }

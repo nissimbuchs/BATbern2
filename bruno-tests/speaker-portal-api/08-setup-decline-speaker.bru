@@ -1,0 +1,38 @@
+meta {
+  name: Setup Speaker for Decline Test
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/invite
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "decline-test-{{timestamp}}@example.com",
+    "speakerName": "Decline Test Speaker",
+    "company": "Test Decline AG",
+    "expertise": "Testing",
+    "responseDeadline": "2026-06-01T23:59:59Z"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200 || res.getStatus() === 201) {
+    bru.setVar("declineSpeakerUsername", res.getBody().username);
+  }
+}
+
+tests {
+  test("should create speaker for decline test", function() {
+    const status = res.getStatus();
+    expect(status === 200 || status === 201).to.be.true;
+  });
+}

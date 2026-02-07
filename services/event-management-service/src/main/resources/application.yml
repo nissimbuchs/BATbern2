@@ -22,6 +22,8 @@ spring:
     clean-disabled: true
     locations: classpath:db/migration
     table: flyway_schema_history_event_management
+    # Allow missing migrations (migrations removed from codebase after being applied)
+    ignore-migration-patterns: "*:missing"
 
 management:
   endpoints:
@@ -121,7 +123,8 @@ user-service:
 
 aws:
   s3:
-    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+    # For local dev, use 'materials' bucket (matches the CloudFront URL path prefix)
+    bucket-name: ${AWS_S3_BUCKET_NAME:materials}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 

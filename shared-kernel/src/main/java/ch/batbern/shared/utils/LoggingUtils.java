@@ -177,11 +177,7 @@ public class LoggingUtils {
         if (lower.contains("password") || lower.contains("secret") || lower.contains("token")) {
             return "***";
         } else if (lower.contains("email")) {
-            int atIndex = value.indexOf('@');
-            if (atIndex > 1) {
-                return value.charAt(0) + "***" + value.substring(atIndex);
-            }
-            return "***";
+            return maskEmail(value);
         } else if (lower.contains("creditcard")) {
             if (value.length() >= 16) {
                 return value.substring(0, 4) + "-****-****-" + value.substring(value.length() - 4);
@@ -189,6 +185,24 @@ public class LoggingUtils {
             return "***";
         }
 
+        return "***";
+    }
+
+    /**
+     * Masks an email address for safe logging.
+     * Example: "john.doe@example.com" -> "j***@example.com"
+     *
+     * @param email the email address to mask
+     * @return masked email address safe for logging
+     */
+    public static String maskEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return "***";
+        }
+        int atIndex = email.indexOf('@');
+        if (atIndex > 1) {
+            return email.charAt(0) + "***" + email.substring(atIndex);
+        }
         return "***";
     }
 

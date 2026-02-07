@@ -85,7 +85,16 @@ Navigate to the Speakers tab after publishing speakers. Open the quality review 
 
 **Review Submission**
 
-The content review interface displays: speaker name and topic, presentation title, abstract with character count, numbered learning objectives, quality scores for Relevance, Clarity, Originality, and Completeness (1-5 scale with visual indicators), calculated overall score (out of 5.0) with quality rating (EXCELLENT/GOOD/FAIR/POOR), optional reviewer notes field for feedback, and action buttons ([Approve] [Request Revision] [Reject]) to make the final decision.
+The content review interface displays:
+- Speaker name, company, and current workflow status
+- Presentation title and abstract with character count
+- **Uploaded materials** (if available) with download link to review presentation files
+- Quality criteria checklist:
+  - Abstract length ≤ 1000 characters
+  - "Lessons learned" detection (English/German keywords)
+  - No product promotion detected
+  - Professional tone assessment
+- Action buttons: [Approve] and [Reject]
 
 </div>
 
@@ -103,13 +112,17 @@ After reviewing the content, approve it to confirm the speaker.
 - Speaker ready for slot assignment (Phase D)
 - Will auto-confirm to **confirmed** when slot assigned
 
-**Request Revision** (score 2.5-3.4):
-- Speaker notified with feedback
-- Speaker status remains content_submitted
-- Re-review after revision
+**Request Revision / Reject**:
+- Speaker notified via email with:
+  - Detailed feedback explaining what needs to change
+  - **Magic link** to speaker portal (30-day validity) for easy content revision
+  - Direct access to revision page without re-authentication
+- Speaker content status set to REVISION_NEEDED
+- Rejection feedback displayed in speaker contact history
+- Re-review after speaker submits revised content
 
-**Reject** (score < 2.5):
-- Speaker marked as **withdrew** (insufficient quality)
+**Permanently Reject** (insufficient quality):
+- Speaker marked as **withdrew**
 - Activate backup candidate
 
 </div>
@@ -118,7 +131,14 @@ After reviewing the content, approve it to confirm the speaker.
 
 **Send Revision Request** (if needed)
 
-The revision request email includes: recipient email and subject line, personalized greeting, thanking the speaker for their submission, specific feedback organized by quality criterion (e.g., Relevance, Clarity) with scores and actionable improvement suggestions, concrete examples showing "before → after" transformations for clarity, revision deadline, secure revision link with authentication token, and organizer signature.
+When you reject content, the speaker automatically receives an email with:
+- Personalized greeting thanking them for their submission
+- Your feedback explaining what needs to change
+- **Magic link** to the speaker portal (valid for 30 days)
+- Direct access to content revision page - no login required
+- Clear next steps for resubmission
+
+The rejection feedback is also saved to the speaker's contact history, visible to all organizers in the speaker details drawer.
 
 </div>
 

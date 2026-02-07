@@ -1,0 +1,47 @@
+meta {
+  name: Send Invitation Email (Story 6.1b)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{invitedSpeakerUsername}}/send-invitation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "personalMessage": "Looking forward to your presentation!"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.token: isDefined
+  res.body.workflowState: eq INVITED
+}
+
+tests {
+  test("should send invitation and return token - Story 6.1b AC4", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.token).to.be.a('string');
+    expect(body.token.length).to.be.greaterThan(50);
+    bru.setVar("speakerMagicToken", body.token);
+  });
+
+  test("should transition workflow state to INVITED - Story 6.1b AC5", function() {
+    const body = res.getBody();
+    expect(body.workflowState).to.equal('INVITED');
+  });
+
+  test("should set invitedAt timestamp - Story 6.1b AC6", function() {
+    const body = res.getBody();
+    expect(body.invitedAt).to.be.a('string');
+  });
+}

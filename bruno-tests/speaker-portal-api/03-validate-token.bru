@@ -1,0 +1,49 @@
+meta {
+  name: Validate Magic Link Token (Story 6.1a)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/validate-token
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{speakerMagicToken}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.valid: eq true
+  res.body.username: isDefined
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("should validate token successfully - Story 6.1a AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.valid).to.be.true;
+  });
+
+  test("should return speaker context - Story 6.1a AC2", function() {
+    const body = res.getBody();
+    expect(body.username).to.be.a('string');
+    expect(body.eventCode).to.be.a('string');
+    expect(body.speakerName).to.be.a('string');
+  });
+
+  test("should return event details - Story 6.1a AC3", function() {
+    const body = res.getBody();
+    expect(body.eventTitle).to.be.a('string');
+  });
+
+  test("should indicate token action type - Story 6.1a AC4", function() {
+    const body = res.getBody();
+    expect(['RESPOND', 'SUBMIT', 'VIEW']).to.include(body.action);
+  });
+}

@@ -78,4 +78,12 @@ i18n
     },
   });
 
+// Cache language changes to localStorage when changeLanguage() is called programmatically
+// (i18next-browser-languagedetector only caches on initial detection by default)
+i18n.on('languageChanged', (lng: string) => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('batbern-language', lng);
+  }
+});
+
 export default i18n;

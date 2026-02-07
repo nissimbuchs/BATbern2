@@ -20,9 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import type { components } from '@/types/generated/speakers-api.types';
-
-type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
+import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
 
 export interface StatusChangeDialogProps {
   open: boolean;

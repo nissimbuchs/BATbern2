@@ -4,26 +4,26 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionMaterialResponse;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.SessionSpeakerResponse;
+import ch.batbern.events.mapper.SessionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
  * Service for Session business logic
  * Story 1.15a.1b: Session-User Many-to-Many Relationship
  * Story 5.9: Session Materials Upload
+ * Story BAT-90 Phase 2: Uses SessionMapper for basic field mapping
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SessionService {
 
-    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
-
+    private final SessionMapper sessionMapper;
     private final SessionUserService sessionUserService;
     private final SessionMaterialsService sessionMaterialsService;
 
@@ -31,6 +31,7 @@ public class SessionService {
      * Convert Session entity to SessionResponse DTO
      * Story 1.15a.1b: Enriches with speaker data
      * Story 5.9: Enriches with materials data
+     * Story BAT-90 Phase 2: Uses SessionMapper for basic field mapping
      *
      * @param session Session entity
      * @param eventCode Event code (for response)
@@ -39,19 +40,23 @@ public class SessionService {
      */
     @Transactional(readOnly = true)
     public SessionResponse toSessionResponse(Session session, String eventCode, boolean includeSpeakers) {
+        // Use SessionMapper for basic field mapping
+        SessionResponse baseResponse = sessionMapper.toDto(session);
+
+        // Build enriched response with speakers and materials
         SessionResponse.SessionResponseBuilder builder = SessionResponse.builder()
-                .sessionSlug(session.getSessionSlug())
-                .eventCode(eventCode)
-                .title(session.getTitle())
-                .description(session.getDescription())
-                .sessionType(session.getSessionType())
-                .startTime(session.getStartTime() != null ? ISO_FORMATTER.format(session.getStartTime()) : null)
-                .endTime(session.getEndTime() != null ? ISO_FORMATTER.format(session.getEndTime()) : null)
-                .room(session.getRoom())
-                .capacity(session.getCapacity())
-                .language(session.getLanguage())
-                .createdAt(session.getCreatedAt() != null ? ISO_FORMATTER.format(session.getCreatedAt()) : null)
-                .updatedAt(session.getUpdatedAt() != null ? ISO_FORMATTER.format(session.getUpdatedAt()) : null);
+                .sessionSlug(baseResponse.getSessionSlug())
+                .eventCode(eventCode) // Override with provided eventCode
+                .title(baseResponse.getTitle())
+                .description(baseResponse.getDescription())
+                .sessionType(baseResponse.getSessionType())
+                .startTime(baseResponse.getStartTime())
+                .endTime(baseResponse.getEndTime())
+                .room(baseResponse.getRoom())
+                .capacity(baseResponse.getCapacity())
+                .language(baseResponse.getLanguage())
+                .createdAt(baseResponse.getCreatedAt())
+                .updatedAt(baseResponse.getUpdatedAt());
 
         // Include speakers if requested (Story 1.15a.1b)
         if (includeSpeakers) {

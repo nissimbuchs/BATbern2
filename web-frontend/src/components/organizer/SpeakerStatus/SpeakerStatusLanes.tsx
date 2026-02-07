@@ -12,7 +12,22 @@
  */
 
 import React, { useState } from 'react';
-import { Grid, Card, Typography, Avatar, Box, Chip, Paper, Stack } from '@mui/material';
+import {
+  Grid,
+  Card,
+  Typography,
+  Avatar,
+  Box,
+  Chip,
+  Paper,
+  Stack,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import { Send as SendIcon, Email as EmailIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
@@ -29,15 +44,12 @@ import {
 } from '@dnd-kit/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
-import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
+import { speakerPoolKeys, useSendInvitation } from '@/hooks/useSpeakerPool';
 import { StatusChangeDialog } from './StatusChangeDialog';
 import { ContentSubmissionDrawer } from './ContentSubmissionDrawer';
 import { QualityReviewDrawer } from './QualityReviewDrawer';
-import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
-import type { components } from '@/types/generated/speakers-api.types';
+import type { SpeakerPoolEntry, SpeakerWorkflowState } from '@/types/speakerPool.types';
 import type { SessionUI } from '@/types/event.types';
-
-type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 export interface SpeakerStatusLanesProps {
   eventCode: string;
@@ -48,9 +60,10 @@ export interface SpeakerStatusLanesProps {
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void; // Callback for speaker card clicks (for statuses without specific drawers)
 }
 
-// Status color mapping (Story 5.5 - Extended to 7 lanes)
+// Status color mapping (Story 5.5 - Extended to 8 lanes, Story 6.1b added INVITED)
 const STATUS_COLORS: Record<string, string> = {
   IDENTIFIED: '#9e9e9e', // Grey
+  INVITED: '#2196f3', // Blue (NEW - Story 6.1b: automated invitation sent)
   CONTACTED: '#ffc107', // Amber
   READY: '#ff9800', // Orange
   ACCEPTED: '#4caf50', // Green
@@ -60,9 +73,10 @@ const STATUS_COLORS: Record<string, string> = {
   DECLINED: '#f44336', // Red
 };
 
-// Status lanes to display (Story 5.5 - Extended from 5 to 7 lanes)
+// Status lanes to display (Story 5.5 - Extended from 5 to 8 lanes, Story 6.1b added INVITED)
 const STATUS_LANES: SpeakerWorkflowState[] = [
   'IDENTIFIED',
+  'INVITED', // NEW - Story 6.1b: automated invitation sent
   'CONTACTED',
   'READY',
   'ACCEPTED',
@@ -205,19 +219,9 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   };
 
   // Handle speaker card click (Story 5.5 + 5.6)
+  // Always open the outreach details drawer (which shows contact history) for all statuses
   const handleSpeakerClick = (speaker: SpeakerPoolEntry) => {
-    // Open content submission drawer for ACCEPTED speakers
-    if (speaker.status === 'ACCEPTED') {
-      setCurrentSpeaker(speaker);
-      setContentDrawerOpen(true);
-    }
-    // Open quality review drawer for CONTENT_SUBMITTED speakers (Story 5.5 Phase 4)
-    else if (speaker.status === 'CONTENT_SUBMITTED') {
-      setReviewSpeaker(speaker);
-      setReviewDrawerOpen(true);
-    }
-    // For other statuses (IDENTIFIED, CONTACTED, READY, etc.), use callback if provided
-    else if (onSpeakerClick) {
+    if (onSpeakerClick) {
       onSpeakerClick(speaker);
     }
   };
@@ -253,6 +257,7 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
                 status={status}
                 speakers={speakersByStatus[status] || []}
                 sessions={sessions}
+                eventCode={eventCode}
                 color={STATUS_COLORS[status]}
                 onSpeakerClick={handleSpeakerClick}
               />
@@ -262,7 +267,12 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
 
         <DragOverlay>
           {activeSpeaker ? (
-            <SpeakerCard speaker={activeSpeaker} sessions={sessions} isDragging />
+            <SpeakerCard
+              speaker={activeSpeaker}
+              sessions={sessions}
+              eventCode={eventCode}
+              isDragging
+            />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -303,6 +313,7 @@ interface StatusLaneProps {
   status: SpeakerWorkflowState;
   speakers: SpeakerPoolEntry[];
   sessions: SessionUI[];
+  eventCode: string;
   color: string;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -311,6 +322,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   status,
   speakers,
   sessions,
+  eventCode,
   color,
   onSpeakerClick,
 }) => {
@@ -322,7 +334,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
   return (
     <Paper
       ref={setNodeRef}
-      data-testid={`status-lane-${status}`}
+      data-testid={`status-lane-${status.toLowerCase()}`}
       sx={{
         p: 2,
         height: '100%',
@@ -334,7 +346,11 @@ const StatusLane: React.FC<StatusLaneProps> = ({
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" sx={{ color }} data-testid={`status-lane-heading-${status}`}>
+        <Typography
+          variant="h6"
+          sx={{ color }}
+          data-testid={`status-lane-heading-${status.toLowerCase()}`}
+        >
           {t(`organizer:speakerStatus.${status}`)}
         </Typography>
         <Chip
@@ -351,6 +367,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
               key={speaker.id}
               speaker={speaker}
               sessions={sessions}
+              eventCode={eventCode}
               onSpeakerClick={onSpeakerClick}
             />
           ))}
@@ -364,6 +381,7 @@ const StatusLane: React.FC<StatusLaneProps> = ({
 interface SpeakerCardProps {
   speaker: SpeakerPoolEntry;
   sessions: SessionUI[];
+  eventCode: string;
   isDragging?: boolean;
   onSpeakerClick?: (speaker: SpeakerPoolEntry) => void;
 }
@@ -371,12 +389,20 @@ interface SpeakerCardProps {
 const SpeakerCard: React.FC<SpeakerCardProps> = ({
   speaker,
   sessions,
+  eventCode,
   isDragging = false,
   onSpeakerClick,
 }) => {
+  const { t } = useTranslation(['organizer']);
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: speaker.id,
   });
+
+  // Invitation mutation (Story 6.1c)
+  const sendInvitationMutation = useSendInvitation(eventCode);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const style = transform
     ? {
@@ -392,71 +418,288 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     }
   };
 
+  // Handle invite click (Story 6.1c - AC3)
+  const handleInviteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    try {
+      await sendInvitationMutation.mutateAsync({
+        username: speaker.id,
+      });
+      setSnackbarMessage(t('organizer:speakers.inviteSent'));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('organizer:speakers.inviteFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Show invite button only for IDENTIFIED speakers
+  const canInvite = speaker.status === 'IDENTIFIED';
+  const hasEmail = !!speaker.email;
+
   // Find the session if speaker has sessionId (Story 5.6)
   const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
 
   return (
-    <Card
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      onClick={handleClick}
-      data-testid="speaker-card"
-      sx={{
-        p: 2,
-        cursor: 'grab',
-        opacity: isDragging ? 0.5 : 1,
-        '&:hover': {
-          boxShadow: 3,
-        },
-        ...style,
-      }}
-    >
-      {session && session.speakers && session.speakers.length > 0 ? (
-        // Display session details when speaker has sessionId
-        <Box>
-          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-            {session.title}
-          </Typography>
-          <Stack direction="column" spacing={0.5}>
-            {session.speakers.map((spk) => (
-              <UserAvatar
-                key={spk.username}
-                firstName={spk.firstName}
-                lastName={spk.lastName}
-                company={spk.company}
-                profilePictureUrl={spk.profilePictureUrl}
-                size={32}
-                showCompany={true}
-                horizontal={true}
-              />
-            ))}
-          </Stack>
-        </Box>
-      ) : (
-        // Display speaker pool info when no session
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-              {speaker.speakerName.charAt(0).toUpperCase()}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2">{speaker.speakerName}</Typography>
-              {speaker.company && (
-                <Typography variant="caption" color="text.secondary">
-                  {speaker.company}
+    <>
+      <Card
+        ref={setNodeRef}
+        {...listeners}
+        {...attributes}
+        onClick={handleClick}
+        data-testid={`speaker-card-${speaker.id}`}
+        sx={{
+          p: 2,
+          cursor: 'grab',
+          opacity: isDragging ? 0.5 : 1,
+          '&:hover': {
+            boxShadow: 3,
+          },
+          ...style,
+        }}
+      >
+        {session && session.speakers && session.speakers.length > 0 ? (
+          // Display session details when speaker has sessionId
+          <Box>
+            <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+              {session.title}
+            </Typography>
+            <Stack direction="column" spacing={0.5}>
+              {session.speakers.map((spk) => (
+                <UserAvatar
+                  key={spk.username}
+                  firstName={spk.firstName}
+                  lastName={spk.lastName}
+                  company={spk.company}
+                  profilePictureUrl={spk.profilePictureUrl}
+                  size={32}
+                  showCompany={true}
+                  horizontal={true}
+                />
+              ))}
+            </Stack>
+
+            {/* Story 6.3: Submitted Content Display (also shown when session assigned) */}
+            {speaker.submittedTitle && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <Chip
+                    label={speaker.contentStatus || 'SUBMITTED'}
+                    size="small"
+                    color={
+                      speaker.contentStatus === 'APPROVED'
+                        ? 'success'
+                        : speaker.contentStatus === 'REVISION_NEEDED'
+                          ? 'warning'
+                          : 'info'
+                    }
+                    sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  color="success.dark"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
+                  {speaker.submittedTitle}
                 </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      mt: 0.5,
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
+        ) : (
+          // Display speaker pool info when no session
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                {speaker.speakerName.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2">{speaker.speakerName}</Typography>
+                {speaker.company && (
+                  <Typography variant="caption" color="text.secondary">
+                    {speaker.company}
+                  </Typography>
+                )}
+              </Box>
+              {/* Invite Quick Action (Story 6.1c - AC3) */}
+              {canInvite && (
+                <Tooltip
+                  title={
+                    hasEmail
+                      ? t('organizer:speakers.invite')
+                      : t('organizer:speakers.noEmailTooltip')
+                  }
+                >
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={handleInviteClick}
+                      disabled={!hasEmail || sendInvitationMutation.isPending}
+                      aria-label={t('organizer:speakers.invite')}
+                      data-testid={`invite-button-${speaker.id}`}
+                      sx={{ ml: 'auto' }}
+                    >
+                      {sendInvitationMutation.isPending ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SendIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
+              {/* Email sent badge for CONTACTED speakers (AC3.6) - CONTACTED means invitation sent */}
+              {speaker.status === 'CONTACTED' && (
+                <Tooltip title={t('organizer:speakers.inviteSent')}>
+                  <EmailIcon fontSize="small" color="info" data-testid="invite-sent-badge" />
+                </Tooltip>
               )}
             </Box>
+            {speaker.expertise && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                {speaker.expertise}
+              </Typography>
+            )}
+
+            {/* Speaker Response Details (Story 6.2a) - Show for any speaker who accepted */}
+            {speaker.acceptedAt &&
+              (speaker.preferredTimeSlot ||
+                speaker.travelRequirements ||
+                speaker.initialPresentationTitle) && (
+                <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                  {speaker.initialPresentationTitle && (
+                    <Typography
+                      variant="caption"
+                      color="primary.main"
+                      sx={{ display: 'block', fontWeight: 500 }}
+                    >
+                      {speaker.initialPresentationTitle}
+                    </Typography>
+                  )}
+                  {speaker.preferredTimeSlot && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
+                    </Typography>
+                  )}
+                  {speaker.travelRequirements && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.travelRequirements')}: {speaker.travelRequirements}
+                    </Typography>
+                  )}
+                  {speaker.technicalRequirements && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      {t('organizer:speakers.technicalRequirements')}:{' '}
+                      {speaker.technicalRequirements}
+                    </Typography>
+                  )}
+                  {speaker.preferenceComments && (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', fontStyle: 'italic', mt: 0.5 }}
+                    >
+                      "{speaker.preferenceComments}"
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
+            {/* Story 6.3: Submitted Content Display */}
+            {speaker.submittedTitle && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <Chip
+                    label={speaker.contentStatus || 'SUBMITTED'}
+                    size="small"
+                    color={
+                      speaker.contentStatus === 'APPROVED'
+                        ? 'success'
+                        : speaker.contentStatus === 'REVISION_NEEDED'
+                          ? 'warning'
+                          : 'info'
+                    }
+                    sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
+                  />
+                </Box>
+                <Typography
+                  variant="caption"
+                  color="success.dark"
+                  sx={{ display: 'block', fontWeight: 600 }}
+                >
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      mt: 0.5,
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {speaker.status === 'DECLINED' && speaker.declineReason && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography variant="caption" color="error.main" sx={{ display: 'block' }}>
+                  {t('organizer:speakers.declineReason')}: {speaker.declineReason}
+                </Typography>
+              </Box>
+            )}
+
+            {speaker.isTentative && speaker.tentativeReason && (
+              <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
+                  {t('organizer:speakers.tentativeReason')}: {speaker.tentativeReason}
+                </Typography>
+              </Box>
+            )}
           </Box>
-          {speaker.expertise && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {speaker.expertise}
-            </Typography>
-          )}
-        </Box>
-      )}
-    </Card>
+        )}
+      </Card>
+
+      {/* Invitation Feedback Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: '100%' }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

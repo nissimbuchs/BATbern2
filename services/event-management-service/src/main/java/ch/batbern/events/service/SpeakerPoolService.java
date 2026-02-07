@@ -1,10 +1,12 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -15,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -29,15 +33,18 @@ public class SpeakerPoolService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
+    private final ContentSubmissionRepository contentSubmissionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
+                              ContentSubmissionRepository contentSubmissionRepository,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
+        this.contentSubmissionRepository = contentSubmissionRepository;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
     }
@@ -98,19 +105,49 @@ public class SpeakerPoolService {
     }
 
     /**
-     * Get all speaker pool entries for an event.
+     * Get all speaker pool entries for an event with content submission data.
+     *
+     * Story 6.3: Include submitted title and abstract for organizer dashboard.
      *
      * @param eventCode the event code
-     * @return list of speaker pool entries
+     * @return list of speaker pool entries with content submission data
      */
     @Transactional(readOnly = true)
     public List<SpeakerPoolResponse> getSpeakerPoolForEvent(String eventCode) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventCode));
 
-        return speakerPoolRepository.findByEventId(event.getId())
-                .stream()
-                .map(SpeakerPoolResponse::fromEntity)
+        List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
+
+        // Fetch latest content submissions for all speakers in one query
+        // This avoids N+1 query problem
+        List<UUID> speakerIds = speakers.stream()
+                .map(SpeakerPool::getId)
+                .collect(Collectors.toList());
+
+        // Build map of speakerId -> latest content submission
+        Map<UUID, ContentSubmission> contentMap = speakerIds.stream()
+                .map(id -> contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(id))
+                .filter(opt -> opt.isPresent())
+                .map(opt -> opt.get())
+                .collect(Collectors.toMap(
+                        cs -> cs.getSpeakerPool().getId(),
+                        cs -> cs
+                ));
+
+        return speakers.stream()
+                .map(speaker -> {
+                    ContentSubmission content = contentMap.get(speaker.getId());
+                    if (content != null) {
+                        return SpeakerPoolResponse.fromEntityWithContent(
+                                speaker,
+                                content.getTitle(),
+                                content.getContentAbstract()
+                        );
+                    } else {
+                        return SpeakerPoolResponse.fromEntity(speaker);
+                    }
+                })
                 .collect(Collectors.toList());
     }
 

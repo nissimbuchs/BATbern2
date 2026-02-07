@@ -150,6 +150,7 @@ export class CICDStack extends cdk.Stack {
         'ecs:DescribeServices',
         'ecs:DescribeTaskDefinition',
         'ecs:DescribeTasks',
+        'ecs:ListServices',  // Required for fast-path deployment script
         'ecs:ListTasks',
         'ecs:RegisterTaskDefinition',
         'ecs:UpdateService',

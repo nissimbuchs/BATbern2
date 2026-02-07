@@ -1,0 +1,31 @@
+meta {
+  name: Get Content After Submit (Story 6.3)
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/content?token={{speakerViewToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.contentStatus: eq SUBMITTED
+}
+
+tests {
+  test("should show SUBMITTED status - Story 6.3 AC5", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.contentStatus).to.equal('SUBMITTED');
+  });
+
+  test("should show saved draft with submitted content - Story 6.3 AC4", function() {
+    const body = res.getBody();
+    expect(body.hasDraft).to.be.true;
+    expect(body.draftTitle).to.equal('Building Cloud-Native Applications');
+    expect(body.draftVersion).to.equal(1);
+  });
+}

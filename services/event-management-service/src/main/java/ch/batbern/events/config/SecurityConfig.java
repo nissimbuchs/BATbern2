@@ -96,6 +96,30 @@ public class SecurityConfig {
                 // Email cancellation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/cancel").permitAll()
 
+                // Story 6.1a: Speaker portal magic link validation (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/validate-token").permitAll()
+
+                // Story 6.2a: Speaker portal response submission (no auth required, token-protected)
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/respond").permitAll()
+
+                // Story 6.2b: Speaker portal profile endpoints (no auth required, token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/profile").permitAll()
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/speaker-portal/profile").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
+
+                // Story 6.3: Speaker portal content submission endpoints (no auth required, token-protected)
+                .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/submit").permitAll()
+                .requestMatchers(HttpMethod.POST,
+                        "/api/v1/speaker-portal/materials/presigned-url").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
+
+                // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
+                .requestMatchers("/api/v1/e2e-test/**").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()

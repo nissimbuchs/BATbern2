@@ -15,6 +15,7 @@ import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
@@ -63,6 +64,7 @@ import java.util.UUID;
         }
 )
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -72,6 +74,7 @@ public class Registration {
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")
     @JsonIgnore // Story 1.16.2: Hide internal UUID from API responses
+    @EqualsAndHashCode.Include
     private UUID id;
 
     /**

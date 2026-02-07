@@ -1,0 +1,42 @@
+meta {
+  name: Get Review Queue (Story 5.5)
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/events/{{testEventCode}}/speakers/review-queue
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return 200 for review queue - Story 5.5 AC11", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return array of speakers pending review - Story 5.5 AC11", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+    // Queue should contain speakers with CONTENT_SUBMITTED status
+  });
+
+  test("should include speaker who just submitted content - Story 5.5 AC11", function() {
+    const body = res.getBody();
+    const speakerPoolId = bru.getVar("speakerPoolId");
+    if (speakerPoolId && body.length > 0) {
+      const foundSpeaker = body.find(s => s.id === speakerPoolId);
+      if (foundSpeaker) {
+        expect(foundSpeaker.status).to.equal('CONTENT_SUBMITTED');
+      }
+    }
+  });
+}

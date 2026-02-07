@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "session_timing_history")
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,6 +35,7 @@ public class SessionTimingHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Column(name = "session_id", nullable = false, columnDefinition = "UUID")
