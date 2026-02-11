@@ -172,7 +172,6 @@ public class ProfilePictureService {
                 extension);
     }
 
-
     /**
      * Extract file extension from filename
      */
