@@ -17,7 +17,7 @@ import java.util.Set;
  * - DECLINED is a terminal state (cannot transition out)
  *
  * Valid State Machine:
- * IDENTIFIED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
+ * IDENTIFIED → INVITED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
  * All states ↘ DECLINED
  */
 @Component
@@ -28,7 +28,14 @@ public class StatusTransitionValidator {
      */
     private static final Map<SpeakerWorkflowState, Set<SpeakerWorkflowState>> ALLOWED_TRANSITIONS = Map.ofEntries(
         Map.entry(SpeakerWorkflowState.IDENTIFIED, Set.of(
+            SpeakerWorkflowState.INVITED,
             SpeakerWorkflowState.CONTACTED,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.INVITED, Set.of(
+            SpeakerWorkflowState.CONTACTED,
+            SpeakerWorkflowState.READY,
+            SpeakerWorkflowState.ACCEPTED,
             SpeakerWorkflowState.DECLINED
         )),
         Map.entry(SpeakerWorkflowState.CONTACTED, Set.of(

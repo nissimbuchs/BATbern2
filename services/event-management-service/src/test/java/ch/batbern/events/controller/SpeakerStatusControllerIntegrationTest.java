@@ -246,52 +246,26 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     @Test
     @DisplayName("Should return 422 when invalid state transition is attempted")
     void should_return422_when_invalidStateTransition_attempted() throws Exception {
-        // Given: Speaker in ACCEPTED status
-        // First, transition speaker through workflow to ACCEPTED state
-        String toContactedRequest = """
-                {
-                    "newStatus": "CONTACTED",
-                    "reason": "Setup: transition to CONTACTED"
-                }
-                """;
-        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, testSpeaker.getId().toString())
-                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toContactedRequest))
-                .andExpect(status().isOk());
-
-        String toReadyRequest = """
-                {
-                    "newStatus": "READY",
-                    "reason": "Setup: transition to READY"
-                }
-                """;
-        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, testSpeaker.getId().toString())
-                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toReadyRequest))
-                .andExpect(status().isOk());
-
-        String toAcceptedRequest = """
-                {
-                    "newStatus": "ACCEPTED",
-                    "reason": "Setup: transition to ACCEPTED"
-                }
-                """;
-        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
-                        TEST_EVENT_CODE, testSpeaker.getId().toString())
-                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toAcceptedRequest))
-                .andExpect(status().isOk());
-
-        // Attempt invalid transition: ACCEPTED → DECLINED
-        String invalidRequest = """
+        // Given: Speaker in DECLINED status (terminal state)
+        // First, transition speaker to DECLINED
+        String toDeclinedRequest = """
                 {
                     "newStatus": "DECLINED",
-                    "reason": "Attempting invalid transition"
+                    "reason": "Speaker declined invitation"
+                }
+                """;
+        mockMvc.perform(put("/api/v1/events/{code}/speakers/{speakerId}/status",
+                        TEST_EVENT_CODE, testSpeaker.getId().toString())
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toDeclinedRequest))
+                .andExpect(status().isOk());
+
+        // Attempt invalid transition: DECLINED → ACCEPTED (cannot reverse from terminal state)
+        String invalidRequest = """
+                {
+                    "newStatus": "ACCEPTED",
+                    "reason": "Attempting invalid transition from terminal state"
                 }
                 """;
 
@@ -306,8 +280,8 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.error", is("InvalidStateTransitionException")))
                 .andExpect(jsonPath("$.message", containsString("transition")))
-                .andExpect(jsonPath("$.message", containsString("ACCEPTED")))
-                .andExpect(jsonPath("$.message", containsString("DECLINED")));
+                .andExpect(jsonPath("$.message", containsString("DECLINED")))
+                .andExpect(jsonPath("$.message", containsString("ACCEPTED")));
     }
 
     /**
