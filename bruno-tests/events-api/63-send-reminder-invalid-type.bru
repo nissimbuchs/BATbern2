@@ -1,0 +1,39 @@
+meta {
+  name: Send Reminder With Invalid Type Returns 400 (Story 6.5 AC8)
+  type: http
+  seq: 63
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/{{createdSpeakerPoolId}}/send-reminder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "reminderType": "INVALID_TYPE",
+    "tier": "TIER_1"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 for invalid reminderType - Story 6.5 AC8", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return error message about invalid type - Story 6.5 AC8", function() {
+    const body = res.getBody();
+    // Error response may be in different formats depending on exception handler
+    const hasError = body.error || body.message || body.detail;
+    expect(hasError).to.be.a('string');
+  });
+}
