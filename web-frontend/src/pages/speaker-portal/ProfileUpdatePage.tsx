@@ -6,7 +6,7 @@
  *
  * Features:
  * - View combined User + Speaker profile
- * - Update profile fields (name, bio, expertise, topics, languages, LinkedIn)
+ * - Update profile fields (name, bio, LinkedIn)
  * - Profile completeness indicator
  * - Unsaved changes warning
  */

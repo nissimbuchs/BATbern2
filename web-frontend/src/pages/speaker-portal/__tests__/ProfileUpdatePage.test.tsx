@@ -201,6 +201,35 @@ describe('ProfileUpdatePage', () => {
       });
     });
 
+    it('should preserve hidden fields (expertise, topics, languages) in save payload', async () => {
+      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
+      vi.mocked(speakerPortalService.updateProfile).mockResolvedValue(mockProfile);
+      const user = userEvent.setup();
+
+      renderWithProviders();
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane')).toBeInTheDocument();
+      });
+
+      const firstNameInput = screen.getByLabelText(/first name/i);
+      await user.clear(firstNameInput);
+      await user.type(firstNameInput, 'Janet');
+
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(speakerPortalService.updateProfile).toHaveBeenCalledWith(
+          expect.objectContaining({
+            expertiseAreas: ['Cloud Architecture', 'Microservices'],
+            speakingTopics: ['AWS', 'Kubernetes'],
+            languages: ['de', 'en'],
+          })
+        );
+      });
+    });
+
     it('should show success message after save', async () => {
       vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
       vi.mocked(speakerPortalService.updateProfile).mockResolvedValue(mockProfile);

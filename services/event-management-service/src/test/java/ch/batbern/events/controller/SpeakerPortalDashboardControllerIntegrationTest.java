@@ -250,6 +250,54 @@ class SpeakerPortalDashboardControllerIntegrationTest extends AbstractIntegratio
         }
 
         @Test
+        @DisplayName("should show contentUrl for ACCEPTED speaker without session")
+        void should_showContentUrl_forAcceptedSpeakerWithoutSession() throws Exception {
+            // Remove session assignment - this was the original bug
+            SpeakerPool speaker = speakerPoolRepository
+                    .findById(testSpeakerPoolId).orElseThrow();
+            speaker.setSessionId(null);
+            speakerPoolRepository.save(speaker);
+
+            mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
+                            .param("token", validToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentUrl",
+                            is("/speaker-portal/content")));
+        }
+
+        @Test
+        @DisplayName("should NOT show contentUrl for INVITED speaker")
+        void should_notShowContentUrl_forInvitedSpeaker() throws Exception {
+            SpeakerPool speaker = speakerPoolRepository
+                    .findById(testSpeakerPoolId).orElseThrow();
+            speaker.setStatus(SpeakerWorkflowState.INVITED);
+            speakerPoolRepository.save(speaker);
+
+            mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
+                            .param("token", validToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.upcomingEvents[0].contentUrl")
+                            .doesNotExist())
+                    .andExpect(jsonPath("$.upcomingEvents[0].respondUrl",
+                            is("/speaker-portal/respond")));
+        }
+
+        @Test
+        @DisplayName("should NOT show contentUrl for WITHDREW speaker")
+        void should_notShowContentUrl_forWithdrewSpeaker() throws Exception {
+            SpeakerPool speaker = speakerPoolRepository
+                    .findById(testSpeakerPoolId).orElseThrow();
+            speaker.setStatus(SpeakerWorkflowState.WITHDREW);
+            speakerPoolRepository.save(speaker);
+
+            // WITHDREW is not in UPCOMING_STATES, so no upcoming events
+            mockMvc.perform(get("/api/v1/speaker-portal/dashboard")
+                            .param("token", validToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.upcomingEvents", hasSize(0)));
+        }
+
+        @Test
         @DisplayName("should sort upcoming events by date ascending")
         void should_sortUpcomingEventsByDateAscending() throws Exception {
             long uniqueNumber2 = (System.currentTimeMillis() + 1) % 100000;

@@ -71,6 +71,9 @@ public class SpeakerDashboardService {
     private static final Map<SpeakerWorkflowState, String> WORKFLOW_STATE_LABELS = Map.of(
             SpeakerWorkflowState.INVITED, "Invitation Pending",
             SpeakerWorkflowState.ACCEPTED, "Accepted",
+            SpeakerWorkflowState.CONTENT_SUBMITTED, "Content Submitted",
+            SpeakerWorkflowState.QUALITY_REVIEWED, "Content Approved",
+            SpeakerWorkflowState.SLOT_ASSIGNED, "Slot Assigned",
             SpeakerWorkflowState.CONFIRMED, "Confirmed"
     );
 
@@ -291,7 +294,8 @@ public class SpeakerDashboardService {
         boolean canSubmitContent = entry.getStatus() != SpeakerWorkflowState.INVITED
                 && entry.getStatus() != SpeakerWorkflowState.IDENTIFIED
                 && entry.getStatus() != SpeakerWorkflowState.CONTACTED
-                && entry.getStatus() != SpeakerWorkflowState.DECLINED;
+                && entry.getStatus() != SpeakerWorkflowState.DECLINED
+                && entry.getStatus() != SpeakerWorkflowState.WITHDREW;
         String contentUrl = canSubmitContent ? "/speaker-portal/content" : null;
 
         return DashboardUpcomingEventDto.builder()

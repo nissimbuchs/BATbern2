@@ -7,7 +7,7 @@
  * Flow:
  * 1. Extract token from URL
  * 2. Validate token and display invitation details
- * 3. Show response form (Accept/Decline/Tentative)
+ * 3. Show response form (Accept/Decline)
  * 4. Show confirmation after response
  */
 
