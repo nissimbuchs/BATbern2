@@ -287,8 +287,12 @@ public class SpeakerDashboardService {
         // Quick-action URLs (AC2)
         String respondUrl = entry.getStatus() == SpeakerWorkflowState.INVITED
                 ? "/speaker-portal/respond" : null;
-        String contentUrl = entry.getSessionId() != null
-                ? "/speaker-portal/content" : null;
+        // Show content submit for any speaker who has accepted or beyond
+        boolean canSubmitContent = entry.getStatus() != SpeakerWorkflowState.INVITED
+                && entry.getStatus() != SpeakerWorkflowState.IDENTIFIED
+                && entry.getStatus() != SpeakerWorkflowState.CONTACTED
+                && entry.getStatus() != SpeakerWorkflowState.DECLINED;
+        String contentUrl = canSubmitContent ? "/speaker-portal/content" : null;
 
         return DashboardUpcomingEventDto.builder()
                 .eventCode(event.getEventCode())
