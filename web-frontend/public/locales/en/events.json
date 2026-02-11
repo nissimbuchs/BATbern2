@@ -404,7 +404,10 @@
     "autoAssignConfirmMessage": "This will automatically assign speakers to optimal time slots based on topic expertise and availability. Existing assignments will be overwritten. Continue?",
     "noSpeakers": "No speakers assigned",
     "noSessionsScheduled": "No sessions scheduled yet. Use 'Manage Speaker Assignments' to add speakers.",
-    "loadError": "Failed to load sessions. Please try again."
+    "loadError": "Failed to load sessions. Please try again.",
+    "deleteSession": "Delete",
+    "deleteSessionTitle": "Delete Session?",
+    "deleteSessionMessage": "Are you sure you want to delete the session '{{title}}'? This action cannot be undone."
   },
   "team": {
     "title": "Team Assignments",
