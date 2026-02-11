@@ -100,6 +100,9 @@ const ContentSubmissionPage = React.lazy(
   () => import('@pages/speaker-portal/ContentSubmissionPage')
 );
 
+// Story 6.4: Speaker Portal - Dashboard
+const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -236,6 +239,9 @@ function App() {
 
                     {/* Story 6.3: Speaker Portal - Content Submission */}
                     <Route path="/speaker-portal/content" element={<ContentSubmissionPage />} />
+
+                    {/* Story 6.4: Speaker Portal - Dashboard */}
+                    <Route path="/speaker-portal/dashboard" element={<SpeakerDashboardPage />} />
 
                     <Route
                       path="/search"

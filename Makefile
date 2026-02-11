@@ -296,6 +296,8 @@ dev-native-restart-service: ## Restart specific native service (use SERVICE=name
 dev-seed-data: ## Seed test data into local database (event + speakers)
 	@echo "🌱 Seeding test data into local database..."
 	@docker exec batbern-dev-postgres psql -U postgres -d batbern_development -f /dev/stdin < scripts/dev/seed-test-data.sql
+	@echo "📄 Uploading seed material PDFs to MinIO..."
+	@scripts/dev/seed-materials.sh 2>/dev/null || echo "⚠️  MinIO material upload skipped (mc not installed or MinIO not running)"
 	@echo "✓ Test data seeded"
 
 # ═══════════════════════════════════════════════════════════

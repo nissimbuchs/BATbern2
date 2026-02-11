@@ -34,10 +34,18 @@ import {
   Stack,
   Snackbar,
 } from '@mui/material';
-import { Close as CloseIcon, Email, Phone, Person, Send as SendIcon } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  Email,
+  Phone,
+  Person,
+  Send as SendIcon,
+  NotificationsActive,
+  AttachFile as AttachFileIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
-import { useSendInvitation } from '../../../hooks/useSpeakerPool';
+import { useSendInvitation, useSendReminder } from '../../../hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
 
@@ -81,6 +89,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
   const recordOutreachMutation = useRecordOutreach();
   const sendInvitationMutation = useSendInvitation(eventCode);
+  const sendReminderMutation = useSendReminder(eventCode);
 
   // Snackbar state for invitation feedback
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -124,6 +133,29 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   // Show Send Invitation button only for IDENTIFIED speakers
   const canSendInvitation = speaker?.status === 'IDENTIFIED';
   const hasEmail = !!speaker?.email;
+
+  // Show Send Reminder button for INVITED or ACCEPTED speakers (Story 6.5)
+  const canSendReminder = speaker?.status === 'INVITED' || speaker?.status === 'ACCEPTED';
+
+  const handleSendReminder = async () => {
+    if (!speaker) return;
+
+    const reminderType = speaker.status === 'INVITED' ? 'RESPONSE' : 'CONTENT';
+
+    try {
+      const result = await sendReminderMutation.mutateAsync({
+        speakerPoolId: speaker.id,
+        request: { reminderType },
+      });
+      setSnackbarMessage(t('speakers.reminderSent', { email: result.emailAddress }));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('speakers.reminderFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
 
   // Email input state (AC4: for speakers without email)
   const [emailInput, setEmailInput] = useState('');
@@ -345,39 +377,35 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
             {/* Response Details - Story 6.2a */}
             {/* Show for any speaker who has accepted (acceptedAt is set), not just current ACCEPTED status */}
             {speaker.acceptedAt && (
-              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
-                <Typography variant="subtitle2" color="success.dark" gutterBottom>
+              <Box mt={2} sx={{ bgcolor: '#e8f5e9', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#1b5e20' }} gutterBottom>
                   {t('speakers.responseDetails')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#212121' }}>
                   {t('speakers.acceptedAt')}: {formatDate(speaker.acceptedAt)}
                 </Typography>
                 {speaker.preferredTimeSlot && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
                     {t('speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
                   </Typography>
                 )}
                 {speaker.travelRequirements && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
                     {t('speakers.travelRequirements')}: {speaker.travelRequirements}
                   </Typography>
                 )}
                 {speaker.technicalRequirements && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
                     {t('speakers.technicalRequirements')}: {speaker.technicalRequirements}
                   </Typography>
                 )}
                 {speaker.initialPresentationTitle && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
                     {t('speakers.initialTitle')}: {speaker.initialPresentationTitle}
                   </Typography>
                 )}
                 {speaker.preferenceComments && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1, fontStyle: 'italic' }}
-                  >
+                  <Typography variant="body2" sx={{ color: '#212121', mt: 1, fontStyle: 'italic' }}>
                     {t('speakers.comments')}: {speaker.preferenceComments}
                   </Typography>
                 )}
@@ -385,27 +413,27 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
             )}
 
             {speaker.status === 'DECLINED' && speaker.declineReason && (
-              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
-                <Typography variant="subtitle2" color="error.dark" gutterBottom>
+              <Box mt={2} sx={{ bgcolor: '#ffebee', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#b71c1c' }} gutterBottom>
                   {t('speakers.declineDetails')}
                 </Typography>
                 {speaker.declinedAt && (
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
                     {t('speakers.declinedAt')}: {formatDate(speaker.declinedAt)}
                   </Typography>
                 )}
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#212121' }}>
                   {t('speakers.declineReason')}: {speaker.declineReason}
                 </Typography>
               </Box>
             )}
 
             {speaker.isTentative && speaker.tentativeReason && (
-              <Box mt={2} sx={{ bgcolor: 'warning.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
-                <Typography variant="subtitle2" color="warning.dark" gutterBottom>
+              <Box mt={2} sx={{ bgcolor: '#fff8e1', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#e65100' }} gutterBottom>
                   {t('speakers.tentativeDetails')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: '#212121' }}>
                   {t('speakers.tentativeReason')}: {speaker.tentativeReason}
                 </Typography>
               </Box>
@@ -413,11 +441,11 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
             {/* Revision Needed Feedback (when content was rejected) */}
             {speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes && (
-              <Box mt={2} sx={{ bgcolor: 'error.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
-                <Typography variant="subtitle2" color="error.dark" gutterBottom>
+              <Box mt={2} sx={{ bgcolor: '#ffebee', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#b71c1c' }} gutterBottom>
                   {t('speakers.revisionRequested', 'Revision Requested')}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                <Typography variant="body2" sx={{ color: '#212121', whiteSpace: 'pre-wrap' }}>
                   {speaker.notes}
                 </Typography>
               </Box>
@@ -425,8 +453,8 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
             {/* Story 6.3: Submitted Content Display */}
             {speaker.submittedTitle && (
-              <Box mt={2} sx={{ bgcolor: 'success.light', p: 1.5, borderRadius: 1, opacity: 0.9 }}>
-                <Typography variant="subtitle2" color="success.dark" gutterBottom>
+              <Box mt={2} sx={{ bgcolor: '#e8f5e9', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#1b5e20' }} gutterBottom>
                   {t('speakers.submittedContent', 'Submitted Content')}
                   {speaker.contentStatus && (
                     <Chip
@@ -443,14 +471,19 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     />
                   )}
                 </Typography>
-                <Typography variant="body2" fontWeight="medium" gutterBottom>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#212121' }}
+                  fontWeight="medium"
+                  gutterBottom
+                >
                   {speaker.submittedTitle}
                 </Typography>
                 {speaker.submittedAbstract && (
                   <Typography
                     variant="body2"
-                    color="text.secondary"
                     sx={{
+                      color: '#212121',
                       mt: 1,
                       whiteSpace: 'pre-wrap',
                       maxHeight: 150,
@@ -460,12 +493,29 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                     {speaker.submittedAbstract}
                   </Typography>
                 )}
+                {speaker.materialFileName && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+                    <AttachFileIcon sx={{ fontSize: 16, color: '#1b5e20' }} />
+                    {speaker.materialCloudFrontUrl ? (
+                      <Button
+                        variant="text"
+                        href={speaker.materialCloudFrontUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="small"
+                        sx={{ textTransform: 'none', color: '#1b5e20', p: 0, minWidth: 0 }}
+                      >
+                        {speaker.materialFileName}
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: '#212121' }}>
+                        {speaker.materialFileName}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
                 {speaker.contentSubmittedAt && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ mt: 1, display: 'block' }}
-                  >
+                  <Typography variant="caption" sx={{ color: '#424242', mt: 1, display: 'block' }}>
                     {t('speakers.submittedAt', 'Submitted')}:{' '}
                     {formatDate(speaker.contentSubmittedAt)}
                   </Typography>
@@ -528,6 +578,30 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                   {sendInvitationMutation.isPending
                     ? t('speakers.sending')
                     : t('speakers.sendInvitation')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Send Reminder Button (Story 6.5) */}
+            {canSendReminder && (
+              <Box mt={2}>
+                <Button
+                  variant="outlined"
+                  color="info"
+                  startIcon={
+                    sendReminderMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <NotificationsActive />
+                    )
+                  }
+                  onClick={handleSendReminder}
+                  disabled={sendReminderMutation.isPending}
+                  fullWidth
+                >
+                  {sendReminderMutation.isPending
+                    ? t('speakers.sendingReminder')
+                    : t('speakers.sendReminder')}
                 </Button>
               </Box>
             )}

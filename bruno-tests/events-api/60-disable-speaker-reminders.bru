@@ -1,0 +1,38 @@
+meta {
+  name: Disable Speaker Reminders (Story 6.5 AC6)
+  type: http
+  seq: 60
+}
+
+patch {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/{{createdSpeakerPoolId}}/reminders
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "remindersDisabled": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.remindersDisabled: eq true
+}
+
+tests {
+  test("should return 200 status - Story 6.5 AC6", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should confirm reminders disabled - Story 6.5 AC6", function() {
+    const body = res.getBody();
+    expect(body.remindersDisabled).to.be.true;
+    expect(body.speakerPoolId).to.equal(bru.getVar("createdSpeakerPoolId"));
+  });
+}

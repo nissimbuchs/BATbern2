@@ -42,11 +42,16 @@ public class SpeakerPoolResponse {
     private String initialPresentationTitle;
     private String preferenceComments;
 
+    // Story 6.5: Automated Deadline Reminders
+    private Boolean remindersDisabled;
+
     // Story 6.3: Speaker Content Submission Portal fields
     private String contentStatus;
     private Instant contentSubmittedAt;
     private String submittedTitle;
     private String submittedAbstract;
+    private String materialFileName;
+    private String materialCloudFrontUrl;
 
     // Constructors
 
@@ -91,6 +96,9 @@ public class SpeakerPoolResponse {
         response.technicalRequirements = speakerPool.getTechnicalRequirements();
         response.initialPresentationTitle = speakerPool.getInitialPresentationTitle();
         response.preferenceComments = speakerPool.getPreferenceComments();
+
+        // Story 6.5: Automated Deadline Reminders
+        response.remindersDisabled = speakerPool.getRemindersDisabled();
 
         // Story 6.3: Speaker Content Submission Portal fields
         response.contentStatus = speakerPool.getContentStatus();
@@ -331,6 +339,16 @@ public class SpeakerPoolResponse {
         this.preferenceComments = preferenceComments;
     }
 
+    // Story 6.5: Automated Deadline Reminders getter and setter
+
+    public Boolean getRemindersDisabled() {
+        return remindersDisabled;
+    }
+
+    public void setRemindersDisabled(Boolean remindersDisabled) {
+        this.remindersDisabled = remindersDisabled;
+    }
+
     // Story 6.3: Speaker Content Submission Portal getters and setters
 
     public String getContentStatus() {
@@ -363,5 +381,21 @@ public class SpeakerPoolResponse {
 
     public void setSubmittedAbstract(String submittedAbstract) {
         this.submittedAbstract = submittedAbstract;
+    }
+
+    public String getMaterialFileName() {
+        return materialFileName;
+    }
+
+    public void setMaterialFileName(String materialFileName) {
+        this.materialFileName = materialFileName;
+    }
+
+    public String getMaterialCloudFrontUrl() {
+        return materialCloudFrontUrl;
+    }
+
+    public void setMaterialCloudFrontUrl(String materialCloudFrontUrl) {
+        this.materialCloudFrontUrl = materialCloudFrontUrl;
     }
 }

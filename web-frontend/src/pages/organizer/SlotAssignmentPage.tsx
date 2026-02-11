@@ -14,12 +14,14 @@
  * @see docs/wireframes/story-3.1-speaker-matching-interface.md
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Button, Breadcrumbs, Link, Alert } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { DragDropSlotAssignment } from '@components/SlotAssignment/DragDropSlotAssignment/DragDropSlotAssignment';
+import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
 
 /**
  * Slot Assignment Page Component
@@ -37,6 +39,17 @@ const SlotAssignmentPage: React.FC = () => {
   const { eventCode } = useParams<{ eventCode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation('events');
+  const queryClient = useQueryClient();
+
+  // Invalidate speaker pool cache on unmount so kanban reflects slot changes
+  useEffect(() => {
+    return () => {
+      if (eventCode) {
+        queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+        queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
+      }
+    };
+  }, [eventCode, queryClient]);
 
   const handleBackToEvent = () => {
     navigate(`/organizer/events/${eventCode}`);

@@ -97,6 +97,17 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      */
     boolean existsByEventIdAndEmail(UUID eventId, String email);
 
+    // Story 6.4: Speaker Dashboard - find all events for a speaker by username
+
+    /**
+     * Find all speaker pool entries for a given username across all events.
+     * Used by the speaker dashboard to show upcoming and past events.
+     *
+     * @param username the speaker's username
+     * @return list of speaker pool entries for this speaker
+     */
+    List<SpeakerPool> findByUsername(String username);
+
     // E2E Test Support Methods (Story 6.3)
 
     /**

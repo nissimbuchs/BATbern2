@@ -7,7 +7,7 @@
  * Flow:
  * 1. Extract token from URL
  * 2. Validate token and display invitation details
- * 3. Show response form (Accept/Decline/Tentative)
+ * 3. Show response form (Accept/Decline)
  * 4. Show confirmation after response
  */
 
@@ -26,7 +26,6 @@ import {
   Clock,
   AlertCircle,
   ArrowLeft,
-  HelpCircle,
   ThumbsUp,
   ThumbsDown,
 } from 'lucide-react';
@@ -151,12 +150,12 @@ const InvitationResponsePage = () => {
       response: selectedResponse,
     };
 
-    if (selectedResponse === 'DECLINE' || selectedResponse === 'TENTATIVE') {
+    if (selectedResponse === 'DECLINE') {
       data.reason = reason;
     }
 
-    if (selectedResponse === 'ACCEPT') {
-      data.preferences = preferences;
+    if (selectedResponse === 'ACCEPT' && preferences.comments) {
+      data.preferences = { comments: preferences.comments };
     }
 
     respondMutation.mutate(data);
@@ -166,7 +165,6 @@ const InvitationResponsePage = () => {
   const isSubmitValid = () => {
     if (!selectedResponse) return false;
     if (selectedResponse === 'DECLINE' && !reason.trim()) return false;
-    if (selectedResponse === 'TENTATIVE' && !reason.trim()) return false;
     return true;
   };
 
@@ -369,106 +367,11 @@ const InvitationResponsePage = () => {
                   <ThumbsDown className="h-5 w-5 mr-2" />
                   Decline
                 </Button>
-                <Button
-                  variant={selectedResponse === 'TENTATIVE' ? 'default' : 'outline'}
-                  className={`flex-1 h-14 ${selectedResponse === 'TENTATIVE' ? 'bg-amber-600 hover:bg-amber-700 border-amber-600' : ''}`}
-                  onClick={() => handleResponseSelect('TENTATIVE')}
-                  disabled={respondMutation.isPending}
-                >
-                  <HelpCircle className="h-5 w-5 mr-2" />
-                  Maybe
-                </Button>
               </div>
 
-              {/* Accept Preferences Form */}
+              {/* Accept - Optional Message */}
               {selectedResponse === 'ACCEPT' && (
                 <div className="space-y-4 border-t border-zinc-700 pt-6">
-                  <h3 className="text-sm font-medium text-zinc-300">
-                    Optional: Help us prepare for your session
-                  </h3>
-
-                  <div>
-                    <label htmlFor="timeSlot" className="block text-sm text-zinc-400 mb-2">
-                      Preferred Time Slot
-                    </label>
-                    <select
-                      id="timeSlot"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      value={preferences.timeSlot || ''}
-                      onChange={(e) =>
-                        setPreferences({
-                          ...preferences,
-                          timeSlot: e.target.value as 'morning' | 'afternoon' | 'no_preference',
-                        })
-                      }
-                    >
-                      <option value="">No preference</option>
-                      <option value="morning">Morning</option>
-                      <option value="afternoon">Afternoon</option>
-                      <option value="no_preference">Flexible</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="travelReq" className="block text-sm text-zinc-400 mb-2">
-                      Travel Requirements
-                    </label>
-                    <select
-                      id="travelReq"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      value={preferences.travelRequirements || ''}
-                      onChange={(e) =>
-                        setPreferences({
-                          ...preferences,
-                          travelRequirements: e.target.value as
-                            | 'local'
-                            | 'accommodation'
-                            | 'virtual',
-                        })
-                      }
-                    >
-                      <option value="">Select...</option>
-                      <option value="local">Local / No travel needed</option>
-                      <option value="accommodation">Need accommodation</option>
-                      <option value="virtual">Prefer virtual participation</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="techReq" className="block text-sm text-zinc-400 mb-2">
-                      Technical Requirements (optional)
-                    </label>
-                    <input
-                      id="techReq"
-                      type="text"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      placeholder="e.g., Mac adapter, remote clicker, video playback"
-                      value={preferences.technicalRequirements || ''}
-                      onChange={(e) =>
-                        setPreferences({ ...preferences, technicalRequirements: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="title" className="block text-sm text-zinc-400 mb-2">
-                      Preliminary Presentation Title (optional)
-                    </label>
-                    <input
-                      id="title"
-                      type="text"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      placeholder="Working title for your presentation"
-                      value={preferences.initialTitle || ''}
-                      onChange={(e) =>
-                        setPreferences({
-                          ...preferences,
-                          initialTitle: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
                   <div>
                     <label htmlFor="comments" className="block text-sm text-zinc-400 mb-2">
                       Message to Organizers (optional)
@@ -511,44 +414,6 @@ const InvitationResponsePage = () => {
                       </p>
                     )}
                   </div>
-                </div>
-              )}
-
-              {/* Tentative Reason Form */}
-              {selectedResponse === 'TENTATIVE' && (
-                <div className="space-y-4 border-t border-zinc-700 pt-6">
-                  <div>
-                    <label htmlFor="tentativeReason" className="block text-sm text-zinc-400 mb-2">
-                      What&apos;s holding you back?{' '}
-                      <span className="text-red-400" aria-hidden="true">
-                        *
-                      </span>
-                      <span className="sr-only">(required)</span>
-                    </label>
-                    <textarea
-                      id="tentativeReason"
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[100px]"
-                      placeholder="e.g., Need to check travel dates, awaiting budget approval..."
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      required
-                      aria-required="true"
-                      aria-describedby={!reason.trim() ? 'tentativeReasonError' : undefined}
-                    />
-                    {!reason.trim() && (
-                      <p
-                        id="tentativeReasonError"
-                        className="text-sm text-red-400 mt-1"
-                        role="alert"
-                      >
-                        Please let us know what you need to confirm
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-sm text-zinc-400">
-                    The organizers will follow up with you. You can return to this page to update
-                    your response.
-                  </p>
                 </div>
               )}
 

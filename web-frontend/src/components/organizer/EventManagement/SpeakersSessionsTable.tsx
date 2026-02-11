@@ -482,7 +482,9 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         <DialogTitle>{t('speakers.deleteSessionTitle')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {t('speakers.deleteSessionMessage', { title: sessionToDelete?.title || sessionToDelete?.sessionSlug })}
+            {t('speakers.deleteSessionMessage', {
+              title: sessionToDelete?.title || sessionToDelete?.sessionSlug,
+            })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>

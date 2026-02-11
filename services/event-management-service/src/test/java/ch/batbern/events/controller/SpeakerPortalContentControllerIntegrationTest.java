@@ -442,7 +442,7 @@ class SpeakerPortalContentControllerIntegrationTest extends AbstractIntegrationT
                     .andExpect(jsonPath("$.submissionId", notNullValue()))
                     .andExpect(jsonPath("$.version", is(1)))
                     .andExpect(jsonPath("$.status", is("SUBMITTED")))
-                    .andExpect(jsonPath("$.sessionTitle", is("Cloud Architecture Best Practices")));
+                    .andExpect(jsonPath("$.sessionTitle", is("My Final Presentation Title")));
 
             // Verify database
             var submissions = contentSubmissionRepository.findAll();

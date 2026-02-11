@@ -267,13 +267,14 @@ public class SpeakerContentSubmissionService {
         String materialUrl = null;
         String materialFileName = null;
 
-        List<SessionMaterial> materials = sessionMaterialsRepository.findBySession_Id(session.getId());
+        List<SessionMaterial> materials = sessionMaterialsRepository
+                .findBySession_IdOrderByCreatedAtAsc(session.getId());
         if (!materials.isEmpty()) {
             hasMaterial = true;
-            // Return the first/primary material (typically presentation)
-            SessionMaterial primaryMaterial = materials.get(0);
-            materialUrl = primaryMaterial.getCloudFrontUrl();
-            materialFileName = primaryMaterial.getFileName();
+            // Return the most recent material (last in ascending order)
+            SessionMaterial latestMaterial = materials.get(materials.size() - 1);
+            materialUrl = latestMaterial.getCloudFrontUrl();
+            materialFileName = latestMaterial.getFileName();
         }
 
         return SpeakerContentResponse.builder()

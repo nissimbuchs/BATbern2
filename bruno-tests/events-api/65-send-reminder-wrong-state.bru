@@ -1,0 +1,41 @@
+meta {
+  name: Send Reminder For Wrong Speaker State Returns 400 (Story 6.5 AC8)
+  type: http
+  seq: 65
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/{{createdSpeakerPoolId}}/send-reminder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "reminderType": "RESPONSE",
+    "tier": "TIER_2"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.error: eq INVALID_STATE
+}
+
+tests {
+  test("should return 400 for RESPONSE reminder when speaker is not INVITED - Story 6.5 AC8", function() {
+    // Speaker from test 39 is in ACCEPTED state, not INVITED
+    // RESPONSE reminders only valid for INVITED speakers (AC2)
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should return INVALID_STATE error - Story 6.5 AC8", function() {
+    const body = res.getBody();
+    expect(body.error).to.equal('INVALID_STATE');
+    expect(body.message).to.be.a('string');
+  });
+}

@@ -26,6 +26,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -89,6 +92,9 @@ class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private S3Presigner s3Presigner;
 
+    @MockitoBean
+    private S3Client s3Client;
+
     private UUID testSpeakerPoolId;
     private UUID testEventId;
     private UUID testSessionId;
@@ -103,6 +109,10 @@ class SpeakerPortalMaterialsIntegrationTest extends AbstractIntegrationTest {
         PresignedPutObjectRequest mockPresignedRequest = Mockito.mock(PresignedPutObjectRequest.class);
         when(mockPresignedRequest.url()).thenReturn(URI.create("https://test-bucket.s3.amazonaws.com/test-upload-url").toURL());
         when(s3Presigner.presignPutObject(any(PutObjectPresignRequest.class))).thenReturn(mockPresignedRequest);
+
+        // Configure S3Client mock to return success for copyObject (used by confirmUpload)
+        when(s3Client.copyObject(any(CopyObjectRequest.class)))
+                .thenReturn(CopyObjectResponse.builder().build());
 
         // Clean up in correct order (FK constraints)
         sessionMaterialsRepository.deleteAll();

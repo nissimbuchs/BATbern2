@@ -142,41 +142,6 @@ describe('ProfileUpdatePage', () => {
       });
     });
 
-    it('should display expertise areas as tags', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText('Cloud Architecture')).toBeInTheDocument();
-        expect(screen.getByText('Microservices')).toBeInTheDocument();
-      });
-    });
-
-    it('should display speaking topics as tags', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText('AWS')).toBeInTheDocument();
-        expect(screen.getByText('Kubernetes')).toBeInTheDocument();
-      });
-    });
-
-    it('should show selected languages', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        const germanButton = screen.getByRole('button', { name: /german/i });
-        const englishButton = screen.getByRole('button', { name: /english/i });
-        expect(germanButton).toHaveClass('bg-blue-600');
-        expect(englishButton).toHaveClass('bg-blue-600');
-      });
-    });
-
     it('should show missing fields alert when profile incomplete', async () => {
       const incompleteProfile = {
         ...mockProfile,
@@ -233,6 +198,35 @@ describe('ProfileUpdatePage', () => {
 
       await waitFor(() => {
         expect(speakerPortalService.updateProfile).toHaveBeenCalled();
+      });
+    });
+
+    it('should preserve hidden fields (expertise, topics, languages) in save payload', async () => {
+      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
+      vi.mocked(speakerPortalService.updateProfile).mockResolvedValue(mockProfile);
+      const user = userEvent.setup();
+
+      renderWithProviders();
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane')).toBeInTheDocument();
+      });
+
+      const firstNameInput = screen.getByLabelText(/first name/i);
+      await user.clear(firstNameInput);
+      await user.type(firstNameInput, 'Janet');
+
+      const saveButton = screen.getByRole('button', { name: /save changes/i });
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(speakerPortalService.updateProfile).toHaveBeenCalledWith(
+          expect.objectContaining({
+            expertiseAreas: ['Cloud Architecture', 'Microservices'],
+            speakingTopics: ['AWS', 'Kubernetes'],
+            languages: ['de', 'en'],
+          })
+        );
       });
     });
 
@@ -303,59 +297,6 @@ describe('ProfileUpdatePage', () => {
       await waitFor(() => {
         expect(screen.getByText(/must be a valid linkedin url/i)).toBeInTheDocument();
       });
-    });
-  });
-
-  describe('Tag Management', () => {
-    it('should add expertise area', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-      const user = userEvent.setup();
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText('Cloud Architecture')).toBeInTheDocument();
-      });
-
-      const expertiseInput = screen.getByPlaceholderText(/add expertise area/i);
-      await user.type(expertiseInput, 'DevOps');
-
-      const addButtons = screen.getAllByRole('button', { name: /^add$/i });
-      await user.click(addButtons[0]);
-
-      expect(screen.getByText('DevOps')).toBeInTheDocument();
-    });
-
-    it('should remove expertise area', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-      const user = userEvent.setup();
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText('Cloud Architecture')).toBeInTheDocument();
-      });
-
-      const removeButton = screen.getByRole('button', { name: /remove cloud architecture/i });
-      await user.click(removeButton);
-
-      expect(screen.queryByText('Cloud Architecture')).not.toBeInTheDocument();
-    });
-
-    it('should toggle language selection', async () => {
-      vi.mocked(speakerPortalService.getProfile).mockResolvedValue(mockProfile);
-      const user = userEvent.setup();
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /german/i })).toHaveClass('bg-blue-600');
-      });
-
-      const frenchButton = screen.getByRole('button', { name: /french/i });
-      await user.click(frenchButton);
-
-      expect(frenchButton).toHaveClass('bg-blue-600');
     });
   });
 });

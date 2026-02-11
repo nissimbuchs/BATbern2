@@ -1102,6 +1102,207 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/speakers/invite:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Invite a speaker to an event
+      description: |
+        Create a SpeakerPool entry for a speaker and optionally auto-create
+        a User account if one doesn't exist.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+        - Auto-creates a User via UserApiClient if no user exists for the email
+        - Speaker starts in IDENTIFIED status
+        - Cognito account is NOT created for speakers initially
+
+        **Performance**: <300ms (P95)
+
+      operationId: inviteSpeaker
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteSpeakerRequest'
+      responses:
+        '201':
+          description: Speaker invited successfully (new entry created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '200':
+          description: Speaker already exists in pool (idempotent return)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/invite-batch:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Batch invite speakers to an event
+      description: |
+        Invite multiple speakers in a single request with partial failure support.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC5 (batch)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Maximum 50 speakers per batch
+        - Processing continues even if individual invitations fail
+        - Returns 207 Multi-Status when some succeed and some fail
+
+        **Performance**: <2000ms (P95) for 50 speakers
+
+      operationId: inviteSpeakerBatch
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchInviteRequest'
+      responses:
+        '200':
+          description: All invitations processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '207':
+          description: Partial success - some invitations failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '400':
+          description: Validation error (e.g., empty speakers list)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{username}/send-invitation:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Send invitation email to a speaker
+      description: |
+        Send or resend a personalized invitation email with magic links for
+        accept/decline and a dashboard access link.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Speaker must exist in the pool for this event
+        - Transitions speaker status to INVITED
+        - Generates two magic link tokens:
+          - RESPOND token (single-use) for accept/decline
+          - VIEW token (reusable, 30-day expiry) for dashboard access
+        - Publishes SpeakerInvitationSentEvent domain event
+        - Records outreach history and status transition history
+        - Email sent asynchronously; failure does not block the response
+
+        **Performance**: <300ms (P95)
+
+      operationId: sendSpeakerInvitation
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+        - name: username
+          in: path
+          description: Speaker's username or UUID (for brainstormed speakers)
+          required: true
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvitationRequest'
+      responses:
+        '200':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendInvitationResponse'
+        '400':
+          description: Validation error (e.g., missing email, invalid deadlines)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/{speakerId}/outreach:
     post:
       tags:
@@ -4673,6 +4874,270 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-14T14:35:00Z
+
+    InviteSpeakerRequest:
+      type: object
+      description: |
+        Request to invite a speaker to an event.
+        Story 6.1b - AC1: Speaker Invitation
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          nullable: true
+          description: Speaker's first name (used for user creation if not found)
+          example: Jane
+        lastName:
+          type: string
+          nullable: true
+          description: Speaker's last name (used for user creation if not found)
+          example: Smith
+        company:
+          type: string
+          nullable: true
+          description: Speaker's company name
+          example: Tech Corp AG
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session to assign speaker to (optional)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the speaker
+          example: Expert in cloud architecture
+
+    InviteSpeakerResponse:
+      type: object
+      description: |
+        Response for a speaker invitation.
+        Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+      required:
+        - speakerPoolId
+        - email
+        - speakerName
+        - status
+        - created
+        - createdAt
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        speakerName:
+          type: string
+          description: Display name of the speaker
+          example: Jane Smith
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: Current workflow status
+          example: identified
+        created:
+          type: boolean
+          description: True if newly created, false if existing (idempotent return)
+          example: true
+        userCreated:
+          type: boolean
+          description: True if a new User account was created
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: When the SpeakerPool entry was created
+          example: 2026-01-15T10:00:00Z
+
+    BatchInviteRequest:
+      type: object
+      description: |
+        Request to invite multiple speakers in a batch.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - speakers
+      properties:
+        speakers:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: List of speakers to invite (1-50 per batch)
+          items:
+            $ref: '#/components/schemas/InviteSpeakerRequest'
+
+    BatchInviteResponse:
+      type: object
+      description: |
+        Response for a batch speaker invitation with partial failure support.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - totalRequested
+        - successCount
+        - failedCount
+        - results
+        - errors
+      properties:
+        totalRequested:
+          type: integer
+          description: Total number of speakers requested
+          example: 5
+        successCount:
+          type: integer
+          description: Number of speakers successfully invited
+          example: 4
+        failedCount:
+          type: integer
+          description: Number of failed invitations
+          example: 1
+        results:
+          type: array
+          description: Individual results for successful invitations
+          items:
+            $ref: '#/components/schemas/InviteSpeakerResponse'
+        errors:
+          type: array
+          description: Details of failed invitations
+          items:
+            type: object
+            required:
+              - email
+              - errorCode
+              - errorMessage
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email of the speaker that failed
+                example: invalid@broken.test
+              errorCode:
+                type: string
+                description: Error classification code
+                enum:
+                  - INVALID_REQUEST
+                  - EVENT_NOT_FOUND
+                  - USER_SERVICE_ERROR
+                  - INTERNAL_ERROR
+                example: USER_SERVICE_ERROR
+              errorMessage:
+                type: string
+                description: Human-readable error message
+                example: Failed to create user account
+
+    SendInvitationRequest:
+      type: object
+      description: |
+        Request to send/resend an invitation email to a speaker.
+        Story 6.1b - AC3: Invitation Email
+
+        The email includes:
+        - Accept/decline magic links (single-use RESPOND token)
+        - Dashboard access link (reusable VIEW token)
+        - Event details, deadlines, and session info
+      required:
+        - responseDeadline
+      properties:
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond (must be in the future)
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for speaker to submit content (must be after responseDeadline)
+          example: '2026-03-10'
+        locale:
+          type: string
+          nullable: true
+          description: Preferred language for the email (defaults to 'de')
+          enum:
+            - de
+            - en
+          example: de
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Override email address (for speakers without email in database)
+          example: jane.smith@example.com
+
+    SendInvitationResponse:
+      type: object
+      description: |
+        Response after sending an invitation email.
+        Story 6.1b - AC3: Invitation Email
+      required:
+        - speakerPoolId
+        - status
+        - invitedAt
+        - responseDeadline
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        status:
+          type: string
+          enum:
+            - invited
+          description: Updated status (always INVITED after sending)
+          example: invited
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the invitation was sent
+          example: 2026-01-15T10:00:00Z
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for content submission
+          example: '2026-03-10'
 
     TopicResponse:
       type: object

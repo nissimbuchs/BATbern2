@@ -135,6 +135,7 @@ public class SpeakerAcceptanceEmailService {
             // Build portal URLs with VIEW token
             String profileUrl = baseUrl + "/speaker-portal/profile?token=" + viewToken;
             String contentUrl = baseUrl + "/speaker-portal/content?token=" + viewToken;
+            String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + viewToken;
 
             // Get session details if assigned
             String sessionTitle = "";
@@ -157,6 +158,7 @@ public class SpeakerAcceptanceEmailService {
                     Map.entry("sessionTitle", sessionTitle),
                     Map.entry("profileUrl", profileUrl),
                     Map.entry("contentUrl", contentUrl),
+                    Map.entry("dashboardLink", dashboardLink),
                     Map.entry("contentDeadline", speaker.getContentDeadline() != null
                             ? speaker.getContentDeadline().format(DATE_FORMATTER)
                             : ""),

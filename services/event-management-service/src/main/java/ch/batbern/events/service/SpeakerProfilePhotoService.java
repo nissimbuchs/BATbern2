@@ -10,6 +10,7 @@ import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.exception.InvalidTokenException;
 import ch.batbern.events.exception.PhotoUploadNotFoundException;
 import ch.batbern.events.repository.SpeakerRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -200,7 +201,7 @@ public class SpeakerProfilePhotoService {
         }
 
         // 3. Build CloudFront URL
-        String cloudFrontUrl = cloudFrontDomain + "/" + s3Key;
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key);
 
         // 4. Update Speaker entity with photo URL (stored locally, no auth required)
         Optional<Speaker> speakerOpt = speakerRepository.findByUsername(username);

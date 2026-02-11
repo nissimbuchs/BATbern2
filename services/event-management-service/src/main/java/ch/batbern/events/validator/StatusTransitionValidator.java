@@ -17,7 +17,8 @@ import java.util.Set;
  * - DECLINED is a terminal state (cannot transition out)
  *
  * Valid State Machine:
- * IDENTIFIED → INVITED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
+ * IDENTIFIED → INVITED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED →
+ * CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
  * All states ↘ DECLINED
  */
 @Component

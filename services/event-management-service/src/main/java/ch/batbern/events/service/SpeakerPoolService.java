@@ -2,12 +2,14 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
 import ch.batbern.events.dto.SpeakerPoolResponse;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
@@ -34,17 +36,20 @@ public class SpeakerPoolService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
 
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
                               ContentSubmissionRepository contentSubmissionRepository,
+                              SessionMaterialsRepository sessionMaterialsRepository,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.contentSubmissionRepository = contentSubmissionRepository;
+        this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
     }
@@ -138,15 +143,27 @@ public class SpeakerPoolService {
         return speakers.stream()
                 .map(speaker -> {
                     ContentSubmission content = contentMap.get(speaker.getId());
+                    SpeakerPoolResponse response;
                     if (content != null) {
-                        return SpeakerPoolResponse.fromEntityWithContent(
+                        response = SpeakerPoolResponse.fromEntityWithContent(
                                 speaker,
                                 content.getTitle(),
                                 content.getContentAbstract()
                         );
                     } else {
-                        return SpeakerPoolResponse.fromEntity(speaker);
+                        response = SpeakerPoolResponse.fromEntity(speaker);
                     }
+                    // Enrich with material info if session exists
+                    if (speaker.getSessionId() != null) {
+                        List<SessionMaterial> materials = sessionMaterialsRepository
+                                .findBySession_IdOrderByCreatedAtAsc(speaker.getSessionId());
+                        if (!materials.isEmpty()) {
+                            SessionMaterial latest = materials.get(materials.size() - 1);
+                            response.setMaterialFileName(latest.getFileName());
+                            response.setMaterialCloudFrontUrl(latest.getCloudFrontUrl());
+                        }
+                    }
+                    return response;
                 })
                 .collect(Collectors.toList());
     }

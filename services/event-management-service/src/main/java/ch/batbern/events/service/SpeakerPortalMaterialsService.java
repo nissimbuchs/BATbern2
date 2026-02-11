@@ -13,11 +13,14 @@ import ch.batbern.events.exception.InvalidFileTypeException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -70,6 +73,7 @@ public class SpeakerPortalMaterialsService {
     private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final S3Presigner s3Presigner;
+    private final S3Client s3Client;
 
     @Value("${aws.s3.bucket-name:batbern-development-company-logos}")
     private String bucketName;
@@ -182,8 +186,13 @@ public class SpeakerPortalMaterialsService {
                 year, session.getEventCode(), session.getSessionSlug(),
                 request.uploadId(), request.fileExtension());
 
+        // Copy file from temp location to final location in S3
+        String tempS3Key = String.format("materials/temp/%s/file-%s.%s",
+                request.uploadId(), request.uploadId(), request.fileExtension());
+        copyS3Object(tempS3Key, finalS3Key);
+
         // Build CloudFront URL
-        String cloudFrontUrl = cloudFrontDomain + "/" + finalS3Key;
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
 
         // Create SessionMaterial entity
         SessionMaterial material = SessionMaterial.builder()
@@ -237,6 +246,26 @@ public class SpeakerPortalMaterialsService {
         }
 
         return result;
+    }
+
+    /**
+     * Copy S3 object from temp upload location to final location.
+     */
+    private void copyS3Object(String sourceKey, String destinationKey) {
+        try {
+            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                    .sourceBucket(bucketName)
+                    .sourceKey(sourceKey)
+                    .destinationBucket(bucketName)
+                    .destinationKey(destinationKey)
+                    .build();
+
+            s3Client.copyObject(copyRequest);
+            log.info("Copied S3 object from {} to {}", sourceKey, destinationKey);
+        } catch (Exception e) {
+            log.error("Failed to copy S3 object from {} to {}", sourceKey, destinationKey, e);
+            throw new RuntimeException("Failed to move uploaded file to final location", e);
+        }
     }
 
     /**

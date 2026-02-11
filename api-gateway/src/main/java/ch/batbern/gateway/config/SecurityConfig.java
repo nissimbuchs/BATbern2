@@ -161,6 +161,9 @@ public class SecurityConfig {
                                 "/api/v1/speaker-portal/profile/photo/presigned-url").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/profile/photo/confirm").permitAll()
 
+                        // Story 6.4: Speaker dashboard endpoint (token-protected, no JWT auth)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/dashboard").permitAll()
+
                         // Story 6.3: Speaker content submission endpoints (token-protected, no JWT auth)
                         .requestMatchers(HttpMethod.GET, "/api/v1/speaker-portal/content").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/content/draft").permitAll()

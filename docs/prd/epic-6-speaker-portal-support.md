@@ -226,14 +226,14 @@ As a **speaker**, I want to respond to invitations via a simple web form, so tha
 
 **Response Interface:**
 1. **Response Form**: Simple form accessible via unique link from invitation email
-2. **Availability Options**: Accept/Decline/Tentative responses
-3. **Constraint Collection**: Capture scheduling preferences, technical needs
+2. **Availability Options**: Accept/Decline responses *(Tentative removed from UI 2026-02-11; API still supports for backward compat)*
+3. **Constraint Collection**: Optional message to organizer *(scheduling preferences, technical needs simplified out of UI 2026-02-11)*
 4. **Confirmation**: Immediate confirmation of response submission
 
 **Response Processing:**
 5. **Auto Status Update**: Response automatically updates speaker status in Epic 5 workflow
 6. **Organizer Notification**: Organizers notified in real-time of speaker responses
-7. **Tentative Handling**: Support for tentative responses with follow-up
+7. ~~**Tentative Handling**: Support for tentative responses with follow-up~~ *Deferred from UI 2026-02-11; backend supports tentative for future re-enablement*
 8. **Decline Reasons**: Optional collection of decline reasons
 
 **Hybrid Operation:**
@@ -242,7 +242,7 @@ As a **speaker**, I want to respond to invitations via a simple web form, so tha
 
 **Definition of Done:**
 - [ ] Response form works without authentication via unique link
-- [ ] All response types (Accept/Decline/Tentative) properly handled
+- [ ] All response types (Accept/Decline) properly handled in UI *(Tentative: backend only)*
 - [ ] Status automatically updates in Epic 5 speaker status dashboard
 - [ ] Organizers notified of responses in real-time
 - [ ] Organizer can override speaker response if needed
