@@ -326,6 +326,30 @@ BEGIN
             NOW() - INTERVAL '5 days'
         ) ON CONFLICT (id) DO NOTHING;
 
+        -- PDF presentation materials for speakers with submitted content
+        INSERT INTO session_materials (
+            id, session_id, upload_id, s3_key, cloudfront_url,
+            file_name, file_extension, file_size, mime_type,
+            material_type, uploaded_by, content_extracted, extraction_status
+        ) VALUES
+        -- Dr. Anna Müller: Keynote presentation PDF
+        ('ff003333-ff00-ff00-ff00-ff0000000001',
+         'cccc1111-cccc-cccc-cccc-cccccccccccc',
+         'upload-anna-mueller-001',
+         'materials/BATbern998/anna-mueller/digital-twins-bauindustrie.pdf',
+         'https://cdn.batbern.ch/materials/BATbern998/anna-mueller/digital-twins-bauindustrie.pdf',
+         'Digital_Twins_Bauindustrie_Mueller.pdf', 'pdf', 2458624, 'application/pdf',
+         'PRESENTATION', 'anna.mueller', false, 'PENDING'),
+        -- Lisa Schneider: Urban planning presentation PDF
+        ('ff003333-ff00-ff00-ff00-ff0000000002',
+         'cccc2222-cccc-cccc-cccc-cccccccccccc',
+         'upload-lisa-schneider-001',
+         'materials/BATbern998/lisa-schneider/smart-city-bern-stadtplanung.pdf',
+         'https://cdn.batbern.ch/materials/BATbern998/lisa-schneider/smart-city-bern-stadtplanung.pdf',
+         'Smart_City_Bern_Schneider.pdf', 'pdf', 1843200, 'application/pdf',
+         'PRESENTATION', 'lisa.schneider', false, 'PENDING')
+        ON CONFLICT (id) DO NOTHING;
+
         -- Story 6.5: Sample reminder log entries (showing past reminders already sent)
         INSERT INTO speaker_reminder_log (
             id, speaker_pool_id, event_id, reminder_type, tier,
