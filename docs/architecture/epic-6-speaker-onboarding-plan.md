@@ -104,7 +104,9 @@ This simplified model replaces the previous 11-state machine, providing:
 
 **Design Decision**: TENTATIVE is handled as a **flag on INVITED state**, not a separate state.
 
-When a speaker responds "Maybe/Tentative":
+> **UI Update (2026-02-11):** The Tentative/Maybe button has been removed from the speaker portal UI to simplify the response flow to Accept/Decline only. The `is_tentative` infrastructure is retained in the backend for potential future use. API still accepts `response: "TENTATIVE"` for backward compatibility.
+
+When a speaker responds "Maybe/Tentative" *(backend-only as of 2026-02-11)*:
 - Workflow state remains `INVITED`
 - `is_tentative = TRUE`
 - `tentative_reason` stores their constraints (e.g., "Need to check travel dates")
@@ -118,7 +120,7 @@ INVITED (is_tentative=false) ──▶ Speaker clicks "Maybe" ──▶ INVITED 
                                                     ACCEPTED              DECLINED
 ```
 
-This keeps the workflow at 6 states while supporting the tentative use case.
+This keeps the workflow at 6 states while supporting the tentative use case. *(Note: UI only shows Accept/Decline as of 2026-02-11)*
 
 #### Session Assignment
 
@@ -338,7 +340,7 @@ public class SpeakerInvitationService {
 ```
 web-frontend/src/pages/speaker-portal/
 ├── SpeakerPortalLayout.tsx       # Layout with minimal nav (no full auth)
-├── InvitationResponsePage.tsx    # Accept/Decline/Tentative
+├── InvitationResponsePage.tsx    # Accept/Decline (Tentative removed from UI 2026-02-11)
 ├── ProfileUpdatePage.tsx         # Bio, photo, expertise
 ├── ContentSubmissionPage.tsx     # Title, abstract, files
 ├── SpeakerDashboardPage.tsx      # View upcoming/past events
@@ -907,7 +909,7 @@ public ResponseEntity<?> getAnyProfile(@PathVariable String username) {
 ### Phase 2: Response Portal (Week 3-4)
 
 **Story 6.2a: Invitation Response**
-- [ ] `InvitationResponsePage.tsx` - Accept/Decline/Tentative UI
+- [ ] `InvitationResponsePage.tsx` - Accept/Decline UI *(Tentative removed from UI 2026-02-11)*
 - [ ] `POST /speaker-portal/respond` endpoint
 - [ ] Status update integration with SpeakerPool
 - [ ] Organizer notification on response
