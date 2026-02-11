@@ -10,6 +10,7 @@ import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.SessionMaterialsRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,7 +93,7 @@ public class SessionMaterialsService {
             copyS3Object(tempS3Key, finalS3Key);
 
             // Build CloudFront URL
-            String cloudFrontUrl = cloudFrontDomain + "/" + finalS3Key;
+            String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
 
             // Create SessionMaterial entity
             SessionMaterial material = SessionMaterial.builder()
@@ -338,7 +339,7 @@ public class SessionMaterialsService {
             uploadToS3(finalS3Key, fileData, mimeType);
 
             // Build CloudFront URL
-            String cloudFrontUrl = cloudFrontDomain + "/" + finalS3Key;
+            String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
 
             // Create SessionMaterial entity
             SessionMaterial material = SessionMaterial.builder()
