@@ -183,6 +183,12 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
     queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
   };
 
+  const handleSessionDelete = async (sessionSlug: string) => {
+    await sessionApiClient.deleteSession(eventCode, sessionSlug);
+    queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
+    queryClient.invalidateQueries({ queryKey: ['speakerPool', eventCode] });
+  };
+
   const handleViewMaterials = (sessionId: string) => {
     console.log('View materials:', sessionId);
   };
@@ -358,6 +364,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
               eventDate={event?.date || ''}
               onViewMaterials={handleViewMaterials}
               onSessionUpdate={handleSessionUpdate}
+              onSessionDelete={handleSessionDelete}
             />
           </Paper>
         )}
