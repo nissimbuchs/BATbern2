@@ -52,13 +52,19 @@ public class SpeakerDashboardService {
     private static final Set<SpeakerWorkflowState> UPCOMING_STATES = Set.of(
             SpeakerWorkflowState.INVITED,
             SpeakerWorkflowState.ACCEPTED,
-            SpeakerWorkflowState.CONFIRMED
+            SpeakerWorkflowState.CONFIRMED,
+            SpeakerWorkflowState.CONTENT_SUBMITTED,
+            SpeakerWorkflowState.QUALITY_REVIEWED,
+            SpeakerWorkflowState.SLOT_ASSIGNED
     );
 
     // Past event states (AC3)
     private static final Set<SpeakerWorkflowState> PAST_STATES = Set.of(
             SpeakerWorkflowState.ACCEPTED,
-            SpeakerWorkflowState.CONFIRMED
+            SpeakerWorkflowState.CONFIRMED,
+            SpeakerWorkflowState.CONTENT_SUBMITTED,
+            SpeakerWorkflowState.QUALITY_REVIEWED,
+            SpeakerWorkflowState.SLOT_ASSIGNED
     );
 
     // Friendly labels for workflow states (AC2)
@@ -224,6 +230,10 @@ public class SpeakerDashboardService {
                         && !latestSubmission.get().getTitle().isBlank();
                 hasAbstract = latestSubmission.get().getContentAbstract() != null
                         && !latestSubmission.get().getContentAbstract().isBlank();
+                // Use submitted title if available (overrides original session title)
+                if (hasTitle) {
+                    sessionTitle = latestSubmission.get().getTitle();
+                }
             }
         }
 

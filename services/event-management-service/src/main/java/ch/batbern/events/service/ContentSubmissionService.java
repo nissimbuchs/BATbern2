@@ -284,6 +284,11 @@ public class ContentSubmissionService {
         } else {
             session = sessionRepository.findById(speaker.getSessionId())
                     .orElseThrow(() -> new IllegalStateException("Session not found - contact organizer"));
+
+            // Update session title and description from submitted content
+            session.setTitle(request.title().trim());
+            session.setDescription(request.contentAbstract().trim());
+            session = sessionRepository.save(session);
         }
 
         // AC8: Determine version (increment if resubmitting)
