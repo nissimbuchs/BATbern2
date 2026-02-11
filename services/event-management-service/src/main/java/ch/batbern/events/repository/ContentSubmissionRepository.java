@@ -60,6 +60,14 @@ public interface ContentSubmissionRepository extends JpaRepository<ContentSubmis
     List<ContentSubmission> findBySessionId(UUID sessionId);
 
     /**
+     * Delete all content submissions for a specific session.
+     * Used when deleting a session to maintain referential integrity.
+     *
+     * @param sessionId the session ID
+     */
+    void deleteBySessionId(UUID sessionId);
+
+    /**
      * Get the maximum submission version for a speaker pool entry.
      * Used to determine next version number on resubmission.
      *

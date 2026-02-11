@@ -8,6 +8,7 @@ import ch.batbern.events.dto.CreateSessionRequest;
 import ch.batbern.events.dto.SessionResponse;
 import ch.batbern.events.dto.UpdateSessionRequest;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionBatchImportService;
@@ -66,6 +67,9 @@ public class SessionController {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private ContentSubmissionRepository contentSubmissionRepository;
 
     @Autowired
     private SlugGenerationService slugGenerationService;
@@ -329,6 +333,7 @@ public class SessionController {
      */
     @DeleteMapping("/{sessionSlug}")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @org.springframework.transaction.annotation.Transactional
     public ResponseEntity<Void> deleteSession(
             @PathVariable String eventCode,
             @PathVariable String sessionSlug) {
@@ -346,6 +351,9 @@ public class SessionController {
         if (!session.getEventId().equals(eventId)) {
             throw new ValidationException("Session does not belong to this event");
         }
+
+        // Delete related content submissions first to avoid foreign key constraint violation
+        contentSubmissionRepository.deleteBySessionId(session.getId());
 
         // Delete session
         sessionRepository.deleteById(session.getId());
