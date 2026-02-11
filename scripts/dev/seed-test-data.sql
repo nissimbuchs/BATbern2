@@ -337,16 +337,16 @@ BEGIN
          'cccc1111-cccc-cccc-cccc-cccccccccccc',
          'upload-anna-mueller-001',
          'materials/BATbern998/anna-mueller/digital-twins-bauindustrie.pdf',
-         'https://cdn.batbern.ch/materials/BATbern998/anna-mueller/digital-twins-bauindustrie.pdf',
-         'Digital_Twins_Bauindustrie_Mueller.pdf', 'pdf', 2458624, 'application/pdf',
+         'http://localhost:8450/materials/materials/BATbern998/anna-mueller/digital-twins-bauindustrie.pdf',
+         'Digital_Twins_Bauindustrie_Mueller.pdf', 'pdf', 748, 'application/pdf',
          'PRESENTATION', 'anna.mueller', false, 'PENDING'),
         -- Lisa Schneider: Urban planning presentation PDF
         ('ff003333-ff00-ff00-ff00-ff0000000002',
          'cccc2222-cccc-cccc-cccc-cccccccccccc',
          'upload-lisa-schneider-001',
          'materials/BATbern998/lisa-schneider/smart-city-bern-stadtplanung.pdf',
-         'https://cdn.batbern.ch/materials/BATbern998/lisa-schneider/smart-city-bern-stadtplanung.pdf',
-         'Smart_City_Bern_Schneider.pdf', 'pdf', 1843200, 'application/pdf',
+         'http://localhost:8450/materials/materials/BATbern998/lisa-schneider/smart-city-bern-stadtplanung.pdf',
+         'Smart_City_Bern_Schneider.pdf', 'pdf', 741, 'application/pdf',
          'PRESENTATION', 'lisa.schneider', false, 'PENDING')
         ON CONFLICT (id) DO NOTHING;
 
