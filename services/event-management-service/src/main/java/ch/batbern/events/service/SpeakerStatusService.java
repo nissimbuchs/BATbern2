@@ -11,6 +11,7 @@ import ch.batbern.events.dto.StatusSummaryResponse;
 import ch.batbern.events.dto.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
@@ -54,6 +55,7 @@ public class SpeakerStatusService {
     private final StatusTransitionValidator validator;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
+    private final SessionRepository sessionRepository;
     private final EventTypeService eventTypeService;
     private final ApplicationEventPublisher eventPublisher;
     private final DomainEventPublisher domainEventPublisher;
@@ -93,6 +95,14 @@ public class SpeakerStatusService {
 
         // Update speaker_pool status column
         speaker.setStatus(request.getNewStatus());
+
+        // Clean up associated session when speaker is declined
+        if (request.getNewStatus() == SpeakerWorkflowState.DECLINED && speaker.getSessionId() != null) {
+            UUID sessionId = speaker.getSessionId();
+            log.info("Declining speaker {} - deleting associated session {}", speakerId, sessionId);
+            speaker.setSessionId(null);
+            sessionRepository.deleteById(sessionId);
+        }
 
         // Save updated speaker pool entry
         speakerPoolRepository.save(speaker);
