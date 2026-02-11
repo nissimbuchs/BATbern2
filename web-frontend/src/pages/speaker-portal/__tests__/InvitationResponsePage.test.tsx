@@ -156,13 +156,12 @@ describe('InvitationResponsePage Component', () => {
       vi.mocked(speakerPortalService.validateToken).mockResolvedValue(validInvitation);
     });
 
-    test('should_renderThreeResponseButtons_when_invitationValid', async () => {
+    test('should_renderTwoResponseButtons_when_invitationValid', async () => {
       renderWithProviders('valid-token');
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Accept/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Decline/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Maybe/i })).toBeInTheDocument();
       });
     });
 
@@ -217,7 +216,7 @@ describe('InvitationResponsePage Component', () => {
       vi.mocked(speakerPortalService.validateToken).mockResolvedValue(validInvitation);
     });
 
-    test('should_showPreferencesForm_when_acceptClicked', async () => {
+    test('should_showMessageField_when_acceptClicked', async () => {
       renderWithProviders('valid-token');
 
       await waitFor(() => {
@@ -227,9 +226,7 @@ describe('InvitationResponsePage Component', () => {
       fireEvent.click(screen.getByRole('button', { name: /Accept/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Preferred Time Slot/i)).toBeInTheDocument();
-        expect(screen.getByText(/Travel Requirements/i)).toBeInTheDocument();
-        expect(screen.getByText(/Technical Requirements/i)).toBeInTheDocument();
+        expect(screen.getByText(/Message to Organizers/i)).toBeInTheDocument();
       });
     });
 
@@ -281,7 +278,7 @@ describe('InvitationResponsePage Component', () => {
       });
     });
 
-    test('should_includePreferences_when_acceptWithPreferences', async () => {
+    test('should_includeMessage_when_acceptWithMessage', async () => {
       vi.mocked(speakerPortalService.respond).mockResolvedValue({
         success: true,
         speakerName: 'Jane Smith',
@@ -297,21 +294,12 @@ describe('InvitationResponsePage Component', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /Accept/i }));
 
-      // Fill in preferences
       await waitFor(() => {
-        expect(screen.getByText(/Preferred Time Slot/i)).toBeInTheDocument();
+        expect(screen.getByText(/Message to Organizers/i)).toBeInTheDocument();
       });
 
-      // Select time slot preference - find the select following the label
-      const timeSlotLabel = screen.getByText(/Preferred Time Slot/i);
-      const timeSlotSelect = timeSlotLabel.parentElement?.querySelector('select');
-      if (timeSlotSelect) {
-        fireEvent.change(timeSlotSelect, { target: { value: 'morning' } });
-      }
-
-      // Fill in technical requirements
-      const techInput = screen.getByPlaceholderText(/Mac adapter/i);
-      fireEvent.change(techInput, { target: { value: 'Need HDMI adapter' } });
+      const messageTextarea = screen.getByPlaceholderText(/Any questions or comments/i);
+      fireEvent.change(messageTextarea, { target: { value: 'Looking forward to it!' } });
 
       fireEvent.click(screen.getByRole('button', { name: /Submit Response/i }));
 
@@ -321,8 +309,7 @@ describe('InvitationResponsePage Component', () => {
             token: 'valid-token',
             response: 'ACCEPT',
             preferences: expect.objectContaining({
-              timeSlot: 'morning',
-              technicalRequirements: ['Need HDMI adapter'],
+              comments: 'Looking forward to it!',
             }),
           })
         );
@@ -420,86 +407,6 @@ describe('InvitationResponsePage Component', () => {
             token: 'valid-token',
             response: 'DECLINE',
             reason: 'Schedule conflict',
-          })
-        );
-      });
-    });
-  });
-
-  describe('Tentative Response Flow', () => {
-    const validInvitation = {
-      valid: true,
-      speakerName: 'Jane Smith',
-      eventCode: 'BAT2025',
-      eventTitle: 'BATbern 2025',
-      eventDate: '20. November 2025',
-      alreadyResponded: false,
-    };
-
-    beforeEach(() => {
-      vi.mocked(speakerPortalService.validateToken).mockResolvedValue(validInvitation);
-    });
-
-    test('should_showReasonInput_when_tentativeClicked', async () => {
-      renderWithProviders('valid-token');
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Maybe/i })).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /Maybe/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/What's holding you back/i)).toBeInTheDocument();
-      });
-    });
-
-    test('should_requireReason_when_tentativeWithoutReason', async () => {
-      renderWithProviders('valid-token');
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Maybe/i })).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /Maybe/i }));
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Please let us know what you need to confirm/i)
-        ).toBeInTheDocument();
-      });
-
-      const submitButton = screen.getByRole('button', { name: /Submit Response/i });
-      expect(submitButton).toBeDisabled();
-    });
-
-    test('should_submitTentativeResponse_when_reasonProvided', async () => {
-      vi.mocked(speakerPortalService.respond).mockResolvedValue({
-        success: true,
-        speakerName: 'Jane Smith',
-        eventName: 'BATbern 2025',
-        nextSteps: ['Organizers will follow up'],
-      });
-
-      renderWithProviders('valid-token');
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Maybe/i })).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /Maybe/i }));
-
-      const reasonTextarea = screen.getByPlaceholderText(/Need to check travel dates/i);
-      fireEvent.change(reasonTextarea, { target: { value: 'Awaiting budget approval' } });
-
-      fireEvent.click(screen.getByRole('button', { name: /Submit Response/i }));
-
-      await waitFor(() => {
-        expect(speakerPortalService.respond).toHaveBeenCalledWith(
-          expect.objectContaining({
-            token: 'valid-token',
-            response: 'TENTATIVE',
-            reason: 'Awaiting budget approval',
           })
         );
       });
@@ -695,7 +602,6 @@ describe('InvitationResponsePage Component', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Accept/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Decline/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Maybe/i })).toBeInTheDocument();
       });
     });
   });
