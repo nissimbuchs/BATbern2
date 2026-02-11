@@ -35,9 +35,34 @@ BEGIN
 
         -- Insert test speakers with various statuses
         -- Story 6.5: Added email, deadlines, invited_at, accepted_at, content_status fields
+        -- Create user profiles for speakers who have accepted/submitted content
+        INSERT INTO user_profiles (
+            id, username, email, first_name, last_name, is_active
+        ) VALUES
+        ('ff001111-ff00-ff00-ff00-ff0000000001', 'anna.mueller', 'anna.mueller@ethz.ch', 'Anna', 'Müller', true),
+        ('ff001111-ff00-ff00-ff00-ff0000000002', 'lisa.schneider', 'lisa.schneider@bern.ch', 'Lisa', 'Schneider', true)
+        ON CONFLICT (id) DO NOTHING;
+
+        -- Create speaker profiles
+        INSERT INTO speakers (
+            id, username, first_name, last_name, availability, workflow_state,
+            expertise_areas, speaking_topics, languages
+        ) VALUES
+        ('ff002222-ff00-ff00-ff00-ff0000000001', 'anna.mueller', 'Anna', 'Müller',
+         'available', 'confirmed',
+         ARRAY['Digital Twin Technology', 'BIM Integration'],
+         ARRAY['Digital Twins in der Bauindustrie', 'BIM-Workflows'],
+         ARRAY['de', 'en']),
+        ('ff002222-ff00-ff00-ff00-ff0000000002', 'lisa.schneider', 'Lisa', 'Schneider',
+         'available', 'identified',
+         ARRAY['Urban Planning', 'Public Infrastructure'],
+         ARRAY['Smart City', 'Digitale Stadtplanung'],
+         ARRAY['de', 'fr'])
+        ON CONFLICT (id) DO NOTHING;
+
         INSERT INTO speaker_pool (
             id, event_id, speaker_name, company, expertise, status,
-            notes, assigned_organizer_id, email,
+            notes, assigned_organizer_id, email, username,
             invited_at, response_deadline, content_deadline,
             accepted_at, content_status, reminders_disabled
         ) VALUES
@@ -45,7 +70,7 @@ BEGIN
         ('11111111-1111-1111-1111-111111111111', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Dr. Anna Müller', 'ETH Zürich', 'Digital Twin Technology, BIM Integration',
          'confirmed', 'Keynote speaker, confirmed for morning slot', 'nissim.buchs',
-         'anna.mueller@ethz.ch',
+         'anna.mueller@ethz.ch', 'anna.mueller',
          NOW() - INTERVAL '30 days', CURRENT_DATE - 16, CURRENT_DATE + 14,
          NOW() - INTERVAL '28 days', 'SUBMITTED', false),
 
@@ -53,7 +78,7 @@ BEGIN
         ('22222222-2222-2222-2222-222222222222', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Marco Bernasconi', 'Implenia AG', 'Sustainable Construction, Carbon Footprint',
          'accepted', 'Presentation on sustainable construction practices', 'nissim.buchs',
-         'marco.bernasconi@implenia.com',
+         'marco.bernasconi@implenia.com', NULL,
          NOW() - INTERVAL '20 days', CURRENT_DATE - 6, CURRENT_DATE + 7,
          NOW() - INTERVAL '18 days', 'PENDING', false),
 
@@ -61,7 +86,7 @@ BEGIN
         ('33333333-3333-3333-3333-333333333333', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Sarah Weber', 'Herzog & de Meuron', 'Parametric Design, Computational Architecture',
          'contacted', 'Initial contact via LinkedIn', 'nissim.buchs',
-         'sarah.weber@herzogdemeuron.com',
+         'sarah.weber@herzogdemeuron.com', NULL,
          NULL, NULL, NULL,
          NULL, 'PENDING', false),
 
@@ -69,7 +94,7 @@ BEGIN
         ('44444444-4444-4444-4444-444444444444', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Thomas Keller', 'Roche Pharma', 'Smart Buildings, IoT Integration',
          'identified', 'Recommended by steering committee', NULL,
-         'thomas.keller@roche.com',
+         'thomas.keller@roche.com', NULL,
          NULL, NULL, NULL,
          NULL, 'PENDING', false),
 
@@ -77,7 +102,7 @@ BEGIN
         ('55555555-5555-5555-5555-555555555555', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Lisa Schneider', 'Stadt Bern', 'Urban Planning, Public Infrastructure',
          'content_submitted', 'Abstract received, pending review', 'nissim.buchs',
-         'lisa.schneider@bern.ch',
+         'lisa.schneider@bern.ch', 'lisa.schneider',
          NOW() - INTERVAL '25 days', CURRENT_DATE - 11, CURRENT_DATE + 10,
          NOW() - INTERVAL '22 days', 'SUBMITTED', false),
 
@@ -85,7 +110,7 @@ BEGIN
         ('66666666-6666-6666-6666-666666666666', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Pierre Dubois', 'EPFL Lausanne', 'AI in Architecture, Generative Design',
          'declined', 'Not available due to schedule conflict', 'nissim.buchs',
-         'pierre.dubois@epfl.ch',
+         'pierre.dubois@epfl.ch', NULL,
          NOW() - INTERVAL '15 days', CURRENT_DATE - 1, NULL,
          NULL, 'PENDING', false),
 
@@ -95,7 +120,7 @@ BEGIN
         ('aaaa1111-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Eva Hofmann', 'SBB Immobilien', 'Railway Architecture, Transit-Oriented Development',
          'invited', 'Invited for afternoon session on transit architecture', 'nissim.buchs',
-         'eva.hofmann@sbb.ch',
+         'eva.hofmann@sbb.ch', NULL,
          NOW() - INTERVAL '5 days', CURRENT_DATE + 14, CURRENT_DATE + 42,
          NULL, 'PENDING', false),
 
@@ -103,7 +128,7 @@ BEGIN
         ('aaaa2222-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Jan Meier', 'Bern Fachhochschule', 'Timber Construction, Wood Engineering',
          'invited', 'URGENT: No response yet, final reminder due', 'nissim.buchs',
-         'jan.meier@bfh.ch',
+         'jan.meier@bfh.ch', NULL,
          NOW() - INTERVAL '25 days', CURRENT_DATE + 3, CURRENT_DATE + 35,
          NULL, 'PENDING', false),
 
@@ -111,7 +136,7 @@ BEGIN
         ('aaaa3333-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Claudia Roth', 'Emch+Berger', 'Structural Engineering, Seismic Design',
          'accepted', 'Accepted, waiting for presentation materials', 'nissim.buchs',
-         'claudia.roth@emchberger.ch',
+         'claudia.roth@emchberger.ch', NULL,
          NOW() - INTERVAL '30 days', CURRENT_DATE - 16, CURRENT_DATE + 14,
          NOW() - INTERVAL '20 days', 'PENDING', false),
 
@@ -119,7 +144,7 @@ BEGIN
         ('aaaa4444-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Felix Brunner', 'Swisscom', 'Smart City, 5G Infrastructure',
          'invited', 'Reminders disabled per speaker request', 'nissim.buchs',
-         'felix.brunner@swisscom.com',
+         'felix.brunner@swisscom.com', NULL,
          NOW() - INTERVAL '10 days', CURRENT_DATE + 7, CURRENT_DATE + 35,
          NULL, 'PENDING', true),
 
@@ -127,7 +152,7 @@ BEGIN
         ('aaaa5555-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Nina Zimmermann', 'Zürcher Kantonalbank', 'Real Estate Valuation, PropTech',
          'invited', 'No email on file - contacted via phone only', 'nissim.buchs',
-         NULL,
+         NULL, NULL,
          NOW() - INTERVAL '8 days', CURRENT_DATE + 7, CURRENT_DATE + 35,
          NULL, 'PENDING', false),
 
@@ -135,7 +160,7 @@ BEGIN
         ('aaaa6666-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
          'Roberto Frei', 'Basler & Hofmann', 'Energy Efficiency, MINERGIE Standards',
          'accepted', 'URGENT: Content deadline approaching, no submission yet', 'nissim.buchs',
-         'roberto.frei@baslerhofmann.ch',
+         'roberto.frei@baslerhofmann.ch', NULL,
          NOW() - INTERVAL '40 days', CURRENT_DATE - 26, CURRENT_DATE + 3,
          NOW() - INTERVAL '35 days', 'PENDING', false)
 
@@ -224,6 +249,82 @@ BEGIN
         ('88888888-8888-8888-8888-888888888892', 'aaaa6666-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
          'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'invited', 'accepted', 'roberto.frei', 'Accepted invitation via speaker portal', NOW() - INTERVAL '35 days')
         ON CONFLICT (id) DO NOTHING;
+
+        -- Sessions and content submissions for speakers with SUBMITTED content
+        -- Dr. Anna Müller: Keynote session with submitted content
+        INSERT INTO sessions (
+            id, event_id, event_code, title, description, session_type, session_slug
+        ) VALUES (
+            'cccc1111-cccc-cccc-cccc-cccccccccccc',
+            'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
+            'BATbern998',
+            'Digital Twins in der Schweizer Bauindustrie',
+            'Wie Digital Twin Technology die Planung, den Bau und den Betrieb von Gebäuden in der Schweiz revolutioniert. Praxisbeispiele von ETH-Forschungsprojekten und Industriepartnerschaften.',
+            'presentation',
+            'digital-twins-schweizer-bauindustrie'
+        ) ON CONFLICT (id) DO NOTHING;
+
+        -- Lisa Schneider: Urban planning session with submitted content
+        INSERT INTO sessions (
+            id, event_id, event_code, title, description, session_type, session_slug
+        ) VALUES (
+            'cccc2222-cccc-cccc-cccc-cccccccccccc',
+            'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d',
+            'BATbern998',
+            'Smart City Bern: Digitale Stadtplanung der Zukunft',
+            'Die Stadt Bern setzt auf innovative digitale Werkzeuge für die Stadtplanung. Erfahren Sie, wie GIS, BIM und Bürgerbeteiligungsplattformen die öffentliche Infrastrukturplanung transformieren.',
+            'presentation',
+            'smart-city-bern-digitale-stadtplanung'
+        ) ON CONFLICT (id) DO NOTHING;
+
+        -- Link sessions to speakers via session_users
+        INSERT INTO session_users (id, session_id, username, speaker_role, is_confirmed) VALUES
+        ('dddd1111-dddd-dddd-dddd-dddddddddddd', 'cccc1111-cccc-cccc-cccc-cccccccccccc',
+         'anna.mueller', 'primary_speaker', true),
+        ('dddd2222-dddd-dddd-dddd-dddddddddddd', 'cccc2222-cccc-cccc-cccc-cccccccccccc',
+         'lisa.schneider', 'primary_speaker', false)
+        ON CONFLICT (id) DO NOTHING;
+
+        -- Update speaker_pool entries with session references and content_submitted_at
+        UPDATE speaker_pool SET
+            session_id = 'cccc1111-cccc-cccc-cccc-cccccccccccc',
+            content_submitted_at = NOW() - INTERVAL '10 days'
+        WHERE id = '11111111-1111-1111-1111-111111111111';
+
+        UPDATE speaker_pool SET
+            session_id = 'cccc2222-cccc-cccc-cccc-cccccccccccc',
+            content_submitted_at = NOW() - INTERVAL '5 days'
+        WHERE id = '55555555-5555-5555-5555-555555555555';
+
+        -- Content submissions for Dr. Anna Müller
+        INSERT INTO speaker_content_submissions (
+            id, speaker_pool_id, session_id, title, abstract, abstract_char_count,
+            submission_version, submitted_at
+        ) VALUES (
+            'eeee1111-eeee-eeee-eeee-eeeeeeeeeeee',
+            '11111111-1111-1111-1111-111111111111',
+            'cccc1111-cccc-cccc-cccc-cccccccccccc',
+            'Digital Twins in der Schweizer Bauindustrie',
+            'Wie Digital Twin Technology die Planung, den Bau und den Betrieb von Gebäuden in der Schweiz revolutioniert. Praxisbeispiele von ETH-Forschungsprojekten und Industriepartnerschaften.',
+            186,
+            1,
+            NOW() - INTERVAL '10 days'
+        ) ON CONFLICT (id) DO NOTHING;
+
+        -- Content submissions for Lisa Schneider
+        INSERT INTO speaker_content_submissions (
+            id, speaker_pool_id, session_id, title, abstract, abstract_char_count,
+            submission_version, submitted_at
+        ) VALUES (
+            'eeee2222-eeee-eeee-eeee-eeeeeeeeeeee',
+            '55555555-5555-5555-5555-555555555555',
+            'cccc2222-cccc-cccc-cccc-cccccccccccc',
+            'Smart City Bern: Digitale Stadtplanung der Zukunft',
+            'Die Stadt Bern setzt auf innovative digitale Werkzeuge für die Stadtplanung. Erfahren Sie, wie GIS, BIM und Bürgerbeteiligungsplattformen die öffentliche Infrastrukturplanung transformieren.',
+            191,
+            1,
+            NOW() - INTERVAL '5 days'
+        ) ON CONFLICT (id) DO NOTHING;
 
         -- Story 6.5: Sample reminder log entries (showing past reminders already sent)
         INSERT INTO speaker_reminder_log (
