@@ -25,8 +25,6 @@ import {
   Save,
   User,
   Globe,
-  Briefcase,
-  Languages,
   AlertCircle,
   FileText,
   ArrowRight,
@@ -35,16 +33,6 @@ import { speakerPortalService, ProfileUpdateRequest } from '@/services/speakerPo
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 
 type PageState = 'loading' | 'form' | 'error';
-
-// Available languages for selection
-const AVAILABLE_LANGUAGES = [
-  { code: 'de', name: 'German' },
-  { code: 'en', name: 'English' },
-  { code: 'fr', name: 'French' },
-  { code: 'it', name: 'Italian' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'pt', name: 'Portuguese' },
-];
 
 const ProfileUpdatePage = () => {
   const [searchParams] = useSearchParams();
@@ -62,10 +50,6 @@ const ProfileUpdatePage = () => {
   const [speakingTopics, setSpeakingTopics] = useState<string[]>([]);
   const [linkedInUrl, setLinkedInUrl] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
-
-  // Input state for adding new items
-  const [newExpertise, setNewExpertise] = useState('');
-  const [newTopic, setNewTopic] = useState('');
 
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -188,46 +172,6 @@ const ProfileUpdatePage = () => {
     };
 
     updateMutation.mutate(request);
-  };
-
-  // Add expertise area
-  const addExpertise = () => {
-    if (newExpertise.trim() && expertiseAreas.length < 10) {
-      setExpertiseAreas([...expertiseAreas, newExpertise.trim()]);
-      setNewExpertise('');
-      markDirty();
-    }
-  };
-
-  // Remove expertise area
-  const removeExpertise = (index: number) => {
-    setExpertiseAreas(expertiseAreas.filter((_, i) => i !== index));
-    markDirty();
-  };
-
-  // Add speaking topic
-  const addTopic = () => {
-    if (newTopic.trim() && speakingTopics.length < 10) {
-      setSpeakingTopics([...speakingTopics, newTopic.trim()]);
-      setNewTopic('');
-      markDirty();
-    }
-  };
-
-  // Remove speaking topic
-  const removeTopic = (index: number) => {
-    setSpeakingTopics(speakingTopics.filter((_, i) => i !== index));
-    markDirty();
-  };
-
-  // Toggle language
-  const toggleLanguage = (code: string) => {
-    if (languages.includes(code)) {
-      setLanguages(languages.filter((l) => l !== code));
-    } else {
-      setLanguages([...languages, code]);
-    }
-    markDirty();
   };
 
   // Get error details
@@ -450,137 +394,6 @@ const ProfileUpdatePage = () => {
                   />
                   {errors.bio && <p className="text-sm text-red-400 mt-1">{errors.bio}</p>}
                 </div>
-              </div>
-            </Card>
-
-            {/* Expertise Card */}
-            <Card className="p-6 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Briefcase className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-light text-zinc-100">Expertise & Topics</h2>
-              </div>
-
-              <div className="space-y-4">
-                {/* Expertise Areas */}
-                <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
-                    Expertise Areas
-                    <span className="ml-2 text-zinc-500">({expertiseAreas.length}/10)</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {expertiseAreas.map((area, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm"
-                      >
-                        {area}
-                        <button
-                          type="button"
-                          onClick={() => removeExpertise(index)}
-                          className="hover:text-red-400 ml-1"
-                          aria-label={`Remove ${area}`}
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      value={newExpertise}
-                      onChange={(e) => setNewExpertise(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addExpertise())}
-                      placeholder="Add expertise area..."
-                      disabled={expertiseAreas.length >= 10}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addExpertise}
-                      disabled={!newExpertise.trim() || expertiseAreas.length >= 10}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {errors.expertiseAreas && (
-                    <p className="text-sm text-red-400 mt-1">{errors.expertiseAreas}</p>
-                  )}
-                </div>
-
-                {/* Speaking Topics */}
-                <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
-                    Speaking Topics
-                    <span className="ml-2 text-zinc-500">({speakingTopics.length}/10)</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {speakingTopics.map((topic, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-green-900/30 text-green-300 rounded-full text-sm"
-                      >
-                        {topic}
-                        <button
-                          type="button"
-                          onClick={() => removeTopic(index)}
-                          className="hover:text-red-400 ml-1"
-                          aria-label={`Remove ${topic}`}
-                        >
-                          &times;
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-zinc-100 min-h-[44px]"
-                      value={newTopic}
-                      onChange={(e) => setNewTopic(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTopic())}
-                      placeholder="Add speaking topic..."
-                      disabled={speakingTopics.length >= 10}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addTopic}
-                      disabled={!newTopic.trim() || speakingTopics.length >= 10}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                  {errors.speakingTopics && (
-                    <p className="text-sm text-red-400 mt-1">{errors.speakingTopics}</p>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Languages Card */}
-            <Card className="p-6 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Languages className="h-5 w-5 text-zinc-400" />
-                <h2 className="text-lg font-light text-zinc-100">Languages</h2>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {AVAILABLE_LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => toggleLanguage(lang.code)}
-                    className={`px-4 py-2 rounded-lg border transition-colors ${
-                      languages.includes(lang.code)
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-zinc-600'
-                    }`}
-                  >
-                    {lang.name}
-                  </button>
-                ))}
               </div>
             </Card>
 
