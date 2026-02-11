@@ -423,6 +423,107 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/speakers/invite': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Invite a speaker to an event
+     * @description Create a SpeakerPool entry for a speaker and optionally auto-create
+     *     a User account if one doesn't exist.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+     *     - Auto-creates a User via UserApiClient if no user exists for the email
+     *     - Speaker starts in IDENTIFIED status
+     *     - Cognito account is NOT created for speakers initially
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['inviteSpeaker'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/invite-batch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Batch invite speakers to an event
+     * @description Invite multiple speakers in a single request with partial failure support.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC5 (batch)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - Maximum 50 speakers per batch
+     *     - Processing continues even if individual invitations fail
+     *     - Returns 207 Multi-Status when some succeed and some fail
+     *
+     *     **Performance**: <2000ms (P95) for 50 speakers
+     */
+    post: operations['inviteSpeakerBatch'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{username}/send-invitation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send invitation email to a speaker
+     * @description Send or resend a personalized invitation email with magic links for
+     *     accept/decline and a dashboard access link.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - Speaker must exist in the pool for this event
+     *     - Transitions speaker status to INVITED
+     *     - Generates two magic link tokens:
+     *       - RESPOND token (single-use) for accept/decline
+     *       - VIEW token (reusable, 30-day expiry) for dashboard access
+     *     - Publishes SpeakerInvitationSentEvent domain event
+     *     - Records outreach history and status transition history
+     *     - Email sent asynchronously; failure does not block the response
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['sendSpeakerInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/{speakerId}/outreach': {
     parameters: {
       query?: never;
@@ -2458,6 +2559,238 @@ export interface components {
        */
       updatedAt: string;
     };
+    /**
+     * @description Request to invite a speaker to an event.
+     *     Story 6.1b - AC1: Speaker Invitation
+     */
+    InviteSpeakerRequest: {
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Speaker's first name (used for user creation if not found)
+       * @example Jane
+       */
+      firstName?: string | null;
+      /**
+       * @description Speaker's last name (used for user creation if not found)
+       * @example Smith
+       */
+      lastName?: string | null;
+      /**
+       * @description Speaker's company name
+       * @example Tech Corp AG
+       */
+      company?: string | null;
+      /**
+       * Format: uuid
+       * @description Session to assign speaker to (optional)
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      sessionId?: string | null;
+      /**
+       * @description Notes about the speaker
+       * @example Expert in cloud architecture
+       */
+      notes?: string | null;
+    };
+    /**
+     * @description Response for a speaker invitation.
+     *     Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+     */
+    InviteSpeakerResponse: {
+      /**
+       * Format: uuid
+       * @description UUID of the SpeakerPool entry
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      speakerPoolId: string;
+      /**
+       * @description Speaker's username
+       * @example jane.smith
+       */
+      username?: string | null;
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Display name of the speaker
+       * @example Jane Smith
+       */
+      speakerName: string;
+      /**
+       * @description Current workflow status
+       * @example identified
+       * @enum {string}
+       */
+      status:
+        | 'identified'
+        | 'contacted'
+        | 'ready'
+        | 'accepted'
+        | 'declined'
+        | 'content_submitted'
+        | 'quality_reviewed'
+        | 'slot_assigned'
+        | 'confirmed'
+        | 'withdrew'
+        | 'overflow';
+      /**
+       * @description True if newly created, false if existing (idempotent return)
+       * @example true
+       */
+      created: boolean;
+      /**
+       * @description True if a new User account was created
+       * @example true
+       */
+      userCreated?: boolean;
+      /**
+       * Format: date-time
+       * @description When the SpeakerPool entry was created
+       * @example 2026-01-15T10:00:00Z
+       */
+      createdAt: string;
+    };
+    /**
+     * @description Request to invite multiple speakers in a batch.
+     *     Story 6.1b - AC5: Batch Invitation
+     */
+    BatchInviteRequest: {
+      /** @description List of speakers to invite (1-50 per batch) */
+      speakers: components['schemas']['InviteSpeakerRequest'][];
+    };
+    /**
+     * @description Response for a batch speaker invitation with partial failure support.
+     *     Story 6.1b - AC5: Batch Invitation
+     */
+    BatchInviteResponse: {
+      /**
+       * @description Total number of speakers requested
+       * @example 5
+       */
+      totalRequested: number;
+      /**
+       * @description Number of speakers successfully invited
+       * @example 4
+       */
+      successCount: number;
+      /**
+       * @description Number of failed invitations
+       * @example 1
+       */
+      failedCount: number;
+      /** @description Individual results for successful invitations */
+      results: components['schemas']['InviteSpeakerResponse'][];
+      /** @description Details of failed invitations */
+      errors: {
+        /**
+         * Format: email
+         * @description Email of the speaker that failed
+         * @example invalid@broken.test
+         */
+        email: string;
+        /**
+         * @description Error classification code
+         * @example USER_SERVICE_ERROR
+         * @enum {string}
+         */
+        errorCode: 'INVALID_REQUEST' | 'EVENT_NOT_FOUND' | 'USER_SERVICE_ERROR' | 'INTERNAL_ERROR';
+        /**
+         * @description Human-readable error message
+         * @example Failed to create user account
+         */
+        errorMessage: string;
+      }[];
+    };
+    /**
+     * @description Request to send/resend an invitation email to a speaker.
+     *     Story 6.1b - AC3: Invitation Email
+     *
+     *     The email includes:
+     *     - Accept/decline magic links (single-use RESPOND token)
+     *     - Dashboard access link (reusable VIEW token)
+     *     - Event details, deadlines, and session info
+     */
+    SendInvitationRequest: {
+      /**
+       * Format: date
+       * @description Deadline for speaker to respond (must be in the future)
+       * @example 2026-02-28
+       */
+      responseDeadline: string;
+      /**
+       * Format: date
+       * @description Deadline for speaker to submit content (must be after responseDeadline)
+       * @example 2026-03-10
+       */
+      contentDeadline?: string | null;
+      /**
+       * @description Preferred language for the email (defaults to 'de')
+       * @example de
+       * @enum {string|null}
+       */
+      locale?: 'de' | 'en' | null;
+      /**
+       * Format: email
+       * @description Override email address (for speakers without email in database)
+       * @example jane.smith@example.com
+       */
+      email?: string | null;
+    };
+    /**
+     * @description Response after sending an invitation email.
+     *     Story 6.1b - AC3: Invitation Email
+     */
+    SendInvitationResponse: {
+      /**
+       * Format: uuid
+       * @description UUID of the SpeakerPool entry
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      speakerPoolId: string;
+      /**
+       * @description Speaker's username
+       * @example jane.smith
+       */
+      username?: string | null;
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email?: string;
+      /**
+       * @description Updated status (always INVITED after sending)
+       * @example invited
+       * @enum {string}
+       */
+      status: 'invited';
+      /**
+       * Format: date-time
+       * @description When the invitation was sent
+       * @example 2026-01-15T10:00:00Z
+       */
+      invitedAt: string;
+      /**
+       * Format: date
+       * @description Deadline for speaker to respond
+       * @example 2026-02-28
+       */
+      responseDeadline: string;
+      /**
+       * Format: date
+       * @description Deadline for content submission
+       * @example 2026-03-10
+       */
+      contentDeadline?: string | null;
+    };
     /** @description Topic response with staleness score and similarity information */
     TopicResponse: {
       /**
@@ -3352,6 +3685,164 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  inviteSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InviteSpeakerRequest'];
+      };
+    };
+    responses: {
+      /** @description Speaker already exists in pool (idempotent return) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InviteSpeakerResponse'];
+        };
+      };
+      /** @description Speaker invited successfully (new entry created) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InviteSpeakerResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  inviteSpeakerBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchInviteRequest'];
+      };
+    };
+    responses: {
+      /** @description All invitations processed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchInviteResponse'];
+        };
+      };
+      /** @description Partial success - some invitations failed */
+      207: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchInviteResponse'];
+        };
+      };
+      /** @description Validation error (e.g., empty speakers list) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  sendSpeakerInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+        /** @description Speaker's username or UUID (for brainstormed speakers) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendInvitationRequest'];
+      };
+    };
+    responses: {
+      /** @description Invitation sent successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SendInvitationResponse'];
+        };
+      };
+      /** @description Validation error (e.g., missing email, invalid deadlines) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event or speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   getSpeakerOutreachHistory: {
