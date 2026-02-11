@@ -31,3 +31,4 @@ web-frontend/public/assets/**/*.pdf
 *.mp4
 *.webm
 *.srt
+.gitignore

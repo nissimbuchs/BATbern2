@@ -1,0 +1,468 @@
+1
+00:00:00,000 --> 00:00:08,333
+Willkommen zur BATbern Event-Management-Plattform!
+
+2
+00:00:08,333 --> 00:00:16,666
+Heute zeige ich Ihnen, wie man ein Event plant, ohne dabei den Verstand zu verlieren.
+
+3
+00:00:16,666 --> 00:00:25,000
+Wir durchlaufen den kompletten Event-Lebenszyklus, von "Oh Gott, wir brauchen ein Event" bis zu "Endlich vorbei, ab ins Archiv damit!" Sie sehen in diesem Video alle wichtigen Schritte, die ein Organisator durchführt, um ein Berner Architekten Treffen zu planen, ohne dabei in Panik zu geraten.
+
+4
+00:00:25,000 --> 00:00:31,400
+Wir beginnen am Event-Dashboard.
+
+5
+00:00:31,400 --> 00:00:37,800
+Das ist sozusagen Ihre Kommandozentrale, von der aus Sie den Überblick über alle Events behalten, die Sie jemals organisiert haben oder noch organisieren werden.
+
+6
+00:00:37,800 --> 00:00:44,200
+Die Authentifizierung über AWS Cognito ist bereits erledigt.
+
+7
+00:00:44,200 --> 00:00:50,600
+Sie sehen oben rechts Ihren Benutzernamen, und damit haben Sie die Macht, alle Funktionen als Organisator zu nutzen.
+
+8
+00:00:50,600 --> 00:00:57,000
+Mit großer Macht kommt große Verantwortung!
+
+9
+00:00:57,000 --> 00:01:04,000
+Jetzt erstellen wir ein brandneues Event! Klicken Sie auf den Button "Neue Veranstaltung" oben rechts. Boom!
+
+10
+00:01:04,000 --> 00:01:11,000
+Ein modales Formular erscheint. Keine Sorge, es sieht nach viel aus, aber wir füllen das gemeinsam aus.
+
+11
+00:01:11,000 --> 00:01:16,666
+Event-Nummer. Eine eindeutige Kennung für dieses Event.
+
+12
+00:01:16,666 --> 00:01:22,332
+Das System verwendet intern das Format "BATbern" gefolgt von der Nummer. Sozusagen die Geburtsurkunde Ihres Events.
+
+13
+00:01:22,332 --> 00:01:28,000
+Dies dient der Identifikation in der Datenbank und in URLs.
+
+14
+00:01:28,000 --> 00:01:33,333
+Titel. Hier kommt der Name, der Ihre Teilnehmer begeistern soll!
+
+15
+00:01:33,333 --> 00:01:38,666
+"Langweiliges Architektur-Event Nummer 47" wäre zwar ehrlich, aber vielleicht nicht die beste Wahl.
+
+16
+00:01:38,666 --> 00:01:44,000
+Wählen Sie etwas Aussagekräftiges, das die Leute auf der öffentlichen Website sehen werden.
+
+17
+00:01:44,000 --> 00:01:48,333
+Beschreibung. Eine kurze Erläuterung des Event-Themas.
+
+18
+00:01:48,333 --> 00:01:52,666
+Diese Information hilft Interessenten zu verstehen, warum sie sich unbedingt anmelden sollten.
+
+19
+00:01:52,666 --> 00:01:57,000
+Oder zumindest, worum es geht.
+
+20
+00:01:57,000 --> 00:02:02,800
+Event-Typ.
+
+21
+00:02:02,800 --> 00:02:08,600
+Wählen Sie zwischen drei Formaten: "Abend" für Feierabend-Events, bei denen man nach der Arbeit noch ein bisschen netzwerken kann.
+
+22
+00:02:08,600 --> 00:02:14,400
+"Nachmittag" für Nachmittagsveranstaltungen, perfekt für alle, die abends lieber auf dem Sofa sitzen.
+
+23
+00:02:14,400 --> 00:02:20,200
+Oder "Ganztag" für ganztägige Konferenzen. Da brauchen Sie dann viel Kaffee!
+
+24
+00:02:20,200 --> 00:02:26,000
+Dies beeinflusst die Zeitplanung und Slot-Verwaltung.
+
+25
+00:02:26,000 --> 00:02:31,000
+Datum und Anmeldefrist. Das Event-Datum legt fest, wann die Veranstaltung stattfindet.
+
+26
+00:02:31,000 --> 00:02:36,000
+Bitte wählen Sie ein Datum in der Zukunft, Zeitreisen unterstützen wir noch nicht.
+
+27
+00:02:36,000 --> 00:02:41,000
+Die Anmeldefrist ist wichtig für die Teilnehmer-Verwaltung.
+
+28
+00:02:41,000 --> 00:02:45,666
+Veranstaltungsort. Name und Adresse des Veranstaltungsortes.
+
+29
+00:02:45,666 --> 00:02:50,332
+Also nicht "bei mir im Keller", sondern ein richtiger Ort mit Adresse.
+
+30
+00:02:50,332 --> 00:02:55,000
+Diese Informationen werden auf der öffentlichen Website angezeigt, damit die Leute auch wirklich hingehen können.
+
+31
+00:02:55,000 --> 00:02:59,666
+Wir klicken auf "Speichern" und das Event wird erstellt. Tada!
+
+32
+00:02:59,666 --> 00:03:04,332
+Das System kehrt automatisch zum Dashboard zurück, und da ist es! Ihr brandneues Event in der Liste.
+
+33
+00:03:04,332 --> 00:03:09,000
+Ihr Baby ist geboren!
+
+34
+00:03:09,000 --> 00:03:14,333
+Nach der Event-Erstellung navigieren wir zur Event-Detailseite. Hier können wir Aufgaben an Teammitglieder zuweisen.
+
+35
+00:03:14,333 --> 00:03:19,666
+Denn warum sollten Sie alles alleine machen, wenn Sie ein ganzes Team haben?
+
+36
+00:03:19,666 --> 00:03:25,000
+Klicken Sie auf "Bearbeiten" um das Event-Formular erneut zu öffnen.
+
+37
+00:03:25,000 --> 00:03:30,500
+Wechseln Sie zum Tab "Aufgaben".
+
+38
+00:03:30,500 --> 00:03:36,000
+Hier sehen Sie eine vordefinierte Liste von Standard-Aufgaben, die bei jedem Event anfallen.
+
+39
+00:03:36,000 --> 00:03:41,500
+Das System kennt sich aus, es weiß, was alles zu tun ist.
+
+40
+00:03:41,500 --> 00:03:47,000
+Für jede Aufgabe wählen wir einen verantwortlichen Organisator aus dem Dropdown-Menü.
+
+41
+00:03:47,000 --> 00:03:52,500
+Dies stellt sicher, dass alle wichtigen Tätigkeiten klar zugeordnet sind und nichts vergessen wird.
+
+42
+00:03:52,500 --> 00:03:58,000
+Denn vergessene Aufgaben führen zu Chaos, und Chaos führt zu... naja, mehr Chaos.
+
+43
+00:03:58,000 --> 00:04:02,500
+Nach der Zuweisung klicken wir auf "Speichern".
+
+44
+00:04:02,500 --> 00:04:07,000
+Das System speichert alle Aufgaben und kehrt zur Event-Detailseite zurück. Perfekt!
+
+45
+00:04:07,000 --> 00:04:12,600
+Um die Aufgaben zu überprüfen, navigieren wir zur Aufgabenliste.
+
+46
+00:04:12,600 --> 00:04:18,200
+Zunächst sehen Sie die Standard-Filterung "Meine Aufgaben", die nur Ihre eigenen Aufgaben anzeigt.
+
+47
+00:04:18,200 --> 00:04:23,800
+Aber wir sind neugierig und wollen wissen, was die anderen so machen.
+
+48
+00:04:23,800 --> 00:04:29,400
+Wir ändern den Filter auf "Alle Aufgaben", um alle Zuweisungen zu sehen.
+
+49
+00:04:29,400 --> 00:04:35,000
+Dies gibt einen Überblick über die Verantwortlichkeiten im gesamten Team. Und wer vielleicht gerade nichts zu tun hat.
+
+50
+00:04:35,000 --> 00:04:40,000
+Zurück auf der Event-Detailseite beginnen wir mit der inhaltlichen Planung! Der erste Schritt ist die Themenauswahl.
+
+51
+00:04:40,000 --> 00:04:45,000
+Klicken Sie auf "Thema auswählen".
+
+52
+00:04:45,000 --> 00:04:49,333
+Es öffnet sich eine Ansicht mit verschiedenen Themen-Kategorien.
+
+53
+00:04:49,333 --> 00:04:53,666
+Die Standardansicht zeigt eine Liste, aber wir nutzen die Heat Map für eine bessere Übersicht.
+
+54
+00:04:53,666 --> 00:04:58,000
+Denn wer liebt nicht eine gute Heat Map?
+
+55
+00:04:58,000 --> 00:05:03,750
+Die Heat Map ist eine Zwei-Dimensionale Matrix, die Themen nach ihrer Popularität und Aktualität visualisiert.
+
+56
+00:05:03,750 --> 00:05:09,500
+Helle Farben zeigen beliebte Themen, sozusagen die Rockstars unter den Architektur-Themen.
+
+57
+00:05:09,500 --> 00:05:15,250
+Dunklere Farben zeigen weniger häufig gewählte Themen. Die Außenseiter, die auch eine Chance verdienen.
+
+58
+00:05:15,250 --> 00:05:21,000
+Dies hilft bei der strategischen Themenplanung basierend auf den Interessen der Teilnehmer.
+
+59
+00:05:21,000 --> 00:05:26,000
+Wir wählen ein Thema aus der Heat Map, indem wir auf eine Zelle klicken.
+
+60
+00:05:26,000 --> 00:05:31,000
+Das System markiert die Auswahl und zeigt Details an.
+
+61
+00:05:31,000 --> 00:05:36,000
+Nach der Bestätigung speichert das System das gewählte Thema und öffnet automatisch die Referenten-Brainstorming-Ansicht.
+
+62
+00:05:36,000 --> 00:05:41,000
+Das System ist wie ein guter Assistent, es weiß immer, was als Nächstes kommt!
+
+63
+00:05:41,000 --> 00:05:45,600
+Jetzt sammeln wir potenzielle Referenten für das gewählte Thema!
+
+64
+00:05:45,600 --> 00:05:50,200
+In dieser Phase erstellen wir einen Pool von Kandidaten, die wir später kontaktieren werden.
+
+65
+00:05:50,200 --> 00:05:54,800
+Wir fügen vier Referenten-Kandidaten hinzu.
+
+66
+00:05:54,800 --> 00:05:59,400
+Dies gibt uns ausreichend Optionen für die Kontaktaufnahme, falls nicht alle zusagen.
+
+67
+00:05:59,400 --> 00:06:04,000
+Denn Referenten sind wie Katzen, manchmal sagen sie einfach nein, ohne Grund.
+
+68
+00:06:04,000 --> 00:06:08,666
+Nach dem Hinzufügen aller Kandidaten klicken wir auf "Weiter zur Kontaktierung".
+
+69
+00:06:08,666 --> 00:06:13,332
+Das System wechselt automatisch zur Kanban-Ansicht, wo wir den Kontaktstatus verfolgen können. Kanban!
+
+70
+00:06:13,332 --> 00:06:18,000
+Das klingt wichtig und organisiert!
+
+71
+00:06:18,000 --> 00:06:24,333
+Wir befinden uns jetzt in der Referenten-Kontaktierungs-Phase.
+
+72
+00:06:24,333 --> 00:06:30,666
+Das Kanban-Board zeigt mehrere Spalten, die den Workflow abbilden.
+
+73
+00:06:30,666 --> 00:06:37,000
+Von "Wer ist das?" über "Angefragt" bis "Hurra, zugesagt!" Diese Visualisierung gibt einen schnellen Überblick über den Fortschritt der Referenten-Gewinnung.
+
+74
+00:06:37,000 --> 00:06:41,750
+Jetzt kontaktieren wir systematisch alle Referenten-Kandidaten.
+
+75
+00:06:41,750 --> 00:06:46,500
+Für jeden Kandidaten klicken wir auf die Karte und öffnen den Kontakt-Dialog.
+
+76
+00:06:46,500 --> 00:06:51,250
+Diese Dokumentation ist wichtig für die Nachverfolgung und für andere Teammitglieder, die den Status einsehen müssen.
+
+77
+00:06:51,250 --> 00:06:56,000
+Sonst fragt nächste Woche jemand: "Haben wir den schon kontaktiert?" Und niemand weiß es. Chaos vermieden!
+
+78
+00:06:56,000 --> 00:07:01,333
+Nachdem wir positive Rückmeldungen erhalten haben, verschieben wir Referenten durch den Workflow!
+
+79
+00:07:01,333 --> 00:07:06,666
+Das ist wie Tetris, nur mit Menschen. Wir nutzen Drag-and-Drop, um Karten zwischen den Spalten zu verschieben.
+
+80
+00:07:06,666 --> 00:07:12,000
+Wir verschieben vier Referenten in die "READY"-Spalte.
+
+81
+00:07:12,000 --> 00:07:20,000
+Im nächsten Schritt verschieben wir Referenten von "READY" zu "ACCEPTED".
+
+82
+00:07:20,000 --> 00:07:28,000
+Alle vier READY-Referenten werden zu ACCEPTED verschoben. Das läuft wie geschmiert!
+
+83
+00:07:28,000 --> 00:07:31,666
+Bevor Referenten ihre Inhalte einreichen können, müssen wir das Thema veröffentlichen.
+
+84
+00:07:31,666 --> 00:07:35,332
+Wir navigieren zum Tab "Veröffentlichung" und klicken auf "Thema veröffentlichen".
+
+85
+00:07:35,332 --> 00:07:39,000
+Im unteren Bereich ist ein Preview des Events auf der öffentlichen Seite ersichtlich. Schön, oder?
+
+86
+00:07:39,000 --> 00:07:44,500
+Zurück im Referenten-Tab reichen wir nun für jeden Referenten die Präsentations-Inhalte ein.
+
+87
+00:07:44,500 --> 00:07:50,000
+Titel, Abstract, die üblichen Verdächtigen.
+
+88
+00:07:50,000 --> 00:07:55,500
+Wir wiederholen diesen Prozess für alle drei Referenten mit zugesagten Präsentationen. Copy, paste, repeat.
+
+89
+00:07:55,500 --> 00:08:01,000
+Nein, Spaß, jeder Referent hat natürlich einzigartige Inhalte!
+
+90
+00:08:01,000 --> 00:08:05,400
+Nach der Inhaltseinreichung folgt die Qualitätsprüfung.
+
+91
+00:08:05,400 --> 00:08:09,800
+Da wir jetzt die Inhalte haben, können wir die Referenten veröffentlichen. Wir klicken auf "Referenten veröffentlichen".
+
+92
+00:08:09,800 --> 00:08:14,200
+Und jetzt kommt's!
+
+93
+00:08:14,200 --> 00:08:18,600
+Nun sind auf der öffentlichen Webseite nicht nur das Thema, sondern auch die zugesagten Referenten mit ihrem Thema ersichtlich.
+
+94
+00:08:18,600 --> 00:08:23,000
+Die Welt kann es sehen!
+
+95
+00:08:23,000 --> 00:08:29,333
+Zurück im Referenten-Tab prüfen und genehmigen wir nun jede eingereichte Präsentation.
+
+96
+00:08:29,333 --> 00:08:35,666
+Wir spielen jetzt Qualitätskontrolle. Sieht gut aus, sieht gut aus, das auch. Wir genehmigen alle drei Präsentationen.
+
+97
+00:08:35,666 --> 00:08:42,000
+Grünes Licht für alle!
+
+98
+00:08:42,000 --> 00:08:47,000
+Für die Slot-Zuweisung wechseln wir zur Sessions-Ansicht. Klicken Sie auf "Slot-Zuweisungen verwalten".
+
+99
+00:08:47,000 --> 00:08:52,000
+Jetzt wird's zeitlich!
+
+100
+00:08:52,000 --> 00:08:57,250
+Für eine schnelle initiale Planung nutzen wir die Auto-Assign-Funktion.
+
+101
+00:08:57,250 --> 00:09:02,500
+Das System führt die automatische Zuweisung durch. Magie! Das System übernimmt die Arbeit.
+
+102
+00:09:02,500 --> 00:09:07,750
+Durch Drag-und-Drop ist hier auch eine manuelle Zuweisung möglich.
+
+103
+00:09:07,750 --> 00:09:13,000
+Falls Sie dem Computer nicht vertrauen oder einfach gerne Dinge herumschieben.
+
+104
+00:09:13,000 --> 00:09:17,000
+Nach der Slot-Zuweisung klicken wir auf "Zurück zur Veranstaltung".
+
+105
+00:09:17,000 --> 00:09:24,666
+Der finale Schritt ist die Agenda-Veröffentlichung! Das große Finale! Klicken Sie auf "Agenda veröffentlichen". Und...
+
+106
+00:09:24,666 --> 00:09:32,332
+Der Event ist jetzt vollständig geplant und öffentlich inklusive detaillierter Agenda zugänglich! Konfetti! Feuerwerk!
+
+107
+00:09:32,332 --> 00:09:40,000
+Okay, vielleicht nur in Gedanken, aber trotzdem! Wir haben es geschafft!
+
+108
+00:09:40,000 --> 00:09:45,000
+Nach der Durchführung des Events archivieren wir es für die Historie.
+
+109
+00:09:45,000 --> 00:09:50,000
+Wechseln Sie zum Tab "Übersicht" und klicken Sie auf "Bearbeiten". Zeit, das Event in Rente zu schicken.
+
+110
+00:09:50,000 --> 00:09:58,000
+Im Formular wählen Sie "ARCHIVIERT" als Status. Das Event war toll, aber jetzt ist es Geschichte.
+
+111
+00:09:58,000 --> 00:10:03,333
+Für Test-Zwecke können Sie die Workflow-Validierung überschreiben.
+
+112
+00:10:03,333 --> 00:10:08,666
+Aktivieren Sie die Checkbox "Workflow-Validierung überschreiben" und klicken Sie auf "Speichern".
+
+113
+00:10:08,666 --> 00:10:14,000
+Das ist sozusagen der Notausgang, falls mal was nicht nach Plan läuft.
+
+114
+00:10:14,000 --> 00:10:19,250
+Damit ist der vollständige Event-Workflow abgeschlossen!
+
+115
+00:10:19,250 --> 00:10:24,500
+Von der ersten Idee bis zum Archiv, wir haben die ganze Reise gemeinsam gemacht!
+
+116
+00:10:24,500 --> 00:10:29,750
+Sie sind jetzt ein Event-Management-Profi! Vielen Dank für Ihre Aufmerksamkeit!
+
+117
+00:10:29,750 --> 00:10:35,000
+Und denken Sie daran: Events planen macht Spaß, zumindest mit der richtigen Software! Tschüss!
+

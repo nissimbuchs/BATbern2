@@ -132,6 +132,28 @@ class SessionApiClient {
   }
 
   /**
+   * Delete a session
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   */
+  async deleteSession(eventCode: string, sessionSlug: string): Promise<void> {
+    try {
+      await apiClient.delete(`${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}`);
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {

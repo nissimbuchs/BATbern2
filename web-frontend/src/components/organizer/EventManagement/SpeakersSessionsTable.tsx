@@ -33,11 +33,18 @@ import {
   TableRow,
   Paper,
   Stack,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import {
   Folder as FolderIcon,
+  Delete as DeleteIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
@@ -53,6 +60,7 @@ interface SpeakersSessionsTableProps {
   eventDate: string; // ISO 8601 date for time conversion
   onViewMaterials: (sessionId: string) => void; // Kept for backwards compatibility
   onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
+  onSessionDelete?: (sessionSlug: string) => Promise<void>;
   isLoading?: boolean;
   error?: string;
 }
@@ -63,6 +71,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   eventDate,
   onViewMaterials: _onViewMaterials, // eslint-disable-line @typescript-eslint/no-unused-vars
   onSessionUpdate,
+  onSessionDelete,
   isLoading = false,
   error,
 }) => {
@@ -72,6 +81,9 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<SessionUI | null>(null);
   const [modalInitialTab, setModalInitialTab] = useState<number>(0); // Story 5.9 - AC2
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<SessionUI | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Sort sessions by start time (unassigned sessions go to the end)
   const sortedSessions = React.useMemo(() => {
@@ -169,6 +181,28 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     setEditModalOpen(false);
     setSelectedSession(null);
     setModalInitialTab(0); // Reset to Details tab
+  };
+
+  const handleDeleteClick = (session: SessionUI) => {
+    setSessionToDelete(session);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!sessionToDelete || !onSessionDelete) return;
+    try {
+      setDeleteLoading(true);
+      await onSessionDelete(sessionToDelete.sessionSlug);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSessionToDelete(null);
   };
 
   // Loading state
@@ -296,6 +330,19 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   {t('speakers.materials')}
                 </Button>
               )}
+              {onSessionDelete && (
+                <IconButton
+                  size="small"
+                  color="error"
+                  aria-label={t('speakers.deleteSession')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(session);
+                  }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              )}
             </CardActions>
           </Card>
         ))}
@@ -399,6 +446,19 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                         {t('speakers.materials')}
                       </Button>
                     )}
+                    {onSessionDelete && (
+                      <IconButton
+                        size="small"
+                        color="error"
+                        aria-label={t('speakers.deleteSession')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(session);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Stack>
                 </TableCell>
               </TableRow>
@@ -416,6 +476,26 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         onSave={onSessionUpdate}
         initialTab={modalInitialTab} // Story 5.9 - AC2: Materials button opens Materials tab
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+        <DialogTitle>{t('speakers.deleteSessionTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('speakers.deleteSessionMessage', {
+              title: sessionToDelete?.title || sessionToDelete?.sessionSlug,
+            })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading}>
+            {t('speakers.deleteSession')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

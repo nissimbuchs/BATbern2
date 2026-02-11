@@ -11,15 +11,15 @@ import java.util.Set;
  * Validator for speaker status transitions
  * Story 5.4: Speaker Status Management - Task 5 (GREEN Phase)
  *
- * Implements workflow validation rules from AC12:
- * - Valid transitions: IDENTIFIED → CONTACTED → READY → ACCEPTED/DECLINED
- * - Terminal states: ACCEPTED, DECLINED (cannot transition further in most cases)
- * - ACCEPTED can only transition to SLOT_ASSIGNED
+ * Implements workflow validation rules:
+ * - Any non-terminal state can transition to DECLINED (speaker can decline at any point)
+ * - CONFIRMED can also transition to DECLINED (organizer can remove from agenda)
  * - DECLINED is a terminal state (cannot transition out)
  *
  * Valid State Machine:
- * IDENTIFIED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED
- *            ↘ DECLINED   ↘ DECLINED
+ * IDENTIFIED → INVITED → CONTACTED → READY → ACCEPTED → SLOT_ASSIGNED →
+ * CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED
+ * All states ↘ DECLINED
  */
 @Component
 public class StatusTransitionValidator {
@@ -27,34 +27,48 @@ public class StatusTransitionValidator {
     /**
      * Map of allowed transitions: from state → set of allowed target states
      */
-    private static final Map<SpeakerWorkflowState, Set<SpeakerWorkflowState>> ALLOWED_TRANSITIONS = Map.of(
-        SpeakerWorkflowState.IDENTIFIED, Set.of(
+    private static final Map<SpeakerWorkflowState, Set<SpeakerWorkflowState>> ALLOWED_TRANSITIONS = Map.ofEntries(
+        Map.entry(SpeakerWorkflowState.IDENTIFIED, Set.of(
+            SpeakerWorkflowState.INVITED,
             SpeakerWorkflowState.CONTACTED,
             SpeakerWorkflowState.DECLINED
-        ),
-        SpeakerWorkflowState.CONTACTED, Set.of(
+        )),
+        Map.entry(SpeakerWorkflowState.INVITED, Set.of(
+            SpeakerWorkflowState.CONTACTED,
             SpeakerWorkflowState.READY,
-            SpeakerWorkflowState.DECLINED
-        ),
-        SpeakerWorkflowState.READY, Set.of(
             SpeakerWorkflowState.ACCEPTED,
             SpeakerWorkflowState.DECLINED
-        ),
-        SpeakerWorkflowState.ACCEPTED, Set.of(
+        )),
+        Map.entry(SpeakerWorkflowState.CONTACTED, Set.of(
+            SpeakerWorkflowState.READY,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.READY, Set.of(
+            SpeakerWorkflowState.ACCEPTED,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.ACCEPTED, Set.of(
             SpeakerWorkflowState.SLOT_ASSIGNED,
-            SpeakerWorkflowState.CONFIRMED
-        ),
-        SpeakerWorkflowState.SLOT_ASSIGNED, Set.of(
             SpeakerWorkflowState.CONFIRMED,
-            SpeakerWorkflowState.CONTENT_SUBMITTED
-        ),
-        SpeakerWorkflowState.CONTENT_SUBMITTED, Set.of(
-            SpeakerWorkflowState.QUALITY_REVIEWED
-        ),
-        SpeakerWorkflowState.QUALITY_REVIEWED, Set.of(
-            SpeakerWorkflowState.CONFIRMED
-        )
-        // DECLINED, CONFIRMED, WITHDREW are terminal states - no transitions allowed
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.SLOT_ASSIGNED, Set.of(
+            SpeakerWorkflowState.CONFIRMED,
+            SpeakerWorkflowState.CONTENT_SUBMITTED,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.CONTENT_SUBMITTED, Set.of(
+            SpeakerWorkflowState.QUALITY_REVIEWED,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.QUALITY_REVIEWED, Set.of(
+            SpeakerWorkflowState.CONFIRMED,
+            SpeakerWorkflowState.DECLINED
+        )),
+        Map.entry(SpeakerWorkflowState.CONFIRMED, Set.of(
+            SpeakerWorkflowState.DECLINED
+        ))
+        // DECLINED, WITHDREW are terminal states - no transitions allowed
     );
 
     /**
