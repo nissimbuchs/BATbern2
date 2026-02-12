@@ -126,24 +126,21 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
     });
   };
 
-  // Quality criteria checks
+  // Quality criteria checks (null-safe: API may return null for presentationAbstract)
+  const abstract = content?.presentationAbstract || '';
   const qualityCriteria = content
     ? [
         {
           label: t('qualityReview.criteria.abstractLength'),
-          passed: content.presentationAbstract.length <= MAX_ABSTRACT_LENGTH,
-          value: `${content.presentationAbstract.length} / ${MAX_ABSTRACT_LENGTH} ${t('qualityReview.characters')}`,
+          passed: abstract.length <= MAX_ABSTRACT_LENGTH,
+          value: `${abstract.length} / ${MAX_ABSTRACT_LENGTH} ${t('qualityReview.characters')}`,
         },
         {
           label: t('qualityReview.criteria.lessonsLearned'),
           // English: lessons learned, lesson learned
           // German: Erkenntnisse, Lerneffekte, Erfahrungen, Lehren
-          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
-            content.presentationAbstract
-          ),
-          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
-            content.presentationAbstract
-          )
+          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract),
+          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract)
             ? t('qualityReview.detected')
             : t('qualityReview.notDetected'),
         },
@@ -153,11 +150,11 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
           // German: kaufen, erwerben, bestellen, rabatt, ermäßigung, verkauf, angebot, jetzt bestellen, kontaktieren
           passed:
             !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              content.presentationAbstract
+              abstract
             ),
           value:
             !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              content.presentationAbstract
+              abstract
             )
               ? t('qualityReview.passed')
               : t('qualityReview.promotionDetected'),
@@ -216,14 +213,15 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
               {t('qualityReview.presentationTitle')}
             </Typography>
             <Typography variant="h6" gutterBottom>
-              {content.presentationTitle}
+              {content.presentationTitle || t('qualityReview.noTitle', 'Untitled')}
             </Typography>
 
             <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
               {t('qualityReview.abstract')}
             </Typography>
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {content.presentationAbstract}
+              {content.presentationAbstract ||
+                t('qualityReview.noAbstract', 'No abstract provided')}
             </Typography>
           </Paper>
 
