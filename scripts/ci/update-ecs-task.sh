@@ -51,13 +51,19 @@ NEW_TASK_DEF=$(echo $TASK_DEF_JSON | jq \
   'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) |
    .containerDefinitions[0].image = $IMAGE')
 
+# Write task definition to temp file (more reliable than stdin pipe)
+TEMP_TASK_FILE=$(mktemp)
+echo "$NEW_TASK_DEF" > "$TEMP_TASK_FILE"
+
 # Register new task definition
-NEW_TASK_ARN=$(echo $NEW_TASK_DEF | \
-  aws ecs register-task-definition \
-    --region $REGION \
-    --cli-input-json file:///dev/stdin \
-    --query 'taskDefinition.taskDefinitionArn' \
-    --output text)
+NEW_TASK_ARN=$(aws ecs register-task-definition \
+  --region $REGION \
+  --cli-input-json "file://$TEMP_TASK_FILE" \
+  --query 'taskDefinition.taskDefinitionArn' \
+  --output text)
+
+# Clean up temp file
+rm -f "$TEMP_TASK_FILE"
 
 echo "✅ Registered new task definition: $NEW_TASK_ARN"
 

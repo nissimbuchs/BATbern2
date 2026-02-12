@@ -2,6 +2,7 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.ContentSubmission;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -58,6 +59,16 @@ public interface ContentSubmissionRepository extends JpaRepository<ContentSubmis
      * @return list of content submissions
      */
     List<ContentSubmission> findBySessionId(UUID sessionId);
+
+    /**
+     * Delete all content submissions for a specific session.
+     * Used when deleting a session to maintain referential integrity.
+     *
+     * @param sessionId the session ID
+     */
+    @Modifying
+    @Query("DELETE FROM ContentSubmission c WHERE c.session.id = :sessionId")
+    void deleteBySessionId(@Param("sessionId") UUID sessionId);
 
     /**
      * Get the maximum submission version for a speaker pool entry.
