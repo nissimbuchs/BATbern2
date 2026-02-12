@@ -330,6 +330,11 @@ public class SessionController {
      * AC10: Delete a session
      * Story 1.16.2: Uses sessionSlug as path parameter
      * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}
+     *
+     * Note: @Transactional is required at controller level to ensure atomic deletion
+     * of session + related content submissions. The schema lacks ON DELETE CASCADE
+     * (V53), requiring application-level cascade deletion. Transaction ensures both
+     * deletes succeed or both roll back, preventing orphaned records.
      */
     @DeleteMapping("/{sessionSlug}")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
