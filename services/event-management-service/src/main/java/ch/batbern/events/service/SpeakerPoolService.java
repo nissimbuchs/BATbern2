@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.ContentSubmission;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.AddSpeakerToPoolRequest;
@@ -10,6 +11,7 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.ContentSubmissionRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionMaterialsRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.events.SpeakerAddedToPoolEvent;
@@ -36,6 +38,7 @@ public class SpeakerPoolService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final ContentSubmissionRepository contentSubmissionRepository;
+    private final SessionRepository sessionRepository;
     private final SessionMaterialsRepository sessionMaterialsRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
@@ -43,12 +46,14 @@ public class SpeakerPoolService {
     public SpeakerPoolService(SpeakerPoolRepository speakerPoolRepository,
                               EventRepository eventRepository,
                               ContentSubmissionRepository contentSubmissionRepository,
+                              SessionRepository sessionRepository,
                               SessionMaterialsRepository sessionMaterialsRepository,
                               ApplicationEventPublisher eventPublisher,
                               SecurityContextHelper securityContextHelper) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.contentSubmissionRepository = contentSubmissionRepository;
+        this.sessionRepository = sessionRepository;
         this.sessionMaterialsRepository = sessionMaterialsRepository;
         this.eventPublisher = eventPublisher;
         this.securityContextHelper = securityContextHelper;
@@ -140,6 +145,17 @@ public class SpeakerPoolService {
                         cs -> cs
                 ));
 
+        // Batch-fetch sessions for speakers that have sessionIds (for title fallback + materials)
+        List<UUID> sessionIds = speakers.stream()
+                .map(SpeakerPool::getSessionId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<UUID, Session> sessionMap = sessionIds.isEmpty()
+                ? Map.of()
+                : sessionRepository.findAllById(sessionIds).stream()
+                        .collect(Collectors.toMap(Session::getId, s -> s));
+
         return speakers.stream()
                 .map(speaker -> {
                     ContentSubmission content = contentMap.get(speaker.getId());
@@ -150,6 +166,20 @@ public class SpeakerPoolService {
                                 content.getTitle(),
                                 content.getContentAbstract()
                         );
+                    } else if (speaker.getSessionId() != null) {
+                        // Fallback: use session title/description when no ContentSubmission exists
+                        // This handles content submitted via organizer path (SpeakerContentSubmissionService)
+                        // which stores content on Session, not in speaker_content_submissions table
+                        Session session = sessionMap.get(speaker.getSessionId());
+                        if (session != null && session.getTitle() != null) {
+                            response = SpeakerPoolResponse.fromEntityWithContent(
+                                    speaker,
+                                    session.getTitle(),
+                                    session.getDescription()
+                            );
+                        } else {
+                            response = SpeakerPoolResponse.fromEntity(speaker);
+                        }
                     } else {
                         response = SpeakerPoolResponse.fromEntity(speaker);
                     }
