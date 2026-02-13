@@ -146,13 +146,39 @@ public class QualityReviewService {
         speakerPoolRepository.save(speaker);
 
         // Update latest ContentSubmission with reviewer feedback for portal display
-        contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId())
-                .ifPresent(submission -> {
-                    submission.setReviewerFeedback(feedback);
-                    submission.setReviewedAt(java.time.Instant.now());
-                    submission.setReviewedBy(moderatorUsername);
-                    contentSubmissionRepository.save(submission);
-                });
+        // If no ContentSubmission exists (organizer-path content), create one from session data
+        // so the speaker portal can display the feedback and pre-populate the revision form
+        java.util.Optional<ch.batbern.events.domain.ContentSubmission> latestSubmission =
+                contentSubmissionRepository.findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
+        if (latestSubmission.isPresent()) {
+            ch.batbern.events.domain.ContentSubmission submission = latestSubmission.get();
+            submission.setReviewerFeedback(feedback);
+            submission.setReviewedAt(java.time.Instant.now());
+            submission.setReviewedBy(moderatorUsername);
+            contentSubmissionRepository.save(submission);
+        } else if (speaker.getSessionId() != null) {
+            // Create ContentSubmission from session data for organizer-path content
+            sessionRepository.findById(speaker.getSessionId())
+                    .ifPresent(session -> {
+                var submission = ch.batbern.events.domain.ContentSubmission
+                        .builder()
+                        .speakerPool(speaker)
+                        .session(session)
+                        .title(session.getTitle())
+                        .contentAbstract(session.getDescription())
+                        .abstractCharCount(session.getDescription() != null
+                                ? session.getDescription().length() : 0)
+                        .submissionVersion(1)
+                        .submittedAt(java.time.Instant.now())
+                        .reviewerFeedback(feedback)
+                        .reviewedAt(java.time.Instant.now())
+                        .reviewedBy(moderatorUsername)
+                        .build();
+                contentSubmissionRepository.save(submission);
+                log.info("Created ContentSubmission from session for speaker: {}",
+                        speaker.getId());
+            });
+        }
 
         // Notify speaker via email about required revisions
         notifySpeakerOfRejection(speaker, feedback);
