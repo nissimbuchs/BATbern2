@@ -91,9 +91,12 @@ public class ContentSubmissionService {
             }
         }
 
-        // ACCEPTED speakers can submit content even without a session
+        // ACCEPTED or CONTENT_SUBMITTED speakers can submit content even without a session
+        // CONTENT_SUBMITTED covers the revision case where session may have been deleted
         // (session will be created on submission via SpeakerContentSubmissionService)
-        boolean canSubmit = hasSession || speaker.getStatus() == SpeakerWorkflowState.ACCEPTED;
+        boolean canSubmit = hasSession
+                || speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
+                || speaker.getStatus() == SpeakerWorkflowState.CONTENT_SUBMITTED;
 
         if (!canSubmit) {
             return SpeakerContentInfo.noSession(
@@ -179,8 +182,10 @@ public class ContentSubmissionService {
                 .findFirstBySpeakerPoolIdOrderBySubmissionVersionDesc(speaker.getId());
 
         ContentSubmission draft;
-        if (existingDraft.isPresent() && "PENDING".equals(speaker.getContentStatus())) {
-            // Update existing draft
+        String contentStatus = speaker.getContentStatus();
+        boolean canUpdateExisting = "PENDING".equals(contentStatus) || "REVISION_NEEDED".equals(contentStatus);
+        if (existingDraft.isPresent() && canUpdateExisting) {
+            // Update existing draft (including revisions after rejection)
             draft = existingDraft.get();
             draft.setTitle(truncate(request.title(), MAX_TITLE_LENGTH));
             draft.setContentAbstract(truncate(request.contentAbstract(), MAX_ABSTRACT_LENGTH));
@@ -246,10 +251,25 @@ public class ContentSubmissionService {
 
         // AC1: Get or create session
         Session session;
-        if (speaker.getSessionId() == null) {
-            // ACCEPTED speakers without a session: create one on content submission
-            if (speaker.getStatus() != SpeakerWorkflowState.ACCEPTED) {
-                throw new IllegalStateException("Cannot submit content - speaker must be in ACCEPTED state");
+        boolean needsNewSession = speaker.getSessionId() == null;
+
+        // Check if existing session was deleted (orphaned FK)
+        if (!needsNewSession) {
+            Optional<Session> existingSession = sessionRepository.findById(speaker.getSessionId());
+            if (existingSession.isEmpty()) {
+                log.warn("Session {} was deleted for speaker {} - will create new session",
+                        speaker.getSessionId(), speaker.getId());
+                speaker.setSessionId(null);
+                needsNewSession = true;
+            }
+        }
+
+        if (needsNewSession) {
+            // Speakers without a session: create one on content submission
+            if (speaker.getStatus() != SpeakerWorkflowState.ACCEPTED
+                    && speaker.getStatus() != SpeakerWorkflowState.CONTENT_SUBMITTED) {
+                throw new IllegalStateException(
+                        "Cannot submit content - speaker must be in ACCEPTED or CONTENT_SUBMITTED state");
             }
 
             // Create session with presentation title and abstract

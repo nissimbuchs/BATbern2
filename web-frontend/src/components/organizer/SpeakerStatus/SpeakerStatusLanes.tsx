@@ -484,7 +484,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
             </Stack>
 
             {/* Story 6.3: Submitted Content Display (also shown when session assigned) */}
-            {speaker.submittedTitle && (
+            {(speaker.submittedTitle || speaker.contentStatus) && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                   <Chip
@@ -500,13 +500,15 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                     sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
                   />
                 </Box>
-                <Typography
-                  variant="caption"
-                  color="success.dark"
-                  sx={{ display: 'block', fontWeight: 600 }}
-                >
-                  {speaker.submittedTitle}
-                </Typography>
+                {speaker.submittedTitle && (
+                  <Typography
+                    variant="caption"
+                    color="success.dark"
+                    sx={{ display: 'block', fontWeight: 600 }}
+                  >
+                    {speaker.submittedTitle}
+                  </Typography>
+                )}
                 {speaker.submittedAbstract && (
                   <Typography
                     variant="caption"
@@ -624,7 +626,7 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
               )}
 
             {/* Story 6.3: Submitted Content Display */}
-            {speaker.submittedTitle && (
+            {(speaker.submittedTitle || speaker.contentStatus) && (
               <Box sx={{ mt: 1, pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                   <Chip
@@ -640,13 +642,15 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
                     sx={{ height: 18, '& .MuiChip-label': { fontSize: '0.65rem', px: 1 } }}
                   />
                 </Box>
-                <Typography
-                  variant="caption"
-                  color="success.dark"
-                  sx={{ display: 'block', fontWeight: 600 }}
-                >
-                  {speaker.submittedTitle}
-                </Typography>
+                {speaker.submittedTitle && (
+                  <Typography
+                    variant="caption"
+                    color="success.dark"
+                    sx={{ display: 'block', fontWeight: 600 }}
+                  >
+                    {speaker.submittedTitle}
+                  </Typography>
+                )}
                 {speaker.submittedAbstract && (
                   <Typography
                     variant="caption"
