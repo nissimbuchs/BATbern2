@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
@@ -249,3 +249,51 @@ Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 
 | watchOS background limits | Haptics may not fire in background | Use local notifications + extended runtime session during events |
 | Battery drain from WebSocket | Watch dies mid-event | Minimize active networking; poll every 30s instead of persistent socket if battery low |
 | Small screen UX | Features don't fit Watch form factor | Strict 2-3 line maximum; test on real hardware before every feature ships |
+
+## Functional Requirements
+
+### Schedule Display & Awareness
+
+- **FR1:** Organizer can view the current session's speaker name, talk title, and remaining time on the Watch face complication
+- **FR2:** Organizer can view the next upcoming session (speaker name and talk title) at a glance
+- **FR3:** Organizer can scroll through the full remaining event schedule using the Digital Crown
+- **FR4:** Organizer can view a speaker's portrait photo alongside their session information
+- **FR5:** Organizer can see the current event state on the always-on display without raising their wrist
+
+### Session Lifecycle Management
+
+- **FR6:** Organizer can mark the current session as complete to advance the schedule to the next item
+- **FR7:** System detects when a session runs past its allocated time and displays overrun duration
+- **FR8:** Organizer can initiate a schedule cascade when a session overruns, shifting all remaining items by a chosen increment
+- **FR9:** System automatically recalculates all downstream session times and break durations after a cascade
+- **FR10:** Organizer can view whether the event is on time, ahead, or behind schedule
+
+### Time Alerting & Haptics
+
+- **FR11:** Organizer receives a haptic alert when 5 minutes remain in the current session
+- **FR12:** Organizer receives a distinct haptic alert when 2 minutes remain in the current session
+- **FR13:** Organizer receives a distinct haptic alert when the session time reaches zero
+- **FR14:** Organizer receives escalating haptic alerts at intervals when a session runs over time
+- **FR15:** Organizer receives a haptic alert at a configured time before a break ends (gong reminder)
+- **FR16:** All connected organizers receive haptic alerts simultaneously for the same timing events
+
+### Team Synchronization
+
+- **FR17:** All connected organizer watches display identical event state in real time
+- **FR18:** When one organizer advances the schedule, all other watches update within 3 seconds
+- **FR19:** When one organizer triggers a schedule cascade, all other watches reflect the new times within 3 seconds
+- **FR20:** Organizer can see how many fellow organizers are currently connected to the event
+
+### Event Setup & Connection
+
+- **FR21:** Organizer can authenticate with the BATbern platform directly from the Watch
+- **FR22:** Organizer can select and join an active event from the Watch
+- **FR23:** System syncs the full event schedule (sessions, speakers, times, portraits) to the Watch on join
+- **FR24:** Watch connects directly to the BATbern backend over WiFi without requiring an iPhone
+
+### Offline Resilience
+
+- **FR25:** System caches the complete event schedule locally after initial sync
+- **FR26:** Countdown timer and haptic alerts continue functioning when WiFi connectivity is lost
+- **FR27:** Actions taken offline (session advance, cascade) queue locally and sync when connectivity is restored
+- **FR28:** System indicates connectivity status to the organizer (connected / offline)
