@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
@@ -18,59 +18,85 @@ classification:
   projectContext: brownfield
 ---
 
-# Product Requirements Document - BATbern
+# Product Requirements Document - BATbern Apple Watch Companion App
 
 **Author:** Nissim
 **Date:** 2026-02-14
+**Project:** BATbern — Berner Architekten Treffen
+**Platform:** Native watchOS standalone app
+
+## Executive Summary
+
+BATbern Watch is a native Apple Watch companion app for the BATbern event management platform. It transforms the Apple Watch into a real-time event operations tool for a 4-person organizer team running architecture conferences in Bern, Switzerland.
+
+**Vision:** Replace printed schedules and mental clock math with a glanceable, haptic-driven command surface on the wrist — enabling moderators to run entire events without touching a phone.
+
+**Target Users:** 4 BATbern organizers (all generalists, one moderating per event)
+
+**Core Differentiator:** Unlike typical single-user Watch apps, BATbern Watch is a multi-organizer synchronized system where one tap on any wrist updates all watches simultaneously. The moderator on stage — who cannot use a phone — is the power user.
+
+**Project Context:** Brownfield extension of the existing BATbern platform (MVP complete: 5 microservices, React frontend, AWS infrastructure, 9-state event workflow, speaker coordination).
 
 ## Success Criteria
 
 ### User Success
 
 - The app feels supportive, not fiddly — large tap targets, glanceable information, no text walls
-- Moderator never does mental clock math on stage again — countdown is always visible
+- Moderator never does mental clock math on stage — countdown is always visible
 - Rescheduling after an overrun takes one tap, not a huddle with co-organizers
 - Break gong is never forgotten — haptics carry the cognitive load
 - All 4 organizers see identical event state without verbal coordination
 
 ### Business Success
 
-- All 4 organizers adopt the Watch app and use it at every BATbern event (spring + autumn)
+- All 4 organizers adopt the Watch app at every BATbern event (spring + autumn)
 - Paper schedules eliminated from the organizer workflow
-- The app is an internal team tool — no external user expansion required for MVP success
+- Internal team tool — no external user expansion required for MVP success
 
 ### Technical Success
 
-- Watch app connects directly to BATbern backend — no iPhone companion app required (standalone watchOS app)
-- Real-time state sync across all 4 watches is reliable throughout a 3-hour event
-- Battery consumption allows full event coverage without mid-event charging
+- Watch connects directly to BATbern backend — no iPhone companion app required
+- Real-time state sync across all 4 watches reliable throughout a 3-hour event
+- Battery allows full event coverage without mid-event charging
 
 ### Measurable Outcomes
 
-- 100% of organizer timing actions handled by Watch (zero phone pulls for schedule management)
+- 100% of organizer timing actions handled by Watch (zero phone pulls)
 - Schedule cascade completes in under 3 seconds across all watches
 - Haptic alerts delivered within 1 second of scheduled time
 
 ## Product Scope
 
-### MVP — Minimum Viable Product
+### MVP (Phase 1)
 
-- **LIVE-1:** Always-on schedule complication (current talk, speaker name, countdown)
-- **LIVE-2:** Haptic cue system (5min / 2min / time's up — all watches buzz simultaneously)
-- **LIVE-5:** Live schedule cascade (one-tap reschedule when speaker overruns)
-- **LIVE-6:** Break gong reminder (haptic at 5 min before break ends)
-- **LIVE-8:** Session complete (tap "Done" to advance schedule for all organizers)
-- **SYNC-1:** Shared state across all 4 watches via backend sync
-- **Standalone:** Direct backend connection — no iPhone companion app dependency
+**MVP Approach:** Experience MVP — the minimum feature set that lets the moderator run an entire BATbern evening event from their wrist. If it works for one event, it's validated.
 
-### Growth Features (Post-MVP)
+**Resource Requirements:** 1 iOS/watchOS developer + existing BATbern backend team. Backend changes are incremental (new endpoints on existing API Gateway).
+
+**Must-Have Capabilities:**
+
+| ID | Capability | Description |
+|---|---|---|
+| LIVE-1 | Always-on schedule complication | Current talk, speaker name, portrait, countdown |
+| LIVE-2 | Haptic cue system | Escalating alerts at 5min / 2min / time's up / overrun |
+| LIVE-5 | Live schedule cascade | One-tap reschedule when speaker overruns |
+| LIVE-6 | Break gong reminder | Haptic at configured time before break ends |
+| LIVE-8 | Session complete | Tap "Done" to advance schedule for all organizers |
+| SYNC-1 | Shared state | All watches display identical event state via backend sync |
+| — | Standalone connectivity | Direct backend connection over WiFi, no iPhone required |
+| — | Offline resilience | Cached schedule; countdown/haptics work without WiFi |
+| — | Speaker portraits | Photo display for face recognition at venue |
+
+**Core User Journeys Supported:** Moderator happy path, Floor Organizer, Speaker Overrun edge case, Pre-Event Setup — all fully supported.
+
+### Phase 2 (Growth)
 
 - **PRE-1:** Speaker arrival tracking (shared across organizers)
 - **LIVE-7:** Speaker time signal/flash (discreet signal to speaker)
 - **SYNC-3:** Quick ping between organizers (silent wrist buzz)
 - **LIVE-3:** Next-up speaker notification (auto-ping "You're on in 10 minutes")
 
-### Vision (Future)
+### Phase 3 (Expansion)
 
 - **LIVE-4:** Attendee count pulse (live check-in count on wrist)
 - Speaker-facing Watch complication (countdown for the speaker themselves)
@@ -152,18 +178,9 @@ No iPhone tethering. No Bluetooth pairing with a phone. The Watch talks directly
 - Measure: did the moderator successfully use Watch-only for all transitions and introductions?
 - Post-event debrief: "would you go back to paper?"
 
-### Risk Mitigation
+## watchOS Platform Requirements
 
-- **WiFi failure at venue:** Watch app should cache the full event schedule locally on launch — if connectivity drops, countdown and haptics still work (only real-time sync between watches degrades)
-- **Adoption friction:** If one organizer doesn't have an Apple Watch, the system must still work for the remaining 3 — graceful degradation, not all-or-nothing
-
-## watchOS App Specific Requirements
-
-### Project-Type Overview
-
-Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 10+ for latest complication and connectivity APIs. No iPhone companion app required — direct backend communication over WiFi. Distributed via App Store.
-
-### Platform Requirements
+### Platform & Distribution
 
 - **Target:** Apple Watch Series 6+ (watchOS 10+) — needed for always-on display and reliable standalone networking
 - **Framework:** SwiftUI with watchOS app lifecycle
@@ -187,68 +204,17 @@ Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 
 - Real-time team sync degrades gracefully — resumes on reconnect
 - Schedule cascade actions queue locally and sync when connectivity returns
 
-### Push & Sync Strategy
+### Sync Strategy
 
 - WebSocket connection to BATbern backend for real-time state sync between watches
 - Fallback to polling if WebSocket unavailable
 - Push notifications (APNs) as backup channel for critical state changes (session advance, schedule cascade)
 
-### Implementation Considerations
+### UX Constraints
 
-- **Battery:** Minimize active networking; use complication updates via WidgetKit timeline
-- **Screen size:** Maximum 2-3 lines of text visible at any time — design for glanceability
-- **Input:** Large tap targets only; no text input on Watch; no tiny buttons
-- **Backend integration:** New REST/WebSocket endpoints on existing BATbern API Gateway for Watch-specific event state
-
-## Project Scoping & Phased Development
-
-### MVP Strategy & Philosophy
-
-**MVP Approach:** Experience MVP — the minimum set of features that lets the moderator run an entire BATbern evening event from their wrist without touching a phone or paper. If it works for one event, it's validated.
-
-**Resource Requirements:** 1 iOS/watchOS developer + existing BATbern backend team. Backend changes are incremental (new WebSocket endpoints on existing API Gateway).
-
-### MVP Feature Set (Phase 1)
-
-**Core User Journeys Supported:**
-- Marco the Moderator (happy path) — fully supported
-- Sarah the Floor Organizer — fully supported
-- Marco Overrun (edge case) — fully supported
-- Pre-Event Setup — fully supported
-
-**Must-Have Capabilities:**
-1. Always-on schedule complication with countdown (LIVE-1)
-2. Haptic cue system with escalation (LIVE-2)
-3. Live schedule cascade on overrun (LIVE-5)
-4. Break gong reminder (LIVE-6)
-5. Session complete / advance (LIVE-8)
-6. Shared state sync across watches (SYNC-1)
-7. Standalone WiFi — no iPhone dependency
-8. Offline schedule cache for graceful degradation
-9. Speaker portrait display
-
-### Post-MVP Features
-
-**Phase 2 (Growth):**
-- Speaker arrival tracking (PRE-1)
-- Speaker time signal/flash (LIVE-7)
-- Quick ping between organizers (SYNC-3)
-- Next-up speaker notification (LIVE-3)
-
-**Phase 3 (Expansion):**
-- Attendee count pulse (LIVE-4)
-- Speaker-facing Watch complication
-- Attendee-facing live schedule
-
-### Risk Mitigation Strategy
-
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Venue WiFi drops | Watches lose sync | Local cache keeps countdown/haptics running; sync resumes on reconnect |
-| Not all organizers have Apple Watch | Partial team coverage | System works for any subset; non-Watch organizers use phone fallback |
-| watchOS background limits | Haptics may not fire in background | Use local notifications + extended runtime session during events |
-| Battery drain from WebSocket | Watch dies mid-event | Minimize active networking; poll every 30s instead of persistent socket if battery low |
-| Small screen UX | Features don't fit Watch form factor | Strict 2-3 line maximum; test on real hardware before every feature ships |
+- Maximum 2-3 lines of text visible at any time — design for glanceability
+- Large tap targets only; no text input on Watch; no tiny buttons
+- New REST/WebSocket endpoints on existing BATbern API Gateway for Watch-specific event state
 
 ## Functional Requirements
 
@@ -297,3 +263,52 @@ Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 
 - **FR26:** Countdown timer and haptic alerts continue functioning when WiFi connectivity is lost
 - **FR27:** Actions taken offline (session advance, cascade) queue locally and sync when connectivity is restored
 - **FR28:** System indicates connectivity status to the organizer (connected / offline)
+
+## Non-Functional Requirements
+
+### Performance
+
+- Complication updates within 1 second of state change
+- Haptic alerts fire within 1 second of scheduled time
+- Schedule cascade propagates to all connected watches within 3 seconds
+- Event schedule initial sync completes within 5 seconds on venue WiFi
+- App launch to usable state within 3 seconds
+
+### Reliability
+
+- App must not crash during a live event (3-hour continuous session)
+- Haptic alerts must fire even if the app moves to background
+- Offline mode activates seamlessly on WiFi loss — no user action required
+- Queued offline actions must not be lost on app restart
+- System must handle conflicting actions from multiple organizers gracefully
+
+### Security
+
+- Organizer authentication via existing BATbern Cognito credentials
+- Session token persists for event duration (no re-authentication mid-event)
+- Only authenticated organizers assigned to an event can join that event's Watch session
+- Communication with backend encrypted via TLS
+
+### Integration
+
+- Watch app consumes existing BATbern event data (events, sessions, speakers, portraits) via API Gateway
+- New WebSocket or polling endpoint on API Gateway for real-time event state
+- Backend event state changes (from Watch or web frontend) are consistent across all clients
+- Speaker portrait images served from existing BATbern S3/CDN infrastructure
+
+### Battery & Resources
+
+- Full 3-hour event operation on a single charge (Watch battery > 30% remaining at event end)
+- Network polling frequency adapts to battery level (reduce frequency below 20% battery)
+- Cached data storage under 50MB per event (schedule + portraits)
+
+## Risk Mitigation
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Venue WiFi drops | Watches lose sync | Local cache keeps countdown/haptics running; sync resumes on reconnect |
+| Not all organizers have Apple Watch | Partial team coverage | System works for any subset; non-Watch organizers use phone fallback |
+| watchOS background limits | Haptics may not fire in background | Use local notifications + extended runtime session during events |
+| Battery drain from WebSocket | Watch dies mid-event | Minimize active networking; poll every 30s instead of persistent socket if battery low |
+| Small screen UX | Features don't fit Watch form factor | Strict 2-3 line maximum; test on real hardware before every feature ships |
+| Adoption friction | Organizers don't use it | Pilot at one event; post-event debrief to validate value |
