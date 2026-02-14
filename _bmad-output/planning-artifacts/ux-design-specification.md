@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
@@ -299,3 +299,95 @@ This is BATbern Watch's "swipe right" moment. It combines three things no other 
 - Moderator glances at next speaker name + portrait for introduction
 - System returns to passive mode — no further interaction needed
 - The loop resets: wait for next haptic → glance → tap
+
+## Visual Design Foundation
+
+### Color System
+
+**Brand Adaptation for watchOS:** BATbern's web platform uses `#2C5F7C` (primary blue) with a Swiss precision aesthetic. On watchOS, we map the brand identity to Apple's system color semantics while preserving BATbern's blue DNA.
+
+**watchOS Color Mapping:**
+
+| Purpose | Color | Source | Usage |
+|---|---|---|---|
+| Brand accent | BATbern Blue (`#2C5F7C`) | Brand guidelines | App icon, complication tint, header accents |
+| On track | System `.green` | watchOS semantic | Countdown running normally, connected status |
+| Warning (5 min) | System `.yellow` | watchOS semantic | 5-minute warning state |
+| Urgent (2 min) | System `.orange` | watchOS semantic | 2-minute warning state |
+| Time's up / Overrun | System `.red` | watchOS semantic | Zero/overrun countdown display |
+| Text primary | System `.white` | watchOS default | Countdown digits, speaker names |
+| Text secondary | System `.gray` | watchOS default | Talk titles, secondary info |
+| Background | System black | watchOS default | OLED-native, battery-efficient |
+
+**Always-On Display Colors:** watchOS automatically dims colors for always-on state. Use system colors to ensure automatic dimming works correctly — custom hex colors may not dim properly and burn OLED.
+
+**Color State Transitions:**
+- Normal (>5 min): BATbern Blue accent + white countdown
+- Warning (5-2 min): Yellow accent tint on countdown
+- Urgent (<2 min): Orange accent tint
+- Time's up (0:00): Red countdown digits
+- Overrun (+N:NN): Red digits + red background tint
+
+### Typography System
+
+**watchOS Font Strategy:** Use Apple's system fonts exclusively — SF Pro and SF Mono are designed for Watch legibility at small sizes and automatically support Dynamic Type.
+
+| Element | Font | Size | Weight | Usage |
+|---|---|---|---|---|
+| Countdown digits | SF Mono | ~40pt | Bold | Primary countdown display — must dominate the screen |
+| Speaker name | SF Pro Rounded | ~16pt | Semibold | Current/next speaker identification |
+| Talk title | SF Pro | ~13pt | Regular | Secondary context, truncated to 1 line |
+| Status label | SF Pro | ~11pt | Medium | "On Track," "5 min left," "+2:00 over" |
+| Complication text | SF Pro Compact | System | Medium | Watch face complication content |
+| Button label | SF Pro | ~16pt | Semibold | "Done," "Shift +5 min" |
+
+**Typography Principles:**
+- Countdown is always the largest element on screen — no exceptions
+- Speaker names truncate with ellipsis rather than wrapping
+- Talk titles are optional — show only when space permits
+- No paragraph text anywhere — this is a Watch, not a reading device
+
+### Spacing & Layout Foundation
+
+**watchOS Layout Constraints:**
+- Screen: 44mm Watch = 184 × 224 points usable area
+- Safe areas: ~8pt inset on all sides (more on rounded corners)
+- Effective content area: ~168 × 208 points
+
+**Layout Zones (Vertical Stack):**
+
+```
+┌──────────────────────┐
+│  Status bar (8pt)    │  ← Connection status, event state
+│──────────────────────│
+│                      │
+│   24:32              │  ← Countdown (dominant, ~80pt tall)
+│                      │
+│──────────────────────│
+│  Anna Meier          │  ← Speaker name (~20pt)
+│  Cloud-Native Pitf…  │  ← Talk title, truncated (~16pt)
+│──────────────────────│
+│  [ Done ]            │  ← Action button (only when relevant)
+└──────────────────────┘
+```
+
+**Spacing Scale (watchOS-adapted):**
+- 2pt: Minimum spacing (label-to-label)
+- 4pt: Tight spacing (icon-to-text)
+- 8pt: Standard spacing (between content blocks)
+- 12pt: Section spacing (between layout zones)
+- 16pt: Maximum spacing (rare, hero elements only)
+
+**Complication Layouts:**
+- `AccessoryCircular`: Circular progress ring + countdown minutes
+- `AccessoryRectangular`: Speaker name + countdown + progress bar
+- `AccessoryCorner`: Countdown digits only (minimal)
+
+### Accessibility Considerations
+
+- **Dynamic Type**: Support all watchOS text size settings — countdown digits scale proportionally
+- **VoiceOver**: All elements labeled (countdown reads "24 minutes 32 seconds remaining for Anna Meier's talk")
+- **Reduce Motion**: Disable any color transition animations if system preference set
+- **Bold Text**: Respect system bold text preference — all weights shift up one level
+- **Contrast**: System colors guarantee WCAG AA on OLED black background
+- **Haptic alternatives**: Visual flash accompanies every haptic alert for users who may not feel vibrations
