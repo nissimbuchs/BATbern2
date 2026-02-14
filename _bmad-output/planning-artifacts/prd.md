@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
@@ -199,3 +199,53 @@ Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 
 - **Screen size:** Maximum 2-3 lines of text visible at any time — design for glanceability
 - **Input:** Large tap targets only; no text input on Watch; no tiny buttons
 - **Backend integration:** New REST/WebSocket endpoints on existing BATbern API Gateway for Watch-specific event state
+
+## Project Scoping & Phased Development
+
+### MVP Strategy & Philosophy
+
+**MVP Approach:** Experience MVP — the minimum set of features that lets the moderator run an entire BATbern evening event from their wrist without touching a phone or paper. If it works for one event, it's validated.
+
+**Resource Requirements:** 1 iOS/watchOS developer + existing BATbern backend team. Backend changes are incremental (new WebSocket endpoints on existing API Gateway).
+
+### MVP Feature Set (Phase 1)
+
+**Core User Journeys Supported:**
+- Marco the Moderator (happy path) — fully supported
+- Sarah the Floor Organizer — fully supported
+- Marco Overrun (edge case) — fully supported
+- Pre-Event Setup — fully supported
+
+**Must-Have Capabilities:**
+1. Always-on schedule complication with countdown (LIVE-1)
+2. Haptic cue system with escalation (LIVE-2)
+3. Live schedule cascade on overrun (LIVE-5)
+4. Break gong reminder (LIVE-6)
+5. Session complete / advance (LIVE-8)
+6. Shared state sync across watches (SYNC-1)
+7. Standalone WiFi — no iPhone dependency
+8. Offline schedule cache for graceful degradation
+9. Speaker portrait display
+
+### Post-MVP Features
+
+**Phase 2 (Growth):**
+- Speaker arrival tracking (PRE-1)
+- Speaker time signal/flash (LIVE-7)
+- Quick ping between organizers (SYNC-3)
+- Next-up speaker notification (LIVE-3)
+
+**Phase 3 (Expansion):**
+- Attendee count pulse (LIVE-4)
+- Speaker-facing Watch complication
+- Attendee-facing live schedule
+
+### Risk Mitigation Strategy
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Venue WiFi drops | Watches lose sync | Local cache keeps countdown/haptics running; sync resumes on reconnect |
+| Not all organizers have Apple Watch | Partial team coverage | System works for any subset; non-Watch organizers use phone fallback |
+| watchOS background limits | Haptics may not fire in background | Use local notifications + extended runtime session during events |
+| Battery drain from WebSocket | Watch dies mid-event | Minimize active networking; poll every 30s instead of persistent socket if battery low |
+| Small screen UX | Features don't fit Watch form factor | Strict 2-3 line maximum; test on real hardware before every feature ships |
