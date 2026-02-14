@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
@@ -228,3 +228,74 @@ The BATbern Watch experience is built around a single loop: **glance → feel �
 - Button styles (use system `.borderedProminent`)
 - Scroll behavior (use system Digital Crown integration)
 - Alert presentation (use system `.alert` modifier)
+
+## Defining Core Interaction
+
+### The One-Sentence Experience
+
+**"Your wrist buzzes, you glance down, you tap Done — and your whole team moves forward together."**
+
+This is BATbern Watch's "swipe right" moment. It combines three things no other tool gives a conference moderator: body-level awareness (haptic), instant context (glance), and team-wide control (tap). If we nail this loop, the app succeeds.
+
+### User Mental Model
+
+**Current mental model (without Watch):**
+- Moderator checks wall clock → does mental math ("started at 18:05, talk is 25 min, so... 18:30") → checks clock again → whispers to co-organizer → checks printed schedule for next speaker name
+- Floor organizer asks moderator "where are we?" or checks phone for schedule PDF
+- Break timing relies on someone remembering to check the clock
+
+**Target mental model (with Watch):**
+- The Watch knows. I don't need to think about time — it will tell me.
+- When my wrist buzzes, I know what it means without looking.
+- When I tap Done, everyone knows. No coordination needed.
+- The schedule is alive on my wrist — not a static printout.
+
+**Key mental model shift:** From "I manage the schedule" to "the schedule manages itself — I just confirm transitions."
+
+### Success Criteria
+
+| Criteria | Measure |
+|---|---|
+| Haptic recognition | Organizer identifies alert type (5min/2min/done) without looking within first event |
+| Glance speed | Wrist raise to "I know the state" in under 2 seconds |
+| Tap confidence | "Done" tap with zero hesitation — no "did it work?" doubt |
+| Team sync trust | Organizers stop verbally confirming schedule state with each other |
+| Cognitive offload | Moderator reports "I didn't think about timing" after event |
+
+### Novel vs. Established Patterns
+
+**Established patterns we adopt:**
+- Countdown timer (universal, no learning curve)
+- Haptic notifications (every Watch user knows these)
+- Tap to confirm (fundamental Watch interaction)
+- Complication as ambient display (standard watchOS pattern)
+
+**Novel combination that makes BATbern unique:**
+- **Multi-user synchronized state from a single tap** — No existing Watch app treats 4 watches as one coordinated system. The "Done" tap is novel because its effect is team-wide, not personal.
+- **Haptic vocabulary for event operations** — Using distinct haptic patterns as a non-visual communication channel for event timing is new. Users must learn 4 patterns, but each maps to one clear meaning.
+- **Schedule cascade on wrist** — Dynamically rescheduling an entire event from a Watch is novel. The interaction must feel as simple as setting an alarm, despite the complexity behind it.
+
+### Experience Mechanics
+
+**1. Initiation — The Haptic Buzz:**
+- System fires haptic at programmed time (5 min, 2 min, 0:00)
+- Moderator feels it on wrist — no visual needed
+- Distinct pattern tells them which alert without looking
+
+**2. Interaction — The Glance:**
+- Wrist raise activates always-on display
+- Screen shows: countdown (large), speaker name (medium), "Done" button (if at/past zero)
+- During normal time: passive display only, no action needed
+- At session end: "Done" button appears prominently
+
+**3. Feedback — The Tap Response:**
+- Tap "Done" → immediate haptic confirmation (`.success` pattern)
+- Screen transitions to next session info (speaker name, portrait, title)
+- If session ran over: cascade prompt appears ("Shift remaining +N min?")
+- All other watches update within 3 seconds — visible via sync indicator
+
+**4. Completion — The Transition:**
+- New countdown begins automatically for next session
+- Moderator glances at next speaker name + portrait for introduction
+- System returns to passive mode — no further interaction needed
+- The loop resets: wait for next haptic → glance → tap
