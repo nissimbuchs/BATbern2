@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
@@ -134,3 +134,25 @@ No iPhone tethering. No Bluetooth pairing with a phone. The Watch talks directly
 | Sarah (Floor) | Shared real-time state, passive schedule awareness, same haptic cues |
 | Marco (Overrun) | Overrun detection, escalating haptics, schedule cascade with confirmation, auto-recalculation |
 | Pre-Event Setup | Direct backend connection, multi-organizer presence detection, event activation |
+
+## Innovation & Novel Patterns
+
+### Detected Innovation Areas
+
+1. **Watch as Team Coordination Tool** — Most Apple Watch apps are single-user personal tools. BATbern Watch is a multi-person real-time operations tool where 4 watches act as one synchronized system. Haptics serve as a silent team communication channel invisible to the audience.
+
+2. **Standalone Event Control Surface** — Unlike typical Watch apps that act as phone companions, BATbern Watch connects directly to the backend with no iPhone dependency. The Watch becomes an independent operations terminal for a moderator who cannot touch any other device while on stage.
+
+3. **The "Event Conductor" Pattern** — The Watch is not passive (just displaying info). It is an active control surface — tap "Done" to advance the event state, tap to cascade the entire schedule. One wrist drives the event forward for all stakeholders simultaneously.
+
+### Validation Approach
+
+- Pilot at one BATbern evening event with all 4 organizers wearing Apple Watches
+- Measure: did any organizer pull out their phone for schedule management during the event?
+- Measure: did the moderator successfully use Watch-only for all transitions and introductions?
+- Post-event debrief: "would you go back to paper?"
+
+### Risk Mitigation
+
+- **WiFi failure at venue:** Watch app should cache the full event schedule locally on launch — if connectivity drops, countdown and haptics still work (only real-time sync between watches degrades)
+- **Adoption friction:** If one organizer doesn't have an Apple Watch, the system must still work for the remaining 3 — graceful degradation, not all-or-nothing
