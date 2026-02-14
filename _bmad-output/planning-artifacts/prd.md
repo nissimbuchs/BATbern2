@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
@@ -156,3 +156,46 @@ No iPhone tethering. No Bluetooth pairing with a phone. The Watch talks directly
 
 - **WiFi failure at venue:** Watch app should cache the full event schedule locally on launch — if connectivity drops, countdown and haptics still work (only real-time sync between watches degrades)
 - **Adoption friction:** If one organizer doesn't have an Apple Watch, the system must still work for the remaining 3 — graceful degradation, not all-or-nothing
+
+## watchOS App Specific Requirements
+
+### Project-Type Overview
+
+Native Apple Watch (watchOS) standalone app built with SwiftUI. Targets watchOS 10+ for latest complication and connectivity APIs. No iPhone companion app required — direct backend communication over WiFi. Distributed via App Store.
+
+### Platform Requirements
+
+- **Target:** Apple Watch Series 6+ (watchOS 10+) — needed for always-on display and reliable standalone networking
+- **Framework:** SwiftUI with watchOS app lifecycle
+- **Distribution:** App Store
+- **Authentication:** Organizer logs in once during setup; session persists for event duration
+
+### Device Features
+
+| Feature | Usage |
+|---|---|
+| **Taptic Engine** | Haptic cue system — escalating patterns for 5min/2min/time's up/overrun |
+| **Complications** | Always-on display showing current talk, speaker, countdown |
+| **Digital Crown** | Scroll through upcoming schedule items |
+| **Always-On Display** | Persistent countdown visible without wrist raise |
+| **Speaker Portraits** | Display speaker photo alongside name and talk title for face recognition |
+
+### Offline Mode
+
+- Cache full event schedule (speakers, times, agenda, portrait images) on initial sync
+- If WiFi drops: local countdown and haptics continue uninterrupted
+- Real-time team sync degrades gracefully — resumes on reconnect
+- Schedule cascade actions queue locally and sync when connectivity returns
+
+### Push & Sync Strategy
+
+- WebSocket connection to BATbern backend for real-time state sync between watches
+- Fallback to polling if WebSocket unavailable
+- Push notifications (APNs) as backup channel for critical state changes (session advance, schedule cascade)
+
+### Implementation Considerations
+
+- **Battery:** Minimize active networking; use complication updates via WidgetKit timeline
+- **Screen size:** Maximum 2-3 lines of text visible at any time — design for glanceability
+- **Input:** Large tap targets only; no text input on Watch; no tiny buttons
+- **Backend integration:** New REST/WebSocket endpoints on existing BATbern API Gateway for Watch-specific event state
