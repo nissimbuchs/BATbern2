@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys]
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain]
 inputDocuments:
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
   - _bmad-output/analysis/brainstorming-session-2026-02-14.md
