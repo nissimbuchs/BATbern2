@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
@@ -96,3 +96,46 @@ The BATbern Watch experience is built around a single loop: **glance → feel �
 4. **Synchronized by default** — Any action by any organizer propagates to all. There is no "out of sync" state during normal operation. The team shares one reality.
 
 5. **Degrade gracefully, never fail** — If WiFi drops, the Watch still counts down. If one organizer doesn't have a Watch, the others still work. Nothing is all-or-nothing.
+
+## Desired Emotional Response
+
+### Primary Emotional Goals
+
+**Invisible Support** — The Watch should feel like a trusted stage manager working silently behind the curtain. Organizers should never feel they're "operating an app." The technology recedes; confidence rises. The dominant feeling is: *"I don't have to think about timing — it's handled."*
+
+**Team Unity** — Every organizer should feel they are part of one synchronized organism. No one is out of the loop. No one needs to ask "where are we?" The Watch creates a shared awareness that feels like telepathy between the 4 team members.
+
+### Emotional Journey Mapping
+
+| Event Phase | Desired Emotion | What Creates It |
+|---|---|---|
+| Pre-event setup | Calm confidence | Green dots — all watches connected, schedule loaded |
+| During a talk (passive) | Relaxed awareness | Complication quietly counting down, no action needed |
+| Haptic alert (5 min / 2 min) | Gentle nudge, not anxiety | Firm but not startling buzz — information, not alarm |
+| Session transition | Effortless flow | One tap "Done," next speaker info appears instantly |
+| Speaker overrun | Control, not panic | Clear overrun display + one-tap cascade = "I've got this" |
+| Break gong reminder | Reliable support | Buzz arrives exactly when needed — "the Watch remembered so I didn't have to" |
+| Post-event | Quiet pride | "We ran that smoothly — together" |
+
+### Micro-Emotions
+
+- **Confidence over Confusion** — At every glance, the Watch shows exactly one thing: what matters right now. No menus, no ambiguity.
+- **Trust over Skepticism** — Haptics fire precisely on time. Cascade propagates instantly. The system earns trust through reliability.
+- **Accomplishment over Frustration** — Every transition feels like a small win. "Done" tap → schedule advances → next speaker ready. Momentum builds.
+- **Belonging over Isolation** — Synchronized state means no organizer is ever alone. Sarah on the floor knows exactly what Marco on stage knows.
+
+### Design Implications
+
+- **Invisible Support → Minimal UI**: No chrome, no navigation bars, no settings during events. The Watch face IS the app for 90% of usage.
+- **Team Unity → Instant sync feedback**: When one organizer taps "Done," all watches update within seconds — reinforcing the feeling of shared control.
+- **Confidence → Large, clear typography**: Countdown numbers must be readable in a split-second wrist glance. No squinting, no parsing.
+- **Trust → Consistent haptic language**: Same buzz pattern = same meaning, every time. The body learns to trust the vocabulary.
+- **No anxiety → Gentle escalation**: Haptic alerts inform, they don't startle. The overrun display is factual ("+2:00 over"), not alarming.
+
+### Emotional Design Principles
+
+1. **The Watch is a teammate, not a tool** — Design every interaction as if a calm, competent colleague is whispering updates in your ear.
+2. **Silence is the default emotion** — The best emotional state is "I forgot the Watch was there." Only surface information at moments that matter.
+3. **Shared knowing beats shared talking** — The emotional payoff of team unity comes from NOT needing to communicate verbally. The buzz says it all.
+4. **Stress absorption, not stress creation** — Every feature must reduce cognitive load. If a feature could create anxiety (e.g., overrun warnings), design it to feel like support, not pressure.
+5. **Pride through flow** — When an event runs smoothly, every organizer should feel they contributed to that flow — the Watch enabled it quietly.
