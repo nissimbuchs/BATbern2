@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
@@ -139,3 +139,56 @@ The BATbern Watch experience is built around a single loop: **glance → feel �
 3. **Shared knowing beats shared talking** — The emotional payoff of team unity comes from NOT needing to communicate verbally. The buzz says it all.
 4. **Stress absorption, not stress creation** — Every feature must reduce cognitive load. If a feature could create anxiety (e.g., overrun warnings), design it to feel like support, not pressure.
 5. **Pride through flow** — When an event runs smoothly, every organizer should feel they contributed to that flow — the Watch enabled it quietly.
+
+## UX Pattern Analysis & Inspiration
+
+### Inspiring Products Analysis
+
+**Apple Workout App (watchOS)** — The gold standard for "glance, act, forget" Watch UX. During a run, the always-on display shows elapsed time, heart rate, and pace — no interaction needed. The Digital Crown locks to prevent accidental taps. The end-workout flow is a single swipe + tap. BATbern Watch should feel this natural during an event — passive display, minimal interaction, always legible.
+
+**Apple Timer / Stopwatch** — Proves that a countdown is the most natural Watch complication. Large digits, always visible, haptic on completion. BATbern's session countdown should feel exactly this native — as if Apple built it into watchOS. The lesson: don't reinvent the countdown UI. Match the system aesthetic.
+
+**Walkie-Talkie (watchOS)** — Apple's team communication app on Watch. One tap to talk, instant connection between two people. The key UX insight: team awareness on a Watch works when it's radically simple. BATbern Watch extends this concept — instead of voice, the "communication" is synchronized state. The same design principle applies: one action, instant team effect.
+
+**Broadcast Production Countdown Monitors** — In TV studios, stage managers use large countdown displays visible from across the room. Red at 30 seconds, flashing at zero. BATbern Watch is the wrist-sized version of this production tool. The lesson: color-coded time states (green → yellow → red → overrun) are an established pattern that works under pressure.
+
+### Transferable UX Patterns
+
+**Navigation Patterns:**
+- **Complication-first architecture** (from Workout) — The Watch face complication IS the primary interface. The app is secondary. 90% of usage never opens the full app.
+- **Context-aware display** (from Workout) — What's shown depends on state. During a run = metrics. Paused = resume button. Applied to BATbern: during talk = countdown, between talks = next speaker, during break = gong timer.
+
+**Interaction Patterns:**
+- **Single-action completion** (from Timer) — Tap to stop. No confirmation dialog. For BATbern: tap "Done" to advance. The system trusts the user.
+- **Haptic vocabulary** (from Workout) — Workout uses distinct haptic patterns for start, lap, goal reached. BATbern extends this: 5-min nudge, 2-min warning, time's up, overrun pulse.
+- **Digital Crown for scrolling** (from watchOS system) — Natural scroll through upcoming schedule items. No swipe gestures competing with tap targets.
+
+**Visual Patterns:**
+- **Large monospace countdown digits** (from Timer/Stopwatch) — Time remaining must be the dominant visual element. SF Mono or system monospace, filling available width.
+- **Color-coded urgency** (from broadcast monitors) — Subtle color shifts as time decreases. Not jarring — ambient awareness through color temperature.
+- **Circular progress** (from Workout rings) — A circular complication gauge showing session progress feels native to watchOS and communicates "how far along" at a glance.
+
+### Anti-Patterns to Avoid
+
+- **List-heavy navigation** — Many Watch apps try to be phone apps on a tiny screen. Scrolling through menus kills glanceability. BATbern must avoid any multi-level navigation during events.
+- **Confirmation dialogs for common actions** — "Are you sure you want to mark as done?" adds friction at the worst moment. Reserve confirmations only for cascade (which changes the schedule for everyone).
+- **Text-heavy displays** — Any screen showing more than 3 lines of text has failed the Watch UX test. Speaker names may need truncation. Talk titles should be secondary to the countdown.
+- **Aggressive haptics** — Over-buzzing trains users to ignore alerts (notification fatigue). Each haptic pattern must be earned — only fire at genuinely meaningful moments.
+- **Custom UI controls** — Non-standard buttons, sliders, or gestures feel foreign on watchOS. Use system controls exclusively. The app should feel like it belongs on the Watch, not bolted on.
+
+### Design Inspiration Strategy
+
+**Adopt directly:**
+- Apple Timer's countdown display aesthetic — large digits, always-on, system fonts
+- Workout's complication-first architecture — the Watch face does 90% of the work
+- Walkie-Talkie's one-tap team action model — tap once, everyone is updated
+
+**Adapt for BATbern:**
+- Workout's context-aware display — customize for event states (talk, break, transition, overrun)
+- Broadcast countdown color coding — translate to watchOS-native color palette (green/yellow/red)
+- Circular progress complication — show session elapsed as a ring gauge within the complication
+
+**Avoid entirely:**
+- Phone-style navigation (tab bars, hamburger menus, deep hierarchies)
+- Custom gesture systems (stick to tap and Digital Crown)
+- Information density from larger screens — ruthlessly prioritize what earns screen space
