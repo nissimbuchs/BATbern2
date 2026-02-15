@@ -40,11 +40,11 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Public Event Companion
-  epic-1: backlog
-  w1-1-xcode-project-setup-event-hero-screen: backlog
-  w1-2-session-card-browsing: backlog
-  w1-3-session-abstract-speaker-bio: backlog
-  w1-4-progressive-publishing-offline-support: backlog
+  epic-1: in-progress
+  w1-1-xcode-project-setup-event-hero-screen: review
+  w1-2-session-card-browsing: ready-for-dev
+  w1-3-session-abstract-speaker-bio: ready-for-dev
+  w1-4-progressive-publishing-offline-support: ready-for-dev
   epic-1-retrospective: optional
 
   # Epic 2: Watch Pairing & Organizer Access
