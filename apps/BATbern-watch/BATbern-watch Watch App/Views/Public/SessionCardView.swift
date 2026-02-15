@@ -124,8 +124,8 @@ struct SessionCardView: View {
             .font(.system(size: 16, weight: .medium, design: .rounded))
             .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)  // BATbern Blue tint
             .multilineTextAlignment(.center)
-            .lineLimit(5)
-            .minimumScaleFactor(0.8)
+            .lineLimit(nil)  // Allow unlimited lines for proper wrapping
+            .fixedSize(horizontal: false, vertical: true)  // Enable text wrapping
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())  // Make entire area tappable
         // .onTapGesture { } // W1.3 will implement navigation
@@ -135,11 +135,6 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private var speakerArea: some View {
-        Divider()
-            .background(.secondary)
-            .padding(.horizontal, -12)
-            .padding(.bottom, 8)
-
         // Speaker portraits and names
         if session.speakers.count == 1 {
             // Single speaker: centered
@@ -186,62 +181,13 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private func singleSpeakerLayout(_ speaker: CachedSpeaker) -> some View {
-        VStack(spacing: 4) {
-            // Circular portrait (placeholder for now, will use AsyncImage in Task 7)
-            Circle()
-                .fill(.secondary.opacity(0.3))
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: "person.crop.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 24))
-                )
-
-            // Speaker name
-            Text(speaker.fullName)
-                .font(.system(size: 11))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-
-            // Company name
-            if let company = speaker.company {
-                Text(company)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity)
+        SpeakerPortraitView(speaker: speaker, size: 50)  // Larger size for single speaker
+            .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private func speakerPortrait(_ speaker: CachedSpeaker) -> some View {
-        VStack(spacing: 4) {
-            // Circular portrait (placeholder for now, will use AsyncImage in Task 7)
-            Circle()
-                .fill(.secondary.opacity(0.3))
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: "person.crop.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: 24))
-                )
-
-            // Speaker name
-            Text(speaker.fullName)
-                .font(.system(size: 11))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-
-            // Company name
-            if let company = speaker.company {
-                Text(company)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-        }
-        .frame(width: 60)
+        SpeakerPortraitView(speaker: speaker, size: 40)
     }
 }
 

@@ -11,6 +11,7 @@ import SwiftUI
 struct SpeakerPortraitView: View {
     let speaker: CachedSpeaker
     let size: CGFloat
+    @State private var companyLogoUrl: String?
 
     init(speaker: CachedSpeaker, size: CGFloat = 40) {
         self.speaker = speaker
@@ -19,10 +20,30 @@ struct SpeakerPortraitView: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Circular portrait (Task 7 will add AsyncImage from CDN)
-            portraitImage
-                .frame(width: size, height: size)
-                .clipShape(Circle())
+            // Portrait + Company Logo Row
+            HStack(spacing: 4) {
+                // Circular portrait with AsyncImage from CDN
+                portraitImage
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+
+                // Company logo (if available)
+                if let logoUrl = companyLogoUrl, let url = URL(string: logoUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: size * 0.7, height: size * 0.7)  // Larger logo (70% of portrait size)
+                        case .failure, .empty:
+                            EmptyView()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+            }
 
             // Speaker name
             Text(speaker.fullName)
@@ -38,7 +59,13 @@ struct SpeakerPortraitView: View {
                     .lineLimit(1)
             }
         }
-        .frame(width: size + 20)  // Extra width for text
+        .frame(minWidth: size + 40)  // Minimum width, allows expansion for single speaker
+        .task {
+            // Fetch company logo if company name exists
+            if let companyName = speaker.company {
+                await loadCompanyLogo(companyName: companyName)
+            }
+        }
     }
 
     // MARK: - Portrait Image (AC#5)
@@ -76,6 +103,42 @@ struct SpeakerPortraitView: View {
                     .font(.system(size: size * 0.6))
             )
     }
+
+    // MARK: - Company Logo Loading
+
+    /// Fetch company logo URL from company-user-management API
+    /// Replicates web frontend pattern: GET /api/v1/companies/{companyName}?expand=logo
+    private func loadCompanyLogo(companyName: String) async {
+        // URL encode company name (may contain spaces or special characters)
+        guard let encodedCompanyName = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              let baseUrl = URL(string: "https://api.staging.batbern.ch") else { return }
+
+        let endpoint = baseUrl.appendingPathComponent("/api/v1/companies/\(encodedCompanyName)")
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "expand", value: "logo")]
+
+        guard let url = components?.url else { return }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let company = try JSONDecoder().decode(CompanyResponse.self, from: data)
+            companyLogoUrl = company.logo?.url
+        } catch {
+            // Silently fail - logo is optional
+            print("Failed to load company logo for \(companyName): \(error)")
+        }
+    }
+}
+
+// MARK: - Company API Response Types
+
+/// Minimal company response for logo fetching
+private struct CompanyResponse: Codable {
+    let logo: CompanyLogo?
+}
+
+private struct CompanyLogo: Codable {
+    let url: String
 }
 
 // MARK: - Previews

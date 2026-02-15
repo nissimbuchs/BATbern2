@@ -45,6 +45,15 @@ xcodebuild test -scheme "BATbern-watch Watch App" \
 # Build for physical device (requires code signing)
 xcodebuild -scheme "BATbern-watch Watch App" \
   -destination 'generic/platform=watchOS'
+
+# Regenerate types from OpenAPI spec (after API changes)
+./scripts/generate-types.sh
+
+# Then manually add new files to Xcode project:
+# 1. Open Xcode: open BATbern-watch.xcodeproj
+# 2. Right-click "BATbern-watch Watch App" → Add Files...
+# 3. Select Generated/Models/ folder
+# 4. Ensure target membership is checked
 ```
 
 ### Xcode Development
@@ -61,61 +70,120 @@ open BATbern-watch.xcodeproj
 
 ## Architecture Overview
 
-### MVVM + Repository Pattern
+### MVVM + Repository Pattern + Protocol-Based Dependency Injection
 
 ```
 Views/               # SwiftUI views (no business logic)
   ├── Public/        # Unauthenticated screens
-  └── Organizer/     # Authenticated organizer workflows
+  ├── Organizer/     # Authenticated organizer workflows (planned)
+  └── Shared/        # Reusable components (BATbernSymbolView, SpeakerPortraitView)
 
 ViewModels/          # ObservableObject view models (presentation logic)
-  ├── SessionViewModel.swift       # Countdown timer, state display
-  ├── ScheduleViewModel.swift      # Full schedule navigation
-  └── HapticViewModel.swift        # Alert coordination
+  └── PublicViewModel.swift        # Event browsing, session cards
 
-Models/              # SwiftData models (local cache)
-  ├── Event.swift
-  ├── Session.swift
-  └── Speaker.swift
+Models/              # SwiftData models (local cache) + domain models
+  ├── CachedEvent.swift            # Local cache entity
+  ├── CachedSession.swift          # Session with computed state
+  ├── CachedSpeaker.swift          # Speaker metadata
+  ├── SessionState.swift           # Session lifecycle enum
+  ├── HapticAlert.swift            # Haptic pattern definitions
+  ├── PairingInfo.swift            # Organizer pairing data
+  └── WatchModels.swift            # Shared domain types
 
-Services/            # External dependencies and infrastructure
-  ├── BATbernAPIClient.swift       # REST endpoints
-  ├── WebSocketService.swift       # STOMP real-time sync
-  ├── HapticEngine.swift           # WKHapticType wrappers
-  └── OfflineQueue.swift           # Action buffering
+Data/                # Repository pattern (network, caching)
+  ├── PublicEventService.swift     # REST API client
+  ├── LocalCache.swift             # SwiftData persistence
+  └── PortraitCache.swift          # Speaker image caching
+
+Domain/              # Pure business logic (no dependencies)
+  ├── SessionTimerEngine.swift     # Wall-clock countdown timer
+  └── HapticScheduler.swift        # Alert threshold calculation
+
+Protocols/           # Dependency injection contracts (testability)
+  ├── ClockProtocol.swift          # Injectable time (CRITICAL for testing)
+  ├── APIClientProtocol.swift      # Network abstraction
+  ├── WebSocketClientProtocol.swift # Real-time sync abstraction
+  └── HapticServiceProtocol.swift  # Haptic engine abstraction
+
+Generated/           # OpenAPI-generated types (auto-generated, do not edit)
+  ├── Models/        # Event, Session, Speaker DTOs from events-api.openapi.yml
+  └── OpenAPIUtilities.swift
+
+Utilities/           # Helper functions
+  └── SwissDateFormatter.swift     # Swiss German date/time formatting
+
+Complications/       # Watch face complications (empty, planned for Epic W5)
+
+Resources/           # Non-code assets
+
+App/                 # App entry point
+  ├── BATbernWatchApp.swift        # @main entry point
+  └── ContentView.swift            # Root navigation view
 ```
 
 ### Critical Architectural Patterns
 
-**1. Server-Authoritative State Model**
+**1. Protocol-Based Dependency Injection**
+
+**CRITICAL FOR TESTABILITY:** Every external dependency has a protocol interface to enable test mocking.
+
+| Protocol | Production Impl | Test Mock | Purpose |
+|---|---|---|---|
+| `ClockProtocol` | `SystemClock` | `MockClock` | Injectable time control (timer accuracy) |
+| `APIClientProtocol` | `PublicEventService` | `MockAPIClient` | Network requests |
+| `WebSocketClientProtocol` | (TBD in Epic W4) | `MockWebSocketClient` | Real-time sync |
+| `HapticServiceProtocol` | (TBD in Epic W3) | `MockHapticService` | Haptic feedback |
+
+**Key Rule:** NEVER call `Date()` directly in production domain code — always use `clock.now` for testability. This pattern is essential for testing timer accuracy without flaky time-dependent tests.
+
+**Example:**
+```swift
+// ❌ Wrong - untestable
+class SessionTimer {
+    func checkRemaining() -> TimeInterval {
+        return session.endTime.timeIntervalSince(Date()) // Can't control time in tests
+    }
+}
+
+// ✅ Correct - testable
+class SessionTimerEngine {
+    let clock: ClockProtocol
+
+    func checkRemaining() -> TimeInterval {
+        return session.endTime.timeIntervalSince(clock.now) // Tests inject MockClock
+    }
+}
+```
+
+**2. Server-Authoritative State Model**
 - Backend is the source of truth for event state
 - Local SwiftData cache is read-only mirror
 - Actions (advance session, trigger cascade) sent to server via STOMP
 - Server broadcasts state changes to all connected devices
 - Last-write-wins conflict resolution on server side
 
-**2. Offline-First Design**
+**3. Offline-First Design**
 - All event data cached locally after initial sync (SwiftData)
 - Countdown timer and haptics run locally (wall-clock based, not network-dependent)
 - Actions queued locally when offline (`OfflineQueue.swift`)
 - Automatic sync when connectivity restored
 - No user action required for offline transition
 
-**3. Real-Time Synchronization**
+**4. Real-Time Synchronization**
 - STOMP over WebSocket for low-latency broadcasts
 - JWT authentication in STOMP CONNECT headers
 - Server broadcasts to `/topic/events/{eventCode}/state`
 - Clients subscribe on join, single persistent connection
 - REST fallback endpoints for reconnection scenarios
 
-**4. Battery-Aware Behavior**
+**5. Battery-Aware Behavior**
 - Extended Runtime session for background haptics
 - Adaptive polling frequency (reduce when battery < 20%)
 - Single persistent WebSocket (no frequent reconnects)
 - Lazy loading of speaker portraits (fetch on-demand, not bulk)
 - Target: >30% battery remaining after 3-hour event
 
-**5. Complication-First Architecture**
+**6. Complication-First Architecture**
 - Watch face complication is primary interface (90% usage)
 - App itself is secondary (settings, auth, manual schedule override)
 - WidgetKit timeline updates on state changes (<1 second latency)
@@ -162,40 +230,134 @@ Services/            # External dependencies and infrastructure
 
 ## Testing Strategy
 
-### Unit Tests (`BATbern-watch Watch AppTests/`)
-- **ViewModels:** Countdown timer accuracy, state transitions, offline queue behavior
-- **Services:** API client request construction, STOMP message parsing, haptic scheduling
-- **Models:** SwiftData relationships, cascade recalculation logic
-- **Coverage target:** 80%+ for business logic
+**Framework:** Swift Testing (unit tests) + XCTest (UI tests)
+**Coverage Target:** 80%+ for business logic
+**Documentation:** See `TESTING.md` for comprehensive test framework guide
 
-### UI Tests (`BATbern-watch Watch AppUITests/`)
-- **Critical paths:** Authentication flow, session advance, schedule cascade
-- **Complication updates:** Verify content reflects state changes within 1 second
-- **Offline scenarios:** Trigger airplane mode, verify timer continues, actions queue
-- **Accessibility:** VoiceOver navigation, Dynamic Type, Reduce Motion
+### Test Directory Structure
 
-### Integration Testing
-- **Mock backend:** Stub STOMP server for multi-device sync testing
-- **Battery simulation:** Xcode Energy Log to validate power consumption
-- **Network conditions:** Network Link Conditioner (slow WiFi, packet loss)
-- **Extended Runtime:** Run 3-hour continuous session to verify NFR6 (zero crashes)
+```
+BATbern-watch Watch AppTests/          # Unit tests (Swift Testing)
+├── Domain/                            # Pure domain logic tests
+│   ├── SessionTimerEngineTests.swift  # Wall-clock countdown (HIGH RISK)
+│   └── HapticSchedulerTests.swift     # Threshold-based alert scheduling
+├── Data/                              # Repository layer tests
+│   ├── LocalCacheTests.swift          # SwiftData persistence
+│   └── PublicEventServiceTests.swift  # API client
+├── ViewModels/                        # Presentation logic tests
+│   └── PublicViewModelTests.swift     # Event browsing, session cards
+├── Views/                             # View component tests
+│   └── SessionCardViewTests.swift     # SwiftUI view rendering
+├── Mocks/                             # Protocol-backed test doubles
+│   ├── MockClock.swift                # Injectable time control
+│   ├── MockAPIClient.swift            # REST client stub
+│   ├── MockWebSocketClient.swift      # STOMP client stub
+│   └── MockHapticService.swift        # Records haptic invocations
+├── Factories/                         # Test data builders
+│   └── TestDataFactory.swift          # Event, Session, Speaker factories
+└── Helpers/                           # Test utilities
+    └── AsyncTestHelpers.swift         # Async wait, error assertions
+```
+
+### Risk-Ordered Testing Priority
+
+**Write tests in this order, matching risk profile:**
+
+| Priority | Component | Risk | Pattern |
+|---|---|---|---|
+| **P0** | `SessionTimerEngine` | Timer drift on watchOS suspension | MockClock + wall-clock assertions |
+| **P0** | `HapticScheduler` | Missed/duplicate alerts during live event | MockClock + MockHapticService |
+| **P1** | WebSocket sync | Multi-device state divergence | MockWebSocketClient + emit() |
+| **P1** | Offline `ActionQueue` | Lost actions on app restart | Persistence tests |
+| **P2** | `AuthManager` | JWT expiry mid-event | MockClock + token lifecycle |
+| **P2** | Public zone data loading | Stale cache, progressive publishing | MockAPIClient |
+| **P3** | UI navigation | Swipe zones, Crown scroll | XCTest UI tests |
+
+### Test Data Factory Pattern
+
+All test data flows through `TestDataFactory.swift` — a single source of realistic BATbern defaults:
+
+```swift
+// Simple — uses all defaults
+let event = TestData.event()
+
+// Override specific fields
+let speaker = TestData.speaker(firstName: "Marco", arrived: true)
+
+// Fixed dates for timer tests (not relative to now)
+let session = TestData.fixedSession(start: clock.now, end: clock.now.addingTimeInterval(2700))
+
+// Full evening schedule
+let event = TestData.eveningEvent(baseTime: referenceDate)
+```
+
+### Key Testing Rules
+
+**CRITICAL - Follow these rules strictly:**
+
+1. **NEVER use `Date()` in production domain code** — always inject `ClockProtocol`
+2. **NEVER use decrementing counters for timers** — always calculate from wall clock
+3. **Every external dependency gets a protocol** — no concrete dependencies in domain/ViewModel layer
+4. **Mocks record invocations** — assert on call count and arguments, not just return values
+5. **Use `TestData.fixedSession(start:end:)` for timer tests** — relative dates cause flaky tests
+6. **Reset mock state between tests** — Swift Testing creates fresh instances per `@Suite` init
+
+### Injectable Clock Pattern (Critical!)
+
+The most critical testability pattern. The `SessionTimerEngine` NEVER calls `Date()` directly — it uses `clock.now`. This lets tests control time precisely:
+
+```swift
+let clock = MockClock(fixedDate: someDate)
+let engine = SessionTimerEngine(clock: clock)
+
+engine.setActiveSession(session)
+clock.advance(by: 300) // Simulate 5 minutes passing
+engine.recalculate()
+
+#expect(engine.remainingSeconds == expectedValue)
+```
+
+This pattern proves the timer survives watchOS app suspension (where a decrementing counter would drift).
+
+### Recording Mocks Pattern
+
+Mocks record every invocation for assertion:
+
+```swift
+let haptics = MockHapticService()
+// ... run code that triggers haptics ...
+#expect(haptics.playedAlerts == [.fiveMinuteWarning, .twoMinuteWarning])
+```
 
 ### Test Execution
+
 ```bash
 # All tests
 xcodebuild test -scheme "BATbern-watch Watch App" \
   -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
+
+# Unit tests only
+xcodebuild test -scheme "BATbern-watch Watch App" \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -only-testing:BATbern-watch_Watch_AppTests
 
 # UI tests only
 xcodebuild test -scheme "BATbern-watch Watch App" \
   -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
   -only-testing:BATbern-watch_Watch_AppUITests
 
+# Specific test suite
+xcodebuild test -scheme "BATbern-watch Watch App" \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
+  -only-testing:BATbern-watch_Watch_AppTests/SessionTimerEngineTests
+
 # Generate coverage report
 xcodebuild test -scheme "BATbern-watch Watch App" \
   -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
   -enableCodeCoverage YES
 ```
+
+Or in Xcode: `Cmd+U` (all tests), or click the diamond next to a test.
 
 ## Backend Integration
 
@@ -240,19 +402,88 @@ All design and architecture documentation lives in `../../docs/watch-app/`:
 
 **When implementing new features:** Always consult these docs first. They define requirements, NFRs, and architectural constraints.
 
+## OpenAPI Type Generation
+
+### Workflow
+
+Types are automatically generated from the BATbern OpenAPI specification:
+
+```bash
+# Regenerate types after API spec changes
+./scripts/generate-types.sh
+
+# Source: ../../docs/api/events-api.openapi.yml
+# Output: BATbern-watch Watch App/Generated/Models/*.swift
+```
+
+**After regeneration:**
+1. Open Xcode: `open BATbern-watch.xcodeproj`
+2. Right-click "BATbern-watch Watch App" → **Add Files to...**
+3. Select `Generated/Models/` folder
+4. Ensure target membership is **BATbern-watch Watch App**
+5. Build to verify: `Cmd+B`
+
+### Generated vs Manual Models
+
+- **Generated types** (`Generated/Models/`): API DTOs from OpenAPI spec (Event, Session, Speaker, etc.)
+- **Manual models** (`Models/`): Local cache entities (CachedEvent, CachedSession), domain models (SessionState, HapticAlert)
+
+**Rule:** Use generated types for API communication, manual types for local SwiftData persistence and domain logic.
+
+See `OPENAPI_GENERATOR_GUIDE.md` for detailed migration guide.
+
+## Localization
+
+- **Base language:** English (`Base.lproj/Localizable.strings`)
+- **Supported:** German (`de.lproj/Localizable.strings`)
+- **Date formatting:** Swiss German conventions via `SwissDateFormatter`
+- **Convention:** All user-facing strings use `NSLocalizedString("key", comment: "context")`
+
 ## Code Conventions
 
 ### Swift Style
 - **Naming:** SwiftLint defaults (camelCase, PascalCase for types)
-- **ViewModels:** Suffix with `ViewModel` (e.g., `SessionViewModel`)
-- **Services:** Suffix with `Service` or descriptive noun (e.g., `WebSocketService`, `HapticEngine`)
-- **Models:** Match backend DTOs where possible (e.g., `Session`, `Event`)
+- **ViewModels:** Suffix with `ViewModel` (e.g., `PublicViewModel`)
+- **Protocols:** Suffix with `Protocol` for dependency injection (e.g., `ClockProtocol`, `APIClientProtocol`)
+- **Models:** Manual models in `Models/`, generated DTOs in `Generated/Models/`
+- **Mocks:** Prefix with `Mock` in test target (e.g., `MockClock`, `MockAPIClient`)
 
 ### SwiftUI Patterns
 - **Single responsibility:** Views display only, ViewModels contain logic
 - **Environment objects:** Share `WebSocketService`, `BATbernAPIClient` via `.environmentObject()`
 - **Combine:** Use `@Published` in ViewModels, `onReceive()` in Views
 - **Previews:** Every View must have `#Preview` with mock data
+
+### Dependency Injection Pattern
+
+```swift
+// ✅ Correct — protocol-based dependency injection
+class SessionTimerEngine {
+    let clock: ClockProtocol  // Injected dependency
+
+    init(clock: ClockProtocol) {
+        self.clock = clock
+    }
+
+    func checkRemaining() -> TimeInterval {
+        return session.endTime.timeIntervalSince(clock.now)  // Uses protocol
+    }
+}
+
+// Production: inject SystemClock
+let engine = SessionTimerEngine(clock: SystemClock())
+
+// Tests: inject MockClock
+let mockClock = MockClock(fixedDate: testDate)
+let engine = SessionTimerEngine(clock: mockClock)
+
+// ❌ Wrong — direct dependency, untestable
+class SessionTimerEngine {
+    func checkRemaining() -> TimeInterval {
+        return session.endTime.timeIntervalSince(Date())  // Hard-coded, can't control in tests
+    }
+}
+```
 
 ### Error Handling
 ```swift
