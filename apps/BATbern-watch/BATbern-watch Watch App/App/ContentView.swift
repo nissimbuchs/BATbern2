@@ -20,7 +20,7 @@ struct ContentView: View {
         TabView(selection: $selectedZone) {
             // Tab 0 (left, default): Public zone — unauthenticated event browsing
             NavigationStack {
-                EventHeroView()
+                SessionListView()  // W1.2: Vertical paging container (Hero + Session cards)
             }
             .tag(Zone.publicZone)
 

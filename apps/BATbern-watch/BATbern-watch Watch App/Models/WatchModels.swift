@@ -11,6 +11,7 @@ struct WatchEvent: Sendable, Identifiable {
     let themeImageUrl: String?
     let venueName: String
     let sessions: [WatchSession]
+    let currentPublishedPhase: String?  // W1.2: Progressive publishing (TOPIC, SPEAKERS, AGENDA)
 }
 
 struct WatchSession: Sendable, Identifiable {

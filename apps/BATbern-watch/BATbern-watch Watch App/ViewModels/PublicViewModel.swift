@@ -27,6 +27,35 @@ class PublicViewModel {
     var lastSynced: Date?
     var errorMessage: String?
 
+    // MARK: - Computed Properties (W1.2 - Session Card Browsing)
+
+    /// Returns displayable sessions: filters out placeholders, sorted by startTime (AC#7)
+    var displayableSessions: [CachedSession] {
+        sessions
+            .filter { session in
+                // Exclude placeholder sessions (null sessionType or null startTime/endTime)
+                session.sessionType != nil && session.startTime != nil && session.endTime != nil
+            }
+            .sorted { ($0.startTime ?? Date()) < ($1.startTime ?? Date()) }
+    }
+
+    /// True when currentPublishedPhase is SPEAKERS or AGENDA (AC#6)
+    var hasSpeakerPhase: Bool {
+        guard let phase = event?.currentPublishedPhase else { return false }
+        return phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
+    /// True when currentPublishedPhase is AGENDA (AC#6)
+    var hasAgendaPhase: Bool {
+        event?.currentPublishedPhase == "AGENDA"
+    }
+
+    /// Checks if session is a break/networking/lunch session (AC#3)
+    func isBreakSession(_ session: CachedSession) -> Bool {
+        guard let type = session.sessionType else { return false }
+        return type == .breakTime || type == .lunch || type == .networking
+    }
+
     // MARK: - Initialization
 
     init(
