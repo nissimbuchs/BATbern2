@@ -679,3 +679,73 @@ WSS    /ws/events/{eventCode}/live              → Real-time session state chan
 
 **SessionSpeaker** (subset relevant to Watch):
 - `firstName`, `lastName`, `company`, `profilePictureUrl`, `bio`, `speakerRole`
+
+---
+
+## 15. Repository Structure & Artifact Separation
+
+The Watch app lives alongside the main BATbern platform in the same monorepo but is **completely independent** of the Gradle/Java/TypeScript build system.
+
+### Code Location
+
+```
+apps/BATbern-watch/           # Xcode project (Swift, SwiftUI, watchOS 11)
+  BATbernWatch/               # Main Watch app target
+  BATbernWatchTests/          # Unit tests
+  BATbernWatch.xcodeproj/     # Xcode project file
+```
+
+The `apps/` folder already contains legacy/auxiliary projects (`BATspa-old`, `BATbern-comming-soon`, etc.). The Watch app fits naturally here.
+
+### Documentation Location
+
+All Watch planning artifacts are in `docs/watch-app/`, separate from the platform's `docs/stories/` and `docs/architecture/`:
+
+```
+docs/watch-app/               # All Watch docs
+  prd-batbern-watch.md        # This PRD (authoritative)
+  architecture.md             # Architecture decisions
+  ux-design-specification.md  # UX design spec
+  ux-design-directions.html   # Visual design mockups
+  product-brief.md            # Initial product brief
+  epics.md                    # Epic breakdown
+  stories/                    # Watch stories (W-prefixed)
+    W1.1-xcode-project-setup.md
+    W1.2-event-hero-screen.md
+    W2.1-pairing-code-flow.md
+    ...
+```
+
+### Story Naming Convention
+
+Watch stories use a **W prefix** to avoid collision with platform story numbers:
+
+| Convention | Example | Meaning |
+|---|---|---|
+| `W{epic}.{story}` | `W1.2` | Watch Epic 1, Story 2 |
+| Platform | `6.3` | Platform Epic 6, Story 3 |
+
+This ensures `grep`, file listings, and CI workflows never confuse Watch and platform stories.
+
+### Cross-Cutting Backend Work
+
+Some Watch epics require changes to existing platform services:
+
+| Watch Epic | Platform Service Affected | What Changes |
+|---|---|---|
+| W2 (Pairing) | `company-user-management-service` | New pairing endpoints, user profile extension |
+| W2 (Pairing) | `web-frontend` | "Watch Pairing" section in organizer profile |
+| W4 (Team Sync) | `event-management-service` | WebSocket endpoint, session state machine |
+
+These backend changes are **implemented in the platform codebase** (existing services) but **tracked in Watch stories**. Each Watch story that requires backend work will note which service and files are affected.
+
+### Build System Independence
+
+| Concern | Platform | Watch App |
+|---|---|---|
+| Build tool | Gradle + npm | Xcode |
+| Language | Java 21 + TypeScript | Swift |
+| `make build` | Builds platform | Does NOT touch Watch |
+| `make test` | Tests platform | Does NOT touch Watch |
+| CI/CD | GitHub Actions → ECS | Separate workflow → TestFlight |
+| Deploy | AWS CDK | App Store Connect |
