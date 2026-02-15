@@ -1,69 +1,72 @@
-# PRD: BATbern Apple Watch Companion App
+---
+stepsCompleted: [step-01-init, step-02-discovery, step-03-success, step-04-journeys, step-05-domain, step-06-innovation, step-07-project-type, step-08-scoping, step-09-functional, step-10-nonfunctional, step-11-polish, step-12-complete]
+inputDocuments:
+  - _bmad-output/planning-artifacts/product-brief-BATbern-2026-02-14.md
+  - _bmad-output/analysis/brainstorming-session-2026-02-14.md
+  - docs/brainstorming-session-results.md
+documentCounts:
+  briefs: 1
+  research: 0
+  brainstorming: 2
+  projectDocs: multiple
+workflowType: 'prd'
+projectType: brownfield
+classification:
+  projectType: mobile_app
+  domain: event_management
+  complexity: medium
+  projectContext: brownfield
+---
 
-**Version:** 1.0
+# Product Requirements Document - BATbern Apple Watch Companion App
+
+**Author:** Nissim
 **Date:** 2026-02-15
-**Status:** Draft
-**Author:** PM (AI-assisted)
+**Version:** 2.0 (Consolidated)
+**Project:** BATbern — Berner Architekten Treffen
+**Platform:** Native watchOS standalone app
+**Status:** Ready for Architecture & Design
 
 ---
 
-## 1. Executive Summary
+## Document History
 
-The BATbern Apple Watch app serves **two distinct audiences on one wrist**: a **public event companion** for all attendees and an **organizer command center** for the 4 BATbern organizers. Separated by a swipe gesture, the left zone lets anyone browse tonight's event — sessions, speakers, abstracts — while the right zone gives organizers live countdown control, haptic alerts, and team-synchronized session management.
+- **v1.0** (2026-02-14): Initial PRD from brainstorming session (28 FRs, organizer-focused)
+- **v2.0** (2026-02-15): Consolidated version merging dual-zone architecture, navigation details, data architecture, and repository structure
 
-The app is distributed via the App Store, making it available to all ~200 BATbern attendees. No login is required for the public view. Organizers pair their Watch once via a simple code and never touch a password again.
-
----
-
-## 2. Problem Statement
-
-### For Attendees
-BATbern attendees currently rely on printed programs or pulling out their phones to check what session is next. A glance at their wrist would be faster, more natural, and less disruptive during talks.
-
-### For Organizers
-The 4 BATbern organizers currently use stopwatch apps, printed schedules, and verbal coordination to manage real-time session flow. This leads to:
-- **Timing drift**: No authoritative countdown visible to the moderator
-- **Missed transitions**: Reliance on memory for 5-min/1-min warnings
-- **Team blind spots**: Other organizers don't know the current session state
-- **Manual friction**: Constantly checking phones during a live event
-
-### Why Apple Watch
-- 38mm screen forces focus — one piece of information at a time
-- Haptic Taptic Engine provides silent, personal alerts without disturbing the audience
-- Digital Crown enables natural scrolling through sessions
-- Always-on display means the countdown is visible at a wrist glance
-- Direct WiFi capability enables phone-free operation
+**Input Documents:**
+- [Brainstorming Session Results](brainstorming-session.md) — Feature discovery and innovation exploration
+- Previous PRD iterations from Claude.ai sessions (connection-issue fragmented capture)
 
 ---
 
-## 3. Product Vision
+## Executive Summary
 
-**"Everything you need to know about BATbern tonight — on your wrist."**
+BATbern Watch is a native Apple Watch companion app for the BATbern event management platform. It transforms the Apple Watch into **two experiences on one wrist**:
 
-For attendees: a conference companion that shows what's on, who's speaking, and what's next.
-For organizers: a command center that counts down, alerts, and keeps the whole team in sync.
+**Public Event Companion (Left Zone):**
+Anyone with an Apple Watch can browse tonight's BATbern event — theme, schedule, session details, speaker bios and portraits — by scrolling with the Digital Crown. No login required.
+
+**Organizer Command Center (Right Zone):**
+The 4 BATbern organizers swipe right to enter a paired, authenticated zone with live countdown control, haptic-driven time alerts, and team-synchronized session management.
+
+**Vision:** Replace printed schedules and mental clock math with a glanceable, haptic-driven command surface on the wrist — enabling moderators to run entire events without touching a phone, while giving all attendees instant access to the event program.
+
+**Target Users:**
+- **Primary:** 4 BATbern organizers (all generalists, one moderating per event)
+- **Secondary:** ~200 attendees per event (public browsing)
+
+**Core Differentiator:**
+Unlike typical single-user Watch apps, BATbern Watch is a **multi-organizer synchronized system** where one tap on any wrist updates all watches simultaneously. The moderator on stage — who cannot use a phone — is the power user. Plus, the public zone makes it App Store-worthy with broad adoption potential.
+
+**Project Context:**
+Brownfield extension of the existing BATbern platform (MVP complete: 5 microservices, React frontend, AWS infrastructure, 9-state event workflow, speaker coordination).
 
 ---
 
-## 4. User Personas
+## Navigation Architecture
 
-### Attendee (Ana)
-- Architect at a Bern firm, attends BATbern regularly
-- Wants to quickly check the next session without pulling out her phone
-- Doesn't want to create an account or log in
-- Tech-comfortable but not a power user
-
-### Organizer (Olivier)
-- One of 4 BATbern organizers
-- Manages session flow from the room: introduces speakers, manages Q&A timing
-- Needs silent alerts that only he can feel (not audible in the room)
-- Wants to know what session other organizers are managing in parallel rooms
-
----
-
-## 5. Navigation Architecture
-
-The app uses a **horizontal paging model** with two zones:
+The app uses a **horizontal paging model** with two zones separated by swipe gestures:
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -86,15 +89,13 @@ The app uses a **horizontal paging model** with two zones:
 └─────────────────────────────────────────────────┘
 ```
 
-### 5.1 Public Zone (Left — Default on Launch)
-
-The app launches into the public zone. No login required.
+### Public Zone (Left — Default on Launch)
 
 **Screen 1: Event Hero**
 - Event theme image as full-bleed background
 - Event title overlay
 - Bottom bar: date, time, venue name
-- Visual: `themeImageUrl` from `GET /api/v1/events/current`
+- Data source: `themeImageUrl` from `GET /api/v1/events/current`
 
 **Crown Scroll Down → Session Pages (one per session)**
 
@@ -118,42 +119,22 @@ Each session page is a vertically-split card:
 ```
 
 **Tap Interactions:**
-- **Tap upper area (title)**: Push to abstract detail screen showing `session.description`
-- **Tap lower area (speakers)**: Push to speaker detail screen
+- **Tap upper area (title):** Push to abstract detail screen showing `session.description`
+- **Tap lower area (speakers):** Push to speaker detail screen
   - Single speaker: Full portrait, name, company, `speaker.bio`
   - Multiple speakers: Grid of portraits + company logos; tap individual speaker for bio
 
-**Multi-Speaker Grid Layout:**
-```
-┌──────────────────────┐
-│  ┌──────┐ ┌──────┐   │
-│  │  📷  │ │  📷  │   │   2 speakers: side by side
-│  │ Name │ │ Name │   │
-│  │ Logo │ │ Logo │   │
-│  └──────┘ └──────┘   │
-│                       │
-│  ┌────┐┌────┐┌────┐  │
-│  │ 📷 ││ 📷 ││ 📷 │  │   3+ speakers: compact grid
-│  │Name││Name││Name│  │
-│  └────┘└────┘└────┘  │
-└──────────────────────┘
-```
+Sessions are ordered by `startTime`. Break/lunch sessions shown as simple cards without speaker areas.
 
-**Crown continues → next session → ... → last session**
+### Organizer Zone (Right — Swipe Right from Any Public Screen)
 
-Sessions are ordered by `startTime`. Break/lunch sessions are shown as simple cards without speaker areas.
+**If not paired:** Shows pairing screen (6-character code display + instructions).
 
-### 5.2 Organizer Zone (Right — Swipe Right from Any Public Screen)
+**If paired and within 1 hour before event start:** Shows speaker portrait overview — a scrollable grid of all speakers for tonight with portraits and arrival tracking. Organizer taps a speaker to confirm their arrival; a green ✓ badge appears on the portrait and syncs to all organizer watches instantly.
 
-Swiping right from any public screen transitions to the organizer zone.
+**If paired and within event window:** Shows the live countdown and session control interface.
 
-**If not paired:** Shows pairing screen (see Section 6.2).
-
-**If paired but >1 hour before event:** Shows speaker portrait overview — a scrollable grid of all confirmed speakers for tonight, so the organizer can recognize faces before the event.
-
-**If paired and within event window:** Shows the live countdown and session control interface (Epics 3-4).
-
-### 5.3 Navigation Summary
+### Navigation Summary
 
 | Gesture | Action |
 |---|---|
@@ -168,222 +149,371 @@ Swiping right from any public screen transitions to the organizer zone.
 
 ---
 
-## 6. Feature Requirements
+## Success Criteria
 
-### 6.1 Public Event Companion (Epic 1)
+### User Success
 
-#### FR-P1: Current Event Discovery
-- On launch, fetch current event via `GET /api/v1/events/current?expand=sessions,speakers`
-- Display event hero screen with theme image, title, date/time, venue
-- If no current event, show "No upcoming event" with next event date if available
+- The app feels supportive, not fiddly — large tap targets, glanceable information, no text walls
+- Moderator never does mental clock math on stage — countdown is always visible
+- Rescheduling after an overrun takes one tap, not a huddle with co-organizers
+- Break gong is never forgotten — haptics carry the cognitive load
+- All 4 organizers see identical event state without verbal coordination
+- Attendees can browse the schedule without pulling out their phone
 
-#### FR-P2: Session Browsing
-- Display one session per page, scrollable via Digital Crown
-- Show: time slot (`startTime`–`endTime`), title, session type badge
-- Sessions ordered by `startTime`
-- Break/lunch sessions shown as simple dividers (type badge, time, no speakers)
-- Session types: keynote, presentation, workshop, panel_discussion, networking, break, lunch
+### Business Success
 
-#### FR-P3: Session Abstract
-- Tap on title area pushes to abstract detail screen
-- Display `session.description` (the talk abstract)
-- Scrollable via Digital Crown for long abstracts
-- Back navigation via swipe right or system back
+- All 4 organizers adopt the Watch app at every BATbern event (spring + autumn)
+- 30+ attendees install the app within first 2 events (public zone adoption)
+- Paper schedules eliminated from the organizer workflow
+- Internal team tool — no external user expansion required for MVP success
 
-#### FR-P4: Speaker Display
-- Single speaker: Show portrait (`profilePictureUrl`), full name, company name, company logo (`logoUrl` from company endpoint)
-- Multiple speakers: Grid layout — portrait + company logo per speaker, side by side
-- Tap individual speaker → push to bio detail
+### Technical Success
 
-#### FR-P5: Speaker Bio Detail
-- Full portrait image (as large as Watch allows)
-- Name, company, speaker role badge
-- Bio text (`speaker.bio`), scrollable via Crown
-- Company logo below bio
+- Watch connects directly to BATbern backend — no iPhone companion app required
+- Real-time state sync across all 4 watches reliable throughout a 3-hour event
+- Battery allows full event coverage without mid-event charging
+- Public zone works offline with cached data
 
-#### FR-P6: Progressive Publishing Respect
-- Respect `currentPublishedPhase` from API:
-  - `TOPIC`: Show hero screen only, no sessions
-  - `SPEAKERS`: Show session cards with speakers, no times
-  - `AGENDA`: Show full timetable with times
-- Graceful degradation for missing data
+### Measurable Outcomes
 
-#### FR-P7: Offline Cache
-- Cache last-fetched event data in SwiftData
-- If network unavailable on launch, display cached data with "Last updated" indicator
-- Background refresh when connectivity restored
-
-#### FR-P8: Theme Image Display
-- Fetch `themeImageUrl` (CloudFront CDN)
-- Display as full-bleed background on hero screen
-- Apply dark gradient overlay for text readability
-- Cache image locally after first download
-
-### 6.2 Watch Pairing & Organizer Access (Epic 2)
-
-#### FR-A1: Pairing Code Generation
-- On first swipe-right to organizer zone, Watch generates a 6-character alphanumeric pairing code (e.g., `BAT-7K92`)
-- Code displayed prominently on Watch screen
-- Code persists until explicitly re-generated or pairing succeeds
-
-#### FR-A2: Web Frontend Pairing UI
-- New section in organizer's profile page: "Watch Pairing"
-- Input field for pairing code
-- On submit: backend validates code and associates Watch device with organizer's user account
-- Shows paired status with "Unpair" option
-
-#### FR-A3: Pairing Code Backend
-- New endpoint: `POST /api/v1/users/{username}/watch-pairing`
-  - Request: `{ "pairingCode": "BAT-7K92" }`
-  - Response: `{ "pairingToken": "<JWT>", "organizer": { "username": "...", "firstName": "..." } }`
-- New endpoint: `DELETE /api/v1/users/{username}/watch-pairing` (unpair)
-- New endpoint: `POST /api/v1/watch/authenticate`
-  - Request: `{ "pairingToken": "<stored-token>" }`
-  - Response: `{ "accessToken": "<short-lived-JWT>", "expiresIn": 3600 }`
-- Pairing tokens stored in user profile, never expire (until explicitly unpaired)
-- Max 2 paired watches per organizer (primary + backup)
-
-#### FR-A4: Auto-Authentication Flow
-- Watch stores pairing token in Keychain after successful pairing
-- On swipe-right to organizer zone:
-  1. Send stored pairing token to `POST /api/v1/watch/authenticate`
-  2. Receive short-lived access JWT (1 hour)
-  3. Use JWT for all organizer API calls
-  4. Auto-refresh before expiry
-- If pairing token rejected (unpaired): show pairing screen again
-
-#### FR-A5: Pre-Event Speaker Overview
-- When paired and >1 hour before event start:
-  - Display grid of confirmed speaker portraits
-  - Name and company below each portrait
-  - Scrollable via Crown
-  - Purpose: "know the faces before the event"
-- Transition to live mode at T-60 minutes automatically
-
-#### FR-A6: Pairing Status Indicator
-- Small icon in organizer zone corner: paired (checkmark) or unpaired (link icon)
-- Organizer's first name shown after successful auth: "Hi, Olivier"
-
-### 6.3 Live Countdown & Haptic Awareness (Epic 3)
-
-#### FR-C1: Active Session Display
-- Show current session with prominent countdown timer (MM:SS)
-- Session title, speaker name(s), session type
-- Progress ring around the Watch face showing elapsed percentage
-- Color transitions: Green (>10min left) → Yellow (5-10min) → Orange (2-5min) → Red (<2min)
-
-#### FR-C2: Next Session Preview
-- Below active session (Crown scroll down): upcoming session preview
-- "Up Next" label with title and speaker
-- Time until next session starts
-
-#### FR-C3: Haptic Alert Schedule
-Each alert uses a **distinct haptic pattern** so the organizer learns to recognize them by feel:
-
-| Moment | Haptic Pattern | Visual |
-|---|---|---|
-| Session start | 3× strong taps (`.notification`) | Green pulse |
-| Halfway mark | 2× medium taps (`.directionUp`) | — |
-| 10 min remaining | 1× gentle tap (`.click`) | Yellow transition |
-| 5 min remaining | 2× firm taps (`.directionDown`) | Orange transition |
-| 2 min remaining | 3× rapid taps (`.retry`) | Red flash |
-| 1 min remaining | Long press (`.success`) | Red pulse |
-| Time's up | 5× strong taps (`.failure`) | Red solid |
-| Overtime 1 min | Continuous pulse every 15s | Red + overtime counter |
-
-#### FR-C4: Overtime Tracking
-- When session exceeds planned `endTime`, switch to overtime counter (+MM:SS in red)
-- Haptic pulse every 15 seconds during overtime
-- Show impact: "Next session delayed by X min"
-
-#### FR-C5: Always-On Display
-- Countdown timer visible in always-on (dimmed) mode
-- Simplified view: time remaining + color indicator only
-- Full detail on wrist raise
-
-#### FR-C6: Session Timeline View
-- Crown scroll through all sessions of the day
-- Current session highlighted
-- Past sessions dimmed with checkmark
-- Future sessions with scheduled times
-- Tap any session to view its details
-
-### 6.4 Session Control & Team Sync (Epic 4)
-
-#### FR-S1: Session State Transitions
-- **Start Session**: Tap "Start" button — begins countdown for this session
-- **Extend Session**: Tap "+" to add 5 minutes (with confirmation)
-- **End Session Early**: Swipe up on active session → "End Now" confirmation
-- **Skip to Next**: Long press on "Next" → confirms skip
-
-#### FR-S2: Multi-Organizer Sync
-- When one organizer starts/extends/ends a session, ALL paired organizer watches update within 2 seconds
-- Sync mechanism: WebSocket connection to event management service
-- Conflict resolution: First action wins, others see updated state
-- Visual indicator of who initiated the action: "Started by Olivier"
-
-#### FR-S3: WebSocket Real-Time Channel
-- Endpoint: `wss://api.batbern.ch/ws/events/{eventCode}/live`
-- Authentication: JWT from pairing token flow
-- Message types:
-  - `SESSION_STARTED { sessionSlug, startedBy, startTime }`
-  - `SESSION_EXTENDED { sessionSlug, extendedBy, newEndTime, minutesAdded }`
-  - `SESSION_ENDED { sessionSlug, endedBy, endTime }`
-  - `SESSION_SKIPPED { sessionSlug, skippedBy }`
-  - `HEARTBEAT { timestamp }`
-- Reconnection with exponential backoff on disconnect
-
-#### FR-S4: Complication Support
-- Watch face complication showing:
-  - Current session name (truncated)
-  - Time remaining
-  - Color-coded urgency
-- Complication updates every minute via Timeline
-
-#### FR-S5: Quick Actions from Notification
-- When haptic fires, tappable notification allows:
-  - "Extend +5 min" (at 2-min and 1-min warnings)
-  - "View Session" (at any alert)
-  - "End Now" (at time's-up alert)
-
-### 6.5 Offline Resilience (Epic 5)
-
-#### FR-O1: Full Offline Operation
-- Complete event schedule cached in SwiftData before event starts
-- Countdown timers run locally — no network dependency
-- Haptic schedule computed locally from session times
-
-#### FR-O2: Sync Recovery
-- When connectivity lost: "Offline" indicator, local operation continues
-- When connectivity restored:
-  - Pull latest session states from server
-  - Reconcile local timer with server time
-  - Push any queued local actions (extend, end)
-- Conflict resolution: Server state wins, local adjustments applied
-
-#### FR-O3: Direct WiFi
-- Watch connects directly to venue WiFi (no iPhone dependency)
-- Fallback chain: WiFi → Bluetooth (via iPhone) → Offline mode
-- Connection status indicator in organizer zone
+- 100% of organizer timing actions handled by Watch (zero phone pulls)
+- Schedule cascade completes in under 3 seconds across all watches
+- Haptic alerts delivered within 1 second of scheduled time
+- Sessions end within ±2 minutes of planned time (vs. ±5-10 min today)
 
 ---
 
-## 7. Data Architecture
+## Product Scope
 
-### 7.1 Public Data (No Auth Required)
+### MVP (Phase 1)
+
+**MVP Approach:** Experience MVP — the minimum feature set that lets the moderator run an entire BATbern evening event from their wrist, while giving all attendees a useful schedule browser. If it works for one event, it's validated.
+
+**Resource Requirements:** 1 iOS/watchOS developer + existing BATbern backend team. Backend changes are incremental (new endpoints on existing API Gateway).
+
+**Must-Have Capabilities:**
+
+| ID | Capability | Description | Audience |
+|---|---|---|---|
+| PUB-1 | Event browsing | Browse event theme, sessions, speakers, bios | Attendees |
+| PUB-2 | Speaker portraits | View speaker photos and company logos | Attendees |
+| PUB-3 | Session abstracts | Read talk descriptions via Crown scroll | Attendees |
+| LIVE-1 | Always-on schedule complication | Current talk, speaker name, portrait, countdown | Organizers |
+| LIVE-2 | Haptic cue system | Escalating alerts at 5min / 2min / time's up / overrun | Organizers |
+| LIVE-5 | Live schedule cascade | One-tap reschedule when speaker overruns | Organizers |
+| LIVE-6 | Break gong reminder | Haptic at configured time before break ends | Organizers |
+| LIVE-8 | Session complete | Tap "Done" to advance schedule for all organizers | Organizers |
+| SYNC-1 | Shared state | All watches display identical event state via backend sync | Organizers |
+| PRE-1 | Speaker arrival tracking | Tap speaker portrait to confirm arrival; green ✓ syncs to all watches | Organizers |
+| — | Standalone connectivity | Direct backend connection over WiFi, no iPhone required | Both |
+| — | Offline resilience | Cached schedule; countdown/haptics work without WiFi | Both |
+
+**Core User Journeys Supported:** Moderator happy path, Floor Organizer, Speaker Overrun edge case, Pre-Event Setup, Attendee browsing — all fully supported.
+
+### Phase 2 (Growth)
+
+- **LIVE-7:** Speaker time signal/flash (discreet signal to speaker)
+- **SYNC-3:** Quick ping between organizers (silent wrist buzz)
+- **LIVE-3:** Next-up speaker notification (auto-ping "You're on in 10 minutes")
+
+### Phase 3 (Expansion)
+
+- **LIVE-4:** Attendee count pulse (live check-in count on wrist)
+- Speaker-facing Watch complication (countdown for the speaker themselves)
+- Attendee-facing live schedule on Watch (already covered by Public Zone MVP)
+
+---
+
+## User Journeys
+
+### Journey 1: Marco the Moderator — Evening Event (Happy Path)
+
+Marco is one of the 4 BATbern organizers and tonight he's moderating. It's 17:45, fifteen minutes before doors open. He raises his wrist — the Watch face shows the BATbern complication: **"Event starts in 15 min | First: Anna Meier — Cloud-Native Pitfalls"**.
+
+18:00 — Marco welcomes the room. He glances at his wrist: the countdown is running. **24:12 remaining**. He doesn't think about time. He listens to Anna's talk, watches the audience.
+
+At **5 minutes remaining**, a firm haptic buzz hits his wrist. Only he feels it. He knows it's time to start thinking about the transition. At **2 minutes**, another buzz. He prepares his notes for the Q&A wrap-up. At **0:00**, the final buzz. He stands, thanks Anna, and opens a quick Q&A.
+
+Q&A wraps. Marco taps **"Done"** on his Watch. The schedule advances. His wrist now shows: **"Next: Thomas Keller — Zero Trust Architecture | 5 min break"**. All 4 organizers' watches update simultaneously. He glances down, reads the speaker name and title, and introduces Thomas without touching a piece of paper.
+
+The evening flows. Three talks, one break (the gong reminder buzzes his wrist at 15 minutes — he rings the bell). At 21:00, Marco taps "Done" on the final session. The event is complete.
+
+**What Marco never did:** pull out his phone, do clock math, check a printed schedule, or ask a co-organizer "who's next?"
+
+---
+
+### Journey 2: Sarah the Floor Organizer — Supporting from the Room
+
+Sarah is another organizer. Tonight Marco is moderating, so she's on the floor — greeting late arrivals, checking on the catering setup, talking to a sponsor.
+
+She's deep in conversation with a partner representative when her wrist buzzes: **5 minutes remaining** on the current talk. She wraps the conversation naturally — "I should head back, the next speaker is up soon."
+
+She walks to the side of the room. Her Watch shows the same countdown Marco sees: **4:32 remaining**. She spots Thomas Keller near the coffee — she walks over and quietly says "You're up next, Thomas."
+
+When Marco taps "Done," Sarah's Watch advances too. She sees the break starting and the gong countdown begin. She doesn't need to check with Marco or look at a printout. She *knows* the state of the event at all times.
+
+**What Sarah never did:** ask Marco "where are we in the schedule?", check her phone for the agenda, or lose track of time while talking to sponsors.
+
+---
+
+### Journey 3: Marco the Moderator — Speaker Overrun (Edge Case)
+
+It's the second talk. The speaker is deep into a live demo that's captivating the audience. Marco's wrist buzzes at **0:00** — time's up. But the demo is landing perfectly. He decides to let it run.
+
+At **+2 minutes**, another haptic pattern — slightly different, more urgent. The Watch shows **"+2:00 over"** in a distinct color. Marco makes a judgment call — two more minutes.
+
+At **+4:00**, Marco wraps the Q&A. He taps **"Done"** and the Watch asks: **"Session ran +4 min over. Shift remaining schedule?"** He taps **"Shift +5 min"** (rounding up for buffer).
+
+Instantly, all 4 watches update. The break that was 20 minutes is now 20 minutes starting 5 minutes later. The gong reminder recalculates. The final talk's start time shifts. One tap, everything cascades.
+
+The audience notices nothing. The other 3 organizers don't need to be told — their watches already show the new timeline.
+
+**What Marco never did:** whisper to a co-organizer "we're running late, push everything back 5 minutes", recalculate the schedule mentally, or panic about the domino effect.
+
+---
+
+### Journey 4: Pre-Event Setup (Organizer)
+
+It's 17:00 on event day. Nissim opens the BATbern web app on his laptop and activates tonight's event for Watch sync. The event's agenda, speaker names, and timing are already in the system from weeks of preparation.
+
+He raises his Apple Watch — it connects directly to the BATbern backend over the venue WiFi. The complication populates: tonight's event, first speaker, start time. He swipes right to organizer zone and checks — all 4 organizers show as connected. Green dots. They're ready.
+
+No iPhone tethering. No Bluetooth pairing with a phone. The Watch talks directly to the backend. Simple.
+
+---
+
+### Journey 5: Ana the Attendee — Public Browsing (New Journey)
+
+Ana is an architect who registered for tonight's BATbern event. She installed the Watch app from the App Store after seeing it mentioned in the registration confirmation email.
+
+She arrives at the venue at 18:05 — the first talk is already underway. She finds a seat in the back. Instead of pulling out her phone to check what's on, she raises her wrist.
+
+The Watch shows the event hero screen. She scrolls down with the Crown — **"18:00-18:45 | Cloud-Native Pitfalls"** — that's the current talk. She taps the title and reads the abstract: *"Microservices gone wrong..."* — interesting. She taps the speaker area and sees Anna Meier's portrait, company, and bio.
+
+She scrolls down to see what's next: **"19:00-19:45 | Zero Trust Architecture"**. She makes a mental note. During the break, she doesn't need to check her phone — one Crown scroll on her wrist shows the schedule.
+
+**What Ana never did:** pull out her phone during a talk, struggle to find the PDF program email, or ask someone "what's on next?"
+
+---
+
+### Journey Requirements Summary
+
+| Journey | Capabilities Revealed |
+|---|---|
+| Marco (Happy Path) | Always-on complication, haptic cue system, session advance, speaker info display |
+| Sarah (Floor) | Shared real-time state, passive schedule awareness, same haptic cues |
+| Marco (Overrun) | Overrun detection, escalating haptics, schedule cascade with confirmation, auto-recalculation |
+| Pre-Event Setup | Direct backend connection, multi-organizer presence detection, event activation |
+| Ana (Attendee) | Public browsing, event hero, session abstracts, speaker bios, offline cache |
+
+---
+
+## Functional Requirements
+
+### Schedule Display & Awareness
+
+- **FR1:** Organizer can view the current session's speaker name, talk title, and remaining time on the Watch face complication
+- **FR2:** Organizer can view the next upcoming session (speaker name and talk title) at a glance
+- **FR3:** Organizer can scroll through the full remaining event schedule using the Digital Crown
+- **FR4:** Organizer can view a speaker's portrait photo alongside their session information
+- **FR5:** Organizer can see the current event state on the always-on display without raising their wrist
+
+### Session Lifecycle Management
+
+- **FR6:** Organizer can mark the current session as complete to advance the schedule to the next item
+- **FR7:** System detects when a session runs past its allocated time and displays overrun duration
+- **FR8:** Organizer can initiate a schedule cascade when a session overruns, shifting all remaining items by a chosen increment
+- **FR9:** System automatically recalculates all downstream session times and break durations after a cascade
+- **FR10:** Organizer can view whether the event is on time, ahead, or behind schedule
+
+### Time Alerting & Haptics
+
+- **FR11:** Organizer receives a haptic alert when 5 minutes remain in the current session
+- **FR12:** Organizer receives a distinct haptic alert when 2 minutes remain in the current session
+- **FR13:** Organizer receives a distinct haptic alert when the session time reaches zero
+- **FR14:** Organizer receives escalating haptic alerts at intervals when a session runs over time
+- **FR15:** Organizer receives a haptic alert at a configured time before a break ends (gong reminder)
+- **FR16:** All connected organizers receive haptic alerts simultaneously for the same timing events
+
+### Team Synchronization
+
+- **FR17:** All connected organizer watches display identical event state in real time
+- **FR18:** When one organizer advances the schedule, all other watches update within 3 seconds
+- **FR19:** When one organizer triggers a schedule cascade, all other watches reflect the new times within 3 seconds
+- **FR20:** Organizer can see how many fellow organizers are currently connected to the event
+
+### Event Setup & Connection
+
+- **FR21:** Organizer can authenticate with the BATbern platform directly from the Watch via pairing code
+- **FR22:** Organizer can select and join an active event from the Watch
+- **FR23:** System syncs the full event schedule (sessions, speakers, times, portraits) to the Watch on join
+- **FR24:** Watch connects directly to the BATbern backend over WiFi without requiring an iPhone
+
+### Pre-Event Coordination
+
+- **FR36:** Organizer can view all speakers with portraits in a pre-event overview (available within 1 hour before event start)
+- **FR37:** Organizer can tap a speaker's portrait to confirm their arrival, marking them with a visible green ✓ badge
+- **FR38:** Speaker arrival confirmations sync to all connected organizer watches within 3 seconds
+- **FR39:** Pre-event overview shows arrival count ("3 of 5 arrived") updated in real time across all watches
+
+### Offline Resilience
+
+- **FR25:** System caches the complete event schedule locally after initial sync
+- **FR26:** Countdown timer and haptic alerts continue functioning when WiFi connectivity is lost
+- **FR27:** Actions taken offline (session advance, cascade) queue locally and sync when connectivity is restored
+- **FR28:** System indicates connectivity status to the organizer (connected / offline)
+
+### Public Zone (Attendee Features)
+
+- **FR29:** Attendee can view the current event's theme image, title, date, time, and venue on launch (no login)
+- **FR30:** Attendee can browse all sessions via Digital Crown scrolling
+- **FR31:** Attendee can tap on a session title to view the full abstract
+- **FR32:** Attendee can tap on a speaker area to view speaker bio, portrait, and company info
+- **FR33:** Multi-speaker sessions display a grid of speaker portraits with company logos
+- **FR34:** Public zone respects progressive publishing phases (TOPIC / SPEAKERS / AGENDA)
+- **FR35:** Public zone caches event data and works offline with "Last updated" indicator
+
+---
+
+## Non-Functional Requirements
+
+### Performance
+
+- **NFR1:** Complication updates within 1 second of state change
+- **NFR2:** Haptic alerts fire within 1 second of scheduled time
+- **NFR3:** Schedule cascade propagates to all connected watches within 3 seconds
+- **NFR4:** Event schedule initial sync completes within 5 seconds on venue WiFi
+- **NFR5:** App launch to usable state within 3 seconds
+- **NFR6:** Crown scroll between sessions: <100ms per page transition
+- **NFR7:** Public zone: App launch to hero screen <2 seconds (cached), <4 seconds (cold)
+
+### Reliability
+
+- **NFR8:** App must not crash during a live event (3-hour continuous session)
+- **NFR9:** Haptic alerts must fire even if the app moves to background
+- **NFR10:** Offline mode activates seamlessly on WiFi loss — no user action required
+- **NFR11:** Queued offline actions must not be lost on app restart
+- **NFR12:** System must handle conflicting actions from multiple organizers gracefully
+- **NFR13:** Zero missed haptic alerts per event
+
+### Security
+
+- **NFR14:** Organizer authentication via pairing code flow (no password entry on Watch)
+- **NFR15:** Pairing tokens stored in Keychain (not UserDefaults)
+- **NFR16:** Short-lived JWTs (1 hour) for organizer API calls with auto-refresh
+- **NFR17:** Only authenticated organizers assigned to an event can join that event's Watch session
+- **NFR18:** Communication with backend encrypted via TLS
+- **NFR19:** Max 2 watches per organizer account
+- **NFR20:** Pairing codes expire after 24 hours if unused
+
+### Battery & Resources
+
+- **NFR21:** Full 3-hour event operation on a single charge (Watch battery > 30% remaining at event end)
+- **NFR22:** Battery impact during event: <15% for 4-hour event (organizer mode with active sync)
+- **NFR23:** Network polling frequency adapts to battery level (reduce frequency below 20% battery)
+- **NFR24:** Cached data storage under 50MB per event (schedule + portraits)
+
+### Compatibility & Accessibility
+
+- **NFR25:** watchOS 11+ (Apple Watch Series 8, SE 2nd gen, Ultra, and later)
+- **NFR26:** No iPhone app required (standalone watchOS app)
+- **NFR27:** Direct WiFi support required (Series 6+ have this capability)
+- **NFR28:** VoiceOver support for all screens
+- **NFR29:** Dynamic Type support for text scaling
+- **NFR30:** High contrast mode for countdown colors
+- **NFR31:** Haptic-only alerts (no audio in default mode)
+
+### Localization
+
+- **NFR32:** German (primary), English, French
+- **NFR33:** Matches existing web frontend i18n keys where applicable
+
+---
+
+## Innovation & Novel Patterns
+
+### Detected Innovation Areas
+
+1. **Watch as Team Coordination Tool** — Most Apple Watch apps are single-user personal tools. BATbern Watch is a multi-person real-time operations tool where 4 watches act as one synchronized system. Haptics serve as a silent team communication channel invisible to the audience.
+
+2. **Standalone Event Control Surface** — Unlike typical Watch apps that act as phone companions, BATbern Watch connects directly to the backend with no iPhone dependency. The Watch becomes an independent operations terminal for a moderator who cannot touch any other device while on stage.
+
+3. **The "Event Conductor" Pattern** — The Watch is not passive (just displaying info). It is an active control surface — tap "Done" to advance the event state, tap to cascade the entire schedule. One wrist drives the event forward for all stakeholders simultaneously.
+
+4. **Dual-Zone Architecture** — Public + Organizer zones on one wrist. This unlocks App Store distribution (200 users) while protecting organizer-only features. Separated by a simple swipe gesture, not separate apps.
+
+### Validation Approach
+
+- Pilot at one BATbern evening event with all 4 organizers wearing Apple Watches
+- Measure: did any organizer pull out their phone for schedule management during the event?
+- Measure: did the moderator successfully use Watch-only for all transitions and introductions?
+- Measure: did 10+ attendees use the public zone during the event?
+- Post-event debrief: "would you go back to paper / phone?"
+
+---
+
+## watchOS Platform Requirements
+
+### Platform & Distribution
+
+- **Target:** Apple Watch Series 6+ (watchOS 10+) — needed for always-on display and reliable standalone networking
+- **Framework:** SwiftUI with watchOS app lifecycle
+- **Distribution:** App Store (public + organizers download same app)
+- **Authentication:**
+  - Public zone: No login required
+  - Organizer zone: Pair once via code during setup; session persists for event duration
+
+### Device Features
+
+| Feature | Usage |
+|---|---|
+| **Taptic Engine** | Haptic cue system — escalating patterns for 5min/2min/time's up/overrun |
+| **Complications** | Always-on display showing current talk, speaker, countdown |
+| **Digital Crown** | Scroll through upcoming schedule items (both zones) |
+| **Always-On Display** | Persistent countdown visible without wrist raise (organizer zone) |
+| **Speaker Portraits** | Display speaker photo alongside name and talk title for face recognition |
+| **WiFi Connectivity** | Direct backend connection without iPhone tethering |
+
+### Offline Mode
+
+- Cache full event schedule (speakers, times, agenda, portrait images) on initial sync
+- If WiFi drops: local countdown and haptics continue uninterrupted (organizer zone)
+- If WiFi drops: cached event data remains browsable (public zone)
+- Real-time team sync degrades gracefully — resumes on reconnect
+- Schedule cascade actions queue locally and sync when connectivity returns
+
+### Sync Strategy (Organizer Zone)
+
+- WebSocket connection to BATbern backend for real-time state sync between watches
+- Fallback to polling if WebSocket unavailable
+- Push notifications (APNs) as backup channel for critical state changes (session advance, schedule cascade)
+
+### UX Constraints
+
+- Maximum 2-3 lines of text visible at any time — design for glanceability
+- Large tap targets only; no text input on Watch; no tiny buttons
+- New REST/WebSocket endpoints on existing BATbern API Gateway for Watch-specific event state
+
+---
+
+## Data Architecture
+
+### Public Data (No Auth Required)
 
 All data sourced from existing public API endpoints:
 
 | Data | Endpoint | Key Fields |
 |---|---|---|
-| Current event | `GET /api/v1/events/current?expand=sessions,speakers` | eventCode, title, date, themeImageUrl, venueName, typicalStartTime/EndTime |
+| Current event | `GET /api/v1/events/current?expand=sessions,speakers` | eventCode, title, date, themeImageUrl, venueName, typicalStartTime/EndTime, currentPublishedPhase |
 | Event sessions | Included in expand | sessionSlug, title, description, sessionType, startTime, endTime, speakers[] |
 | Speaker info | Included in session speakers[] | firstName, lastName, company, profilePictureUrl, bio, speakerRole |
 | Company logos | `GET /api/v1/companies/{companyName}?expand=logo` | logoUrl |
 
-**No new backend endpoints needed for Epic 1.**
+**No new backend endpoints needed for public zone.**
 
-### 7.2 Pairing & Auth Data (New Endpoints)
+---
+
+### Pairing & Auth Data (New Endpoints Required)
 
 | Endpoint | Method | Auth | Purpose |
 |---|---|---|---|
@@ -393,13 +523,26 @@ All data sourced from existing public API endpoints:
 | `/api/v1/users/{username}/watch-pairing` | DELETE | Organizer JWT | Unpair watch |
 | `/api/v1/users/{username}/watch-pairing` | GET | Organizer JWT | Check pairing status |
 
-### 7.3 Live Session Data (New WebSocket)
+---
+
+### Live Session Data (New WebSocket Required)
 
 | Channel | Auth | Purpose |
 |---|---|---|
-| `wss://.../ws/events/{eventCode}/live` | Access JWT | Real-time session state sync |
+| `wss://{backend}/ws/events/{eventCode}/live` | Access JWT | Real-time session state sync |
 
-### 7.4 Local Storage (SwiftData)
+**Message types:**
+- `SESSION_STARTED { sessionSlug, startedBy, startTime }`
+- `SESSION_EXTENDED { sessionSlug, extendedBy, newEndTime, minutesAdded }`
+- `SESSION_ENDED { sessionSlug, endedBy, endTime }`
+- `SESSION_SKIPPED { sessionSlug, skippedBy }`
+- `HEARTBEAT { timestamp }`
+
+Reconnection with exponential backoff on disconnect.
+
+---
+
+### Local Storage (SwiftData)
 
 ```swift
 @Model class CachedEvent {
@@ -408,8 +551,9 @@ All data sourced from existing public API endpoints:
     var date: Date
     var themeImageUrl: String?
     var venueName: String
-    var startTime: String
-    var endTime: String
+    var startTime: String  // typicalStartTime
+    var endTime: String    // typicalEndTime
+    var currentPublishedPhase: String?  // TOPIC, SPEAKERS, AGENDA
     var sessions: [CachedSession]
     var lastSynced: Date
 }
@@ -417,12 +561,14 @@ All data sourced from existing public API endpoints:
 @Model class CachedSession {
     var sessionSlug: String
     var title: String
-    var abstract: String?
-    var sessionType: String
+    var abstract: String?  // session.description
+    var sessionType: String  // keynote, presentation, workshop, panel_discussion, networking, break, lunch
     var startTime: Date?
     var endTime: Date?
     var speakers: [CachedSpeaker]
-    var state: SessionState  // scheduled, active, completed, skipped
+    var state: SessionState  // scheduled, active, completed, skipped (organizer zone only)
+    var actualStartTime: Date?  // organizer zone only
+    var overrunMinutes: Int?    // organizer zone only
 }
 
 @Model class CachedSpeaker {
@@ -433,7 +579,7 @@ All data sourced from existing public API endpoints:
     var companyLogoUrl: String?
     var profilePictureUrl: String?
     var bio: String?
-    var speakerRole: String
+    var speakerRole: String  // keynote_speaker, panelist, moderator
 }
 
 @Model class PairingInfo {
@@ -442,16 +588,24 @@ All data sourced from existing public API endpoints:
     var organizerFirstName: String
     var pairedAt: Date
 }
+
+enum SessionState: String, Codable {
+    case scheduled
+    case active
+    case completed
+    case skipped
+}
 ```
 
 ---
 
-## 8. Epic Breakdown
+## Epic Breakdown
 
 ### Epic 1: Public Event Companion
+
 **Goal:** Anyone with an Apple Watch can browse tonight's BATbern event — theme, schedule, session details, speaker bios and portraits — by scrolling with the Digital Crown. No login required.
 
-**Scope:** FR-P1 through FR-P8
+**Scope:** FR29-FR35
 
 **Backend work:** None — uses existing public endpoints.
 
@@ -463,7 +617,7 @@ All data sourced from existing public API endpoints:
 - Abstract detail view (tap title)
 - Speaker bio detail view (tap speakers)
 - Multi-speaker grid layout
-- Progressive publishing support
+- Progressive publishing support (TOPIC / SPEAKERS / AGENDA)
 - Offline cache with stale indicator
 
 **App Store:** Yes — this epic alone is a shippable product. Submit for TestFlight after Epic 1.
@@ -471,9 +625,10 @@ All data sourced from existing public API endpoints:
 ---
 
 ### Epic 2: Watch Pairing & Organizer Access
+
 **Goal:** Organizer pairs their Watch once via a simple code, then swipes right to enter the organizer zone — automatically authenticated, no passwords ever.
 
-**Scope:** FR-A1 through FR-A6
+**Scope:** FR21-FR24 (pairing aspects)
 
 **Backend work:**
 - Pairing code endpoints (company-user-management-service)
@@ -482,207 +637,92 @@ All data sourced from existing public API endpoints:
 
 **Key deliverables:**
 - Horizontal paging navigation (public ↔ organizer zones)
-- Pairing code generation and display
+- Pairing code generation (6-character) and display on Watch
 - Web frontend "Watch Pairing" UI in organizer profile
 - Backend pairing code → token exchange
-- Auto-authentication on swipe-right
-- Pre-event speaker portrait overview
+- Auto-authentication on swipe-right (token in Keychain)
+- Pre-event speaker portrait overview (>1 hour before event)
 - Keychain storage for pairing token
 
 ---
 
 ### Epic 3: Live Countdown & Haptic Awareness
+
 **Goal:** During the event, the organizer's wrist counts down, shows speaker info, and fires distinct haptic alerts at every critical moment.
 
-**Scope:** FR-C1 through FR-C6
+**Scope:** FR1-FR5, FR11-FR16
 
 **Backend work:** Session timing state endpoint (or derive from existing event data).
 
 **Key deliverables:**
 - Active session countdown (MM:SS) with progress ring
-- Color-coded urgency transitions
-- 8 distinct haptic patterns for timing milestones
-- Overtime tracking with delay impact
-- Next session preview
-- Always-on display support
-- Session timeline view
-- Watch face complication
+- Color-coded urgency transitions (Green > Yellow > Orange > Red)
+- 8 distinct haptic patterns for timing milestones (session start, halfway, 10min, 5min, 2min, 1min, time's up, overtime pulse)
+- Overtime tracking with delay impact display
+- Next session preview below active session
+- Always-on display support (dimmed countdown)
+- Session timeline view (Crown scroll through all sessions)
+- Watch face complication with real-time updates
 
 ---
 
 ### Epic 4: Session Control & Team Sync
+
 **Goal:** One tap advances the event for ALL organizer watches simultaneously.
 
-**Scope:** FR-S1 through FR-S5
+**Scope:** FR6-FR10, FR17-FR20, FR27
 
 **Backend work:**
-- WebSocket endpoint for real-time session state
+- WebSocket endpoint for real-time session state (`wss://.../ws/events/{eventCode}/live`)
 - Session state machine (start, extend, end, skip)
-- Multi-device conflict resolution
+- Multi-device conflict resolution (first action wins)
 
 **Key deliverables:**
 - Session start/extend/end/skip controls
-- WebSocket real-time sync across all organizer watches
-- Conflict resolution (first action wins)
-- "Started by [name]" attribution
-- Quick actions from haptic notifications
+- Schedule cascade UI ("Shift +5 min" / "+10 min")
+- Downstream recalculation (breaks, final session times)
+- WebSocket real-time sync across all organizer watches (<3 seconds)
+- Conflict resolution with "Started by [name]" attribution
+- Quick actions from haptic notifications (extend, view, end)
+- Presence indicator (how many organizers connected)
 
 ---
 
 ### Epic 5: Offline Resilience
+
 **Goal:** The Watch never fails, even when WiFi drops.
 
-**Scope:** FR-O1 through FR-O3
+**Scope:** FR25-FR28, FR35 (public zone caching)
 
 **Backend work:** None (resilience is client-side).
 
 **Key deliverables:**
 - Pre-event full schedule sync to SwiftData
 - Local countdown timer (no network dependency)
-- Local haptic schedule computation
+- Local haptic schedule computation (wall-clock based)
 - Connectivity monitoring and status indicator
 - Sync recovery with server reconciliation
-- Action queue for offline session control operations
-- Direct WiFi configuration
+- Action queue for offline session control operations (session advance, cascade)
+- Direct WiFi configuration (no iPhone tethering)
+- Public zone offline browsing with "Last updated" timestamp
 
 ---
 
-## 9. Non-Functional Requirements
+## Risk Mitigation
 
-### Performance
-| Metric | Target |
-|---|---|
-| App launch to hero screen | <2 seconds (cached), <4 seconds (cold) |
-| Crown scroll between sessions | <100ms per page transition |
-| Haptic timing accuracy | ±1 second of scheduled moment |
-| WebSocket message delivery | <2 seconds organizer-to-organizer |
-| Battery impact during event | <15% for 4-hour event (organizer mode) |
-
-### Compatibility
-- watchOS 11+ (Apple Watch Series 8, SE 2nd gen, Ultra, and later)
-- No iPhone app required (standalone watchOS app)
-- Direct WiFi support required (Series 6+ have this)
-
-### Accessibility
-- VoiceOver support for all screens
-- Dynamic Type support for text scaling
-- High contrast mode for countdown colors
-- Haptic-only alerts (no audio in default mode)
-
-### Security
-- Pairing tokens stored in Keychain (not UserDefaults)
-- Short-lived JWTs (1 hour) for organizer API calls
-- Pairing codes expire after 24 hours if unused
-- Max 2 watches per organizer account
-- Unpair from web frontend removes Watch access immediately
-
-### Localization
-- German (primary), English, French
-- Matches existing web frontend i18n keys where applicable
-
----
-
-## 10. Success Metrics
-
-### Attendee Engagement (Epic 1)
-- **Installs**: 30+ attendees install the app within first 2 events
-- **Session views**: Average 5+ sessions browsed per attendee per event
-- **Retention**: 60%+ of installers use it at the next event
-
-### Organizer Efficiency (Epics 2-4)
-- **Timing accuracy**: Sessions end within ±2 minutes of planned time (vs. ±5-10 min today)
-- **Transition speed**: <30 seconds between sessions (measured from end to next start)
-- **Adoption**: All 4 organizers using Watch within 2 events
-
-### Reliability (Epic 5)
-- **Uptime**: Zero missed haptic alerts per event
-- **Offline**: Watch remains functional for full event if WiFi drops at start
-
----
-
-## 11. Out of Scope (v1)
-
-- iPhone companion app (watchOS standalone only)
-- Attendee voting or feedback from Watch
-- Live Q&A display on Watch
-- Speaker-facing Watch features (speakers don't get special Watch access)
-- Push notifications for event reminders (rely on calendar/web notifications)
-- Partner/sponsor display on Watch
-- Registration from Watch (use phone/web)
-- Multiple events on same day (BATbern runs one event at a time)
-
----
-
-## 12. Open Questions
-
-| # | Question | Status |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| 1 | Should the app be free on App Store or bundled with BATbern registration? | **Leaning: Free** — maximize adoption |
-| 2 | Do we need a privacy policy page for App Store submission? | **Yes** — required by Apple, minimal since no PII collected in public mode |
-| 3 | Should speaker portraits be pre-cached at a specific resolution for Watch? | To discuss — current CloudFront URLs serve full-size images |
-| 4 | WebSocket infrastructure: add to existing API Gateway or separate lightweight service? | To discuss in architecture phase |
-| 5 | Should the pairing code be numeric-only (easier to read on small screen) or alphanumeric? | **Leaning: Numeric 6-digit** for readability |
+| Venue WiFi drops | Watches lose sync | Local cache keeps countdown/haptics running; sync resumes on reconnect |
+| Not all organizers have Apple Watch | Partial team coverage | System works for any subset; non-Watch organizers use phone fallback |
+| watchOS background limits | Haptics may not fire in background | Use local notifications + extended runtime session during events |
+| Battery drain from WebSocket | Watch dies mid-event | Minimize active networking; poll every 30s instead of persistent socket if battery low |
+| Small screen UX | Features don't fit Watch form factor | Strict 2-3 line maximum; test on real hardware before every feature ships |
+| Adoption friction (organizers) | Organizers don't use it | Pilot at one event; post-event debrief to validate value |
+| Adoption friction (attendees) | Public zone unused | Promote in registration emails; QR code posters at venue |
 
 ---
 
-## 13. Dependencies
-
-| Dependency | Status | Notes |
-|---|---|---|
-| Public event API endpoints | ✅ Available | All needed endpoints exist and are production-ready |
-| Speaker/session data in API | ✅ Available | Full data including bios, portraits, abstracts |
-| Company logo endpoint | ✅ Available | `GET /api/v1/companies/{name}?expand=logo` |
-| CloudFront CDN for images | ✅ Available | Theme images, speaker photos, company logos |
-| Organizer profile page | ✅ Available | Extend with "Watch Pairing" section |
-| WebSocket infrastructure | ❌ New | Required for Epic 4 (team sync) |
-| Pairing code backend | ❌ New | Required for Epic 2 |
-| Apple Developer account | ❓ Needed | For App Store / TestFlight distribution |
-| Xcode + watchOS SDK | ❓ Needed | Development environment for native Watch app |
-
----
-
-## 14. Appendix: API Endpoint Reference
-
-### Existing Public Endpoints Used
-
-```
-GET  /api/v1/events/current?expand=sessions,speakers    → EventDetail with sessions & speakers
-GET  /api/v1/events/{eventCode}?expand=sessions,speakers → EventDetail by code
-GET  /api/v1/events/{eventCode}/sessions                 → Session list
-GET  /api/v1/events/{eventCode}/sessions/{slug}          → Session detail
-GET  /api/v1/companies/{companyName}?expand=logo         → Company with logo URL
-GET  /api/v1/config                                      → Frontend config (API URLs, feature flags)
-```
-
-### New Endpoints Required
-
-```
-POST   /api/v1/watch/pair              → Exchange pairing code for pairing token
-POST   /api/v1/watch/authenticate      → Exchange pairing token for access JWT
-POST   /api/v1/users/{username}/watch-pairing   → Register pairing code (web frontend)
-GET    /api/v1/users/{username}/watch-pairing   → Get pairing status
-DELETE /api/v1/users/{username}/watch-pairing   → Unpair watch
-WSS    /ws/events/{eventCode}/live              → Real-time session state channel
-```
-
-### Data Structures (from existing API)
-
-**EventDetail** (subset relevant to Watch):
-- `eventCode`, `title`, `date`, `themeImageUrl`, `venueName`, `venueAddress`
-- `typicalStartTime`, `typicalEndTime`, `currentPublishedPhase`
-- `sessions[]` (when expanded)
-
-**Session** (subset relevant to Watch):
-- `sessionSlug`, `title`, `description` (abstract), `sessionType`
-- `startTime`, `endTime`, `room`
-- `speakers[]` (when expanded)
-
-**SessionSpeaker** (subset relevant to Watch):
-- `firstName`, `lastName`, `company`, `profilePictureUrl`, `bio`, `speakerRole`
-
----
-
-## 15. Repository Structure & Artifact Separation
+## Repository Structure & Artifact Separation
 
 The Watch app lives alongside the main BATbern platform in the same monorepo but is **completely independent** of the Gradle/Java/TypeScript build system.
 
@@ -690,9 +730,12 @@ The Watch app lives alongside the main BATbern platform in the same monorepo but
 
 ```
 apps/BATbern-watch/           # Xcode project (Swift, SwiftUI, watchOS 11)
-  BATbernWatch/               # Main Watch app target
-  BATbernWatchTests/          # Unit tests
-  BATbernWatch.xcodeproj/     # Xcode project file
+  BATbern-watch Watch App/    # Main Watch app target
+  BATbern-watch Watch AppTests/        # Unit tests
+  BATbern-watch Watch AppUITests/      # UI tests
+  BATbern-watch.xcodeproj/    # Xcode project file
+  CLAUDE.md                   # Watch app development guide
+  README.md                   # Watch app overview
 ```
 
 The `apps/` folder already contains legacy/auxiliary projects (`BATspa-old`, `BATbern-comming-soon`, etc.). The Watch app fits naturally here.
@@ -703,11 +746,12 @@ All Watch planning artifacts are in `docs/watch-app/`, separate from the platfor
 
 ```
 docs/watch-app/               # All Watch docs
-  prd-batbern-watch.md        # This PRD (authoritative)
+  prd-batbern-watch-consolidated.md   # This PRD (authoritative)
   architecture.md             # Architecture decisions
   ux-design-specification.md  # UX design spec
   ux-design-directions.html   # Visual design mockups
   product-brief.md            # Initial product brief
+  brainstorming-session.md    # Feature discovery session
   epics.md                    # Epic breakdown
   stories/                    # Watch stories (W-prefixed)
     W1.1-xcode-project-setup.md
@@ -749,3 +793,99 @@ These backend changes are **implemented in the platform codebase** (existing ser
 | `make test` | Tests platform | Does NOT touch Watch |
 | CI/CD | GitHub Actions → ECS | Separate workflow → TestFlight |
 | Deploy | AWS CDK | App Store Connect |
+
+---
+
+## Open Questions
+
+| # | Question | Status |
+|---|---|---|
+| 1 | Should the app be free on App Store or bundled with BATbern registration? | **Leaning: Free** — maximize adoption |
+| 2 | Do we need a privacy policy page for App Store submission? | **Yes** — required by Apple, minimal since no PII collected in public mode |
+| 3 | Should speaker portraits be pre-cached at a specific resolution for Watch? | To discuss — current CloudFront URLs serve full-size images |
+| 4 | WebSocket infrastructure: add to existing API Gateway or separate lightweight service? | To discuss in architecture phase |
+| 5 | Should the pairing code be numeric-only (easier to read on small screen) or alphanumeric? | **Leaning: Numeric 6-digit** for readability |
+| 6 | Should we implement complication timeline updates or real-time push? | To discuss — timeline more battery-efficient |
+
+---
+
+## Dependencies
+
+| Dependency | Status | Notes |
+|---|---|---|
+| Public event API endpoints | ✅ Available | All needed endpoints exist and are production-ready |
+| Speaker/session data in API | ✅ Available | Full data including bios, portraits, abstracts |
+| Company logo endpoint | ✅ Available | `GET /api/v1/companies/{name}?expand=logo` |
+| CloudFront CDN for images | ✅ Available | Theme images, speaker photos, company logos |
+| Organizer profile page | ✅ Available | Extend with "Watch Pairing" section |
+| WebSocket infrastructure | ❌ New | Required for Epic 4 (team sync) |
+| Pairing code backend | ❌ New | Required for Epic 2 |
+| Apple Developer account | ❓ Needed | For App Store / TestFlight distribution |
+| Xcode + watchOS SDK | ❓ Needed | Development environment for native Watch app |
+
+---
+
+## Out of Scope (v1)
+
+- iPhone companion app (watchOS standalone only)
+- Attendee voting or feedback from Watch
+- Live Q&A display on Watch
+- Speaker-facing Watch features (speakers don't get special Watch access in MVP)
+- Push notifications for event reminders (rely on calendar/web notifications)
+- Partner/sponsor display on Watch
+- Registration from Watch (use phone/web)
+- Multiple events on same day (BATbern runs one event at a time)
+- Attendee login/personalization in public zone (public = truly public, no accounts)
+
+---
+
+## Appendix: API Endpoint Reference
+
+### Existing Public Endpoints Used
+
+```
+GET  /api/v1/events/current?expand=sessions,speakers    → EventDetail with sessions & speakers
+GET  /api/v1/events/{eventCode}?expand=sessions,speakers → EventDetail by code
+GET  /api/v1/events/{eventCode}/sessions                 → Session list
+GET  /api/v1/events/{eventCode}/sessions/{slug}          → Session detail
+GET  /api/v1/companies/{companyName}?expand=logo         → Company with logo URL
+GET  /api/v1/config                                      → Frontend config (API URLs, feature flags)
+```
+
+### New Endpoints Required
+
+```
+POST   /api/v1/watch/pair              → Exchange pairing code for pairing token
+POST   /api/v1/watch/authenticate      → Exchange pairing token for access JWT
+POST   /api/v1/users/{username}/watch-pairing   → Register pairing code (web frontend)
+GET    /api/v1/users/{username}/watch-pairing   → Get pairing status
+DELETE /api/v1/users/{username}/watch-pairing   → Unpair watch
+WSS    /ws/events/{eventCode}/live              → Real-time session state channel
+```
+
+### Data Structures (from existing API)
+
+**EventDetail** (subset relevant to Watch):
+- `eventCode`, `title`, `date`, `themeImageUrl`, `venueName`, `venueAddress`
+- `typicalStartTime`, `typicalEndTime`, `currentPublishedPhase`
+- `sessions[]` (when expanded)
+
+**Session** (subset relevant to Watch):
+- `sessionSlug`, `title`, `description` (abstract), `sessionType`
+- `startTime`, `endTime`, `room`
+- `speakers[]` (when expanded)
+
+**SessionSpeaker** (subset relevant to Watch):
+- `firstName`, `lastName`, `company`, `profilePictureUrl`, `bio`, `speakerRole`
+
+---
+
+**END OF DOCUMENT**
+
+---
+
+**Next Steps:**
+1. Review and approve this consolidated PRD
+2. Proceed to Architecture phase (see `architecture.md`)
+3. Proceed to UX Design phase (see `ux-design-specification.md`)
+4. Proceed to Epic breakdown and story creation (see `epics.md`)

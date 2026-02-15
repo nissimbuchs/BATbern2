@@ -399,7 +399,7 @@
 <body>
 
 <h1>BATbern Watch — Design Directions</h1>
-<p class="subtitle">Chosen hybrid + 6 explored alternatives · 44mm Apple Watch · watchOS 10+</p>
+<p class="subtitle">Dual-zone architecture: Public Companion + Organizer Command Center · 44mm Apple Watch · watchOS 11+</p>
 
 <div class="legend">
   <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> On Track (&gt;5 min)</div>
@@ -1005,9 +1005,273 @@
 
 </div>
 
+<!-- ============================================================ -->
+<!-- NAVIGATION ARCHITECTURE                                       -->
+<!-- ============================================================ -->
+<div class="section-divider">
+  <div class="section-title">Navigation Architecture</div>
+  <p class="section-desc">Horizontal paging: Public Zone (left, default) ↔ Organizer Zone (right, paired)</p>
+</div>
+
+<div style="max-width:800px; margin:0 auto; display:flex; gap:24px; justify-content:center; align-items:center; flex-wrap:wrap;">
+  <div style="border:1px solid #27272a; border-radius:16px; padding:24px; text-align:center; flex:1; min-width:220px; max-width:320px;">
+    <div style="font-size:11px; font-weight:600; color:#22c55e; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;">Public Zone (Left)</div>
+    <div style="font-size:18px; font-weight:500; margin-bottom:6px;">Event Companion</div>
+    <div style="font-size:12px; color:#71717a; line-height:1.6;">No login required<br>Crown scroll through sessions<br>Tap for abstracts &amp; bios<br><strong>Default on app launch</strong></div>
+    <div style="margin-top:12px; font-size:10px; color:#52525b;">Screens: P1 · P2 · P3 · P4 · P5 · P6</div>
+  </div>
+
+  <div style="font-size:28px; color:#52525b; flex-shrink:0;">◄ ►</div>
+
+  <div style="border:1px solid #2C5F7C; border-radius:16px; padding:24px; text-align:center; flex:1; min-width:220px; max-width:320px; background:rgba(44,95,124,0.06);">
+    <div style="font-size:11px; font-weight:600; color:#60a5fa; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px;">Organizer Zone (Right)</div>
+    <div style="font-size:18px; font-weight:500; margin-bottom:6px;">Command Center</div>
+    <div style="font-size:12px; color:#71717a; line-height:1.6;">Paired via 6-digit code<br>Live countdown + haptics<br>Session control + team sync<br><strong>Swipe right to enter</strong></div>
+    <div style="margin-top:12px; font-size:10px; color:#52525b;">Screens: O1 · O2 · O3 · O4 · O5 · O6 · O7</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PUBLIC ZONE SCREENS                                            -->
+<!-- ============================================================ -->
+<div class="section-divider">
+  <div class="section-title">Public Zone — Event Companion</div>
+  <p class="section-desc">Browse-only experience for all attendees — no login, Crown scroll + tap to explore</p>
+</div>
+
+<div class="grid">
+
+<!-- Event Hero (P1) -->
+<div class="direction">
+  <div class="direction-label">Screen P1</div>
+  <div class="direction-name">Event Hero</div>
+  <div class="direction-desc">Launch screen. Theme image background with event title, date, time, and venue. Default on app launch.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:0; justify-content:flex-end; background:linear-gradient(180deg, #1a3a4a 0%, #0d1f2d 60%, #000 100%);">
+      <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:linear-gradient(180deg, rgba(44,95,124,0.3) 0%, rgba(0,0,0,0.85) 75%);"></div>
+      <div style="position:relative; text-align:center; padding:0 16px 16px;">
+        <div style="font-size:8px; color:#71717a; text-transform:uppercase; letter-spacing:2px; margin-bottom:6px;">BATBERN #42</div>
+        <div style="font-size:18px; font-weight:600; line-height:1.2; margin-bottom:4px;">Cloud Native</div>
+        <div style="font-size:18px; font-weight:600; line-height:1.2; margin-bottom:12px;">Evening</div>
+        <div style="height:1px; background:#3f3f46; margin:0 20px 8px;"></div>
+        <div style="font-size:10px; color:#a1a1aa;">15 Feb · 18:00 · Bern</div>
+        <div style="font-size:8px; color:#52525b; margin-top:10px;">▼ Scroll for program</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Card (P2) -->
+<div class="direction">
+  <div class="direction-label">Screen P2</div>
+  <div class="direction-name">Session Card</div>
+  <div class="direction-desc">One per session, paged via Crown scroll. Tap title area for abstract, tap speaker area for bios.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:14px 10px; gap:0;">
+      <div style="font-size:10px; color:#71717a; font-weight:500; margin-bottom:4px;">18:00 – 18:45</div>
+      <div style="height:1px; background:#27272a; margin-bottom:8px;"></div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; margin-bottom:6px;">
+        <div style="font-size:14px; font-weight:600; line-height:1.3; color:#60a5fa;">Cloud Native</div>
+        <div style="font-size:14px; font-weight:600; line-height:1.3; color:#60a5fa; margin-bottom:2px;">Security in 2026</div>
+        <div style="font-size:8px; color:#52525b;">Tap for abstract ›</div>
+      </div>
+      <div style="height:1px; background:#27272a; margin-bottom:6px;"></div>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div class="portrait" style="width:30px; height:30px; font-size:11px;">AM</div>
+          <div style="font-size:8px; font-weight:500;">A. Meier</div>
+          <div style="font-size:7px; color:#52525b;">ACME</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div class="portrait" style="width:30px; height:30px; font-size:11px; background:linear-gradient(135deg,#4A90B8,#6bb3d9);">TK</div>
+          <div style="font-size:8px; font-weight:500;">T. Keller</div>
+          <div style="font-size:7px; color:#52525b;">Corp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Break Card (P2 variant) -->
+<div class="direction">
+  <div class="direction-label">Screen P2</div>
+  <div class="direction-name">Break Card</div>
+  <div class="direction-desc">Simple session card for breaks, lunch, and networking. No speaker area — just title and time.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:14px 10px; justify-content:center; align-items:center;">
+      <div style="font-size:10px; color:#71717a; font-weight:500; margin-bottom:12px;">19:00 – 19:20</div>
+      <div style="font-size:32px; margin-bottom:8px;">☕</div>
+      <div style="font-size:16px; font-weight:600; text-align:center;">Coffee Break</div>
+      <div style="font-size:9px; color:#52525b; margin-top:6px;">20 minutes</div>
+    </div>
+  </div>
+</div>
+
+<!-- Abstract Detail (P3) -->
+<div class="direction">
+  <div class="direction-label">Screen P3</div>
+  <div class="direction-name">Abstract Detail</div>
+  <div class="direction-desc">Push view from tapping session title. Full abstract text, scrollable via Digital Crown.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:12px 10px; gap:4px;">
+      <div style="font-size:9px; color:#60a5fa; font-weight:500;">◄ Back</div>
+      <div style="font-size:13px; font-weight:600; line-height:1.2;">Cloud Native Security in 2026</div>
+      <div style="height:1px; background:#27272a; margin:2px 0;"></div>
+      <div style="font-size:10px; color:#a1a1aa; line-height:1.6; flex:1; overflow:hidden;">
+        Microservices gone wrong: lessons from 3 years of production incidents. We'll cover service mesh pitfalls, secret management anti-patterns, and why zero-trust isn't optional anymore...
+      </div>
+      <div style="height:1px; background:#1a1a1a; margin:2px 0;"></div>
+      <div style="font-size:9px; color:#52525b;">18:00 – 18:45</div>
+    </div>
+  </div>
+</div>
+
+<!-- Speaker Bio (P4) -->
+<div class="direction">
+  <div class="direction-label">Screen P4</div>
+  <div class="direction-name">Speaker Bio</div>
+  <div class="direction-desc">Push view from tapping a speaker portrait. Large photo, name, company, and bio text.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:12px 10px; gap:4px; align-items:center;">
+      <div style="font-size:9px; color:#60a5fa; font-weight:500; align-self:flex-start;">◄ Back</div>
+      <div class="portrait" style="width:52px; height:52px; font-size:22px; margin:6px 0;">AM</div>
+      <div style="font-size:15px; font-weight:600; text-align:center;">Anna Meier</div>
+      <div style="font-size:10px; color:#a1a1aa; text-align:center;">ACME Corp</div>
+      <div style="height:1px; background:#27272a; width:100%; margin:2px 0;"></div>
+      <div style="font-size:10px; color:#a1a1aa; line-height:1.5; text-align:center; overflow:hidden;">
+        Senior architect specializing in cloud-native security and DevSecOps practices.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Multi-Speaker Grid (P5) -->
+<div class="direction">
+  <div class="direction-label">Screen P5</div>
+  <div class="direction-name">Multi-Speaker Grid</div>
+  <div class="direction-desc">Grid of speaker portraits when a session has 2+ speakers. Tap any portrait to view individual bio (P6).</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:12px 10px; gap:6px;">
+      <div style="font-size:9px; color:#60a5fa; font-weight:500;">◄ Back</div>
+      <div style="font-size:11px; color:#a1a1aa;">Speakers (3)</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1; align-content:center;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div class="portrait" style="width:36px; height:36px; font-size:14px;">AM</div>
+          <div style="font-size:9px; font-weight:500;">A. Meier</div>
+          <div style="font-size:7px; color:#52525b;">ACME</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div class="portrait" style="width:36px; height:36px; font-size:14px; background:linear-gradient(135deg,#4A90B8,#6bb3d9);">TK</div>
+          <div style="font-size:9px; font-weight:500;">T. Keller</div>
+          <div style="font-size:7px; color:#52525b;">Corp</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div class="portrait" style="width:36px; height:36px; font-size:14px; background:linear-gradient(135deg,#5a8a6e,#7ab892);">LB</div>
+          <div style="font-size:9px; font-weight:500;">L. Berg</div>
+          <div style="font-size:7px; color:#52525b;">Inc</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- PAIRING & PRE-EVENT SCREENS                                    -->
+<!-- ============================================================ -->
+<div class="section-divider">
+  <div class="section-title">Pairing & Pre-Event</div>
+  <p class="section-desc">One-time Watch pairing via code from web profile + pre-event speaker overview</p>
+</div>
+
+<div class="grid" style="max-width:700px;">
+
+<!-- Pairing Screen (O1) -->
+<div class="direction">
+  <div class="direction-label">Screen O1</div>
+  <div class="direction-name">Watch Pairing</div>
+  <div class="direction-desc">Shown when swiping right and Watch is not yet paired. Enter 6-digit code from web profile.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:16px 12px; gap:6px; align-items:center; justify-content:center;">
+      <div style="font-size:13px; font-weight:600;">Pair Your Watch</div>
+      <div style="font-size:9px; color:#71717a; text-align:center; line-height:1.5;">Enter the code from your<br>BATbern profile</div>
+      <div style="background:#1a1a1a; border:1px solid #3f3f46; border-radius:12px; padding:10px 16px; margin:6px 0;">
+        <div style="font-family:'SF Mono','Menlo',monospace; font-size:22px; font-weight:700; letter-spacing:6px; color:#60a5fa; text-align:center;">482715</div>
+      </div>
+      <div class="done-btn" style="font-size:13px; padding:10px 0; margin-top:4px;">
+        Pair
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Speaker Portrait Overview with Arrival Tracking (O2) -->
+<div class="direction">
+  <div class="direction-label">Screen O2</div>
+  <div class="direction-name">Speaker Arrival</div>
+  <div class="direction-desc">Pre-event view (<1h before start). Speaker portraits with arrival tracking. Tap to confirm arrival — green ✓ syncs to all watches.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:12px 10px; gap:4px;">
+      <div style="font-size:10px; color:#71717a; text-transform:uppercase; letter-spacing:0.8px; text-align:center; font-weight:500;">Tonight's Speakers</div>
+      <div style="font-size:9px; color:#22c55e; text-align:center; font-weight:500;">2 of 4 arrived</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:1; align-content:center;">
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div style="position:relative;">
+            <div class="portrait" style="width:38px; height:38px; font-size:15px; border:2px solid #22c55e;">AM</div>
+            <div style="position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; background:#22c55e; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; color:#000; font-weight:700;">✓</div>
+          </div>
+          <div style="font-size:9px; font-weight:500;">Anna Meier</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div style="position:relative;">
+            <div class="portrait" style="width:38px; height:38px; font-size:15px; background:linear-gradient(135deg,#4A90B8,#6bb3d9); opacity:0.5;">TK</div>
+          </div>
+          <div style="font-size:9px; font-weight:500; color:#71717a;">Tom Keller</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div style="position:relative;">
+            <div class="portrait" style="width:38px; height:38px; font-size:15px; background:linear-gradient(135deg,#5a8a6e,#7ab892); border:2px solid #22c55e;">LB</div>
+            <div style="position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; background:#22c55e; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; color:#000; font-weight:700;">✓</div>
+          </div>
+          <div style="font-size:9px; font-weight:500;">Lisa Berg</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+          <div style="position:relative;">
+            <div class="portrait" style="width:38px; height:38px; font-size:15px; background:linear-gradient(135deg,#8a6e5a,#b8927a); opacity:0.5;">MR</div>
+          </div>
+          <div style="font-size:9px; font-weight:500; color:#71717a;">Marc Roth</div>
+        </div>
+      </div>
+      <div style="font-size:9px; color:#52525b; text-align:center;">Event starts at 18:00</div>
+    </div>
+  </div>
+</div>
+
+<!-- Arrival Confirmation Dialog -->
+<div class="direction">
+  <div class="direction-label">Screen O2b</div>
+  <div class="direction-name">Arrival Confirm</div>
+  <div class="direction-desc">Shown when tapping a speaker portrait. Confirm their arrival — green ✓ badge syncs to all organizer watches.</div>
+  <div class="watch-frame">
+    <div class="watch-screen" style="padding:16px 12px; gap:4px; align-items:center; justify-content:center;">
+      <div class="portrait" style="width:52px; height:52px; font-size:22px; margin-bottom:4px;">AM</div>
+      <div style="font-size:14px; font-weight:600;">Anna Meier</div>
+      <div style="font-size:10px; color:#a1a1aa;">ACME Corp</div>
+      <div style="font-size:11px; color:#a1a1aa; margin-top:8px; text-align:center;">Has this speaker<br>arrived?</div>
+      <div style="width:100%; margin-top:8px; display:flex; flex-direction:column; gap:4px;">
+        <div class="done-btn" style="background:#22c55e; color:#000; font-size:13px; padding:8px 0;">Arrived ✓</div>
+        <div class="done-btn" style="background:#27272a; color:#a1a1aa; font-size:12px; padding:7px 0;">Not yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
 <div class="scroll-hint">
   Open this file in a browser to explore all design directions<br>
-  <span style="color:#2C5F7C;">BATbern Watch — UX Design Directions</span>
+  <span style="color:#2C5F7C;">BATbern Watch — UX Design Directions v2.0</span>
 </div>
 
 <div style="height:64px"></div>
