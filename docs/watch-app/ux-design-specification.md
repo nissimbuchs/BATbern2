@@ -423,6 +423,33 @@ This is BATbern Watch's "swipe right" moment. It combines three things no other 
 - **Contrast**: System colors guarantee WCAG AA on OLED black background
 - **Haptic alternatives**: Visual flash accompanies every haptic alert for users who may not feel vibrations
 
+### Brand Assets for Watch
+
+**Source logo:** `web-frontend/public/BATbern_color_logo.svg` — Full horizontal logo with three components:
+1. **Symbol mark** — Two curved arrows forming a cycle (compact, recognizable at small sizes)
+2. **Wordmark** — "BATbern" text
+3. **Subtitle** — "TECHNOLOGIE-AUSTAUSCH ZWISCHEN IT EXPERTEN" (too small for Watch, never used)
+
+**Watch usage — Symbol mark only:**
+
+The symbol mark (cycle arrows) is the only logo element used on the Watch. It is extracted from the `featureKey="symbol1"` group in the SVG source — two `<path>` elements forming the interlocking cycle arrows.
+
+| Placement | Size | Color | Context |
+|---|---|---|---|
+| P1 Event Hero | ~20pt width | BATbern Blue (`#2C5F7C`) | Above event number, establishes brand on launch screen |
+| Empty states (no event) | ~32pt width | BATbern Blue (`#2C5F7C`) | Centered with "BATbern" wordmark below (~14pt) |
+
+**Color decision:** Use `#2C5F7C` (design system BATbern Blue) — not the original logo blue (`#2d8acd`) — for consistency with all Watch UI accents (progress ring, buttons, complication tints). The design system color is slightly darker, which reads better alongside the watchOS system color palette on OLED.
+
+**Where NOT to use the logo:**
+- **Session Cards (P2)** — Every pixel needed for session content
+- **Abstract Detail (P3)** — Reading space is precious
+- **Speaker Bio (P4/P6)** — Portrait + bio dominate
+- **Multi-Speaker Grid (P5)** — Grid needs all available space
+- **Organizer zone screens** — Operational focus, no branding needed
+
+**Implementation note:** For the SwiftUI implementation, extract the symbol mark paths into a standalone `batbern-symbol-mark.svg` asset for the Watch app asset catalog. The paths can be rendered via SwiftUI `Shape` or as an image asset.
+
 ---
 
 ## Navigation Architecture & Sitemap
@@ -598,11 +625,12 @@ The public zone is a **browse-only experience**. No accounts, no login, no state
 
 ### Event Hero Screen (P1)
 
-The launch screen sets the mood. Full-bleed theme image background (dimmed for text readability). Event title centered. Compact info bar at bottom.
+The launch screen sets the mood. Full-bleed theme image background (dimmed for text readability). The BATbern **symbol mark** (cycle arrows) sits above the event number to establish brand identity — compact, recognizable, and tinted in BATbern Blue (`#2C5F7C`). Event title centered below. Compact info bar at bottom.
 
 ```
 ┌──────────────────────┐
 │░░░░░░░░░░░░░░░░░░░░░░│
+│░░░░░  [⟳ symbol]  ░░░│  ← BATbern cycle arrows (~20pt, BATbern Blue)
 │░░░ BATBERN #42 ░░░░░░│  ← Event number (small, secondary)
 │░░░░░░░░░░░░░░░░░░░░░░│
 │░░░ Cloud Native ░░░░░│  ← Event title (large, centered)
@@ -614,12 +642,27 @@ The launch screen sets the mood. Full-bleed theme image background (dimmed for t
 └──────────────────────┘
 ```
 
+**Symbol mark placement:** The BATbern cycle arrows symbol (extracted from the full logo — see [Brand Assets](#brand-assets-for-watch)) renders at ~20pt width, centered above the event number. It uses BATbern Blue (`#2C5F7C`) to match the design system accent color. On the OLED black background with the dimmed theme image, the symbol provides instant brand recognition without competing with the event title below.
+
 **Data source:** `GET /api/v1/events/current?expand=sessions,speakers`
 
 **Edge cases:**
-- No current event → "No upcoming BATbern event" message with BATbern logo
+- No current event → Show BATbern symbol mark (~32pt) + "BATbern" wordmark (~14pt, BATbern Blue) centered on screen, with "No upcoming BATbern event" message below (see layout below)
 - Event published at TOPIC level → Show title only, sessions hidden
 - Network unavailable → Show cached event with "Last updated [time]" indicator
+
+**Empty state layout (no current event):**
+
+```
+┌──────────────────────┐
+│                       │
+│      [⟳ symbol]      │  ← Symbol mark (~32pt, BATbern Blue)
+│       BATbern        │  ← Wordmark (~14pt, BATbern Blue)
+│                       │
+│  No upcoming event   │  ← Secondary text (system gray)
+│                       │
+└──────────────────────┘
+```
 
 ### Session Card Pages (P2)
 
@@ -774,7 +817,7 @@ Success → haptic `.success` pattern → "Paired as [Name]" message → organiz
 | State | Organizer Zone Shows |
 |---|---|
 | Not paired | O1: Pairing Screen |
-| Paired, no current event | "No active event" message with BATbern logo |
+| Paired, no current event | BATbern symbol mark + wordmark + "No active event" (same layout as public zone empty state) |
 | Paired, >1h before event | Event preview (title, date, start time) |
 | Paired, <1h before event | O2: Speaker Portrait Overview with arrival tracking |
 | Paired, event started | O3: Live Countdown |
