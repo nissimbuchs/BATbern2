@@ -1509,6 +1509,14 @@ export interface components {
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
       sessions?: components['schemas']['Session'][];
+      /**
+       * @description Progressive publishing phase for watch app (Story W1.2)
+       *     - TOPIC: Event topic selected, speakers TBA
+       *     - SPEAKERS: Speaker list published
+       *     - AGENDA: Full session details published
+       * @enum {string|null}
+       */
+      currentPublishedPhase?: 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null;
     };
     Venue: {
       id?: string;
@@ -1594,18 +1602,27 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
-       *     Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
+       * @description Material submission workflow status
+       *     - NONE: No materials submitted yet (initial state)
+       *     - pending: Materials submitted, awaiting review
+       *     - in_review: Materials under review
+       *     - approved: Materials approved
+       *     - requires_changes: Materials need changes
+       *     - rejected: Materials rejected
+       *     - revision_submitted: Revised materials submitted
+       *     - COMPLETE: Materials finalized and approved (final state)
        * @example pending
        * @enum {string}
        */
       materialsStatus?:
+        | 'NONE'
         | 'pending'
         | 'in_review'
         | 'approved'
         | 'requires_changes'
         | 'rejected'
-        | 'revision_submitted';
+        | 'revision_submitted'
+        | 'COMPLETE';
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
