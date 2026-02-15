@@ -50,6 +50,7 @@ class PublicEventService: APIClientProtocol {
     func fetchCurrentEvent() async throws -> WatchEvent {
         // Construct URL with query parameters
         guard var components = URLComponents(string: "\(baseURL)/api/v1/events/current") else {
+            print("❌ Failed to construct URLComponents")
             throw APIError.invalidResponse
         }
 
@@ -58,38 +59,71 @@ class PublicEventService: APIClientProtocol {
         ]
 
         guard let url = components.url else {
+            print("❌ Failed to construct URL from components")
             throw APIError.invalidResponse
         }
+
+        print("🌐 Fetching event from: \(url.absoluteString)")
 
         // Execute HTTP GET request
         let (data, response) = try await session.data(from: url)
 
         // Validate HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ Response is not HTTPURLResponse")
             throw APIError.invalidResponse
         }
+
+        print("📡 HTTP Status: \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200:
             break  // Success
         case 404:
+            print("⚠️ No current event (404)")
             throw APIError.noCurrentEvent
         default:
+            print("❌ Unexpected status code: \(httpResponse.statusCode)")
             throw APIError.invalidResponse
         }
 
         // Parse JSON response
         let decoder = JSONDecoder()
-        let eventResponse: EventResponse
+        decoder.dateDecodingStrategy = .iso8601  // Generated types expect Date objects
+        let eventDetail: EventDetail
+
+        print("📦 Response data size: \(data.count) bytes")
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📄 Raw JSON: \(jsonString.prefix(500))...")
+        }
 
         do {
-            eventResponse = try decoder.decode(EventResponse.self, from: data)
+            eventDetail = try decoder.decode(EventDetail.self, from: data)
+            print("✅ Decoded EventDetail: \(eventDetail.eventCode) - \(eventDetail.title)")
+            print("   Sessions count: \(eventDetail.sessions?.count ?? 0)")
         } catch {
+            print("❌ Decoding error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("   Missing key: \(key.stringValue) at \(context.codingPath)")
+                case .typeMismatch(let type, let context):
+                    print("   Type mismatch: expected \(type) at \(context.codingPath)")
+                case .valueNotFound(let type, let context):
+                    print("   Value not found: \(type) at \(context.codingPath)")
+                case .dataCorrupted(let context):
+                    print("   Data corrupted at \(context.codingPath)")
+                @unknown default:
+                    print("   Unknown decoding error")
+                }
+            }
             throw APIError.decodingError(error)
         }
 
-        // Convert DTO → domain model
-        return eventResponse.toWatchEvent()
+        // Convert generated EventDetail → domain model WatchEvent
+        let watchEvent = eventDetail.toWatchEvent()
+        print("✅ Converted to WatchEvent with \(watchEvent.sessions.count) sessions")
+        return watchEvent
     }
 
     func fetchEvent(code: String) async throws -> WatchEvent {
@@ -112,16 +146,17 @@ class PublicEventService: APIClientProtocol {
 
         // Parse JSON response
         let decoder = JSONDecoder()
-        let eventResponse: EventResponse
+        decoder.dateDecodingStrategy = .iso8601
+        let eventDetail: EventDetail
 
         do {
-            eventResponse = try decoder.decode(EventResponse.self, from: data)
+            eventDetail = try decoder.decode(EventDetail.self, from: data)
         } catch {
             throw APIError.decodingError(error)
         }
 
-        // Convert DTO → domain model
-        return eventResponse.toWatchEvent()
+        // Convert generated EventDetail → domain model
+        return eventDetail.toWatchEvent()
     }
 
     // MARK: - Epic 2 Stubs (not implemented yet)

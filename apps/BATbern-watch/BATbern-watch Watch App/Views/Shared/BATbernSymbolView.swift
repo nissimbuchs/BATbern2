@@ -3,8 +3,7 @@
 //  BATbern-watch Watch App
 //
 //  Reusable BATbern symbol mark component.
-//  TODO: Extract SVG symbol mark from web-frontend/public/BATbern_color_logo.svg
-//  For now, using a placeholder "arrow.clockwise.circle" SF Symbol.
+//  Displays the official BATbern arrows logo (extracted from web-frontend/public/BATbern_arrows_only.svg)
 //  Source: docs/watch-app/ux-design-specification.md#Brand-Assets-for-Watch
 //
 
@@ -20,12 +19,12 @@ struct BATbernSymbolView: View {
     }
 
     var body: some View {
-        // TODO: Replace with actual BATbern cycle arrows asset from Assets.xcassets
-        // For MVP, using SF Symbol placeholder
-        Image(systemName: "arrow.clockwise.circle.fill")
+        // Official BATbern logo (arrows + text) from Assets.xcassets/BATbernLogo.imageset
+        Image("BATbernLogo")
             .resizable()
+            .renderingMode(.template)  // Apply color tint
             .aspectRatio(contentMode: .fit)
-            .frame(width: size, height: size)
+            .frame(width: size, height: size)  // Square aspect ratio: 200x200
             .foregroundStyle(color)
     }
 }

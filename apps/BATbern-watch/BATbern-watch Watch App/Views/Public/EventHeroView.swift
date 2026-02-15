@@ -3,6 +3,7 @@
 //  BATbern-watch Watch App
 //
 //  Event hero screen (P1) showing current event details or empty state.
+//  Uses Swiss German (de_CH) locale for all date/time formatting.
 //  Source: docs/watch-app/ux-design-specification.md#Event-Hero-Screen
 //
 
@@ -63,38 +64,47 @@ struct EventHeroView: View {
             }
 
             // Foreground content
-            VStack(spacing: 8) {
+            VStack(spacing: 0) {
                 Spacer()
 
-                // BATbern symbol mark (~20pt, BATbern Blue)
-                BATbernSymbolView(size: 20, color: Color(hex: "#2C5F7C") ?? .blue)
+                // BATbern logo with text (larger for hero visibility)
+                BATbernSymbolView(size: 45, color: Color(hex: "#2C5F7C") ?? .blue)
+                    .padding(.bottom, 8)
 
-                // Event title (large, centered, white)
+                // Event title (large, centered, white, wrapped) - flexible space
                 Text(event.title)
                     .font(.system(.title3, design: .rounded, weight: .semibold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                    .lineLimit(5)
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity)
 
-                Spacer()
+                Spacer(minLength: 16)
 
-                // Bottom info bar: date + time + venue
-                HStack(spacing: 4) {
-                    Text(event.eventDate, style: .date)
-                        .font(.caption2)
-                    Text("·")
-                    Text(event.typicalStartTime)
-                        .font(.caption2)
-                    Text("·")
+                // Bottom info bar: date + time + venue (Swiss German format)
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text(SwissDateFormatter.formatEventDate(event.eventDate))
+                            .font(.caption2)
+                        Text("·")
+                        Text(SwissDateFormatter.formatTimeString(event.typicalStartTime))
+                            .font(.caption2)
+                    }
+
                     Text(event.venueName)
                         .font(.caption2)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
                 }
                 .foregroundStyle(.secondary)
 
-                // Scroll affordance
+                Spacer(minLength: 16)
+
+                // Scroll affordance (localized)
                 if !event.sessions.isEmpty {
-                    Text("▼ Scroll for program")
+                    Text(NSLocalizedString("event.hero.scroll_hint", comment: "Scroll hint"))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .padding(.top, 4)
@@ -110,11 +120,11 @@ struct EventHeroView: View {
         VStack(spacing: 12) {
             BATbernSymbolView(size: 32, color: Color(hex: "#2C5F7C") ?? .blue)
 
-            Text("BATbern")
+            Text(NSLocalizedString("event.hero.empty.title", comment: "App title"))
                 .font(.system(size: 14, design: .rounded))
                 .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)
 
-            Text("No upcoming BATbern event")
+            Text(NSLocalizedString("event.hero.empty.message", comment: "Empty state message"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

@@ -349,6 +349,80 @@ GET /api/v1/companies/{companyName}?expand=logo         → Company logo URL
 - `SPEAKERS`: Show titles + speakers, hide abstracts
 - `AGENDA`: Full detail (titles, speakers, abstracts, times)
 
+#### Type Generation from OpenAPI Specification
+
+**Decision:** Generate Swift types from OpenAPI spec using `openapi-generator` CLI instead of manually maintaining DTOs.
+
+**Rationale:**
+- **Type safety:** Compile-time validation that types match backend API contract
+- **Zero maintenance:** Types auto-update when OpenAPI spec changes
+- **Reduced errors:** Eliminated field name/type mismatches (e.g., missing optional `typicalStartTime` caught immediately)
+- **DRY principle:** Single source of truth (OpenAPI spec) instead of duplicating type definitions
+
+**Implementation:**
+
+1. **Code Generation Script** (`apps/BATbern-watch/scripts/generate-types.sh`):
+   ```bash
+   # Generates Swift types from docs/api/events-api.openapi.yml
+   openapi-generator generate \
+     -i ../../docs/api/events-api.openapi.yml \
+     -g swift5 \
+     -o "BATbern-watch Watch App/Generated/temp" \
+     --additional-properties=library=urlsession,responseAs=Codable \
+     --global-property=models
+
+   # Copies only essential types (EventDetail, Session, Speaker, etc.)
+   # Removes admin/batch types not needed for Watch app
+   ```
+
+2. **Generated Types** (`BATbern-watch Watch App/Generated/Models/`):
+   - `EventDetail.swift` — Full event response with sessions, speakers, venue
+   - `Event.swift` — Base event model
+   - `Session.swift` — Session with timing, type, speakers
+   - `SessionSpeaker.swift` — Speaker role assignment
+   - `Speaker.swift` — Speaker profile data
+   - `Venue.swift`, `EventType.swift`, `EventWorkflowState.swift` — Supporting types
+
+3. **Utility Helpers** (`BATbern-watch Watch App/Generated/OpenAPIUtilities.swift`):
+   - `JSONEncodable` protocol — For encoding to JSON
+   - `StringRule`, `NumericRule`, `ArrayRule` — Validation metadata (used by generated code)
+   - `AnyCodable` — Dynamic JSON support
+
+4. **Type Mapping Extensions** (`BATbern-watch Watch App/Generated/EventDetailExtensions.swift`):
+   - `EventDetail → WatchEvent` — Generated API type → domain model
+   - `EventDetail → CachedEvent` — Generated API type → SwiftData persistence model
+   - `Session.SessionType → SessionType` — Maps generated enum to domain enum
+   - `SessionSpeaker.SpeakerRole → SpeakerRole` — Maps `PRIMARY_SPEAKER` (backend) → `keynoteSpeaker` (domain)
+
+**Type Flow:**
+```
+API JSON → EventDetail (generated) → WatchEvent (domain) → CachedEvent (SwiftData)
+                                  ↓
+                            PublicViewModel
+                                  ↓
+                            EventHeroView
+```
+
+**Regeneration Workflow:**
+```bash
+# After OpenAPI spec changes in docs/api/events-api.openapi.yml
+cd apps/BATbern-watch
+./scripts/generate-types.sh
+
+# Xcode automatically detects new/changed files (PBXFileSystemSynchronizedRootGroup)
+# Build to verify — compilation errors indicate breaking API changes
+```
+
+**Trade-offs:**
+- ✅ **Pros:** Always in sync, zero manual maintenance, catches API changes at compile time
+- ⚠️ **Cons:** Slightly verbose generated code, some unused types generated (but removed by script)
+- ⚠️ **Limitation:** Apple's `swift-openapi-generator` doesn't support watchOS runtime (we use standalone CLI `openapi-generator` instead)
+
+**Files managed:**
+- ✅ **Generated (do not edit):** `Generated/Models/*.swift`, `Generated/OpenAPIUtilities.swift`
+- ✅ **Manual (edit for domain logic):** `Generated/EventDetailExtensions.swift`
+- ✅ **Version controlled:** All generated files committed to ensure build reproducibility
+
 #### Pairing Endpoints (company-user-management-service)
 
 ```
@@ -558,6 +632,77 @@ Two view models for the two zones:
 Both view models read from the shared `LocalCache` (SwiftData) and are updated via `WebSocketClient` (organizer) or `PublicEventService` (public).
 
 **Timer Design Decision:** Calculate remaining time from wall clock vs `scheduledEndTime` each tick (not a decrementing counter). This prevents drift across watchOS app suspensions.
+
+#### Internationalization & Localization
+
+**Primary Locale:** Swiss German (`de_CH`)
+
+**Decision:** All user-facing text uses German with Swiss German date/time formatting. While the app targets Swiss German speakers (Bern conference), the localization infrastructure supports future expansion to additional languages.
+
+**Implementation:**
+
+1. **String Localization** (`BATbern-watch Watch App/de.lproj/Localizable.strings`):
+   ```swift
+   // Event Hero Screen
+   "event.hero.scroll_hint" = "▼ Für Programm scrollen";
+   "event.hero.empty.title" = "BATbern";
+   "event.hero.empty.message" = "Kein anstehendes BATbern Event";
+
+   // Error Messages
+   "error.offline" = "Offline — gecachte Daten werden angezeigt";
+   "error.refresh_failed" = "Aktualisierung fehlgeschlagen: %@";
+   ```
+
+2. **Swiss Date/Time Formatting** (`Utilities/SwissDateFormatter.swift`):
+   ```swift
+   enum SwissDateFormatter {
+       static let swissLocale = Locale(identifier: "de_CH")
+
+       // Event dates: "15. Februar 2026"
+       static let eventDateFormatter: DateFormatter = {
+           let formatter = DateFormatter()
+           formatter.locale = swissLocale
+           formatter.dateStyle = .long
+           formatter.timeStyle = .none
+           return formatter
+       }()
+
+       // Event times: "14:00" (24-hour format)
+       static let eventTimeFormatter: DateFormatter = {
+           let formatter = DateFormatter()
+           formatter.locale = swissLocale
+           formatter.dateFormat = "HH:mm"
+           return formatter
+       }()
+   }
+   ```
+
+3. **Usage in Views:**
+   ```swift
+   // Localized strings
+   Text(NSLocalizedString("event.hero.scroll_hint", comment: "Scroll hint"))
+
+   // Swiss date formatting
+   Text(SwissDateFormatter.formatEventDate(event.eventDate))  // "15. Februar 2026"
+   Text(SwissDateFormatter.formatTimeString(event.typicalStartTime))  // "14:00"
+   ```
+
+**Swiss German Conventions:**
+- Dates: Long format with full month name (e.g., "15. Februar 2026")
+- Times: 24-hour format without AM/PM (e.g., "14:00", not "2:00 PM")
+- Decimal separator: `.` (period, not comma as in Germany)
+- Date separator: `.` (period: `15.02.2026`)
+
+**Hero Page Visual Design:**
+- Logo size: 50pt (larger than elsewhere for visibility)
+- Logo includes both BATbern symbol arrows and text
+- All UI text in German
+- Bottom info bar uses Swiss date/time formatting
+
+**Future Extensions:**
+- Additional language support: Add `en.lproj/Localizable.strings`, `fr.lproj/Localizable.strings`
+- User language selection: Detect from device settings or allow manual override
+- Date/time formatting: Extend `SwissDateFormatter` with locale-aware formatters for EN/FR
 
 ### Infrastructure & Deployment
 

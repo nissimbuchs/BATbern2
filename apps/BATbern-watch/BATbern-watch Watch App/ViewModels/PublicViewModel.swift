@@ -72,47 +72,13 @@ class PublicViewModel {
         errorMessage = nil
 
         do {
+            print("🔄 PublicViewModel: Starting refresh...")
             // Fetch fresh data from API
             let watchEvent = try await apiClient.fetchCurrentEvent()
+            print("✅ PublicViewModel: Received WatchEvent - \(watchEvent.title)")
 
-            // Convert to DTO for cache persistence
-            let eventResponse = EventResponse(
-                eventCode: watchEvent.id,
-                eventNumber: nil,
-                title: watchEvent.title,
-                date: ISO8601DateFormatter().string(from: watchEvent.date),
-                themeImageUrl: watchEvent.themeImageUrl,
-                venueName: watchEvent.venueName,
-                venueAddress: nil,
-                typicalStartTime: "",  // Not needed for display
-                typicalEndTime: "",
-                workflowState: "",
-                currentPublishedPhase: nil,
-                sessions: watchEvent.sessions.map { session in
-                    SessionResponse(
-                        sessionSlug: session.id,
-                        title: session.title,
-                        description: session.abstract,
-                        sessionType: session.sessionType.rawValue,
-                        startTime: ISO8601DateFormatter().string(from: session.startTime),
-                        endTime: ISO8601DateFormatter().string(from: session.endTime),
-                        speakers: session.speakers.map { speaker in
-                            SessionSpeakerResponse(
-                                username: speaker.id,
-                                firstName: speaker.firstName,
-                                lastName: speaker.lastName,
-                                company: speaker.company,
-                                profilePictureUrl: speaker.profilePictureUrl,
-                                bio: speaker.bio,
-                                speakerRole: speaker.speakerRole.rawValue
-                            )
-                        }
-                    )
-                }
-            )
-
-            // Convert DTO → SwiftData model
-            let cachedEvent = eventResponse.toCachedEvent()
+            // Convert WatchEvent → SwiftData model
+            let cachedEvent = watchEvent.toCachedEvent()
 
             // Update cache
             let cache = LocalCache(modelContext: modelContext)
@@ -125,27 +91,32 @@ class PublicViewModel {
 
         } catch let error as APIError {
             // Handle API-specific errors
+            print("❌ PublicViewModel: APIError - \(error)")
             switch error {
             case .noCurrentEvent:
                 // No current event — clear cache and show empty state
+                print("⚠️ No current event - showing empty state")
                 self.event = nil
                 self.sessions = []
                 self.errorMessage = nil  // Empty state, not an error
 
             case .networkError:
                 // Network failure — continue showing cached data
+                print(NSLocalizedString("debug.network_error", comment: "Debug: Network error"))
                 isOffline = true
-                errorMessage = "Offline — showing cached data"
+                errorMessage = NSLocalizedString("error.offline", comment: "Offline error message")
 
             default:
                 // Other errors — continue with cached data
+                print("⚠️ Other API error: \(error.localizedDescription)")
                 errorMessage = error.localizedDescription
             }
 
         } catch {
             // Unexpected errors
+            print(String(format: NSLocalizedString("debug.unexpected_error", comment: "Debug: Unexpected error"), "\(error)"))
             isOffline = true
-            errorMessage = "Failed to refresh: \(error.localizedDescription)"
+            errorMessage = String(format: NSLocalizedString("error.refresh_failed", comment: "Refresh failed error"), error.localizedDescription)
         }
 
         isLoading = false

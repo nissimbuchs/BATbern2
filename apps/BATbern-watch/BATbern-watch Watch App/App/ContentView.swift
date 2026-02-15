@@ -43,10 +43,10 @@ struct OrganizerPlaceholderView: View {
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
 
-            Text("Organizer Zone")
+            Text(NSLocalizedString("organizer.title", comment: "Organizer zone title"))
                 .font(.headline)
 
-            Text("Available in Epic 2")
+            Text(NSLocalizedString("organizer.coming_soon", comment: "Coming soon message"))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
