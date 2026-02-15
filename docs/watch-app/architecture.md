@@ -1,9 +1,9 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 inputDocuments:
-  - prd.md
-  - product-brief-BATbern-2026-02-14.md
+  - prd-batbern-watch.md
   - ux-design-specification.md
+  - product-brief-BATbern-2026-02-14.md
   - brainstorming-session-2026-02-14.md
   - ux-design-directions.html
   - docs/architecture/index.md
@@ -15,17 +15,17 @@ inputDocuments:
 workflowType: 'architecture'
 project_name: 'BATbern Watch'
 user_name: 'Nissim'
-date: '2026-02-14'
+date: '2026-02-15'
 ---
 
 # Architecture Decision Document
 
-_BATbern Watch — Standalone watchOS companion app for real-time event orchestration._
+_BATbern Watch — Standalone watchOS companion app with dual-zone architecture: public event browsing for all attendees + real-time event orchestration for organizers._
 
 > **Status:** READY FOR IMPLEMENTATION
-> **Last Updated:** 2026-02-14
+> **Last Updated:** 2026-02-15 (v2.0 — aligned with PRD v2.0 + UX Spec v2.0)
 > **Audience:** Developers, Architect, Product Owner
-> **Depends On:** [PRD](prd.md) · [UX Spec](ux-design-specification.md) · [Design Directions](ux-design-directions.html)
+> **Depends On:** [PRD](prd-batbern-watch.md) · [UX Spec](ux-design-specification.md) · [Design Directions](ux-design-directions.html)
 
 ---
 
@@ -41,48 +41,60 @@ _BATbern Watch — Standalone watchOS companion app for real-time event orchestr
 | Session lifecycle (FR6-10) | 5 | Event state machine, STOMP actions, cascade algorithm |
 | Time alerting & haptics (FR11-16) | 6 | HapticScheduler, timer engine, Extended Runtime session |
 | Team synchronization (FR17-20) | 4 | WebSocket broadcast, presence tracking, conflict resolution |
-| Event setup & connection (FR21-24) | 4 | Cognito auth, REST endpoints, WiFi-direct connectivity |
+| Event setup & connection (FR21-24) | 4 | Pairing code auth, REST endpoints, WiFi-direct connectivity |
 | Offline resilience (FR25-28) | 4 | ActionQueue, SwiftData cache, connectivity state machine |
+| Public zone — attendee browsing (FR29-35) | 7 | Existing public REST endpoints, SwiftData cache, progressive publishing |
+| Pre-event — speaker arrival tracking (FR36-39) | 4 | WebSocket SPEAKER_ARRIVED message, arrival state in DB, portrait grid UI |
 
 **Non-Functional Requirements — Driving Decisions:**
 
 | NFR | Target | Architecture Driver |
 |---|---|---|
-| Complication update latency | < 1 second | WidgetKit timeline + Extended Runtime |
-| Haptic delivery accuracy | < 1 second | Wall-clock timer (not decrementing counter) |
-| Schedule cascade propagation | < 3 seconds | WebSocket broadcast to all subscribers |
-| Initial sync | < 5 seconds | Single REST GET + portrait batch download |
-| App launch to usable | < 3 seconds | SwiftData cached state, lazy portrait load |
-| Battery at end of 3-hour event | > 30% | Single persistent WebSocket, adaptive polling |
-| Offline transition | Seamless | No user action; automatic state machine |
-| Continuous reliability | Zero crashes in 3 hours | Extended Runtime, defensive error boundaries |
+| Complication update latency (NFR1) | < 1 second | WidgetKit timeline + Extended Runtime |
+| Haptic delivery accuracy (NFR2) | < 1 second | Wall-clock timer (not decrementing counter) |
+| Schedule cascade propagation (NFR3) | < 3 seconds | WebSocket broadcast to all subscribers |
+| Initial sync (NFR4) | < 5 seconds | Single REST GET + portrait batch download |
+| App launch to usable (NFR5) | < 3 seconds | SwiftData cached state, lazy portrait load |
+| Crown scroll latency (NFR6) | < 100ms | Native SwiftUI TabView paging |
+| Public zone launch (NFR7) | < 2s cached, < 4s cold | SwiftData cache-first, async network refresh |
+| Battery at end of event (NFR21-22) | > 30%, < 15% drain/4h | Single persistent WebSocket, adaptive polling |
+| Offline transition (NFR10) | Seamless | No user action; automatic state machine |
+| Max watches per organizer (NFR19) | 2 | Server-side pairing limit enforcement |
+| Pairing code expiry (NFR20) | 24 hours | Server-side TTL on pairing codes |
+| Localization (NFR32-33) | DE, EN, FR | String catalogs, i18n key alignment with web frontend |
+| Accessibility (NFR28-31) | VoiceOver, Dynamic Type, High Contrast | Native SwiftUI accessibility support |
+| Continuous reliability (NFR8) | Zero crashes in 3 hours | Extended Runtime, defensive error boundaries |
 
 ### Scale & Complexity
 
-- **Primary domain:** Real-time team coordination (event management)
-- **Complexity level:** Medium-high (real-time sync, offline resilience, multi-device coordination)
-- **Users:** 4 concurrent (fixed, all organizers)
-- **Estimated architectural components:** watchOS app (6 views, 3 domain modules, 4 data modules) + backend extensions (1 new package, 4 new REST endpoints, STOMP handler upgrades)
+- **Primary domain:** Dual-zone event companion — public browsing (200+ attendees) + real-time team coordination (4 organizers)
+- **Complexity level:** Medium-high (real-time sync, offline resilience, multi-device coordination, dual-zone navigation)
+- **Users:** 200+ concurrent (public zone, read-only) + 4 concurrent organizers (read-write)
+- **Estimated architectural components:** watchOS app (13 screens, 3 complication types, 3 domain modules, 5 data modules) + backend extensions (2 services modified, 9 new REST endpoints, WebSocket handlers)
 
 ### Technical Constraints & Dependencies
 
 | Constraint | Impact |
 |---|---|
-| watchOS 10+ minimum | SwiftUI lifecycle, WidgetKit (not ClockKit), SwiftData |
+| watchOS 11+ minimum | SwiftUI lifecycle, WidgetKit (not ClockKit), SwiftData, latest navigation APIs |
 | Standalone (no iPhone) | Direct WiFi to backend; no WatchConnectivity framework |
-| Existing STOMP WebSocket | Must extend, not replace, `WebSocketConfig.java` |
-| Existing Cognito auth | Reuse JWT tokens; add STOMP-level validation |
-| Existing PostgreSQL schema | Flyway migration for new session columns |
+| Existing STOMP WebSocket | Must extend, not replace, `WebSocketConfig.java` in event-management-service |
+| Pairing code authentication | No direct Cognito on Watch; pairing code → token exchange via backend |
+| Existing PostgreSQL schema | Flyway migrations for session fields + pairing tables + arrival tracking |
 | Venue WiFi dependency | Offline mode is mandatory, not optional |
-| 4-user fixed scale | In-memory broker sufficient; no Kafka/RabbitMQ needed |
+| 4-user organizer scale | In-memory broker sufficient; no Kafka/RabbitMQ needed |
+| 200+ public users | Read-only; existing public API endpoints handle this load already |
+| App Store distribution | Single app binary serves both public and organizer zones |
 
 ### Cross-Cutting Concerns Identified
 
-1. **Authentication** — JWT flows through REST and STOMP; token refresh mid-event
-2. **Offline resilience** — Affects every layer (timer, haptics, actions, UI state)
-3. **State synchronization** — Server-authoritative model with local cache reconciliation
-4. **Error handling** — Graceful degradation, never crash during live event
-5. **Battery management** — Adaptive behavior across all components based on battery level
+1. **Authentication** — Pairing code flow for organizers; no auth for public zone. JWT flows through REST and STOMP; token refresh mid-event
+2. **Dual-zone navigation** — Horizontal paging separates public (left) and organizer (right) zones; state-dependent organizer entry screen
+3. **Offline resilience** — Affects every layer (timer, haptics, actions, UI state); public zone works fully offline with cached data
+4. **State synchronization** — Server-authoritative model with local cache reconciliation; full-state broadcasts on every change
+5. **Error handling** — Graceful degradation, never crash during live event
+6. **Battery management** — Adaptive behavior across all components based on battery level
+7. **Progressive publishing** — Public zone respects event publishing phases (TOPIC / SPEAKERS / AGENDA)
 
 ---
 
@@ -92,7 +104,7 @@ _BATbern Watch — Standalone watchOS companion app for real-time event orchestr
 
 **Dual-stack project:**
 - **watchOS client:** Native Swift/SwiftUI app (no cross-platform option for watchOS)
-- **Backend extensions:** Java/Spring Boot additions to existing monorepo
+- **Backend extensions:** Java/Spring Boot additions to existing monorepo (two services)
 
 ### Starter Options Considered
 
@@ -108,29 +120,32 @@ _BATbern Watch — Standalone watchOS companion app for real-time event orchestr
 **watchOS Client:**
 ```
 Xcode → File → New → Project → watchOS → App
-Product Name: BATbernWatch
+Product Name: BATbern-watch
 Interface: SwiftUI
 Language: Swift
 Storage: SwiftData
+Target: watchOS 11+
 ```
 
 **Backend Extensions:**
 ```
-No new project — extend existing event-management-service
-New package: ch.batbern.events.watch
-New Flyway migration: V{next}__add_watch_session_fields.sql
+Two services extended:
+1. event-management-service — WebSocket handlers, session state, speaker arrival
+   New package: ch.batbern.events.watch
+2. company-user-management-service — Pairing code management
+   New package: ch.batbern.companyuser.watch
 ```
 
 **Architectural Decisions Provided by Starters:**
 
 | Decision | Value |
 |---|---|
-| Language & Runtime | Swift 5.9+ / watchOS 10+ (client) · Java 21 / Spring Boot 3.x (backend) |
+| Language & Runtime | Swift 6.0 / watchOS 11+ (client) · Java 21 / Spring Boot 3.x (backend) |
 | UI Framework | SwiftUI with watchOS app lifecycle |
 | Persistence | SwiftData (client) · PostgreSQL 15+ (backend) |
 | Networking | URLSession + StompClientLib (client) · Spring WebSocket (backend) |
-| Build Tooling | Xcode 15+ / Swift Package Manager (client) · Gradle (backend) |
-| Testing Framework | XCTest (client) · JUnit 5 + Testcontainers (backend) |
+| Build Tooling | Xcode 16+ / Swift Package Manager (client) · Gradle (backend) |
+| Testing Framework | XCTest + Swift Testing (client) · JUnit 5 + Testcontainers (backend) |
 | Code Organization | MVVM + Repository (client) · Layered DDD (backend) |
 
 ---
@@ -140,176 +155,415 @@ New Flyway migration: V{next}__add_watch_session_fields.sql
 ### Decision Priority Analysis
 
 **Critical Decisions (Block Implementation):**
-1. Real-time sync protocol (WebSocket/STOMP)
-2. State authority model (server-authoritative)
-3. Offline resilience strategy (local cache + action queue)
-4. Authentication flow (Cognito JWT in STOMP CONNECT)
+1. Dual-zone navigation architecture (horizontal paging, state-dependent organizer entry)
+2. Pairing code authentication flow (no passwords on Watch)
+3. Real-time sync protocol (WebSocket/STOMP)
+4. State authority model (server-authoritative)
+5. Offline resilience strategy (local cache + action queue)
 
 **Important Decisions (Shape Architecture):**
-5. Timer engine design (wall-clock calculation)
-6. Haptic scheduling approach
-7. Complication timeline strategy
-8. Conflict resolution (idempotent actions)
+6. Timer engine design (wall-clock calculation)
+7. Haptic scheduling approach
+8. Complication timeline strategy
+9. Conflict resolution (idempotent actions)
+10. Speaker arrival tracking (WebSocket + persistent state)
+11. Public zone data flow (existing endpoints + SwiftData cache)
 
 **Deferred Decisions (Post-MVP):**
-9. APNs backup channel
-10. Speaker arrival tracking
-11. Analytics dashboard
-12. App Store distribution
+12. APNs backup channel
+13. Analytics dashboard
+14. Speaker time signal / flash
 
 ### Data Architecture
 
-**Database:** Existing PostgreSQL 15+ (RDS) — schema extension only
+**Database:** Existing PostgreSQL 15+ (RDS) — schema extension across two services
 
-**New Columns on `sessions` Table:**
+**New Columns on `sessions` Table (event-management-service):**
 
 ```sql
+-- Flyway: V{next}__add_watch_session_fields.sql
 ALTER TABLE sessions ADD COLUMN actual_start_time TIMESTAMP;
 ALTER TABLE sessions ADD COLUMN actual_end_time TIMESTAMP;
 ALTER TABLE sessions ADD COLUMN overrun_minutes INTEGER DEFAULT 0;
 ALTER TABLE sessions ADD COLUMN completed_by_username VARCHAR(100);
 ```
 
-**Client-Side Persistence:** SwiftData
+**New Table for Speaker Arrival Tracking (event-management-service):**
+
+```sql
+-- Flyway: V{next}__add_speaker_arrival_tracking.sql
+CREATE TABLE speaker_arrivals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_code VARCHAR(50) NOT NULL,
+    speaker_username VARCHAR(100) NOT NULL,
+    confirmed_by_username VARCHAR(100) NOT NULL,
+    arrived_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (event_code, speaker_username)
+);
+CREATE INDEX idx_speaker_arrivals_event ON speaker_arrivals(event_code);
+```
+
+**New Table for Watch Pairing (company-user-management-service):**
+
+```sql
+-- Flyway: V{next}__add_watch_pairing.sql
+CREATE TABLE watch_pairings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) NOT NULL,
+    pairing_code VARCHAR(6),
+    pairing_code_expires_at TIMESTAMP,
+    pairing_token VARCHAR(256) UNIQUE,
+    device_name VARCHAR(100),
+    paired_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_watch_user FOREIGN KEY (username) REFERENCES users(username)
+);
+CREATE INDEX idx_watch_pairings_username ON watch_pairings(username);
+CREATE INDEX idx_watch_pairings_code ON watch_pairings(pairing_code) WHERE pairing_code IS NOT NULL;
+-- Enforce max 2 watches per organizer
+CREATE UNIQUE INDEX idx_watch_pairings_limit ON watch_pairings(username, paired_at)
+    WHERE paired_at IS NOT NULL;
+```
+
+**Client-Side Persistence:** SwiftData (aligned with PRD data models)
 
 ```swift
 @Model class CachedEvent {
     var eventCode: String
     var title: String
     var eventDate: Date
+    var themeImageUrl: String?
+    var venueName: String
+    var typicalStartTime: String
+    var typicalEndTime: String
+    var currentPublishedPhase: String?  // TOPIC, SPEAKERS, AGENDA
     var sessions: [CachedSession]
     var lastSyncTimestamp: Date
 }
 
 @Model class CachedSession {
     var sessionSlug: String
-    var speakerName: String
-    var talkTitle: String
-    var scheduledStartTime: Date
-    var scheduledEndTime: Date
-    var status: String
-    var overrunMinutes: Int
+    var title: String
+    var abstract: String?               // session.description
+    var sessionType: String             // keynote, presentation, workshop, panel_discussion, networking, break, lunch
+    var scheduledStartTime: Date?
+    var scheduledEndTime: Date?
+    var speakers: [CachedSpeaker]
+    var state: SessionState             // scheduled, active, completed, skipped (organizer zone only)
+    var actualStartTime: Date?          // organizer zone only
+    var overrunMinutes: Int?            // organizer zone only
+}
+
+@Model class CachedSpeaker {
+    var username: String
+    var firstName: String
+    var lastName: String
+    var company: String?
+    var companyLogoUrl: String?
+    var profilePictureUrl: String?
+    var bio: String?
+    var speakerRole: String             // keynote_speaker, panelist, moderator
+    var arrived: Bool                   // organizer zone: confirmed present at venue
+    var arrivedConfirmedBy: String?     // username of confirming organizer
+    var arrivedAt: Date?                // timestamp of arrival confirmation
+}
+
+@Model class PairingInfo {
+    var pairingToken: String            // Reference — actual token in Keychain
+    var organizerUsername: String
+    var organizerFirstName: String
+    var pairedAt: Date
+}
+
+enum SessionState: String, Codable {
+    case scheduled, active, completed, skipped
 }
 ```
 
-**Portrait Cache:** File-based, ~100KB per speaker × 8 speakers = < 1MB total
+**Portrait Cache:** File-based, ~100KB per speaker x 8 speakers = < 1MB per event. Watch-optimized resolution (max 200x200px).
 
-**Validation Strategy:** Server validates all actions; client validates UI constraints only (e.g., can't tap "Done" before session starts)
+**Validation Strategy:** Server validates all actions; client validates UI constraints only (e.g., can't tap "Done" before session starts). Max 2 watches per organizer enforced server-side.
 
-**Migration Approach:** Flyway (existing pattern) — `V{next}__add_watch_session_fields.sql`
+**Migration Approach:** Flyway (existing pattern) — separate migrations per service.
 
 ### Authentication & Security
 
-**Authentication Method:** AWS Cognito OAuth2 (existing)
+**Authentication Method:** Pairing Code Flow (no passwords on Watch)
 
-**Flow:**
-1. Watch → Cognito: username/password → JWT tokens (access + refresh)
-2. Watch → Backend: STOMP CONNECT with `Authorization: Bearer {accessToken}`
-3. Backend: `JwtStompInterceptor` validates token, extracts `custom:role`
-4. Only `ORGANIZER` role permitted
+The Watch never interacts with Cognito directly. Instead, organizers pair their Watch once via a 6-digit numeric code generated from the web frontend. This avoids any password entry on the tiny Watch screen.
+
+**Pairing Flow:**
+
+```
+Step 1: Web Frontend (organizer profile)
+  Organizer clicks "Pair Apple Watch" → POST /api/v1/users/{username}/watch-pairing
+  → Backend generates 6-digit numeric code with 24-hour expiry
+  → Code displayed in organizer's profile page
+
+Step 2: Watch (swipe right → pairing screen O1)
+  Organizer enters 6-digit code using Crown-scroll digit picker
+  → POST /api/v1/watch/pair { code: "482715" }
+  → Backend validates code, returns pairing token
+  → Pairing token stored in Watch Keychain
+
+Step 3: Ongoing authentication
+  On each app launch / WebSocket connect:
+  → POST /api/v1/watch/authenticate { pairingToken: "..." }
+  → Backend validates pairing token, returns short-lived JWT (1 hour)
+  → JWT used for all subsequent REST calls and STOMP CONNECT
+```
 
 **Token Management:**
-- Access token: 1 hour, stored in Keychain
-- Refresh token: 30 days, stored in Keychain
-- Proactive refresh: 10 minutes before expiry
-- Event duration (~3 hours): one mid-event refresh
+- Pairing token: Long-lived (until explicitly unpaired), stored in Keychain
+- Access JWT: 1 hour, stored in memory
+- JWT refresh: Watch calls `/api/v1/watch/authenticate` with pairing token to get new JWT
+- Event duration (~3 hours): 2-3 JWT refreshes, proactive at 10 minutes before expiry
 
-**Security Middleware:** `JwtStompInterceptor` added to WebSocket channel interceptors
+**Security Rules:**
+- Pairing codes: 6-digit numeric, expire after 24 hours, single-use
+- Max 2 watches per organizer account (enforced server-side)
+- Only `ORGANIZER` role permitted to pair
+- Unpairing: Only from web frontend (prevents accidental unpairing during events)
+- All communication encrypted via TLS (HTTPS + WSS)
+- No PII stored on Watch beyond speaker names/portraits and organizer first name
 
-**Data Encryption:** TLS for all communication (HTTPS + WSS). No PII stored on Watch beyond speaker names/portraits.
+**Security Middleware:** `JwtStompInterceptor` added to WebSocket channel interceptors — validates JWT on STOMP CONNECT.
+
+**Public Zone:** No authentication whatsoever. All public data served from existing unauthenticated endpoints.
 
 ### API & Communication Patterns
 
-**Primary: WebSocket (STOMP)**
+#### Public Zone Data Flow (No New Backend)
+
+The public zone uses existing public API endpoints — no new backend work:
+
+```
+GET /api/v1/events/current?expand=sessions,speakers    → Full event with sessions & speakers
+GET /api/v1/companies/{companyName}?expand=logo         → Company logo URL
+```
+
+**Data flow:** App launch → check SwiftData cache → display cached data immediately → async REST fetch → update cache → refresh UI if changed. Cache-first, network-second.
+
+**Progressive publishing:** Watch respects `currentPublishedPhase`:
+- `TOPIC`: Show session titles only, hide speakers
+- `SPEAKERS`: Show titles + speakers, hide abstracts
+- `AGENDA`: Full detail (titles, speakers, abstracts, times)
+
+#### Pairing Endpoints (company-user-management-service)
+
+```
+POST   /api/v1/users/{username}/watch-pairing           # Generate pairing code (Organizer JWT)
+GET    /api/v1/users/{username}/watch-pairing           # Check pairing status (Organizer JWT)
+DELETE /api/v1/users/{username}/watch-pairing/{deviceId} # Unpair specific watch (Organizer JWT)
+POST   /api/v1/watch/pair                               # Exchange code for pairing token (no auth)
+POST   /api/v1/watch/authenticate                       # Exchange pairing token for JWT (pairing token)
+```
+
+#### Organizer Real-Time: WebSocket (STOMP)
 
 ```
 # Server → Watch (subscriptions)
-/topic/events/{eventCode}/state       # Full event state broadcasts
-/user/queue/watch/ack                 # Per-user action ACKs
-/user/queue/watch/errors              # Per-user errors
+/topic/events/{eventCode}/state              # Full event state broadcasts
+/topic/events/{eventCode}/arrivals           # Speaker arrival updates
+/user/queue/watch/ack                        # Per-user action ACKs
+/user/queue/watch/errors                     # Per-user errors
 
 # Watch → Server (send destinations)
-/app/watch/events/{eventCode}/join    # Organizer joins
-/app/watch/events/{eventCode}/leave   # Organizer leaves
-/app/watch/events/{eventCode}/action  # Actions (SESSION_COMPLETE, SCHEDULE_CASCADE)
+/app/watch/events/{eventCode}/join           # Organizer joins event
+/app/watch/events/{eventCode}/leave          # Organizer leaves event
+/app/watch/events/{eventCode}/action         # Session actions
+/app/watch/events/{eventCode}/speaker-arrived  # Confirm speaker arrival
 ```
 
-**Secondary: REST (setup + fallback)**
+#### Organizer REST (setup + fallback)
 
 ```
-GET  /api/v1/watch/events/{eventCode}/state         # Polling fallback
-GET  /api/v1/watch/events/{eventCode}/speakers/{username}/portrait  # Portrait presigned URL
-POST /api/v1/watch/events/{eventCode}/actions        # Offline queue replay
-GET  /api/v1/watch/organizers/me/active-events       # Event selection
+GET  /api/v1/watch/events/{eventCode}/state                           # Polling fallback
+GET  /api/v1/watch/events/{eventCode}/speakers/{username}/portrait    # Portrait presigned URL
+POST /api/v1/watch/events/{eventCode}/actions                         # Offline queue replay
+GET  /api/v1/watch/organizers/me/active-events                        # Event selection
+GET  /api/v1/watch/events/{eventCode}/arrivals                        # Speaker arrival status
+POST /api/v1/watch/events/{eventCode}/arrivals                        # Record speaker arrival (REST fallback)
 ```
 
-**Error Handling:** ACTION_ACK with `success: false` + error reason. Watch displays error toast and retains action in queue for retry.
+#### Message Schemas
 
-**Message Schemas:**
-
-State Update (Server → Watch):
+**State Update (Server → all Watch subscribers):**
 ```json
 {
   "type": "STATE_UPDATE",
+  "trigger": "SESSION_ENDED",
   "eventCode": "BATbern56",
   "currentSessionIndex": 2,
-  "sessions": [{ "sessionSlug": "...", "status": "LIVE", ... }],
-  "connectedOrganizers": [{ "username": "...", "connected": true }],
-  "serverTimestamp": "2026-02-14T18:35:01Z"
+  "sessions": [
+    {
+      "sessionSlug": "cloud-native-pitfalls",
+      "title": "Cloud-Native Pitfalls",
+      "sessionType": "presentation",
+      "scheduledStartTime": "2026-02-14T18:00:00Z",
+      "scheduledEndTime": "2026-02-14T18:45:00Z",
+      "status": "COMPLETED",
+      "actualStartTime": "2026-02-14T18:00:00Z",
+      "actualEndTime": "2026-02-14T18:49:00Z",
+      "overrunMinutes": 4,
+      "completedBy": "marco.organizer",
+      "speakers": [{ "username": "anna.meier", "firstName": "Anna", "lastName": "Meier" }]
+    }
+  ],
+  "connectedOrganizers": [
+    { "username": "marco.organizer", "firstName": "Marco", "connected": true }
+  ],
+  "serverTimestamp": "2026-02-14T18:49:01Z"
 }
 ```
 
-Action (Watch → Server):
+The `trigger` field indicates what action caused the state update, corresponding to PRD message types: `SESSION_STARTED`, `SESSION_EXTENDED`, `SESSION_ENDED`, `SESSION_SKIPPED`, `SCHEDULE_CASCADED`, `HEARTBEAT`.
+
+**Speaker Arrival (Server → all Watch subscribers):**
 ```json
 {
-  "action": "SESSION_COMPLETE",
+  "type": "SPEAKER_ARRIVED",
+  "eventCode": "BATbern56",
+  "speakerUsername": "anna.meier",
+  "speakerFirstName": "Anna",
+  "speakerLastName": "Meier",
+  "confirmedBy": "sarah.organizer",
+  "arrivedAt": "2026-02-14T17:35:00Z",
+  "arrivalCount": { "arrived": 3, "total": 5 }
+}
+```
+
+**Action (Watch → Server):**
+```json
+{
+  "action": "SESSION_ENDED",
   "sessionSlug": "cloud-native-pitfalls",
   "organizerUsername": "marco.organizer",
   "overrunMinutes": 4,
-  "clientTimestamp": "2026-02-14T18:29:00Z"
+  "cascadeMinutes": 5,
+  "clientTimestamp": "2026-02-14T18:49:00Z"
 }
 ```
 
+**Action types:** `SESSION_STARTED`, `SESSION_ENDED`, `SESSION_EXTENDED`, `SESSION_SKIPPED`, `SCHEDULE_CASCADE`, `SPEAKER_ARRIVED`
+
+**Error Handling:** ACTION_ACK with `success: false` + error reason. Watch displays error toast and retains action in queue for retry.
+
 ### Frontend Architecture (watchOS)
 
-**Architecture Pattern:** MVVM + Repository
+**Architecture Pattern:** MVVM + Repository with dual-zone navigation
+
+#### Dual-Zone Navigation
+
+The app uses **horizontal paging** (SwiftUI `TabView` with `.page` style) as the top-level navigation:
 
 ```
-Presentation Layer
-├── SessionView          (Progress ring + card stack)
-├── ScheduleListView     (Digital Crown scrollable)
-├── CascadeSheet         (Schedule shift modal)
-├── BreakView            (Break countdown + gong)
-├── TransitionView       (Next speaker intro)
-├── SetupView            (Event selection + login)
-└── ComplicationProvider (WidgetKit timeline)
+TabView (horizontal paging)
+├── Tab 0: Public Zone (Left — default on launch)
+│   └── NavigationStack
+│       ├── P1: EventHeroView (root)
+│       ├── P2: SessionCardView (Crown scroll — vertical paging)
+│       ├── P3: AbstractDetailView (push from P2 title tap)
+│       ├── P4: SpeakerBioView (push from P2 single speaker tap)
+│       ├── P5: MultiSpeakerGridView (push from P2 multi-speaker tap)
+│       └── P6: IndividualSpeakerBioView (push from P5 portrait tap)
+│
+└── Tab 1: Organizer Zone (Right — swipe right)
+    └── NavigationStack
+        ├── O1: PairingView (if not paired)
+        ├── O2: SpeakerArrivalView (if paired, <1h before event)
+        ├── O3: LiveCountdownView (if paired, event active)
+        ├── O4: CascadePromptView (sheet from O3 on overrun Done tap)
+        ├── O5: BreakGongView (auto-transition during break)
+        ├── O6: TransitionView (auto-transition between sessions)
+        └── O7: SessionTimelineView (Crown scroll in organizer zone)
+```
+
+**Organizer Zone Entry Logic:**
+```swift
+// O1/O2/O3 selection based on state
+var organizerEntryView: some View {
+    if !authManager.isPaired {
+        PairingView()                    // O1
+    } else if eventState.isPreEvent {
+        SpeakerArrivalView()             // O2 (<1h before event)
+    } else if eventState.isLive {
+        LiveCountdownView()              // O3
+    } else {
+        EventPreviewView()               // No active event
+    }
+}
+```
+
+#### Complete Layer Architecture
+
+```
+Presentation Layer (13 screens + 3 complications)
+├── Public Zone
+│   ├── EventHeroView.swift              (P1: Theme image, title, date/venue)
+│   ├── SessionCardView.swift            (P2: Time, title, speakers — Crown scrollable)
+│   ├── AbstractDetailView.swift         (P3: Full session abstract)
+│   ├── SpeakerBioView.swift             (P4: Portrait, name, company, bio)
+│   ├── MultiSpeakerGridView.swift       (P5: Portrait grid for multi-speaker sessions)
+│   └── IndividualSpeakerBioView.swift   (P6: Same as P4, pushed from P5)
+├── Organizer Zone
+│   ├── PairingView.swift                (O1: 6-digit code entry via Crown)
+│   ├── SpeakerArrivalView.swift         (O2: Portrait grid with arrival tracking)
+│   ├── LiveCountdownView.swift          (O3: Progress ring + countdown + speaker card)
+│   ├── CascadePromptView.swift          (O4: Shift options modal)
+│   ├── BreakGongView.swift              (O5: Break countdown + gong timer)
+│   ├── TransitionView.swift             (O6: Next speaker portrait + intro info)
+│   └── SessionTimelineView.swift        (O7: All sessions with status)
+├── Complications
+│   ├── CircularComplication.swift        (C1: Progress ring + countdown minutes)
+│   ├── RectangularComplication.swift     (C2: Speaker name + countdown + progress bar)
+│   └── CornerComplication.swift          (C3: Countdown digits only)
+└── Root
+    ├── ContentView.swift                (TabView horizontal paging — zone container)
+    └── BATbernWatchApp.swift            (App entry point)
 
 Domain Layer
-├── EventStateMachine    (SCHEDULED → LIVE → COMPLETE)
-├── SessionTimerEngine   (Wall-clock countdown, 1s ticks)
-└── HapticScheduler      (Threshold-based alert scheduling)
+├── EventStateMachine.swift              (scheduled → active → completed/skipped)
+├── SessionTimerEngine.swift             (Wall-clock countdown, 1s ticks)
+├── HapticScheduler.swift                (Threshold-based alert scheduling)
+└── ArrivalTracker.swift                 (Speaker arrival state management)
 
 Data Layer
-├── WebSocketClient      (STOMP over WebSocket)
-├── LocalCache           (SwiftData persistence)
-├── ActionQueue          (Offline action buffer)
-└── AuthManager          (Cognito JWT in Keychain)
+├── WebSocketClient.swift                (STOMP over WebSocket)
+├── PublicEventService.swift             (REST client for public API endpoints)
+├── LocalCache.swift                     (SwiftData persistence)
+├── ActionQueue.swift                    (Offline action buffer, persisted to disk)
+└── AuthManager.swift                    (Pairing token in Keychain + JWT management)
 ```
 
-**State Management:** Single `EventViewModel` as `@ObservableObject`:
-- `@Published currentSession: WatchSession?`
-- `@Published timerState: TimerState`
-- `@Published connectionState: ConnectionState`
-- `@Published connectedOrganizers: [OrganizerPresence]`
-- `@Published allSessions: [WatchSession]`
+#### State Management
 
-**Timer Design Decision:** Calculate from wall clock vs `scheduledEndTime` each tick (not a decrementing counter). This prevents drift across watchOS app suspensions.
+Two view models for the two zones:
+
+**PublicViewModel** (`@Observable`):
+- `event: CachedEvent?` — current event data
+- `sessions: [CachedSession]` — ordered session list for Crown scroll
+- `isOffline: Bool` — connectivity indicator
+- `lastSynced: Date?` — "Last updated" timestamp
+
+**OrganizerViewModel** (`@Observable`):
+- `currentSession: CachedSession?` — active session
+- `timerState: TimerState` — countdown / overrun state
+- `connectionState: ConnectionState` — WebSocket status
+- `connectedOrganizers: [OrganizerPresence]` — who's online
+- `allSessions: [CachedSession]` — full schedule with live state
+- `speakerArrivals: [SpeakerArrival]` — arrival tracking state
+- `isPaired: Bool` — pairing status
+
+Both view models read from the shared `LocalCache` (SwiftData) and are updated via `WebSocketClient` (organizer) or `PublicEventService` (public).
+
+**Timer Design Decision:** Calculate remaining time from wall clock vs `scheduledEndTime` each tick (not a decrementing counter). This prevents drift across watchOS app suspensions.
 
 ### Infrastructure & Deployment
 
 **Hosting:** Existing AWS ECS Fargate (ARM64) — no new services
 
-**ALB Changes:**
+**ALB Changes (for WebSocket support):**
 ```typescript
 targetGroup.setAttribute('stickiness.enabled', 'true');
 targetGroup.setAttribute('stickiness.lb_cookie.duration_seconds', '86400');
@@ -317,30 +571,38 @@ loadBalancer.setAttribute('idle_timeout.timeout_seconds', '3600');
 targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
 ```
 
-**CI/CD:** Existing GitHub Actions pipeline for backend. watchOS app via Xcode direct install (MVP) or TestFlight.
+**CI/CD:**
+- Backend: Existing GitHub Actions pipeline
+- watchOS: Separate GitHub Actions workflow → TestFlight via Xcode Cloud or Fastlane
+- Epic 1 (public zone only) → submit to TestFlight immediately as standalone shippable product
 
-**Monitoring:** Existing CloudWatch logs at `/aws/ecs/BATbern-{env}/event-management`
+**Monitoring:** Existing CloudWatch logs at `/aws/ecs/BATbern-{env}/event-management` and `/aws/ecs/BATbern-{env}/company-user-management`
 
-**Scaling:** Not applicable — fixed 4 users. In-memory broker sufficient.
+**Scaling:** Not applicable for organizer zone — fixed 4 users, in-memory broker sufficient. Public zone uses existing REST endpoints already scaled for web frontend load.
 
 ### Decision Impact Analysis
 
-**Implementation Sequence:**
-1. Backend: Flyway migration + Session entity changes
-2. Backend: Watch WebSocket controller + JWT interceptor
-3. Backend: REST endpoints for setup/fallback
-4. watchOS: Project setup, data layer (STOMP client, cache, auth)
-5. watchOS: Domain layer (timer engine, state machine, haptics)
-6. watchOS: Presentation layer (views, complications)
-7. Integration: Multi-watch sync testing
+**Epic-Aligned Implementation Sequence:**
+
+| Phase | Epic | Scope | Backend Work |
+|---|---|---|---|
+| 1 | **Epic 1: Public Event Companion** | P1-P6 screens, SwiftData cache, offline, progressive publishing | None — uses existing public endpoints |
+| 2 | **Epic 2: Watch Pairing & Organizer Access** | O1-O2 screens, pairing flow, speaker arrival tracking | Pairing endpoints (CUMS), arrival tracking (EMS), web frontend pairing UI |
+| 3 | **Epic 3: Live Countdown & Haptic Awareness** | O3 screen, complications C1-C3, haptic patterns, always-on display | Session timing state endpoint (minor) |
+| 4 | **Epic 4: Session Control & Team Sync** | O3-O7 screens, WebSocket sync, cascade, presence | WebSocket endpoint (EMS), session state machine, conflict resolution |
+| 5 | **Epic 5: Offline Resilience** | ActionQueue, connectivity monitoring, sync recovery, offline haptics | Offline queue replay endpoint |
+
+This sequence enables **incremental delivery**: Epic 1 alone is a shippable App Store product. Each subsequent epic adds organizer capabilities.
 
 **Cross-Component Dependencies:**
+- PublicViewModel depends on LocalCache + PublicEventService (Data → Presentation)
+- OrganizerViewModel depends on LocalCache + WebSocketClient + AuthManager (Data → Presentation)
 - Timer engine depends on cached session data (Data → Domain)
 - Haptic scheduler depends on timer state transitions (Domain → Domain)
-- Complication depends on timer state (Domain → Presentation)
-- All views depend on EventViewModel (Domain → Presentation)
+- Complications depend on timer state (Domain → Presentation)
 - WebSocket client updates local cache (Data → Data)
 - ActionQueue depends on connection state (Data → Data)
+- SpeakerArrivalView depends on WebSocket arrivals topic (Data → Presentation)
 
 ---
 
@@ -349,108 +611,133 @@ targetGroup.setAttribute('deregistration_delay.timeout_seconds', '30');
 ### Naming Patterns
 
 **Database Naming (PostgreSQL — existing conventions):**
-- Tables: `snake_case` plural (`sessions`, `events`)
-- Columns: `snake_case` (`actual_start_time`, `completed_by_username`)
-- Indexes: `idx_{table}_{column}` (`idx_sessions_event_code`)
+- Tables: `snake_case` plural (`sessions`, `watch_pairings`, `speaker_arrivals`)
+- Columns: `snake_case` (`actual_start_time`, `pairing_code_expires_at`)
+- Indexes: `idx_{table}_{column}` (`idx_speaker_arrivals_event`)
 - Migrations: `V{number}__{description}.sql`
 
 **API Naming (REST — ADR-003 compliance):**
-- Endpoints: `/api/v1/watch/events/{eventCode}/...`
+- Endpoints: `/api/v1/watch/...` and `/api/v1/users/{username}/watch-pairing`
 - Path params: `camelCase` meaningful IDs (`eventCode`, `sessionSlug`, `username`)
 - Never expose UUIDs in URLs
 
 **STOMP Topic Naming:**
-- Topics: `/topic/events/{eventCode}/state`
+- Topics: `/topic/events/{eventCode}/state`, `/topic/events/{eventCode}/arrivals`
 - User queues: `/user/queue/watch/{purpose}`
 - App destinations: `/app/watch/events/{eventCode}/{action}`
 
 **Swift Code Naming:**
-- Types: `PascalCase` (`WatchSession`, `EventViewModel`, `SessionTimerEngine`)
+- Types: `PascalCase` (`CachedSession`, `OrganizerViewModel`, `SessionTimerEngine`)
 - Properties: `camelCase` (`scheduledEndTime`, `connectedOrganizers`)
-- Enums: `PascalCase` type, `camelCase` cases (`SessionStatus.live`)
-- Files: Match primary type name (`SessionView.swift`, `EventViewModel.swift`)
+- Enums: `PascalCase` type, `camelCase` cases (`SessionState.active`)
+- Files: Match primary type name (`LiveCountdownView.swift`, `OrganizerViewModel.swift`)
+- Views: Named by screen ID from UX spec (`EventHeroView` = P1, `PairingView` = O1)
 
 **Java Code Naming (existing conventions):**
-- Package: `ch.batbern.events.watch`
-- Classes: `PascalCase` (`WatchWebSocketController`, `WatchStateUpdate`)
-- Methods: `camelCase` (`handleSessionComplete`, `broadcastStateUpdate`)
+- Packages: `ch.batbern.events.watch`, `ch.batbern.companyuser.watch`
+- Classes: `PascalCase` (`WatchWebSocketController`, `WatchPairingService`)
+- Methods: `camelCase` (`handleSessionEnded`, `broadcastStateUpdate`)
 
 ### Structure Patterns
 
 **watchOS Project Organization:**
 ```
-BATbernWatch/
-├── App/                    # App entry point
-├── Views/                  # SwiftUI views
-├── ViewModels/             # Observable view models
-├── Domain/                 # Business logic (state machine, timer, haptics)
+BATbern-watch Watch App/
+├── App/                    # App entry point + ContentView (zone container)
+├── Views/
+│   ├── Public/             # P1-P6 screens
+│   ├── Organizer/          # O1-O7 screens
+│   └── Complications/      # C1-C3 WidgetKit providers
+├── ViewModels/             # PublicViewModel, OrganizerViewModel
+├── Domain/                 # Business logic (state machine, timer, haptics, arrival tracker)
 ├── Data/                   # Network, persistence, auth
-├── Models/                 # Data types and DTOs
-├── Complications/          # WidgetKit providers
-└── Resources/              # Assets, localization
+├── Models/                 # SwiftData models, DTOs, enums
+└── Resources/              # Assets, localization string catalogs
 ```
 
-**Backend Extension Organization:**
+**Backend Extension Organization (event-management-service):**
 ```
 ch.batbern.events.watch/
-├── WatchWebSocketController.java     # STOMP message handlers
-├── WatchConnectionManager.java       # Presence tracking
-├── WatchEventStateService.java       # State snapshot builder
-├── WatchSessionActionService.java    # Action processor
-└── dto/                              # Watch-specific DTOs
+├── WatchWebSocketController.java       # STOMP message handlers
+├── WatchConnectionManager.java         # Presence tracking (in-memory)
+├── WatchEventStateService.java         # State snapshot builder
+├── WatchSessionActionService.java      # Action processor (session lifecycle)
+├── WatchSpeakerArrivalService.java     # Speaker arrival tracking
+├── WatchRestController.java            # REST fallback + arrivals
+├── JwtStompInterceptor.java            # WebSocket auth
+└── dto/
     ├── WatchStateUpdate.java
     ├── WatchAction.java
-    └── WatchActionAck.java
+    ├── WatchActionAck.java
+    └── SpeakerArrivalUpdate.java
+```
+
+**Backend Extension Organization (company-user-management-service):**
+```
+ch.batbern.companyuser.watch/
+├── WatchPairingController.java         # Pairing REST endpoints
+├── WatchPairingService.java            # Pairing business logic
+├── WatchAuthController.java            # Code exchange + JWT issuance
+└── dto/
+    ├── PairingCodeResponse.java
+    ├── PairingRequest.java
+    └── WatchAuthResponse.java
+
+domain/
+└── WatchPairing.java                   # JPA entity
 ```
 
 **Test Organization:**
-- Swift: `BATbernWatchTests/` mirroring source structure
-- Java: `src/test/java/ch/batbern/events/watch/` (Testcontainers PostgreSQL)
+- Swift: `BATbern-watch Watch AppTests/` mirroring source structure
+- Java (EMS): `src/test/java/ch/batbern/events/watch/` (Testcontainers PostgreSQL)
+- Java (CUMS): `src/test/java/ch/batbern/companyuser/watch/` (Testcontainers PostgreSQL)
 
 ### Format Patterns
 
-**API Response Format (REST):**
-```json
-{
-  "eventCode": "BATbern56",
-  "data": { ... },
-  "timestamp": "2026-02-14T18:00:00Z"
-}
-```
-
 **Date Format:** ISO 8601 UTC (`2026-02-14T18:00:00Z`) — all timestamps in UTC, client converts to local
 
-**Status Codes:** `SCHEDULED`, `LIVE`, `COMPLETE` (uppercase, matching backend `SessionStatus`)
+**Session Status Codes:** `SCHEDULED`, `ACTIVE`, `COMPLETED`, `SKIPPED` (uppercase, matching backend enum)
 
-**Action Names:** `SESSION_COMPLETE`, `SCHEDULE_CASCADE` (uppercase snake_case)
+**Action Names:** `SESSION_STARTED`, `SESSION_ENDED`, `SESSION_EXTENDED`, `SESSION_SKIPPED`, `SCHEDULE_CASCADE`, `SPEAKER_ARRIVED` (uppercase snake_case)
+
+**Session Types:** `keynote`, `presentation`, `workshop`, `panel_discussion`, `networking`, `break`, `lunch` (lowercase, matching existing API)
 
 ### Communication Patterns
 
 **WebSocket State Updates:**
 - Server broadcasts full state on every change (no deltas)
-- Watch replaces local state entirely on each update
-- This simplifies reconciliation at the cost of slightly larger payloads (~2KB per update — negligible)
+- Watch replaces local organizer state entirely on each update
+- `trigger` field in state update identifies what changed (maps to PRD message types)
+- This simplifies reconciliation at the cost of slightly larger payloads (~3KB per update — negligible for 4 users)
+
+**Speaker Arrival Updates:**
+- Separate topic (`/topic/events/{eventCode}/arrivals`) for lightweight arrival broadcasts
+- Watch merges arrival data into local speaker cache
+- Arrival count included in each message for display without local computation
 
 **Action-ACK Pattern:**
 - Watch sends action → waits for ACK (3s timeout)
-- If ACK received: update local state
+- If ACK received with `success: true`: local state already updated via broadcast
+- If ACK with `success: false`: display error toast, retain in queue
 - If timeout: queue action, switch to offline mode, retry on reconnect
 
 **Idempotency:**
-- `SESSION_COMPLETE` is idempotent (completing an already-complete session is a no-op)
+- `SESSION_ENDED` is idempotent (ending an already-ended session is a no-op)
 - `SCHEDULE_CASCADE` checks if cascade already applied (based on server state)
+- `SPEAKER_ARRIVED` is idempotent (confirming an already-arrived speaker is a no-op)
 
 ### Process Patterns
 
 **Error Handling:**
 - Network errors → silent fallback to offline mode (no user alert unless persistent)
 - Action errors → toast notification + retain in queue
-- Auth errors → re-prompt login (only if refresh token also fails)
+- Auth errors → attempt JWT refresh via pairing token; if that fails, show pairing screen
 - Never crash — wrap all WebSocket handlers in do/catch
 
 **Loading States:**
 - Initial sync: Full-screen spinner with "Connecting to event..."
 - Reconnecting: Status bar shows "Reconnecting..." with attempt count
+- Public zone: Show cached data immediately, refresh in background
 - Normal operation: No loading indicators (seamless)
 
 ### Enforcement Guidelines
@@ -464,6 +751,10 @@ ch.batbern.events.watch/
 6. Calculate timer from wall clock, never use decrementing counter
 7. Queue offline actions to disk, replay on reconnect
 8. Validate JWT on STOMP CONNECT (never allow unauthenticated WebSocket)
+9. Implement dual-zone navigation as horizontal TabView paging (public left, organizer right)
+10. Use pairing code flow for Watch auth (never direct Cognito password entry on Watch)
+11. Respect progressive publishing phases in public zone (TOPIC / SPEAKERS / AGENDA)
+12. Place pairing endpoints in company-user-management-service, session/WebSocket in event-management-service
 
 ---
 
@@ -471,51 +762,77 @@ ch.batbern.events.watch/
 
 ### Complete Project Directory Structure
 
-**New watchOS Project:**
+**New watchOS Project (in monorepo `apps/` directory):**
 ```
-BATbernWatch/
-├── BATbernWatch.xcodeproj
-├── BATbernWatch/
+apps/BATbern-watch/
+├── BATbern-watch.xcodeproj/
+├── BATbern-watch Watch App/
 │   ├── BATbernWatchApp.swift
-│   ├── ContentView.swift
+│   ├── ContentView.swift                    # TabView horizontal paging (zone container)
 │   ├── Views/
-│   │   ├── SessionView.swift           # Progress ring + card stack
-│   │   ├── ScheduleListView.swift      # Digital Crown scrollable
-│   │   ├── CascadeSheet.swift          # Shift schedule modal
-│   │   ├── BreakView.swift             # Break countdown
-│   │   ├── TransitionView.swift        # Next speaker intro
-│   │   └── SetupView.swift             # Event selection + login
+│   │   ├── Public/
+│   │   │   ├── EventHeroView.swift          # P1: Theme image, title, date/venue
+│   │   │   ├── SessionCardView.swift        # P2: Time slot, title, speakers
+│   │   │   ├── AbstractDetailView.swift     # P3: Session abstract (Crown scrollable)
+│   │   │   ├── SpeakerBioView.swift         # P4/P6: Portrait, name, company, bio
+│   │   │   └── MultiSpeakerGridView.swift   # P5: Portrait grid (tappable → P6)
+│   │   ├── Organizer/
+│   │   │   ├── PairingView.swift            # O1: 6-digit code entry
+│   │   │   ├── SpeakerArrivalView.swift     # O2: Portrait grid + arrival tracking
+│   │   │   ├── LiveCountdownView.swift      # O3: Progress ring + countdown + speaker
+│   │   │   ├── CascadePromptView.swift      # O4: Shift schedule options
+│   │   │   ├── BreakGongView.swift          # O5: Break countdown + gong timer
+│   │   │   ├── TransitionView.swift         # O6: Next speaker intro
+│   │   │   └── SessionTimelineView.swift    # O7: Full session list with status
+│   │   └── Shared/
+│   │       ├── SpeakerPortraitView.swift    # Reusable portrait thumbnail
+│   │       └── ConnectionStatusBar.swift    # Connectivity indicator
 │   ├── ViewModels/
-│   │   └── EventViewModel.swift        # Main @Observable state
+│   │   ├── PublicViewModel.swift            # Public zone state
+│   │   └── OrganizerViewModel.swift         # Organizer zone state
 │   ├── Domain/
-│   │   ├── EventStateMachine.swift     # Session lifecycle
-│   │   ├── SessionTimerEngine.swift    # Countdown timer
-│   │   └── HapticScheduler.swift       # Alert scheduling
+│   │   ├── EventStateMachine.swift          # Session lifecycle
+│   │   ├── SessionTimerEngine.swift         # Wall-clock countdown
+│   │   ├── HapticScheduler.swift            # Alert scheduling
+│   │   └── ArrivalTracker.swift             # Speaker arrival logic
 │   ├── Data/
-│   │   ├── WebSocketClient.swift       # STOMP client
-│   │   ├── LocalCache.swift            # SwiftData models + queries
-│   │   ├── ActionQueue.swift           # Offline queue
-│   │   └── AuthManager.swift           # Cognito JWT management
+│   │   ├── WebSocketClient.swift            # STOMP client
+│   │   ├── PublicEventService.swift         # REST client for public endpoints
+│   │   ├── LocalCache.swift                 # SwiftData models + queries
+│   │   ├── ActionQueue.swift                # Offline action buffer
+│   │   ├── AuthManager.swift                # Pairing token + JWT management
+│   │   └── PortraitCache.swift              # Image file cache
 │   ├── Models/
-│   │   ├── WatchEvent.swift            # Event data type
-│   │   ├── WatchSession.swift          # Session data type
-│   │   ├── OrganizerPresence.swift     # Presence data type
-│   │   └── DTOs.swift                  # Network message types
+│   │   ├── CachedEvent.swift                # SwiftData event model
+│   │   ├── CachedSession.swift              # SwiftData session model
+│   │   ├── CachedSpeaker.swift              # SwiftData speaker model
+│   │   ├── PairingInfo.swift                # SwiftData pairing model
+│   │   ├── OrganizerPresence.swift          # Presence data type
+│   │   └── DTOs.swift                       # Network message types
 │   ├── Complications/
-│   │   └── ComplicationProvider.swift  # WidgetKit timeline
+│   │   ├── CircularComplication.swift        # C1: Progress ring + minutes
+│   │   ├── RectangularComplication.swift     # C2: Speaker + countdown + bar
+│   │   └── CornerComplication.swift          # C3: Digits only
 │   └── Resources/
-│       └── Assets.xcassets
-├── BATbernWatchTests/
+│       ├── Assets.xcassets/
+│       └── Localizable.xcstrings            # DE, EN, FR
+├── BATbern-watch Watch AppTests/
 │   ├── Domain/
 │   │   ├── SessionTimerEngineTests.swift
 │   │   ├── EventStateMachineTests.swift
-│   │   └── HapticSchedulerTests.swift
+│   │   ├── HapticSchedulerTests.swift
+│   │   └── ArrivalTrackerTests.swift
 │   ├── Data/
 │   │   ├── ActionQueueTests.swift
-│   │   └── LocalCacheTests.swift
+│   │   ├── LocalCacheTests.swift
+│   │   └── AuthManagerTests.swift
 │   └── ViewModels/
-│       └── EventViewModelTests.swift
-└── Package.swift                       # SPM dependencies
+│       ├── PublicViewModelTests.swift
+│       └── OrganizerViewModelTests.swift
+├── BATbern-watch Watch AppUITests/
+│   └── NavigationUITests.swift
+├── CLAUDE.md                                # Watch app development guide
+└── README.md
 ```
 
 **Backend Extensions (existing monorepo):**
@@ -523,70 +840,129 @@ BATbernWatch/
 services/event-management-service/
 ├── src/main/java/ch/batbern/events/
 │   ├── config/
-│   │   └── WebSocketConfig.java                # MODIFIED: Add JWT interceptor
-│   ├── watch/                                  # NEW package
-│   │   ├── WatchWebSocketController.java       # STOMP message handlers
-│   │   ├── WatchConnectionManager.java         # Presence tracking (in-memory)
-│   │   ├── WatchEventStateService.java         # State snapshot builder
-│   │   ├── WatchSessionActionService.java      # Action processor
-│   │   ├── WatchRestController.java            # REST fallback endpoints
-│   │   ├── JwtStompInterceptor.java            # WebSocket auth
+│   │   └── WebSocketConfig.java                    # MODIFIED: Add JWT interceptor
+│   ├── watch/                                      # NEW package
+│   │   ├── WatchWebSocketController.java
+│   │   ├── WatchConnectionManager.java
+│   │   ├── WatchEventStateService.java
+│   │   ├── WatchSessionActionService.java
+│   │   ├── WatchSpeakerArrivalService.java         # NEW: arrival tracking
+│   │   ├── WatchRestController.java
+│   │   ├── JwtStompInterceptor.java
 │   │   └── dto/
 │   │       ├── WatchStateUpdate.java
 │   │       ├── WatchAction.java
-│   │       └── WatchActionAck.java
+│   │       ├── WatchActionAck.java
+│   │       └── SpeakerArrivalUpdate.java           # NEW
 │   └── domain/
-│       └── Session.java                        # MODIFIED: Add 4 new fields
+│       ├── Session.java                            # MODIFIED: Add 4 watch fields
+│       └── SpeakerArrival.java                     # NEW: arrival entity
 ├── src/main/resources/db/migration/
-│   └── V{next}__add_watch_session_fields.sql   # NEW
+│   ├── V{next}__add_watch_session_fields.sql       # NEW
+│   └── V{next+1}__add_speaker_arrival_tracking.sql # NEW
 └── src/test/java/ch/batbern/events/watch/
-    └── WatchWebSocketIntegrationTest.java      # NEW
+    ├── WatchWebSocketIntegrationTest.java          # NEW
+    └── WatchSpeakerArrivalIntegrationTest.java     # NEW
+
+services/company-user-management-service/
+├── src/main/java/ch/batbern/companyuser/
+│   └── watch/                                      # NEW package
+│       ├── WatchPairingController.java
+│       ├── WatchPairingService.java
+│       ├── WatchAuthController.java
+│       └── dto/
+│           ├── PairingCodeResponse.java
+│           ├── PairingRequest.java
+│           └── WatchAuthResponse.java
+├── src/main/java/ch/batbern/companyuser/domain/
+│   └── WatchPairing.java                           # NEW: JPA entity
+├── src/main/resources/db/migration/
+│   └── V{next}__add_watch_pairing.sql              # NEW
+└── src/test/java/ch/batbern/companyuser/watch/
+    └── WatchPairingIntegrationTest.java            # NEW
+
+web-frontend/
+└── src/
+    └── features/
+        └── profile/
+            └── WatchPairingSection.tsx              # NEW: "Pair Apple Watch" UI
 
 infrastructure/
-└── lib/constructs/ecs-service.ts               # MODIFIED: ALB timeout + stickiness
+└── lib/constructs/ecs-service.ts                   # MODIFIED: ALB timeout + stickiness
+```
+
+**Documentation (already established):**
+```
+docs/watch-app/
+├── prd-batbern-watch.md                # PRD v2.0 (authoritative)
+├── architecture.md                     # This document
+├── ux-design-specification.md          # UX Spec v2.0
+├── ux-design-directions.html           # Visual mockups
+├── product-brief.md                    # Initial product brief
+├── brainstorming-session.md            # Feature discovery session
+├── epics.md                            # Epic breakdown
+└── stories/                            # Watch stories (W-prefixed)
+    ├── W1.1-xcode-project-setup.md
+    ├── W1.2-event-hero-screen.md
+    └── ...
 ```
 
 ### Architectural Boundaries
 
 **API Boundaries:**
-- Watch ↔ Backend: WSS (STOMP) + HTTPS (REST) through ALB
-- Watch ↔ Cognito: HTTPS (OAuth2 token exchange)
-- WebSocket bypasses API Gateway (existing pattern) — connects direct to EMS on port 8002
+- Watch (public zone) ↔ Backend: HTTPS (REST) through API Gateway — existing public endpoints
+- Watch (organizer zone) ↔ Backend: WSS (STOMP) + HTTPS (REST) through ALB
+- Watch ↔ company-user-management: HTTPS (pairing endpoints) through API Gateway
+- WebSocket connects direct to event-management-service on port 8002 (existing pattern)
 - REST endpoints go through API Gateway for auth middleware
 
 **Component Boundaries (watchOS):**
-- Views never access Data layer directly — always through ViewModel
+- Views never access Data layer directly — always through ViewModels
 - Domain layer is pure logic — no UI or network dependencies
-- Data layer handles all I/O (network, disk, keychain)
+- Data layer handles all I/O (network, disk, Keychain)
 - Models are shared across all layers (value types, Codable)
+- Public and Organizer ViewModels share the same LocalCache but have separate network clients
 
 **Service Boundaries (Backend):**
-- `watch/` package is self-contained within Event Management Service
-- No cross-service calls from Watch handlers (all data in EMS database)
+- `event-management-service/watch/` — session state, WebSocket, arrival tracking (owns session and event data)
+- `company-user-management-service/watch/` — pairing code management (owns user identity data)
+- No new cross-service calls from Watch handlers — pairing and session services operate independently
 - Presence tracking is in-memory only (no database persistence needed for 4 users)
+- Speaker arrival tracking IS persistent (database — survives service restarts during pre-event phase)
 
 **Data Boundaries:**
-- Watch local cache is a read-through cache of server state
+- Watch local cache is a read-through cache of server state (organizer zone)
+- Watch local cache is a periodic refresh cache of public API data (public zone)
 - Server state is always authoritative
-- No Watch-specific database tables — only new columns on existing `sessions` table
+- Public zone data is strictly read-only — no state mutations from public users
 
 ### Integration Points
 
 **Internal Communication:**
-- WebSocket (STOMP): Primary real-time channel between Watch and EMS
-- REST: Setup, fallback polling, offline queue replay
+- WebSocket (STOMP): Primary real-time channel between Watch and EMS (organizer zone)
+- REST (public): Watch → API Gateway → existing public endpoints (public zone)
+- REST (pairing): Watch → API Gateway → CUMS (pairing flow)
+- REST (fallback): Watch → API Gateway → EMS (offline replay, polling)
 - SwiftData ↔ Domain: Local cache feeds timer engine and views
 
 **External Integrations:**
-- AWS Cognito: Authentication tokens
-- S3/CloudFront: Speaker portrait images (presigned URLs)
+- S3/CloudFront: Speaker portrait images, company logos, event theme images
+- No direct Cognito interaction from Watch (pairing code abstracts this)
 - No other external services for MVP
 
-**Data Flow:**
+**Data Flow — Public Zone:**
 ```
-Cognito → JWT → Watch AuthManager → STOMP CONNECT → EMS
-EMS → STATE_UPDATE → Watch WebSocketClient → LocalCache → EventViewModel → Views
-Watch → ACTION → EMS → Process → Broadcast STATE_UPDATE → All Watches
+App Launch → SwiftData Cache → PublicViewModel → Views (immediate)
+             PublicEventService → REST GET /events/current → SwiftData Cache → PublicViewModel → Views (refresh)
+```
+
+**Data Flow — Organizer Zone:**
+```
+Pairing: Watch → POST /watch/pair → PairingToken → Keychain
+Auth:    PairingToken → POST /watch/authenticate → JWT → Memory
+Connect: JWT → STOMP CONNECT → EMS WebSocket → Subscribe /topic/events/{code}/state
+Sync:    EMS → STATE_UPDATE → WebSocketClient → LocalCache → OrganizerViewModel → Views
+Action:  Watch → STOMP SEND /action → EMS → Process → Broadcast STATE_UPDATE → All Watches
 ```
 
 ---
@@ -595,63 +971,75 @@ Watch → ACTION → EMS → Process → Broadcast STATE_UPDATE → All Watches
 
 ### Coherence Validation
 
-- **Decision Compatibility:** All decisions work together. STOMP/WebSocket + JWT auth + server-authoritative state form a coherent real-time sync model. SwiftData + wall-clock timer + offline queue form a coherent offline resilience model.
-- **Pattern Consistency:** Naming patterns align with existing BATbern conventions (ADR-003, snake_case SQL, camelCase Java/Swift). STOMP topics follow consistent `/topic/events/{eventCode}/...` pattern.
-- **Structure Alignment:** watchOS MVVM layers cleanly separate concerns. Backend `watch/` package is self-contained within existing service structure.
+- **Decision Compatibility:** All decisions work together. Pairing code flow avoids password entry on Watch while still producing JWTs for STOMP auth. STOMP/WebSocket + JWT auth + server-authoritative state form a coherent real-time sync model. SwiftData + wall-clock timer + offline queue form a coherent offline resilience model. Dual-zone navigation cleanly separates public (read-only, no auth) from organizer (read-write, paired auth).
+- **Pattern Consistency:** Naming patterns align with existing BATbern conventions (ADR-003, snake_case SQL, camelCase Java/Swift). STOMP topics follow consistent `/topic/events/{eventCode}/...` pattern. View names match UX spec screen IDs (P1-P6, O1-O7, C1-C3).
+- **Structure Alignment:** watchOS MVVM layers cleanly separate concerns. Backend changes distributed correctly: identity/pairing in CUMS, session state in EMS.
 
 ### Requirements Coverage Validation
 
-| Requirement Group | Coverage | Notes |
+| Requirement Group | Coverage | Implementation |
 |---|---|---|
-| FR1-5 (Schedule display) | Covered | SessionView, ScheduleListView, ComplicationProvider |
+| FR1-5 (Schedule display) | Covered | LiveCountdownView (O3), SessionTimelineView (O7), Complications (C1-C3) |
 | FR6-10 (Session lifecycle) | Covered | EventStateMachine, WatchSessionActionService |
 | FR11-16 (Time alerting) | Covered | HapticScheduler, SessionTimerEngine |
 | FR17-20 (Team sync) | Covered | WebSocket broadcast, WatchConnectionManager |
-| FR21-24 (Setup & connection) | Covered | AuthManager, SetupView, REST endpoints |
+| FR21-24 (Setup & connection) | Covered | AuthManager, PairingView (O1), pairing endpoints |
 | FR25-28 (Offline resilience) | Covered | LocalCache, ActionQueue, ConnectionState |
-| NFR: <3s cascade | Covered | WebSocket broadcast (in-memory broker) |
-| NFR: <1s haptic | Covered | Wall-clock timer with threshold detection |
-| NFR: >30% battery | Covered | Single WebSocket, adaptive behavior |
-| NFR: Zero crashes | Covered | Error boundaries, defensive patterns |
+| FR29-35 (Public zone) | Covered | EventHeroView (P1), SessionCardView (P2), AbstractDetailView (P3), SpeakerBioView (P4), MultiSpeakerGridView (P5), PublicEventService |
+| FR36-39 (Speaker arrival) | Covered | SpeakerArrivalView (O2), WatchSpeakerArrivalService, SPEAKER_ARRIVED message |
+| NFR1-6: Performance | Covered | Wall-clock timer, native SwiftUI, SwiftData cache |
+| NFR7: Public zone speed | Covered | Cache-first loading, async refresh |
+| NFR8-13: Reliability | Covered | Extended Runtime, offline mode, error boundaries |
+| NFR14-20: Security | Covered | Pairing code flow, Keychain, JWT, TLS, max 2 watches |
+| NFR21-24: Battery | Covered | Single WebSocket, adaptive polling, file cache |
+| NFR25-31: Compatibility | Covered | watchOS 11+, VoiceOver, Dynamic Type, High Contrast |
+| NFR32-33: Localization | Covered | String catalogs (DE, EN, FR) |
 
 ### Implementation Readiness Validation
 
 - **Decision Completeness:** All critical and important decisions documented with specific technologies and versions
-- **Structure Completeness:** Full directory tree for watchOS project and backend extensions
+- **Structure Completeness:** Full directory tree for watchOS project (13 screens, 3 complications) and backend extensions (2 services)
 - **Pattern Completeness:** Naming, structure, format, communication, and process patterns defined
+- **Epic Alignment:** Implementation sequence follows PRD epic structure for incremental delivery
 
 ### Gap Analysis Results
 
 | Priority | Gap | Mitigation |
 |---|---|---|
 | Nice-to-have | APNs backup channel | Deferred to Phase 2; WebSocket sufficient for venue WiFi |
-| Nice-to-have | Speaker arrival tracking | Phase 2 feature |
-| Nice-to-have | Quick ping between organizers | Phase 2 feature |
+| Nice-to-have | Quick ping between organizers | Phase 2 feature — new action type `PING` |
+| Nice-to-have | Speaker time signal / flash | Phase 2 feature — separate speaker-facing channel |
 | Low | Multi-instance ECS WebSocket routing | Stickiness handles this; only 4 connections |
 
 ### Architecture Completeness Checklist
 
-- [x] Requirements Analysis — all 28 FRs and NFRs mapped
-- [x] Architectural Decisions — 8 critical/important decisions documented
+- [x] Requirements Analysis — all 39 FRs and 33 NFRs mapped
+- [x] Architectural Decisions — 11 critical/important decisions documented
+- [x] Dual-Zone Architecture — public (left) + organizer (right) with state-dependent entry
+- [x] Authentication — pairing code flow, no Watch passwords, JWT for API/STOMP
 - [x] Implementation Patterns — naming, structure, format, communication, process
-- [x] Project Structure — full directory tree with file purposes
-- [x] Integration Points — WebSocket, REST, Cognito, S3 defined
-- [x] Data Architecture — schema migration, client persistence, cache strategy
-- [x] Security — JWT auth, STOMP interceptor, TLS, role-based access
-- [x] Testing Strategy — unit, integration, UI, manual test plan
-- [x] Deployment Plan — 5-phase rollout from staging to live pilot
-- [x] Risk Register — 7 risks with mitigations
+- [x] Project Structure — full directory tree with file purposes (13 screens, 3 complications)
+- [x] Integration Points — WebSocket, REST (public + pairing + fallback), S3/CloudFront
+- [x] Data Architecture — 3 schema migrations (2 services), SwiftData models, portrait cache
+- [x] Security — Pairing code auth, JWT, STOMP interceptor, TLS, role-based access
+- [x] Backend Service Boundaries — pairing in CUMS, session/WebSocket/arrival in EMS
+- [x] Epic-Aligned Sequence — 5 epics with incremental delivery (Epic 1 alone is shippable)
+- [x] Risk Register — 8 risks with mitigations
 
 ### Architecture Readiness Assessment
 
 - **Overall Status:** READY FOR IMPLEMENTATION
 - **Confidence Level:** High
 - **Key Strengths:**
+  - Dual-zone architecture enables App Store distribution (200+ attendees) while protecting organizer features
+  - Pairing code flow eliminates password entry on Watch — seamless one-time setup
   - Extends existing proven infrastructure (no greenfield backend)
+  - Epic 1 (public zone) requires zero backend work — fastest path to TestFlight
   - WebSocket/STOMP already configured — just needs auth + Watch handlers
   - Offline resilience is first-class (not bolted on)
-  - Timer design prevents drift across watchOS suspensions
+  - Timer design prevents drift across watchOS app suspensions
   - Idempotent actions eliminate multi-user conflict complexity
+  - Speaker arrival tracking integrated into MVP — completes pre-event workflow
 - **Areas for Future Enhancement:**
   - APNs backup channel for reliability beyond venue WiFi
   - Analytics from actual session timing data
@@ -663,37 +1051,37 @@ Watch → ACTION → EMS → Process → Broadcast STATE_UPDATE → All Watches
 
 ### Workflow Completion
 
-- **Status:** COMPLETED
-- **Total Steps Completed:** 8
-- **Date Completed:** 2026-02-14
-- **Document Location:** `_bmad-output/planning-artifacts/architecture.md`
+- **Status:** COMPLETED (v2.0 update)
+- **Total Steps Completed:** 8 (initial) + alignment review
+- **Date Completed:** 2026-02-15
+- **Document Location:** `docs/watch-app/architecture.md`
+- **Change Summary (v2.0):** Aligned with PRD v2.0 and UX Spec v2.0 — added public zone, pairing code auth, speaker arrival tracking, dual-zone navigation, complete screen catalog, correct service boundaries
 
 ### Final Architecture Deliverables
 
 - **Complete Architecture Document:** All decisions, patterns, structure, validation
 - **Implementation Ready Foundation:**
-  - 8 architectural decisions documented
+  - 11 architectural decisions documented
   - 5 pattern categories defined
-  - 20+ source files specified with purposes
-  - Full directory tree for both watchOS and backend
+  - 30+ source files specified with purposes
+  - Full directory trees for watchOS and backend (2 services)
+  - 13 screens + 3 complications mapped to UX spec IDs
 - **AI Agent Implementation Guide:**
-  - Swift 5.9+ / SwiftUI / watchOS 10+ / SwiftData (client)
+  - Swift 6.0 / SwiftUI / watchOS 11+ / SwiftData (client)
   - Java 21 / Spring Boot 3.x / Spring WebSocket / PostgreSQL 15+ (backend)
-  - 8 mandatory enforcement rules for AI agents
+  - 12 mandatory enforcement rules for AI agents
   - ADR-003 compliance required throughout
 
 ### Implementation Handoff
 
-**For AI Agents:** This document contains all decisions needed to implement BATbern Watch. Follow the enforcement guidelines in "Implementation Patterns" exactly. When in doubt, the server is authoritative, timers use wall-clock calculation, and all actions are idempotent.
+**For AI Agents:** This document contains all decisions needed to implement BATbern Watch. Follow the enforcement guidelines in "Implementation Patterns" exactly. When in doubt: the server is authoritative, timers use wall-clock calculation, all actions are idempotent, pairing code flow for auth (never Cognito direct), and public zone uses existing endpoints only.
 
-**Development Sequence:**
-1. **Backend schema + entities** — Flyway migration, Session.java changes
-2. **Backend WebSocket handlers** — STOMP controller, JWT interceptor, state service
-3. **Backend REST endpoints** — Setup, fallback, offline replay
-4. **watchOS data layer** — STOMP client, SwiftData cache, auth manager, action queue
-5. **watchOS domain layer** — Timer engine, state machine, haptic scheduler
-6. **watchOS presentation** — Views (progress ring + card stack), complications
-7. **Integration testing** — Multi-watch sync, offline scenarios, cascade propagation
+**Epic Delivery Sequence:**
+1. **Epic 1: Public Event Companion** — Xcode project, P1-P6 screens, SwiftData cache, offline support. Zero backend work. Submit to TestFlight.
+2. **Epic 2: Watch Pairing & Organizer Access** — O1-O2 screens, pairing endpoints (CUMS), arrival tracking (EMS), web frontend pairing UI.
+3. **Epic 3: Live Countdown & Haptic Awareness** — O3 screen, C1-C3 complications, haptic patterns, always-on display.
+4. **Epic 4: Session Control & Team Sync** — O3-O7 screens, WebSocket endpoint (EMS), session state machine, cascade, presence.
+5. **Epic 5: Offline Resilience** — ActionQueue, connectivity monitoring, sync recovery, offline haptics, queue replay endpoint.
 
 ### Risk Register
 
@@ -705,18 +1093,19 @@ Watch → ACTION → EMS → Process → Broadcast STATE_UPDATE → All Watches
 | Battery drains before event ends | Low | High | Adaptive behavior; test 3-hour sessions in advance |
 | Two organizers conflict on cascade | Low | Low | First-wins; second sees result immediately |
 | ECS rolling deploy during event | Low | High | Schedule deploys outside event hours; ALB draining |
-| Cognito token refresh fails | Low | Medium | Keychain-cached refresh token; degrade to offline mode |
+| Pairing token compromised | Low | Medium | Max 2 watches enforced; unpair from web; pairing tokens are per-device |
+| Speaker arrival state lost on restart | Low | Medium | Persistent database storage; recovers on service restart |
 
 ### Phase 2 Extensions
 
 | Feature | Architecture Impact |
 |---|---|
 | **APNs backup channel** | Push notifications for critical state changes as WebSocket reliability backup |
-| **Speaker arrival tracking** | New STOMP topic + backend endpoint |
-| **Quick ping between organizers** | New action type `PING` with haptic on receiving watch |
+| **Quick ping between organizers** | New action type `PING` with haptic on receiving Watch |
 | **Speaker time signal** | Separate speaker-facing channel or companion app |
 | **Multi-event support** | Watch switches between events; minor UI/cache changes |
 | **Analytics dashboard** | Backend stores timing data (already captured in `actualStartTime`/`actualEndTime`) |
+| **Attendee count pulse** | Live check-in count on wrist — requires registration service integration |
 
 ---
 
