@@ -34,21 +34,30 @@ struct SessionListView: View {
 
     @ViewBuilder
     private func verticalPagingView(vm: PublicViewModel) -> some View {
-        TabView(selection: $selectedPageIndex) {
-            // Page 0: Event Hero (P1)
-            EventHeroView()
-                .tag(0)
+        ZStack(alignment: .top) {
+            TabView(selection: $selectedPageIndex) {
+                // Page 0: Event Hero (P1)
+                EventHeroView()
+                    .tag(0)
 
-            // Pages 1..N: Session Cards (P2)
-            ForEach(Array(vm.displayableSessions.enumerated()), id: \.element.sessionSlug) { index, session in
-                SessionCardView(
-                    session: session,
-                    phase: vm.event?.currentPublishedPhase
-                )
-                .tag(index + 1)
+                // Pages 1..N: Session Cards (P2)
+                ForEach(Array(vm.displayableSessions.enumerated()), id: \.element.sessionSlug) { index, session in
+                    SessionCardView(
+                        session: session,
+                        phase: vm.event?.currentPublishedPhase
+                    )
+                    .tag(index + 1)
+                }
             }
+            .tabViewStyle(.verticalPage)  // Crown-driven vertical paging
+
+            // Connection status bar overlay (AC#4, AC#7)
+            // Visible on P1 (EventHero) and P2 (session cards) only
+            ConnectionStatusBar(
+                isOffline: vm.isOffline,
+                lastSynced: vm.lastSynced
+            )
         }
-        .tabViewStyle(.verticalPage)  // Crown-driven vertical paging
     }
 }
 

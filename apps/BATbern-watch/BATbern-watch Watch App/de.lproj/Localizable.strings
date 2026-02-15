@@ -20,6 +20,10 @@
 "organizer.title" = "Organisator-Bereich";
 "organizer.coming_soon" = "Verfügbar in Epic 2";
 
+/* Connection Status */
+"status.offline" = "Offline";
+"status.updated" = "Aktualisiert";
+
 /* Error Messages */
 "error.offline" = "Offline — gecachte Daten werden angezeigt";
 "error.refresh_failed" = "Aktualisierung fehlgeschlagen: %@";

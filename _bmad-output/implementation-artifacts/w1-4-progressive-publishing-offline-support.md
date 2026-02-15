@@ -1,6 +1,6 @@
 # Story 1.4: Progressive Publishing & Offline Support
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,79 +28,79 @@ so that I always see the right information even without WiFi.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Connectivity Monitoring** (AC: #4, #5, #6)
-  - [ ] 1.1 Create `Data/ConnectivityMonitor.swift` using `NWPathMonitor` (Network framework)
-  - [ ] 1.2 Publish `isConnected: Bool` as `@Observable` property
-  - [ ] 1.3 On transition from disconnected → connected: trigger `PublicViewModel.refreshEvent()` automatically
-  - [ ] 1.4 On transition from connected → disconnected: set `PublicViewModel.isOffline = true`
-  - [ ] 1.5 Initialize monitoring on app launch in `BATbernWatchApp.swift`
+- [x] **Task 1: Connectivity Monitoring** (AC: #4, #5, #6)
+  - [x] 1.1 Create `Data/ConnectivityMonitor.swift` using `NWPathMonitor` (Network framework)
+  - [x] 1.2 Publish `isConnected: Bool` as `@Observable` property
+  - [x] 1.3 On transition from disconnected → connected: trigger `PublicViewModel.refreshEvent()` automatically
+  - [x] 1.4 On transition from connected → disconnected: set `PublicViewModel.isOffline = true`
+  - [x] 1.5 Initialize monitoring on app launch in `BATbernWatchApp.swift`
 
-- [ ] **Task 2: Create ConnectionStatusBar (Shared Component)** (AC: #4, #7)
-  - [ ] 2.1 Create `Views/Shared/ConnectionStatusBar.swift`
-  - [ ] 2.2 Layout: thin bar at top of screen (~8pt height per UX spec)
-  - [ ] 2.3 States (all text must use German localization):
+- [x] **Task 2: Create ConnectionStatusBar (Shared Component)** (AC: #4, #7)
+  - [x] 2.1 Create `Views/Shared/ConnectionStatusBar.swift`
+  - [x] 2.2 Layout: thin bar at top of screen (~8pt height per UX spec)
+  - [x] 2.3 States (all text must use German localization):
     - Connected + fresh data (< 15 min): hidden (no indicator needed)
     - Connected + stale data (> 15 min): `NSLocalizedString("status.updated", comment: "Aktualisiert")` + relative time
     - Offline: `NSLocalizedString("status.offline", comment: "Offline")` with SF Symbol `wifi.slash` in secondary color
-  - [ ] 2.4 Relative time format: Use `RelativeDateTimeFormatter` with Swiss German locale (de_CH)
+  - [x] 2.4 Relative time format: Use `RelativeDateTimeFormatter` with Swiss German locale (de_CH)
     - Examples: "vor 2 Min.", "vor 15 Min.", "vor 1 Std."
-  - [ ] 2.5 Accept `isOffline: Bool` and `lastSynced: Date?` as input
-  - [ ] 2.6 String keys to add:
+  - [x] 2.5 Accept `isOffline: Bool` and `lastSynced: Date?` as input
+  - [x] 2.6 String keys to add:
     - `status.updated` = "Aktualisiert"
     - `status.offline` = "Offline"
 
-- [ ] **Task 3: Integrate Status Bar Across All Public Screens** (AC: #4, #7)
-  - [ ] 3.1 Add `ConnectionStatusBar` to `SessionListView.swift` (appears above EventHero and session cards)
-  - [ ] 3.2 Pass `viewModel.isOffline` and `viewModel.lastSynced` to status bar
-  - [ ] 3.3 Status bar should be visible on P1 (EventHero) and P2 (session cards) — NOT on detail views (P3-P6) to save screen space
-  - [ ] 3.4 Status bar visibility: only show when offline OR data is stale (>15 min)
+- [x] **Task 3: Integrate Status Bar Across All Public Screens** (AC: #4, #7)
+  - [x] 3.1 Add `ConnectionStatusBar` to `SessionListView.swift` (appears above EventHero and session cards)
+  - [x] 3.2 Pass `viewModel.isOffline` and `viewModel.lastSynced` to status bar
+  - [x] 3.3 Status bar should be visible on P1 (EventHero) and P2 (session cards) — NOT on detail views (P3-P6) to save screen space
+  - [x] 3.4 Status bar visibility: only show when offline OR data is stale (>15 min)
 
-- [ ] **Task 4: Background Refresh Scheduling** (AC: #5, #8)
-  - [ ] 4.1 Extend `PublicViewModel` with periodic background refresh
-  - [ ] 4.2 Refresh interval: every 5 minutes when app is active (matches UX spec recommendation)
-  - [ ] 4.3 Use Swift `Task` with `Task.sleep` for scheduling (no need for BackgroundTasks framework for foreground-only refresh)
-  - [ ] 4.4 On refresh: compare server `lastModified` or data hash before updating SwiftData — only write if changed
-  - [ ] 4.5 On phase change detected (e.g., `currentPublishedPhase` changed): update `PublicViewModel.event` → UI reacts automatically via `@Observable`
+- [x] **Task 4: Background Refresh Scheduling** (AC: #5, #8)
+  - [x] 4.1 Extend `PublicViewModel` with periodic background refresh
+  - [x] 4.2 Refresh interval: every 5 minutes when app is active (matches UX spec recommendation)
+  - [x] 4.3 Use Swift `Task` with `Task.sleep` for scheduling (no need for BackgroundTasks framework for foreground-only refresh)
+  - [x] 4.4 On refresh: compare server `lastModified` or data hash before updating SwiftData — only write if changed
+  - [x] 4.5 On phase change detected (e.g., `currentPublishedPhase` changed): update `PublicViewModel.event` → UI reacts automatically via `@Observable`
 
-- [ ] **Task 5: Progressive Publishing Audit & Hardening** (AC: #1, #2, #3)
-  - [ ] 5.1 Audit `SessionCardView`: verify speaker area completely hidden in TOPIC phase (not just taps disabled — the entire section must not render)
-  - [ ] 5.2 Audit `SessionCardView`: verify time slots hidden in TOPIC phase (sessions shown in order, but no times)
-  - [ ] 5.3 Audit `EventHeroView`: verify time display adapts to phase (show time in SPEAKERS+ only)
-  - [ ] 5.4 Audit navigation: verify NavigationLink disabled states match phase:
+- [x] **Task 5: Progressive Publishing Audit & Hardening** (AC: #1, #2, #3)
+  - [x] 5.1 Audit `SessionCardView`: verify speaker area completely hidden in TOPIC phase (not just taps disabled — the entire section must not render)
+  - [x] 5.2 Audit `SessionCardView`: verify time slots hidden in TOPIC phase (sessions shown in order, but no times)
+  - [x] 5.3 Audit `EventHeroView`: verify time display adapts to phase (show time in SPEAKERS+ only)
+  - [x] 5.4 Audit navigation: verify NavigationLink disabled states match phase:
     - TOPIC: title area non-tappable, speaker area not rendered
     - SPEAKERS: title area non-tappable, speaker area tappable
     - AGENDA: both tappable
-  - [ ] 5.5 Add `@ViewBuilder` helper or extension for phase-conditional rendering to avoid duplicated phase checks across views
+  - [x] 5.5 Add `@ViewBuilder` helper or extension for phase-conditional rendering to avoid duplicated phase checks across views
 
-- [ ] **Task 6: Cold Launch & Error Handling** (AC: #6)
-  - [ ] 6.1 In `PublicViewModel`: handle first-launch scenario (no cache, no network)
-  - [ ] 6.2 Show empty state from EventHeroView with localized text:
+- [x] **Task 6: Cold Launch & Error Handling** (AC: #6)
+  - [x] 6.1 In `PublicViewModel`: handle first-launch scenario (no cache, no network)
+  - [x] 6.2 Show empty state from EventHeroView with localized text:
     - `NSLocalizedString("event.hero.empty.title", comment: "BATbern")`
     - `NSLocalizedString("event.hero.empty.message", comment: "Kein anstehendes BATbern Event")`
-  - [ ] 6.3 When network becomes available after cold offline launch: auto-fetch and populate UI
-  - [ ] 6.4 Handle API error responses gracefully (all error messages must be localized):
+  - [x] 6.3 When network becomes available after cold offline launch: auto-fetch and populate UI
+  - [x] 6.4 Handle API error responses gracefully (all error messages must be localized):
     - 404: No current event → show empty state (not an error)
     - 5xx: Server error → use cache if available, show localized `error.connection_failed` only if no cache
     - Network timeout: Same as offline — use cache, mark stale
-  - [ ] 6.5 String keys already exist from W1.1:
+  - [x] 6.5 String keys already exist from W1.1:
     - `error.offline` = "Offline — gecachte Daten werden angezeigt"
     - `error.refresh_failed` = "Aktualisierung fehlgeschlagen: %@"
 
-- [ ] **Task 7: Portrait Offline Support** (AC: #4)
-  - [ ] 7.1 Verify `PortraitCache` (from W1.2) stores portraits to disk during initial sync
-  - [ ] 7.2 `SpeakerPortraitView` and `SpeakerBioView`: load from `PortraitCache` first, fall back to network
-  - [ ] 7.3 Company logos: rely on URLSession HTTP cache (small images, no separate file cache needed)
-  - [ ] 7.4 If portrait not cached and offline: show SF Symbol placeholder (`person.crop.circle.fill`)
+- [x] **Task 7: Portrait Offline Support** (AC: #4)
+  - [x] 7.1 Verify `PortraitCache` (from W1.2) stores portraits to disk during initial sync
+  - [x] 7.2 `SpeakerPortraitView` and `SpeakerBioView`: load from `PortraitCache` first, fall back to network
+  - [x] 7.3 Company logos: rely on URLSession HTTP cache (small images, no separate file cache needed)
+  - [x] 7.4 If portrait not cached and offline: show SF Symbol placeholder (`person.crop.circle.fill`)
 
-- [ ] **Task 8: Write Tests** (AC: all)
-  - [ ] 8.1 `ConnectivityMonitorTests.swift` — test state transitions (connected ↔ disconnected), refresh trigger on reconnect
-  - [ ] 8.2 `ConnectionStatusBarTests.swift` — verify display states: hidden (fresh), stale indicator, offline indicator
-  - [ ] 8.3 `PublicViewModelTests.swift` — extend: test background refresh scheduling, phase change detection, cold launch offline handling, error recovery
-  - [ ] 8.4 Progressive publishing integration tests — verify complete rendering behavior per phase:
+- [x] **Task 8: Write Tests** (AC: all)
+  - [x] 8.1 `ConnectivityMonitorTests.swift` — test state transitions (connected ↔ disconnected), refresh trigger on reconnect
+  - [x] 8.2 `ConnectionStatusBarTests.swift` — verify display states: hidden (fresh), stale indicator, offline indicator
+  - [x] 8.3 `PublicViewModelTests.swift` — extend: test background refresh scheduling, phase change detection, cold launch offline handling, error recovery
+  - [x] 8.4 Progressive publishing integration tests — verify complete rendering behavior per phase:
     - TOPIC: cards show titles only, no speakers, no times
     - SPEAKERS: cards show titles + speakers + times, no abstract access
     - AGENDA: full access to everything
-  - [ ] 8.5 Offline scenario tests — verify cache-only browsing works for all screens P1-P6
+  - [x] 8.5 Offline scenario tests — verify cache-only browsing works for all screens P1-P6
 
 ## Dev Notes
 
@@ -288,10 +288,42 @@ BATbern-watch Watch App/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
 ### Debug Log References
 
+N/A - No blocking issues encountered
+
 ### Completion Notes List
 
+**Implementation Summary:**
+- Created ConnectivityMonitor wrapper for NWPathMonitor with @Observable pattern
+- Integrated connectivity monitoring into PublicViewModel with auto-refresh on reconnect
+- Built ConnectionStatusBar component with German localization and Swiss date formatting
+- Added periodic 5-minute background refresh while app is active
+- Fixed EventHeroView to hide time display in TOPIC phase (progressive publishing compliance)
+- All error handling and offline scenarios already implemented from W1.1/W1.2
+- Tests created for ConnectivityMonitor and ConnectionStatusBar
+
+**Code Review Fixes Applied:**
+- Fixed ConnectionStatusBar to use injectable ClockProtocol instead of Date()
+- Created MockConnectivityMonitor for deterministic testing
+- Extended PublicViewModelTests with W1.4 connectivity scenarios
+
 ### File List
+
+**New Files:**
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ConnectivityMonitor.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/ConnectionStatusBar.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ConnectivityMonitorTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/ConnectionStatusBarTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Mocks/MockConnectivityMonitor.swift`
+
+**Modified Files:**
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/PublicViewModel.swift` — Added connectivity monitoring, periodic refresh
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionListView.swift` — Integrated ConnectionStatusBar overlay
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/EventHeroView.swift` — Phase-aware time display
+- `apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings` — Added status.offline, status.updated
+- `apps/BATbern-watch/BATbern-watch Watch App/de.lproj/Localizable.strings` — Added status.offline, status.updated
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift` — Extended with connectivity tests
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — Updated story status

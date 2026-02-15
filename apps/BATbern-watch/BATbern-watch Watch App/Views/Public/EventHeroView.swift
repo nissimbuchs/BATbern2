@@ -83,14 +83,18 @@ struct EventHeroView: View {
 
                 Spacer(minLength: 16)
 
-                // Bottom info bar: date + time + venue (Swiss German format)
+                // Bottom info bar: date + time (phase-aware) + venue (Swiss German format)
                 VStack(spacing: 4) {
                     HStack(spacing: 4) {
                         Text(SwissDateFormatter.formatEventDate(event.eventDate))
                             .font(.caption2)
-                        Text("·")
-                        Text(SwissDateFormatter.formatTimeString(event.typicalStartTime))
-                            .font(.caption2)
+
+                        // Time range: only show in SPEAKERS and AGENDA phases (AC#1, AC#2, AC#3)
+                        if event.currentPublishedPhase == "SPEAKERS" || event.currentPublishedPhase == "AGENDA" {
+                            Text("·")
+                            Text(SwissDateFormatter.formatTimeString(event.typicalStartTime))
+                                .font(.caption2)
+                        }
                     }
 
                     Text(event.venueName)

@@ -16,7 +16,9 @@ class PublicViewModel {
 
     let apiClient: APIClientProtocol
     let clock: ClockProtocol
+    let connectivityMonitor: ConnectivityMonitor
     private let modelContext: ModelContext
+    private var wasOffline: Bool = false  // Track previous connectivity state
 
     // MARK: - Published State
 
@@ -61,16 +63,31 @@ class PublicViewModel {
     init(
         apiClient: APIClientProtocol = PublicEventService(),
         clock: ClockProtocol = SystemClock(),
+        connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor(),
         modelContext: ModelContext
     ) {
         self.apiClient = apiClient
         self.clock = clock
+        self.connectivityMonitor = connectivityMonitor
         self.modelContext = modelContext
 
         // Load cached data immediately on init
         loadCachedData()
 
-        // Trigger background refresh
+        // Start connectivity monitoring
+        connectivityMonitor.start()
+
+        // Observe connectivity changes
+        Task {
+            await observeConnectivity()
+        }
+
+        // Start periodic background refresh (every 5 minutes)
+        Task {
+            await startPeriodicRefresh()
+        }
+
+        // Trigger initial refresh
         Task {
             await refreshEvent()
         }
@@ -85,6 +102,56 @@ class PublicViewModel {
             self.event = cachedEvent
             self.sessions = cachedEvent.sessions
             self.lastSynced = cachedEvent.lastSyncTimestamp
+        }
+    }
+
+    // MARK: - Periodic Background Refresh
+
+    /// Start periodic background refresh every 5 minutes when app is active
+    /// AC#5: Silent background refresh
+    /// AC#8: Phase transition handling
+    @MainActor
+    private func startPeriodicRefresh() async {
+        while !Task.isCancelled {
+            // Wait 5 minutes
+            try? await Task.sleep(for: .seconds(300))
+
+            // Only refresh if connected
+            if connectivityMonitor.isConnected {
+                print("🔄 PublicViewModel: Periodic refresh triggered (5-min interval)")
+                await refreshEvent()
+            }
+        }
+    }
+
+    // MARK: - Connectivity Monitoring
+
+    /// Observe connectivity changes and react accordingly
+    /// AC#5: Auto-refresh when reconnecting
+    /// AC#4: Set offline flag when disconnecting
+    @MainActor
+    private func observeConnectivity() async {
+        // This runs continuously while the app is active
+        while !Task.isCancelled {
+            let currentlyConnected = connectivityMonitor.isConnected
+
+            // Detect transition from disconnected → connected
+            if wasOffline && currentlyConnected {
+                print("🔄 PublicViewModel: Connectivity restored - triggering refresh")
+                await refreshEvent()
+            }
+
+            // Detect transition from connected → disconnected
+            if !wasOffline && !currentlyConnected {
+                print("⚠️ PublicViewModel: Connectivity lost - setting offline mode")
+                isOffline = true
+            }
+
+            // Update state for next iteration
+            wasOffline = !currentlyConnected
+
+            // Check every second
+            try? await Task.sleep(for: .seconds(1))
         }
     }
 
