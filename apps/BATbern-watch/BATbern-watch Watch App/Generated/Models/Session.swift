@@ -23,12 +23,14 @@ public struct Session: Codable, JSONEncodable, Hashable {
         case lunch = "lunch"
     }
     public enum MaterialsStatus: String, Codable, CaseIterable {
+        case _none = "NONE"
         case pending = "pending"
         case inReview = "in_review"
         case approved = "approved"
         case requiresChanges = "requires_changes"
         case rejected = "rejected"
         case revisionSubmitted = "revision_submitted"
+        case complete = "COMPLETE"
     }
     public static let sessionSlugRule = StringRule(minLength: nil, maxLength: 200, pattern: "/^[a-z0-9]+(-[a-z0-9]+)*$/")
     public static let eventCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^BATbern[0-9]+$/")
@@ -54,7 +56,7 @@ public struct Session: Codable, JSONEncodable, Hashable {
     public var updatedAt: Date?
     /** Story 1.15a.1b: Session speakers with enriched User data List of speakers assigned to this session with their roles  */
     public var speakers: [SessionSpeaker]?
-    /** Phase 2 Feature: Quality review status for session materials (presentation, bio, photo). Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).  */
+    /** Material submission workflow status - NONE: No materials submitted yet (initial state) - pending: Materials submitted, awaiting review - in_review: Materials under review - approved: Materials approved - requires_changes: Materials need changes - rejected: Materials rejected - revision_submitted: Revised materials submitted - COMPLETE: Materials finalized and approved (final state)  */
     public var materialsStatus: MaterialsStatus?
 
     public init(sessionSlug: String, eventCode: String, title: String, description: String? = nil, sessionType: SessionType? = nil, startTime: Date? = nil, endTime: Date? = nil, room: String? = nil, capacity: Int? = nil, language: String? = "de", createdAt: Date? = nil, updatedAt: Date? = nil, speakers: [SessionSpeaker]? = nil, materialsStatus: MaterialsStatus? = nil) {

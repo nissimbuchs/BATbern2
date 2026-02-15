@@ -101,6 +101,7 @@ class PublicEventService: APIClientProtocol {
             eventDetail = try decoder.decode(EventDetail.self, from: data)
             print("✅ Decoded EventDetail: \(eventDetail.eventCode) - \(eventDetail.title)")
             print("   Sessions count: \(eventDetail.sessions?.count ?? 0)")
+            print("   currentPublishedPhase: \(String(describing: eventDetail.currentPublishedPhase))")
         } catch {
             print("❌ Decoding error: \(error)")
             if let decodingError = error as? DecodingError {
@@ -120,7 +121,7 @@ class PublicEventService: APIClientProtocol {
             throw APIError.decodingError(error)
         }
 
-        // Convert generated EventDetail → domain model WatchEvent
+        // Convert generated EventDetail → domain model WatchEvent (using generated field)
         let watchEvent = eventDetail.toWatchEvent()
         print("✅ Converted to WatchEvent with \(watchEvent.sessions.count) sessions")
         return watchEvent

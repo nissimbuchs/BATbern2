@@ -34,18 +34,25 @@ extension EventDetail {
     func toWatchEvent() -> WatchEvent {
         let watchSessions = sessions?.compactMap { $0.toWatchSession() } ?? []
 
+        // Map generated enum to String (EventDetail.currentPublishedPhase is now generated)
+        let phaseString = currentPublishedPhase?.rawValue
+
         return WatchEvent(
             id: eventCode,
             title: title,
             date: date,
             themeImageUrl: themeImageUrl,
             venueName: venueName,
-            sessions: watchSessions
+            sessions: watchSessions,
+            currentPublishedPhase: phaseString
         )
     }
 
     func toCachedEvent() -> CachedEvent {
         let cachedSessions = sessions?.compactMap { $0.toCachedSession() } ?? []
+
+        // Use generated field for cached event too
+        let phaseString = currentPublishedPhase?.rawValue
 
         return CachedEvent(
             eventCode: eventCode,
@@ -55,7 +62,7 @@ extension EventDetail {
             venueName: venueName,
             typicalStartTime: typicalStartTime ?? "18:00",
             typicalEndTime: typicalEndTime ?? "22:00",
-            currentPublishedPhase: nil,
+            currentPublishedPhase: phaseString,
             sessions: cachedSessions,
             lastSyncTimestamp: Date()
         )
@@ -155,7 +162,7 @@ extension WatchEvent {
             venueName: venueName,
             typicalStartTime: "18:00",  // Default
             typicalEndTime: "22:00",     // Default
-            currentPublishedPhase: nil,
+            currentPublishedPhase: currentPublishedPhase,
             sessions: cachedSessions,
             lastSyncTimestamp: Date()
         )

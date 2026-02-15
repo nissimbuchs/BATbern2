@@ -12,6 +12,11 @@ import AnyCodable
 
 public struct EventDetail: Codable, JSONEncodable, Hashable {
 
+    public enum CurrentPublishedPhase: String, Codable, CaseIterable {
+        case topic = "TOPIC"
+        case speakers = "SPEAKERS"
+        case agenda = "AGENDA"
+    }
     public static let eventCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^BATbern[0-9]+$/")
     public static let titleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
     public static let venueNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
@@ -54,8 +59,10 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     public var topic: EventTopic?
     public var venue: Venue?
     public var sessions: [Session]?
+    /** Progressive publishing phase for watch app (Story W1.2) - TOPIC: Event topic selected, speakers TBA - SPEAKERS: Speaker list published - AGENDA: Full session details published  */
+    public var currentPublishedPhase: CurrentPublishedPhase?
 
-    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [Session]? = nil) {
+    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [Session]? = nil, currentPublishedPhase: CurrentPublishedPhase? = nil) {
         self.eventCode = eventCode
         self.title = title
         self.eventNumber = eventNumber
@@ -81,6 +88,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         self.topic = topic
         self.venue = venue
         self.sessions = sessions
+        self.currentPublishedPhase = currentPublishedPhase
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -109,6 +117,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         case topic
         case venue
         case sessions
+        case currentPublishedPhase
     }
 
     // Encodable protocol methods
@@ -140,6 +149,7 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(topic, forKey: .topic)
         try container.encodeIfPresent(venue, forKey: .venue)
         try container.encodeIfPresent(sessions, forKey: .sessions)
+        try container.encodeIfPresent(currentPublishedPhase, forKey: .currentPublishedPhase)
     }
 }
 

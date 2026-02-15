@@ -34,8 +34,8 @@ useSPMFileStructure=false \
 
 # Copy only model files
 mkdir -p "$OUTPUT_DIR/Models"
-if [ -d "$OUTPUT_DIR/temp/BATbernAPI/Classes/OpenAPIs/Models" ]; then
-    cp "$OUTPUT_DIR/temp/BATbernAPI/Classes/OpenAPIs/Models"/*.swift "$OUTPUT_DIR/Models/" 2>/dev/null || true
+if [ -d "$OUTPUT_DIR/temp/Sources/BATbernAPI/Models" ]; then
+    cp "$OUTPUT_DIR/temp/Sources/BATbernAPI/Models"/*.swift "$OUTPUT_DIR/Models/" 2>/dev/null || true
 fi
 
 # Cleanup

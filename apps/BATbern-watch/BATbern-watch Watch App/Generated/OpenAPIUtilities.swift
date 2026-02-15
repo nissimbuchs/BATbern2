@@ -58,11 +58,45 @@ public struct ArrayRule {
     }
 }
 
-public struct AnyCodable: Codable {
+public struct AnyCodable: Codable, Hashable, Equatable {
     public let value: Any
 
     public init(_ value: Any) {
         self.value = value
+    }
+
+    // Hashable conformance
+    public func hash(into hasher: inout Hasher) {
+        switch value {
+        case let value as Bool:
+            hasher.combine(value)
+        case let value as Int:
+            hasher.combine(value)
+        case let value as Double:
+            hasher.combine(value)
+        case let value as String:
+            hasher.combine(value)
+        default:
+            // For complex types, use a constant hash to avoid crashes
+            hasher.combine(0)
+        }
+    }
+
+    // Equatable conformance
+    public static func == (lhs: AnyCodable, rhs: AnyCodable) -> Bool {
+        switch (lhs.value, rhs.value) {
+        case (let lhs as Bool, let rhs as Bool):
+            return lhs == rhs
+        case (let lhs as Int, let rhs as Int):
+            return lhs == rhs
+        case (let lhs as Double, let rhs as Double):
+            return lhs == rhs
+        case (let lhs as String, let rhs as String):
+            return lhs == rhs
+        default:
+            // For complex types, consider them not equal
+            return false
+        }
     }
 
     public init(from decoder: Decoder) throws {
