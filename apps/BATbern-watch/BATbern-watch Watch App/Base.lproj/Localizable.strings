@@ -10,6 +10,11 @@
 
 /* Session Cards */
 "session.speakers.more" = "weitere";
+"session.no_description" = "Keine Beschreibung verfügbar";
+
+/* Speaker Bio */
+"speaker.no_bio" = "Keine Biografie verfügbar";
+"speakers.count" = "Referenten (%d)";
 
 /* Organizer Zone */
 "organizer.title" = "Organisator-Bereich";

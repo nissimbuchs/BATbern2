@@ -8,6 +8,14 @@
 "event.hero.empty.title" = "BATbern";
 "event.hero.empty.message" = "Kein anstehendes BATbern Event";
 
+/* Session Cards */
+"session.speakers.more" = "weitere";
+"session.no_description" = "Keine Beschreibung verfügbar";
+
+/* Speaker Bio */
+"speaker.no_bio" = "Keine Biografie verfügbar";
+"speakers.count" = "Referenten (%d)";
+
 /* Organizer Zone */
 "organizer.title" = "Organisator-Bereich";
 "organizer.coming_soon" = "Verfügbar in Epic 2";

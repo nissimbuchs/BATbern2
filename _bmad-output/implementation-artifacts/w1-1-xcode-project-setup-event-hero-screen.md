@@ -1,6 +1,6 @@
 # Story 1.1: Xcode Project Setup & Event Hero Screen
 
-Status: review
+Status: done
 
 ## Story
 
@@ -95,58 +95,6 @@ so that I immediately know what event is happening tonight.
   - [x] 9.3 `Data/PublicEventServiceTests.swift` — DTO mapping tests
   - [x] 9.4 EventHeroView has Xcode Previews for testing
   - [x] 9.5 Verified existing TF scaffold tests build successfully
-  - [ ] 5.1 Create `ViewModels/PublicViewModel.swift` as `@Observable` class with **protocol-based dependency injection**:
-    ```swift
-    @Observable
-    class PublicViewModel {
-        let apiClient: APIClientProtocol
-        let clock: ClockProtocol
-
-        init(apiClient: APIClientProtocol = PublicEventService(),
-             clock: ClockProtocol = SystemClock()) {
-            self.apiClient = apiClient
-            self.clock = clock
-        }
-    }
-    ```
-    This enables tests to inject `MockAPIClient` and `MockClock` without modifying the ViewModel.
-  - [ ] 5.2 Properties: `event: CachedEvent?`, `sessions: [CachedSession]`, `isLoading: Bool`, `isOffline: Bool`, `lastSynced: Date?`
-  - [ ] 5.3 On init: Load cached event immediately → trigger background refresh
-  - [ ] 5.4 Implement `refreshEvent()` — async fetch via `apiClient.fetchCurrentEvent()` → update cache → update published properties
-  - [ ] 5.5 Handle loading states: show cached data during refresh, show spinner only on cold launch with no cache
-
-- [ ] **Task 6: Build Event Hero View (P1)** (AC: #1, #2, #4)
-  - [ ] 6.1 Create `Views/Public/EventHeroView.swift`
-  - [ ] 6.2 Layout: Full-bleed theme image background (AsyncImage with dimming overlay)
-  - [ ] 6.3 BATbern symbol mark (~20pt, `#2C5F7C`) centered above event number
-  - [ ] 6.4 Event title (large, centered, SF Pro Rounded, white on dimmed background)
-  - [ ] 6.5 Bottom info bar: date (formatted) + time + venue name
-  - [ ] 6.6 Scroll affordance: subtle "▼ Scroll for program" indicator
-  - [ ] 6.7 Empty state: BATbern symbol mark (~32pt) + "BATbern" wordmark + "No upcoming BATbern event"
-  - [ ] 6.8 Extract BATbern symbol mark as reusable SwiftUI view or image asset from `web-frontend/public/BATbern_color_logo.svg`
-
-- [ ] **Task 7: Wire ContentView for Dual-Zone TabView** (AC: #5)
-  - [ ] 7.1 Update `ContentView.swift` → TabView with `.tabViewStyle(.page)` for horizontal paging
-  - [ ] 7.2 Tab 0 (left, default): NavigationStack wrapping public zone — EventHeroView as root
-  - [ ] 7.3 Tab 1 (right): Placeholder organizer zone view (stub for Epic 2)
-  - [ ] 7.4 Default selection: Tab 0 (public zone)
-
-- [ ] **Task 8: Add Brand Asset** (AC: #1, #2)
-  - [ ] 8.1 Extract BATbern symbol mark (cycle arrows) from SVG source as Watch-sized asset
-  - [ ] 8.2 Add to `Assets.xcassets` at appropriate Watch resolutions (@1x, @2x)
-  - [ ] 8.3 Create `Views/Shared/BATbernSymbolView.swift` — reusable symbol mark component with configurable size and color
-
-- [ ] **Task 9: Write Tests** (AC: all)
-  Uses test infrastructure from TF scaffold: `MockAPIClient`, `MockClock`, `TestData` factories, `AsyncTestHelpers`. All test files go in `BATbern-watch Watch AppTests/`.
-  - [ ] 9.1 `ViewModels/PublicViewModelTests.swift` — inject `MockAPIClient` and `MockClock` via init. Test:
-    - Cache-first loading: configure `mockAPI.fetchCurrentEventResult = .success(TestData.event())`, verify ViewModel populates `event` and `sessions`
-    - Background refresh: verify `mockAPI.fetchCurrentEventCallCount` increments
-    - Empty state: configure `mockAPI.fetchCurrentEventResult = .failure(MockError.simulatedFailure)`, verify `event == nil`
-    - Error recovery: configure failure then success, verify ViewModel recovers
-  - [ ] 9.2 `Data/LocalCacheTests.swift` — test SwiftData persistence, upsert behavior, cache clearing
-  - [ ] 9.3 `Data/PublicEventServiceTests.swift` — test API response parsing, error handling, DTO → `WatchEvent` mapping. Use `URLProtocol` mock for HTTP stubbing (not `MockAPIClient` — this tests the real service).
-  - [ ] 9.4 Verify EventHeroView renders correctly in Xcode Previews with `TestData.event()` sample data
-  - [ ] 9.5 Verify existing TF scaffold tests still pass (`Cmd+U`): `SessionTimerEngineTests`, `HapticSchedulerTests`, `TestInfrastructureTests`
 
 ## Dev Notes
 
@@ -420,6 +368,13 @@ N/A - No blocking issues encountered
 - PublicEventService: DTO mapping for EventResponse and SessionResponse
 - Existing TF scaffold tests verified (SessionTimerEngine, HapticScheduler)
 
+**Code Review Fixes (2026-02-15):**
+- 🔧 **Issue #1 Fixed (HIGH):** Removed duplicate tasks 5-9 from story file (lines 98-149 were corrupted duplicates with conflicting [ ] status)
+- 🔧 **Issue #2 Fixed (MEDIUM):** Added note to File List documenting untracked `AbstractDetailViewTests.swift` belongs to W1.3, not W1.1
+- 🔧 **Issue #3 Fixed (MEDIUM):** Added sprint-status.yaml to File List tracking section
+- ✅ **All 8 Acceptance Criteria verified as implemented** despite documentation issues
+- ✅ **Implementation quality confirmed:** Protocol-based DI, cache-first loading, proper MVVM separation, comprehensive tests
+
 ### File List
 
 **Created:**
@@ -449,3 +404,8 @@ N/A - No blocking issues encountered
 - Mocks/MockAPIClient.swift
 - Mocks/MockClock.swift
 - Factories/TestDataFactory.swift
+
+**Tracking:**
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified - story status set to "review")
+
+**Note:** Untracked file `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/AbstractDetailViewTests.swift` found in git but belongs to Story W1.3, not W1.1.

@@ -28,6 +28,14 @@ struct SessionCardView: View {
         phase == "SPEAKERS" || phase == "AGENDA"
     }
 
+    private var titleTapsEnabled: Bool {
+        phase == "AGENDA"
+    }
+
+    private var speakerTapsEnabled: Bool {
+        phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
     private var breakIcon: String {
         guard let type = session.sessionType else { return "questionmark.circle" }
         switch type {
@@ -115,11 +123,26 @@ struct SessionCardView: View {
         .padding(.horizontal, 12)
     }
 
-    // MARK: - Title Area (AC#2, AC#6)
+    // MARK: - Title Area (AC#2, AC#6, W1.3 AC#1, AC#5, AC#6)
 
     @ViewBuilder
     private var titleArea: some View {
-        // Tappable title area (preparation for W1.3 navigation)
+        if titleTapsEnabled {
+            // AGENDA phase: Title is NavigationLink to AbstractDetailView (P3)
+            NavigationLink {
+                AbstractDetailView(session: session)
+            } label: {
+                titleText
+            }
+            .buttonStyle(.plain)  // Remove default button styling
+        } else {
+            // TOPIC/SPEAKERS phase: Title is not tappable
+            titleText
+        }
+    }
+
+    @ViewBuilder
+    private var titleText: some View {
         Text(session.title)
             .font(.system(size: 16, weight: .medium, design: .rounded))
             .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)  // BATbern Blue tint
@@ -128,18 +151,46 @@ struct SessionCardView: View {
             .fixedSize(horizontal: false, vertical: true)  // Enable text wrapping
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())  // Make entire area tappable
-        // .onTapGesture { } // W1.3 will implement navigation
     }
 
-    // MARK: - Speaker Area (AC#2, AC#5)
+    // MARK: - Speaker Area (AC#2, AC#5, W1.3 AC#2, AC#3, AC#5, AC#6)
 
     @ViewBuilder
     private var speakerArea: some View {
-        // Speaker portraits and names
-        if session.speakers.count == 1 {
-            // Single speaker: centered
-            singleSpeakerLayout(session.speakers[0])
-        } else if session.speakers.count == 2 {
+        if speakerTapsEnabled {
+            // SPEAKERS/AGENDA phase: Speaker area is tappable
+            if session.speakers.count == 1 {
+                // Single speaker: NavigationLink to SpeakerBioView (P4)
+                NavigationLink {
+                    SpeakerBioView(speaker: session.speakers[0])
+                } label: {
+                    singleSpeakerLayout(session.speakers[0])
+                }
+                .buttonStyle(.plain)
+            } else if session.speakers.count >= 2 {
+                // 2+ speakers: NavigationLink to MultiSpeakerGridView (P5)
+                NavigationLink {
+                    MultiSpeakerGridView(speakers: session.speakers)
+                } label: {
+                    multiSpeakerLayout
+                }
+                .buttonStyle(.plain)
+            }
+        } else {
+            // TOPIC phase: Speaker area not tappable
+            if session.speakers.count == 1 {
+                singleSpeakerLayout(session.speakers[0])
+            } else if session.speakers.count >= 2 {
+                multiSpeakerLayout
+            }
+        }
+    }
+
+    // MARK: - Multi-Speaker Layout (reusable for tappable and non-tappable states)
+
+    @ViewBuilder
+    private var multiSpeakerLayout: some View {
+        if session.speakers.count == 2 {
             // Two speakers: side by side
             HStack(spacing: 12) {
                 ForEach(Array(session.speakers.prefix(2)), id: \.username) { speaker in

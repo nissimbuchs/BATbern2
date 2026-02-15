@@ -1,6 +1,6 @@
 # Story 1.2: Session Card Browsing
 
-Status: review
+Status: done
 
 ## Story
 
@@ -316,3 +316,11 @@ Build output: `/tmp/build-output-2.log`
 - `BATbern-watch Watch App/ViewModels/PublicViewModel.swift` - Added displayableSessions, phase helpers, isBreakSession()
 - `BATbern-watch Watch App/Base.lproj/Localizable.strings` - Added "session.speakers.more" localization
 - `BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift` - Added 9 tests for W1.2 functionality
+
+**Code Review Notes (2026-02-15):**
+- ✅ **All 7 Acceptance Criteria verified as implemented** in committed version (fd9bd3ba)
+- ✅ **Implementation quality confirmed:** Vertical paging via TabView(.verticalPage), progressive publishing (TOPIC/SPEAKERS/AGENDA), speaker portrait grid
+- 📝 **Note:** Uncommitted changes to SessionCardView.swift (+69 lines) are W1.3 navigation code (AbstractDetailView, SpeakerBioView, MultiSpeakerGridView NavigationLinks) - NOT part of W1.2
+- 📝 **Note:** Uncommitted backend changes (SessionSpeakerResponse.java, SessionUserService.java) from commit a4e45527 are W1.3 backend prep - NOT part of W1.2
+- 📝 **Note:** Uncommitted Localizable.strings changes mix W1.2 and W1.3 strings
+- ✅ **W1.2 story correctly followed architecture constraint:** "No navigation from this story - taps prepared but non-functional until W1.3"
