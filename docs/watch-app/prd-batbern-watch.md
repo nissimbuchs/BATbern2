@@ -536,6 +536,7 @@ All data sourced from existing public API endpoints:
 - `SESSION_EXTENDED { sessionSlug, extendedBy, newEndTime, minutesAdded }`
 - `SESSION_ENDED { sessionSlug, endedBy, endTime }`
 - `SESSION_SKIPPED { sessionSlug, skippedBy }`
+- `SPEAKER_ARRIVED { speakerUsername, confirmedBy, timestamp }`
 - `HEARTBEAT { timestamp }`
 
 Reconnection with exponential backoff on disconnect.
@@ -580,6 +581,9 @@ Reconnection with exponential backoff on disconnect.
     var profilePictureUrl: String?
     var bio: String?
     var speakerRole: String  // keynote_speaker, panelist, moderator
+    var arrived: Bool        // organizer zone: confirmed present at venue
+    var arrivedConfirmedBy: String?  // username of organizer who confirmed
+    var arrivedAt: Date?     // timestamp of arrival confirmation
 }
 
 @Model class PairingInfo {
@@ -628,11 +632,12 @@ enum SessionState: String, Codable {
 
 **Goal:** Organizer pairs their Watch once via a simple code, then swipes right to enter the organizer zone — automatically authenticated, no passwords ever.
 
-**Scope:** FR21-FR24 (pairing aspects)
+**Scope:** FR21-FR24 (pairing), FR36-FR39 (pre-event coordination)
 
 **Backend work:**
 - Pairing code endpoints (company-user-management-service)
 - Watch authentication token exchange
+- Speaker arrival tracking (WebSocket message + state)
 - Web frontend profile extension ("Watch Pairing" section)
 
 **Key deliverables:**
@@ -641,7 +646,9 @@ enum SessionState: String, Codable {
 - Web frontend "Watch Pairing" UI in organizer profile
 - Backend pairing code → token exchange
 - Auto-authentication on swipe-right (token in Keychain)
-- Pre-event speaker portrait overview (>1 hour before event)
+- Pre-event speaker portrait overview (<1 hour before event)
+- Speaker arrival tracking (tap portrait → confirm → green ✓ badge syncs to all watches)
+- Arrival counter ("3 of 5 arrived") with real-time sync
 - Keychain storage for pairing token
 
 ---
