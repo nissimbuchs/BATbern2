@@ -232,6 +232,7 @@ export class CognitoStack extends cdk.Stack {
         userPassword: true,
         custom: true,
         userSrp: true, // Enable SRP authentication for secure password flow
+        adminUserPassword: true, // Enable server-side AdminInitiateAuth for magic link JWT issuance
       },
       generateSecret: false,
       refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens

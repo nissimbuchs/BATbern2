@@ -114,6 +114,15 @@ describe('CognitoStack Tests', () => {
     });
   });
 
+  // Test: ALLOW_ADMIN_USER_PASSWORD_AUTH required for server-side Cognito authentication (Story 7.1)
+  test('should_enableAdminUserPasswordAuth_when_appClientCreated', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      ExplicitAuthFlows: Match.arrayWith([
+        'ALLOW_ADMIN_USER_PASSWORD_AUTH',
+      ]),
+    });
+  });
+
   // Test for User Pool Domain
   test('should_createUserPoolDomain_when_stackDeployed', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolDomain', {

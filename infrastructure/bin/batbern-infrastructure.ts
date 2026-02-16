@@ -344,6 +344,7 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   });
   companyManagementStack.addDependency(clusterStack);
   companyManagementStack.addDependency(databaseStack);
+  // Note: Secrets dependency via CloudFormation Fn::ImportValue (Story 7.1 - avoids cyclic deps)
   companyManagementStack.addDependency(cicdStack);
   companyManagementStack.addDependency(cognitoStack);
   companyManagementStack.addDependency(storageStack);

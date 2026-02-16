@@ -21,6 +21,7 @@ export interface SecretsStackProps extends cdk.StackProps {
 export class SecretsStack extends cdk.Stack {
   // Redis secret removed - Redis disabled for cost optimization
   public readonly jwtSecret: secretsmanager.Secret;
+  public readonly cognitoPasswordEncryptionKey: secretsmanager.Secret;
   public readonly secretsKey: kms.Key;
 
   constructor(scope: Construct, id: string, props: SecretsStackProps) {
@@ -42,6 +43,18 @@ export class SecretsStack extends cdk.Stack {
     this.jwtSecret = new secretsmanager.Secret(this, 'JWTSecret', {
       secretName: `batbern/${props.config.envName}/jwt/signing-key`,
       description: 'JWT token signing secret',
+      encryptionKey: this.secretsKey,
+      generateSecretString: {
+        excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
+        passwordLength: 64,
+        excludePunctuation: true,
+      },
+    });
+
+    // Story 7.1: Encryption key for server-managed Cognito passwords
+    this.cognitoPasswordEncryptionKey = new secretsmanager.Secret(this, 'CognitoPasswordEncryptionKey', {
+      secretName: `batbern/${props.config.envName}/cognito/password-encryption-key`,
+      description: 'Encryption key for server-managed Cognito passwords',
       encryptionKey: this.secretsKey,
       generateSecretString: {
         excludeCharacters: ' %+~`#$&*()|[]{}:;<>?!\'/@"\\',
@@ -76,6 +89,12 @@ export class SecretsStack extends cdk.Stack {
       value: this.jwtSecret.secretArn,
       description: 'ARN of JWT signing key secret',
       exportName: `${props.config.envName}-JWTSecretArn`,
+    });
+
+    new cdk.CfnOutput(this, 'CognitoPasswordEncryptionKeyArn', {
+      value: this.cognitoPasswordEncryptionKey.secretArn,
+      description: 'ARN of Cognito password encryption key secret',
+      exportName: `${props.config.envName}-CognitoPasswordEncryptionKeyArn`,
     });
 
     new cdk.CfnOutput(this, 'SecretsKeyId', {

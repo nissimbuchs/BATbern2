@@ -53,6 +53,17 @@ export class CompanyManagementStack extends cdk.Stack {
     const envName = props.config.envName;
     const serviceName = 'company-user-management';
 
+    // Story 7.1: Import Cognito password encryption key secret ARN via CloudFormation cross-stack reference
+    // This avoids cyclic dependencies by not passing the secret object through props
+    const cognitoPasswordEncryptionKeyArn = cdk.Fn.importValue(
+      `${envName}-CognitoPasswordEncryptionKeyArn`
+    );
+    const cognitoPasswordEncryptionKey = secretsmanager.Secret.fromSecretCompleteArn(
+      this,
+      'CognitoPasswordEncryptionKey',
+      cognitoPasswordEncryptionKeyArn
+    );
+
     // Build additional environment variables specific to this service
     const additionalEnvironment: Record<string, string> = {
       // Service scope - consolidated master data
@@ -94,6 +105,10 @@ export class CompanyManagementStack extends cdk.Stack {
       databaseSecret: props.databaseSecret,
       userPool: props.userPool,
       userPoolClient: props.userPoolClient,
+      // Story 7.1: Pass Cognito password encryption key for server-managed passwords
+      additionalSecrets: {
+        COGNITO_PASSWORD_ENCRYPTION_KEY: ecs.Secret.fromSecretsManager(cognitoPasswordEncryptionKey),
+      },
     });
 
     this.service = domainService.service;
@@ -140,6 +155,18 @@ export class CompanyManagementStack extends cdk.Stack {
         resources: [props.eventBus.eventBusArn],
       }));
     }
+
+    // Story 7.1: Grant Cognito permissions for server-managed user creation and authentication
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminInitiateAuth',
+        'cognito-idp:AdminGetUser',
+      ],
+      resources: [props.userPool.userPoolArn],
+    }));
 
     // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
     // to avoid cyclic dependencies. Database tables are created by Flyway migrations

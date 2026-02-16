@@ -19,9 +19,9 @@ describe('SecretsStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify secrets are created
-      // Note: Only JWT secret here. DB managed by RDS stack, Redis removed (disabled for cost optimization)
-      template.resourceCountIs('AWS::SecretsManager::Secret', 1);
+      // Verify secrets are created (JWT + Cognito password encryption key)
+      // Note: DB managed by RDS stack, Redis removed (disabled for cost optimization)
+      template.resourceCountIs('AWS::SecretsManager::Secret', 2);
     });
 
     test('should_enableKMSKeyRotation_when_productionEnvironment', () => {
@@ -59,6 +59,25 @@ describe('SecretsStack', () => {
       // Verify secret has generation configuration (not testing specific length - implementation detail)
       template.hasResourceProperties('AWS::SecretsManager::Secret', {
         GenerateSecretString: Match.objectLike({
+          ExcludePunctuation: true,
+        }),
+      });
+    });
+
+    // Story 7.1: Cognito password encryption key for server-managed passwords
+    test('should_createCognitoPasswordEncryptionKey_when_secretsStackDeployed', () => {
+      const app = new App();
+      const stack = new SecretsStack(app, 'TestSecretsStack', {
+        config: devConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::SecretsManager::Secret', {
+        Name: 'batbern/development/cognito/password-encryption-key',
+        Description: 'Encryption key for server-managed Cognito passwords',
+        GenerateSecretString: Match.objectLike({
+          PasswordLength: 64,
           ExcludePunctuation: true,
         }),
       });

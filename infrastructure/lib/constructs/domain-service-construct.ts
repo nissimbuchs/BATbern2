@@ -29,6 +29,7 @@ export interface DomainServiceConstructProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  additionalSecrets?: Record<string, ecs.Secret>;
 }
 
 /**
@@ -79,6 +80,10 @@ export function createDomainService(
     if (props.databaseSecret) {
       secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
       secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
+    }
+    // Merge any additional service-specific secrets
+    if (props.additionalSecrets) {
+      Object.assign(secrets, props.additionalSecrets);
     }
 
     // Create stable log group
@@ -160,6 +165,8 @@ export function createDomainService(
     }
 
     // Grant Secrets Manager permissions to task execution role
+    // Note: CDK also auto-grants when secrets are passed to addContainer,
+    // but explicit grant ensures coverage for the database secret
     if (props.databaseSecret) {
       props.databaseSecret.grantRead(taskDefinition.executionRole!);
     }
