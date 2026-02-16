@@ -30,10 +30,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal ✅ **DEPLOYED TO STAGING** (2026-02-03)
+**Current Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal ✅ **DEPLOYED TO STAGING** (2026-02-06)
 - Stories 6.0-6.3: Complete (invitation, response, content submission)
 - Story 6.4: Partial (dashboard views available)
-- Story 6.5: Pending (automated reminders)
+- Story 6.5: Complete (automated reminders deployed 2026-02-06)
 
 ## Project Overview
 
@@ -56,7 +56,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
 - ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
-- ✅ **Epic 6**: Speaker Self-Service Portal - **DEPLOYED TO STAGING** (Stories 6.0-6.3 complete)
+- ✅ **Epic 6**: Speaker Self-Service Portal - **DEPLOYED TO STAGING** (Stories 6.0-6.3, 6.5 complete; Story 6.4 partial)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -66,7 +66,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 **When Adding New Features:**
 - ✅ MVP platform is 100% feature-complete
-- Epic 6 Phase 1 & 2 deployed - remaining: Story 6.4 (dashboard), Story 6.5 (reminders)
+- Epic 6 Phase 1 & 2 deployed with automated reminders - remaining: Story 6.4 (full dashboard)
 - Current focus: Epic 6 testing on staging, bug fixes, production readiness
 - Prioritize Epic 6 completion and production deployment
 

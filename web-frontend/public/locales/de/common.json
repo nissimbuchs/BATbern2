@@ -382,7 +382,18 @@
       "contact": "Kontakt",
       "respond": "Antworten",
       "updateProfile": "Profil bearbeiten",
-      "submitContent": "Inhalt einreichen"
+      "submitContent": "Inhalt einreichen",
+      "speakerStatus": "Referenten-Status",
+      "contentStatus": "Inhaltsstatus",
+      "materialProgress": "Materialeinreichungsfortschritt",
+      "deadlines": "Fristen",
+      "urgent": "Dringend",
+      "soon": "Bald fällig",
+      "onTime": "Pünktlich",
+      "actions": "Aktionen",
+      "pastEvent": "Vergangene Veranstaltung",
+      "materialAvailable": "Material verfügbar",
+      "noMaterials": "Kein Material"
     },
     "content": {
       "title": "Inhalt einreichen",
