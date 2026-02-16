@@ -1,8 +1,8 @@
 # Epic 6: Speaker Self-Service Portal (Enhancement Layer)
 
-**Status:** ✅ **DEPLOYED TO STAGING** (2026-02-03)
+**Status:** ✅ **DEPLOYED TO STAGING** (2026-02-06)
 
-**Implementation Complete (2026-02-03):** Epic 6 Phase 1 (Invitation & Response) and Phase 2 (Content Submission) have been implemented and deployed to staging. The speaker self-service portal is now operational.
+**Implementation Complete (2026-02-06):** Epic 6 Phase 1 (Invitation & Response), Phase 2 (Content Submission), and automated reminder system (Story 6.5) have been implemented and deployed to staging. The speaker self-service portal is now operational with full automation.
 
 **Merged:** PR #430 merged to `develop` branch, deployed via Build Pipeline run #21559151095.
 
@@ -343,9 +343,9 @@ As a **speaker**, I want to view my upcoming and past BATbern presentations, so 
 
 ---
 
-### Story 6.5: Automated Deadline Reminders 📋
+### Story 6.5: Automated Deadline Reminders ✅
 
-**Status:** 📋 Not Started - scheduled for future implementation
+**Status:** ✅ Complete (deployed to staging 2026-02-06)
 
 **User Story:**
 As an **organizer**, I want automated deadline reminders sent to speakers, so that I don't have to manually follow up on material submission deadlines.
