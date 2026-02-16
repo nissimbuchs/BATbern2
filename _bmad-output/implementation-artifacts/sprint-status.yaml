@@ -40,16 +40,16 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Public Event Companion
-  epic-1: in-progress
+  epic-1: done
   w1-1-xcode-project-setup-event-hero-screen: done
   w1-2-session-card-browsing: done
   w1-3-session-abstract-speaker-bio: done
-  w1-4-progressive-publishing-offline-support: review
+  w1-4-progressive-publishing-offline-support: done
   epic-1-retrospective: optional
 
   # Epic 2: Watch Pairing & Organizer Access
-  epic-2: backlog
-  w2-1-pairing-code-backend-web-frontend: backlog
+  epic-2: in-progress
+  w2-1-pairing-code-backend-web-frontend: ready-for-dev
   w2-2-watch-pairing-flow-organizer-zone-navigation: backlog
   w2-3-event-join-schedule-sync: backlog
   w2-4-speaker-arrival-tracking: backlog

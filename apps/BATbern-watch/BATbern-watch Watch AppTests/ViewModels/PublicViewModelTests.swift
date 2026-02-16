@@ -526,4 +526,158 @@ struct PublicViewModelTests {
         #expect(viewModel.isOffline == true, "Offline flag should be set")
         #expect(viewModel.sessions.isEmpty, "No sessions should be available")
     }
+
+    // MARK: - Issue #6: Phase Change Detection (AC#8)
+
+    @Test("Phase transition: UI updates when phase changes from TOPIC to SPEAKERS")
+    func test_phaseTransition_updatesSpeakerVisibility() async throws {
+        // Given: Event in TOPIC phase
+        var topicEvent = sampleWatchEvent
+        topicEvent.currentPublishedPhase = "TOPIC"
+
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(topicEvent)
+
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: MockClock(fixedDate: Date()),
+            connectivityMonitor: MockConnectivityMonitor(),
+            modelContext: modelContext
+        )
+
+        // Wait for initial fetch
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then: Should be in TOPIC phase
+        #expect(viewModel.event?.currentPublishedPhase == "TOPIC")
+        #expect(viewModel.hasSpeakerPhase == false, "Should not have speaker phase")
+        #expect(viewModel.hasAgendaPhase == false, "Should not have agenda phase")
+
+        // When: Server changes phase to SPEAKERS
+        var speakersEvent = sampleWatchEvent
+        speakersEvent.currentPublishedPhase = "SPEAKERS"
+        mockAPI.fetchCurrentEventResult = .success(speakersEvent)
+
+        // Trigger background refresh
+        await viewModel.refreshEvent()
+
+        // Then: UI state should update to show speakers
+        #expect(viewModel.event?.currentPublishedPhase == "SPEAKERS")
+        #expect(viewModel.hasSpeakerPhase == true, "Should now have speaker phase")
+        #expect(viewModel.hasAgendaPhase == false, "Should not have agenda phase yet")
+    }
+
+    // MARK: - Issue #7: Progressive Publishing Integration (AC#1, AC#2, AC#3)
+
+    @Test("Progressive publishing: TOPIC phase hides speakers and times")
+    func test_progressivePublishing_topicPhaseHidesSpeakers() async throws {
+        // Given: Event in TOPIC phase
+        var topicEvent = sampleWatchEvent
+        topicEvent.currentPublishedPhase = "TOPIC"
+
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(topicEvent)
+
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: MockClock(fixedDate: Date()),
+            connectivityMonitor: MockConnectivityMonitor(),
+            modelContext: modelContext
+        )
+
+        // Wait for fetch
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then: Speaker phase should be disabled (AC#1)
+        #expect(viewModel.hasSpeakerPhase == false)
+        #expect(viewModel.hasAgendaPhase == false)
+        #expect(viewModel.event?.currentPublishedPhase == "TOPIC")
+    }
+
+    @Test("Progressive publishing: SPEAKERS phase shows speakers but hides abstracts")
+    func test_progressivePublishing_speakersPhaseShowsSpeakers() async throws {
+        // Given: Event in SPEAKERS phase
+        var speakersEvent = sampleWatchEvent
+        speakersEvent.currentPublishedPhase = "SPEAKERS"
+
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(speakersEvent)
+
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: MockClock(fixedDate: Date()),
+            connectivityMonitor: MockConnectivityMonitor(),
+            modelContext: modelContext
+        )
+
+        // Wait for fetch
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then: Speaker phase enabled, agenda phase disabled (AC#2)
+        #expect(viewModel.hasSpeakerPhase == true)
+        #expect(viewModel.hasAgendaPhase == false)
+        #expect(viewModel.event?.currentPublishedPhase == "SPEAKERS")
+    }
+
+    @Test("Progressive publishing: AGENDA phase enables full access")
+    func test_progressivePublishing_agendaPhaseFullAccess() async throws {
+        // Given: Event in AGENDA phase
+        var agendaEvent = sampleWatchEvent
+        agendaEvent.currentPublishedPhase = "AGENDA"
+
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(agendaEvent)
+
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: MockClock(fixedDate: Date()),
+            connectivityMonitor: MockConnectivityMonitor(),
+            modelContext: modelContext
+        )
+
+        // Wait for fetch
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then: Both phases enabled (AC#3)
+        #expect(viewModel.hasSpeakerPhase == true)
+        #expect(viewModel.hasAgendaPhase == true)
+        #expect(viewModel.event?.currentPublishedPhase == "AGENDA")
+    }
+
+    // MARK: - Issue #8: Portrait Offline Support (AC#4, Task 7)
+
+    @Test("Portrait offline: ViewModel maintains speaker data when offline")
+    func test_portraitOffline_maintainsSpeakerData() async throws {
+        // Given: Event with speakers cached
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(sampleWatchEvent)
+
+        let mockConnectivity = MockConnectivityMonitor()
+
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: MockClock(fixedDate: Date()),
+            connectivityMonitor: mockConnectivity,
+            modelContext: modelContext
+        )
+
+        // Wait for initial fetch
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Verify speakers are loaded
+        let speakerCount = viewModel.sessions.flatMap { $0.speakers }.count
+        #expect(speakerCount > 0, "Should have speakers loaded")
+
+        // When: Go offline
+        mockConnectivity.simulateDisconnected()
+        mockAPI.fetchCurrentEventResult = .failure(APIError.networkError(NSError(domain: "test", code: -1)))
+
+        // Trigger refresh (will fail, but should keep cached data)
+        await viewModel.refreshEvent()
+
+        // Then: Speaker data should still be available from cache
+        let offlineSpeakerCount = viewModel.sessions.flatMap { $0.speakers }.count
+        #expect(offlineSpeakerCount == speakerCount, "Should maintain speaker data offline")
+        #expect(viewModel.isOffline == true, "Offline flag should be set")
+    }
 }

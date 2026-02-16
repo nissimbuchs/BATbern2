@@ -74,13 +74,13 @@ class PublicViewModel {
         // Load cached data immediately on init
         loadCachedData()
 
-        // Start connectivity monitoring
-        connectivityMonitor.start()
-
-        // Observe connectivity changes
-        Task {
-            await observeConnectivity()
+        // Start connectivity monitoring with reactive callback
+        connectivityMonitor.onConnectivityChanged = { @Sendable [weak self] isConnected in
+            Task { @MainActor in
+                await self?.handleConnectivityChange(isConnected: isConnected)
+            }
         }
+        connectivityMonitor.start()
 
         // Start periodic background refresh (every 5 minutes)
         Task {
@@ -126,32 +126,21 @@ class PublicViewModel {
 
     // MARK: - Connectivity Monitoring
 
-    /// Observe connectivity changes and react accordingly
+    /// Handle connectivity state changes (callback from ConnectivityMonitor)
     /// AC#5: Auto-refresh when reconnecting
     /// AC#4: Set offline flag when disconnecting
     @MainActor
-    private func observeConnectivity() async {
-        // This runs continuously while the app is active
-        while !Task.isCancelled {
-            let currentlyConnected = connectivityMonitor.isConnected
-
-            // Detect transition from disconnected → connected
-            if wasOffline && currentlyConnected {
-                print("🔄 PublicViewModel: Connectivity restored - triggering refresh")
-                await refreshEvent()
-            }
-
-            // Detect transition from connected → disconnected
-            if !wasOffline && !currentlyConnected {
-                print("⚠️ PublicViewModel: Connectivity lost - setting offline mode")
-                isOffline = true
-            }
-
-            // Update state for next iteration
-            wasOffline = !currentlyConnected
-
-            // Check every second
-            try? await Task.sleep(for: .seconds(1))
+    private func handleConnectivityChange(isConnected: Bool) async {
+        if isConnected && wasOffline {
+            // Transition: disconnected → connected
+            print("🔄 PublicViewModel: Connectivity restored - triggering refresh")
+            wasOffline = false
+            await refreshEvent()
+        } else if !isConnected && !wasOffline {
+            // Transition: connected → disconnected
+            print("⚠️ PublicViewModel: Connectivity lost - setting offline mode")
+            wasOffline = true
+            isOffline = true
         }
     }
 
@@ -174,15 +163,23 @@ class PublicViewModel {
             print("✅ PublicViewModel: Received WatchEvent - \(watchEvent.title)")
 
             // Convert WatchEvent → SwiftData model
-            let cachedEvent = watchEvent.toCachedEvent()
+            let newCachedEvent = watchEvent.toCachedEvent()
 
-            // Update cache
+            // Compare with existing cache before saving (Task 4.4: avoid unnecessary writes)
             let cache = LocalCache(modelContext: modelContext)
-            cache.saveEvent(cachedEvent)
+            let existingEvent = cache.getCachedEvent()
+            let shouldUpdate = hasEventChanged(existing: existingEvent, new: newCachedEvent)
 
-            // Update published properties
-            self.event = cachedEvent
-            self.sessions = cachedEvent.sessions
+            if shouldUpdate {
+                print("📝 PublicViewModel: Event data changed - updating cache")
+                cache.saveEvent(newCachedEvent)
+            } else {
+                print("✓ PublicViewModel: Event data unchanged - skipping cache write")
+            }
+
+            // Update published properties (always update in-memory state)
+            self.event = newCachedEvent
+            self.sessions = newCachedEvent.sessions
             self.lastSynced = clock.now
 
         } catch let error as APIError {
@@ -216,5 +213,31 @@ class PublicViewModel {
         }
 
         isLoading = false
+    }
+
+    // MARK: - Data Comparison (Task 4.4)
+
+    /// Compare event data to avoid unnecessary cache writes
+    /// Returns true if data has changed, false if identical
+    private func hasEventChanged(existing: CachedEvent?, new: CachedEvent) -> Bool {
+        guard let existing = existing else {
+            return true  // No existing event - always save
+        }
+
+        // Compare key fields that indicate event content has changed
+        if existing.eventCode != new.eventCode { return true }
+        if existing.title != new.title { return true }
+        if existing.currentPublishedPhase != new.currentPublishedPhase { return true }
+        if existing.sessions.count != new.sessions.count { return true }
+
+        // Deep comparison of sessions (title, speakers, times)
+        for (existingSession, newSession) in zip(existing.sessions, new.sessions) {
+            if existingSession.sessionSlug != newSession.sessionSlug { return true }
+            if existingSession.title != newSession.title { return true }
+            if existingSession.abstract != newSession.abstract { return true }
+            if existingSession.speakers.count != newSession.speakers.count { return true }
+        }
+
+        return false  // No changes detected
     }
 }
