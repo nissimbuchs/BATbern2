@@ -74,7 +74,11 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
   const { t } = useTranslation();
 
   return (
-    <Card className="p-6 mb-4">
+    <Card
+      className="p-6 mb-4"
+      role="article"
+      aria-label={`${event.eventTitle} - ${event.workflowStateLabel}`}
+    >
       <div className="flex flex-col gap-4">
         {/* Event header */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -96,12 +100,14 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
           <div className="flex gap-2 flex-wrap">
             <span
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[event.workflowState] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
+              aria-label={`${t('speakerPortal.dashboard.speakerStatus')}: ${event.workflowStateLabel}`}
             >
               {event.workflowStateLabel}
             </span>
             {event.contentStatus && (
               <span
                 className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${contentStatusColors[event.contentStatus] || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
+                aria-label={`${t('speakerPortal.dashboard.contentStatus')}: ${event.contentStatusLabel}`}
               >
                 {event.contentStatusLabel}
               </span>
@@ -118,28 +124,32 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         )}
 
         {/* Content status (AC4) */}
-        <div className="grid grid-cols-3 gap-2 text-sm">
+        <div
+          className="grid grid-cols-3 gap-2 text-sm"
+          role="status"
+          aria-label={t('speakerPortal.dashboard.materialProgress')}
+        >
           <div className="flex items-center gap-1">
             {event.hasTitle ? (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-green-500" aria-hidden="true" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" aria-hidden="true" />
             )}
             <span>{t('speakerPortal.dashboard.titleStatus')}</span>
           </div>
           <div className="flex items-center gap-1">
             {event.hasAbstract ? (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-green-500" aria-hidden="true" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" aria-hidden="true" />
             )}
             <span>{t('speakerPortal.dashboard.abstractStatus')}</span>
           </div>
           <div className="flex items-center gap-1">
             {event.hasMaterial ? (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-green-500" aria-hidden="true" />
             ) : (
-              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+              <XCircle className="w-4 h-4 text-gray-300 dark:text-gray-600" aria-hidden="true" />
             )}
             <span>{t('speakerPortal.dashboard.materialStatus')}</span>
           </div>
@@ -157,20 +167,26 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         )}
 
         {/* Deadlines */}
-        <div className="flex flex-wrap gap-3 text-sm">
+        <div
+          className="flex flex-wrap gap-3 text-sm"
+          role="status"
+          aria-label={t('speakerPortal.dashboard.deadlines')}
+        >
           {event.responseDeadline && event.workflowState === 'INVITED' && (
             <span
               className={`flex items-center gap-1 px-2 py-1 rounded ${urgencyColors[getDeadlineUrgency(event.responseDeadline)]}`}
+              aria-label={`${t('speakerPortal.dashboard.responseBy')}: ${event.responseDeadline}, ${getDeadlineUrgency(event.responseDeadline) === 'red' ? t('speakerPortal.dashboard.urgent') : getDeadlineUrgency(event.responseDeadline) === 'amber' ? t('speakerPortal.dashboard.soon') : t('speakerPortal.dashboard.onTime')}`}
             >
-              <Clock className="w-3.5 h-3.5" />
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
               {t('speakerPortal.dashboard.responseBy')}: {event.responseDeadline}
             </span>
           )}
           {event.contentDeadline && (
             <span
               className={`flex items-center gap-1 px-2 py-1 rounded ${urgencyColors[getDeadlineUrgency(event.contentDeadline)]}`}
+              aria-label={`${t('speakerPortal.dashboard.contentBy')}: ${event.contentDeadline}, ${getDeadlineUrgency(event.contentDeadline) === 'red' ? t('speakerPortal.dashboard.urgent') : getDeadlineUrgency(event.contentDeadline) === 'amber' ? t('speakerPortal.dashboard.soon') : t('speakerPortal.dashboard.onTime')}`}
             >
-              <Clock className="w-3.5 h-3.5" />
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
               {t('speakerPortal.dashboard.contentBy')}: {event.contentDeadline}
             </span>
           )}
@@ -196,47 +212,59 @@ function UpcomingEventCard({ event, token }: { event: DashboardUpcomingEvent; to
         )}
 
         {/* Quick actions (AC2) */}
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+        <nav
+          className="flex flex-wrap gap-2 pt-2 border-t border-border"
+          aria-label={t('speakerPortal.dashboard.actions')}
+        >
           {event.respondUrl && (
             <Link
               to={`${event.respondUrl}?token=${token}`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label={`${t('speakerPortal.dashboard.respond')} to ${event.eventTitle}`}
             >
               {t('speakerPortal.dashboard.respond')}
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
             </Link>
           )}
           <Link
             to={`${event.profileUrl}?token=${token}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            aria-label={`${t('speakerPortal.dashboard.updateProfile')} for ${event.eventTitle}`}
           >
-            <User className="w-3.5 h-3.5" />
+            <User className="w-3.5 h-3.5" aria-hidden="true" />
             {t('speakerPortal.dashboard.updateProfile')}
           </Link>
           {event.contentUrl && (
             <Link
               to={`${event.contentUrl}?token=${token}`}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label={`${t('speakerPortal.dashboard.submitContent')} for ${event.eventTitle}`}
             >
-              <FileText className="w-3.5 h-3.5" />
+              <FileText className="w-3.5 h-3.5" aria-hidden="true" />
               {t('speakerPortal.dashboard.submitContent')}
             </Link>
           )}
-        </div>
+        </nav>
       </div>
     </Card>
   );
 }
 
 function PastEventCard({ event }: { event: DashboardPastEvent }) {
+  const { t } = useTranslation();
+
   return (
-    <Card className="p-4 mb-3">
+    <Card
+      className="p-4 mb-3"
+      role="article"
+      aria-label={`${t('speakerPortal.dashboard.pastEvent')}: ${event.eventTitle}`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h3 className="text-base font-medium text-foreground">{event.eventTitle}</h3>
           <div className="flex items-center gap-3 text-sm text-muted-foreground mt-0.5">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
               {event.eventDate}
             </span>
             {event.sessionTitle && <span>{event.sessionTitle}</span>}
@@ -244,12 +272,20 @@ function PastEventCard({ event }: { event: DashboardPastEvent }) {
         </div>
         <div className="text-sm text-muted-foreground">
           {event.hasMaterial ? (
-            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-              <FileText className="w-4 h-4" />
+            <span
+              className="flex items-center gap-1 text-green-600 dark:text-green-400"
+              aria-label={`${t('speakerPortal.dashboard.materialAvailable')}: ${event.materialFileName}`}
+            >
+              <FileText className="w-4 h-4" aria-hidden="true" />
               {event.materialFileName}
             </span>
           ) : (
-            <span className="text-muted-foreground">No materials</span>
+            <span
+              className="text-muted-foreground"
+              aria-label={t('speakerPortal.dashboard.noMaterials')}
+            >
+              {t('speakerPortal.dashboard.noMaterials')}
+            </span>
           )}
         </div>
       </div>
@@ -330,61 +366,76 @@ const SpeakerDashboardPage = () => {
           {pageState === 'dashboard' && dashboard && (
             <>
               {/* Header */}
-              <div className="mb-8">
+              <header className="mb-8">
                 <div className="flex items-center gap-4 mb-2">
                   {dashboard.profilePictureUrl ? (
                     <img
                       src={dashboard.profilePictureUrl}
-                      alt={dashboard.speakerName}
+                      alt={`${dashboard.speakerName} profile picture`}
                       className="w-16 h-16 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                      <User className="w-8 h-8 text-muted-foreground" />
+                    <div
+                      className="w-16 h-16 rounded-full bg-muted flex items-center justify-center"
+                      role="img"
+                      aria-label={`${dashboard.speakerName} profile placeholder`}
+                    >
+                      <User className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
                     </div>
                   )}
                   <div>
                     <h1 className="text-2xl font-bold text-foreground">
                       {t('speakerPortal.dashboard.welcome', { name: dashboard.speakerName })}
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground" role="status" aria-live="polite">
                       {t('speakerPortal.dashboard.profileComplete', {
                         percent: dashboard.profileCompleteness,
                       })}
                     </p>
                   </div>
                 </div>
-              </div>
+              </header>
 
               {/* Upcoming Events (AC2) */}
-              <section className="mb-8">
-                <h2 className="text-xl font-semibold text-foreground mb-4">
+              <section className="mb-8" aria-labelledby="upcoming-events-heading">
+                <h2
+                  id="upcoming-events-heading"
+                  className="text-xl font-semibold text-foreground mb-4"
+                >
                   {t('speakerPortal.dashboard.upcomingEvents')}
                 </h2>
                 {dashboard.upcomingEvents.length === 0 ? (
-                  <Card className="p-6 text-center text-muted-foreground">
+                  <Card className="p-6 text-center text-muted-foreground" role="status">
                     {t('speakerPortal.dashboard.noUpcomingEvents')}
                   </Card>
                 ) : (
-                  dashboard.upcomingEvents.map((event) => (
-                    <UpcomingEventCard key={event.eventCode} event={event} token={token!} />
-                  ))
+                  <ul className="list-none">
+                    {dashboard.upcomingEvents.map((event) => (
+                      <li key={event.eventCode}>
+                        <UpcomingEventCard event={event} token={token!} />
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </section>
 
               {/* Past Events (AC3) */}
-              <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">
+              <section aria-labelledby="past-events-heading">
+                <h2 id="past-events-heading" className="text-xl font-semibold text-foreground mb-4">
                   {t('speakerPortal.dashboard.pastEvents')}
                 </h2>
                 {dashboard.pastEvents.length === 0 ? (
-                  <Card className="p-6 text-center text-muted-foreground">
+                  <Card className="p-6 text-center text-muted-foreground" role="status">
                     {t('speakerPortal.dashboard.noPastEvents')}
                   </Card>
                 ) : (
-                  dashboard.pastEvents.map((event) => (
-                    <PastEventCard key={event.eventCode} event={event} />
-                  ))
+                  <ul className="list-none">
+                    {dashboard.pastEvents.map((event) => (
+                      <li key={event.eventCode}>
+                        <PastEventCard event={event} />
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </section>
             </>
