@@ -1,0 +1,79 @@
+# generated: 2026-02-15
+# project: BATbern Watch
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+# epics_source: docs/watch-app/epics.md
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-15
+project: BATbern Watch
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Public Event Companion
+  epic-1: in-progress
+  w1-1-xcode-project-setup-event-hero-screen: done
+  w1-2-session-card-browsing: done
+  w1-3-session-abstract-speaker-bio: done
+  w1-4-progressive-publishing-offline-support: review
+  epic-1-retrospective: optional
+
+  # Epic 2: Watch Pairing & Organizer Access
+  epic-2: backlog
+  w2-1-pairing-code-backend-web-frontend: backlog
+  w2-2-watch-pairing-flow-organizer-zone-navigation: backlog
+  w2-3-event-join-schedule-sync: backlog
+  w2-4-speaker-arrival-tracking: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Live Countdown & Haptic Awareness
+  epic-3: backlog
+  w3-1-live-countdown-display: backlog
+  w3-2-haptic-alert-system: backlog
+  w3-3-watch-face-complications: backlog
+  w3-4-session-schedule-next-session-preview: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Session Control & Team Sync
+  epic-4: backlog
+  w4-1-websocket-real-time-infrastructure: backlog
+  w4-2-session-advance-transition: backlog
+  w4-3-overrun-detection-schedule-cascade: backlog
+  w4-4-break-management-event-lifecycle: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Offline Resilience
+  epic-5: backlog
+  w5-1-offline-timer-haptics: backlog
+  w5-2-action-queue-sync-recovery: backlog
+  w5-3-connectivity-monitoring-adaptive-behavior: backlog
+  epic-5-retrospective: optional

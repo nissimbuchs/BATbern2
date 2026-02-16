@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
  * Story 1.15a.1b: Session-User Many-to-Many Relationship
  *
  * Combines data from SessionUser entity and User entity:
- * - User fields: username, firstName, lastName, company, profilePictureUrl
+ * - User fields: username, firstName, lastName, company, profilePictureUrl, bio
  * - SessionUser fields: speakerRole, presentationTitle, isConfirmed
  */
 @Data
@@ -27,6 +27,7 @@ public class SessionSpeakerResponse {
     private String lastName;
     private String company;
     private String profilePictureUrl;
+    private String bio;
 
     // From SessionUser entity
     private SpeakerRole speakerRole;

@@ -250,6 +250,7 @@ public class SessionUserService {
                 .lastName(user.getLastName())
                 .company(user.getCompanyId()) // companyId is the company name per Story 1.16.2
                 .profilePictureUrl(user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null)
+                .bio(user.getBio())
                 .speakerRole(sessionUser.getSpeakerRole())
                 .presentationTitle(sessionUser.getPresentationTitle())
                 .isConfirmed(sessionUser.isConfirmed())
