@@ -87,10 +87,6 @@ const RegistrationConfirmationPage = React.lazy(
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
-// Legal pages
-const PrivacyPage = React.lazy(() => import('@pages/public/PrivacyPage'));
-const SupportPage = React.lazy(() => import('@pages/public/SupportPage'));
-
 // Story 6.2a: Speaker Portal - Invitation Response
 const InvitationResponsePage = React.lazy(
   () => import('@pages/speaker-portal/InvitationResponsePage')
@@ -256,8 +252,22 @@ function App() {
                       }
                     />
                     <Route path="/about" element={<AboutPage />} />
-                    <Route path="/privacy" element={<PrivacyPage />} />
-                    <Route path="/support" element={<SupportPage />} />
+                    <Route
+                      path="/privacy"
+                      element={
+                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                          Privacy Policy (Coming later)
+                        </div>
+                      }
+                    />
+                    <Route
+                      path="/terms"
+                      element={
+                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
+                          Terms of Service (Coming later)
+                        </div>
+                      }
+                    />
 
                     {/* Authentication routes */}
                     <Route

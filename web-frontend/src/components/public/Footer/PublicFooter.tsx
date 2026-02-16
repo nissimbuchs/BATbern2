@@ -73,10 +73,10 @@ export const PublicFooter = () => {
               </li>
               <li>
                 <Link
-                  to="/support"
+                  to="/terms"
                   className="text-sm text-zinc-400 hover:text-blue-400 transition-colors"
                 >
-                  {t('footer.support')}
+                  {t('footer.termsOfService')}
                 </Link>
               </li>
             </ul>

@@ -5,13 +5,12 @@
 # Project Structure:
 #   - Java/Gradle: shared-kernel, api-gateway, 5x domain services
 #   - TypeScript/Node: infrastructure (CDK), web-frontend (React)
-#   - Swift/Xcode: BATbern-watch (watchOS companion app)
 #
 # Usage: make <target>
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -31,13 +30,11 @@ help: ## Show this help message
 	@echo "  make build            - Build all projects"
 	@echo "  make build-java       - Build Java projects only"
 	@echo "  make build-node       - Build Node.js projects only"
-	@echo "  make build-watch      - Build watchOS app only"
 	@echo ""
 	@echo "🧪 Testing:"
 	@echo "  make test             - Run all tests (unit + integration, coverage report, requires Docker)"
 	@echo "  make test-java        - Run Java tests (unit + integration)"
 	@echo "  make test-node        - Run Node.js tests (unit tests only)"
-	@echo "  make test-watch       - Run watchOS app tests"
 	@echo "  Note: Integration tests use Testcontainers (requires Docker) but AWS credentials NOT needed"
 	@echo ""
 	@echo "✨ Code Quality:"
@@ -52,7 +49,6 @@ help: ## Show this help message
 	@echo "  make clean            - Clean all build artifacts"
 	@echo "  make clean-java       - Clean Java build artifacts"
 	@echo "  make clean-node       - Clean Node.js build artifacts"
-	@echo "  make clean-watch      - Clean watchOS build artifacts"
 	@echo ""
 	@echo "🐳 Docker:"
 	@echo "  make docker-up        - Start all services with Docker Compose"
@@ -83,9 +79,8 @@ help: ## Show this help message
 	@echo "  make update-deps      - Update safe dependencies (patch/minor)"
 	@echo ""
 	@echo "🔍 Utilities:"
-	@echo "  make verify              - Pre-commit verification (lint + test)"
-	@echo "  make all                 - Clean + Install + Build + Test"
-	@echo "  make watch-generate-types - Generate Swift types from OpenAPI spec"
+	@echo "  make verify           - Pre-commit verification (lint + test)"
+	@echo "  make all              - Clean + Install + Build + Test"
 	@echo ""
 
 # ═══════════════════════════════════════════════════════════
@@ -131,16 +126,6 @@ build-node: ## Build all Node.js projects
 	@cd web-frontend && npm run build
 	@echo "✓ Node.js build complete"
 
-build-watch: ## Build watchOS app (BATbern-watch)
-	@echo "🔨 Building watchOS app..."
-	@echo "→ Building BATbern-watch for watchOS Simulator..."
-	@xcodebuild -scheme "BATbern-watch Watch App" \
-		-destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
-		-project apps/BATbern-watch/BATbern-watch.xcodeproj \
-		clean build \
-		| grep -E '^(Build|▸|⚠️|❌|error:|warning:)' || true
-	@echo "✓ watchOS build complete"
-
 # ═══════════════════════════════════════════════════════════
 # TESTING
 # ═══════════════════════════════════════════════════════════
@@ -168,15 +153,6 @@ test-node: ## Run Node.js tests with coverage
 	@echo "  CDK:      infrastructure/coverage/index.html"
 	@echo "  Frontend: web-frontend/coverage/index.html"
 	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
-
-test-watch: ## Run watchOS app tests
-	@echo "🧪 Running watchOS app tests..."
-	@echo "→ Running unit tests for BATbern-watch..."
-	@xcodebuild test -scheme "BATbern-watch Watch App" \
-		-destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
-		-project apps/BATbern-watch/BATbern-watch.xcodeproj \
-		| grep -E '^(Test|▸|⚠️|❌|error:|warning:|Executed)' || true
-	@echo "✓ watchOS tests complete"
 
 # ═══════════════════════════════════════════════════════════
 # CODE QUALITY
@@ -211,7 +187,7 @@ format-check: ## Check code formatting
 # CLEANUP
 # ═══════════════════════════════════════════════════════════
 
-clean: clean-java clean-node clean-watch ## Clean all build artifacts
+clean: clean-java clean-node ## Clean all build artifacts
 
 clean-java: ## Clean Java build artifacts
 	@echo "🧹 Cleaning Java build artifacts..."
@@ -223,13 +199,6 @@ clean-node: ## Clean Node.js build artifacts
 	@rm -rf infrastructure/node_modules infrastructure/cdk.out
 	@rm -rf web-frontend/node_modules web-frontend/dist web-frontend/coverage
 	@echo "✓ Node.js clean complete"
-
-clean-watch: ## Clean watchOS build artifacts
-	@echo "🧹 Cleaning watchOS build artifacts..."
-	@xcodebuild clean -scheme "BATbern-watch Watch App" \
-		-project apps/BATbern-watch/BATbern-watch.xcodeproj \
-		| grep -E '^(Clean|▸|⚠️|❌)' || true
-	@echo "✓ watchOS clean complete"
 
 # ═══════════════════════════════════════════════════════════
 # DOCKER
@@ -464,10 +433,3 @@ verify: lint check-generated-types test ## Pre-commit verification (lint + check
 
 all: clean install build test ## Complete workflow: clean, install, build, test
 	@echo "✓ All tasks complete!"
-
-watch-generate-types: ## Generate Swift types from OpenAPI spec for watchOS app
-	@echo "🔄 Generating Swift types from OpenAPI spec..."
-	@cd apps/BATbern-watch && ./scripts/generate-types.sh
-	@echo "✓ Swift types generated"
-	@echo ""
-	@echo "💡 Generated files in: apps/BATbern-watch/BATbern-watch Watch App/Generated/"
