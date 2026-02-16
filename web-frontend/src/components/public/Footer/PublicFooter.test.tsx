@@ -51,7 +51,7 @@ describe('PublicFooter', () => {
     // Check for translated text
     expect(screen.getByText('Legal')).toBeInTheDocument();
     expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
-    expect(screen.getByText('Terms of Service')).toBeInTheDocument();
+    expect(screen.getByText('Support')).toBeInTheDocument();
 
     // Copyright is now in the legal section with current year
     const currentYear = new Date().getFullYear();
@@ -67,13 +67,13 @@ describe('PublicFooter', () => {
     const pastEventsLink = screen.getByText('Past Events').closest('a');
     const aboutLink = screen.getByText('About').closest('a');
     const privacyLink = screen.getByText('Privacy Policy').closest('a');
-    const termsLink = screen.getByText('Terms of Service').closest('a');
+    const supportLink = screen.getByText('Support').closest('a');
 
     expect(currentEventLink).toHaveAttribute('href', '/');
     expect(pastEventsLink).toHaveAttribute('href', '/archive');
     expect(aboutLink).toHaveAttribute('href', '/about');
     expect(privacyLink).toHaveAttribute('href', '/privacy');
-    expect(termsLink).toHaveAttribute('href', '/terms');
+    expect(supportLink).toHaveAttribute('href', '/support');
   });
 
   it('should have proper styling classes for dark theme', () => {
