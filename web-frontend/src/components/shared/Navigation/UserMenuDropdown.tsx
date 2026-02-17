@@ -119,7 +119,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
           {user.email}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          {t(`role.${user.role}`)}
+          {user.roles.map((r) => t(`role.${r}`)).join(', ')}
         </Typography>
       </Box>
 

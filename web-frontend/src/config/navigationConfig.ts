@@ -16,6 +16,7 @@ import {
   Business,
   ManageAccounts,
   Public,
+  RecordVoiceOver,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -119,6 +120,13 @@ export const navigationConfig: NavigationItem[] = [
     description: 'Your speaker profile',
   },
   {
+    labelKey: 'navigation.speakerPortal',
+    path: '/speaker-portal/login',
+    icon: RecordVoiceOver,
+    roles: ['speaker'],
+    description: 'Access speaker self-service portal',
+  },
+  {
     labelKey: 'navigation.publicSite',
     path: '/',
     icon: Public,
@@ -199,6 +207,35 @@ export const navigationConfig: NavigationItem[] = [
  */
 export function getNavigationForRole(role: UserRole): NavigationItem[] {
   return navigationConfig.filter((item) => item.roles.includes(role));
+}
+
+/**
+ * Story 9.5: Get deduplicated navigation items for multiple roles.
+ * Items that appear in multiple roles (e.g., "Public Site") appear only once.
+ */
+export function getNavigationForRoles(roles: UserRole[]): NavigationItem[] {
+  const seen = new Set<string>();
+  return navigationConfig
+    .filter((item) => item.roles.some((r) => roles.includes(r)))
+    .filter((item) => {
+      if (seen.has(item.path)) return false;
+      seen.add(item.path);
+      return true;
+    });
+}
+
+/**
+ * Story 9.5: Get navigation items grouped by role section.
+ * Returns an array of role groups, each with a label key and items.
+ */
+export function getGroupedNavigationForRoles(
+  roles: UserRole[]
+): { role: UserRole; labelKey: string; items: NavigationItem[] }[] {
+  return roles.map((role) => ({
+    role,
+    labelKey: `navigation.section.${role}`,
+    items: getNavigationForRole(role),
+  }));
 }
 
 /**

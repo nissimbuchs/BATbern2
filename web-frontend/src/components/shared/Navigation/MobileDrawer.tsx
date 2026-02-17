@@ -26,10 +26,11 @@ interface MobileDrawerProps {
   open: boolean;
   onClose: () => void;
   userRole: UserRole;
+  userRoles?: UserRole[]; // Story 9.5: optional multi-role support
   userEmail?: string;
 }
 
-export function MobileDrawer({ open, onClose, userRole, userEmail }: MobileDrawerProps) {
+export function MobileDrawer({ open, onClose, userRole, userRoles, userEmail }: MobileDrawerProps) {
   const handleLogout = () => {
     // Logout will be handled by parent component
     onClose();
@@ -92,7 +93,12 @@ export function MobileDrawer({ open, onClose, userRole, userEmail }: MobileDrawe
 
         {/* Navigation Menu */}
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-          <NavigationMenu userRole={userRole} onItemClick={onClose} variant="vertical" />
+          <NavigationMenu
+            userRole={userRole}
+            userRoles={userRoles}
+            onItemClick={onClose}
+            variant="vertical"
+          />
         </Box>
 
         <Divider />

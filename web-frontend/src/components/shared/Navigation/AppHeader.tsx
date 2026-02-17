@@ -51,6 +51,8 @@ const AppHeader = React.memo(function AppHeader({
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
+  // Story 9.5: Extract all roles from UserContext (only UserContext has roles[])
+  const userRoles = user && 'roles' in user ? (user as UserContext).roles : undefined;
 
   const handleNotificationClick = () => {
     setNotificationMenuOpen(!notificationMenuOpen);
@@ -131,7 +133,7 @@ const AppHeader = React.memo(function AppHeader({
           {/* Desktop/Tablet Navigation */}
           {!isMobile && currentRole && (
             <Box sx={{ flex: 1 }}>
-              <NavigationMenu userRole={currentRole} showText={!isTablet} />
+              <NavigationMenu userRole={currentRole} userRoles={userRoles} showText={!isTablet} />
             </Box>
           )}
 
@@ -173,8 +175,8 @@ const AppHeader = React.memo(function AppHeader({
               )}
             </IconButton>
 
-            {/* Tasks - Only show for organizers */}
-            {currentRole === 'organizer' && (
+            {/* Tasks - Only show for organizers (Story 9.5: check all roles) */}
+            {(userRoles?.includes('organizer') ?? currentRole === 'organizer') && (
               <Tooltip title={t('navigation.tasks', 'Tasks')}>
                 <IconButton
                   color="inherit"
@@ -217,6 +219,7 @@ const AppHeader = React.memo(function AppHeader({
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
           userRole={currentRole}
+          userRoles={userRoles}
           userEmail={user.email}
         />
       )}

@@ -23,6 +23,16 @@ vi.mock('react-i18next', () => ({
         'navigation.myEvents': 'My Events',
         'navigation.myContent': 'My Content',
         'navigation.myRegistrations': 'My Registrations',
+        'navigation.speakerPortal': 'Speaker Portal',
+        'navigation.section.organizer': 'Organizer',
+        'navigation.section.speaker': 'Speaker',
+        'navigation.section.partner': 'Partner',
+        'navigation.section.attendee': 'Attendee',
+        'events:navigation.dashboard': 'Events',
+        'navigation.companies': 'Companies',
+        'navigation.users': 'Users',
+        'navigation.publicSite': 'Public Website',
+        'navigation.myCompany': 'My Company',
       };
       return translations[key] || key;
     },
@@ -196,6 +206,65 @@ describe('NavigationMenu Component', () => {
       // Should have Material-UI icons for each menu item
       const icons = container.querySelectorAll('svg');
       expect(icons.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Multi-Role Navigation (Story 9.5)', () => {
+    test('should_renderGroupedItems_when_userHasMultipleRoles', () => {
+      renderWithRouter(
+        <NavigationMenu
+          userRole="organizer"
+          userRoles={['organizer', 'speaker']}
+          variant="vertical"
+        />
+      );
+
+      // Should render items from both organizer and speaker sections
+      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
+    });
+
+    test('should_renderSectionHeaders_when_multiRoleVertical', () => {
+      renderWithRouter(
+        <NavigationMenu
+          userRole="organizer"
+          userRoles={['organizer', 'speaker']}
+          variant="vertical"
+        />
+      );
+
+      // Should render section headers for each role group
+      expect(screen.getByTestId('nav-section-organizer')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-section-speaker')).toBeInTheDocument();
+    });
+
+    test('should_renderSingleRoleItems_when_userRolesNotProvided', () => {
+      renderWithRouter(<NavigationMenu userRole="organizer" />);
+
+      // Should work like before — only organizer items
+      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      expect(screen.queryByTestId('nav-section-organizer')).not.toBeInTheDocument();
+    });
+
+    test('should_renderSingleRoleItems_when_userRolesHasOneEntry', () => {
+      renderWithRouter(<NavigationMenu userRole="organizer" userRoles={['organizer']} />);
+
+      // Single role = no grouping, same as before
+      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      expect(screen.queryByTestId('nav-section-organizer')).not.toBeInTheDocument();
+    });
+
+    test('should_includeSpeakerPortal_when_speakerRolePresent', () => {
+      renderWithRouter(
+        <NavigationMenu
+          userRole="organizer"
+          userRoles={['organizer', 'speaker']}
+          variant="vertical"
+        />
+      );
+
+      // Speaker Portal should appear in the speaker section
+      expect(screen.getByText('Speaker Portal')).toBeInTheDocument();
     });
   });
 });

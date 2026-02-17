@@ -22,7 +22,14 @@
     "myRegistrations": "My Registrations",
     "about": "About",
     "pastEvents": "Past Events",
-    "publicSite": "Public Website"
+    "publicSite": "Public Website",
+    "speakerPortal": "Speaker Portal",
+    "section": {
+      "organizer": "Organizer",
+      "speaker": "Speaker",
+      "partner": "Partner",
+      "attendee": "Attendee"
+    }
   },
   "public": {
     "login": "Login",

@@ -63,6 +63,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-1',
         email: 'organizer@test.com',
         role: 'organizer' as UserRole,
+        roles: ['organizer'] as UserRole[],
         firstName: 'Test',
         lastName: 'Organizer',
         emailVerified: true,
@@ -93,6 +94,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-1',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -128,6 +130,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-1',
         email: 'organizer@test.com',
         role: 'organizer' as UserRole,
+        roles: ['organizer'] as UserRole[],
         firstName: 'Test',
         lastName: 'Organizer',
         emailVerified: true,
@@ -158,6 +161,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-2',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -191,6 +195,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-2',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -221,6 +226,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-4',
         email: 'attendee@test.com',
         role: 'attendee' as UserRole,
+        roles: ['attendee'] as UserRole[],
         firstName: 'Test',
         lastName: 'Attendee',
         emailVerified: true,
@@ -254,6 +260,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-3',
         email: 'partner@test.com',
         role: 'partner' as UserRole,
+        roles: ['partner'] as UserRole[],
         firstName: 'Test',
         lastName: 'Partner',
         emailVerified: true,
@@ -284,6 +291,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-2',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -317,6 +325,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-4',
         email: 'attendee@test.com',
         role: 'attendee' as UserRole,
+        roles: ['attendee'] as UserRole[],
         firstName: 'Test',
         lastName: 'Attendee',
         emailVerified: true,
@@ -347,6 +356,7 @@ describe('ProtectedRoute - Route Protection Based on User Role', () => {
         userId: 'user-1',
         email: 'organizer@test.com',
         role: 'organizer' as UserRole,
+        roles: ['organizer'] as UserRole[],
         firstName: 'Test',
         lastName: 'Organizer',
         emailVerified: true,
@@ -383,6 +393,7 @@ describe('ProtectedRoute - Unauthorized Redirect to Dashboard', () => {
         userId: 'user-2',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -418,6 +429,7 @@ describe('ProtectedRoute - Unauthorized Redirect to Dashboard', () => {
         userId: 'user-4',
         email: 'attendee@test.com',
         role: 'attendee' as UserRole,
+        roles: ['attendee'] as UserRole[],
         firstName: 'Test',
         lastName: 'Attendee',
         emailVerified: true,
@@ -451,6 +463,7 @@ describe('ProtectedRoute - Unauthorized Redirect to Dashboard', () => {
         userId: 'user-2',
         email: 'speaker@test.com',
         role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
         firstName: 'Test',
         lastName: 'Speaker',
         emailVerified: true,
@@ -633,6 +646,108 @@ describe('ProtectedRoute - Session Expired Redirect to Login', () => {
   });
 });
 
+describe('ProtectedRoute - Multi-Role Support (Story 9.5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test('should_allowAccess_when_multiRoleUserHasMatchingRole', async () => {
+    const mockUseAuth = vi.spyOn(useAuthModule, 'useAuth');
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        userId: 'user-multi',
+        email: 'multi@test.com',
+        role: 'organizer' as UserRole,
+        roles: ['organizer', 'speaker'] as UserRole[],
+        firstName: 'Test',
+        lastName: 'Multi',
+        emailVerified: true,
+      },
+      canAccess: vi.fn(() => true),
+      login: vi.fn(),
+      logout: vi.fn(),
+      refreshSession: vi.fn(),
+    });
+
+    renderWithRouter(
+      <SpeakerRoute>
+        <SpeakerPage />
+      </SpeakerRoute>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Speaker Page')).toBeInTheDocument();
+    });
+  });
+
+  test('should_allowAccess_when_secondaryRoleMatchesAllowedRoles', async () => {
+    const mockUseAuth = vi.spyOn(useAuthModule, 'useAuth');
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        userId: 'user-multi',
+        email: 'multi@test.com',
+        role: 'speaker' as UserRole, // Primary is speaker
+        roles: ['speaker', 'organizer'] as UserRole[], // But also has organizer
+        firstName: 'Test',
+        lastName: 'Multi',
+        emailVerified: true,
+      },
+      canAccess: vi.fn(() => true),
+      login: vi.fn(),
+      logout: vi.fn(),
+      refreshSession: vi.fn(),
+    });
+
+    renderWithRouter(
+      <OrganizerRoute>
+        <OrganizerPage />
+      </OrganizerRoute>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Organizer Page')).toBeInTheDocument();
+    });
+  });
+
+  test('should_redirectToDashboard_when_multiRoleUserLacksRequiredRole', async () => {
+    const mockUseAuth = vi.spyOn(useAuthModule, 'useAuth');
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true,
+      isLoading: false,
+      user: {
+        userId: 'user-multi',
+        email: 'multi@test.com',
+        role: 'speaker' as UserRole,
+        roles: ['speaker'] as UserRole[],
+        firstName: 'Test',
+        lastName: 'Multi',
+        emailVerified: true,
+      },
+      canAccess: vi.fn(() => true),
+      login: vi.fn(),
+      logout: vi.fn(),
+      refreshSession: vi.fn(),
+    });
+
+    renderWithRouter(
+      <OrganizerRoute>
+        <OrganizerPage />
+      </OrganizerRoute>,
+      '/organizer'
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Organizer Page')).not.toBeInTheDocument();
+  });
+});
+
 describe('ProtectedRoute - Email Verification Requirements', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -647,6 +762,7 @@ describe('ProtectedRoute - Email Verification Requirements', () => {
         userId: 'user-1',
         email: 'organizer@test.com',
         role: 'organizer' as UserRole,
+        roles: ['organizer'] as UserRole[],
         firstName: 'Test',
         lastName: 'Organizer',
         emailVerified: false, // Not verified
@@ -679,6 +795,7 @@ describe('ProtectedRoute - Email Verification Requirements', () => {
         userId: 'user-1',
         email: 'organizer@test.com',
         role: 'organizer' as UserRole,
+        roles: ['organizer'] as UserRole[],
         firstName: 'Test',
         lastName: 'Organizer',
         emailVerified: true,

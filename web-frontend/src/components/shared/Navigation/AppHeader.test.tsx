@@ -84,9 +84,11 @@ describe('AppHeader Component', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: {
         userId: 'user-123',
+        username: 'test.user',
         email: 'test@batbern.ch',
         emailVerified: true,
         role: 'organizer',
+        roles: ['organizer'],
         companyId: 'company-123',
         preferences: {
           language: 'de',
@@ -289,6 +291,43 @@ describe('AppHeader Component', () => {
 
   // Language Switcher test removed - language switcher is now in UserMenuDropdown
   // See UserMenuDropdown.test.tsx for language switcher tests
+
+  describe('Multi-Role Tasks Button (Story 9.5)', () => {
+    test('should_showTasksButton_when_multiRoleUserHasOrganizerAsSecondaryRole', async () => {
+      const { useAuth } = await import('@/hooks/useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        ...vi.mocked(useAuth)(),
+        user: {
+          ...vi.mocked(useAuth)().user!,
+          role: 'speaker', // Primary role is speaker
+          roles: ['speaker', 'organizer'], // But also has organizer
+        },
+      });
+
+      renderWithProviders(<AppHeader />);
+
+      // Tasks button should be visible because user has organizer role
+      const tasksButton = screen.getByTestId('tasks-button');
+      expect(tasksButton).toBeInTheDocument();
+    });
+
+    test('should_hideTasksButton_when_userHasNoOrganizerRole', async () => {
+      const { useAuth } = await import('@/hooks/useAuth');
+      vi.mocked(useAuth).mockReturnValue({
+        ...vi.mocked(useAuth)(),
+        user: {
+          ...vi.mocked(useAuth)().user!,
+          role: 'speaker',
+          roles: ['speaker'],
+        },
+      });
+
+      renderWithProviders(<AppHeader />);
+
+      // Tasks button should NOT be visible
+      expect(screen.queryByTestId('tasks-button')).not.toBeInTheDocument();
+    });
+  });
 
   describe('Mobile Responsive', () => {
     test('should_renderHamburgerMenu_when_mobile', async () => {

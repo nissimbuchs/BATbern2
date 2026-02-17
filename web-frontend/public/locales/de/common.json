@@ -22,7 +22,14 @@
     "myRegistrations": "Meine Anmeldungen",
     "about": "Über uns",
     "pastEvents": "Vergangene Veranstaltungen",
-    "publicSite": "Öffentliche Webseite"
+    "publicSite": "Öffentliche Webseite",
+    "speakerPortal": "Speaker Portal",
+    "section": {
+      "organizer": "Organisator",
+      "speaker": "Referent",
+      "partner": "Partner",
+      "attendee": "Teilnehmer"
+    }
   },
   "public": {
     "login": "Anmelden",

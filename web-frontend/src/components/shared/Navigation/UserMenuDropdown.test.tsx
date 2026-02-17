@@ -24,9 +24,11 @@ vi.mock('../../../services/api/apiClient', () => ({
 
 const mockUser: UserContext = {
   userId: 'user-123',
+  username: 'john.doe',
   email: 'john.doe@batbern.ch',
   emailVerified: true,
   role: 'organizer',
+  roles: ['organizer'],
   companyId: 'company-123',
   preferences: {
     language: 'de',
@@ -298,6 +300,45 @@ describe('UserMenuDropdown', () => {
       await waitFor(() => {
         expect(mockOnLogout).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('Multi-Role Display (Story 9.5)', () => {
+    it('should_displayAllRoles_when_userHasMultipleRoles', () => {
+      const multiRoleUser: UserContext = {
+        ...mockUser,
+        roles: ['organizer', 'speaker'],
+      };
+
+      renderWithRouter(
+        <UserMenuDropdown
+          user={multiRoleUser}
+          anchorEl={document.createElement('div')}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      // Should show both roles, comma-separated
+      expect(screen.getByText('role.organizer, role.speaker')).toBeInTheDocument();
+    });
+
+    it('should_displaySingleRole_when_userHasOneRole', () => {
+      renderWithRouter(
+        <UserMenuDropdown
+          user={mockUser}
+          anchorEl={document.createElement('div')}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      // Single role display should remain the same
+      expect(screen.getByText('role.organizer')).toBeInTheDocument();
     });
   });
 

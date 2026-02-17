@@ -112,6 +112,12 @@ const SpeakerMagicLoginPage = React.lazy(
   () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
 );
 
+// Story 9.3: Speaker Portal - Dual Authentication
+const SpeakerLoginPage = React.lazy(() => import('@pages/speaker-portal/SpeakerLoginPage'));
+const SpeakerForgotPasswordPage = React.lazy(
+  () => import('@pages/speaker-portal/SpeakerForgotPasswordPage')
+);
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -254,6 +260,13 @@ function App() {
 
                     {/* Story 9.1: Speaker Portal - JWT Magic Login */}
                     <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
+
+                    {/* Story 9.3: Speaker Portal - Dual Authentication */}
+                    <Route path="/speaker-portal/login" element={<SpeakerLoginPage />} />
+                    <Route
+                      path="/speaker-portal/forgot-password"
+                      element={<SpeakerForgotPasswordPage />}
+                    />
 
                     <Route
                       path="/search"
