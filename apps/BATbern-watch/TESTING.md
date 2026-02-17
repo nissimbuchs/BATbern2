@@ -1,8 +1,12 @@
 # BATbern Watch — Test Framework
 
-**Framework**: Swift Testing (unit) + XCTest (UI)
+**Framework**: Swift Testing (unit tests)
 **Scaffolded**: 2026-02-15
 **Coverage Target**: 80%+ business logic
+
+> **Note**: watchOS does not support XCUITest (`XCUIApplication`-based UI testing) for standalone
+> watch apps without a paired iPhone host. The UITest target has been removed. UI interaction
+> testing is covered via Swift Testing unit tests against ViewModels and SwiftUI previews.
 
 ## Directory Structure
 
@@ -21,10 +25,6 @@ BATbern-watch Watch AppTests/          # Unit tests (Swift Testing)
 ├── Helpers/                           # Test utilities
 │   └── AsyncTestHelpers.swift         # Async wait, error assertions
 └── BATbern_watch_Watch_AppTests.swift # Infrastructure smoke tests
-
-BATbern-watch Watch AppUITests/        # UI tests (XCTest)
-├── BATbern_watch_Watch_AppUITests.swift
-└── BATbern_watch_Watch_AppUITestsLaunchTests.swift
 ```
 
 ## Xcode Setup (Required)
@@ -49,7 +49,7 @@ After scaffolding, add new files to the Xcode project:
 xcodebuild test -scheme "BATbern-watch Watch App" \
   -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)'
 
-# Unit tests only
+# Unit tests (only target available)
 xcodebuild test -scheme "BATbern-watch Watch App" \
   -destination 'platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)' \
   -only-testing:BATbern-watch_Watch_AppTests
@@ -146,7 +146,7 @@ Tests should be written in this order, matching risk profile:
 | P1 | Offline `ActionQueue` | Lost actions on app restart | Persistence tests |
 | P2 | `AuthManager` | JWT expiry mid-event | MockClock + token lifecycle |
 | P2 | Public zone data loading | Stale cache, progressive publishing | MockAPIClient |
-| P3 | UI navigation | Swipe zones, Crown scroll | XCTest UI tests |
+| P3 | UI navigation | Swipe zones, Crown scroll | ViewModel tests + SwiftUI previews |
 
 ## Adding New Tests
 
