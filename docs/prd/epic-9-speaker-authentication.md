@@ -1,6 +1,6 @@
 # Epic 9: Speaker Authentication & Account Integration
 
-**Status:** 📋 **PLANNED** (Ready for Implementation)
+**Status:** ✅ **COMPLETE** (All 5 stories implemented, tested, and pushed — 2026-02-17)
 
 **Epic Goal**: Unify authentication architecture so speakers who are also attendees can access both portals with a single JWT-based session, eliminating dual login patterns and preventing duplicate accounts.
 
@@ -94,7 +94,7 @@
 
 ## Epic 9 Stories
 
-### Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal
+### Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal ✅ DONE
 
 **User Story:**
 As a **speaker**, I want to click a magic link that logs me in automatically with a JWT token, so that I can access the speaker portal without creating a separate password.
@@ -120,7 +120,7 @@ As a **speaker**, I want to click a magic link that logs me in automatically wit
 
 ---
 
-### Story 9.2: Automatic Account Creation & Role Extension on Invitation Acceptance
+### Story 9.2: Automatic Account Creation & Role Extension on Invitation Acceptance ✅ DONE
 
 **User Story:**
 As a **system**, I want to automatically create or update user accounts when speakers accept invitations, so that speakers have unified access without duplicate accounts.
@@ -148,7 +148,7 @@ As a **system**, I want to automatically create or update user accounts when spe
 
 ---
 
-### Story 9.3: Dual Authentication Support (Magic Link + Email/Password)
+### Story 9.3: Dual Authentication Support (Magic Link + Email/Password) ✅ DONE
 
 **User Story:**
 As a **speaker**, I want to access the speaker portal via magic link OR email/password, so that I have flexibility in how I authenticate.
@@ -177,7 +177,7 @@ As a **speaker**, I want to access the speaker portal via magic link OR email/pa
 
 ---
 
-### Story 9.4: Migration Script for Epic 6 Staging Users
+### Story 9.4: Migration Script for Epic 6 Staging Users ✅ DONE
 
 **User Story:**
 As a **system administrator**, I want to migrate existing Epic 6 token-based speakers to JWT-based authentication, so that we can deploy Epic 9 without data loss.
@@ -206,7 +206,7 @@ As a **system administrator**, I want to migrate existing Epic 6 token-based spe
 
 ---
 
-### Story 9.5: Frontend Unified Navigation for Multi-Role Users
+### Story 9.5: Frontend Unified Navigation for Multi-Role Users ✅ DONE
 
 **User Story:**
 As a **speaker who is also an attendee**, I want to see navigation options for both speaker and attendee portals, so that I can easily switch between my roles.
