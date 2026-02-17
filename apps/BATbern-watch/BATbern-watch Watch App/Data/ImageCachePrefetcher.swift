@@ -54,6 +54,12 @@ class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
     // MARK: - Private
 
     private func prefetchSpeaker(_ speaker: CachedSpeaker) async {
+        // Re-check budget per speaker to limit overshoot when many tasks run concurrently
+        guard portraitCache.cacheSize() < maxCacheSizeBytes else {
+            print("⚠️ ImageCachePrefetcher: Cache ≥40MB mid-prefetch — stopping speaker \(speaker.username)")
+            return
+        }
+
         // Portrait
         if let urlString = speaker.profilePictureUrl, let url = URL(string: urlString) {
             await prefetchPortrait(url: url, label: speaker.username)
@@ -77,37 +83,15 @@ class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
     }
 
     private func prefetchLogo(companyName: String) async {
-        guard !portraitCache.isLogoCached(companyName: companyName) else { return }
-
-        guard let encodedName = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              var components = URLComponents(string: "https://api.staging.batbern.ch/api/v1/companies/\(encodedName)") else {
-            return
-        }
-        components.queryItems = [URLQueryItem(name: "expand", value: "logo")]
-        guard let url = components.url else { return }
-
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let company = try JSONDecoder().decode(CompanyLogoResponse.self, from: data)
-            if let logoUrlString = company.logo?.url,
-               let logoUrl = URL(string: logoUrlString) {
-                let (logoData, _) = try await URLSession.shared.data(from: logoUrl)
-                portraitCache.saveLogo(companyName: companyName, data: logoData)
+            // Delegates to PortraitCache.downloadAndCacheLogo — single implementation, no duplication
+            try await portraitCache.downloadAndCacheLogo(companyName: companyName)
+            if portraitCache.isLogoCached(companyName: companyName) {
                 print("✅ ImageCachePrefetcher: Logo cached — \(companyName)")
             }
         } catch {
             print("⚠️ ImageCachePrefetcher: Logo download failed for \(companyName): \(error.localizedDescription)")
         }
     }
-}
-
-// MARK: - Response Types
-
-private struct CompanyLogoResponse: Codable {
-    let logo: CompanyLogoURL?
-}
-
-private struct CompanyLogoURL: Codable {
-    let url: String
 }
 

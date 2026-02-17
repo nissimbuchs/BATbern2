@@ -36,13 +36,19 @@ class PortraitCache {
 
     // MARK: - Cache Operations
 
-    /// Generates cache key from CDN URL
+    /// Generates a collision-resistant cache key from a full URL.
+    /// Uses djb2 hash of the full absolute URL to prevent collisions when
+    /// different URLs share the same lastPathComponent (e.g. two CDNs both serve "photo.jpg").
     private func cacheKey(for url: URL) -> String {
-        // Use URL path as filename (sanitized)
+        let fullString = url.absoluteString
+        var hash: UInt32 = 5381
+        for byte in fullString.utf8 {
+            hash = hash &* 33 &+ UInt32(byte)
+        }
         let sanitized = url.lastPathComponent
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: ":", with: "_")
-        return sanitized
+        return "\(sanitized)_\(String(hash, radix: 16))"
     }
 
     /// Returns cached file URL for portrait
@@ -118,6 +124,30 @@ class PortraitCache {
         try? data.write(to: fileURL, options: .atomic)
     }
 
+    /// Downloads a company logo via the BATbern company API and caches it under the company name key.
+    /// Cache-first: no-op if already cached. Throws on network/decode failure — caller handles silently.
+    /// Single implementation consumed by both ImageCachePrefetcher and SpeakerPortraitView.
+    func downloadAndCacheLogo(
+        companyName: String,
+        apiBaseURL: String = BATbernAPIConfig.baseURL
+    ) async throws {
+        guard !isLogoCached(companyName: companyName) else { return }
+        guard let encoded = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              var components = URLComponents(string: "\(apiBaseURL)/api/v1/companies/\(encoded)") else {
+            return
+        }
+        components.queryItems = [URLQueryItem(name: "expand", value: "logo")]
+        guard let url = components.url else { return }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(CompanyLogoAPIResponse.self, from: data)
+        if let logoUrlString = response.logo?.url,
+           let logoUrl = URL(string: logoUrlString) {
+            let (logoData, _) = try await URLSession.shared.data(from: logoUrl)
+            saveLogo(companyName: companyName, data: logoData)
+        }
+    }
+
     // MARK: - Portrait Cache Operations
 
     /// Pre-downloads all speaker portraits for offline availability
@@ -135,11 +165,13 @@ class PortraitCache {
         }
     }
 
-    /// Clears all cached portraits
+    /// Clears all cached portraits AND logos
     func clearCache() {
         try? fileManager.removeItem(at: cacheDirectory)
         try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-        print("🗑️ PortraitCache: Cache cleared")
+        try? fileManager.removeItem(at: logoDirectory)
+        try? fileManager.createDirectory(at: logoDirectory, withIntermediateDirectories: true)
+        print("🗑️ PortraitCache: Cache cleared (portraits + logos)")
     }
 
     /// Returns total cache size in bytes (portraits + logos)
@@ -161,4 +193,14 @@ class PortraitCache {
 
         return totalSize
     }
+}
+
+// MARK: - Private API Response Types (used by downloadAndCacheLogo)
+
+private struct CompanyLogoAPIResponse: Codable {
+    let logo: CompanyLogoURLField?
+}
+
+private struct CompanyLogoURLField: Codable {
+    let url: String
 }

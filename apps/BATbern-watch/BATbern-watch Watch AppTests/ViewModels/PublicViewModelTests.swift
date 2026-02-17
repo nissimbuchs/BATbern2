@@ -510,15 +510,15 @@ struct PublicViewModelTests {
         let mockClock = MockClock(fixedDate: Date())
 
         // When: ViewModel initializes and refreshes
-        let viewModel = PublicViewModel(
+        _ = PublicViewModel(
             apiClient: mockAPI,
             clock: mockClock,
             prefetcher: mockPrefetcher,
             modelContext: modelContext
         )
 
-        // Wait for background refresh + prefetch task to complete
-        try await Task.sleep(nanoseconds: 700_000_000)  // 0.7s
+        // Wait until prefetchAll is actually called (condition-driven, not arbitrary sleep)
+        try await AsyncTestHelpers.waitFor { mockPrefetcher.prefetchCallCount > 0 }
 
         // Then: prefetchAll was called
         #expect(mockPrefetcher.prefetchCallCount > 0, "prefetchAll should be called after successful refresh")
@@ -540,18 +540,17 @@ struct PublicViewModelTests {
         let mockClock = MockClock(fixedDate: baseTime)
 
         // When: ViewModel refreshes
-        let viewModel = PublicViewModel(
+        _ = PublicViewModel(
             apiClient: mockAPI,
             clock: mockClock,
             prefetcher: mockPrefetcher,
             modelContext: modelContext
         )
 
-        try await Task.sleep(nanoseconds: 700_000_000)
+        // Wait until prefetchAll is called (condition-driven, not arbitrary sleep)
+        try await AsyncTestHelpers.waitFor { mockPrefetcher.prefetchCallCount > 0 }
 
         // Then: prefetcher received speakers from both sessions
-        #expect(mockPrefetcher.prefetchCallCount > 0, "prefetchAll should have been called")
-        // Speaker count should include speakers from both sessions
         let speakerUsernames = mockPrefetcher.lastPrefetchedSpeakers.map(\.username)
         #expect(speakerUsernames.contains("s1"), "Speaker s1 should be in prefetch list")
         #expect(speakerUsernames.contains("s2"), "Speaker s2 should be in prefetch list")
@@ -573,9 +572,10 @@ struct PublicViewModelTests {
             modelContext: modelContext
         )
 
-        try await Task.sleep(nanoseconds: 500_000_000)
+        // Wait until API was called (so we know the refresh attempt completed)
+        try await AsyncTestHelpers.waitFor { mockAPI.fetchCurrentEventCallCount > 0 }
 
-        // Then: prefetchAll should not have been called
+        // Then: prefetchAll should not have been called (API failed before reaching prefetch)
         #expect(mockPrefetcher.prefetchCallCount == 0, "prefetchAll should not be called on API failure")
     }
 

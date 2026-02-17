@@ -1,6 +1,6 @@
 # Story 1.5: Watch App UI Polish & Image Caching
 
-Status: review
+Status: done
 
 <!-- Beta testing feedback: 4 issues identified from TestFlight/Apple Store testing. All are Epic 1 polish items. -->
 
@@ -221,6 +221,14 @@ _No blocking issues encountered._
 - **Task 4**: Removed scroll hint block and preceding `Spacer(minLength: 16)` from `EventHeroView`. Removed `"event.hero.scroll_hint"` key from both `Base.lproj/Localizable.strings` and `de.lproj/Localizable.strings`. Replaced flat `Color.black.opacity(0.6)` overlay with `LinearGradient` (stops: 0.3→0.5→0.85 opacity, top→bottom).
 - **Task 5**: Created `BATbernWatchStyle.swift` with `Colors`, `Typography`, and `Spacing` namespaces. Migrated hardcoded `Color(hex: "#2C5F7C")` → `BATbernWatchStyle.Colors.batbernBlue` in EventHeroView and SessionCardView. Migrated `.font(.caption2)` → `BATbernWatchStyle.Typography.statusBar` in ConnectionStatusBar. Migrated `.font(.system(size: 11/9))` → `BATbernWatchStyle.Typography.speakerName/companyName` in SpeakerPortraitView. Migrated portrait sizes → `BATbernWatchStyle.Spacing.portraitSize/portraitSizeSmall`.
 - **Task 6**: Created 5 test files covering all ACs. Note: all new test files require adding to Xcode project target membership before building.
+- **Code Review Fix (CR)**: Resolved 8 HIGH/MEDIUM findings from code review:
+  - **H1+H2**: `SpeakerBioView.swift` was missing PortraitCache migration — both portrait and logo now use cache-first loading via `PortraitCache` (no more `AsyncImage`). AC#4 and AC#5 now fully satisfied across ALL views.
+  - **H3**: Hardcoded `"https://api.staging.batbern.ch"` strings extracted to `BATbernAPIConfig.swift` — single source of truth for base URL across `PublicEventService`, `ImageCachePrefetcher`, and `SpeakerPortraitView`.
+  - **M1**: `PortraitCache.cacheKey(url:)` now uses djb2 hash of full URL to prevent filename collisions.
+  - **M2**: `PortraitCache.clearCache()` now clears both `cacheDirectory` and `logoDirectory`.
+  - **M3**: Per-speaker budget check added inside `ImageCachePrefetcher.prefetchSpeaker()` to limit cache overshoot during concurrent downloads.
+  - **M4**: `PortraitCache.downloadAndCacheLogo(companyName:apiBaseURL:)` method added — DRY: replaces duplicated company API fetch + JSON decode logic in both `ImageCachePrefetcher` and `SpeakerPortraitView`.
+  - **M5**: W1.5 prefetch tests in `PublicViewModelTests.swift` migrated from `Task.sleep` to `AsyncTestHelpers.waitFor` (condition-driven, not timing-dependent).
 
 ### Note: Xcode Project Registration Required
 
@@ -244,6 +252,7 @@ To add: Open Xcode → right-click target group → Add Files to "BATbern-watch 
 **Created:**
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/ImageCachePrefetcher.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/Utilities/BATbernWatchStyle.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Utilities/BATbernAPIConfig.swift` ← NEW (CR: H3 base URL config)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/PortraitCacheTests.swift`
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ImageCachePrefetcherTests.swift`
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/EventHeroViewTests.swift`
@@ -251,19 +260,23 @@ To add: Open Xcode → right-click target group → Add Files to "BATbern-watch 
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Mocks/MockImageCachePrefetcher.swift`
 
 **Modified:**
-- `apps/BATbern-watch/BATbern-watch Watch App/Data/PortraitCache.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/PortraitCache.swift` ← CR: M1 (cache key), M2 (clearCache), M4 (downloadAndCacheLogo)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ImageCachePrefetcher.swift` ← CR: H3, M3, M4
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/PublicEventService.swift` ← CR: H3 (baseURL from config)
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionListView.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionCardView.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/EventHeroView.swift`
-- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/SpeakerPortraitView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SpeakerBioView.swift` ← CR: H1, H2 (PortraitCache migration)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/SpeakerPortraitView.swift` ← CR: H3, M4
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/ConnectionStatusBar.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/PublicViewModel.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings`
 - `apps/BATbern-watch/BATbern-watch Watch App/de.lproj/Localizable.strings`
-- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift` ← CR: M5 (AsyncTestHelpers)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml`
 - `_bmad-output/implementation-artifacts/w1-5-ui-polish-image-caching.md`
 
 ## Change Log
 
 - 2026-02-17: W1.5 implemented — UI polish (layout fixes, scroll hint removal, gradient hero overlay) + image caching infrastructure (PortraitCache logo support, ImageCachePrefetcher, SpeakerPortraitView migration) + BATbernWatchStyle design system. All 6 tasks complete, 7 test files created/extended. (Claude Sonnet 4.5)
+- 2026-02-17: W1.5 code review fixes — 8 HIGH/MEDIUM issues resolved: SpeakerBioView PortraitCache migration (H1, H2), BATbernAPIConfig base URL extraction (H3), cache key collision fix (M1), clearCache logo cleanup (M2), per-item budget check (M3), DRY logo-fetch in PortraitCache (M4), AsyncTestHelpers in W1.5 tests (M5). (Claude Sonnet 4.5)

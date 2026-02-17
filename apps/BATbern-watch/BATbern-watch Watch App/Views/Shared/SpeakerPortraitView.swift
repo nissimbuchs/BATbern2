@@ -110,44 +110,21 @@ struct SpeakerPortraitView: View {
     // MARK: - Cache-First Logo Loading (AC#5)
 
     private func loadLogo(companyName: String) async {
-        // Cache-first: try local file first
+        // Cache-first: serve from local file immediately
         if let cached = portraitCache.getLogoForCompany(companyName) {
             logoData = cached
             return
         }
 
-        // Fallback: fetch from company API and cache
-        guard let encodedName = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              var components = URLComponents(string: "https://api.staging.batbern.ch/api/v1/companies/\(encodedName)") else {
-            return
-        }
-        components.queryItems = [URLQueryItem(name: "expand", value: "logo")]
-        guard let url = components.url else { return }
-
+        // Fallback: fetch via PortraitCache (single shared implementation, no duplication)
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let company = try JSONDecoder().decode(CompanyResponse.self, from: data)
-            if let logoUrlString = company.logo?.url,
-               let logoUrl = URL(string: logoUrlString) {
-                let (rawLogoData, _) = try await URLSession.shared.data(from: logoUrl)
-                portraitCache.saveLogo(companyName: companyName, data: rawLogoData)
-                logoData = rawLogoData
-            }
+            try await portraitCache.downloadAndCacheLogo(companyName: companyName)
+            logoData = portraitCache.getLogoForCompany(companyName)
         } catch {
             // Silently fail — logo is optional
             print("SpeakerPortraitView: Logo load failed for \(companyName): \(error.localizedDescription)")
         }
     }
-}
-
-// MARK: - Company API Response Types
-
-private struct CompanyResponse: Codable {
-    let logo: CompanyLogo?
-}
-
-private struct CompanyLogo: Codable {
-    let url: String
 }
 
 // MARK: - Previews
