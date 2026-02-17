@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.JwtConfig;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.TokenValidationResult;
@@ -15,7 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -23,6 +28,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.argThat;
@@ -33,6 +39,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for MagicLinkService
  * Story 6.1a: Magic Link Infrastructure - Task 3 (RED Phase)
+ * Story 9.1: JWT Token Generation
  *
  * RED PHASE (TDD): These tests will FAIL until MagicLinkService is implemented.
  *
@@ -42,8 +49,10 @@ import static org.mockito.Mockito.when;
  * - AC3: Single-use enforcement (RESPOND tokens marked used)
  * - AC4: Token expiry checking
  * - AC6: Security (crypto-random, hash not plaintext)
+ * - Story 9.1: JWT token generation with RS256
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class MagicLinkServiceTest {
 
     @Mock
@@ -58,15 +67,25 @@ class MagicLinkServiceTest {
     @Mock
     private SessionRepository sessionRepository;
 
+    @Mock
+    private JwtConfig jwtConfig;
+
     private MagicLinkService magicLinkService;
 
     private UUID testSpeakerPoolId;
     private SpeakerPool testSpeakerPool;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(2048);
+        KeyPair keyPair = gen.generateKeyPair();
+        when(jwtConfig.getKeyPair()).thenReturn(keyPair);
+        when(jwtConfig.getIssuer()).thenReturn("batbern");
+        when(jwtConfig.getExpiryDays()).thenReturn(30);
+
         magicLinkService = new MagicLinkService(
-                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository);
+                tokenRepository, speakerPoolRepository, eventRepository, sessionRepository, jwtConfig);
 
         testSpeakerPoolId = UUID.randomUUID();
         testSpeakerPool = SpeakerPool.builder()
@@ -586,5 +605,99 @@ class MagicLinkServiceTest {
         // The hash should be a 64-character hex string (SHA-256)
         assertThat(savedToken.getTokenHash()).hasSize(64);
         assertThat(savedToken.getTokenHash()).matches("^[a-f0-9]+$");
+    }
+
+    // ==================== Story 9.1: JWT Token Generation Tests ====================
+
+    @Test
+    void should_generateJwt_when_validSpeakerPoolId() {
+        // Arrange
+        UUID speakerPoolId = UUID.randomUUID();
+        SpeakerPool speakerPool = new SpeakerPool();
+        speakerPool.setId(speakerPoolId);
+        speakerPool.setSpeakerName("Jane Doe");
+        speakerPool.setEmail("jane@example.com");
+        when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
+
+        // Act
+        String jwt = magicLinkService.generateJwtToken(speakerPoolId);
+
+        // Assert
+        assertThat(jwt).isNotNull().isNotBlank();
+        assertThat(jwt.split("\\.")).hasSize(3); // header.payload.signature
+    }
+
+    @Test
+    void should_includeCorrectClaims_when_jwtGenerated() throws Exception {
+        // Arrange
+        UUID speakerPoolId = UUID.randomUUID();
+        SpeakerPool speakerPool = new SpeakerPool();
+        speakerPool.setId(speakerPoolId);
+        speakerPool.setSpeakerName("Jane Doe");
+        speakerPool.setEmail("jane@example.com");
+        when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
+
+        // Act
+        String jwt = magicLinkService.generateJwtToken(speakerPoolId);
+
+        // Assert - decode payload without verifying signature (unit test)
+        String[] parts = jwt.split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        assertThat(payload).contains("\"sub\":\"" + speakerPoolId + "\"");
+        assertThat(payload).contains("\"email\":\"jane@example.com\"");
+        assertThat(payload).contains("SPEAKER");
+        assertThat(payload).contains("\"speakerPoolId\":\"" + speakerPoolId + "\"");
+        assertThat(payload).contains("\"iss\":\"batbern\"");
+    }
+
+    @Test
+    void should_expireAfter30Days_when_jwtGenerated() throws Exception {
+        // Arrange
+        UUID speakerPoolId = UUID.randomUUID();
+        SpeakerPool speakerPool = new SpeakerPool();
+        speakerPool.setId(speakerPoolId);
+        speakerPool.setSpeakerName("Jane Doe");
+        speakerPool.setEmail("jane@example.com");
+        when(speakerPoolRepository.findById(speakerPoolId)).thenReturn(Optional.of(speakerPool));
+
+        Instant before = Instant.now();
+
+        // Act
+        String jwt = magicLinkService.generateJwtToken(speakerPoolId);
+
+        // Assert - expiry is between 29 and 31 days from now
+        String[] parts = jwt.split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        // exp is a Unix timestamp (seconds)
+        long expSeconds = extractExpClaim(payload);
+        Instant exp = Instant.ofEpochSecond(expSeconds);
+        assertThat(exp).isAfter(before.plus(29, ChronoUnit.DAYS));
+        assertThat(exp).isBefore(before.plus(31, ChronoUnit.DAYS));
+    }
+
+    @Test
+    void should_throwException_when_speakerPoolNotFound() {
+        // Arrange
+        UUID unknownId = UUID.randomUUID();
+        when(speakerPoolRepository.findById(unknownId)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThatThrownBy(() -> magicLinkService.generateJwtToken(unknownId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(unknownId.toString());
+    }
+
+    private long extractExpClaim(String jsonPayload) {
+        // Simple extraction: find "exp":NUMBER
+        int idx = jsonPayload.indexOf("\"exp\":");
+        if (idx == -1) {
+            throw new AssertionError("No 'exp' claim found in JWT payload: " + jsonPayload);
+        }
+        int start = idx + 6;
+        int end = start;
+        while (end < jsonPayload.length() && (Character.isDigit(jsonPayload.charAt(end)))) {
+            end++;
+        }
+        return Long.parseLong(jsonPayload.substring(start, end));
     }
 }

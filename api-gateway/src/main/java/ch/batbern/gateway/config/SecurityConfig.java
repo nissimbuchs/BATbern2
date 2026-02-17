@@ -172,6 +172,9 @@ public class SecurityConfig {
                                 "/api/v1/speaker-portal/materials/presigned-url").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/speaker-portal/materials/confirm").permitAll()
 
+                        // Story 9.1: Speaker JWT magic link authentication endpoint (JWT-protected, no Cognito auth)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()
+
                         // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
                         .requestMatchers("/api/v1/e2e-test/**").permitAll()
 

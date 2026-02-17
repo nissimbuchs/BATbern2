@@ -38,6 +38,7 @@ public class SpeakerInvitationEmailService {
 
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
+    private final MagicLinkService magicLinkService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -81,6 +82,9 @@ public class SpeakerInvitationEmailService {
             // Convert event date to Swiss timezone
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
+            // Story 9.1: Generate JWT magic link for new-style authentication
+            String jwtToken = magicLinkService.generateJwtToken(speaker.getId());
+
             // Load and populate email template
             String htmlBody = loadEmailTemplate(
                     emailLocale,
@@ -88,7 +92,8 @@ public class SpeakerInvitationEmailService {
                     event,
                     eventDateTime,
                     respondToken,
-                    dashboardToken
+                    dashboardToken,
+                    jwtToken
             );
 
             // Determine subject based on locale
@@ -120,7 +125,8 @@ public class SpeakerInvitationEmailService {
             Event event,
             ZonedDateTime eventDateTime,
             String respondToken,
-            String dashboardToken
+            String dashboardToken,
+            String jwtToken
     ) {
         try {
             // Determine template file based on locale
@@ -135,6 +141,8 @@ public class SpeakerInvitationEmailService {
             String acceptLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=accept";
             String declineLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=decline";
             String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + dashboardToken;
+            // Story 9.1: JWT-based magic login link (new-style auth)
+            String jwtMagicLink = baseUrl + "/speaker-portal/magic-login?jwt=" + jwtToken;
 
             // Get session details if assigned
             String sessionTitle = "";
@@ -170,7 +178,8 @@ public class SpeakerInvitationEmailService {
                     Map.entry("organizerEmail", organizerEmail),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),
-                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
+                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                    Map.entry("jwtMagicLink", jwtMagicLink)
             );
 
             // Replace template variables
