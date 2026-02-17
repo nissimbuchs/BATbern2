@@ -18,8 +18,8 @@ enum BATbernWatchStyle {
         static let batbernBlueDark = Color(hex: "#1E4A61") ?? .blue   // Pressed states
         static let heroBg = Color.black                                // All screen backgrounds
         static let textPrimary = Color.white                           // Primary text
-        static let textSecondary = Color(.secondaryLabel)              // Secondary text
-        static let textTertiary = Color(.tertiaryLabel)                // Tertiary / hints
+        static let textSecondary = Color.secondary                      // Secondary text
+        static let textTertiary = Color(white: 1.0, opacity: 0.3)     // Tertiary / hints
     }
 
     // MARK: - Typography
