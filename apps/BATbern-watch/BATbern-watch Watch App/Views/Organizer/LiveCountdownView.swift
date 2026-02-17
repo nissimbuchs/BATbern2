@@ -13,6 +13,7 @@ struct LiveCountdownView: View {
 
     @Environment(EventStateManager.self) private var eventState
     @State private var viewModel = LiveCountdownViewModel()
+    @State private var portraitData: Data?
 
     var body: some View {
         Group {
@@ -99,25 +100,12 @@ struct LiveCountdownView: View {
 
     // MARK: - Speaker Card (AC1)
 
-    /// Styled card: initials avatar + speaker name + talk title.
+    /// Styled card: portrait circle + speaker name + talk title.
     private var speakerCard: some View {
         HStack(spacing: 7) {
-            // Initials avatar
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [
-                            Color(red: 0.17, green: 0.37, blue: 0.49),
-                            Color(red: 0.29, green: 0.57, blue: 0.72)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                Text(speakerInitials)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 24, height: 24)
+            // Portrait circle — PortraitCache backed, initials fallback
+            portraitCircle
+                .frame(width: 24, height: 24)
 
             // Name + title (SF Pro Rounded / SF Pro per AC1)
             VStack(alignment: .leading, spacing: 1) {
@@ -139,6 +127,35 @@ struct LiveCountdownView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(white: 0.15), lineWidth: 1)
         )
+        .task(id: viewModel.activeSession?.id) {
+            await loadPortrait()
+        }
+    }
+
+    /// Portrait circle: cached image if available, initials gradient otherwise.
+    @ViewBuilder
+    private var portraitCircle: some View {
+        if let data = portraitData, let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(Circle())
+        } else {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [
+                            Color(red: 0.17, green: 0.37, blue: 0.49),
+                            Color(red: 0.29, green: 0.57, blue: 0.72)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                Text(speakerInitials)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+        }
     }
 
     // MARK: - Next Session Peek Card
@@ -186,6 +203,20 @@ struct LiveCountdownView: View {
     }
 
     // MARK: - Helpers
+
+    /// Cache-first portrait load: serves local file immediately, downloads if missing.
+    private func loadPortrait() async {
+        guard let urlString = viewModel.activeSession?.speakers.first?.profilePictureUrl,
+              let url = URL(string: urlString) else {
+            portraitData = nil
+            return
+        }
+        if let cached = PortraitCache.shared.getCachedPortrait(url: url) {
+            portraitData = cached
+            return
+        }
+        portraitData = try? await PortraitCache.shared.downloadAndCache(url: url)
+    }
 
     /// Countdown color mapping per AC2-AC5.
     private var countdownColor: Color {
