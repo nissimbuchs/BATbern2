@@ -41,6 +41,8 @@ final class AuthManager: AuthManagerProtocol {
     private var refreshTimer: Timer?
     private let keychainService = "ch.batbern.watch"
     private let pairingTokenKey = "pairingToken"
+    private let usernameDefaultsKey = "batbern.organizerUsername"
+    private let firstNameDefaultsKey = "batbern.organizerFirstName"
 
     // MARK: - Dependencies
 
@@ -68,6 +70,9 @@ final class AuthManager: AuthManagerProtocol {
         // Load pairing token from Keychain on init (AC4: persistent pairing)
         if let token = loadPairingTokenFromKeychain() {
             isPaired = true
+            // Restore username + firstName from UserDefaults (set during pair())
+            organizerUsername = UserDefaults.standard.string(forKey: usernameDefaultsKey)
+            organizerFirstName = UserDefaults.standard.string(forKey: firstNameDefaultsKey)
             // Fetch fresh JWT using saved pairing token (non-blocking)
             Task {
                 do {
@@ -104,9 +109,11 @@ final class AuthManager: AuthManagerProtocol {
         currentJWT = authResult.jwt
         jwtExpiresAt = authResult.expiresAt
 
-        // Update pairing state
+        // Update pairing state and persist username/firstName for restarts
         organizerUsername = result.organizerUsername
         organizerFirstName = result.organizerFirstName
+        UserDefaults.standard.set(result.organizerUsername, forKey: usernameDefaultsKey)
+        UserDefaults.standard.set(result.organizerFirstName, forKey: firstNameDefaultsKey)
         isPaired = true
 
         // Schedule JWT auto-refresh (NFR16: refresh 10 min before expiry)
@@ -121,7 +128,31 @@ final class AuthManager: AuthManagerProtocol {
         currentJWT = authResult.jwt
         jwtExpiresAt = authResult.expiresAt
 
+        // Recover username from JWT sub claim if not yet known (e.g. after restart
+        // before re-pairing with the UserDefaults persistence fix in place).
+        if organizerUsername == nil, let sub = decodeJWTSubject(from: authResult.jwt) {
+            organizerUsername = sub
+            UserDefaults.standard.set(sub, forKey: usernameDefaultsKey)
+        }
+
         scheduleJWTRefresh()
+    }
+
+    // MARK: - JWT Utilities
+
+    /// Decodes the payload of a JWT (without verification) and returns the `sub` claim.
+    private func decodeJWTSubject(from jwt: String) -> String? {
+        let parts = jwt.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        var base64 = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let remainder = base64.count % 4
+        if remainder > 0 { base64 += String(repeating: "=", count: 4 - remainder) }
+        guard let data = Data(base64Encoded: base64),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let sub = json["sub"] as? String else { return nil }
+        return sub
     }
 
     /// Remove pairing token from Keychain and clear all auth state.
@@ -133,6 +164,8 @@ final class AuthManager: AuthManagerProtocol {
         organizerUsername = nil
         organizerFirstName = nil
         currentJWT = nil
+        UserDefaults.standard.removeObject(forKey: usernameDefaultsKey)
+        UserDefaults.standard.removeObject(forKey: firstNameDefaultsKey)
         jwtExpiresAt = nil
     }
 

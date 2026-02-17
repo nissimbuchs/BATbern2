@@ -19,7 +19,7 @@ class CachedEvent {
     var typicalStartTime: String
     var typicalEndTime: String
     var currentPublishedPhase: String?  // TOPIC, SPEAKERS, AGENDA
-    var sessions: [CachedSession]
+    @Relationship(deleteRule: .cascade) var sessions: [CachedSession]
     var lastSyncTimestamp: Date
 
     init(

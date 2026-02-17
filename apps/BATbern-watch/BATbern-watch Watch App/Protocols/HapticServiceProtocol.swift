@@ -13,4 +13,16 @@ protocol HapticServiceProtocol: Sendable {
 
     /// Cancel a specific scheduled alert type.
     func cancel(_ alert: HapticAlert)
+
+    /// Start an Extended Runtime session to keep the app alive for background haptic delivery (NFR9).
+    func startEventSession()
+
+    /// Stop the Extended Runtime session.
+    func stopEventSession()
+}
+
+// Default no-op implementations — concrete types override only what they support.
+extension HapticServiceProtocol {
+    func startEventSession() {}
+    func stopEventSession() {}
 }

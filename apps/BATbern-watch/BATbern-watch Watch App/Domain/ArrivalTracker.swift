@@ -112,23 +112,20 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     /// Confirm a speaker's arrival (optimistic update + WebSocket send).
     /// Idempotent: server ignores duplicates (UNIQUE constraint on speaker_arrivals table).
     func confirmArrival(speaker: CachedSpeaker) async throws {
-        guard let organizerUsername = authManager.organizerUsername else {
-            throw ArrivalError.notAuthenticated
-        }
-        guard let eventCode = currentEventCode else {
-            throw ArrivalError.noActiveEvent
-        }
-
-        // Optimistic update: mark locally immediately (AC3)
-        speaker.arrived = true
-        speaker.arrivedConfirmedBy = organizerUsername
-        speaker.arrivedAt = Date()
-
-        // Save optimistic update to SwiftData
+        // Optimistic local update — always runs, no server dependency (AC3).
+        // Display name prefers firstName ("Nissim") over username ("nissim.buchs").
+        // Falls back to empty string if auth hasn't refreshed yet after restart.
+        let confirmedBy = authManager.organizerFirstName ?? authManager.organizerUsername ?? ""
+        updateSpeakerArrival(username: speaker.username, confirmedBy: confirmedBy, arrivedAt: Date())
         try modelContext.save()
-
-        // Recompute counter
         recomputeCounter()
+
+        // Server sync — requires active event code.
+        // Silently skip if unavailable; server state will reconcile on next sync.
+        guard let eventCode = currentEventCode else {
+            logger.warning("confirmArrival: skipping server sync — no active eventCode")
+            return
+        }
 
         // Send to server via WebSocket (FR38: syncs within 3 seconds)
         if let wsClient = webSocketClient, wsClient.isConnected {
@@ -249,8 +246,9 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         let descriptor = FetchDescriptor<CachedSpeaker>(
             predicate: #Predicate { speaker in speaker.username == username }
         )
-
-        if let speaker = try? modelContext.fetch(descriptor).first {
+        // Update ALL copies — same speaker appears once per session in SwiftData
+        guard let speakers = try? modelContext.fetch(descriptor) else { return }
+        for speaker in speakers {
             speaker.arrived = true
             speaker.arrivedConfirmedBy = confirmedBy
             speaker.arrivedAt = arrivedAt
@@ -258,16 +256,21 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     }
 
     private func recomputeCounter() {
-        // CachedSpeaker has no eventCode field, so this fetches ALL speakers from all cached
-        // events. For a single-event app this is acceptable. Server-authoritative counts from
+        // CachedSpeaker is stored per-session, so the same speaker can appear multiple times.
+        // Deduplicate by username to get the real count. Server-authoritative counts from
         // SpeakerArrivalMessage ALWAYS override local counts (see processArrivalMessage).
-        // recomputeCounter() is only used for the optimistic local update — the next WebSocket
-        // message will correct it.
+        // recomputeCounter() is only used for the optimistic local update.
         let descriptor = FetchDescriptor<CachedSpeaker>()
         guard let allSpeakers = try? modelContext.fetch(descriptor) else { return }
 
-        totalCount = allSpeakers.count
-        arrivedCount = allSpeakers.filter { $0.arrived }.count
+        var allUsernames = Set<String>()
+        var arrivedUsernames = Set<String>()
+        for speaker in allSpeakers {
+            allUsernames.insert(speaker.username)
+            if speaker.arrived { arrivedUsernames.insert(speaker.username) }
+        }
+        totalCount = allUsernames.count
+        arrivedCount = arrivedUsernames.count
     }
 }
 

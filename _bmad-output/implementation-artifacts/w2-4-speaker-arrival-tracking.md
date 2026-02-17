@@ -1312,3 +1312,19 @@ Adversarial review of committed implementation. Fixed 2 HIGH + 4 MEDIUM issues. 
 - `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSpeakerArrivalService.java`
 - `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSpeakerArrivalWebSocketTest.java` (NEW)
+
+---
+
+**Post-testing Bug Fixes (2026-02-17) — Nissim reported, Amelia fixed:**
+
+| # | Bug | Root Cause | Fix |
+|---|-----|-----------|-----|
+| B1 | 2792 speakers shown (5 expected) | `CachedSpeaker` stored per-session → 5 speakers × N sessions = N×5 SwiftData entries; `@Query` fetches all | Added `uniqueSpeakers` computed property in `SpeakerArrivalView` — deduplicates by username, prefers `arrived=true` copy |
+| B2 | Arrival badge not shown after tap | `updateSpeakerArrival()` only updated `.first` matching entry; grid shows different SwiftData copy | Changed `updateSpeakerArrival()` to loop all matches; `confirmArrival()` now calls it instead of direct property set |
+| B3 | Name shown twice (full name + first name) | `SpeakerPortraitView` already renders `speaker.fullName`; `SpeakerPortraitCell` additionally showed `Text(speaker.firstName)` | Removed `Text(speaker.firstName)` from `SpeakerPortraitCell` |
+| B4 | Two SBB "←→" arrows shown | Roger Wetzel appeared twice (duplicate B1); both cells showed SBB logo containing arrow symbols | Fixed by B1 — only one Roger Wetzel shown after dedup |
+| — | Counter showed 2792 total | `recomputeCounter()` counted all SwiftData rows, not unique speakers | Deduplicate by username using `Set<String>` in `recomputeCounter()` |
+
+**Files changed:**
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/SpeakerArrivalView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Domain/ArrivalTracker.swift`

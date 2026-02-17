@@ -54,6 +54,7 @@ final class LiveCountdownViewModel {
 
     // MARK: - Init
 
+    @MainActor
     init(
         clock: ClockProtocol = SystemClock(),
         hapticService: HapticServiceProtocol = WatchHapticService()
@@ -67,8 +68,10 @@ final class LiveCountdownViewModel {
     // MARK: - Timer Control (1.6, 1.7)
 
     /// Launch a 1-second tick loop. Idempotent — cancels any existing task first.
+    /// Also starts Extended Runtime session for background haptic delivery (AC6/NFR9).
     func startTimer() {
         timerTask?.cancel()
+        hapticService.startEventSession()
         timerTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -77,10 +80,11 @@ final class LiveCountdownViewModel {
         }
     }
 
-    /// Cancel the tick loop. Call from view's onDisappear.
+    /// Cancel the tick loop and stop Extended Runtime session. Call from view's onDisappear.
     func stopTimer() {
         timerTask?.cancel()
         timerTask = nil
+        hapticService.stopEventSession()
     }
 
     // MARK: - State Refresh
@@ -106,7 +110,12 @@ final class LiveCountdownViewModel {
         activeSession = discovered
 
         if let session = discovered {
-            scheduler.evaluate(session: session)
+            // AC5: break sessions get gong reminder; talk sessions get threshold alerts (W3.2)
+            if session.isBreak {
+                scheduler.evaluateBreakGong(breakSession: session)
+            } else {
+                scheduler.evaluate(session: session)
+            }
             nextSession = findNextSession(after: session, in: eventState)
         } else {
             nextSession = nil

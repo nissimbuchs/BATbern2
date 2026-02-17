@@ -197,9 +197,16 @@ final class EventSyncService: EventSyncServiceProtocol {
             syncProgress = 0.2 + (0.6 * Double(index + 1) / Double(max(totalSpeakers, 1)))
         }
 
-        // Step 4: Delete stale cached event data and save new (90% progress)
-        let descriptor = FetchDescriptor<CachedEvent>()
-        if let stale = try? modelContext.fetch(descriptor) {
+        // Step 4: Delete ALL stale records and save new (90% progress)
+        // Cascade delete handles new tree; explicit deletion clears orphaned
+        // CachedSession/CachedSpeaker records left by previous runs before cascade was added.
+        if let stale = try? modelContext.fetch(FetchDescriptor<CachedEvent>()) {
+            stale.forEach { modelContext.delete($0) }
+        }
+        if let stale = try? modelContext.fetch(FetchDescriptor<CachedSession>()) {
+            stale.forEach { modelContext.delete($0) }
+        }
+        if let stale = try? modelContext.fetch(FetchDescriptor<CachedSpeaker>()) {
             stale.forEach { modelContext.delete($0) }
         }
         modelContext.insert(cachedEvent)

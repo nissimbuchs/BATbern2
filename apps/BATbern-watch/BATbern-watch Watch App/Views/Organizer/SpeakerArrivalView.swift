@@ -15,6 +15,22 @@ struct SpeakerArrivalView: View {
 
     @State private var selectedSpeaker: CachedSpeaker?
 
+    /// Deduplicates by username — same speaker appears once per session in SwiftData.
+    /// Prefers the copy with `arrived = true` so the badge renders immediately after confirmation.
+    private var uniqueSpeakers: [CachedSpeaker] {
+        var bestByUsername: [String: CachedSpeaker] = [:]
+        for speaker in speakers {
+            if let existing = bestByUsername[speaker.username] {
+                if speaker.arrived && !existing.arrived {
+                    bestByUsername[speaker.username] = speaker
+                }
+            } else {
+                bestByUsername[speaker.username] = speaker
+            }
+        }
+        return Array(bestByUsername.values).sorted { $0.lastName < $1.lastName }
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
@@ -29,7 +45,7 @@ struct SpeakerArrivalView: View {
                     ],
                     spacing: 8
                 ) {
-                    ForEach(speakers) { speaker in
+                    ForEach(uniqueSpeakers) { speaker in
                         SpeakerPortraitCell(speaker: speaker)
                             .onTapGesture {
                                 selectedSpeaker = speaker
@@ -101,17 +117,11 @@ struct SpeakerPortraitCell: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 4) {
-                // Portrait
+                // Portrait — SpeakerPortraitView already renders fullName below the image
                 SpeakerPortraitView(
                     speaker: speaker,
                     size: 52
                 )
-
-                // Name (first name only for space efficiency on Watch)
-                Text(speaker.firstName)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .foregroundStyle(speaker.arrived ? .primary : .secondary)
             }
             .padding(6)
             .background(
@@ -170,7 +180,7 @@ struct ArrivalConfirmationView: View {
                 .font(.headline)
                 .multilineTextAlignment(.center)
 
-            if let confirmedBy = speaker.arrivedConfirmedBy {
+            if let confirmedBy = speaker.arrivedConfirmedBy, !confirmedBy.isEmpty {
                 Text(
                     String(
                         format: NSLocalizedString("arrival.confirmed_by_format", comment: ""),
@@ -202,7 +212,7 @@ struct ArrivalConfirmationView: View {
             .font(.headline)
             .multilineTextAlignment(.center)
 
-            // "Arrived checkmark" button
+            // "Arrived ✓" button — Text only; the ✓ in the localized string is the indicator
             Button {
                 Task {
                     isConfirming = true
@@ -211,11 +221,8 @@ struct ArrivalConfirmationView: View {
                     dismiss()
                 }
             } label: {
-                Label(
-                    NSLocalizedString("arrival.confirm_arrived", comment: ""),
-                    systemImage: "checkmark"
-                )
-                .font(.caption)
+                Text(NSLocalizedString("arrival.confirm_arrived", comment: ""))
+                    .font(.caption)
             }
             .buttonStyle(.borderedProminent)
             .tint(.green)
