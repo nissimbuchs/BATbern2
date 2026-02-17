@@ -219,9 +219,7 @@ final class EventSyncService: EventSyncServiceProtocol {
         }
 
         if httpResponse.statusCode == 401 {
-            // Don't auto-refresh here — refreshJWT() sets currentJWT to a new value,
-            // which triggers OrganizerZoneView.onChange → infinite retry loop.
-            // JWT refresh is handled proactively by AuthManager's refresh timer.
+            try? await authManager.refreshJWT()
             throw SyncError.authenticationRequired
         }
 

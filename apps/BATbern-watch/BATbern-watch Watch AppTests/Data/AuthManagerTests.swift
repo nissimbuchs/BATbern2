@@ -52,7 +52,7 @@ final class MockWatchAuthService: WatchAuthServiceProtocol, @unchecked Sendable 
 
 // MARK: - AuthManager Tests
 
-@Suite("AuthManagerTests")
+@Suite("AuthManagerTests", .serialized)
 @MainActor
 struct AuthManagerTests {
 
