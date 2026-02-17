@@ -44,29 +44,39 @@ struct OrganizerZoneView: View {
             }
         }
         .onAppear {
-            if authManager.isPaired && !isSyncing {
-                if authManager.currentJWT != nil {
-                    // JWT already loaded — sync immediately
-                    Task { await performSync() }
-                } else {
-                    // JWT not yet loaded — wait for onChange, with a 3s fallback
-                    Task {
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
-                        if !isSyncing {
-                            print("⚠️ OrganizerZoneView: JWT not ready after 3s, attempting sync anyway")
-                            await performSync()
-                        }
+            guard authManager.isPaired && !isSyncing else { return }
+            let now = Date()
+            // Don't re-sync if we already have fresh live/pre-event data (within 5 min)
+            if (eventState.isLive || eventState.isPreEvent),
+               let last = lastSyncAttempt,
+               now.timeIntervalSince(last) < 300 {
+                return
+            }
+            // Minimum 60s between any syncs to avoid rate-limit floods on tab swipes
+            if let last = lastSyncAttempt, now.timeIntervalSince(last) < 60 {
+                return
+            }
+            // Stamp lastSyncAttempt immediately so concurrent onAppear calls skip
+            lastSyncAttempt = Date()
+            if authManager.currentJWT != nil {
+                Task { await performSync() }
+            } else {
+                // JWT not yet loaded — wait for onChange, with a 3s fallback
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    if !isSyncing {
+                        print("⚠️ OrganizerZoneView: JWT not ready after 3s, attempting sync anyway")
+                        await performSync()
                     }
                 }
             }
         }
         .onChange(of: authManager.currentJWT) { _, newJWT in
-            // JWT just became available (refreshJWT finished after init) — start sync.
-            // Debounce: skip if we synced in the last 10 seconds to prevent retry loops
-            // caused by 401 responses triggering refreshJWT → currentJWT changes → onChange → loop.
+            // JWT became available or was refreshed — sync if data is stale.
+            // 60s debounce prevents retry loops from 401 → refreshJWT → onChange → 401.
             guard newJWT != nil && authManager.isPaired && !isSyncing else { return }
             let now = Date()
-            if let last = lastSyncAttempt, now.timeIntervalSince(last) < 10 { return }
+            if let last = lastSyncAttempt, now.timeIntervalSince(last) < 60 { return }
             Task { await performSync() }
         }
     }
