@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service for Watch pairing code management.
@@ -98,6 +99,38 @@ public class WatchPairingService {
 
         watchPairingRepository.delete(pairing);
         log.info("Unpaired watch '{}' for user: {}", deviceName, username);
+    }
+
+    // --- W2.2: Pairing code validation and token lookup ---
+
+    /**
+     * W2.2 AC2/AC3: Validate a 6-digit pairing code and return the WatchPairing if valid.
+     * Returns empty if code not found or expired.
+     * Does NOT consume/clear the code — caller is responsible for clearing.
+     */
+    @Transactional(readOnly = true)
+    public Optional<WatchPairing> validatePairingCode(String code) {
+        return watchPairingRepository.findByPairingCode(code)
+                .filter(p -> !p.isCodeExpired());
+    }
+
+    /**
+     * W2.2 AC4: Find a WatchPairing by its pairing token for JWT issuance.
+     * Returns empty if token is not found or pairing is not complete (pairedAt is null).
+     */
+    @Transactional(readOnly = true)
+    public Optional<WatchPairing> findByPairingToken(String token) {
+        return watchPairingRepository.findByPairingToken(token)
+                .filter(WatchPairing::isPaired);
+    }
+
+    /**
+     * W2.2: Persist a completed pairing (pairingToken set, pairedAt set, code cleared).
+     */
+    @Transactional
+    public void saveCompletedPairing(WatchPairing pairing) {
+        watchPairingRepository.save(pairing);
+        log.info("Completed pairing saved for user: {}", pairing.getUsername());
     }
 
     // --- Private helpers ---

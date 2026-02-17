@@ -3,6 +3,7 @@
 //  BATbern-watch Watch App
 //
 //  App entry point with SwiftData ModelContainer configuration.
+//  W2.2: Added AuthManager and EventStateManager as environment objects.
 //  Source: docs/watch-app/architecture.md#Data-Architecture
 //
 
@@ -13,6 +14,10 @@ import SwiftData
 struct BATbernWatchApp: App {
     // SwiftData ModelContainer for local cache
     let modelContainer: ModelContainer
+
+    // W2.2: Auth + event state managers injected as environment objects
+    @State private var authManager = AuthManager()
+    @State private var eventStateManager = EventStateManager()
 
     init() {
         do {
@@ -41,6 +46,8 @@ struct BATbernWatchApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(authManager)
+                .environment(eventStateManager)
         }
         .modelContainer(modelContainer)
     }

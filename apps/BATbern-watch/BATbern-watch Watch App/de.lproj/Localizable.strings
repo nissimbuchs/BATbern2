@@ -18,6 +18,18 @@
 /* Organizer Zone */
 "organizer.title" = "Organisator-Bereich";
 "organizer.coming_soon" = "Verfügbar in Epic 2";
+"organizer.no_event.title" = "Kein aktives Event";
+"organizer.no_event.message" = "Kurz vor dem Event zurückkommen";
+
+/* Pairing Screen (W2.2) */
+"pairing.title" = "Watch koppeln";
+"pairing.instructions" = "Krone drehen für Ziffer\nTippen für nächste Ziffer";
+"pairing.button" = "Koppeln";
+"pairing.error" = "Code ungültig oder abgelaufen. Bitte erneut versuchen.";
+"pairing.success" = "Gekoppelt als %@";
+"error.network" = "Netzwerkfehler. Bitte erneut versuchen.";
+"error.auth_failed" = "Authentifizierung fehlgeschlagen.";
+"error.invalid_response" = "Ungültige Serverantwort.";
 
 /* Connection Status */
 "status.offline" = "Offline";

@@ -11,6 +11,7 @@ import Network
 @testable import BATbern_watch_Watch_App
 
 @Suite("ConnectivityMonitor Tests")
+@MainActor
 struct ConnectivityMonitorTests {
 
     // MARK: - Test: Initial State

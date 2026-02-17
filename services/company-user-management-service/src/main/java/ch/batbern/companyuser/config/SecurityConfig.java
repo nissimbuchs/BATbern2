@@ -77,6 +77,9 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Public user profile endpoint (GET only for service-to-service calls from localhost)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
+                // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/pair").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
                 .anyRequest().authenticated() // Require authentication but accept any authenticated user
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -116,6 +119,9 @@ public class SecurityConfig {
                 // OR authenticated external requests (via API Gateway with JWT)
                 .requestMatchers("/api/v1/users/*")
                     .access(new VpcInternalAuthorizationManager(vpcCidr))
+                // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/pair").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
@@ -157,6 +163,9 @@ public class SecurityConfig {
                 // Test environment: Enforce authentication for all user endpoints
                 // (tests run from localhost but should verify authentication logic)
                 .requestMatchers("/api/v1/users/*").authenticated()
+                // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/pair").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
                 .anyRequest().authenticated() // Enforce authentication in tests
             )
             .exceptionHandling(exceptions -> exceptions

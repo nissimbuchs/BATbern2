@@ -14,7 +14,7 @@ import Foundation
 /// Spy that records download calls without hitting the network
 final class SpyPortraitCache: PortraitCache {
     var downloadedURLs: [URL] = []
-    var savedLogos: [String: Data] = []
+    var savedLogos: [String: Data] = [:]
     private(set) var simulatedSizeBytes: Int64 = 0
 
     func simulateCacheSize(_ bytes: Int64) {

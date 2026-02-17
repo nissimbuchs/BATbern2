@@ -51,9 +51,9 @@ development_status:
   # Epic 2: Watch Pairing & Organizer Access
   epic-2: in-progress
   w2-1-pairing-code-backend-web-frontend: done
-  w2-2-watch-pairing-flow-organizer-zone-navigation: ready-for-dev
+  w2-2-watch-pairing-flow-organizer-zone-navigation: review
   w2-3-event-join-schedule-sync: ready-for-dev
-  w2-4-speaker-arrival-tracking: backlog
+  w2-4-speaker-arrival-tracking: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: Live Countdown & Haptic Awareness

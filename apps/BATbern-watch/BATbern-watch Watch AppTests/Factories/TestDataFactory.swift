@@ -21,7 +21,8 @@ enum TestData {
             date: date,
             themeImageUrl: themeImageUrl,
             venueName: venueName,
-            sessions: sessions ?? defaultSessions()
+            sessions: sessions ?? defaultSessions(),
+            currentPublishedPhase: nil
         )
     }
 

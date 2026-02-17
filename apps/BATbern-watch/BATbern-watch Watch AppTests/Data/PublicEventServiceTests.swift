@@ -13,22 +13,23 @@ import Foundation
 
 @Suite("PublicEventService Tests")
 struct PublicEventServiceTests {
-    @Test("DTO mapping: EventResponse correctly converts to WatchEvent")
-    func test_dtoMapping_eventResponseToWatchEvent() {
-        // Given: EventResponse DTO
-        let dto = EventResponse(
+    @Test("DTO mapping: EventDetail correctly converts to WatchEvent")
+    func test_dtoMapping_eventDetailToWatchEvent() {
+        // Given: EventDetail DTO (generated type)
+        let dto = EventDetail(
             eventCode: "BATbern57",
-            eventNumber: 57,
             title: "Test Event",
-            date: "2026-03-15",
-            themeImageUrl: "https://example.com/theme.jpg",
+            eventNumber: 57,
+            date: Date(timeIntervalSince1970: 1742040000), // 2025-03-15
+            registrationDeadline: Date(timeIntervalSince1970: 1742040000),
             venueName: "Bern",
             venueAddress: "Street 1",
+            venueCapacity: 100,
+            organizerUsername: "test.organizer",
+            themeImageUrl: "https://example.com/theme.jpg",
             typicalStartTime: "18:00",
             typicalEndTime: "22:00",
-            workflowState: "EVENT_LIVE",
-            currentPublishedPhase: "AGENDA",
-            sessions: []
+            currentPublishedPhase: .agenda
         )
 
         // When: Converting to WatchEvent
@@ -38,44 +39,48 @@ struct PublicEventServiceTests {
         #expect(watchEvent.id == "BATbern57", "Event code should match")
         #expect(watchEvent.title == "Test Event", "Title should match")
         #expect(watchEvent.venueName == "Bern", "Venue should match")
+        #expect(watchEvent.currentPublishedPhase == "AGENDA", "Phase should match")
     }
 
-    @Test("DTO mapping: EventResponse with sessions converts correctly")
-    func test_dtoMapping_eventResponseWithSessions() {
-        // Given: EventResponse with session data
-        let sessionDTO = SessionResponse(
+    @Test("DTO mapping: EventDetail with sessions converts correctly")
+    func test_dtoMapping_eventDetailWithSessions() {
+        // Given: Session DTO with speaker (generated types)
+        let sessionDTO = Session(
             sessionSlug: "keynote-1",
+            eventCode: "BATbern57",
             title: "Opening Keynote",
             description: "Welcome to BATbern",
-            sessionType: "keynote",
-            startTime: "2026-03-15T18:00:00Z",
-            endTime: "2026-03-15T19:00:00Z",
+            sessionType: .keynote,
+            startTime: Date(timeIntervalSince1970: 1742040000),
+            endTime: Date(timeIntervalSince1970: 1742043600),
             speakers: [
-                SessionSpeakerResponse(
+                SessionSpeaker(
                     username: "jane.doe",
                     firstName: "Jane",
                     lastName: "Doe",
                     company: "TechCorp",
                     profilePictureUrl: "https://example.com/jane.jpg",
                     bio: "Expert speaker",
-                    speakerRole: "PRIMARY_SPEAKER"
+                    speakerRole: .primarySpeaker,
+                    isConfirmed: true
                 )
             ]
         )
 
-        let dto = EventResponse(
+        let dto = EventDetail(
             eventCode: "BATbern57",
-            eventNumber: 57,
             title: "Test Event",
-            date: "2026-03-15",
-            themeImageUrl: nil,
+            eventNumber: 57,
+            date: Date(timeIntervalSince1970: 1742040000),
+            registrationDeadline: Date(timeIntervalSince1970: 1742040000),
             venueName: "Bern",
-            venueAddress: nil,
+            venueAddress: "Street 1",
+            venueCapacity: 100,
+            organizerUsername: "test.organizer",
             typicalStartTime: "18:00",
             typicalEndTime: "22:00",
-            workflowState: "EVENT_LIVE",
-            currentPublishedPhase: "AGENDA",
-            sessions: [sessionDTO]
+            sessions: [sessionDTO],
+            currentPublishedPhase: .agenda
         )
 
         // When: Converting to WatchEvent

@@ -246,6 +246,89 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // --- W2.2: Pairing code exchange and JWT authentication ---
+
+    @Test
+    @DisplayName("shouldExchangeCodeForPairingToken_whenValidCode")
+    void shouldExchangeCodeForPairingToken_whenValidCode() throws Exception {
+        // Pre-condition: valid, non-expired pairing code
+        createPendingCode("482715", LocalDateTime.now().plusHours(20));
+
+        mockMvc.perform(post("/api/v1/watch/pair")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingCode\": \"482715\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pairingToken").value(notNullValue()))
+                .andExpect(jsonPath("$.organizerUsername").value("john.doe"))
+                .andExpect(jsonPath("$.organizerFirstName").value("John"));
+
+        // Verify database: pairingCode cleared, pairingToken set, pairedAt set
+        WatchPairing updated = watchPairingRepository.findByUsername("john.doe")
+                .stream()
+                .filter(p -> p.getPairingToken() != null)
+                .findFirst()
+                .orElseThrow();
+
+        assert updated.getPairingCode() == null : "Pairing code should be cleared after exchange";
+        assert updated.getPairedAt() != null : "pairedAt should be set after successful pairing";
+        assert updated.getPairingToken() != null : "pairingToken should be set";
+    }
+
+    @Test
+    @DisplayName("shouldRejectPairing_whenCodeExpired")
+    void shouldRejectPairing_whenCodeExpired() throws Exception {
+        // Pre-condition: expired pairing code
+        createPendingCode("111111", LocalDateTime.now().minusHours(1));
+
+        mockMvc.perform(post("/api/v1/watch/pair")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingCode\": \"111111\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("shouldRejectPairing_whenCodeInvalid")
+    void shouldRejectPairing_whenCodeInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/watch/pair")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingCode\": \"999999\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("shouldAuthenticateWithPairingToken_whenTokenValid")
+    void shouldAuthenticateWithPairingToken_whenTokenValid() throws Exception {
+        // Pre-condition: complete pairing to get a pairing token
+        WatchPairing paired = createPairedWatch("test-watch", LocalDateTime.now().minusMinutes(5));
+        String token = "token-test-watch";
+
+        mockMvc.perform(post("/api/v1/watch/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingToken\": \"" + token + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jwt").value(notNullValue()))
+                .andExpect(jsonPath("$.expiresAt").value(notNullValue()));
+    }
+
+    @Test
+    @DisplayName("shouldRejectAuth_whenTokenInvalid")
+    void shouldRejectAuth_whenTokenInvalid() throws Exception {
+        mockMvc.perform(post("/api/v1/watch/authenticate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingToken\": \"nonexistent-token\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("shouldRejectPairing_whenCodeFormatInvalid")
+    void shouldRejectPairing_whenCodeFormatInvalid() throws Exception {
+        // Only 5 digits — fails bean validation
+        mockMvc.perform(post("/api/v1/watch/pair")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"pairingCode\": \"12345\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
     // --- Helper methods ---
 
     private WatchPairing createPairedWatch(String deviceName, LocalDateTime pairedAt) {

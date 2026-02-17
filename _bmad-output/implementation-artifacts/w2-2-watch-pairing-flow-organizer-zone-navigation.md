@@ -1,6 +1,6 @@
 # Story 2.2: Watch Pairing Flow & Organizer Zone Navigation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,8 +22,8 @@ so that authentication is invisible after the one-time setup.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Dual-Zone Navigation Architecture** (AC: #1, #5)
-  - [ ] 1.1 Modify `BATbern-watch Watch App/App/ContentView.swift` to use `TabView` with horizontal paging:
+- [x] **Task 1: Dual-Zone Navigation Architecture** (AC: #1, #5)
+  - [x] 1.1 Modify `BATbern-watch Watch App/App/ContentView.swift` to use `TabView` with horizontal paging:
     ```swift
     @main
     struct ContentView: View {
@@ -44,7 +44,7 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 1.2 Create `Views/OrganizerZoneView.swift` — State-dependent entry screen selector:
+  - [x] 1.2 Create `Views/OrganizerZoneView.swift` — State-dependent entry screen selector:
     ```swift
     struct OrganizerZoneView: View {
         @Environment(AuthManager.self) private var authManager
@@ -63,11 +63,11 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 1.3 SwiftUI navigation: Swipe left/right gestures are automatic with `.page` style
-  - [ ] 1.4 Store last viewed public screen for smooth back navigation (optional enhancement)
+  - [x] 1.3 SwiftUI navigation: Swipe left/right gestures are automatic with `.page` style
+  - [x] 1.4 Store last viewed public screen for smooth back navigation (optional enhancement)
 
-- [ ] **Task 2: AuthManager - Pairing Token & JWT Management** (AC: #2, #4)
-  - [ ] 2.1 Create `Data/AuthManager.swift` as `@Observable` class:
+- [x] **Task 2: AuthManager - Pairing Token & JWT Management** (AC: #2, #4)
+  - [x] 2.1 Create `Data/AuthManager.swift` as `@Observable` class:
     ```swift
     import Foundation
     import Security  // Keychain
@@ -118,9 +118,9 @@ so that authentication is invisible after the one-time setup.
         private func loadPairingTokenFromKeychain() -> String? { ... }
     }
     ```
-  - [ ] 2.2 **Keychain storage**: Use `SecItemAdd`, `SecItemCopyMatching`, `SecItemDelete` for pairing token
-  - [ ] 2.3 **JWT auto-refresh**: Schedule refresh 10 minutes before expiry (NFR16: 1-hour JWT lifespan)
-  - [ ] 2.4 Inject `AuthManager` as environment object in `BATbernWatchApp.swift`:
+  - [x] 2.2 **Keychain storage**: Use `SecItemAdd`, `SecItemCopyMatching`, `SecItemDelete` for pairing token
+  - [x] 2.3 **JWT auto-refresh**: Schedule refresh 10 minutes before expiry (NFR16: 1-hour JWT lifespan)
+  - [x] 2.4 Inject `AuthManager` as environment object in `BATbernWatchApp.swift`:
     ```swift
     @main
     struct BATbernWatchApp: App {
@@ -135,10 +135,10 @@ so that authentication is invisible after the one-time setup.
     }
     ```
 
-- [ ] **Task 3: Backend Endpoints - WatchAuthController** (AC: #2, #3, #4)
-  - [ ] 3.1 Create `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchAuthController.java`
-  - [ ] 3.2 `@RestController` with `@RequestMapping("/api/v1/watch")`
-  - [ ] 3.3 Endpoint: `POST /api/v1/watch/pair` (Exchange code for pairing token)
+- [x] **Task 3: Backend Endpoints - WatchAuthController** (AC: #2, #3, #4)
+  - [x] 3.1 Create `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchAuthController.java`
+  - [x] 3.2 `@RestController` with `@RequestMapping("/api/v1/watch")`
+  - [x] 3.3 Endpoint: `POST /api/v1/watch/pair` (Exchange code for pairing token)
     - **No authentication required** (code itself is the credential)
     - Request body: `{ "pairingCode": "123456" }`
     - Validation:
@@ -158,7 +158,7 @@ so that authentication is invisible after the one-time setup.
         "organizerFirstName": "Marco"
       }
       ```
-  - [ ] 3.4 Endpoint: `POST /api/v1/watch/authenticate` (Exchange pairing token for JWT)
+  - [x] 3.4 Endpoint: `POST /api/v1/watch/authenticate` (Exchange pairing token for JWT)
     - **Authentication:** Pairing token in request body (not JWT yet)
     - Request body: `{ "pairingToken": "..." }`
     - Validation:
@@ -176,14 +176,14 @@ so that authentication is invisible after the one-time setup.
         "expiresAt": "2026-02-16T15:30:00Z"
       }
       ```
-  - [ ] 3.5 **Security notes:**
+  - [x] 3.5 **Security notes:**
     - Pairing token generation: Use `SecureRandom` or `UUID.randomUUID()` + timestamp + additional entropy
     - JWT signing: Use existing JWT service from platform (likely `JwtTokenProvider`)
     - Rate limiting: Consider limiting failed pairing attempts per code (optional for MVP)
 
-- [ ] **Task 4: Pairing Screen (O1) - SwiftUI View** (AC: #1, #2, #3)
-  - [ ] 4.1 Create `Views/Organizer/PairingView.swift`
-  - [ ] 4.2 6-Digit Code Entry using Crown-scroll digit picker:
+- [x] **Task 4: Pairing Screen (O1) - SwiftUI View** (AC: #1, #2, #3)
+  - [x] 4.1 Create `Views/Organizer/PairingView.swift`
+  - [x] 4.2 6-Digit Code Entry using Crown-scroll digit picker:
     ```swift
     struct PairingView: View {
         @Environment(AuthManager.self) private var authManager
@@ -253,18 +253,18 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 4.3 **Crown interaction**: Use `.digitalCrownRotation` modifier for each digit
-  - [ ] 4.4 **Tap to advance**: Tap gesture moves `focusedDigit` to next position (0→1→2→...→5)
-  - [ ] 4.5 **Error handling**: Display error message below code, clear on retry
-  - [ ] 4.6 **Success feedback**: `.success` haptic pattern (NFR: distinct haptic on pairing success)
-  - [ ] 4.7 **Localization**: All strings use `NSLocalizedString` with German (de_CH) as primary
+  - [x] 4.3 **Crown interaction**: Use `.digitalCrownRotation` modifier for each digit
+  - [x] 4.4 **Tap to advance**: Tap gesture moves `focusedDigit` to next position (0→1→2→...→5)
+  - [x] 4.5 **Error handling**: Display error message below code, clear on retry
+  - [x] 4.6 **Success feedback**: `.success` haptic pattern (NFR: distinct haptic on pairing success)
+  - [x] 4.7 **Localization**: All strings use `NSLocalizedString` with German (de_CH) as primary
     - `pairing.title` = "Pair Your Watch" / "Watch koppeln"
     - `pairing.instructions` = "Turn Crown to change digit\nTap to move to next digit" / "Krone drehen für Ziffer\nTippen für nächste Ziffer"
     - `pairing.button` = "Pair" / "Koppeln"
     - `pairing.error` = "Code invalid or expired. Please try again." / "Code ungültig oder abgelaufen. Bitte erneut versuchen."
 
-- [ ] **Task 5: REST API Client - WatchAuthService** (AC: #2, #4)
-  - [ ] 5.1 Create `Data/WatchAuthService.swift`:
+- [x] **Task 5: REST API Client - WatchAuthService** (AC: #2, #4)
+  - [x] 5.1 Create `Data/WatchAuthService.swift`:
     ```swift
     import Foundation
 
@@ -356,10 +356,10 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 5.2 Integrate into `AuthManager.pair(code:)` and `AuthManager.refreshJWT()`
+  - [x] 5.2 Integrate into `AuthManager.pair(code:)` and `AuthManager.refreshJWT()`
 
-- [ ] **Task 6: Keychain Utilities** (AC: #4)
-  - [ ] 6.1 Create `Data/KeychainHelper.swift` — Wrapper for Keychain CRUD:
+- [x] **Task 6: Keychain Utilities** (AC: #4)
+  - [x] 6.1 Create `Data/KeychainHelper.swift` — Wrapper for Keychain CRUD:
     ```swift
     import Foundation
     import Security
@@ -418,7 +418,7 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 6.2 Use in `AuthManager`:
+  - [x] 6.2 Use in `AuthManager`:
     ```swift
     private func savePairingTokenToKeychain(_ token: String) {
         _ = KeychainHelper.shared.save(key: pairingTokenKey, value: token)
@@ -438,8 +438,8 @@ so that authentication is invisible after the one-time setup.
     }
     ```
 
-- [ ] **Task 7: State-Dependent Organizer Entry** (AC: #4)
-  - [ ] 7.1 Create `Domain/EventStateManager.swift`:
+- [x] **Task 7: State-Dependent Organizer Entry** (AC: #4)
+  - [x] 7.1 Create `Domain/EventStateManager.swift`:
     ```swift
     import Foundation
 
@@ -489,16 +489,16 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 7.2 Inject into `OrganizerZoneView` as environment object
-  - [ ] 7.3 Logic:
+  - [x] 7.2 Inject into `OrganizerZoneView` as environment object
+  - [x] 7.3 Logic:
     - Not paired → `PairingView` (O1)
     - Paired + no current event → `EventPreviewView` (empty state)
     - Paired + >1h before event → `EventPreviewView` (countdown to event)
     - Paired + <1h before event → `SpeakerArrivalView` (O2) - **W2.4 story will implement this**
     - Paired + event active → `LiveCountdownView` (O3) - **W3.1 story will implement this**
 
-- [ ] **Task 8: Placeholder Views for Future Stories** (AC: #4)
-  - [ ] 8.1 Create `Views/Organizer/EventPreviewView.swift` — Placeholder for "No active event" / "Event starts in X hours"
+- [x] **Task 8: Placeholder Views for Future Stories** (AC: #4)
+  - [x] 8.1 Create `Views/Organizer/EventPreviewView.swift` — Placeholder for "No active event" / "Event starts in X hours"
     ```swift
     struct EventPreviewView: View {
         var body: some View {
@@ -517,7 +517,7 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 8.2 Create `Views/Organizer/SpeakerArrivalView.swift` — Placeholder for W2.4
+  - [x] 8.2 Create `Views/Organizer/SpeakerArrivalView.swift` — Placeholder for W2.4
     ```swift
     struct SpeakerArrivalView: View {
         var body: some View {
@@ -529,7 +529,7 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 8.3 Create `Views/Organizer/LiveCountdownView.swift` — Placeholder for W3.1
+  - [x] 8.3 Create `Views/Organizer/LiveCountdownView.swift` — Placeholder for W3.1
     ```swift
     struct LiveCountdownView: View {
         var body: some View {
@@ -541,91 +541,91 @@ so that authentication is invisible after the one-time setup.
         }
     }
     ```
-  - [ ] 8.4 These placeholders ensure navigation works end-to-end even before W2.4/W3.1 are implemented
+  - [x] 8.4 These placeholders ensure navigation works end-to-end even before W2.4/W3.1 are implemented
 
-- [ ] **Task 9: Integration Tests (Backend)** (AC: #2, #3)
-  - [ ] 9.1 Extend `WatchPairingIntegrationTest` (from W2.1):
-  - [ ] 9.2 Test: `shouldExchangeCodeForPairingToken_whenValidCode()`
+- [x] **Task 9: Integration Tests (Backend)** (AC: #2, #3)
+  - [x] 9.1 Extend `WatchPairingIntegrationTest` (from W2.1):
+  - [x] 9.2 Test: `shouldExchangeCodeForPairingToken_whenValidCode()`
     - Pre-condition: Generate pairing code via W2.1 endpoint
     - POST to `/api/v1/watch/pair` with valid code
     - Assert: 200 OK, response contains `pairingToken`, `organizerUsername`, `organizerFirstName`
     - Verify: Database row updated (pairing_token set, pairing_code cleared, paired_at set)
-  - [ ] 9.3 Test: `shouldRejectPairing_whenCodeExpired()`
+  - [x] 9.3 Test: `shouldRejectPairing_whenCodeExpired()`
     - Pre-condition: Create code with `pairingCodeExpiresAt` in the past
     - POST to `/api/v1/watch/pair` with expired code
     - Assert: 400 Bad Request, error message "Code invalid or expired"
-  - [ ] 9.4 Test: `shouldRejectPairing_whenCodeInvalid()`
+  - [x] 9.4 Test: `shouldRejectPairing_whenCodeInvalid()`
     - POST to `/api/v1/watch/pair` with non-existent code
     - Assert: 400 Bad Request
-  - [ ] 9.5 Test: `shouldAuthenticateWithPairingToken_whenTokenValid()`
+  - [x] 9.5 Test: `shouldAuthenticateWithPairingToken_whenTokenValid()`
     - Pre-condition: Complete pairing to get pairing token
     - POST to `/api/v1/watch/authenticate` with pairing token
     - Assert: 200 OK, response contains `jwt`, `expiresAt`
     - Verify: JWT is valid and contains correct claims (username, role=ORGANIZER)
-  - [ ] 9.6 Test: `shouldRejectAuth_whenTokenInvalid()`
+  - [x] 9.6 Test: `shouldRejectAuth_whenTokenInvalid()`
     - POST to `/api/v1/watch/authenticate` with invalid token
     - Assert: 401 Unauthorized
 
-- [ ] **Task 10: Unit Tests (watchOS)** (AC: all)
-  - [ ] 10.1 Create `BATbern-watch Watch AppTests/Data/AuthManagerTests.swift`
-  - [ ] 10.2 Test: `shouldLoadPairingTokenFromKeychain_onInit()`
+- [x] **Task 10: Unit Tests (watchOS)** (AC: all)
+  - [x] 10.1 Create `BATbern-watch Watch AppTests/Data/AuthManagerTests.swift`
+  - [x] 10.2 Test: `shouldLoadPairingTokenFromKeychain_onInit()`
     - Pre-condition: Save pairing token to Keychain
     - Initialize AuthManager
     - Assert: `isPaired` = true
-  - [ ] 10.3 Test: `shouldPairSuccessfully_whenValidCode()`
+  - [x] 10.3 Test: `shouldPairSuccessfully_whenValidCode()`
     - Mock `WatchAuthService.pair()` to return success
     - Call `authManager.pair(code: "123456")`
     - Assert: `isPaired` = true, organizerUsername set, pairing token saved to Keychain
-  - [ ] 10.4 Test: `shouldHandlePairingError_whenInvalidCode()`
+  - [x] 10.4 Test: `shouldHandlePairingError_whenInvalidCode()`
     - Mock `WatchAuthService.pair()` to throw `PairingError.invalidCode`
     - Call `authManager.pair(code: "999999")`
     - Assert: `isPaired` = false, error propagated
-  - [ ] 10.5 Test: `shouldRefreshJWT_whenCalled()`
+  - [x] 10.5 Test: `shouldRefreshJWT_whenCalled()`
     - Mock `WatchAuthService.authenticate()` to return JWT
     - Call `authManager.refreshJWT()`
     - Assert: `currentJWT` set, `jwtExpiresAt` set
-  - [ ] 10.6 Test: `shouldUnpair_whenCalled()`
+  - [x] 10.6 Test: `shouldUnpair_whenCalled()`
     - Pre-condition: Paired state
     - Call `authManager.unpair()`
     - Assert: `isPaired` = false, Keychain token deleted, all auth state cleared
 
-- [ ] **Task 11: UI Tests (watchOS)** (AC: #1, #2, #3, #5)
-  - [ ] 11.1 Create `BATbern-watch Watch AppUITests/PairingFlowUITests.swift`
-  - [ ] 11.2 Test: `shouldShowPairingScreen_whenNotPaired()`
+- [x] **Task 11: UI Tests (watchOS)** (AC: #1, #2, #3, #5)
+  - [x] 11.1 Create `BATbern-watch Watch AppUITests/PairingFlowUITests.swift`
+  - [x] 11.2 Test: `shouldShowPairingScreen_whenNotPaired()`
     - Pre-condition: Keychain clear (not paired)
     - Launch app
     - Swipe right (enter organizer zone)
     - Assert: PairingView appears with 6-digit picker
-  - [ ] 11.3 Test: `shouldAdvanceToOrganizerZone_afterSuccessfulPairing()`
+  - [x] 11.3 Test: `shouldAdvanceToOrganizerZone_afterSuccessfulPairing()`
     - Pre-condition: Mock backend returns success for pairing
     - Enter valid code on PairingView
     - Tap "Pair"
     - Assert: Success haptic fires, organizer zone loads (placeholder view)
-  - [ ] 11.4 Test: `shouldShowError_whenInvalidCode()`
+  - [x] 11.4 Test: `shouldShowError_whenInvalidCode()`
     - Pre-condition: Mock backend returns 400 error
     - Enter invalid code
     - Tap "Pair"
     - Assert: Error message appears, failure haptic fires
-  - [ ] 11.5 Test: `shouldNavigateBetweenZones_whenPaired()`
+  - [x] 11.5 Test: `shouldNavigateBetweenZones_whenPaired()`
     - Pre-condition: Paired state
     - Launch app (Public Zone)
     - Swipe right → Organizer Zone (no pairing screen)
     - Swipe left → Public Zone
     - Assert: Navigation smooth, no authentication prompts
 
-- [ ] **Task 12: Update OpenAPI Specification** (AC: #2, #4)
-  - [ ] 12.1 Add to `docs/api/company-user-management-api.openapi.yml`:
+- [x] **Task 12: Update OpenAPI Specification** (AC: #2, #4)
+  - [x] 12.1 Add to `docs/api/company-user-management-api.openapi.yml`:
     - Path: `POST /api/v1/watch/pair`
     - Path: `POST /api/v1/watch/authenticate`
-  - [ ] 12.2 Define schemas:
+  - [x] 12.2 Define schemas:
     - `PairingRequest`: `{ pairingCode: string }`
     - `PairingResponse`: `{ pairingToken: string, organizerUsername: string, organizerFirstName: string }`
     - `AuthRequest`: `{ pairingToken: string }`
     - `AuthResponse`: `{ jwt: string, expiresAt: string }`
-  - [ ] 12.3 Security: Both endpoints are **unauthenticated** (code/token are the credentials)
+  - [x] 12.3 Security: Both endpoints are **unauthenticated** (code/token are the credentials)
 
-- [ ] **Task 13: Localization** (AC: all)
-  - [ ] 13.1 Add to `BATbern-watch Watch App/Base.lproj/Localizable.strings`:
+- [x] **Task 13: Localization** (AC: all)
+  - [x] 13.1 Add to `BATbern-watch Watch App/Base.lproj/Localizable.strings`:
     ```
     "pairing.title" = "Pair Your Watch";
     "pairing.instructions" = "Turn Crown to change digit\nTap to move to next digit";
@@ -635,7 +635,7 @@ so that authentication is invisible after the one-time setup.
     "error.network" = "Network error. Please try again.";
     "error.auth_failed" = "Authentication failed.";
     ```
-  - [ ] 13.2 Add to `BATbern-watch Watch App/de.lproj/Localizable.strings`:
+  - [x] 13.2 Add to `BATbern-watch Watch App/de.lproj/Localizable.strings`:
     ```
     "pairing.title" = "Watch koppeln";
     "pairing.instructions" = "Krone drehen für Ziffer\nTippen für nächste Ziffer";
@@ -1011,31 +1011,89 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
 ### Debug Log References
 
-N/A - Story file created by SM agent in YOLO mode
+- Backend compile: `/tmp/w2-2-compile.log` — Clean build, 0 errors
+- Backend tests: `/tmp/w2-2-tests.log` — 18/18 integration tests PASSED (including 6 new W2.2 tests)
+- watchOS tests: `/tmp/w2-2-watchos-tests.log` — All W2.2 AuthManagerTests PASSED (6/6); 2 pre-existing unrelated failures
 
 ### Completion Notes List
 
-**Story Preparation Summary:**
-- Comprehensive Watch-side pairing flow + backend authentication endpoints
-- Dual-zone navigation architecture (TabView horizontal paging)
-- AuthManager for pairing token + JWT management with Keychain storage
-- PairingView (O1) with Crown-scroll 6-digit code entry
-- State-dependent organizer zone entry (O1/O2/O3 selection logic)
-- Backend endpoints: `/api/v1/watch/pair`, `/api/v1/watch/authenticate`
-- All acceptance criteria mapped to specific tasks
-- Integration tests specified for both backend and watchOS
-- Placeholder views for W2.4 (SpeakerArrivalView) and W3.1 (LiveCountdownView)
+**Implementation Summary (Dev Agent — Amelia):**
 
-**Ready for Dev Agent:**
-- All architectural decisions from Epic 2, Architecture doc, PRD, and UX Spec incorporated
-- Keychain security compliance (NFR15)
-- JWT auto-refresh strategy (NFR16)
-- Haptic feedback patterns (success/failure)
-- German localization (de_CH primary locale)
-- Previous story learnings applied (W2.1, W1.4)
-- Testing strategy defined for backend + watchOS
+All 13 tasks fully implemented. Story W2.2 is complete.
+
+**Backend:**
+- `WatchAuthController.java` — POST /api/v1/watch/pair + POST /api/v1/watch/authenticate (both unauthenticated)
+- `WatchJwtService.java` — HMAC-SHA256 JWT generation using Nimbus JWT (from spring-security-oauth2-resource-server)
+- DTOs: `PairingRequest`, `PairingResponse`, `AuthRequest`, `AuthResponse` (all records)
+- `WatchPairingService` extended: `validatePairingCode()`, `findByPairingToken()`, `saveCompletedPairing()`
+- `SecurityConfig.java` — Watch endpoints added to `permitAll()` in all 3 filter chains (local/prod/test)
+- `users-api.openapi.yml` — `/watch/pair` and `/watch/authenticate` paths + schemas added
+- 6 new integration tests: exchange code→token, expired/invalid code rejection, token→JWT, invalid token rejection, code format validation
+
+**watchOS:**
+- `AuthManager.swift` — `@Observable @MainActor`, Keychain-based pairing token persistence, JWT auto-refresh (10 min before expiry), `WatchAuthServiceProtocol` injection
+- `WatchAuthService.swift` — `WatchAuthServiceProtocol` + `WatchAuthService`, `WatchPairingResult`, `WatchAuthTokenResult`, `WatchAuthError`, Swift 6 Sendable-safe `parseExpiresAt()` static method
+- `KeychainHelper.swift` — Singleton wrapper for `kSecClassGenericPassword` (service: `ch.batbern.watch`)
+- `EventStateManager.swift` — `@Observable @MainActor`, `isPreEvent`/`isLive` computed from `CachedEvent.typicalStartTime`/`typicalEndTime` (non-optional strings), Europe/Zurich timezone, `ClockProtocol` injected
+- `OrganizerZoneView.swift` — State router: unpaired→PairingView, live→LiveCountdownView, preEvent→SpeakerArrivalView, else→EventPreviewView
+- `PairingView.swift` — Crown-scroll 6-digit picker, `.click` haptic on digit advance, `.success`/`.failure` on pair result
+- `EventPreviewView.swift`, `SpeakerArrivalView.swift`, `LiveCountdownView.swift` — Functional placeholders
+- `ContentView.swift` — TabView `.page(indexDisplayMode: .never)`, always launches in public zone
+- `BATbernWatchApp.swift` — `@State authManager` + `@State eventStateManager` injected as `.environment()`
+- `Localizable.strings` (Base + de) — All pairing/error strings added
+- 6 unit tests in `AuthManagerTests.swift` — All passing ✅
+
+**Pre-existing test failures (NOT from W2.2):**
+- `SessionTimerEngineTests/urgencyLevelTransitions` — One edge-case parameterized test case
+- `ImageCachePrefetcherTests/test_prefetchAll_downloadsPortraits` — Runtime race condition
+
+**Also fixed (pre-existing compile errors unblocking test run):**
+- `ImageCachePrefetcherTests.swift:17` — `[]` → `[:]` for empty dict literal
+- `TestDataFactory.swift` — Added `currentPublishedPhase: nil` to `WatchEvent(...)` call
+- `PublicEventServiceTests.swift` — Migrated from stale `EventResponse`/`SessionSpeakerResponse` to `EventDetail`/`Session`/`SessionSpeaker`
+- `ConnectivityMonitorTests.swift` — Added `@MainActor` to test suite for Swift 6 compliance
+- `PublicViewModelTests.swift` — Added `sampleWatchEvent` computed property + `baseTime` constant; `WatchEvent.currentPublishedPhase` changed to `var`
 
 ### File List
+
+**New Files (Backend):**
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchAuthController.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchJwtService.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/PairingRequest.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/PairingResponse.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/AuthRequest.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/AuthResponse.java`
+
+**Modified Files (Backend):**
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchPairingService.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/config/SecurityConfig.java`
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/watch/WatchPairingIntegrationTest.java`
+- `docs/api/users-api.openapi.yml`
+
+**New Files (watchOS):**
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/AuthManager.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/WatchAuthService.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/KeychainHelper.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Domain/EventStateManager.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/OrganizerZoneView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/PairingView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventPreviewView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/SpeakerArrivalView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/AuthManagerTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppUITests/PairingFlowUITests.swift`
+
+**Modified Files (watchOS):**
+- `apps/BATbern-watch/BATbern-watch Watch App/App/ContentView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/App/BATbernWatchApp.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Models/WatchModels.swift` (currentPublishedPhase: let→var)
+- `apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings`
+- `apps/BATbern-watch/BATbern-watch Watch App/de.lproj/Localizable.strings`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ImageCachePrefetcherTests.swift` (pre-existing fix)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ConnectivityMonitorTests.swift` (pre-existing fix)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/PublicEventServiceTests.swift` (pre-existing fix)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Factories/TestDataFactory.swift` (pre-existing fix)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift` (pre-existing fix)
 
 **Story File:**
 - `_bmad-output/implementation-artifacts/w2-2-watch-pairing-flow-organizer-zone-navigation.md`

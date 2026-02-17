@@ -16,6 +16,17 @@ struct PublicViewModelTests {
     private var modelContainer: ModelContainer
     private var modelContext: ModelContext
 
+    // Shared test fixtures
+    private let baseTime = Date(timeIntervalSince1970: 1742040000)
+    private var sampleWatchEvent: WatchEvent {
+        TestData.event(
+            sessions: [
+                TestData.session(slug: "keynote", title: "Opening Keynote"),
+                TestData.session(slug: "talk-1", title: "Cloud-Native Pitfalls")
+            ]
+        )
+    }
+
     init() throws {
         // In-memory model container for testing
         let schema = Schema([CachedEvent.self, CachedSession.self, CachedSpeaker.self, PairingInfo.self])

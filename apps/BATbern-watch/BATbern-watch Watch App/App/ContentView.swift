@@ -3,7 +3,8 @@
 //  BATbern-watch Watch App
 //
 //  Root TabView container for dual-zone navigation (public + organizer).
-//  Source: docs/watch-app/architecture.md#Structure-Patterns
+//  W2.2: TabView horizontal paging — public zone (left) + organizer zone (right).
+//  Source: docs/watch-app/architecture.md#Navigation-Architecture
 //
 
 import SwiftUI
@@ -24,35 +25,20 @@ struct ContentView: View {
             }
             .tag(Zone.publicZone)
 
-            // Tab 1 (right): Organizer zone — authenticated workflows (Epic 2+)
-            NavigationStack {
-                OrganizerPlaceholderView()
-            }
-            .tag(Zone.organizer)
+            // Tab 1 (right): Organizer zone — state-dependent entry (O1/O2/O3)
+            // W2.2: Replaced OrganizerPlaceholderView with OrganizerZoneView
+            OrganizerZoneView()
+                .tag(Zone.organizer)
         }
-        .tabViewStyle(.page)  // Horizontal paging
-    }
-}
-
-// MARK: - Organizer Placeholder (Epic 2)
-
-struct OrganizerPlaceholderView: View {
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "lock.shield")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
-
-            Text(NSLocalizedString("organizer.title", comment: "Organizer zone title"))
-                .font(.headline)
-
-            Text(NSLocalizedString("organizer.coming_soon", comment: "Coming soon message"))
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+        .tabViewStyle(.page(indexDisplayMode: .never))  // Horizontal paging, no dots
+        .onAppear {
+            selectedZone = .publicZone  // Always launch in Public Zone
         }
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AuthManager())
+        .environment(EventStateManager())
 }
