@@ -3,8 +3,6 @@ package ch.batbern.events.watch;
 import ch.batbern.events.AbstractIntegrationTest;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.watch.SpeakerArrivalRepository;
-import ch.batbern.events.watch.domain.SpeakerArrival;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

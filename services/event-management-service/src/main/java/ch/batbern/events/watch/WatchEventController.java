@@ -33,10 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -78,15 +75,14 @@ public class WatchEventController {
      */
     @GetMapping("/organizers/me/active-events")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ActiveEventsResponse> getActiveEvents(Authentication authentication) {
+    public ResponseEntity<ActiveEventsResponse> getActiveEvents() {
         Instant now = Instant.now();
         Instant startDate = now.minus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
         Instant endDate = now.plus(3, ChronoUnit.DAYS)
                 .truncatedTo(ChronoUnit.DAYS)
                 .plus(1, ChronoUnit.DAYS);  // Include entire end day
 
-        List<Event> activeEvents = eventRepository.findActiveEventsForOrganizer(
-                authentication.getName(), startDate, endDate, ACTIVE_STATES);
+        List<Event> activeEvents = eventRepository.findActiveEvents(startDate, endDate, ACTIVE_STATES);
 
         List<ActiveEventDetail> eventDetails = activeEvents.stream()
                 .map(this::mapToActiveEventDetail)
@@ -235,8 +231,7 @@ public class WatchEventController {
     @GetMapping("/events/{eventCode}/arrivals")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ArrivalStatusListDto> getArrivals(
-            @PathVariable String eventCode,
-            Authentication authentication
+            @PathVariable String eventCode
     ) {
         return ResponseEntity.ok(new ArrivalStatusListDto(arrivalService.getArrivals(eventCode)));
     }
