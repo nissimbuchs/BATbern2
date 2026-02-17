@@ -36,13 +36,17 @@ class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
             return
         }
 
-        // Deduplicate portrait URLs (multiple sessions can share the same speaker)
-        let uniqueSpeakers = Dictionary(grouping: speakers, by: { $0.username }).compactMap { $0.value.first }
+        // Extract only Sendable value types before entering TaskGroup.
+        // CachedSpeaker is a SwiftData PersistentModel (non-Sendable) and must not
+        // be captured in @Sendable closures that cross actor boundaries.
+        let uniqueInfos: [SpeakerPrefetchInfo] = Dictionary(grouping: speakers, by: { $0.username })
+            .compactMap { $0.value.first }
+            .map { SpeakerPrefetchInfo(username: $0.username, profilePictureUrl: $0.profilePictureUrl, company: $0.company) }
 
         await withTaskGroup(of: Void.self) { group in
-            for speaker in uniqueSpeakers {
+            for info in uniqueInfos {
                 group.addTask {
-                    await self.prefetchSpeaker(speaker)
+                    await self.prefetchSpeaker(info)
                 }
             }
         }
@@ -53,7 +57,14 @@ class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
 
     // MARK: - Private
 
-    private func prefetchSpeaker(_ speaker: CachedSpeaker) async {
+    /// Value-type snapshot of the fields needed for prefetch — safe to send across actor boundaries.
+    private struct SpeakerPrefetchInfo: Sendable {
+        let username: String
+        let profilePictureUrl: String?
+        let company: String?
+    }
+
+    private func prefetchSpeaker(_ speaker: SpeakerPrefetchInfo) async {
         // Re-check budget per speaker to limit overshoot when many tasks run concurrently
         guard portraitCache.cacheSize() < maxCacheSizeBytes else {
             print("⚠️ ImageCachePrefetcher: Cache ≥40MB mid-prefetch — stopping speaker \(speaker.username)")
