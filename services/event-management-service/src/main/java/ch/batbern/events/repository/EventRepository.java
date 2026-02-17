@@ -150,7 +150,7 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
            + "WHERE e.date BETWEEN :startDate AND :endDate "
            + "AND e.workflowState IN :states "
            + "ORDER BY e.date ASC")
-    List<Event> findActiveEventsForOrganizer(
+    List<Event> findActiveEvents(
             @Param("startDate") Instant startDate,
             @Param("endDate") Instant endDate,
             @Param("states") List<ch.batbern.shared.types.EventWorkflowState> states

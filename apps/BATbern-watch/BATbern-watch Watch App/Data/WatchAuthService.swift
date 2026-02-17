@@ -95,10 +95,13 @@ final class WatchAuthService: WatchAuthServiceProtocol {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         if let date = formatter.date(from: isoString) { return date }
-        // Fallback: try without fractional seconds
+        // Fallback: try without fractional seconds (e.g. "2026-02-16T15:30:00Z")
         let fallback = ISO8601DateFormatter()
         fallback.formatOptions = [.withInternetDateTime]
-        return fallback.date(from: isoString) ?? Date().addingTimeInterval(3600)
+        if let date = fallback.date(from: isoString) { return date }
+        // L1 fix: log warning when both formats fail — silent fallback hides backend date format bugs
+        print("⚠️ WatchAuthService: parseExpiresAt failed for '\(isoString)' — using fallback 1h from now")
+        return Date().addingTimeInterval(3600)
     }
 
     // MARK: - WatchAuthServiceProtocol

@@ -104,14 +104,29 @@ public class WatchPairingService {
     // --- W2.2: Pairing code validation and token lookup ---
 
     /**
-     * W2.2 AC2/AC3: Validate a 6-digit pairing code and return the WatchPairing if valid.
+     * W2.2 AC2/AC3: Atomically validate a 6-digit pairing code and claim it with the given token.
+     * Validate + clear + save all execute within a single @Transactional boundary (M1 fix).
      * Returns empty if code not found or expired.
-     * Does NOT consume/clear the code — caller is responsible for clearing.
+     *
+     * @param code         6-digit pairing code
+     * @param pairingToken pre-generated secure token to assign if code is valid
+     * @return claimed WatchPairing (code cleared, pairingToken set, pairedAt set), or empty
      */
-    @Transactional(readOnly = true)
-    public Optional<WatchPairing> validatePairingCode(String code) {
-        return watchPairingRepository.findByPairingCode(code)
+    @Transactional
+    public Optional<WatchPairing> claimPairingCode(String code, String pairingToken) {
+        Optional<WatchPairing> opt = watchPairingRepository.findByPairingCode(code)
                 .filter(p -> !p.isCodeExpired());
+        if (opt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        WatchPairing p = opt.get();
+        p.setPairingToken(pairingToken);
+        p.setPairedAt(LocalDateTime.now());
+        p.clearPairingCode();  // Single-use — clear atomically in same transaction
+        watchPairingRepository.save(p);
+        log.info("Pairing code claimed for user: {}", p.getUsername());
+        return Optional.of(p);
     }
 
     /**
@@ -122,15 +137,6 @@ public class WatchPairingService {
     public Optional<WatchPairing> findByPairingToken(String token) {
         return watchPairingRepository.findByPairingToken(token)
                 .filter(WatchPairing::isPaired);
-    }
-
-    /**
-     * W2.2: Persist a completed pairing (pairingToken set, pairedAt set, code cleared).
-     */
-    @Transactional
-    public void saveCompletedPairing(WatchPairing pairing) {
-        watchPairingRepository.save(pairing);
-        log.info("Completed pairing saved for user: {}", pairing.getUsername());
     }
 
     // --- Private helpers ---

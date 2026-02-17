@@ -68,6 +68,22 @@ struct AuthManagerTests {
         #expect(authManager.currentJWT == nil)
     }
 
+    // H1 fix: Task 10.2 — positive Keychain load case was missing
+    @Test("shouldLoadPairingTokenFromKeychain_onInit_whenTokenSaved")
+    func shouldLoadPairingTokenFromKeychain_onInit_whenTokenSaved() async throws {
+        // Pre-condition: save a pairing token to Keychain
+        _ = KeychainHelper.shared.save(key: "pairingToken", value: "saved-pairing-token")
+
+        let mock = MockWatchAuthService()
+        let authManager = AuthManager(authService: mock, clock: MockClock())
+
+        // AC4: isPaired is set synchronously in init when a Keychain token is found
+        #expect(authManager.isPaired == true)
+
+        // Cleanup — also cancels any pending refreshJWT background Task
+        authManager.unpair()
+    }
+
     // MARK: - Pair Success (AC2)
 
     @Test("shouldPairSuccessfully_whenValidCode")

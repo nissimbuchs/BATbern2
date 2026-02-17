@@ -23,8 +23,18 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.Map;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -51,6 +61,9 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private WatchPairingRepository watchPairingRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private User testOrganizer;
 
@@ -262,6 +275,7 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.organizerUsername").value("john.doe"))
                 .andExpect(jsonPath("$.organizerFirstName").value("John"));
 
+        // L2 fix: Use JUnit/Hamcrest assertions instead of Java assert (disabled without -ea flag)
         // Verify database: pairingCode cleared, pairingToken set, pairedAt set
         WatchPairing updated = watchPairingRepository.findByUsername("john.doe")
                 .stream()
@@ -269,9 +283,9 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                 .findFirst()
                 .orElseThrow();
 
-        assert updated.getPairingCode() == null : "Pairing code should be cleared after exchange";
-        assert updated.getPairedAt() != null : "pairedAt should be set after successful pairing";
-        assert updated.getPairingToken() != null : "pairingToken should be set";
+        assertThat("Pairing code should be cleared after exchange", updated.getPairingCode(), is(nullValue()));
+        assertThat("pairedAt should be set after successful pairing", updated.getPairedAt(), is(notNullValue()));
+        assertThat("pairingToken should be set", updated.getPairingToken(), is(notNullValue()));
     }
 
     @Test
@@ -299,15 +313,29 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("shouldAuthenticateWithPairingToken_whenTokenValid")
     void shouldAuthenticateWithPairingToken_whenTokenValid() throws Exception {
         // Pre-condition: complete pairing to get a pairing token
-        WatchPairing paired = createPairedWatch("test-watch", LocalDateTime.now().minusMinutes(5));
+        createPairedWatch("test-watch", LocalDateTime.now().minusMinutes(5));
         String token = "token-test-watch";
 
-        mockMvc.perform(post("/api/v1/watch/authenticate")
+        // H2 fix: capture response to verify JWT claims — task 9.5 spec requires claim validation
+        MvcResult result = mockMvc.perform(post("/api/v1/watch/authenticate")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"pairingToken\": \"" + token + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jwt").value(notNullValue()))
-                .andExpect(jsonPath("$.expiresAt").value(notNullValue()));
+                .andExpect(jsonPath("$.expiresAt").value(notNullValue()))
+                .andReturn();
+
+        // Verify JWT contains correct claims: subject=username, role=ORGANIZER (task 9.5)
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+        String jwtString = (String) body.get("jwt");
+
+        SignedJWT signedJWT = SignedJWT.parse(jwtString);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+
+        assertThat("JWT subject should be organizer username", claims.getSubject(), is("john.doe"));
+        assertThat("JWT role claim should be ORGANIZER", claims.getStringClaim("role"), is("ORGANIZER"));
+        assertThat("JWT issuer should be batbern-watch", claims.getIssuer(), is("batbern-watch"));
     }
 
     @Test

@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - AC#4: Empty list when no active events
  * - 401 when JWT is invalid (no auth)
  * - 403 when user lacks ORGANIZER role
- * - Organizer can only see their own events
+ * - All organizers see all active events (no per-organizer isolation)
  *
  * Uses Testcontainers PostgreSQL for production parity.
  */
@@ -160,22 +160,22 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     // ============================================================================
-    // Isolation: Organizer only sees their own events
+    // All organizers see all active events (no per-organizer isolation)
     // ============================================================================
 
     @Test
-    @DisplayName("shouldOnlyReturnEventsAssignedToOrganizer")
+    @DisplayName("shouldReturnAllActiveEvents_regardlessOfOrganizer")
     @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
-    void shouldOnlyReturnEventsAssignedToOrganizer() throws Exception {
-        // Arrange — two events: one for the authenticated organizer, one for another
+    void shouldReturnAllActiveEvents_regardlessOfOrganizer() throws Exception {
+        // Arrange — two events with different organizer usernames
         createEvent(ORGANIZER_USERNAME, Instant.now(), EventWorkflowState.AGENDA_PUBLISHED);
         createEvent(OTHER_ORGANIZER_USERNAME, Instant.now(), EventWorkflowState.AGENDA_PUBLISHED);
 
-        // Act & Assert — only the authenticated organizer's event is returned
+        // Act & Assert — any organizer sees ALL active events
         mockMvc.perform(get(ENDPOINT).contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.activeEvents").isArray())
-                .andExpect(jsonPath("$.activeEvents", hasSize(1)));
+                .andExpect(jsonPath("$.activeEvents", hasSize(2)));
     }
 
     // ============================================================================

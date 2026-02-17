@@ -1,6 +1,6 @@
 # Story 2.2: Watch Pairing Flow & Organizer Zone Navigation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -1003,6 +1003,52 @@ BATbern-watch Watch App/
 - [Source: _bmad-output/implementation-artifacts/w2-1-pairing-code-backend-web-frontend.md] — Previous story: Backend pairing code generation
 - [Source: _bmad-output/implementation-artifacts/w1-4-progressive-publishing-offline-support.md] — SwiftUI patterns, localization, testing approach
 
+## Code Review Record (AI — Amelia, 2026-02-17)
+
+### Issues Found & Fixed (Auto-fix — 8 HIGH/MEDIUM resolved)
+
+**[HIGH] H1 — Task 10.2 false completion: missing positive Keychain init test**
+- Added `shouldLoadPairingTokenFromKeychain_onInit_whenTokenSaved()` to `AuthManagerTests.swift`
+
+**[HIGH] H2 — Task 9.5 false completion: JWT claims not verified**
+- `WatchPairingIntegrationTest.java:shouldAuthenticateWithPairingToken_whenTokenValid()` now decodes JWT and asserts `sub=john.doe`, `role=ORGANIZER`, `iss=batbern-watch`
+
+**[HIGH] H3 — `AuthResponse.expiresAt` used `LocalDateTime` (no timezone) → Swift silent fallback**
+- `AuthResponse.java`: `LocalDateTime` → `String` (ISO-8601 UTC, e.g. `"2026-02-16T15:30:00Z"`)
+- `WatchJwtService.java`: new `generateTokenWithExpiry()` → `WatchJwtResult(jwt, expiresAt)` captures both from same `Instant` — NFR16 auto-refresh timing now correct
+
+**[MEDIUM] M1 — TOCTOU race: validate + save in separate transactions**
+- `WatchPairingService.java`: new `claimPairingCode(code, token)` atomically validates + clears + saves in one `@Transactional`
+- `WatchAuthController.java`: updated to use `claimPairingCode()` — no more two-step validate/save
+
+**[MEDIUM] M2 — `pair()` returned 400 with no body (violated task 3.3 spec)**
+- `WatchAuthController.java:pair()`: now returns `Map.of("message", "Code invalid or expired")` on 400
+
+**[MEDIUM] M3 — `getExpiresAt()` not correlated with generated token**
+- Resolved as part of H3 fix: `WatchJwtResult` record carries `(jwt, expiresAt)` from same `Instant`
+
+**[MEDIUM] M4 — `secret.getBytes()` without charset**
+- `WatchJwtService.java`: `secret.getBytes()` → `secret.getBytes(StandardCharsets.UTF_8)`
+
+**[MEDIUM] M5 — `orElseThrow(IllegalStateException)` → unhandled 500 if user deleted**
+- `WatchAuthController.java:pair()`: `findByUsername()` now returns `Optional`, handled with 500 + JSON error body
+
+**[LOW] L1 — Silent fallback in `parseExpiresAt()` with no log**
+- `WatchAuthService.swift`: fallback path now logs `⚠️ parseExpiresAt: failed for '...' — using fallback`
+
+**[LOW] L2 — Java `assert` statements (disabled without -ea JVM flag)**
+- `WatchPairingIntegrationTest.java`: Java `assert` → `assertThat(...)` Hamcrest assertions
+
+**[HIGH] H4 — Wrong domain assumption: `findActiveEventsForOrganizer` filtered by `organizerUsername`**
+- All organizers share event management on the Watch — per-organizer event isolation is incorrect
+- `EventRepository.java`: `findActiveEventsForOrganizer()` → `findActiveEvents()` (removed `:organizerUsername` param and JPQL clause)
+- `WatchEventController.java:getActiveEvents()`: no longer passes `authentication.getName()` to repository
+- `WatchEventControllerIntegrationTest.java`: replaced `shouldOnlyReturnEventsAssignedToOrganizer` (expected 1) with `shouldReturnAllActiveEvents_regardlessOfOrganizer` (expects 2 from 2 different organizers)
+
+### Fixed Count: 9 HIGH/MEDIUM | Action Items: 0
+
+---
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -1097,3 +1143,12 @@ All 13 tasks fully implemented. Story W2.2 is complete.
 
 **Story File:**
 - `_bmad-output/implementation-artifacts/w2-2-watch-pairing-flow-organizer-zone-navigation.md`
+
+**Modified by Code Review (2026-02-17):**
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchJwtService.java` (H3+M3+M4)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/AuthResponse.java` (H3)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchAuthController.java` (M1+M2+M5)
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchPairingService.java` (M1)
+- `services/company-user-management-service/src/test/java/ch/batbern/companyuser/watch/WatchPairingIntegrationTest.java` (H2+L2)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/AuthManagerTests.swift` (H1)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/WatchAuthService.swift` (L1)

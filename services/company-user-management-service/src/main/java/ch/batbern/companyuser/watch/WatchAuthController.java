@@ -10,6 +10,7 @@ import ch.batbern.companyuser.watch.dto.PairingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -46,36 +47,35 @@ public class WatchAuthController {
      * Request:  { "pairingCode": "123456" }
      * Response: { "pairingToken": "...", "organizerUsername": "...", "organizerFirstName": "..." }
      *
+     * M1 fix: validate + clear + save in a single atomic transaction via claimPairingCode().
+     * M2 fix: returns error body with message on 400, not empty body.
+     * M5 fix: handles user-not-found gracefully instead of throwing 500.
      * Returns 400 if code is invalid or expired.
      */
     @PostMapping("/pair")
-    public ResponseEntity<PairingResponse> pair(@Valid @RequestBody PairingRequest request) {
-        Optional<WatchPairing> pairingOpt = watchPairingService.validatePairingCode(request.pairingCode());
+    public ResponseEntity<?> pair(@Valid @RequestBody PairingRequest request) {
+        // Generate token first — claimPairingCode() then atomically validates + persists
+        String pairingToken = generateSecurePairingToken();
+        Optional<WatchPairing> claimedOpt = watchPairingService.claimPairingCode(request.pairingCode(), pairingToken);
 
-        if (pairingOpt.isEmpty()) {
+        if (claimedOpt.isEmpty()) {
             log.warn("Pairing attempt with invalid/expired code");
-            return ResponseEntity.badRequest().build();
+            // M2: Return error body per story task 3.3 spec
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Code invalid or expired"));
         }
 
-        WatchPairing pairing = pairingOpt.get();
+        WatchPairing pairing = claimedOpt.get();
 
-        // Generate cryptographically secure pairing token
-        String pairingToken = generateSecurePairingToken();
+        // M5: Handle user deleted between code generation and pairing
+        Optional<User> organizerOpt = userRepository.findByUsername(pairing.getUsername());
+        if (organizerOpt.isEmpty()) {
+            log.error("User not found for claimed pairing: {}", pairing.getUsername());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Internal error during pairing"));
+        }
 
-        // Persist pairing token and mark as paired
-        pairing.setPairingToken(pairingToken);
-        pairing.setPairedAt(LocalDateTime.now());
-        pairing.clearPairingCode();  // Single-use — clear after successful exchange
-
-        // Note: WatchPairingService.save is not exposed; use repository directly via service.
-        // We use a transactional update through WatchPairingRepository via the service layer.
-        watchPairingService.saveCompletedPairing(pairing);
-
-        // Fetch organizer details
-        User organizer = userRepository.findByUsername(pairing.getUsername())
-                .orElseThrow(() -> new IllegalStateException(
-                        "User not found for pairing: " + pairing.getUsername()));
-
+        User organizer = organizerOpt.get();
         log.info("Watch paired successfully for user: {}", pairing.getUsername());
 
         return ResponseEntity.ok(new PairingResponse(
@@ -90,8 +90,9 @@ public class WatchAuthController {
      *
      * POST /api/v1/watch/authenticate
      * Request:  { "pairingToken": "..." }
-     * Response: { "jwt": "eyJ...", "expiresAt": "2026-02-16T15:30:00" }
+     * Response: { "jwt": "eyJ...", "expiresAt": "2026-02-16T15:30:00Z" }
      *
+     * H3+M3 fix: expiresAt is now an ISO-8601 UTC string correlated with the generated JWT.
      * Returns 401 if pairing token is invalid or not yet paired.
      */
     @PostMapping("/authenticate")
@@ -104,12 +105,12 @@ public class WatchAuthController {
         }
 
         WatchPairing pairing = pairingOpt.get();
-        String jwt = watchJwtService.generateToken(pairing.getUsername());
-        LocalDateTime expiresAt = watchJwtService.getExpiresAt();
+        // M3+H3: generateTokenWithExpiry() captures jwt + expiresAt atomically from same Instant
+        WatchJwtService.WatchJwtResult jwtResult = watchJwtService.generateTokenWithExpiry(pairing.getUsername());
 
         log.debug("Watch JWT issued for user: {}", pairing.getUsername());
 
-        return ResponseEntity.ok(new AuthResponse(jwt, expiresAt));
+        return ResponseEntity.ok(new AuthResponse(jwtResult.jwt(), jwtResult.expiresAt()));
     }
 
     // --- Private helpers ---

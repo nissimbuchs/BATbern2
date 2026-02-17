@@ -197,10 +197,6 @@
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = D5FFD1102F41E343003334DE;
 					};
-					D5FFD1292F41E344003334DE = {
-						CreatedOnToolsVersion = 26.2;
-						TestTargetID = D5FFD1102F41E343003334DE;
-					};
 				};
 			};
 			buildConfigurationList = D5FFD1082F41E343003334DE /* Build configuration list for PBXProject "BATbern-watch" */;
@@ -249,13 +245,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D5FFD1282F41E344003334DE /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -267,13 +256,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D5FFD11C2F41E344003334DE /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D5FFD1262F41E344003334DE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
