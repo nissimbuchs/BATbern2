@@ -156,7 +156,6 @@ class PublicViewModel {
             isLoading = true
         }
 
-        isOffline = false
         errorMessage = nil
 
         do {
@@ -184,6 +183,9 @@ class PublicViewModel {
             self.event = newCachedEvent
             self.sessions = newCachedEvent.sessions
             self.lastSynced = clock.now
+
+            // Clear offline flag only on successful network response
+            isOffline = false
 
             // AC#3: Background prefetch all speaker portraits + logos (non-blocking)
             let allSpeakers = newCachedEvent.sessions.flatMap { $0.speakers }

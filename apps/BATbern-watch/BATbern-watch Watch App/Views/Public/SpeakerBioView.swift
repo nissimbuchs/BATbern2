@@ -44,22 +44,20 @@ struct SpeakerBioView: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
 
-                // Company Name + Logo (inline) — logo from PortraitCache (AC#5)
+                // Company: logo if available, else company name as alt
                 if let company = speaker.company {
-                    HStack(spacing: 6) {
+                    if let data = logoData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 20)
+                            .accessibilityLabel(company)
+                    } else {
                         Text(company)
                             .font(.system(size: 13))
                             .foregroundStyle(.primary)
-
-                        // Company logo — PortraitCache backed, no duplicate network request
-                        if let data = logoData, let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(height: 20)
-                        }
+                            .lineLimit(1)
                     }
-                    .lineLimit(1)
                 }
 
                 // Divider

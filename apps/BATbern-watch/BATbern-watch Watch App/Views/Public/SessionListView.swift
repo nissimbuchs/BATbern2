@@ -34,8 +34,9 @@ struct SessionListView: View {
 
     @ViewBuilder
     private func verticalPagingView(vm: PublicViewModel) -> some View {
-        // AC#2: Use .safeAreaInset so ConnectionStatusBar pushes TabView content DOWN
-        // rather than overlaying on top (fixes overlap with session content)
+        // TabView(.verticalPage) on watchOS ignores safeAreaInset — ConnectionStatusBar
+        // overlays the content. We instead pass statusBarVisible to each SessionCardView
+        // so it can add extra top padding to push the time slot below the bar.
         TabView(selection: $selectedPageIndex) {
             // Page 0: Event Hero (P1)
             EventHeroView()
@@ -45,20 +46,27 @@ struct SessionListView: View {
             ForEach(Array(vm.displayableSessions.enumerated()), id: \.element.sessionSlug) { index, session in
                 SessionCardView(
                     session: session,
-                    phase: vm.event?.currentPublishedPhase
+                    phase: vm.event?.currentPublishedPhase,
+                    statusBarVisible: statusBarVisible(vm: vm)
                 )
                 .tag(index + 1)
             }
         }
         .tabViewStyle(.verticalPage)  // Crown-driven vertical paging
         .safeAreaInset(edge: .top, spacing: 0) {
-            // Connection status bar via safeAreaInset (AC#2, AC#4, AC#7)
-            // Visible on P1 (EventHero) and P2 (session cards) only
+            // Connection status bar (AC#2, AC#4, AC#7)
             ConnectionStatusBar(
                 isOffline: vm.isOffline,
                 lastSynced: vm.lastSynced
             )
         }
+    }
+
+    /// Mirrors ConnectionStatusBar.shouldShow — true when the bar is visible
+    private func statusBarVisible(vm: PublicViewModel) -> Bool {
+        if vm.isOffline { return true }
+        guard let lastSync = vm.lastSynced else { return false }
+        return Date().timeIntervalSince(lastSync) > 15 * 60
     }
 }
 

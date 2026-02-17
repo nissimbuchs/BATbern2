@@ -46,26 +46,22 @@ struct ConnectionStatusBar: View {
                     // Offline indicator with WiFi slash icon
                     Image(systemName: "wifi.slash")
                         .font(BATbernWatchStyle.Typography.statusBar)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white)
 
                     Text(NSLocalizedString("status.offline", comment: "Offline"))
                         .font(BATbernWatchStyle.Typography.statusBar)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white)
 
                     if let lastSync = lastSynced {
-                        Text("·")
-                            .font(BATbernWatchStyle.Typography.statusBar)
-                            .foregroundStyle(.tertiary)
-
                         Text(relativeTimeString(from: lastSync))
                             .font(BATbernWatchStyle.Typography.statusBar)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
                 } else if isStale {
                     // Stale data indicator (connected but old cache)
                     Text(NSLocalizedString("status.updated", comment: "Aktualisiert"))
                         .font(BATbernWatchStyle.Typography.statusBar)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white)
 
                     if let lastSync = lastSynced {
                         Text(relativeTimeString(from: lastSync))
@@ -74,8 +70,10 @@ struct ConnectionStatusBar: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 8)  // Thin 8pt bar per UX spec
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color(white: 0.18), in: Capsule())
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
         }

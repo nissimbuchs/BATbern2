@@ -12,6 +12,7 @@ import SwiftUI
 struct SessionCardView: View {
     let session: CachedSession
     let phase: String?  // TOPIC, SPEAKERS, or AGENDA
+    var statusBarVisible: Bool = false  // Extra top padding when ConnectionStatusBar is shown
 
     // MARK: - Computed Properties
 
@@ -34,6 +35,11 @@ struct SessionCardView: View {
 
     private var speakerTapsEnabled: Bool {
         phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
+    /// Top padding for time slot: clears system clock (28pt) + status bar (~24pt) when visible
+    private var timeSlotTopPadding: CGFloat {
+        statusBarVisible ? 52 : BATbernWatchStyle.Spacing.cardTopPadding
     }
 
     private var breakIcon: String {
@@ -73,7 +79,7 @@ struct SessionCardView: View {
                 Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 28)
+                    .padding(.top, timeSlotTopPadding)
             }
 
             Spacer()
@@ -103,7 +109,7 @@ struct SessionCardView: View {
                 Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 28)
+                    .padding(.top, timeSlotTopPadding)
             }
 
             Spacer()

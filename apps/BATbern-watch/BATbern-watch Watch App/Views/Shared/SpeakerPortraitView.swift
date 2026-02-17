@@ -47,8 +47,8 @@ struct SpeakerPortraitView: View {
                 .foregroundStyle(BATbernWatchStyle.Colors.textPrimary)
                 .lineLimit(1)
 
-            // Company name
-            if let company = speaker.company {
+            // Company name — only shown when no logo available (logo takes priority)
+            if logoData == nil, let company = speaker.company {
                 Text(company)
                     .font(BATbernWatchStyle.Typography.companyName)
                     .foregroundStyle(.secondary)
