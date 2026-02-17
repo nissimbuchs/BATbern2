@@ -64,6 +64,91 @@ tags:
     description: Domain service integration endpoints
 
 paths:
+  /users/{username}/watch-pairing:
+    post:
+      operationId: generateWatchPairingCode
+      tags:
+        - Watch Pairing
+      summary: Generate pairing code (AC1)
+      description: |
+        Generate a 6-digit numeric pairing code for the organizer's Apple Watch.
+        Code expires after 24 hours (NFR20). Max 2 watches per organizer (NFR19).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Pairing code generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingCodeResponse'
+        '409':
+          description: Maximum 2 watches already paired (AC2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - not owner or not ORGANIZER role
+
+    get:
+      operationId: getWatchPairingStatus
+      tags:
+        - Watch Pairing
+      summary: Get pairing status
+      description: Returns list of paired watches and any pending pairing code.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pairing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingStatusResponse'
+        '403':
+          description: Forbidden
+
+  /users/{username}/watch-pairing/{deviceName}:
+    delete:
+      operationId: unpairWatch
+      tags:
+        - Watch Pairing
+      summary: Unpair a watch (AC4)
+      description: Hard-delete the pairing record (GDPR compliant).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: deviceName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Watch unpaired
+        '404':
+          description: Watch not found
+        '403':
+          description: Forbidden
+
   /users/me:
     get:
       tags:
@@ -1831,6 +1916,51 @@ components:
         details:
           type: object
           description: Additional error details
+
+    PairingCodeResponse:
+      type: object
+      properties:
+        pairingCode:
+          type: string
+          pattern: '^\d{6}$'
+          example: '482910'
+        expiresAt:
+          type: string
+          format: date-time
+        hoursUntilExpiry:
+          type: integer
+          example: 24
+
+    PairingStatusResponse:
+      type: object
+      properties:
+        pairedWatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/PairedWatch'
+        pendingCode:
+          oneOf:
+            - $ref: '#/components/schemas/PendingPairingCode'
+            - type: 'null'
+
+    PairedWatch:
+      type: object
+      properties:
+        deviceName:
+          type: string
+        pairedAt:
+          type: string
+          format: date-time
+
+    PendingPairingCode:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+        expiresAt:
+          type: string
+          format: date-time
 
   responses:
     BadRequest:
