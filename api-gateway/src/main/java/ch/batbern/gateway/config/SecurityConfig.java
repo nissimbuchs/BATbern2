@@ -175,6 +175,9 @@ public class SecurityConfig {
                         // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
                         .requestMatchers("/api/v1/e2e-test/**").permitAll()
 
+                        // W2.2: Watch pairing — unauthenticated (Watch has no JWT yet; exchanges pairing code for JWT)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/watch/pair").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )

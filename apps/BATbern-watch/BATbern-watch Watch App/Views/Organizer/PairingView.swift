@@ -98,6 +98,7 @@ struct PairingView: View {
 
     @MainActor
     private func pairWatch() async {
+        guard !isPairing else { return }  // Prevent duplicate calls from rapid double-taps
         isPairing = true
         errorMessage = nil
 
