@@ -13,8 +13,10 @@ import Foundation
 @MainActor
 protocol EventStateManagerProtocol: AnyObject {
     var currentEvent: CachedEvent? { get set }
+    var hasActiveEvent: Bool { get }
     var isPreEvent: Bool { get }
     var isLive: Bool { get }
+    var timeUntilEventStart: TimeInterval? { get }
 }
 
 /// Tracks event timing state to determine which organizer screen to show.
@@ -35,6 +37,20 @@ final class EventStateManager: EventStateManagerProtocol {
 
     init(clock: ClockProtocol = SystemClock()) {
         self.clock = clock
+    }
+
+    /// True when a current event is loaded (AC#4 guard).
+    var hasActiveEvent: Bool {
+        return currentEvent != nil
+    }
+
+    /// Time remaining until event start, in seconds. Nil if no event or start unparseable.
+    var timeUntilEventStart: TimeInterval? {
+        guard let event = currentEvent else { return nil }
+        let now = clock.now
+        let eventStart = parseEventTime(event.typicalStartTime, on: event.eventDate)
+        let interval = eventStart.timeIntervalSince(now)
+        return interval > 0 ? interval : nil
     }
 
     /// True when within 1 hour before event start time (O2: SpeakerArrivalView).

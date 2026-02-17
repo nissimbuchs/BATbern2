@@ -18,7 +18,10 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -37,6 +40,9 @@ public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
+
+    @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}")
+    private String watchJwtSecret;
 
     /**
      * Enable method-level security for production, staging, and test environments
@@ -137,9 +143,14 @@ public class SecurityConfig {
     }
 
     /**
-     * JWT decoder for AWS Cognito tokens
-     * Configured to accept both ID tokens and access tokens
-     * Frontend uses ID tokens because they contain custom:role attribute
+     * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
+     *
+     * Routing strategy: peek at the "iss" claim in the (unverified) JWT payload to select the
+     * correct decoder. Signature verification is then performed by the selected decoder, so
+     * a forged issuer claim cannot bypass verification — it would just fail with the wrong decoder.
+     *
+     * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
+     * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
      */
     @Bean
     @Profile("!test")
@@ -147,18 +158,30 @@ public class SecurityConfig {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");
         }
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 
-        // Accept both ID tokens (token_use=id) and access tokens (token_use=access)
-        // Frontend sends ID tokens to include custom:role attribute
-        // No audience validation - we validate signature and custom:role claim instead
-        decoder.setJwtValidator(token -> {
-            // Only validate that the token is not expired and has valid signature
-            // NimbusJwtDecoder already handles signature validation
-            return org.springframework.security.oauth2.jwt.JwtValidators.createDefault().validate(token);
-        });
+        NimbusJwtDecoder cognitoDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        cognitoDecoder.setJwtValidator(token ->
+                org.springframework.security.oauth2.jwt.JwtValidators.createDefault().validate(token));
 
-        return decoder;
+        SecretKeySpec watchKey = new SecretKeySpec(
+                watchJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        NimbusJwtDecoder watchDecoder = NimbusJwtDecoder.withSecretKey(watchKey).build();
+
+        return token -> isWatchJwt(token) ? watchDecoder.decode(token) : cognitoDecoder.decode(token);
+    }
+
+    /** Peeks at the JWT payload (base64url, no signature check) to read the "iss" claim. */
+    private static boolean isWatchJwt(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return false;
+            }
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            return payload.contains("\"iss\":\"batbern-watch\"");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -173,23 +196,24 @@ public class SecurityConfig {
     }
 
     /**
-     * Converter to extract custom:role claim and map to Spring Security authorities
+     * Converter to extract roles from JWT claims and map to Spring Security authorities.
      *
-     * Roles are stored in PostgreSQL and synced to Cognito custom:role attribute
-     * Format: comma-separated string (e.g., "ORGANIZER,SPEAKER")
-     * Requires ROLE_ prefix for Spring Security @PreAuthorize annotations
+     * Supports two JWT formats:
+     * - Cognito tokens: roles in "custom:role" claim (comma-separated, e.g. "ORGANIZER,SPEAKER")
+     * - Watch tokens:   role in "role" claim (single value, e.g. "ORGANIZER")
      */
     private static class CustomRolesToAuthoritiesConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
         @Override
         public Collection<GrantedAuthority> convert(Jwt jwt) {
-            // Extract roles from custom:role claim (comma-separated string)
+            // Cognito ID token: "custom:role" claim (comma-separated)
             String rolesString = jwt.getClaimAsString("custom:role");
-
+            // Watch JWT fallback: "role" claim (single value)
+            if (rolesString == null || rolesString.isEmpty()) {
+                rolesString = jwt.getClaimAsString("role");
+            }
             if (rolesString == null || rolesString.isEmpty()) {
                 return Collections.emptyList();
             }
-
-            // Split comma-separated roles and map to ROLE_ authorities
             return Arrays.stream(rolesString.split(","))
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()))
                 .collect(Collectors.toList());

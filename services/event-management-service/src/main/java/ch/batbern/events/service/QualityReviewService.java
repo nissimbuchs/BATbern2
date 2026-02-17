@@ -160,24 +160,24 @@ public class QualityReviewService {
             // Create ContentSubmission from session data for organizer-path content
             sessionRepository.findById(speaker.getSessionId())
                     .ifPresent(session -> {
-                var submission = ch.batbern.events.domain.ContentSubmission
-                        .builder()
-                        .speakerPool(speaker)
-                        .session(session)
-                        .title(session.getTitle())
-                        .contentAbstract(session.getDescription())
-                        .abstractCharCount(session.getDescription() != null
-                                ? session.getDescription().length() : 0)
-                        .submissionVersion(1)
-                        .submittedAt(java.time.Instant.now())
-                        .reviewerFeedback(feedback)
-                        .reviewedAt(java.time.Instant.now())
-                        .reviewedBy(moderatorUsername)
-                        .build();
-                contentSubmissionRepository.save(submission);
-                log.info("Created ContentSubmission from session for speaker: {}",
-                        speaker.getId());
-            });
+                        var submission = ch.batbern.events.domain.ContentSubmission
+                                .builder()
+                                .speakerPool(speaker)
+                                .session(session)
+                                .title(session.getTitle())
+                                .contentAbstract(session.getDescription())
+                                .abstractCharCount(session.getDescription() != null
+                                        ? session.getDescription().length() : 0)
+                                .submissionVersion(1)
+                                .submittedAt(java.time.Instant.now())
+                                .reviewerFeedback(feedback)
+                                .reviewedAt(java.time.Instant.now())
+                                .reviewedBy(moderatorUsername)
+                                .build();
+                        contentSubmissionRepository.save(submission);
+                        log.info("Created ContentSubmission from session for speaker: {}",
+                                speaker.getId());
+                    });
         }
 
         // Notify speaker via email about required revisions

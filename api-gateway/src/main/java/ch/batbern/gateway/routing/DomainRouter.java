@@ -64,7 +64,7 @@ public class DomainRouter {
         // W2.2: Watch pairing (unauthenticated) → company-user-management-service
         // W2.4+: Watch event/arrivals endpoints → event-management-service
         // Must check /api/v1/watch/pair specifically before /api/v1/watch/events fallthrough
-        if (cleanPath.equals("/api/v1/watch/pair")) {
+        if (cleanPath.equals("/api/v1/watch/pair") || cleanPath.equals("/api/v1/watch/authenticate")) {
             return "company-user-management-service";
         } else if (cleanPath.startsWith("/api/v1/watch")) {
             return "event-management-service";

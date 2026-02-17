@@ -1,6 +1,7 @@
 # Story W2.4: Speaker Arrival Tracking
 
 Status: ready-for-dev
+Review: pre-implementation adversarial review complete (2026-02-17) — all HIGH/MEDIUM issues fixed in story design
 
 ## Story
 
@@ -37,7 +38,64 @@ so that the whole team knows who's here.
     }
     ```
   - [ ] 1.3 Add `arrivalUpdates() -> AsyncStream<SpeakerArrivalMessage>` to protocol
-  - [ ] 1.4 Update `MockWebSocketClient.swift` (in tests) with stub implementation
+  - [ ] 1.4 Update `MockWebSocketClient.swift` — add `arrivalUpdates()` conformance + test helper:
+    ```swift
+    // ADD to MockWebSocketClient — alongside existing stateUpdatesContinuation:
+    private var arrivalUpdatesContinuation: AsyncStream<SpeakerArrivalMessage>.Continuation?
+
+    func arrivalUpdates() -> AsyncStream<SpeakerArrivalMessage> {
+        AsyncStream { continuation in
+            self.arrivalUpdatesContinuation = continuation
+        }
+    }
+
+    /// Emit an arrival update to subscribers (mirrors existing emit() for state updates).
+    func emitArrival(_ message: SpeakerArrivalMessage) {
+        arrivalUpdatesContinuation?.yield(message)
+    }
+    ```
+    > ⚠️ [AI-Review][HIGH] Adding `arrivalUpdates()` to the protocol immediately breaks existing tests
+    > because `MockWebSocketClient` won't conform. This subtask MUST be done atomically with 1.3.
+
+  - [ ] 1.5 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/Mocks/MockAuthManager.swift`:
+    ```swift
+    @testable import BATbern_watch_Watch_App
+    import Foundation
+
+    /// Mock AuthManager for unit tests. Conforms to AuthManagerProtocol.
+    @MainActor
+    final class MockAuthManager: AuthManagerProtocol {
+        var isPaired: Bool
+        var organizerUsername: String?
+        var organizerFirstName: String?
+        var currentJWT: String?
+
+        init(
+            isPaired: Bool = true,
+            organizerUsername: String? = "marco.muster",
+            organizerFirstName: String? = "Marco",
+            currentJWT: String? = "mock-jwt-token"
+        ) {
+            self.isPaired = isPaired
+            self.organizerUsername = organizerUsername
+            self.organizerFirstName = organizerFirstName
+            self.currentJWT = currentJWT
+        }
+
+        func pair(code: String) async throws {}
+        func refreshJWT() async throws {}
+        func unpair() { isPaired = false }
+    }
+    ```
+    > ⚠️ [AI-Review][HIGH] Task 11 tests all reference `MockAuthManager` but this file does NOT exist
+    > in `BATbern-watch Watch AppTests/Mocks/`. Must create before Task 11 tests can compile.
+
+  - [ ] 1.6 Clarify `EventStateMessageType.speakerArrived` in `WebSocketClientProtocol.swift`:
+    - The existing `case speakerArrived = "SPEAKER_ARRIVED"` on `EventStateMessageType` was added as a placeholder
+    - **Remove** it from `EventStateMessageType` — arrival events are handled exclusively via the new `arrivalUpdates()` stream on the dedicated topic
+    - This prevents ambiguity: state updates go through `stateUpdates()`, arrival updates through `arrivalUpdates()`
+    > ⚠️ [AI-Review][MEDIUM] Without this clarification the dev will leave dead code or route the same
+    > event through two different streams causing unpredictable behaviour.
 
 - [ ] **Task 2: ArrivalTracker — Domain Layer** (AC: #1, #3, #4, #5)
   - [ ] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Domain/ArrivalTracker.swift`
@@ -178,11 +236,12 @@ so that the whole team knows who's here.
                 let wrapper = try JSONDecoder().decode(ArrivalStatusWrapper.self, from: data)
 
                 // Apply arrivals to SwiftData cache
+                // ⚠️ [AI-Review][MEDIUM] Use static formatter — ISO8601DateFormatter is expensive to create
                 for arrival in wrapper.arrivals {
                     updateSpeakerArrival(
                         username: arrival.speakerUsername,
                         confirmedBy: arrival.confirmedBy,
-                        arrivedAt: ISO8601DateFormatter().date(from: arrival.arrivedAt) ?? Date()
+                        arrivedAt: Self.iso8601Formatter.date(from: arrival.arrivedAt) ?? Date()
                     )
                 }
 
@@ -266,6 +325,11 @@ so that the whole team knows who's here.
         }
 
         private func recomputeCounter() {
+            // ⚠️ [AI-Review][MEDIUM] CachedSpeaker has no eventCode field, so this fetches ALL
+            // speakers from all cached events. For a single-event app this is acceptable.
+            // Server-authoritative counts from SpeakerArrivalMessage ALWAYS override local counts
+            // (see processArrivalMessage). recomputeCounter() is only used for the optimistic
+            // local update in confirmArrival() — the next WebSocket message will correct it.
             let descriptor = FetchDescriptor<CachedSpeaker>()
             guard let allSpeakers = try? modelContext.fetch(descriptor) else { return }
 
@@ -275,6 +339,15 @@ so that the whole team knows who's here.
     }
 
     // MARK: - Supporting Types
+
+    // ⚠️ [AI-Review][MEDIUM] Static formatter — avoids allocation per decoded arrival
+    private extension ArrivalTracker {
+        static let iso8601Formatter: ISO8601DateFormatter = {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            return f
+        }()
+    }
 
     enum ArrivalError: Error, LocalizedError {
         case notAuthenticated
@@ -363,10 +436,11 @@ so that the whole team knows who's here.
                 .padding(.horizontal, 4)
             }
             // Confirmation sheet (AC2, AC5)
+            // ⚠️ Pass as `any ArrivalTrackerProtocol` — see ArrivalConfirmationView
             .sheet(item: $selectedSpeaker) { speaker in
                 ArrivalConfirmationView(
                     speaker: speaker,
-                    arrivalTracker: arrivalTracker
+                    arrivalTracker: arrivalTracker as any ArrivalTrackerProtocol
                 )
             }
             .navigationTitle(NSLocalizedString("arrival.tonight_speakers", comment: ""))
@@ -447,9 +521,10 @@ so that the whole team knows who's here.
 
     // MARK: - Confirmation Sheet
 
+    // ⚠️ [AI-Review][HIGH] Use protocol type — concrete ArrivalTracker violates DI pattern
     struct ArrivalConfirmationView: View {
         let speaker: CachedSpeaker
-        let arrivalTracker: ArrivalTracker
+        let arrivalTracker: any ArrivalTrackerProtocol
 
         @Environment(\.dismiss) private var dismiss
         @State private var isConfirming = false
@@ -543,6 +618,10 @@ so that the whole team knows who's here.
         }
     }
 
+    // ⚠️ [AI-Review][HIGH] MockAuthManager must exist (Task 1.5) before this Preview compiles.
+    // ⚠️ [AI-Review][MEDIUM] @Environment(ArrivalTracker.self) binds to concrete type — SwiftUI
+    // limitation; protocol injection via EnvironmentKey would require more boilerplate than it saves.
+    // The Preview below is the canonical pattern; it will work once Task 1.5 is complete.
     #Preview {
         NavigationStack {
             SpeakerArrivalView()
@@ -559,39 +638,58 @@ so that the whole team knows who's here.
   - [ ] 4.1 Modify `apps/BATbern-watch/BATbern-watch Watch App/App/BATbernWatchApp.swift`
   - [ ] 4.2 Add `@State private var arrivalTracker: ArrivalTracker` initialized with `authManager` and model context
   - [ ] 4.3 Inject into `ContentView` via `.environment(arrivalTracker)`
-  - [ ] 4.4 The `arrivalTracker` needs the ModelContext — use `@Environment(\.modelContext)` in ContentView or pass via init pattern:
+  - [ ] 4.4 The `arrivalTracker` needs the ModelContext from the SwiftData container — initialize it in `BATbernWatchApp.init()` using `modelContainer.mainContext` (see Task 4.5 for the correct pattern)
+    > ⚠️ [AI-Review][HIGH] Do NOT initialize via `@State var arrivalTracker: ArrivalTracker?` with a
+    > nil-coalescing call in `body` — this mutates `@State` during body evaluation causing infinite re-render.
+  - [ ] 4.5 **Correct pattern** — initialize `ArrivalTracker` in `BATbernWatchApp.swift`, pass `modelContainer.mainContext`:
     ```swift
-    // In BATbernWatchApp.swift — add after existing authManager + eventStateManager:
-    // NOTE: ArrivalTracker needs ModelContext from the container.
-    // Inject it in ContentView which has access to .modelContext environment.
-    // Pass as a lazy @State from the container's mainContext:
-    @State private var arrivalTracker: ArrivalTracker?
+    // BATbernWatchApp.swift — add alongside existing authManager + eventStateManager
+    // ⚠️ [AI-Review][HIGH] Do NOT initialize in ContentView.body via ??/makeArrivalTracker().
+    // Mutating @State inside body causes infinite re-render. Use the same direct @State
+    // init pattern as authManager and eventStateManager.
 
-    // In WindowGroup body, initialize after modelContainer is available:
-    // ContentView().environment(arrivalTracker ?? initArrivalTracker())
-    ```
-  - [ ] 4.5 **Simpler pattern:** Initialize `ArrivalTracker` in `ContentView` using `@Environment(\.modelContext)`:
-    ```swift
-    // ContentView.swift — add ArrivalTracker initialization
-    struct ContentView: View {
-        @Environment(AuthManager.self) private var authManager
-        @Environment(\.modelContext) private var modelContext
+    @State private var arrivalTracker: ArrivalTracker  // initialized in init()
 
-        @State private var arrivalTracker: ArrivalTracker?
-
-        var body: some View {
-            // Pass arrivalTracker down via environment to OrganizerZoneView
-            TabView { /* ... existing zones ... */ }
-                .environment(arrivalTracker ?? makeArrivalTracker())
-        }
-
-        private func makeArrivalTracker() -> ArrivalTracker {
-            let tracker = ArrivalTracker(authManager: authManager, modelContext: modelContext)
-            arrivalTracker = tracker
-            return tracker
-        }
+    init() {
+        // ... existing modelContainer setup ...
+        let container = /* existing modelContainer init */
+        modelContainer = container
+        // ArrivalTracker needs a ModelContext — use the container's mainContext
+        // Note: authManager must be passed; use a temporary and then connect in .task if needed.
+        // Simplest: defer WebSocket; ArrivalTracker.startListening() called from SpeakerArrivalView.task
+        _arrivalTracker = State(wrappedValue: ArrivalTracker(
+            authManager: AuthManager(),   // will be overwritten — see note below
+            modelContext: container.mainContext
+        ))
     }
     ```
+    > **Note:** Because `@State private var authManager = AuthManager()` is initialized before
+    > `arrivalTracker`, pass the same instance. The cleanest approach is to pull `authManager`
+    > init into the `init()` body too:
+    ```swift
+    // In init() — initialize both together so arrivalTracker gets the real authManager:
+    let auth = AuthManager()
+    _authManager = State(wrappedValue: auth)
+    _arrivalTracker = State(wrappedValue: ArrivalTracker(
+        authManager: auth,
+        modelContext: container.mainContext
+    ))
+    ```
+    Then in `WindowGroup.body`:
+    ```swift
+    ContentView()
+        .environment(authManager)
+        .environment(eventStateManager)
+        .environment(arrivalTracker)   // ADD THIS LINE
+    ```
+    > No changes needed to `ContentView.swift` itself — `OrganizerZoneView` → `SpeakerArrivalView`
+    > picks up `ArrivalTracker` from the environment automatically.
+
+- [ ] **Task 4b: Fix Xcode Preview injections** (no AC, build quality)
+  - [ ] 4b.1 Update `#Preview` in `ContentView.swift` — add `.environment(ArrivalTracker(authManager: MockAuthManager(), modelContext: ...))` so the preview doesn't crash when `OrganizerZoneView → SpeakerArrivalView` attempts to resolve `ArrivalTracker` from environment
+  - [ ] 4b.2 Update `#Preview` in `OrganizerZoneView.swift` — same injection needed
+  > ⚠️ [AI-Review][LOW] Without these fixes, Xcode Previews for ContentView and OrganizerZoneView
+  > will crash with "No value for type ArrivalTracker in environment" immediately after Task 4.
 
 - [ ] **Task 5: Backend — Flyway Migration** (AC: #3, #4)
   - [ ] 5.1 Create `services/event-management-service/src/main/resources/db/migration/V{next}__add_speaker_arrival_tracking.sql`
@@ -681,15 +779,23 @@ so that the whole team knows who's here.
         }
 
         // POST (REST fallback) / STOMP action handler:
-        // Idempotent: INSERT ... ON CONFLICT DO NOTHING equivalent via Spring Data
+        // ⚠️ [AI-Review][MEDIUM] exists-check + save is NOT atomic — two concurrent confirms
+        // both pass the exists-check and then both attempt save → DataIntegrityViolationException.
+        // Use @Transactional + catch the exception to make this truly idempotent.
+        @Transactional
         public SpeakerArrivalBroadcast confirmArrival(
             String eventCode,
             String speakerUsername,
             String confirmedBy
         ) {
-            // Idempotent: Spring Data handles UNIQUE constraint
-            if (!arrivalRepository.existsByEventCodeAndSpeakerUsername(eventCode, speakerUsername)) {
-                arrivalRepository.save(new SpeakerArrival(eventCode, speakerUsername, confirmedBy));
+            // Idempotent: catch DataIntegrityViolationException from UNIQUE(event_code, speaker_username)
+            try {
+                if (!arrivalRepository.existsByEventCodeAndSpeakerUsername(eventCode, speakerUsername)) {
+                    arrivalRepository.save(new SpeakerArrival(eventCode, speakerUsername, confirmedBy));
+                }
+            } catch (DataIntegrityViolationException e) {
+                // Concurrent confirmation — already inserted by another organizer. Safe to ignore.
+                log.debug("Concurrent arrival confirmation for {}/{} — already recorded", eventCode, speakerUsername);
             }
 
             // Count for broadcast
@@ -871,9 +977,45 @@ so that the whole team knows who's here.
     - GET with attendee JWT (not ROLE_ORGANIZER)
     - Assert: 403 Forbidden
   - [ ] 12.7 Test: `shouldBroadcastToArrivalsTopicViaWebSocket()`
-    - Connect mock WebSocket subscriber to `/topic/events/{eventCode}/arrivals`
-    - POST arrival via REST
-    - Assert: WebSocket subscriber receives `SPEAKER_ARRIVED` message within 3 seconds
+    > ⚠️ [AI-Review][MEDIUM] STOMP integration tests require explicit infrastructure — do NOT skip.
+    > Use Spring's `WebSocketStompClient` with `SockJsClient` and a `CompletableFuture`-based handler:
+    ```java
+    @Test
+    void shouldBroadcastToArrivalsTopicViaWebSocket() throws Exception {
+        // Requires spring-boot-test + WebSocketStompClient on the test classpath
+        WebSocketStompClient stompClient = new WebSocketStompClient(
+            new SockJsClient(List.of(new WebSocketTransport(new StandardWebSocketClient())))
+        );
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+
+        String url = "ws://localhost:" + port + "/ws";
+        CompletableFuture<SpeakerArrivalBroadcast> receivedFuture = new CompletableFuture<>();
+
+        StompSession session = stompClient.connectAsync(url, new StompSessionHandlerAdapter() {}).get(5, SECONDS);
+        session.subscribe("/topic/events/" + eventCode + "/arrivals",
+            new StompFrameHandler() {
+                public Type getPayloadType(StompHeaders h) { return SpeakerArrivalBroadcast.class; }
+                public void handleFrame(StompHeaders h, Object payload) {
+                    receivedFuture.complete((SpeakerArrivalBroadcast) payload);
+                }
+            });
+
+        // POST arrival via REST to trigger broadcast
+        mockMvc.perform(post("/api/v1/watch/events/{eventCode}/arrivals", eventCode)
+            .header("Authorization", "Bearer " + organizerJwt)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"speakerUsername\":\"anna.meier\"}"))
+            .andExpect(status().isCreated());
+
+        SpeakerArrivalBroadcast broadcast = receivedFuture.get(3, SECONDS);
+        assertThat(broadcast.type()).isEqualTo("SPEAKER_ARRIVED");
+        assertThat(broadcast.speakerUsername()).isEqualTo("anna.meier");
+        assertThat(broadcast.arrivalCount().arrived()).isEqualTo(1);
+        session.disconnect();
+    }
+    ```
+    - Class must be annotated with `@SpringBootTest(webEnvironment = RANDOM_PORT)` (not `MOCK`)
+    - Inject `@LocalServerPort int port` for the STOMP URL
 
 - [ ] **Task 13: Update OpenAPI Specification** (AC: #3, #4)
   - [ ] 13.1 Add to `docs/api/event-management-api.openapi.yml`:
@@ -1077,6 +1219,25 @@ N/A — Story file created by SM agent (Bob) in YOLO mode
 
 ### Completion Notes List
 
+**AI Code Review (2026-02-17) — Pre-implementation adversarial review by Amelia (Dev Agent):**
+
+Reviewed story design against existing codebase before implementation. Fixed 4 HIGH + 6 MEDIUM + 2 LOW issues:
+
+| ID | Severity | Fix Applied |
+|---|---|---|
+| H1 | HIGH | Added Task 1.5: Create `MockAuthManager.swift` — missing mock needed by all Task 11 tests |
+| H2 | HIGH | Expanded Task 1.4: Added `arrivalUpdatesContinuation` + `emitArrival()` to `MockWebSocketClient` |
+| H3 | HIGH | Fixed `ArrivalConfirmationView.arrivalTracker` type: `ArrivalTracker` → `any ArrivalTrackerProtocol` |
+| H4 | HIGH | Replaced broken `makeArrivalTracker()` in ContentView.body with `BATbernWatchApp.init()` pattern |
+| M1 | MEDIUM | Added clarifying comment to `recomputeCounter()` — no event filter possible; server counts authoritative |
+| M2 | MEDIUM | Added `@Transactional` + `catch DataIntegrityViolationException` to `confirmArrival()` |
+| M3 | MEDIUM | Added Task 1.6: Remove `EventStateMessageType.speakerArrived` to avoid dual-stream ambiguity |
+| M4 | MEDIUM | Added `private static let iso8601Formatter` to `ArrivalTracker` with `.withFractionalSeconds` |
+| M5 | MEDIUM | Added concrete `WebSocketStompClient`-based implementation to Task 12.7 |
+| M6 | MEDIUM | Documented `@Environment(ArrivalTracker.self)` SwiftUI limitation in Preview comment |
+| L1 | LOW | Added Task 4b: Fix ContentView + OrganizerZoneView Xcode Preview injections |
+| L2 | LOW | No change needed — German encoding is correct |
+
 **Story Preparation Summary:**
 - Speaker Arrival Tracking: O2 screen with real-time WebSocket sync across organizer watches
 - `CachedSpeaker` model already has `arrived`/`arrivedConfirmedBy`/`arrivedAt` fields — no schema change needed on watchOS side
@@ -1093,7 +1254,30 @@ N/A — Story file created by SM agent (Bob) in YOLO mode
 - `arrivalUpdates()` added to `WebSocketClientProtocol` for separate arrivals topic subscription
 - Swiss German primary locale — all strings in German (de.lproj)
 
+---
+
+**Pre-implementation Code Quality Review (2026-02-17) — Amelia (Dev Agent):**
+
+Reviewed existing codebase dependencies before W2.4 implementation. Found and auto-fixed 4 HIGH + 2 MEDIUM bugs in the Public zone code that W2.4 builds on:
+
+| ID | Severity | File | Fix Applied |
+|---|---|---|---|
+| H1 | HIGH | `PublicViewModel.swift:156` | `isOffline = false` cleared before network request — moved inside success path |
+| H2 | HIGH | `ConnectionStatusBar.swift:49` | Text/icon used `.secondary` foreground on dark capsule — changed to `.white` for readability |
+| H3 | HIGH | `SessionListView.swift:39` | `.safeAreaInset` ignored by `TabView(.verticalPage)` — fixed via `statusBarVisible` flag to `SessionCardView` |
+| H4 | HIGH | `SpeakerBioView.swift:47` | Company logo + name both shown simultaneously — show logo OR text (not both) |
+| M1 | MEDIUM | `SpeakerPortraitView.swift:50` | Same logo+text double-render in portrait card — `if logoData == nil, let company =` |
+| M2 | MEDIUM | `SessionCardView.swift:36` | Hardcoded `padding(.top, 28)` ignores connection bar — computed `timeSlotTopPadding` property |
+
 ### File List
 
 **Story File:**
 - `_bmad-output/implementation-artifacts/w2-4-speaker-arrival-tracking.md`
+
+**Pre-implementation Code Quality Fixes (existing files):**
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/PublicViewModel.swift` — fix `isOffline` premature reset (H1)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/ConnectionStatusBar.swift` — fix text visibility (H2)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionListView.swift` — fix StatusBar+TabView overlap (H3)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SpeakerBioView.swift` — fix logo+text double-render (H4)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/SpeakerPortraitView.swift` — fix logo+text double-render (M1)
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionCardView.swift` — fix top padding when status bar visible (M2)

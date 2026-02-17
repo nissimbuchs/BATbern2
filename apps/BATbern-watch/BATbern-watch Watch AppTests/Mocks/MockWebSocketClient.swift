@@ -9,6 +9,7 @@ final class MockWebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
     private(set) var sentActions: [WatchAction] = []
 
     private var stateUpdatesContinuation: AsyncStream<EventStateMessage>.Continuation?
+    private var arrivalUpdatesContinuation: AsyncStream<SpeakerArrivalMessage>.Continuation?
 
     var isConnected: Bool { _isConnected }
 
@@ -25,6 +26,7 @@ final class MockWebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         disconnectCallCount += 1
         _isConnected = false
         stateUpdatesContinuation?.finish()
+        arrivalUpdatesContinuation?.finish()
     }
 
     func sendAction(_ action: WatchAction) async throws {
@@ -38,6 +40,12 @@ final class MockWebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         }
     }
 
+    func arrivalUpdates() -> AsyncStream<SpeakerArrivalMessage> {
+        AsyncStream { continuation in
+            self.arrivalUpdatesContinuation = continuation
+        }
+    }
+
     // MARK: - Test Helpers
 
     /// Emit a state update message to all subscribers.
@@ -45,9 +53,15 @@ final class MockWebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         stateUpdatesContinuation?.yield(message)
     }
 
+    /// Emit a speaker arrival message to all subscribers.
+    func emitArrival(_ message: SpeakerArrivalMessage) {
+        arrivalUpdatesContinuation?.yield(message)
+    }
+
     /// Simulate unexpected disconnection.
     func simulateDisconnect() {
         _isConnected = false
         stateUpdatesContinuation?.finish()
+        arrivalUpdatesContinuation?.finish()
     }
 }

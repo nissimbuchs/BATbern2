@@ -39,6 +39,18 @@
 "error.offline" = "Offline — gecachte Daten werden angezeigt";
 "error.refresh_failed" = "Aktualisierung fehlgeschlagen: %@";
 
+/* Event Sync Loading (W2.3) */
+"sync.connecting_to_event" = "Verbindung zum Event...";
+"sync.error.not_authenticated" = "Nicht authentifiziert";
+"sync.error.auth_required" = "Authentifizierung erforderlich";
+"sync.error.network" = "Netzwerkfehler beim Synchronisieren";
+"sync.error.no_event" = "Kein aktives Event gefunden";
+
+/* Event Preview Screen (W2.3) */
+"preview.no_active_event" = "Kein aktives Event";
+"preview.check_back_later" = "Kurz vor dem Event zurückkommen";
+"preview.starts_in" = "Beginnt in %@";
+
 /* Debug Messages (optional, for consistency) */
 "debug.refresh_start" = "🔄 PublicViewModel: Aktualisierung gestartet...";
 "debug.event_received" = "✅ PublicViewModel: WatchEvent empfangen - %@";

@@ -76,7 +76,7 @@ final class SessionTimerEngine {
     /// Boundaries align with haptic thresholds: ≤300 caution, ≤120 warning, <60 critical.
     var urgencyLevel: UrgencyLevel {
         if isOvertime { return .overtime }
-        if remainingSeconds < 60 { return .critical }
+        if remainingSeconds <= 60 { return .critical }
         if remainingSeconds <= 120 { return .warning }
         if remainingSeconds <= 300 { return .caution }
         return .normal

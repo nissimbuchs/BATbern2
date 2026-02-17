@@ -33,8 +33,8 @@ final class PairingFlowUITests: XCTestCase {
         app.launchEnvironment["AUTH_STATE"] = "unpaired"
         app.launch()
 
-        // Swipe right to enter organizer zone
-        app.swipeRight()
+        // Swipe left to enter organizer zone (reveals right tab)
+        app.swipeLeft()
 
         // Assert: PairingView appears with title
         let pairingTitle = app.staticTexts["Watch koppeln"]
@@ -53,8 +53,8 @@ final class PairingFlowUITests: XCTestCase {
         app.launchEnvironment["MOCK_PAIR_RESPONSE"] = "invalid_code"
         app.launch()
 
-        // Navigate to organizer zone
-        app.swipeRight()
+        // Navigate to organizer zone (reveals right tab)
+        app.swipeLeft()
 
         // Tap Pair button with default code (000000)
         let pairButton = app.buttons["Koppeln"]
@@ -78,16 +78,16 @@ final class PairingFlowUITests: XCTestCase {
         // Assert: starts in public zone (SessionListView or hero)
         // The public zone should be visible on launch
 
-        // Swipe right → Organizer Zone (no pairing screen because already paired)
-        app.swipeRight()
+        // Swipe left → Organizer Zone (reveals right tab; no pairing screen because already paired)
+        app.swipeLeft()
 
         // Should NOT show pairing screen
         let pairingTitle = app.staticTexts["Watch koppeln"]
         XCTAssertFalse(pairingTitle.exists,
                        "Pairing screen should NOT appear when already paired")
 
-        // Swipe left → Back to public zone
-        app.swipeLeft()
+        // Swipe right → Back to public zone
+        app.swipeRight()
 
         // Should be back in public zone (no pairing title)
         XCTAssertFalse(pairingTitle.exists,
@@ -100,8 +100,8 @@ final class PairingFlowUITests: XCTestCase {
         app.launchEnvironment["AUTH_STATE"] = "paired"
         app.launch()
 
-        // Swipe right
-        app.swipeRight()
+        // Swipe left to organizer zone (reveals right tab)
+        app.swipeLeft()
 
         // Pairing view should NOT be shown
         let pairingTitle = app.staticTexts["Watch koppeln"]

@@ -52,8 +52,8 @@ development_status:
   epic-2: in-progress
   w2-1-pairing-code-backend-web-frontend: done
   w2-2-watch-pairing-flow-organizer-zone-navigation: review
-  w2-3-event-join-schedule-sync: ready-for-dev
-  w2-4-speaker-arrival-tracking: ready-for-dev
+  w2-3-event-join-schedule-sync: review
+  w2-4-speaker-arrival-tracking: in-progress
   epic-2-retrospective: optional
 
   # Epic 3: Live Countdown & Haptic Awareness

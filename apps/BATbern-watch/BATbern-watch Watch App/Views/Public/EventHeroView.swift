@@ -101,9 +101,10 @@ struct EventHeroView: View {
                             .font(.caption2)
 
                         // Time range: only show in SPEAKERS and AGENDA phases (AC#1, AC#2, AC#3)
-                        if event.currentPublishedPhase == "SPEAKERS" || event.currentPublishedPhase == "AGENDA" {
+                        if event.currentPublishedPhase == "SPEAKERS" || event.currentPublishedPhase == "AGENDA",
+                           let firstStart = event.sessions.compactMap({ $0.startTime }).min() {
                             Text("·")
-                            Text(SwissDateFormatter.formatTimeString(event.typicalStartTime))
+                            Text(SwissDateFormatter.formatEventTime(firstStart))
                                 .font(.caption2)
                         }
                     }

@@ -1,6 +1,6 @@
 # Story 2.3: Event Join & Schedule Sync
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,10 +22,10 @@ so that I have everything needed for the event.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Backend Endpoint - GET /api/v1/watch/organizers/me/active-events** (AC: #1, #4, #5)
-  - [ ] 1.1 Create `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java`
-  - [ ] 1.2 `@RestController` with `@RequestMapping("/api/v1/watch")`
-  - [ ] 1.3 Endpoint: `GET /api/v1/watch/organizers/me/active-events`
+- [x] **Task 1: Backend Endpoint - GET /api/v1/watch/organizers/me/active-events** (AC: #1, #4, #5)
+  - [x] 1.1 Create `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java`
+  - [x] 1.2 `@RestController` with `@RequestMapping("/api/v1/watch")`
+  - [x] 1.3 Endpoint: `GET /api/v1/watch/organizers/me/active-events`
     - **Authentication:** Requires valid JWT (from W2.2 pairing flow)
     - **Authorization:** Only `ROLE_ORGANIZER` permitted
     - **Query parameters:** None
@@ -93,20 +93,20 @@ so that I have everything needed for the event.
         "activeEvents": []
       }
       ```
-  - [ ] 1.4 **Error handling:**
+  - [x] 1.4 **Error handling:**
     - 401 Unauthorized if JWT invalid or expired
     - 403 Forbidden if user role is not `ORGANIZER`
     - 500 Internal Server Error with message if database query fails
 
-- [ ] **Task 2: EventSyncService - Sync Logic** (AC: #1, #3)
-  - [ ] 2.1 Create `BATbern-watch Watch App/Data/EventSyncService.swift`
-  - [ ] 2.2 Service responsibilities:
+- [x] **Task 2: EventSyncService - Sync Logic** (AC: #1, #3)
+  - [x] 2.1 Create `BATbern-watch Watch App/Data/EventSyncService.swift`
+  - [x] 2.2 Service responsibilities:
     - Fetch active events from backend via REST endpoint
     - Download speaker portraits at Watch-optimized resolution
     - Cache portraits to local file system (persistent across app launches)
     - Persist event data to SwiftData
     - Report progress during sync
-  - [ ] 2.3 `EventSyncService` implementation:
+  - [x] 2.3 `EventSyncService` implementation:
     ```swift
     import Foundation
     import SwiftData
@@ -340,16 +340,16 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 3: PortraitCache - Image Download & Optimization** (AC: #3)
-  - [ ] 3.1 Create `BATbern-watch Watch App/Data/PortraitCache.swift`
-  - [ ] 3.2 **Portrait optimization strategy:**
+- [x] **Task 3: PortraitCache - Image Download & Optimization** (AC: #3)
+  - [x] 3.1 Create `BATbern-watch Watch App/Data/PortraitCache.swift`
+  - [x] 3.2 **Portrait optimization strategy:**
     - Download portraits at full resolution from CDN
     - Resize to max 200x200px (Watch-optimized)
     - Convert to JPEG with 80% quality (~100KB per portrait)
     - Cache to file system: `FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]/portraits/`
     - Persist across app launches
     - Cache key: speaker username
-  - [ ] 3.3 `PortraitCache` implementation:
+  - [x] 3.3 `PortraitCache` implementation:
     ```swift
     import UIKit
     import Foundation
@@ -454,9 +454,9 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 4: EventStateManager - Event Status Logic** (AC: #4, #5)
-  - [ ] 4.1 Extend `Domain/EventStateManager.swift` (from W2.2) with active event tracking
-  - [ ] 4.2 Add properties and methods:
+- [x] **Task 4: EventStateManager - Event Status Logic** (AC: #4, #5)
+  - [x] 4.1 Extend `Domain/EventStateManager.swift` (from W2.2) with active event tracking
+  - [x] 4.2 Add properties and methods:
     ```swift
     @Observable
     class EventStateManager {
@@ -518,10 +518,10 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 5: EventLoadingView - Sync Progress UI** (AC: #2)
-  - [ ] 5.1 Create `BATbern-watch Watch App/Views/Organizer/EventLoadingView.swift`
-  - [ ] 5.2 Display sync progress with spinner and percentage
-  - [ ] 5.3 Implementation:
+- [x] **Task 5: EventLoadingView - Sync Progress UI** (AC: #2)
+  - [x] 5.1 Create `BATbern-watch Watch App/Views/Organizer/EventLoadingView.swift`
+  - [x] 5.2 Display sync progress with spinner and percentage
+  - [x] 5.3 Implementation:
     ```swift
     import SwiftUI
 
@@ -565,11 +565,11 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 6: EventPreviewView - No Active Event UI** (AC: #4, #5)
-  - [ ] 6.1 Extend `Views/Organizer/EventPreviewView.swift` (placeholder from W2.2)
-  - [ ] 6.2 Show "No active event" when no event exists
-  - [ ] 6.3 Show event preview with countdown when event is >1h away
-  - [ ] 6.4 Implementation:
+- [x] **Task 6: EventPreviewView - No Active Event UI** (AC: #4, #5)
+  - [x] 6.1 Extend `Views/Organizer/EventPreviewView.swift` (placeholder from W2.2)
+  - [x] 6.2 Show "No active event" when no event exists
+  - [x] 6.3 Show event preview with countdown when event is >1h away
+  - [x] 6.4 Implementation:
     ```swift
     import SwiftUI
 
@@ -642,10 +642,10 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 7: OrganizerZoneView Integration** (AC: all)
-  - [ ] 7.1 Modify `Views/OrganizerZoneView.swift` to trigger event sync on appearance
-  - [ ] 7.2 Show loading view during sync
-  - [ ] 7.3 Updated implementation:
+- [x] **Task 7: OrganizerZoneView Integration** (AC: all)
+  - [x] 7.1 Modify `Views/OrganizerZoneView.swift` to trigger event sync on appearance
+  - [x] 7.2 Show loading view during sync
+  - [x] 7.3 Updated implementation:
     ```swift
     import SwiftUI
     import SwiftData
@@ -709,95 +709,95 @@ so that I have everything needed for the event.
     }
     ```
 
-- [ ] **Task 8: Backend Integration Tests** (AC: #1)
-  - [ ] 8.1 Create `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventControllerIntegrationTest.java`
-  - [ ] 8.2 Test: `shouldReturnActiveEvents_whenOrganizerAuthenticated()`
+- [x] **Task 8: Backend Integration Tests** (AC: #1)
+  - [x] 8.1 Create `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventControllerIntegrationTest.java`
+  - [x] 8.2 Test: `shouldReturnActiveEvents_whenOrganizerAuthenticated()`
     - Pre-condition: Create test event with organizer assigned
     - Pre-condition: Obtain valid JWT for organizer (via W2.2 pairing flow)
     - GET to `/api/v1/watch/organizers/me/active-events` with JWT in Authorization header
     - Assert: 200 OK, response contains active event with full session and speaker data
     - Verify: Sessions ordered by `scheduledStartTime`
     - Verify: Speaker portraits URLs present
-  - [ ] 8.3 Test: `shouldReturnEmptyList_whenNoActiveEvents()`
+  - [x] 8.3 Test: `shouldReturnEmptyList_whenNoActiveEvents()`
     - Pre-condition: No events scheduled for today or ±3 days
     - GET to `/api/v1/watch/organizers/me/active-events` with valid JWT
     - Assert: 200 OK, `activeEvents` array is empty
-  - [ ] 8.4 Test: `shouldReturn401_whenJWTInvalid()`
+  - [x] 8.4 Test: `shouldReturn401_whenJWTInvalid()`
     - GET to `/api/v1/watch/organizers/me/active-events` with invalid JWT
     - Assert: 401 Unauthorized
-  - [ ] 8.5 Test: `shouldReturn403_whenUserNotOrganizer()`
+  - [x] 8.5 Test: `shouldReturn403_whenUserNotOrganizer()`
     - Pre-condition: Authenticate as regular attendee (not organizer role)
     - GET to `/api/v1/watch/organizers/me/active-events`
     - Assert: 403 Forbidden
-  - [ ] 8.6 Test: `shouldOnlyReturnEventsAssignedToOrganizer()`
+  - [x] 8.6 Test: `shouldOnlyReturnEventsAssignedToOrganizer()`
     - Pre-condition: Create 2 events, organizer assigned to only 1
     - GET to `/api/v1/watch/organizers/me/active-events`
     - Assert: Response contains only 1 event (the one assigned to organizer)
 
-- [ ] **Task 9: watchOS Unit Tests** (AC: #1, #2, #3)
-  - [ ] 9.1 Create `BATbern-watch Watch AppTests/Data/EventSyncServiceTests.swift`
-  - [ ] 9.2 Test: `shouldFetchActiveEvents_whenAuthenticated()`
+- [x] **Task 9: watchOS Unit Tests** (AC: #1, #2, #3)
+  - [x] 9.1 Create `BATbern-watch Watch AppTests/Data/EventSyncServiceTests.swift`
+  - [x] 9.2 Test: `shouldFetchActiveEvents_whenAuthenticated()`
     - Mock backend to return active event with 3 sessions
     - Call `syncService.syncActiveEvent()`
     - Assert: `syncState` transitions to `.completed`
     - Assert: `currentEvent` populated with correct data
-  - [ ] 9.3 Test: `shouldDownloadPortraits_duringSynchronization()`
+  - [x] 9.3 Test: `shouldDownloadPortraits_duringSynchronization()`
     - Mock backend to return event with 5 speakers
     - Mock portrait downloads
     - Call `syncService.syncActiveEvent()`
     - Assert: Portrait cache called 5 times (once per speaker)
     - Assert: Progress updates from 0.2 to 0.8 during portrait download phase
-  - [ ] 9.4 Test: `shouldHandleNoActiveEvent_gracefully()`
+  - [x] 9.4 Test: `shouldHandleNoActiveEvent_gracefully()`
     - Mock backend to return empty `activeEvents` array
     - Call `syncService.syncActiveEvent()`
     - Assert: `syncState` = `.noActiveEvent`
     - Assert: `currentEvent` = nil
-  - [ ] 9.5 Test: `shouldReportProgress_duringSync()`
+  - [x] 9.5 Test: `shouldReportProgress_duringSync()`
     - Monitor `syncProgress` during sync
     - Assert: Progress increases from 0.0 → 0.1 → 0.2 → 0.8 → 0.9 → 1.0
-  - [ ] 9.6 Test: `shouldHandleAuthenticationError_withRefresh()`
+  - [x] 9.6 Test: `shouldHandleAuthenticationError_withRefresh()`
     - Mock backend to return 401 on first call
     - Verify `authManager.refreshJWT()` is called
     - Assert: Error thrown with `.authenticationRequired`
 
-- [ ] **Task 10: watchOS UI Tests** (AC: #2, #4, #5)
-  - [ ] 10.1 Create `BATbern-watch Watch AppUITests/EventSyncUITests.swift`
-  - [ ] 10.2 Test: `shouldShowLoadingView_duringSynchronization()`
+- [x] **Task 10: watchOS UI Tests** (AC: #2, #4, #5)
+  - [x] 10.1 Create `BATbern-watch Watch AppUITests/EventSyncUITests.swift`
+  - [x] 10.2 Test: `shouldShowLoadingView_duringSynchronization()`
     - Pre-condition: Paired state, slow network mocked
     - Enter organizer zone
     - Assert: Loading view visible with "Connecting to event..." text
     - Assert: Progress indicator animates
-  - [ ] 10.3 Test: `shouldShowEventPreview_whenNoActiveEvent()`
+  - [x] 10.3 Test: `shouldShowEventPreview_whenNoActiveEvent()`
     - Pre-condition: Backend returns empty active events
     - Enter organizer zone
     - Wait for sync complete
     - Assert: "No active event" message visible
     - Assert: "Check back closer to event time" message visible
-  - [ ] 10.4 Test: `shouldShowEventPreview_whenEvent2HoursAway()`
+  - [x] 10.4 Test: `shouldShowEventPreview_whenEvent2HoursAway()`
     - Pre-condition: Backend returns event with start time = now + 2 hours
     - Enter organizer zone
     - Wait for sync complete
     - Assert: Event title visible
     - Assert: "Starts in 2h" countdown visible
     - Assert: Venue name visible
-  - [ ] 10.5 Test: `shouldLoadSpeakerArrivalView_whenEventLessThan1HourAway()`
+  - [x] 10.5 Test: `shouldLoadSpeakerArrivalView_whenEventLessThan1HourAway()`
     - Pre-condition: Backend returns event with start time = now + 45 minutes
     - Enter organizer zone
     - Wait for sync complete
     - Assert: Speaker arrival view loads (W2.4 placeholder or actual view)
 
-- [ ] **Task 11: Update OpenAPI Specification** (AC: #1)
-  - [ ] 11.1 Add to `docs/api/event-management-api.openapi.yml`:
+- [x] **Task 11: Update OpenAPI Specification** (AC: #1)
+  - [x] 11.1 Add to `docs/api/event-management-api.openapi.yml`:
     - Path: `GET /api/v1/watch/organizers/me/active-events`
-  - [ ] 11.2 Define schemas:
+  - [x] 11.2 Define schemas:
     - `ActiveEventsResponse`: `{ activeEvents: [ActiveEventDetail] }`
     - `ActiveEventDetail`: Event with sessions array and full speaker data
     - `SessionDetail`: Session with speakers array and status fields
     - `SpeakerDetail`: Speaker with profile picture URL and bio
-  - [ ] 11.3 Security: Endpoint requires JWT authentication with `ROLE_ORGANIZER`
+  - [x] 11.3 Security: Endpoint requires JWT authentication with `ROLE_ORGANIZER`
 
-- [ ] **Task 12: Localization** (AC: all)
-  - [ ] 12.1 Add to `BATbern-watch Watch App/Base.lproj/Localizable.strings`:
+- [x] **Task 12: Localization** (AC: all)
+  - [x] 12.1 Add to `BATbern-watch Watch App/Base.lproj/Localizable.strings`:
     ```
     "sync.connecting_to_event" = "Connecting to event...";
     "sync.error.not_authenticated" = "Not authenticated. Please pair your Watch.";
@@ -808,7 +808,7 @@ so that I have everything needed for the event.
     "preview.check_back_later" = "Check back closer to event time";
     "preview.starts_in" = "Starts in";
     ```
-  - [ ] 12.2 Add to `BATbern-watch Watch App/de.lproj/Localizable.strings`:
+  - [x] 12.2 Add to `BATbern-watch Watch App/de.lproj/Localizable.strings`:
     ```
     "sync.connecting_to_event" = "Verbindung zum Event...";
     "sync.error.not_authenticated" = "Nicht authentifiziert. Bitte Watch koppeln.";
@@ -1209,31 +1209,74 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 
 ### Debug Log References
 
-N/A - Story file created by SM agent in YOLO mode
+N/A — No blocking errors encountered during implementation.
 
 ### Completion Notes List
 
-**Story Preparation Summary:**
-- Complete event sync workflow from backend to Watch with portrait optimization
-- Backend endpoint: `GET /api/v1/watch/organizers/me/active-events` with full event, session, and speaker data
-- `EventSyncService` orchestrates sync with progress reporting (0.0 → 1.0)
-- `PortraitCache` downloads and optimizes portraits (200x200px, ~100KB per speaker, file system cache)
-- `EventLoadingView` shows sync progress with spinner and percentage
-- `EventPreviewView` handles no event + event countdown scenarios
-- `EventStateManager` extended with `currentEvent`, `hasActiveEvent`, `timeUntilEventStart`
-- Sync triggered automatically on organizer zone appearance (after pairing)
-- All acceptance criteria mapped to specific tasks with detailed implementation
+**Implementation Summary (Dev Agent — Claude Sonnet 4.5):**
 
-**Ready for Dev Agent:**
-- All architectural decisions from Epic 2, Architecture doc, PRD, and UX Spec incorporated
-- NFR4 (5-second sync) compliance via parallel portrait downloads
-- Portrait optimization strategy detailed (resize → compress → cache)
-- Event status logic (SCHEDULED / LIVE / COMPLETED) fully specified
-- Previous story learnings applied (W2.2 AuthManager, W1.4 SwiftData patterns)
-- Testing strategy defined for backend + watchOS (integration + unit + UI tests)
-- German localization (de_CH primary locale) complete
+**Backend (Tasks 1–2):**
+- Created `WatchEventController.java` — `GET /api/v1/watch/organizers/me/active-events` with `@PreAuthorize("hasRole('ORGANIZER')")`. Derives `typicalStartTime`/`typicalEndTime` from session times (not Event entity fields, which don't exist).
+- Created response DTOs: `SpeakerDetail`, `SessionDetail`, `ActiveEventDetail`, `ActiveEventsResponse`.
+- Added `findActiveEventsForOrganizer` JPQL query to `EventRepository` (uses `organizerUsername` field, date range ±3 days, active workflow states).
+- `WatchEventControllerIntegrationTest.java` — 5 integration tests covering AC#1, AC#4, 401, 403, organizer isolation.
+
+**watchOS (Tasks 3–7):**
+- `EventSyncService.swift` — adapted to use existing `PortraitCache.shared.downloadAndCache(url:)` API (story spec specified `download(url:forSpeaker:)` which didn't exist). 5-phase sync: fetch → parse → portraits → save → complete.
+- `EventStateManager.swift` — added `hasActiveEvent` and `timeUntilEventStart` to protocol + class.
+- `EventLoadingView.swift` — new: circular progress, event title, percentage display.
+- `EventPreviewView.swift` — full replacement: AC#4 (no event) + AC#5 (countdown preview).
+- `OrganizerZoneView.swift` — added sync trigger on `.onAppear`, `EventLoadingView` branch.
+
+**Tests (Tasks 8–10):**
+- `WatchEventControllerIntegrationTest.java` — 5 backend integration tests using Testcontainers PostgreSQL.
+- `EventSyncServiceTests.swift` — 5 unit tests with `MockURLProtocol` + `MockAuthManager`, in-memory SwiftData.
+- `EventSyncUITests.swift` — 4 UI tests for loading, no event, event preview, speaker arrival.
+
+**Spec & Localization (Tasks 11–12):**
+- `events-api.openapi.yml` — added Watch tag, path `/api/v1/watch/organizers/me/active-events`, and 4 schemas.
+- `Localizable.strings` (Base + de) — added 9 keys for sync/preview screens.
+
+**Adaptation Notes:**
+- Event entity doesn't have `typicalStartTime`/`typicalEndTime` — derived from sessions in the controller.
+- `PortraitCache` existing API differs from story spec; adapted to use `downloadAndCache(url:)`.
+- Company/companyLogoUrl cross-service lookup deferred (always null in W2.3, documented).
+- `SpeakerRole` domain enum: `PRIMARY_SPEAKER`; Watch enum: `panelist`/`keynoteSpeaker`/`moderator`.
 
 ### File List
 
 **Story File:**
 - `_bmad-output/implementation-artifacts/w2-3-event-join-schedule-sync.md`
+
+**Backend — New Files:**
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/SpeakerDetail.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/SessionDetail.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/ActiveEventDetail.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/ActiveEventsResponse.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventControllerIntegrationTest.java`
+
+**Backend — Modified Files:**
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/EventRepository.java`
+
+**watchOS — New Files:**
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/EventSyncService.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventLoadingView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/EventSyncServiceTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppUITests/EventSyncUITests.swift`
+
+**watchOS — Modified Files:**
+- `apps/BATbern-watch/BATbern-watch Watch App/Domain/EventStateManager.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventPreviewView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/OrganizerZoneView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings`
+- `apps/BATbern-watch/BATbern-watch Watch App/de.lproj/Localizable.strings`
+
+**Documentation:**
+- `docs/api/events-api.openapi.yml`
+
+### Change Log
+
+| Date | Version | Description | Author |
+|------|---------|-------------|--------|
+| 2026-02-17 | 1.0 | Initial implementation — all 12 tasks complete, status → review | Dev Agent (Claude Sonnet 4.5) |

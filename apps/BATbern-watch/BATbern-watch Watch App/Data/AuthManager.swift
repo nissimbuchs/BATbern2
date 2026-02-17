@@ -56,13 +56,29 @@ final class AuthManager: AuthManagerProtocol {
         self.authService = authService
         self.clock = clock
 
+        // TESTING_MODE: override auth state from launch environment (UI tests only)
+        if ProcessInfo.processInfo.environment["TESTING_MODE"] == "1" {
+            if ProcessInfo.processInfo.environment["AUTH_STATE"] == "paired" {
+                isPaired = true
+                currentJWT = "ui-test-jwt"
+            }
+            return  // Skip Keychain loading in test mode
+        }
+
         // Load pairing token from Keychain on init (AC4: persistent pairing)
         if let token = loadPairingTokenFromKeychain() {
             isPaired = true
             // Fetch fresh JWT using saved pairing token (non-blocking)
             Task {
-                try? await self.refreshJWT()
+                do {
+                    try await self.refreshJWT()
+                    print("✅ AuthManager: JWT refreshed on init")
+                } catch {
+                    print("⚠️ AuthManager: refreshJWT failed on init: \(error)")
+                }
             }
+        } else {
+            print("ℹ️ AuthManager: no pairing token in Keychain")
         }
     }
 
@@ -70,6 +86,14 @@ final class AuthManager: AuthManagerProtocol {
 
     /// AC2: Exchange 6-digit code for pairing token + JWT.
     func pair(code: String) async throws {
+        // TESTING_MODE: simulate pair responses without hitting the network
+        if ProcessInfo.processInfo.environment["TESTING_MODE"] == "1" {
+            if ProcessInfo.processInfo.environment["MOCK_PAIR_RESPONSE"] == "invalid_code" {
+                throw NSError(domain: "MockPairError", code: 400,
+                              userInfo: [NSLocalizedDescriptionKey: "Invalid pairing code"])
+            }
+        }
+
         let result = try await authService.pair(code: code)
 
         // Save pairing token to Keychain (NFR15)

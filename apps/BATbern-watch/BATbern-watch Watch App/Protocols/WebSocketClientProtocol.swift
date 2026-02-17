@@ -16,6 +16,10 @@ protocol WebSocketClientProtocol: AnyObject {
 
     /// Subscribe to state updates. Returns an AsyncStream of state messages.
     func stateUpdates() -> AsyncStream<EventStateMessage>
+
+    /// Subscribe to speaker arrival updates via `/topic/events/{eventCode}/arrivals`.
+    /// Separate from stateUpdates() — lightweight arrival-only broadcasts (W2.4, FR39).
+    func arrivalUpdates() -> AsyncStream<SpeakerArrivalMessage>
 }
 
 /// Actions sent from Watch to server via STOMP.
@@ -35,11 +39,26 @@ struct EventStateMessage: Sendable {
     let timestamp: Date
 }
 
+/// Session state message types. Speaker arrivals are handled exclusively
+/// via the dedicated `arrivalUpdates()` stream — NOT via this enum (W2.4, Task 1.6).
 enum EventStateMessageType: String, Sendable {
     case sessionStarted = "SESSION_STARTED"
     case sessionEnded = "SESSION_ENDED"
     case sessionExtended = "SESSION_EXTENDED"
     case sessionSkipped = "SESSION_SKIPPED"
-    case speakerArrived = "SPEAKER_ARRIVED"
     case heartbeat = "HEARTBEAT"
+}
+
+/// Speaker arrival broadcast received via `/topic/events/{eventCode}/arrivals`.
+/// Carries both the individual arrival and server-authoritative counts (FR39).
+struct SpeakerArrivalMessage: Sendable {
+    let speakerUsername: String
+    let speakerFirstName: String
+    let speakerLastName: String
+    let confirmedBy: String
+    let arrivedAt: Date
+    /// Server-authoritative total arrived count (use for counter display — do NOT recompute locally).
+    let arrivedCount: Int
+    /// Server-authoritative total speaker count for tonight.
+    let totalCount: Int
 }

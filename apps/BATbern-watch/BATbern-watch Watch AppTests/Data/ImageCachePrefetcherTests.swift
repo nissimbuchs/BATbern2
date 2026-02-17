@@ -11,18 +11,32 @@ import Foundation
 
 // MARK: - Testable PortraitCache subclass
 
-/// Spy that records download calls without hitting the network
+/// Spy that records download calls without hitting the network.
+/// Uses in-memory storage to avoid file system pollution between test runs.
 final class SpyPortraitCache: PortraitCache {
     var downloadedURLs: [URL] = []
     var savedLogos: [String: Data] = [:]
     private(set) var simulatedSizeBytes: Int64 = 0
+
+    // In-memory set so isCached() doesn't read leftover files from prior tests
+    private var inMemoryCachedURLs: Set<String> = []
 
     func simulateCacheSize(_ bytes: Int64) {
         simulatedSizeBytes = bytes
     }
 
     override func cacheSize() -> Int64 {
-        return simulatedSizeBytes > 0 ? simulatedSizeBytes : super.cacheSize()
+        return simulatedSizeBytes > 0 ? simulatedSizeBytes : 0
+    }
+
+    /// Check against in-memory set, not the file system
+    override func isCached(url: URL) -> Bool {
+        inMemoryCachedURLs.contains(url.absoluteString)
+    }
+
+    /// Record in-memory only — no disk writes so tests stay isolated
+    override func savePortrait(url: URL, data: Data) {
+        inMemoryCachedURLs.insert(url.absoluteString)
     }
 
     override func downloadAndCache(url: URL) async throws -> Data {
@@ -34,7 +48,6 @@ final class SpyPortraitCache: PortraitCache {
 
     override func saveLogo(companyName: String, data: Data) {
         savedLogos[companyName.lowercased().trimmingCharacters(in: .whitespaces)] = data
-        super.saveLogo(companyName: companyName, data: data)
     }
 }
 
