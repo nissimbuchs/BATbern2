@@ -127,6 +127,28 @@ final class LiveCountdownViewModel {
         progress = calculateProgress()
         speakerNames = discovered?.speakers.map { $0.fullName }.joined(separator: ", ") ?? ""
         sessionTitle = discovered?.title ?? ""
+
+        // W3.3: Write snapshot to App Group store so complication extension can read it
+        ComplicationDataStore.write(ComplicationSnapshot(
+            sessionTitle: discovered?.title,
+            speakerNames: formattedSpeakerNames,
+            scheduledEndTime: discovered?.endTime,
+            sessionDuration: discovered?.duration,
+            scheduledStartTime: discovered?.startTime,
+            isLive: discovered != nil,
+            urgencyLevel: engine.urgencyLevel.rawValue,
+            updatedAt: clock.now
+        ))
+    }
+
+    // MARK: - Complication Speaker Names (W3.3)
+
+    /// Last names only, max 2 speakers — fits the narrow C2 rectangular complication.
+    /// "Meier" (single) or "Meier, Müller" (two speakers).
+    var formattedSpeakerNames: String {
+        guard let session = activeSession, !session.speakers.isEmpty else { return "" }
+        let lastNames = session.speakers.map { $0.lastName }
+        return lastNames.prefix(2).joined(separator: ", ")
     }
 
     // MARK: - Session Discovery (1.8, 1.9)

@@ -10,6 +10,11 @@
 import SwiftData
 import SwiftUI
 
+// W3.3 AC4: Notification fired by BATbernWatchApp.onOpenURL when complication is tapped
+extension Notification.Name {
+    static let openOrganizerZone = Notification.Name("ch.batbern.watch.openOrganizerZone")
+}
+
 enum Zone {
     case publicZone
     case organizer
@@ -34,6 +39,10 @@ struct ContentView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))  // Horizontal paging, no dots
         .onAppear {
             selectedZone = .publicZone  // Always launch in Public Zone
+        }
+        // W3.3 AC4: Switch to organizer zone when complication is tapped
+        .onReceive(NotificationCenter.default.publisher(for: .openOrganizerZone)) { _ in
+            selectedZone = .organizer
         }
     }
 }

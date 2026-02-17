@@ -36,5 +36,13 @@
         <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
+    <!-- W3.3 AC4: URL scheme for complication deep link → batbern-watch://organizer/live -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array><string>batbern-watch</string></array>
+        </dict>
+    </array>
 </dict>
 </plist>

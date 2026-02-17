@@ -62,6 +62,14 @@ struct BATbernWatchApp: App {
                 .environment(authManager)
                 .environment(eventStateManager)
                 .environment(arrivalTracker)
+                // W3.3 AC4: Complication tap opens O3 (LiveCountdownView)
+                .onOpenURL { url in
+                    if url.scheme == "batbern-watch",
+                       url.host == "organizer",
+                       url.path == "/live" {
+                        NotificationCenter.default.post(name: .openOrganizerZone, object: nil)
+                    }
+                }
         }
         .modelContainer(modelContainer)
     }

@@ -1,6 +1,6 @@
 # Story W3.3: Watch Face Complications
 
-Status: ready-for-dev
+Status: in-progress — Tasks 2-5 complete; Task 1 (Xcode Widget Extension target) requires manual Xcode setup
 
 ## Story
 
@@ -11,9 +11,9 @@ so that the complication is my primary interface during events.
 ## Acceptance Criteria
 
 1. **AC1 — Three Complication Types**: Given I'm on my Watch face with BATbern complications installed, When a session is active, Then:
-   - **C1 (`.accessoryCircular`)**: shows a circular progress ring with remaining minutes as a number in the center
-   - **C2 (`.accessoryRectangular`)**: shows speaker name (top), countdown MM:SS (middle bold), progress bar (bottom)
-   - **C3 (`.accessoryCorner`)**: shows countdown digits only (MM:SS), no other content
+   - **C1 (`.accessoryCircular`)**: shows a circular progress ring with remaining minutes as a number in the center (e.g., "24"); during overtime shows `+N` overrun minutes (e.g., "+4") with a full red ring
+   - **C2 (`.accessoryRectangular`)**: shows speaker name (top, gray), countdown MM:SS (middle bold, urgency-colored); during overtime shows `+MM:SS` in red with a full red bar; progress bar (bottom)
+   - **C3 (`.accessoryCorner`)**: shows remaining minutes as a single number only (e.g., "24" or "+4" when overtime), no other content — minutes-only matches the limited space of `.accessoryCorner` per UX design
 
 2. **AC2 — Sub-Second Update**: Given the complication is active, When the session countdown changes (each minute boundary, or on session state change), Then the complication updates within 1 second (NFR1) via `WidgetCenter.shared.reloadAllTimelines()`.
 
@@ -25,7 +25,7 @@ so that the complication is my primary interface during events.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add Widget Extension Target in Xcode** (AC: 1, 2, 3, 4)
+- [ ] **Task 1: Add Widget Extension Target in Xcode** (AC: 1, 2, 3, 4) ⚠️ MANUAL XCODE STEP — cannot be automated
   - [ ] 1.1 Open `apps/BATbern-watch/BATbern-watch.xcodeproj` in Xcode
   - [ ] 1.2 File → New → Target → Widget Extension (watchOS)
   - [ ] 1.3 Product Name: `BATbern-watch Complications`
@@ -34,12 +34,16 @@ so that the complication is my primary interface during events.
   - [ ] 1.6 Add **App Group** capability to BOTH targets:
     - `BATbern-watch Watch App`: Signing & Capabilities → + → App Groups → `group.ch.batbern.watch`
     - `BATbern-watch Complications`: same group `group.ch.batbern.watch`
-  - [ ] 1.7 Verify the `.appex` bundle is embedded in the Watch app's build phases
-  - [ ] 1.8 Set `WATCHOS_DEPLOYMENT_TARGET = 11.0` in Widget Extension target settings
+  - [ ] 1.7 Add BOTH shared files to BOTH target memberships (they must compile in both):
+    - `BATbern-watch Watch App/Data/ComplicationDataStore.swift`
+    - `BATbern-watch Watch App/Data/ComplicationEntry.swift`
+  - [ ] 1.8 Add all other `BATbern-watch Complications/*.swift` files to the extension target only
+  - [ ] 1.9 Verify the `.appex` bundle is embedded in the Watch app's build phases
+  - [ ] 1.10 Set `WATCHOS_DEPLOYMENT_TARGET = 11.0` in Widget Extension target settings
 
-- [ ] **Task 2: Shared Data Layer (App Group Store)** (AC: 1, 2, 5)
-  - [ ] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift`
-  - [ ] 2.2 `struct ComplicationSnapshot: Codable` — data the complication reads:
+- [x] **Task 2: Shared Data Layer (App Group Store)** (AC: 1, 2, 5)
+  - [x] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift`
+  - [x] 2.2 `struct ComplicationSnapshot: Codable` — data the complication reads:
     ```swift
     struct ComplicationSnapshot: Codable {
         let sessionTitle: String?
@@ -52,7 +56,7 @@ so that the complication is my primary interface during events.
         let updatedAt: Date
     }
     ```
-  - [ ] 2.3 `enum ComplicationDataStore` with static read/write:
+  - [x] 2.3 `enum ComplicationDataStore` with static read/write:
     ```swift
     enum ComplicationDataStore {
         static let appGroupID = "group.ch.batbern.watch"
@@ -75,8 +79,8 @@ so that the complication is my primary interface during events.
         }
     }
     ```
-  - [ ] 2.4 Add `import WidgetKit` to `ComplicationDataStore.swift` (needed for `WidgetCenter`)
-  - [ ] 2.5 In `LiveCountdownViewModel.refreshState()` (from W3.1), after updating timer state, call:
+  - [x] 2.4 Add `import WidgetKit` to `ComplicationDataStore.swift` (needed for `WidgetCenter`)
+  - [x] 2.5 In `LiveCountdownViewModel.refreshState()` (from W3.1), after updating timer state, call:
     ```swift
     ComplicationDataStore.write(ComplicationSnapshot(
         sessionTitle: activeSession?.title,
@@ -90,8 +94,8 @@ so that the complication is my primary interface during events.
     ))
     ```
 
-- [ ] **Task 3: Complication Types in Widget Extension** (AC: 1, 3, 4, 5)
-  - [ ] 3.1 Create `apps/BATbern-watch/BATbern-watch Complications/BATbernComplicationsBundle.swift`:
+- [x] **Task 3: Complication Types in Widget Extension** (AC: 1, 3, 4, 5)
+  - [x] 3.1 Create `apps/BATbern-watch/BATbern-watch Complications/BATbernComplicationsBundle.swift`:
     ```swift
     import WidgetKit
     import SwiftUI
@@ -105,17 +109,33 @@ so that the complication is my primary interface during events.
         }
     }
     ```
-  - [ ] 3.2 Create `ComplicationEntry.swift` — shared timeline entry:
+  - [x] 3.2 Create `ComplicationEntry.swift` — shared timeline entry:
     ```swift
     struct ComplicationEntry: TimelineEntry {
         let date: Date
         let snapshot: ComplicationSnapshot?
-        // Computed: remaining seconds at entry.date
+        // Computed: remaining seconds at entry.date (clamped to 0)
         var remainingSeconds: TimeInterval? {
             guard let end = snapshot?.scheduledEndTime else { return nil }
             return max(0, end.timeIntervalSince(date))
         }
+        // Computed: overtime seconds at entry.date (0 when not overtime)
+        var isOvertime: Bool {
+            guard let end = snapshot?.scheduledEndTime else { return false }
+            return date > end
+        }
+        var overtimeSeconds: TimeInterval {
+            guard let end = snapshot?.scheduledEndTime, date > end else { return 0 }
+            return date.timeIntervalSince(end)
+        }
+        // Formatted countdown: "MM:SS" normally, "+MM:SS" when overtime
         var formattedCountdown: String {
+            if isOvertime {
+                let over = Int(overtimeSeconds)
+                let mins = over / 60
+                let secs = over % 60
+                return String(format: "+%02d:%02d", mins, secs)
+            }
             guard let remaining = remainingSeconds else { return "--:--" }
             let mins = Int(remaining) / 60
             let secs = Int(remaining) % 60
@@ -130,9 +150,16 @@ so that the complication is my primary interface during events.
         var remainingMinutes: Int {
             Int((remainingSeconds ?? 0) / 60)
         }
+        // Display minutes for C1/C3: "24" normally, "+4" when overtime — per UX design
+        var displayMinutes: String {
+            if isOvertime {
+                return "+\(Int(overtimeSeconds) / 60)"
+            }
+            return "\(remainingMinutes)"
+        }
     }
     ```
-  - [ ] 3.3 Create `ComplicationProvider.swift` — `TimelineProvider`:
+  - [x] 3.3 Create `ComplicationProvider.swift` — `TimelineProvider`:
     ```swift
     struct ComplicationProvider: TimelineProvider {
         func placeholder(in context: Context) -> ComplicationEntry {
@@ -167,7 +194,7 @@ so that the complication is my primary interface during events.
         }
     }
     ```
-  - [ ] 3.4 Create `CircularComplication.swift` — C1 (`.accessoryCircular`):
+  - [x] 3.4 Create `CircularComplication.swift` — C1 (`.accessoryCircular`):
     ```swift
     struct CircularComplication: Widget {
         let kind = "BATbernCircular"
@@ -194,7 +221,7 @@ so that the complication is my primary interface during events.
                     ProgressView(value: entry.progress)
                         .progressViewStyle(.circular)
                         .tint(isLuminanceReduced ? .gray : urgencyColor)
-                    Text("\(entry.remainingMinutes)")
+                    Text(entry.displayMinutes)  // "+N" overtime, "N" normal — per UX design
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundStyle(isLuminanceReduced ? .gray : urgencyColor)
                 } else {
@@ -207,26 +234,26 @@ so that the complication is my primary interface during events.
 
         private var urgencyColor: Color {
             switch entry.snapshot?.urgencyLevel {
-            case "caution": return .yellow
-            case "warning", "critical": return .orange
-            case "overtime": return .red
-            default: return .teal
+            case "caution": return .yellow          // 2-5 min — UX "Warning" yellow
+            case "warning", "critical": return .orange  // 1-2 min / <1 min — UX "Urgent" orange
+            case "overtime": return .red            // UX "Time's Up/Overrun" red
+            default: return .green                  // >5 min — UX "On Track" green (#22c55e)
             }
         }
     }
     ```
-  - [ ] 3.5 Create `RectangularComplication.swift` — C2 (`.accessoryRectangular`):
+  - [x] 3.5 Create `RectangularComplication.swift` — C2 (`.accessoryRectangular`):
     - Top line: speaker name (`.caption`, truncated to 1 line)
     - Middle: countdown in MM:SS (`.title3` monospaced bold), colored by urgency
     - Bottom: `ProgressView(value: entry.progress)` linear bar
     - `.isLuminanceReduced` → gray tint, no color
-  - [ ] 3.6 Create `CornerComplication.swift` — C3 (`.accessoryCorner`):
-    - Single countdown text: MM:SS (`.title2` monospaced bold)
+  - [x] 3.6 Create `CornerComplication.swift` — C3 (`.accessoryCorner`):
+    - Single minutes number using `entry.displayMinutes` — "24" normally, "+4" when overtime (`.title2` monospaced bold)
     - `.isLuminanceReduced` → gray
-    - Note: `.accessoryCorner` has very limited space — digits only
+    - Note: `.accessoryCorner` has very limited space — minutes-only per UX design (not MM:SS)
 
-- [ ] **Task 4: Deep Link Handling (O3 on complication tap)** (AC: 4)
-  - [ ] 4.1 Register URL scheme `batbern-watch://` in `Info.plist` for the Watch app target:
+- [x] **Task 4: Deep Link Handling (O3 on complication tap)** (AC: 4)
+  - [x] 4.1 Register URL scheme `batbern-watch://` in `Info.plist` for the Watch app target:
     ```xml
     <key>CFBundleURLTypes</key>
     <array>
@@ -236,7 +263,7 @@ so that the complication is my primary interface during events.
         </dict>
     </array>
     ```
-  - [ ] 4.2 Handle deep link in `BATbernWatchApp.swift` body:
+  - [x] 4.2 Handle deep link in `BATbernWatchApp.swift` body:
     ```swift
     WindowGroup {
         ContentView()
@@ -249,18 +276,21 @@ so that the complication is my primary interface during events.
             }
     }
     ```
-  - [ ] 4.3 In `ContentView.swift`, listen for the notification and set `selectedZone = .organizer`
+  - [x] 4.3 In `ContentView.swift`, listen for the notification and set `selectedZone = .organizer`
 
-- [ ] **Task 5: Tests** (AC: 1, 2, 5)
-  - [ ] 5.1 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift`
-  - [ ] 5.2 Test: `write()` then `read()` returns same `ComplicationSnapshot` (round-trip encode/decode)
-  - [ ] 5.3 Test: `read()` returns nil when no data written
-  - [ ] 5.4 Test: `ComplicationEntry.formattedCountdown` returns `"25:00"` for 1500s remaining
-  - [ ] 5.5 Test: `ComplicationEntry.progress` returns `0.5` when halfway through session
-  - [ ] 5.6 Test: `ComplicationEntry.progress` clamps to `[0.0, 1.0]`
-  - [ ] 5.7 Test: `ComplicationProvider.getTimeline` generates 1-minute entries for a 45-min session (45 entries + overtime)
-  - [ ] 5.8 Test: when `isLive == false`, timeline policy is `.never` (no wasted wake-ups)
-  - [ ] 5.9 **Note:** WidgetKit views cannot be unit-tested with XCTest directly — visual verification only via Xcode Canvas previews and device testing
+- [x] **Task 5: Tests** (AC: 1, 2, 5)
+  - [x] 5.1 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift`
+  - [x] 5.2 Test: `write()` then `read()` returns same `ComplicationSnapshot` (round-trip encode/decode)
+  - [x] 5.3 Test: `read()` returns nil when no data written
+  - [x] 5.4 Test: `ComplicationEntry.formattedCountdown` returns `"25:00"` for 1500s remaining
+  - [x] 5.5 Test: `ComplicationEntry.progress` returns `0.5` when halfway through session
+  - [x] 5.6 Test: `ComplicationEntry.progress` clamps to `[0.0, 1.0]`
+  - [x] 5.7 Test: `ComplicationProvider.getTimeline` generates 1-minute entries for a 45-min session (45 entries + overtime)
+  - [x] 5.8 Test: when `isLive == false`, timeline policy is `.never` (no wasted wake-ups)
+  - [x] 5.9 Test: `ComplicationEntry.formattedCountdown` returns `"+04:12"` when 252s past end time
+  - [x] 5.10 Test: `ComplicationEntry.displayMinutes` returns `"+4"` when 252s past end time (UX: C1/C3 show minutes)
+  - [x] 5.11 Test: `ComplicationEntry.isOvertime` is `true` when `date > scheduledEndTime`
+  - [x] 5.12 **Note:** WidgetKit views cannot be unit-tested with XCTest directly — visual verification only via Xcode Canvas previews and device testing
 
 ## Dev Notes
 
@@ -390,10 +420,41 @@ apps/BATbern-watch/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+N/A — no integration tests (WidgetKit extension requires Xcode target setup, Task 1 is manual)
+
 ### Completion Notes List
 
+1. **Task 1 is manual (Xcode GUI)**: Widget Extension target must be created in Xcode before the Complications files can compile. All Swift source files are ready in `apps/BATbern-watch/BATbern-watch Complications/`. After creating the target, add `ComplicationDataStore.swift` to BOTH target memberships.
+
+2. **UX Design alignment (pre-implementation review)**:
+   - C3 corner changed from "MM:SS" to "minutes-only" to match `ux-design-directions.html` comp preview
+   - Normal urgency color changed from `.teal` to `.green` to match UX legend (`#22c55e`)
+   - Added `isOvertime` / `overtimeSeconds` / `displayMinutes` to `ComplicationEntry` so C1/C2 show `+N` / `+MM:SS` during overtime (matching UX overrun states)
+
+3. **SourceKit warnings in Complications/ folder**: All SourceKit "Cannot find X in scope" errors in the Complications/ files are expected — they resolve once the Widget Extension target exists in Xcode and the files are added to it. They are not real compile errors.
+
+4. **`ComplicationDataStore.write()` call site**: Added to `LiveCountdownViewModel.refreshState()` — called every second during a live session. `WidgetCenter.reloadAllTimelines()` is called inside `write()`, which is safe from `@MainActor` per Apple docs.
+
+5. **Speaker names**: `formattedSpeakerNames` (last names only, max 2) added to `LiveCountdownViewModel` for the narrow C2 complication. The existing `speakerNames` property (full names, all speakers) is kept for the O3 view.
+
 ### File List
+
+#### New Files Created
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift` ← main app + extension (multi-target)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationEntry.swift` ← main app + extension (multi-target)
+- `apps/BATbern-watch/BATbern-watch Complications/BATbernComplicationsBundle.swift` ← extension only
+- `apps/BATbern-watch/BATbern-watch Complications/ComplicationProvider.swift` ← extension only
+- `apps/BATbern-watch/BATbern-watch Complications/CircularComplication.swift`
+- `apps/BATbern-watch/BATbern-watch Complications/RectangularComplication.swift`
+- `apps/BATbern-watch/BATbern-watch Complications/CornerComplication.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift`
+
+#### Modified Files
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift` — added `formattedSpeakerNames`, `ComplicationDataStore.write()` in `refreshState()`
+- `apps/BATbern-watch/BATbern-watch Watch App/App/BATbernWatchApp.swift` — added `.onOpenURL` deep link handler
+- `apps/BATbern-watch/BATbern-watch Watch App/App/ContentView.swift` — added `Notification.Name.openOrganizerZone` extension, `.onReceive` handler
+- `apps/BATbern-watch/BATbern-watch Watch App/Info.plist` — added `CFBundleURLTypes` for `batbern-watch://` scheme
