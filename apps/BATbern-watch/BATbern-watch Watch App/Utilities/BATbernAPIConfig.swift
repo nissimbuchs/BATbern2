@@ -9,8 +9,20 @@
 import Foundation
 
 /// Shared API configuration for the BATbern Watch app.
-/// Change baseURL here when switching environments (staging → production).
+/// - Debug builds default to http://localhost:9000 (local API gateway, Watch Simulator)
+/// - Override at runtime: set BATBERN_API_BASE_URL in Xcode Scheme → Run → Environment Variables
+/// - Release builds always use staging URL
 enum BATbernAPIConfig {
-    // nonisolated(unsafe): immutable string constant — safe to access from any concurrency context
-    nonisolated(unsafe) static let baseURL = "https://api.staging.batbern.ch"
+    static let baseURL: String = {
+        // Runtime override: highest priority (useful for ngrok or IP-based testing)
+        if let envURL = ProcessInfo.processInfo.environment["BATBERN_API_BASE_URL"],
+           !envURL.isEmpty {
+            return envURL
+        }
+        #if DEBUG
+        return "http://localhost:8000"   // Watch Simulator → local API gateway
+        #else
+        return "https://api.staging.batbern.ch"
+        #endif
+    }()
 }

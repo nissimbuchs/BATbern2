@@ -55,9 +55,22 @@
 		D5FFD12A2F41E344003334DE /* BATbern-watch Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "BATbern-watch Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D512E89C2F445AE100A7A638 /* Exceptions for "BATbern-watch Watch App" folder in "BATbern-watch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D5FFD1102F41E343003334DE /* BATbern-watch Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D5FFD1152F41E343003334DE /* BATbern-watch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D512E89C2F445AE100A7A638 /* Exceptions for "BATbern-watch Watch App" folder in "BATbern-watch Watch App" target */,
+			);
 			path = "BATbern-watch Watch App";
 			sourceTree = "<group>";
 		};
@@ -460,7 +473,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "BATbern-watch Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "BATbern Companion";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -494,7 +508,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "BATbern-watch Watch App/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "BATbern Companion";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKWatchOnly = YES;
