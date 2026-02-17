@@ -12,67 +12,18 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-// MARK: - URLProtocol mock for intercepting URLSession requests
-
-final class MockURLProtocol: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
-
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-    override func startLoading() {
-        guard let handler = MockURLProtocol.requestHandler else {
-            client?.urlProtocol(self, didFailWithError: URLError(.badURL))
-            return
-        }
-        do {
-            let (response, data) = try handler(request)
-            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: data)
-            client?.urlProtocolDidFinishLoading(self)
-        } catch {
-            client?.urlProtocol(self, didFailWithError: error)
-        }
-    }
-
-    override func stopLoading() {}
-}
-
-// MARK: - Mock AuthManager
-
-@MainActor
-final class MockAuthManager: AuthManagerProtocol {
-    var isPaired: Bool = true
-    var currentJWT: String? = "mock.jwt.token"
-    var pairingToken: String? = "mock-pairing-token"
-    var organizerUsername: String? = "test.organizer"
-    var organizerFirstName: String? = "Test"
-
-    var refreshCallCount = 0
-    var shouldFailRefresh = false
-
-    func pair(code: String) async throws {}
-    func unpair() {}
-
-    func refreshJWT() async throws {
-        refreshCallCount += 1
-        if shouldFailRefresh {
-            throw URLError(.userAuthenticationRequired)
-        }
-    }
-}
-
 // MARK: - Mock PortraitCache
 
-final class MockPortraitCache: @unchecked Sendable {
+/// M2/M3 fix: Conforms to PortraitCacheable so it can be injected into EventSyncService.
+/// Replaces real network calls with in-memory stubs, making portrait download assertions reliable.
+final class MockPortraitCache: PortraitCacheable, @unchecked Sendable {
     var downloadCallCount = 0
     var downloadedURLs: [URL] = []
-    var shouldFail = false
 
-    func downloadAndCache(url: URL) async throws -> Data? {
+    @discardableResult
+    func downloadAndCache(url: URL) async throws -> Data {
         downloadCallCount += 1
         downloadedURLs.append(url)
-        if shouldFail { return nil }
         return Data()
     }
 }
@@ -209,12 +160,11 @@ struct EventSyncServiceTests {
 
     // MARK: - Progress reporting increments through phases
 
-    @Test("syncActiveEvent: progress advances from 0 to 1 during sync")
+    @Test("syncActiveEvent: progress starts at 0.0 and reaches 1.0 on completion")
     func test_syncActiveEvent_progressAdvances() async throws {
         // Given
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
-        var observedProgress: [Double] = []
         MockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
@@ -227,29 +177,29 @@ struct EventSyncServiceTests {
             session: makeSession()
         )
 
+        // Verify initial state before sync
+        #expect(service.syncProgress == 0.0, "Progress should start at 0.0")
+        #expect(service.syncState == .idle, "State should start idle")
+
         // When
         try await service.syncActiveEvent()
-        observedProgress.append(service.syncProgress)
 
         // Then: final progress should be 1.0
+        // NOTE (M4): Intermediate steps (0.1 → 0.2 → 0.8 → 0.9) require concurrent
+        // observation with withObservationTracking or AsyncStream — out of scope for this
+        // synchronous unit test. Verified via manual testing and E2E sync flow.
         #expect(service.syncProgress == 1.0, "Progress should reach 100% on completion")
+        #expect(service.syncState == .completed, "State should be completed at 100%")
     }
 
     // MARK: - Portrait download triggered for speakers with profilePictureUrl
 
-    @Test("syncActiveEvent: downloads portrait when profilePictureUrl is present")
+    @Test("syncActiveEvent: downloads portrait via MockPortraitCache when profilePictureUrl is present")
     func test_syncActiveEvent_downloadsPortraitForSpeaker() async throws {
-        // Given — a custom PortraitCache spy to count calls
-        var portraitDownloadCount = 0
-        MockURLProtocol.requestHandler = { request in
-            // Portrait URL returns 200 with empty data
-            if request.url?.absoluteString.contains("speaker.jpg") == true {
-                portraitDownloadCount += 1
-                let response = HTTPURLResponse(
-                    url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-                return (response, Data())
-            }
-            // Active events API
+        // Given — inject MockPortraitCache to intercept portrait downloads (M3 fix)
+        // Previously used URLProtocol interception on URLSession.shared, which didn't
+        // actually capture calls since PortraitCache used URLSession.shared (not the mock session).
+        MockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -257,20 +207,26 @@ struct EventSyncServiceTests {
         }
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
+        let mockPortraitCache = MockPortraitCache()
         let service = EventSyncService(
             authManager: authManager,
             modelContext: modelContext,
+            portraitCache: mockPortraitCache,
             session: makeSession()
         )
 
         // When
         try await service.syncActiveEvent()
 
-        // Then: portrait URL was present in the response — sync should complete
-        #expect(service.syncState == .completed, "Sync should complete even with portrait URL")
+        // Then: portrait was downloaded exactly once (1 speaker with profilePictureUrl)
+        #expect(service.syncState == .completed, "Sync should complete")
+        #expect(mockPortraitCache.downloadCallCount == 1,
+                "downloadAndCache should be called once for the speaker portrait")
+        #expect(mockPortraitCache.downloadedURLs.first?.absoluteString == "https://example.com/speaker.jpg",
+                "Should download the correct portrait URL")
         #expect(service.currentEvent?.sessions.first?.speakers.first?.profilePictureUrl
                 == "https://example.com/speaker.jpg",
-                "Speaker profile picture URL should be persisted")
+                "Speaker profile picture URL should be persisted in CachedSpeaker")
     }
 
     // MARK: - 401 triggers JWT refresh and rethrows

@@ -7,6 +7,7 @@
 //  Source: docs/watch-app/architecture.md#Navigation-Architecture
 //
 
+import SwiftData
 import SwiftUI
 
 enum Zone {
@@ -39,11 +40,12 @@ struct ContentView: View {
 
 #Preview {
     let container = try! ModelContainer(for: CachedSpeaker.self)
+    let auth = AuthManager()
     ContentView()
-        .environment(AuthManager())
+        .environment(auth)
         .environment(EventStateManager())
         .environment(ArrivalTracker(
-            authManager: MockAuthManager(),
+            authManager: auth,
             modelContext: container.mainContext
         ))
 }

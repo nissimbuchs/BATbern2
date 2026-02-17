@@ -119,7 +119,7 @@ final class EventSyncService: EventSyncServiceProtocol {
 
     private let authManager: AuthManagerProtocol
     private let modelContext: ModelContext
-    private let portraitCache: PortraitCache
+    private let portraitCache: any PortraitCacheable
     private let session: URLSession
 
     // MARK: - Init
@@ -127,7 +127,7 @@ final class EventSyncService: EventSyncServiceProtocol {
     init(
         authManager: AuthManagerProtocol,
         modelContext: ModelContext,
-        portraitCache: PortraitCache = PortraitCache.shared,
+        portraitCache: any PortraitCacheable = PortraitCache.shared,
         session: URLSession = .shared
     ) {
         self.authManager = authManager
@@ -186,7 +186,7 @@ final class EventSyncService: EventSyncServiceProtocol {
             stale.forEach { modelContext.delete($0) }
         }
         modelContext.insert(cachedEvent)
-        try? modelContext.save()
+        try modelContext.save()   // H3: propagate — silent failure hid persistence errors
         syncProgress = 0.9
 
         // Step 5: Complete (100% progress)

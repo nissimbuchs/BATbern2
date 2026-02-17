@@ -117,6 +117,17 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     long countByEventId(UUID eventId);
 
     /**
+     * Count distinct speaker usernames across all sessions for a given event.
+     * W2.4: Used by WatchSpeakerArrivalService to compute totalCount for STOMP broadcasts.
+     * Single query replaces N+1 pattern of fetching sessions then streaming sessionUsers.
+     */
+    @Query("SELECT COUNT(DISTINCT su.username) FROM Session s "
+           + "JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
+           + "JOIN s.sessionUsers su "
+           + "WHERE e.eventCode = :eventCode AND su.username IS NOT NULL")
+    long countDistinctSpeakersByEventCode(@Param("eventCode") String eventCode);
+
+    /**
      * Count sessions with timing assigned for an event
      * Story BAT-11 (5.7): Workflow validation for agenda publishing
      */

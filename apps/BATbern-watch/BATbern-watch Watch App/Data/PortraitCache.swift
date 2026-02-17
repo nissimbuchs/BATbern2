@@ -4,13 +4,26 @@
 //
 //  File-based image cache for speaker portraits and company logos with offline support.
 //  Source: W1.2 - Session Card Browsing (AC#5); W1.5 - UI Polish (AC#3, AC#4, AC#5)
+//  W2.3: AC#3 — Watch-optimized portrait resize (200×200px, JPEG 80%, ~100KB).
 //
 
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+// MARK: - Protocol (for testability)
+
+/// Protocol enabling PortraitCache to be mocked in unit tests.
+/// W2.3: Injected into EventSyncService so portrait downloads can be verified in isolation.
+protocol PortraitCacheable: AnyObject {
+    @discardableResult
+    func downloadAndCache(url: URL) async throws -> Data
+}
 
 /// File-based cache for speaker portrait images and company logos.
 /// Storage: ~100KB per portrait, max ~1MB per event (NFR24 compliance)
-class PortraitCache {
+/// W2.3 AC#3: Portraits resized to 200×200px max, JPEG 80% (~100KB) on download.
+class PortraitCache: PortraitCacheable {
     // MARK: - Singleton
 
     static let shared = PortraitCache()
@@ -74,7 +87,9 @@ class PortraitCache {
         try? data.write(to: fileURL, options: .atomic)
     }
 
-    /// Downloads portrait from CDN and caches it
+    /// Downloads portrait from CDN, resizes to Watch-optimized resolution, and caches it.
+    /// AC#3: Resizes to max 200×200px at JPEG 80% quality (~100KB) before caching.
+    @discardableResult
     func downloadAndCache(url: URL) async throws -> Data {
         // Check cache first
         if let cachedData = getCachedPortrait(url: url) {
@@ -82,12 +97,51 @@ class PortraitCache {
         }
 
         // Download from CDN
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (rawData, _) = try await URLSession.shared.data(from: url)
+
+        // AC#3: Resize to Watch-optimized resolution (200×200px max, JPEG 80%)
+        let data = resizeToWatchOptimized(data: rawData) ?? rawData
 
         // Save to cache
         savePortrait(url: url, data: data)
 
         return data
+    }
+
+    /// Resizes image data to max 200×200px at JPEG 80% quality using ImageIO.
+    /// Falls back to nil if the source data is not a supported image format.
+    /// W2.3 AC#3: Target ~100KB per portrait (vs ~2MB raw CDN image).
+    private func resizeToWatchOptimized(data: Data, maxDimension: Int = 200) -> Data? {
+        let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
+        guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions as CFDictionary) else {
+            return nil
+        }
+
+        let thumbOptions: [CFString: Any] = [
+            kCGImageSourceThumbnailMaxPixelSize: maxDimension,
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true
+        ]
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbOptions as CFDictionary) else {
+            return nil
+        }
+
+        let destData = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(
+            destData,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+
+        CGImageDestinationAddImage(
+            dest, thumbnail,
+            [kCGImageDestinationLossyCompressionQuality: 0.8] as CFDictionary
+        )
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return destData as Data
     }
 
     // MARK: - Logo Cache Operations (W1.5 AC#5)

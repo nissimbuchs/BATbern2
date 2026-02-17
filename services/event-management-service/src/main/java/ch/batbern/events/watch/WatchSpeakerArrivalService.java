@@ -108,15 +108,10 @@ public class WatchSpeakerArrivalService {
     }
 
     /**
-     * Returns total distinct speaker count for an event from session_users.
-     * Counts unique usernames across all sessions for the event.
+     * Returns total distinct speaker count for an event.
+     * Single JPQL query — avoids N+1 from loading sessions then streaming sessionUsers.
      */
     private long getTotalSpeakerCount(String eventCode) {
-        return sessionRepository.findByEventCode(eventCode).stream()
-                .flatMap(session -> session.getSessionUsers().stream())
-                .map(su -> su.getUsername())
-                .filter(username -> username != null)
-                .distinct()
-                .count();
+        return sessionRepository.countDistinctSpeakersByEventCode(eventCode);
     }
 }

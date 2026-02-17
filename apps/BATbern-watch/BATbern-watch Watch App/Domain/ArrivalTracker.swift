@@ -42,10 +42,10 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     private let webSocketClient: WebSocketClientProtocol?
     private let urlSession: URLSession
 
-    // MARK: - Internal State (internal for testability via @testable import)
+    // MARK: - Private State
 
     private var listeningTask: Task<Void, Never>?
-    var currentEventCode: String?
+    private var currentEventCode: String?
 
     // MARK: - Init
 
@@ -93,7 +93,7 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         speaker.arrivedAt = Date()
 
         // Save optimistic update to SwiftData
-        try? modelContext.save()
+        try modelContext.save()
 
         // Recompute counter
         recomputeCounter()
@@ -171,7 +171,11 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         arrivedCount = message.arrivedCount
         totalCount = message.totalCount
 
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            logger.warning("Failed to persist arrival update: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Private: REST Fallback

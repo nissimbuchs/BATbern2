@@ -134,11 +134,16 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
 
     // ============================================================================
     // 403: No authentication provided (TestSecurityConfig uses permitAll + @PreAuthorize)
+    //
+    // NOTE (M1 fix): Story Task 8.4 specifies "shouldReturn401_whenJWTInvalid".
+    // At the service layer, anonymous access yields 403 (AccessDeniedException from @PreAuthorize).
+    // The production 401 is enforced at API Gateway before this service is reached.
+    // Testing the real JWT 401 path requires a gateway-level integration test (out of scope here).
     // ============================================================================
 
     @Test
-    @DisplayName("shouldReturn403_whenNotAuthenticated")
-    void shouldReturn401_whenNotAuthenticated() throws Exception {
+    @DisplayName("shouldReturn403_whenUnauthenticated (service layer; API Gateway returns 401 for invalid JWT)")
+    void shouldReturn403_whenUnauthenticated() throws Exception {
         // TestSecurityConfig uses permitAll() at HTTP level + @PreAuthorize at method level.
         // Anonymous users hit @PreAuthorize("hasRole('ORGANIZER')") → AccessDeniedException → 403.
         // In production, the API Gateway rejects unauthenticated requests with 401 before the service.

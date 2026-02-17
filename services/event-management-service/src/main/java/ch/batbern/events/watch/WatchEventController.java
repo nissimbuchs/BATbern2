@@ -33,7 +33,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -98,8 +100,17 @@ public class WatchEventController {
         sessions.sort(Comparator.comparing(
                 s -> s.getStartTime() != null ? s.getStartTime() : Instant.MIN));
 
+        // Batch-load all speakers for this event in one query to avoid N+1 (W2.3: NFR4)
+        Set<String> speakerUsernames = sessions.stream()
+                .flatMap(s -> s.getSessionUsers().stream())
+                .map(SessionUser::getUsername)
+                .collect(Collectors.toSet());
+        Map<String, Speaker> speakerMap = speakerRepository.findAllByUsernameIn(speakerUsernames)
+                .stream()
+                .collect(Collectors.toMap(Speaker::getUsername, Function.identity()));
+
         List<SessionDetail> sessionDetails = sessions.stream()
-                .map(this::mapToSessionDetail)
+                .map(session -> mapToSessionDetail(session, speakerMap))
                 .collect(Collectors.toList());
 
         // Derive typical start/end time from sessions (HH:mm in Europe/Zurich)
@@ -132,9 +143,9 @@ public class WatchEventController {
         );
     }
 
-    private SessionDetail mapToSessionDetail(Session session) {
+    private SessionDetail mapToSessionDetail(Session session, Map<String, Speaker> speakerMap) {
         List<SpeakerDetail> speakerDetails = session.getSessionUsers().stream()
-                .map(this::mapToSpeakerDetail)
+                .map(su -> mapToSpeakerDetail(su, speakerMap))
                 .collect(Collectors.toList());
 
         String scheduledStart = session.getStartTime() != null
@@ -168,15 +179,13 @@ public class WatchEventController {
         );
     }
 
-    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser) {
-        Optional<Speaker> speakerOpt = speakerRepository.findByUsername(sessionUser.getUsername());
+    private SpeakerDetail mapToSpeakerDetail(SessionUser sessionUser, Map<String, Speaker> speakerMap) {
+        Speaker speaker = speakerMap.get(sessionUser.getUsername());
 
-        String firstName = speakerOpt.map(Speaker::getFirstName)
-                .orElse(sessionUser.getSpeakerFirstName());
-        String lastName = speakerOpt.map(Speaker::getLastName)
-                .orElse(sessionUser.getSpeakerLastName());
-        String bio = speakerOpt.map(Speaker::getBio).orElse(null);
-        String profilePictureUrl = speakerOpt.map(Speaker::getProfilePictureUrl).orElse(null);
+        String firstName = speaker != null ? speaker.getFirstName() : sessionUser.getSpeakerFirstName();
+        String lastName = speaker != null ? speaker.getLastName() : sessionUser.getSpeakerLastName();
+        String bio = speaker != null ? speaker.getBio() : null;
+        String profilePictureUrl = speaker != null ? speaker.getProfilePictureUrl() : null;
 
         return new SpeakerDetail(
                 sessionUser.getUsername(),

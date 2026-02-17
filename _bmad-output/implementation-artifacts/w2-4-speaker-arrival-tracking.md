@@ -1,6 +1,6 @@
 # Story W2.4: Speaker Arrival Tracking
 
-Status: review
+Status: done
 Review: pre-implementation adversarial review complete (2026-02-17) — all HIGH/MEDIUM issues fixed in story design
 
 ## Story
@@ -1163,10 +1163,19 @@ See architecture.md line 810: `WatchSpeakerArrivalService.java` belongs to `even
 - `services/event-management-service/src/main/java/ch/batbern/events/watch/SpeakerArrivalRepository.java`
 - `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSpeakerArrivalIntegrationTest.java`
 
+**New Files (Backend, added by code review — Task 12.7):**
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSpeakerArrivalWebSocketTest.java`
+
 **Modified Files (Backend):**
-- `services/event-management-service/src/main/java/.../watch/WatchRestController.java` — Add GET/POST arrivals endpoints
-- `services/event-management-service/src/main/java/.../watch/WatchWebSocketController.java` — Add STOMP handler for `speaker-arrived`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchEventController.java` — Added GET/POST arrivals endpoints
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchWebSocketController.java` — Added STOMP handler for `speaker-arrived`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java` — Added `countDistinctSpeakersByEventCode` JPQL query (N+1 fix)
 - `docs/api/event-management-api.openapi.yml` — Add arrivals endpoints
+
+**⚠️ Uncommitted changes NOT in this story (W2.3 post-review fixes — commit separately):**
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/EventSyncService.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/PortraitCache.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/EventSyncServiceTests.swift`
 
 ### Project Structure After W2.4
 
@@ -1281,3 +1290,25 @@ Reviewed existing codebase dependencies before W2.4 implementation. Found and au
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SpeakerBioView.swift` — fix logo+text double-render (H4)
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/SpeakerPortraitView.swift` — fix logo+text double-render (M1)
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionCardView.swift` — fix top padding when status bar visible (M2)
+
+---
+
+**Post-implementation Code Review (2026-02-17) — Amelia (Dev Agent):**
+
+Adversarial review of committed implementation. Fixed 2 HIGH + 4 MEDIUM issues. Story promoted to `done`.
+
+| ID | Severity | File | Fix Applied |
+|---|---|---|---|
+| H1 | HIGH | `WatchSpeakerArrivalWebSocketTest.java` | Created missing STOMP broadcast test (Task 12.7 was deferred with non-existent file reference) |
+| H2 | HIGH | N/A (process) | Documented uncommitted W2.3 post-review fixes — must be committed separately from W2.4 |
+| M1 | MEDIUM | `ArrivalTracker.swift:96` | `try? modelContext.save()` → `try` in `confirmArrival()` (throws context) |
+| M1b | MEDIUM | `ArrivalTracker.swift:174` | `try? modelContext.save()` → do-catch with `logger.warning()` in `processArrivalMessage()` |
+| M2 | MEDIUM | `SessionRepository.java` + `WatchSpeakerArrivalService.java` | N+1 in `getTotalSpeakerCount()` — added `countDistinctSpeakersByEventCode` JPQL; replaced N-query stream with single DB call |
+| M3 | MEDIUM | Story File List | `WatchRestController.java` corrected to `WatchEventController.java` (wrong filename in story) |
+| M4 | MEDIUM | `ArrivalTracker.swift:48` | `var currentEventCode` → `private var` (removed unnecessary internal visibility) |
+
+**Code Review Files Changed:**
+- `apps/BATbern-watch/BATbern-watch Watch App/Domain/ArrivalTracker.swift`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSpeakerArrivalService.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSpeakerArrivalWebSocketTest.java` (NEW)

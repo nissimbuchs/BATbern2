@@ -118,7 +118,7 @@ struct SpeakerPortraitCell: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(speaker.arrived
                         ? Color.green.opacity(0.1)
-                        : Color(.systemGray6)
+                        : Color.gray.opacity(0.15)  // systemGray6 unavailable on watchOS
                     )
             )
 
@@ -234,13 +234,12 @@ struct ArrivalConfirmationView: View {
 
 // Note: @Environment(ArrivalTracker.self) binds to concrete type — SwiftUI limitation;
 // protocol injection via EnvironmentKey would require more boilerplate than it saves.
-// Preview requires MockAuthManager (Task 1.5) to be compiled first.
 #Preview {
     NavigationStack {
         SpeakerArrivalView()
     }
     .environment(ArrivalTracker(
-        authManager: MockAuthManager(),
+        authManager: AuthManager(),
         modelContext: try! ModelContainer(for: CachedSpeaker.self).mainContext
     ))
     .environment(EventStateManager())
