@@ -10,7 +10,7 @@ import Foundation
 import SwiftData
 
 @Model
-class CachedSpeaker {
+class CachedSpeaker: @unchecked Sendable {
     var username: String
     var firstName: String
     var lastName: String
