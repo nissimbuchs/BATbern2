@@ -66,6 +66,7 @@
 		D512F4122F450C4700A7A638 /* BATbern-watch ComplicationsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "BATbern-watch ComplicationsExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D512F4142F450C4700A7A638 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		D512F4162F450C4700A7A638 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		D512F43A2F4519FB00A7A638 /* BATbern-watch ComplicationsExtensionRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "BATbern-watch ComplicationsExtensionRelease.entitlements"; sourceTree = "<group>"; };
 		D5FFD10B2F41E343003334DE /* BATbern-watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BATbern-watch.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5FFD1112F41E343003334DE /* BATbern-watch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BATbern-watch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5FFD1202F41E344003334DE /* BATbern-watch Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "BATbern-watch Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -160,6 +161,7 @@
 		D5FFD1042F41E343003334DE = {
 			isa = PBXGroup;
 			children = (
+				D512F43A2F4519FB00A7A638 /* BATbern-watch ComplicationsExtensionRelease.entitlements */,
 				D5FFD1152F41E343003334DE /* BATbern-watch Watch App */,
 				D5FFD1232F41E344003334DE /* BATbern-watch Watch AppTests */,
 				D512F4182F450C4700A7A638 /* BATbern-watch Complications */,
@@ -399,6 +401,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "BATbern-watch ComplicationsExtensionRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;
@@ -432,6 +435,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "BATbern-watch ComplicationsExtensionRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;
@@ -583,6 +587,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "BATbern-watch Watch App/BATbern-watch Watch AppRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;
@@ -618,6 +623,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_ENTITLEMENTS = "BATbern-watch Watch App/BATbern-watch Watch AppRelease.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8NAQ32M9HE;

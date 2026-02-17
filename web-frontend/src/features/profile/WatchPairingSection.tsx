@@ -69,11 +69,11 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
     }
   };
 
-  const handleUnpair = async (deviceName: string) => {
-    setUnpairingDevice(deviceName);
+  const handleUnpair = async (watchId: string) => {
+    setUnpairingDevice(watchId);
     setError(null);
     try {
-      await watchPairingApi.unpairWatch(username, deviceName);
+      await watchPairingApi.unpairWatch(username, watchId);
       await loadStatus();
     } catch {
       setError('Failed to unpair device. Please try again.');
@@ -115,10 +115,10 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
         <Box sx={{ mb: 2 }}>
           {status.pairedWatches.map((watch) => (
             <PairedWatchCard
-              key={watch.deviceName}
+              key={watch.id}
               watch={watch}
               onUnpair={handleUnpair}
-              isUnpairing={unpairingDevice === watch.deviceName}
+              isUnpairing={unpairingDevice === watch.id}
             />
           ))}
         </Box>

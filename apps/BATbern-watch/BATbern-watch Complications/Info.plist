@@ -2,6 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- W3.3: Associates this WidgetKit extension with the BATbern Watch app.
+	     Required for complications to appear in the watch face editor.
+	     Must match PRODUCT_BUNDLE_IDENTIFIER of the "BATbern-watch Watch App" target. -->
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>BATbern.BATbern-watch.watchkitapp</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

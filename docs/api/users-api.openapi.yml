@@ -125,13 +125,13 @@ paths:
         '403':
           description: Forbidden
 
-  /users/{username}/watch-pairing/{deviceName}:
+  /users/{username}/watch-pairing/{watchId}:
     delete:
       operationId: unpairWatch
       tags:
         - Watch Pairing
       summary: Unpair a watch (AC4)
-      description: Hard-delete the pairing record (GDPR compliant).
+      description: Hard-delete the pairing record by UUID (GDPR compliant). Uses id instead of deviceName because deviceName is nullable (not set during pairing flow).
       security:
         - BearerAuth: []
       parameters:
@@ -140,11 +140,12 @@ paths:
           required: true
           schema:
             type: string
-        - name: deviceName
+        - name: watchId
           in: path
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         '204':
           description: Watch unpaired
@@ -2087,9 +2088,18 @@ components:
 
     PairedWatch:
       type: object
+      required:
+        - id
+        - pairedAt
       properties:
+        id:
+          type: string
+          format: uuid
+          description: Stable UUID identifier used for unpair. Never null.
         deviceName:
           type: string
+          nullable: true
+          description: Device name, nullable (not set during pairing flow).
         pairedAt:
           type: string
           format: date-time

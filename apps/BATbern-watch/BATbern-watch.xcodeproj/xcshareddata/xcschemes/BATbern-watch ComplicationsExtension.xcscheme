@@ -75,12 +75,21 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
+            BlueprintIdentifier = "D512F4112F450C4700A7A638"
+            BuildableName = "BATbern-watch ComplicationsExtension.appex"
+            BlueprintName = "BATbern-watch ComplicationsExtension"
+            ReferencedContainer = "container:BATbern-watch.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
             BlueprintIdentifier = "D5FFD1102F41E343003334DE"
             BuildableName = "BATbern-watch Watch App.app"
             BlueprintName = "BATbern-watch Watch App"
             ReferencedContainer = "container:BATbern-watch.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </MacroExpansion>
       <EnvironmentVariables>
          <EnvironmentVariable
             key = "_XCWidgetKind"

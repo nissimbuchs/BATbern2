@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -157,6 +158,7 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pairedWatches").isArray())
+                .andExpect(jsonPath("$.pairedWatches[0].id").value(notNullValue()))
                 .andExpect(jsonPath("$.pairedWatches[0].deviceName").value("my-watch"))
                 .andExpect(jsonPath("$.pairedWatches[0].pairedAt").value(notNullValue()))
                 .andExpect(jsonPath("$.pendingCode.code").value("123456"))
@@ -181,9 +183,9 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     @DisplayName("shouldUnpairWatch_whenCalled")
     void shouldUnpairWatch_whenCalled() throws Exception {
-        createPairedWatch("my-watch", LocalDateTime.now().minusDays(1));
+        WatchPairing watch = createPairedWatch("my-watch", LocalDateTime.now().minusDays(1));
 
-        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{deviceName}", "john.doe", "my-watch")
+        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{watchId}", "john.doe", watch.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent());
 
@@ -198,7 +200,7 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     @DisplayName("shouldReturn404_whenUnpairingNonexistentDevice")
     void shouldReturn404_whenUnpairingNonexistentDevice() throws Exception {
-        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{deviceName}", "john.doe", "nonexistent")
+        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{watchId}", "john.doe", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
@@ -207,9 +209,9 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "other.user", roles = {"ORGANIZER"})
     @DisplayName("shouldReturn403_whenUnpairingAnotherUsersWatch")
     void shouldReturn403_whenUnpairingAnotherUsersWatch() throws Exception {
-        createPairedWatch("my-watch", LocalDateTime.now().minusDays(1));
+        WatchPairing watch = createPairedWatch("my-watch", LocalDateTime.now().minusDays(1));
 
-        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{deviceName}", "john.doe", "my-watch")
+        mockMvc.perform(delete("/api/v1/users/{username}/watch-pairing/{watchId}", "john.doe", watch.getId())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }

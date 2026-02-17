@@ -15,6 +15,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service for Watch pairing code management.
@@ -75,7 +76,7 @@ public class WatchPairingService {
 
         List<PairingStatusResponse.PairedWatch> pairedWatches = all.stream()
                 .filter(WatchPairing::isPaired)
-                .map(p -> new PairingStatusResponse.PairedWatch(p.getDeviceName(), p.getPairedAt()))
+                .map(p -> new PairingStatusResponse.PairedWatch(p.getId(), p.getDeviceName(), p.getPairedAt()))
                 .toList();
 
         // Only return pending code if it exists and is not expired
@@ -89,16 +90,18 @@ public class WatchPairingService {
     }
 
     /**
-     * AC4: Hard-delete the pairing record (GDPR compliant).
+     * AC4: Hard-delete the pairing record by UUID (GDPR compliant).
+     * Uses id instead of deviceName because deviceName is nullable (not set during pairing).
      */
     @Transactional
-    public void unpairWatch(String username, String deviceName) {
+    public void unpairWatch(String username, UUID watchId) {
         WatchPairing pairing = watchPairingRepository
-                .findByUsernameAndDeviceName(username, deviceName)
-                .orElseThrow(() -> new WatchPairingNotFoundException(deviceName));
+                .findById(watchId)
+                .filter(p -> p.getUsername().equals(username))
+                .orElseThrow(() -> new WatchPairingNotFoundException(watchId.toString()));
 
         watchPairingRepository.delete(pairing);
-        log.info("Unpaired watch '{}' for user: {}", deviceName, username);
+        log.info("Unpaired watch '{}' for user: {}", watchId, username);
     }
 
     // --- W2.2: Pairing code validation and token lookup ---

@@ -15,7 +15,8 @@ export interface PairingStatusResponse {
 }
 
 export interface PairedWatch {
-  deviceName: string;
+  id: string; // UUID — stable identifier for unpair (deviceName is nullable)
+  deviceName: string | null;
   pairedAt: string; // ISO 8601
 }
 

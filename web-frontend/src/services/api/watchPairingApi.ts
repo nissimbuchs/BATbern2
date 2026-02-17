@@ -13,10 +13,8 @@ const watchPairingApi = {
   getPairingStatus: (username: string): Promise<PairingStatusResponse> =>
     apiClient.get<PairingStatusResponse>(`/users/${username}/watch-pairing`).then((r) => r.data),
 
-  unpairWatch: (username: string, deviceName: string): Promise<void> =>
-    apiClient
-      .delete(`/users/${username}/watch-pairing/${encodeURIComponent(deviceName)}`)
-      .then(() => undefined),
+  unpairWatch: (username: string, watchId: string): Promise<void> =>
+    apiClient.delete(`/users/${username}/watch-pairing/${watchId}`).then(() => undefined),
 };
 
 export default watchPairingApi;

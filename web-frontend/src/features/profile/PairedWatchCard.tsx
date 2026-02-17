@@ -11,7 +11,7 @@ import type { PairedWatch } from '@/types/watch';
 
 interface PairedWatchCardProps {
   watch: PairedWatch;
-  onUnpair: (deviceName: string) => void;
+  onUnpair: (watchId: string) => void;
   isUnpairing?: boolean;
 }
 
@@ -35,7 +35,7 @@ const PairedWatchCard: React.FC<PairedWatchCardProps> = ({ watch, onUnpair, isUn
         borderRadius: 1,
         mb: 1,
       }}
-      data-testid={`paired-watch-card-${watch.deviceName}`}
+      data-testid={`paired-watch-card-${watch.id}`}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <WatchIcon color="action" />
@@ -57,9 +57,9 @@ const PairedWatchCard: React.FC<PairedWatchCardProps> = ({ watch, onUnpair, isUn
             disabled={isUnpairing}
             onClick={() => {
               setConfirmPending(false);
-              onUnpair(watch.deviceName);
+              onUnpair(watch.id);
             }}
-            data-testid={`unpair-confirm-button-${watch.deviceName}`}
+            data-testid={`unpair-confirm-button-${watch.id}`}
           >
             Confirm
           </Button>
@@ -67,7 +67,7 @@ const PairedWatchCard: React.FC<PairedWatchCardProps> = ({ watch, onUnpair, isUn
             size="small"
             variant="outlined"
             onClick={() => setConfirmPending(false)}
-            data-testid={`unpair-cancel-button-${watch.deviceName}`}
+            data-testid={`unpair-cancel-button-${watch.id}`}
           >
             Cancel
           </Button>
@@ -79,7 +79,7 @@ const PairedWatchCard: React.FC<PairedWatchCardProps> = ({ watch, onUnpair, isUn
           color="error"
           disabled={isUnpairing}
           onClick={() => setConfirmPending(true)}
-          data-testid={`unpair-button-${watch.deviceName}`}
+          data-testid={`unpair-button-${watch.id}`}
         >
           Unpair
         </Button>

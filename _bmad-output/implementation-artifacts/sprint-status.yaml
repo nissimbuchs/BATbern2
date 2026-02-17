@@ -60,7 +60,7 @@ development_status:
   epic-3: in-progress
   w3-1-live-countdown-display: done
   w3-2-haptic-alert-system: review
-  w3-3-watch-face-complications: ready-for-dev
+  w3-3-watch-face-complications: review
   w3-4-session-schedule-next-session-preview: ready-for-dev
   epic-3-retrospective: optional
 

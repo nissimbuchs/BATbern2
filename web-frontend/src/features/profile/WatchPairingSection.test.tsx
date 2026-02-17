@@ -42,8 +42,8 @@ describe('WatchPairingSection', () => {
   it('hides Pair button when 2 watches are already paired', async () => {
     const twoWatches: PairingStatusResponse = {
       pairedWatches: [
-        { deviceName: 'Watch 1', pairedAt: '2026-01-01T10:00:00Z' },
-        { deviceName: 'Watch 2', pairedAt: '2026-01-02T10:00:00Z' },
+        { id: 'uuid-watch-1', deviceName: 'Watch 1', pairedAt: '2026-01-01T10:00:00Z' },
+        { id: 'uuid-watch-2', deviceName: 'Watch 2', pairedAt: '2026-01-02T10:00:00Z' },
       ],
       pendingCode: null,
     };
@@ -54,8 +54,8 @@ describe('WatchPairingSection', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('pair-watch-button')).toBeNull();
     });
-    expect(screen.getByTestId('paired-watch-card-Watch 1')).toBeTruthy();
-    expect(screen.getByTestId('paired-watch-card-Watch 2')).toBeTruthy();
+    expect(screen.getByTestId('paired-watch-card-uuid-watch-1')).toBeTruthy();
+    expect(screen.getByTestId('paired-watch-card-uuid-watch-2')).toBeTruthy();
   });
 
   it('shows pending code when one exists', async () => {
@@ -116,7 +116,9 @@ describe('WatchPairingSection', () => {
 
   it('calls unpairWatch API after two-step confirmation', async () => {
     const withWatch: PairingStatusResponse = {
-      pairedWatches: [{ deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' }],
+      pairedWatches: [
+        { id: 'uuid-my-watch', deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' },
+      ],
       pendingCode: null,
     };
     mockGetPairingStatus.mockResolvedValueOnce(withWatch).mockResolvedValueOnce(emptyStatus);
@@ -125,21 +127,23 @@ describe('WatchPairingSection', () => {
     render(<WatchPairingSection username="john.doe" />);
 
     // Step 1: click Unpair → shows confirmation buttons
-    const unpairBtn = await screen.findByTestId('unpair-button-my-watch');
+    const unpairBtn = await screen.findByTestId('unpair-button-uuid-my-watch');
     fireEvent.click(unpairBtn);
 
     // Step 2: confirmation button appears
-    const confirmBtn = await screen.findByTestId('unpair-confirm-button-my-watch');
+    const confirmBtn = await screen.findByTestId('unpair-confirm-button-uuid-my-watch');
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(mockUnpairWatch).toHaveBeenCalledWith('john.doe', 'my-watch');
+      expect(mockUnpairWatch).toHaveBeenCalledWith('john.doe', 'uuid-my-watch');
     });
   });
 
   it('cancels unpair when Cancel is clicked in confirmation', async () => {
     const withWatch: PairingStatusResponse = {
-      pairedWatches: [{ deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' }],
+      pairedWatches: [
+        { id: 'uuid-my-watch', deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' },
+      ],
       pendingCode: null,
     };
     mockGetPairingStatus.mockResolvedValueOnce(withWatch);
@@ -147,15 +151,15 @@ describe('WatchPairingSection', () => {
 
     render(<WatchPairingSection username="john.doe" />);
 
-    const unpairBtn = await screen.findByTestId('unpair-button-my-watch');
+    const unpairBtn = await screen.findByTestId('unpair-button-uuid-my-watch');
     fireEvent.click(unpairBtn);
 
-    const cancelBtn = await screen.findByTestId('unpair-cancel-button-my-watch');
+    const cancelBtn = await screen.findByTestId('unpair-cancel-button-uuid-my-watch');
     fireEvent.click(cancelBtn);
 
     // Original unpair button is back, API not called
     await waitFor(() => {
-      expect(screen.getByTestId('unpair-button-my-watch')).toBeTruthy();
+      expect(screen.getByTestId('unpair-button-uuid-my-watch')).toBeTruthy();
     });
     expect(mockUnpairWatch).not.toHaveBeenCalled();
   });

@@ -1,6 +1,6 @@
 # Story W3.3: Watch Face Complications
 
-Status: in-progress — Tasks 2-5 complete; Task 1 (Xcode Widget Extension target) requires manual Xcode setup
+Status: review
 
 ## Story
 
@@ -25,21 +25,21 @@ so that the complication is my primary interface during events.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add Widget Extension Target in Xcode** (AC: 1, 2, 3, 4) ⚠️ MANUAL XCODE STEP — cannot be automated
-  - [ ] 1.1 Open `apps/BATbern-watch/BATbern-watch.xcodeproj` in Xcode
-  - [ ] 1.2 File → New → Target → Widget Extension (watchOS)
-  - [ ] 1.3 Product Name: `BATbern-watch Complications`
-  - [ ] 1.4 **Uncheck** "Include Configuration Intent" (no user-configurable options needed)
-  - [ ] 1.5 Embed the extension in: `BATbern-watch Watch App` target (not iPhone target if present)
-  - [ ] 1.6 Add **App Group** capability to BOTH targets:
+- [x] **Task 1: Add Widget Extension Target in Xcode** (AC: 1, 2, 3, 4) ⚠️ MANUAL XCODE STEP — completed manually
+  - [x] 1.1 Open `apps/BATbern-watch/BATbern-watch.xcodeproj` in Xcode
+  - [x] 1.2 File → New → Target → Widget Extension (watchOS)
+  - [x] 1.3 Product Name: `BATbern-watch Complications`
+  - [x] 1.4 **Uncheck** "Include Configuration Intent" (no user-configurable options needed)
+  - [x] 1.5 Embed the extension in: `BATbern-watch Watch App` target (not iPhone target if present)
+  - [x] 1.6 Add **App Group** capability to BOTH targets:
     - `BATbern-watch Watch App`: Signing & Capabilities → + → App Groups → `group.ch.batbern.watch`
     - `BATbern-watch Complications`: same group `group.ch.batbern.watch`
-  - [ ] 1.7 Add BOTH shared files to BOTH target memberships (they must compile in both):
+  - [x] 1.7 Add BOTH shared files to BOTH target memberships (they must compile in both):
     - `BATbern-watch Watch App/Data/ComplicationDataStore.swift`
     - `BATbern-watch Watch App/Data/ComplicationEntry.swift`
-  - [ ] 1.8 Add all other `BATbern-watch Complications/*.swift` files to the extension target only
-  - [ ] 1.9 Verify the `.appex` bundle is embedded in the Watch app's build phases
-  - [ ] 1.10 Set `WATCHOS_DEPLOYMENT_TARGET = 11.0` in Widget Extension target settings
+  - [x] 1.8 Add all other `BATbern-watch Complications/*.swift` files to the extension target only
+  - [x] 1.9 Verify the `.appex` bundle is embedded in the Watch app's build phases
+  - [x] 1.10 Set `WATCHOS_DEPLOYMENT_TARGET = 11.0` in Widget Extension target settings
 
 - [x] **Task 2: Shared Data Layer (App Group Store)** (AC: 1, 2, 5)
   - [x] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift`
@@ -428,7 +428,7 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 
 ### Completion Notes List
 
-1. **Task 1 is manual (Xcode GUI)**: Widget Extension target must be created in Xcode before the Complications files can compile. All Swift source files are ready in `apps/BATbern-watch/BATbern-watch Complications/`. After creating the target, add `ComplicationDataStore.swift` to BOTH target memberships.
+1. **Task 1 complete (Xcode GUI — confirmed 2026-02-17)**: Widget Extension target `BATbern-watch ComplicationsExtension` confirmed present in project (`xcodebuild -list` output). Xcode auto-generated `BATbern_watch_ComplicationsBundle.swift` (underscore naming convention). All Tasks 1-5 verified complete and tests passing.
 
 2. **UX Design alignment (pre-implementation review)**:
    - C3 corner changed from "MM:SS" to "minutes-only" to match `ux-design-directions.html` comp preview
@@ -436,6 +436,8 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
    - Added `isOvertime` / `overtimeSeconds` / `displayMinutes` to `ComplicationEntry` so C1/C2 show `+N` / `+MM:SS` during overtime (matching UX overrun states)
 
 3. **SourceKit warnings in Complications/ folder**: All SourceKit "Cannot find X in scope" errors in the Complications/ files are expected — they resolve once the Widget Extension target exists in Xcode and the files are added to it. They are not real compile errors.
+
+6. **`WKCompanionAppBundleIdentifier` required (post-review fix 2026-02-17)**: The extension `Info.plist` was missing this key, causing complications not to appear in the watch face picker. Added `BATbern.BATbern-watch.watchkitapp` (= the Watch App's `PRODUCT_BUNDLE_IDENTIFIER`). This key is required for watchOS to associate the WidgetKit extension with its companion Watch app.
 
 4. **`ComplicationDataStore.write()` call site**: Added to `LiveCountdownViewModel.refreshState()` — called every second during a live session. `WidgetCenter.reloadAllTimelines()` is called inside `write()`, which is safe from `@MainActor` per Apple docs.
 
@@ -446,7 +448,7 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 #### New Files Created
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift` ← main app + extension (multi-target)
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationEntry.swift` ← main app + extension (multi-target)
-- `apps/BATbern-watch/BATbern-watch Complications/BATbernComplicationsBundle.swift` ← extension only
+- `apps/BATbern-watch/BATbern-watch Complications/BATbern_watch_ComplicationsBundle.swift` ← extension only (Xcode auto-named)
 - `apps/BATbern-watch/BATbern-watch Complications/ComplicationProvider.swift` ← extension only
 - `apps/BATbern-watch/BATbern-watch Complications/CircularComplication.swift`
 - `apps/BATbern-watch/BATbern-watch Complications/RectangularComplication.swift`
@@ -458,3 +460,4 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 - `apps/BATbern-watch/BATbern-watch Watch App/App/BATbernWatchApp.swift` — added `.onOpenURL` deep link handler
 - `apps/BATbern-watch/BATbern-watch Watch App/App/ContentView.swift` — added `Notification.Name.openOrganizerZone` extension, `.onReceive` handler
 - `apps/BATbern-watch/BATbern-watch Watch App/Info.plist` — added `CFBundleURLTypes` for `batbern-watch://` scheme
+- `apps/BATbern-watch/BATbern-watch Complications/Info.plist` — added `WKCompanionAppBundleIdentifier` (required for face picker)

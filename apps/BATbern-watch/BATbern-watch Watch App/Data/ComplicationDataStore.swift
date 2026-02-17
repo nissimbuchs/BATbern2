@@ -49,6 +49,7 @@ enum ComplicationDataStore {
         guard let defaults = UserDefaults(suiteName: appGroupID),
               let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
+        defaults.synchronize()
         WidgetCenter.shared.reloadAllTimelines()
     }
 

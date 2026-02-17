@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.UUID;
+
 /**
  * REST controller for Watch pairing code management.
  * Story W2.1: Pairing Code Backend & Web Frontend
@@ -63,17 +65,18 @@ public class WatchPairingController {
     }
 
     /**
-     * AC4: Unpair a watch (204 No Content).
+     * AC4: Unpair a watch by its UUID (204 No Content).
+     * Uses UUID instead of deviceName — deviceName is nullable (not set during pairing flow).
      * Authorization: ORGANIZER only, own account only.
      */
-    @DeleteMapping("/{deviceName}")
+    @DeleteMapping("/{watchId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> unpairWatch(
             @PathVariable String username,
-            @PathVariable String deviceName) {
+            @PathVariable UUID watchId) {
 
         requireOwnAccount(username);
-        watchPairingService.unpairWatch(username, deviceName);
+        watchPairingService.unpairWatch(username, watchId);
         return ResponseEntity.noContent().build();
     }
 
