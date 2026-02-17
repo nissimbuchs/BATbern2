@@ -11,5 +11,6 @@ import Foundation
 /// Shared API configuration for the BATbern Watch app.
 /// Change baseURL here when switching environments (staging → production).
 enum BATbernAPIConfig {
-    static let baseURL = "https://api.staging.batbern.ch"
+    // nonisolated(unsafe): immutable string constant — safe to access from any concurrency context
+    nonisolated(unsafe) static let baseURL = "https://api.staging.batbern.ch"
 }
