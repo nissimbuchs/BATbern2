@@ -22,15 +22,15 @@ so that I can access the speaker portal without creating a separate password.
 - [ ] Task 1: Add `generateJwtToken()` to `MagicLinkService` (AC: 1, 6)
   - [ ] 1.1 Write failing unit tests for `generateJwtToken(UUID speakerPoolId)` in `MagicLinkServiceTest`
   - [ ] 1.2 Add JJWT library dependency to `event-management-service/build.gradle`
-  - [ ] 1.3 Implement `generateJwtToken()` using RS256 with `user_id`, `email`, `roles` claims + 30-day expiry
-  - [ ] 1.4 Add RSA key pair config to `application.yml` (PEM env vars or path refs)
+  - [ ] 1.3 Add RSA key pair config: `${JWT_PRIVATE_KEY}` / `${JWT_PUBLIC_KEY}` env refs in `application.yml`; embed Base64-encoded test keys in `application-test.yml`; see E2 note in Dev Notes for details
+  - [ ] 1.4 Implement `generateJwtToken()` using RS256 with claims: `sub`=speakerPoolId, `email`=`speakerPool.getEmail()`, `roles`=["SPEAKER"], `speakerPoolId`, `exp`=+30 days, `iss`="batbern"
   - [ ] 1.5 Verify tests pass (GREEN phase)
 - [ ] Task 2: Create `POST /api/v1/auth/speaker-magic-login` endpoint (AC: 2, 3, 5)
   - [ ] 2.1 Write failing integration test for the endpoint in `SpeakerMagicLoginControllerTest extends AbstractIntegrationTest`
   - [ ] 2.2 Create `SpeakerMagicLoginController` in `services/event-management-service/src/main/java/ch/batbern/events/controller/`
   - [ ] 2.3 Create `SpeakerMagicLoginRequest` DTO (fields: `jwtToken: String`)
-  - [ ] 2.4 Create `SpeakerAuthResponse` DTO (fields: `speakerPoolId`, `speakerName`, `eventCode`)
-  - [ ] 2.5 Implement controller method: validate JWT claims, set HTTP-only cookie, return 200 with speaker context
+  - [ ] 2.4 Create `SpeakerAuthResponse` DTO (fields: `speakerPoolId`, `speakerName`, `eventCode`, `eventTitle`, `sessionToken`)
+  - [ ] 2.5 Implement controller method: validate JWT claims → look up `SpeakerPool` → call `magicLinkService.generateToken(speakerPoolId, TokenAction.VIEW)` to issue session token → set HTTP-only cookie → return 200 with speaker context + sessionToken
   - [ ] 2.6 Handle invalid/expired JWT: return 401 with error message "Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator."
   - [ ] 2.7 Verify integration tests pass
 - [ ] Task 3: Update `SecurityConfig` in API Gateway (AC: 2, 3)
@@ -49,16 +49,11 @@ so that I can access the speaker portal without creating a separate password.
   - [ ] 5.1 Create `SpeakerMagicLoginPage.tsx` at `web-frontend/src/pages/speaker-portal/SpeakerMagicLoginPage.tsx`
   - [ ] 5.2 Extract `?jwt=` query param from URL using `useSearchParams()`
   - [ ] 5.3 Call `speakerAuthService.validateMagicLink(jwt)` which POSTs to `/api/v1/auth/speaker-magic-login`
-  - [ ] 5.4 On success: redirect to `/speaker/dashboard`
+  - [ ] 5.4 On success: redirect to `/speaker-portal/dashboard?token=${response.sessionToken}` (uses existing dashboard flow — do NOT change `SpeakerDashboardPage.tsx` in this story)
   - [ ] 5.5 On error: show error message with contact info (AC: 5)
   - [ ] 5.6 Create `speakerAuthService.ts` at `web-frontend/src/services/speakerAuthService.ts`
-  - [ ] 5.7 Add route `/speaker-portal/magic-login` in app router pointing to `SpeakerMagicLoginPage`
+  - [ ] 5.7 Add route `/speaker-portal/magic-login` in app router pointing to `SpeakerMagicLoginPage` (insert alongside existing speaker-portal routes in `App.tsx` around line 239)
   - [ ] 5.8 Write unit tests for `SpeakerMagicLoginPage` with Vitest
-- [ ] Task 6: Update `SpeakerDashboardPage` to use cookie-based auth (AC: 3)
-  - [ ] 6.1 Replace `useSearchParams()` for `?token=` with JWT cookie read in `SpeakerDashboardPage.tsx`
-  - [ ] 6.2 Create `useSpeakerAuth.ts` hook at `web-frontend/src/hooks/useSpeakerAuth.ts`
-  - [ ] 6.3 Update all speaker portal pages to use `useSpeakerAuth` instead of `?token=` params
-  - [ ] 6.4 Write unit tests for `useSpeakerAuth` hook
 
 ## Dev Notes
 
@@ -66,7 +61,18 @@ so that I can access the speaker portal without creating a separate password.
 
 This story replaces Epic 6's anonymous token-based auth (`speaker_invitation_tokens` table / `?token=xxx` query params) with JWT-based authentication that creates actual user sessions.
 
-**Key architectural principle**: Story 9.1 adds the JWT layer ALONGSIDE the existing token system (which continues to work until Story 9.4 migration). Do NOT remove old token endpoints in this story.
+**Key architectural principle**: Story 9.1 uses a "session bridge" pattern — the JWT validates the speaker's identity and then issues a standard opaque VIEW token that the existing dashboard infrastructure already understands. This means `SpeakerDashboardPage.tsx` and all speaker portal API calls are **NOT changed in this story**. The JWT layer is entirely within the login flow; after login the session proceeds exactly as in Epic 6.
+
+**Session bridge flow**:
+```
+?jwt=<JWT> in URL → SpeakerMagicLoginPage → POST /api/v1/auth/speaker-magic-login
+→ backend validates JWT → generates VIEW token via MagicLinkService
+→ returns { sessionToken: "<opaque-token>", ... } → set speaker_jwt cookie
+→ frontend redirects to /speaker-portal/dashboard?token=<sessionToken>
+→ existing Epic 6 dashboard flow takes over (unchanged)
+```
+
+Do NOT rework the dashboard, `useSpeakerAuth`, or any existing `?token=` API calls in this story. Full JWT session management is Story 9.4.
 
 ### What Currently Exists (Epic 6 Token System)
 
@@ -77,14 +83,51 @@ The current `MagicLinkService` at [services/event-management-service/src/main/ja
 
 **CRITICAL**: The existing `speaker_invitation_tokens` table and `?token=xxx` pattern MUST remain functional in Story 9.1. Do not break existing flows. Story 9.4 handles migration.
 
+**Why "session bridge" and not full JWT sessions now**: The existing speaker portal has 6+ endpoints that all validate `?token=` (respond, profile, content, dashboard, etc.). Migrating all of them to JWT cookie auth in one story is out of scope and high-risk. The session bridge pattern is the intentional Story 9.1 design — it delivers the JWT magic link UX improvement while keeping the backend session model unchanged. Do not attempt to implement full JWT session management until Story 9.4.
+
 ### New JWT Generation Approach
 
 Story 9.1 adds `generateJwtToken(UUID speakerPoolId)` as a NEW method on `MagicLinkService`. This method:
-1. Looks up `SpeakerPool` to get `username` (Cognito userId), speaker email, speaker name
-2. Creates a signed JWT with claims: `sub` (user_id / speakerPoolId), `email`, `roles: ["SPEAKER"]`, `speakerPoolId`, `exp` (+30 days), `iss` ("batbern")
-3. Signs with RS256 (RSA private key from app config)
+1. Looks up `SpeakerPool` to get email (`speakerPool.getEmail()` — **confirmed field exists**, see `SpeakerPool.java` line 96-97), speaker name, speakerPoolId
+2. Creates a signed JWT with claims: `sub`=speakerPoolId (UUID string), `email`=`speakerPool.getEmail()`, `roles`=["SPEAKER"], `speakerPoolId`=UUID string, `exp`=now+30 days, `iss`="batbern"
+3. Signs with RS256 (RSA private key injected from `JwtConfig`)
 
-**NOTE**: Since Cognito user accounts don't exist yet (that's Story 9.2), for Story 9.1 the JWT `sub` claim will use the `speakerPoolId` UUID as a temporary identifier. This is explicitly acceptable per Epic 9 scope. Full Cognito integration happens in Story 9.2.
+**NOTE**: Since Cognito user accounts don't exist yet (that's Story 9.2), for Story 9.1 the JWT `sub` claim uses the `speakerPoolId` UUID as a temporary identifier. This is explicitly acceptable per Epic 9 scope. Full Cognito integration in Story 9.2 will change `sub` to the Cognito `userId`.
+
+### RSA Key Configuration (E2)
+
+**application.yml** (env var references, never hardcoded):
+```yaml
+app:
+  jwt:
+    private-key: ${JWT_PRIVATE_KEY}   # Base64-encoded PKCS8 PEM
+    public-key: ${JWT_PUBLIC_KEY}     # Base64-encoded X.509 PEM
+    issuer: "batbern"
+    expiry-days: 30
+```
+
+**application-test.yml** (embed generated test keys directly):
+```yaml
+app:
+  jwt:
+    private-key: ${TEST_JWT_PRIVATE_KEY:MIIEvgIBADANBgkqhkiG9w...}  # generate once
+    public-key: ${TEST_JWT_PUBLIC_KEY:MIIBIjANBgkqhkiG9w...}
+```
+
+**In test code** — generate inline instead of loading from config:
+```java
+// In test @BeforeAll or @TestConfiguration
+KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+// inject privateKey and publicKey into JwtConfig mock/stub
+```
+
+**Generate keys locally** (one-time, for dev/test yml):
+```bash
+openssl genrsa -out private.pem 2048
+openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in private.pem -out private_pkcs8.pem
+openssl rsa -in private.pem -pubout -out public.pem
+# Base64-encode for yml: cat private_pkcs8.pem | base64 | tr -d '\n'
+```
 
 ### JWT Library
 
@@ -114,7 +157,8 @@ Response 200:
   "speakerPoolId": "uuid",
   "speakerName": "Jane Doe",
   "eventCode": "BAT-2025",
-  "eventTitle": "BATbern 2025"
+  "eventTitle": "BATbern 2025",
+  "sessionToken": "<opaque-VIEW-token>"   // ← NEW: frontend uses this to redirect to existing dashboard
 }
 Set-Cookie: speaker_jwt=<jwt>; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000
 
@@ -144,11 +188,10 @@ https://www.batbern.ch/speaker-portal/magic-login?jwt=<signed-jwt>
 - `src/main/java/ch/batbern/gateway/config/SecurityConfig.java` — add `permitAll()` for new auth endpoint
 
 **Frontend** (`web-frontend/src/`):
-- `pages/speaker-portal/SpeakerMagicLoginPage.tsx` — NEW: handles JWT URL extraction and validation
-- `services/speakerAuthService.ts` — NEW: API client for auth endpoints
-- `hooks/useSpeakerAuth.ts` — NEW: Zustand-based hook for speaker auth state
-- `pages/speaker-portal/SpeakerDashboardPage.tsx` — MODIFY: remove `?token=` usage, use cookie auth
-- App router — add `/speaker-portal/magic-login` route
+- `pages/speaker-portal/SpeakerMagicLoginPage.tsx` — NEW: JWT URL extraction, calls magic-login endpoint, redirects to dashboard with session token
+- `services/speakerAuthService.ts` — NEW: API client for `POST /api/v1/auth/speaker-magic-login`
+- `App.tsx` — add route `/speaker-portal/magic-login` (around line 239, alongside existing speaker-portal routes)
+- `pages/speaker-portal/SpeakerDashboardPage.tsx` — **NOT MODIFIED in this story** — existing `?token=` flow continues unchanged
 
 **Email template** (exact file to modify):
 - `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java`
@@ -208,9 +251,11 @@ class SpeakerMagicLoginControllerTest extends AbstractIntegrationTest {
 HTTP-only cookie settings (per Epic 9 security requirements + `08-operations-security.md`):
 - `HttpOnly` — prevents JavaScript XSS access
 - `Secure` — HTTPS-only (disable for local dev profile only)
-- `SameSite=Strict` — prevents CSRF
+- `SameSite` — **`Strict` in production; `Lax` in local/dev profile** — `SameSite=Strict` blocks cross-port requests (frontend:8100 → API:8000), causing the cookie to be silently dropped in local dev
 - `Max-Age=2592000` — 30 days in seconds (= 30 × 24 × 60 × 60)
 - `Path=/` — accessible on all paths
+
+**Implementation**: make `SameSite` configurable via `@Value("${app.cookie.same-site:Strict}")` so `application-local.yml` can override to `Lax`.
 
 ### Frontend API Client Pattern
 
