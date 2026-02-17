@@ -66,6 +66,42 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      */
     List<SpeakerPool> findBySessionId(UUID sessionId);
 
+    // Story 9.4: Epic 9 Migration
+
+    /**
+     * Find all speaker pool entries with a specific status across all events.
+     * Used by Epic9MigrationService to locate all ACCEPTED speakers for migration.
+     *
+     * @param status the speaker workflow status
+     * @return list of speaker pool entries with the given status
+     */
+    List<SpeakerPool> findByStatus(SpeakerWorkflowState status);
+
+    // Story 9.3: Dual Authentication Support
+
+    /**
+     * Find the most recent accepted speaker pool entry for a given email.
+     * Used by password-login and magic-link-request flows to look up the speaker.
+     * If a speaker has multiple accepted invitations (different events), returns the most recent.
+     *
+     * @param email the speaker's email address
+     * @param status the speaker workflow status (ACCEPTED)
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findFirstByEmailAndStatusOrderByCreatedAtDesc(
+            String email, SpeakerWorkflowState status);
+
+    /**
+     * Find the most recent speaker pool entry for a given email with any of the provided statuses.
+     * Used by magic-link-request flow to look up speakers in INVITED or ACCEPTED state.
+     *
+     * @param email the speaker's email address
+     * @param statuses the set of speaker workflow statuses
+     * @return optional speaker pool entry
+     */
+    java.util.Optional<SpeakerPool> findFirstByEmailAndStatusInOrderByCreatedAtDesc(
+            String email, java.util.Collection<SpeakerWorkflowState> statuses);
+
     // Story 6.1b: Speaker Invitation System
 
     /**

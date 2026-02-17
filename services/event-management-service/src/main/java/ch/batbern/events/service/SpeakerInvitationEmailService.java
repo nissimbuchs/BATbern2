@@ -117,6 +117,54 @@ public class SpeakerInvitationEmailService {
     }
 
     /**
+     * Send speaker invitation email synchronously, propagating exceptions to the caller.
+     *
+     * Used by Epic9MigrationService (Story 9.4) where the caller needs to detect and record
+     * email failures per-speaker. Unlike {@link #sendInvitationEmail}, this method:
+     * - Is NOT @Async (executes on the calling thread)
+     * - Does NOT swallow exceptions (caller is responsible for error handling)
+     *
+     * @param speaker the speaker pool entry
+     * @param event the event
+     * @param respondToken magic link token for response (accept/decline)
+     * @param dashboardToken magic link token for dashboard access (reusable VIEW token)
+     * @param locale preferred language (defaults to German)
+     * @throws RuntimeException if template loading or email sending fails
+     */
+    public void sendInvitationEmailSync(
+            SpeakerPool speaker,
+            Event event,
+            String respondToken,
+            String dashboardToken,
+            Locale locale
+    ) {
+        log.info("Sending invitation email (sync) to: {} for event: {}",
+                LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
+
+        Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
+        ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
+        String jwtToken = magicLinkService.generateJwtToken(speaker.getId());
+
+        String htmlBody = loadEmailTemplate(
+                emailLocale,
+                speaker,
+                event,
+                eventDateTime,
+                respondToken,
+                dashboardToken,
+                jwtToken
+        );
+
+        String subject = emailLocale.getLanguage().equals("de")
+                ? "Einladung als Referent - " + event.getTitle()
+                : "Speaker Invitation - " + event.getTitle();
+
+        emailService.sendHtmlEmail(speaker.getEmail(), subject, htmlBody);
+
+        log.info("Invitation email sent successfully (sync) to: {}", LoggingUtils.maskEmail(speaker.getEmail()));
+    }
+
+    /**
      * Load and populate email template with speaker/event data.
      */
     private String loadEmailTemplate(
