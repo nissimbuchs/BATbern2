@@ -930,6 +930,53 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Story 9.2: POST /api/v1/users/{username}/roles/{role} — Add single role (additive)
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_addRoleToUser_when_organizerAddsNewRole")
+    void should_addRoleToUser_when_organizerAddsNewRole() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{username}/roles/{role}", "john.doe", "SPEAKER")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasItem("ATTENDEE")))
+                .andExpect(jsonPath("$.roles", hasItem("SPEAKER")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_beIdempotent_when_organizerAddsDuplicateRole")
+    void should_beIdempotent_when_organizerAddsDuplicateRole() throws Exception {
+        // ATTENDEE role already exists on testUser
+        mockMvc.perform(post("/api/v1/users/{username}/roles/{role}", "john.doe", "ATTENDEE")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.roles").isArray())
+                .andExpect(jsonPath("$.roles", hasSize(1)))
+                .andExpect(jsonPath("$.roles[0]").value("ATTENDEE"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_return404_when_addRoleToNonExistentUser")
+    void should_return404_when_addRoleToNonExistentUser() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{username}/roles/{role}", "nonexistent.user", "SPEAKER")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_return403_when_nonOrganizerAddsRole")
+    void should_return403_when_nonOrganizerAddsRole() throws Exception {
+        mockMvc.perform(post("/api/v1/users/{username}/roles/{role}", "john.doe", "SPEAKER")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
     // Admin Profile Picture Management Tests
 
     @Test

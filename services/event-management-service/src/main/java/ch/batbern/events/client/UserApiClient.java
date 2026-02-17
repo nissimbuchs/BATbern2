@@ -1,5 +1,11 @@
 package ch.batbern.events.client;
 
+import ch.batbern.events.dto.CognitoAuthResult;
+import ch.batbern.events.dto.SpeakerAuthRequest;
+import ch.batbern.events.dto.SpeakerConfirmResetRequest;
+import ch.batbern.events.dto.SpeakerForgotPasswordRequest;
+import ch.batbern.events.dto.SpeakerProvisionRequest;
+import ch.batbern.events.dto.SpeakerProvisionResponse;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -132,4 +138,48 @@ public interface UserApiClient {
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
     void updateUserProfilePicture(String username, String profilePictureUrl);
+
+    /**
+     * Story 9.2: Provision a speaker account in Cognito and local DB.
+     *
+     * Called on invitation acceptance to ensure the speaker has a Cognito account
+     * with SPEAKER role, enabling traditional email/password login in addition to magic link.
+     *
+     * Idempotent: safe to call multiple times — duplicate account or role is a no-op.
+     *
+     * @param request Speaker email, firstName, lastName
+     * @return Provision result: username, cognitoUserId, action (NEW|EXTENDED),
+     *         and temporaryPassword (NEW accounts only, null for EXTENDED)
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    SpeakerProvisionResponse provisionSpeakerAccount(SpeakerProvisionRequest request);
+
+    /**
+     * Story 9.3 Task 3.1: Authenticate speaker via Cognito ADMIN_USER_PASSWORD_AUTH.
+     * Calls POST /api/v1/speaker-auth/authenticate on company-user-management-service.
+     *
+     * @param request Speaker email + password
+     * @return Cognito tokens (access, id, refresh)
+     * @throws UserServiceException if API communication fails
+     */
+    CognitoAuthResult authenticateSpeaker(SpeakerAuthRequest request);
+
+    /**
+     * Story 9.3 Task 3.2: Initiate speaker password reset via Cognito ForgotPassword.
+     * Calls POST /api/v1/speaker-auth/forgot-password on company-user-management-service.
+     * Cognito sends the confirmation code email directly.
+     *
+     * @param email Speaker email
+     * @throws UserServiceException if API communication fails
+     */
+    void speakerForgotPassword(SpeakerForgotPasswordRequest request);
+
+    /**
+     * Story 9.3 Task 3.3: Confirm speaker password reset with code + new password.
+     * Calls POST /api/v1/speaker-auth/confirm-reset on company-user-management-service.
+     *
+     * @param request email, confirmationCode, newPassword
+     * @throws UserServiceException if API communication fails
+     */
+    void speakerConfirmReset(SpeakerConfirmResetRequest request);
 }

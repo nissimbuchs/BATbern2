@@ -57,6 +57,7 @@ public class SpeakerResponseService {
     private final UserApiClient userApiClient;
     private final SpeakerAcceptanceEmailService acceptanceEmailService;
     private final SpeakerStatusHistoryRepository statusHistoryRepository;
+    private final SpeakerAccountCreationService speakerAccountCreationService;
 
     @Value("${app.base-url:http://localhost:8100}")
     private String appBaseUrl;
@@ -96,8 +97,10 @@ public class SpeakerResponseService {
         SpeakerWorkflowState previousStatus = speaker.getStatus();
 
         // Step 7: Process based on response type
+        // For ACCEPT: capture temporary password for NEW Cognito accounts (AC5)
+        String temporaryPassword = null;
         switch (request.getResponse()) {
-            case ACCEPT -> processAcceptResponse(speaker, request);
+            case ACCEPT -> temporaryPassword = processAcceptResponse(speaker, request);
             case DECLINE -> processDeclineResponse(speaker, request);
             case TENTATIVE -> processTentativeResponse(speaker, request);
             default -> throw new IllegalArgumentException(
@@ -134,7 +137,7 @@ public class SpeakerResponseService {
         notificationService.notifyOrganizerOfResponse(speaker, event, request.getResponse());
 
         // Step 12: Build and return result
-        return buildResult(speaker, event, request.getResponse());
+        return buildResult(speaker, event, request.getResponse(), temporaryPassword);
     }
 
     /**
@@ -201,8 +204,10 @@ public class SpeakerResponseService {
      * - Clear tentative flag
      * - Store preferences if provided
      * - Consume token (single-use)
+     *
+     * @return temporary password for NEW Cognito accounts (AC5), or null for EXTENDED/error
      */
-    private void processAcceptResponse(SpeakerPool speaker, SpeakerResponseRequest request) {
+    private String processAcceptResponse(SpeakerPool speaker, SpeakerResponseRequest request) {
         // Create/get User account for the speaker (enables profile management)
         String username = createOrLinkUser(speaker);
         speaker.setUsername(username);
@@ -225,6 +230,17 @@ public class SpeakerResponseService {
 
         LOG.info("Speaker {} (username: {}) accepted invitation for event {}",
                 speaker.getSpeakerName(), username, speaker.getEventId());
+
+        // Story 9.2 AC1-3: Trigger Cognito account creation/role extension.
+        // Failure MUST NOT block the acceptance — wrapped in try/catch.
+        // Returns temporary password for NEW accounts (AC5), null otherwise.
+        try {
+            return speakerAccountCreationService.processInvitationAcceptance(speaker.getId());
+        } catch (Exception e) {
+            LOG.error("Account creation failed for speakerPoolId {} — acceptance still completed: {}",
+                    speaker.getId(), e.getMessage(), e);
+            return null;
+        }
     }
 
     /**
@@ -364,8 +380,11 @@ public class SpeakerResponseService {
 
     /**
      * Build the result with confirmation details and next steps.
+     *
+     * @param temporaryPassword temporary password for NEW Cognito accounts (AC5), null otherwise
      */
-    private SpeakerResponseResult buildResult(SpeakerPool speaker, Event event, SpeakerResponseType responseType) {
+    private SpeakerResponseResult buildResult(SpeakerPool speaker, Event event,
+                                              SpeakerResponseType responseType, String temporaryPassword) {
         List<String> nextSteps = new ArrayList<>();
         String profileUrl = null;
 
@@ -381,7 +400,8 @@ public class SpeakerResponseService {
             LOG.info("Generated profile URL for speaker {}: {}", speaker.getSpeakerName(), profileUrl);
 
             // AC9: Send acceptance confirmation email with portal links (async)
-            sendAcceptanceConfirmationEmail(speaker, event, viewToken);
+            // AC5: include temporary password if a NEW Cognito account was created
+            sendAcceptanceConfirmationEmail(speaker, event, viewToken, temporaryPassword);
         } else if (responseType == SpeakerResponseType.TENTATIVE) {
             nextSteps.add("Return to this link when you're ready to confirm");
             nextSteps.add("Contact the organizer if you have questions");
@@ -400,13 +420,17 @@ public class SpeakerResponseService {
     /**
      * Send acceptance confirmation email with portal links.
      * Story 6.2a AC9: Allows speaker to return to portal via email link.
+     * Story 9.2 AC5: Includes temporary password for NEW Cognito accounts.
+     *
+     * @param temporaryPassword temporary password for NEW accounts, null for EXTENDED
      */
-    private void sendAcceptanceConfirmationEmail(SpeakerPool speaker, Event event, String viewToken) {
+    private void sendAcceptanceConfirmationEmail(SpeakerPool speaker, Event event,
+                                                 String viewToken, String temporaryPassword) {
         // Determine locale (default to German for Swiss audience)
         java.util.Locale locale = java.util.Locale.GERMAN;
 
-        // Send email asynchronously
-        acceptanceEmailService.sendAcceptanceConfirmationEmail(speaker, event, viewToken, locale);
+        // Send email asynchronously (overload with temporaryPassword for AC5)
+        acceptanceEmailService.sendAcceptanceConfirmationEmail(speaker, event, viewToken, locale, temporaryPassword);
         LOG.info("Triggered acceptance confirmation email for speaker: {}", speaker.getSpeakerName());
     }
 

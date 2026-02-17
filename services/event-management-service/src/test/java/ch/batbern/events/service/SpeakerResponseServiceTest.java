@@ -39,9 +39,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +90,9 @@ class SpeakerResponseServiceTest {
     @Mock
     private SpeakerStatusHistoryRepository statusHistoryRepository;
 
+    @Mock
+    private SpeakerAccountCreationService speakerAccountCreationService;
+
     private SpeakerResponseService speakerResponseService;
 
     private UUID testSpeakerPoolId;
@@ -107,7 +112,8 @@ class SpeakerResponseServiceTest {
                 notificationService,
                 userApiClient,
                 acceptanceEmailService,
-                statusHistoryRepository
+                statusHistoryRepository,
+                speakerAccountCreationService
         );
 
         testSpeakerPoolId = UUID.randomUUID();
@@ -146,6 +152,11 @@ class SpeakerResponseServiceTest {
         // Default mock for SpeakerRepository (speaker record creation)
         // Use lenient() since this mock is only used in Accept tests
         lenient().when(speakerRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+
+        // Default mock for SpeakerAccountCreationService (Story 9.2): return null (EXTENDED or error)
+        // Use lenient() since this mock is only relevant in Accept tests
+        lenient().when(speakerAccountCreationService.processInvitationAcceptance(any()))
+                .thenReturn(null);
     }
 
     // ==================== AC3: Accept Response Flow Tests ====================
@@ -1136,6 +1147,142 @@ class SpeakerResponseServiceTest {
             ArgumentCaptor<SpeakerPool> captor = ArgumentCaptor.forClass(SpeakerPool.class);
             verify(speakerPoolRepository).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(SpeakerWorkflowState.ACCEPTED);
+        }
+    }
+
+    // ==================== Story 9.2: Account Creation & Temporary Password ====================
+
+    @Nested
+    @DisplayName("Story 9.2: Account Creation on Acceptance")
+    class AccountCreationOnAcceptanceTests {
+
+        private void arrangeAccept() {
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, "jane.speaker", "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+            // generateToken is called in buildResult() to create the VIEW token for email links
+            // Uses lenient() to avoid strict-stub mismatch on the long parameter
+            lenient().when(magicLinkService.generateToken(any(), any(), anyLong()))
+                    .thenReturn("view-token-test");
+        }
+
+        /**
+         * AC1/AC2: processInvitationAcceptance is called on accept.
+         */
+        @Test
+        void should_triggerAccountCreation_when_speakerAccepts() {
+            arrangeAccept();
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.ACCEPT)
+                    .build();
+
+            speakerResponseService.processResponse(request);
+
+            verify(speakerAccountCreationService, times(1))
+                    .processInvitationAcceptance(testSpeakerPoolId);
+        }
+
+        /**
+         * AC5: Temporary password from NEW account is threaded to the acceptance email.
+         */
+        @Test
+        void should_passTemporaryPassword_when_newAccountCreated() {
+            arrangeAccept();
+            String tempPassword = "TempPass123!";
+            when(speakerAccountCreationService.processInvitationAcceptance(testSpeakerPoolId))
+                    .thenReturn(tempPassword);
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.ACCEPT)
+                    .build();
+
+            speakerResponseService.processResponse(request);
+
+            // Verify the 5-arg overload was called with the non-null password
+            ArgumentCaptor<String> passwordCaptor = ArgumentCaptor.forClass(String.class);
+            verify(acceptanceEmailService).sendAcceptanceConfirmationEmail(
+                    any(), any(), anyString(), any(), passwordCaptor.capture());
+            assertThat(passwordCaptor.getValue()).isEqualTo(tempPassword);
+        }
+
+        /**
+         * AC5: Null password for EXTENDED accounts means email has no credentials block.
+         */
+        @Test
+        void should_passNullPassword_when_existingAccountExtended() {
+            arrangeAccept();
+            when(speakerAccountCreationService.processInvitationAcceptance(testSpeakerPoolId))
+                    .thenReturn(null); // EXTENDED account
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.ACCEPT)
+                    .build();
+
+            speakerResponseService.processResponse(request);
+
+            ArgumentCaptor<String> passwordCaptor = ArgumentCaptor.forClass(String.class);
+            verify(acceptanceEmailService).sendAcceptanceConfirmationEmail(
+                    any(), any(), anyString(), any(), passwordCaptor.capture());
+            assertThat(passwordCaptor.getValue()).isNull();
+        }
+
+        /**
+         * AC3 (acceptance not blocked): Account creation failure does NOT prevent acceptance.
+         */
+        @Test
+        void should_completeAcceptance_when_accountCreationThrows() {
+            arrangeAccept();
+            when(speakerAccountCreationService.processInvitationAcceptance(any()))
+                    .thenThrow(new RuntimeException("Cognito unavailable"));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.ACCEPT)
+                    .build();
+
+            // Acceptance must succeed even if account creation throws
+            SpeakerResponseResult result = speakerResponseService.processResponse(request);
+            assertThat(result.isSuccess()).isTrue();
+
+            // Email must still be sent (with null password due to error)
+            ArgumentCaptor<String> passwordCaptor = ArgumentCaptor.forClass(String.class);
+            verify(acceptanceEmailService).sendAcceptanceConfirmationEmail(
+                    any(), any(), anyString(), any(), passwordCaptor.capture());
+            assertThat(passwordCaptor.getValue()).isNull();
+        }
+
+        /**
+         * Account creation is NOT triggered for DECLINE responses.
+         */
+        @Test
+        void should_notTriggerAccountCreation_when_speakerDeclines() {
+            when(magicLinkService.validateToken(validToken))
+                    .thenReturn(TokenValidationResult.valid(testSpeakerPoolId, "jane.speaker", "BAT2025Q1", TokenAction.RESPOND));
+            when(speakerPoolRepository.findById(testSpeakerPoolId))
+                    .thenReturn(Optional.of(testSpeakerPool));
+            when(eventRepository.findById(testEventId))
+                    .thenReturn(Optional.of(testEvent));
+            when(speakerPoolRepository.save(any(SpeakerPool.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            SpeakerResponseRequest request = SpeakerResponseRequest.builder()
+                    .token(validToken)
+                    .response(SpeakerResponseType.DECLINE)
+                    .reason("Not available")
+                    .build();
+
+            speakerResponseService.processResponse(request);
+
+            verify(speakerAccountCreationService, never()).processInvitationAcceptance(any());
         }
     }
 }

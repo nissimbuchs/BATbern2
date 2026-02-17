@@ -72,6 +72,21 @@ public class SpeakerAcceptanceEmailService {
             String viewToken,
             Locale locale
     ) {
+        sendAcceptanceConfirmationEmail(speaker, event, viewToken, locale, null);
+    }
+
+    /**
+     * Story 9.2 AC5: Overload that includes temporary password for NEW Cognito accounts.
+     * Pass temporaryPassword=null for EXTENDED accounts (they already have a password).
+     */
+    @Async
+    public void sendAcceptanceConfirmationEmail(
+            SpeakerPool speaker,
+            Event event,
+            String viewToken,
+            Locale locale,
+            String temporaryPassword
+    ) {
         try {
             log.info("Sending acceptance confirmation email to: {} for event: {}",
                     LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
@@ -88,7 +103,8 @@ public class SpeakerAcceptanceEmailService {
                     speaker,
                     event,
                     eventDateTime,
-                    viewToken
+                    viewToken,
+                    temporaryPassword
             );
 
             // Determine subject based on locale
@@ -121,7 +137,8 @@ public class SpeakerAcceptanceEmailService {
             SpeakerPool speaker,
             Event event,
             ZonedDateTime eventDateTime,
-            String viewToken
+            String viewToken,
+            String temporaryPassword
     ) {
         try {
             // Determine template file based on locale
@@ -166,7 +183,10 @@ public class SpeakerAcceptanceEmailService {
                     Map.entry("organizerEmail", organizerEmail),
                     Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                     Map.entry("supportUrl", baseUrl + "/support"),
-                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
+                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                    // Story 9.2 AC5: temporary password for NEW Cognito accounts (empty = not shown)
+                    Map.entry("temporaryPassword", temporaryPassword != null ? temporaryPassword : ""),
+                    Map.entry("speakerEmail", speaker.getEmail() != null ? speaker.getEmail() : "")
             );
 
             // Replace template variables

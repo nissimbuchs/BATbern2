@@ -134,6 +134,26 @@
             color: #721c24;
             font-size: 16px;
         }
+        .account-credentials {
+            background-color: #e8f4fd;
+            border: 2px solid #17a2b8;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .account-credentials h3 {
+            margin-top: 0;
+            color: #0c5460;
+            font-size: 16px;
+        }
+        .credential-row {
+            margin: 8px 0;
+            font-family: monospace;
+            background-color: #ffffff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #bee5eb;
+        }
         .next-steps {
             background-color: #e8f5e9;
             border-radius: 4px;
@@ -238,6 +258,18 @@
             <p>Bitte reichen Sie Ihren Präsentationstitel und Abstract bis spätestens <strong>{{contentDeadline}}</strong> ein.</p>
         </div>
         {{/contentDeadline}}
+
+        {{#temporaryPassword}}
+        <div class="account-credentials">
+            <h3>🔐 Ihr BATbern-Konto wurde erstellt</h3>
+            <p>Sie können sich jetzt zusätzlich zum Magic Link auch mit E-Mail und Passwort anmelden:</p>
+            <div class="credential-row"><strong>E-Mail:</strong> {{speakerEmail}}</div>
+            <div class="credential-row"><strong>Temporäres Passwort:</strong> {{temporaryPassword}}</div>
+            <p style="font-size:13px;color:#555;margin-top:12px;">
+                ⚠️ Bitte ändern Sie dieses Passwort bei Ihrer ersten Anmeldung. Der Magic Link oben bleibt Ihre primäre Zugriffsmethode.
+            </p>
+        </div>
+        {{/temporaryPassword}}
 
         <div class="next-steps">
             <h3>Nächste Schritte</h3>

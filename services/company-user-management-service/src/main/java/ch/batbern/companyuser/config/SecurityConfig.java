@@ -69,6 +69,10 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Story 9.2: Internal service-to-service endpoint (no user JWT on magic-link flow)
+                .requestMatchers("/api/v1/users/speaker-accounts").permitAll()
+                // Story 9.3: Internal service-to-service speaker auth endpoints (called by event-management-service)
+                .requestMatchers("/api/v1/speaker-auth/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
@@ -104,6 +108,10 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Story 9.2: Internal service-to-service endpoint (no user JWT on magic-link flow)
+                .requestMatchers("/api/v1/users/speaker-accounts").permitAll()
+                // Story 9.3: Internal service-to-service speaker auth endpoints (called by event-management-service)
+                .requestMatchers("/api/v1/speaker-auth/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
@@ -146,6 +154,10 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Story 9.2: Internal service-to-service endpoint (no user JWT on magic-link flow)
+                .requestMatchers("/api/v1/users/speaker-accounts").permitAll()
+                // Story 9.3: Internal service-to-service speaker auth endpoints (called by event-management-service)
+                .requestMatchers("/api/v1/speaker-auth/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)

@@ -3,6 +3,8 @@ package ch.batbern.companyuser.controller;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.PresignedUploadUrl;
+import ch.batbern.companyuser.dto.SpeakerProvisionRequest;
+import ch.batbern.companyuser.dto.SpeakerProvisionResponse;
 import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmRequest;
 import ch.batbern.companyuser.dto.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.ProfilePictureUploadRequest;
@@ -61,6 +63,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
     private final ch.batbern.companyuser.service.RoleService roleService;
+    private final ch.batbern.companyuser.service.SpeakerProvisionService speakerProvisionService;
 
     /**
      * AC1: Get current authenticated user
@@ -352,6 +355,56 @@ public class UserController {
         return ResponseEntity.ok(new UserRolesResponse()
                 .username(username)
                 .roles(rolesDto));
+    }
+
+    /**
+     * Story 9.2: Add a single role to a user (additive, not replacement)
+     * POST /api/v1/users/{username}/roles/{role}
+     *
+     * @param username User username
+     * @param role     Role to add (e.g., SPEAKER)
+     * @return Updated user roles
+     */
+    @PostMapping("/{username}/roles/{role}")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
+    @Timed(value = "users.addUserRole",
+            description = "Time to add a single role to a user",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<UserRolesResponse> addUserRole(
+            @PathVariable String username,
+            @PathVariable String role) {
+        log.info("Adding role {} to user: {}", role, username);
+
+        var domainRole = Role.valueOf(role.toUpperCase());
+        var updatedRoles = roleService.addRole(username, domainRole);
+
+        var rolesDto = updatedRoles.stream()
+                .map(r -> UserRolesResponse.RolesEnum.valueOf(r.name()))
+                .toList();
+
+        return ResponseEntity.ok(new UserRolesResponse()
+                .username(username)
+                .roles(rolesDto));
+    }
+
+    /**
+     * Story 9.2: Provision speaker account (Cognito create/extend + local DB SPEAKER role)
+     * POST /api/v1/users/speaker-accounts
+     * Called internally by event-management-service on invitation acceptance.
+     * Idempotent: safe to call multiple times for the same speaker.
+     *
+     * @param request Email, firstName, lastName of the speaker
+     * @return Provision result with action (NEW|EXTENDED) and temporary password (NEW only)
+     */
+    @PostMapping("/speaker-accounts")
+    @Timed(value = "users.speakerProvision",
+            description = "Time to provision speaker account",
+            percentiles = {0.5, 0.95, 0.99})
+    public ResponseEntity<SpeakerProvisionResponse> provisionSpeakerAccount(
+            @Valid @RequestBody SpeakerProvisionRequest request) {
+        log.info("Provisioning speaker account for email: {}***", request.getEmail().substring(0, 3));
+        SpeakerProvisionResponse response = speakerProvisionService.provision(request);
+        return ResponseEntity.ok(response);
     }
 
     /**

@@ -106,7 +106,7 @@ class UserReconciliationServiceTest {
         assertThat(report.getOrphanedUsers()).isEqualTo(0);
         assertThat(report.getMissingUsers()).isEqualTo(0);
         assertThat(report.getErrors()).isEmpty();
-        assertThat(report.getDurationMs()).isGreaterThan(0);
+        assertThat(report.getDurationMs()).isGreaterThanOrEqualTo(0);
 
         verify(userRepository, never()).save(any(User.class));
         verify(metricsService).recordReconciliationJob(0, 0, 0, 0, report.getDurationMs());

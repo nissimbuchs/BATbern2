@@ -44,6 +44,10 @@ async function globalSetup() {
     console.log('[Global Setup] ⚠️  No token file found - tests requiring auth will fail');
     console.log(`[Global Setup] Expected file: ${tokenFilePath}`);
     console.log('[Global Setup] Run: ./scripts/auth/get-token.sh <environment> <email> <password>');
+
+    // Create empty auth state so Playwright doesn't crash reading a missing file
+    fs.writeFileSync('.playwright-auth-state.json', JSON.stringify({ cookies: [], origins: [] }));
+    console.log('[Global Setup] ✓ Created empty auth state (unauthenticated tests will still run)');
     return;
   }
 

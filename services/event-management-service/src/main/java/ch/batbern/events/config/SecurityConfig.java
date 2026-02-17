@@ -123,6 +123,12 @@ public class SecurityConfig {
                 // Story 9.1: Speaker JWT magic link authentication endpoint (JWT-protected, no Cognito auth)
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-magic-login").permitAll()
 
+                // Story 9.3: Dual authentication — password login, magic link request, password reset
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-password-login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-request-magic-link").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/speaker-confirm-reset").permitAll()
+
                 // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
                 .requestMatchers("/api/v1/e2e-test/**").permitAll()
 

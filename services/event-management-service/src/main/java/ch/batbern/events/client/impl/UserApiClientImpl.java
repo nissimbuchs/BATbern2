@@ -1,6 +1,12 @@
 package ch.batbern.events.client.impl;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.CognitoAuthResult;
+import ch.batbern.events.dto.SpeakerAuthRequest;
+import ch.batbern.events.dto.SpeakerConfirmResetRequest;
+import ch.batbern.events.dto.SpeakerForgotPasswordRequest;
+import ch.batbern.events.dto.SpeakerProvisionRequest;
+import ch.batbern.events.dto.SpeakerProvisionResponse;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
@@ -592,6 +598,213 @@ public class UserApiClientImpl implements UserApiClient {
                     e
             );
         }
+    }
+
+    /**
+     * Story 9.2: Provision a speaker account in Cognito and local DB.
+     * Calls POST /api/v1/users/speaker-accounts on company-user-management-service.
+     * Not cached — each call must reach the service to ensure provisioning completes.
+     */
+    @Override
+    public SpeakerProvisionResponse provisionSpeakerAccount(SpeakerProvisionRequest request) {
+        String email = request.getEmail();
+        String maskedEmail = email != null && email.length() > 3
+                ? email.substring(0, 3) + "***"
+                : "***";
+        log.info("Provisioning speaker account for email: {}", maskedEmail);
+
+        String url = userServiceBaseUrl + "/api/v1/users/speaker-accounts";
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<SpeakerProvisionRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            ResponseEntity<SpeakerProvisionResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpRequest,
+                    SpeakerProvisionResponse.class
+            );
+
+            SpeakerProvisionResponse result = response.getBody();
+            log.info("Speaker account provisioned: username={}, action={}",
+                    result != null ? result.getUsername() : "null",
+                    result != null ? result.getAction() : "null");
+            return result;
+
+        } catch (HttpClientErrorException e) {
+            log.error("Client error provisioning speaker account: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error provisioning speaker account",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error provisioning speaker account: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error provisioning speaker account",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error provisioning speaker account: {}", e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for speaker provisioning",
+                    e
+            );
+
+        } catch (Exception e) {
+            log.error("Unexpected error provisioning speaker account: {}", e.getMessage(), e);
+            throw new UserServiceException(
+                    "Unexpected error provisioning speaker account",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Story 9.3 Task 3.5: Authenticate speaker via Cognito.
+     * Calls POST /api/v1/speaker-auth/authenticate on company-user-management-service.
+     */
+    @Override
+    public CognitoAuthResult authenticateSpeaker(SpeakerAuthRequest request) {
+        log.info("Authenticating speaker via Cognito");
+
+        String url = userServiceBaseUrl + "/api/v1/speaker-auth/authenticate";
+
+        try {
+            HttpHeaders headers = createServiceHeaders();
+            HttpEntity<SpeakerAuthRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            ResponseEntity<CognitoAuthResult> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    httpRequest,
+                    CognitoAuthResult.class
+            );
+
+            log.info("Speaker Cognito authentication successful");
+            return response.getBody();
+
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error authenticating speaker: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error authenticating speaker",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error authenticating speaker: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error authenticating speaker",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error authenticating speaker: {}", e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for speaker authentication",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Story 9.3 Task 3.5: Initiate speaker password reset.
+     * Calls POST /api/v1/speaker-auth/forgot-password on company-user-management-service.
+     */
+    @Override
+    public void speakerForgotPassword(SpeakerForgotPasswordRequest request) {
+        log.info("Initiating speaker password reset");
+
+        String url = userServiceBaseUrl + "/api/v1/speaker-auth/forgot-password";
+
+        try {
+            HttpHeaders headers = createServiceHeaders();
+            HttpEntity<SpeakerForgotPasswordRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            restTemplate.exchange(url, HttpMethod.POST, httpRequest, Void.class);
+            log.info("Speaker password reset initiated");
+
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error initiating password reset: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error initiating speaker password reset",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error initiating password reset: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error initiating speaker password reset",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error initiating password reset: {}", e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for password reset",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Story 9.3 Task 3.5: Confirm speaker password reset.
+     * Calls POST /api/v1/speaker-auth/confirm-reset on company-user-management-service.
+     */
+    @Override
+    public void speakerConfirmReset(SpeakerConfirmResetRequest request) {
+        log.info("Confirming speaker password reset");
+
+        String url = userServiceBaseUrl + "/api/v1/speaker-auth/confirm-reset";
+
+        try {
+            HttpHeaders headers = createServiceHeaders();
+            HttpEntity<SpeakerConfirmResetRequest> httpRequest = new HttpEntity<>(request, headers);
+
+            restTemplate.exchange(url, HttpMethod.POST, httpRequest, Void.class);
+            log.info("Speaker password reset confirmed");
+
+        } catch (HttpClientErrorException e) {
+            log.warn("Client error confirming password reset: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "Client error confirming speaker password reset",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            log.error("Server error confirming password reset: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new UserServiceException(
+                    "User Management Service error confirming speaker password reset",
+                    e.getStatusCode().value(),
+                    e
+            );
+
+        } catch (ResourceAccessException e) {
+            log.error("Network error confirming password reset: {}", e.getMessage());
+            throw new UserServiceException(
+                    "Failed to connect to User Management Service for password reset confirmation",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Create HTTP headers without JWT token for service-to-service calls
+     * where no user auth context is present (e.g., speaker auth endpoints).
+     */
+    private HttpHeaders createServiceHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        return headers;
     }
 
     /**

@@ -214,7 +214,7 @@ API_BASE_URL=http://localhost:${API_GATEWAY_PORT}
 # ==============================================
 AWS_REGION=${AWS_REGION:-eu-central-1}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
-AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+AWS_PROFILE=${AWS_PROFILE:-batbern-staging}
 
 # ==============================================
 # AWS Cognito Configuration

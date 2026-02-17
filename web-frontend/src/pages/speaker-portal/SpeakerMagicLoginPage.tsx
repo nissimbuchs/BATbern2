@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card } from '@/components/public/ui/card';
 import { Loader2, AlertCircle, Mail } from 'lucide-react';
@@ -79,6 +79,11 @@ const SpeakerMagicLoginPage = () => {
                 <a href="mailto:events@batbern.ch" className="text-blue-600 hover:underline">
                   events@batbern.ch
                 </a>
+              </div>
+              <div className="mt-4 text-center">
+                <Link to="/speaker-portal/login" className="text-sm text-blue-600 hover:underline">
+                  Mit Passwort anmelden →
+                </Link>
               </div>
             </div>
           )}

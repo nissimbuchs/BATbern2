@@ -67,6 +67,7 @@ aws:
     domain: ${CLOUDFRONT_DOMAIN:https://cdn.batbern.ch}
   cognito:
     user-pool-id: ${COGNITO_USER_POOL_ID:}
+    app-client-id: ${COGNITO_APP_CLIENT_ID:}
     region: ${AWS_REGION:eu-central-1}
   eventbridge:
     bus-name: ${EVENT_BUS_NAME:batbern-staging}

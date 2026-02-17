@@ -222,23 +222,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
-   * Check if user has specific role
+   * Check if user has specific role (Story 9.5: checks all roles, not just primary)
    */
   const hasRole = useCallback(
     (role: UserRole): boolean => {
-      return state.user?.role === role;
+      return state.user?.roles?.includes(role) ?? false;
     },
     [state.user]
   );
 
   /**
    * Check if user has permission for resource/action
+   * Story 9.5: merges permissions from ALL user roles
    */
   const hasPermission = useCallback(
     (resource: string, action: string): boolean => {
       if (!state.user) return false;
 
-      const { role } = state.user;
+      const { roles } = state.user;
 
       // Role-based permission matrix based on Story 1.2 specifications
       const permissions: Record<UserRole, Record<string, string[]>> = {
@@ -268,19 +269,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       };
 
-      const rolePermissions = permissions[role];
-      if (!rolePermissions) return false;
-
-      const resourcePermissions = rolePermissions[resource];
-      if (!resourcePermissions) return false;
-
-      return resourcePermissions.includes(action);
+      return roles.some((role) => {
+        const rolePerms = permissions[role];
+        return rolePerms?.[resource]?.includes(action) ?? false;
+      });
     },
     [state.user]
   );
 
   /**
    * Check if user can access specific path
+   * Story 9.5: aggregates allowed paths from ALL user roles
    */
   const canAccess = useCallback(
     (path: string): boolean => {
@@ -293,6 +292,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         '/about',
         '/archive',
         '/register',
+        '/speaker-portal',
       ];
       const isPublicPath = publicPaths.some((publicPath) => path.startsWith(publicPath));
 
@@ -307,7 +307,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (!state.user) return false;
 
-      const { role } = state.user;
+      const { roles } = state.user;
 
       // Role-based path access
       const pathAccess: Record<UserRole, string[]> = {
@@ -325,7 +325,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         attendee: ['/dashboard', '/events', '/content', '/search', '/attendee', '/account'],
       };
 
-      const allowedPaths = pathAccess[role] || [];
+      // Aggregate allowed paths from ALL roles
+      const allowedPaths = roles.flatMap((role) => pathAccess[role] || []);
       return allowedPaths.some((allowedPath) => path.startsWith(allowedPath));
     },
     [state.isAuthenticated, state.user]
