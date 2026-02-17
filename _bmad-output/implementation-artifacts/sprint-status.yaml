@@ -54,7 +54,7 @@ development_status:
   w2-2-watch-pairing-flow-organizer-zone-navigation: done
   w2-3-event-join-schedule-sync: done
   w2-4-speaker-arrival-tracking: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Live Countdown & Haptic Awareness
   epic-3: in-progress

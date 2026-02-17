@@ -1,0 +1,170 @@
+//
+//  LiveCountdownViewModel.swift
+//  BATbern-watch Watch App
+//
+//  O3: Live countdown timer ViewModel.
+//  W3.1: MVVM presentation logic for LiveCountdownView.
+//  Source: docs/watch-app/architecture.md#Implementation-Patterns
+//
+
+import Foundation
+
+/// Drives the O3 live countdown display.
+///
+/// Owns `SessionTimerEngine` and `HapticScheduler` internally.
+/// Discovers the active session from `eventState.currentEvent?.sessions` using wall-clock comparison.
+/// Publishes formatted time, urgency level, progress ring value, and session metadata.
+///
+/// Usage:
+/// ```swift
+/// let vm = LiveCountdownViewModel()
+/// vm.eventState = eventStateManager  // set from view's @Environment
+/// vm.startTimer()
+/// ```
+@Observable
+@MainActor
+final class LiveCountdownViewModel {
+
+    // MARK: - Published State (AC1-AC6)
+
+    private(set) var formattedTime: String = "00:00"
+    private(set) var urgencyLevel: UrgencyLevel = .normal
+    private(set) var progress: Double = 0
+    private(set) var activeSession: WatchSession?
+    private(set) var nextSession: WatchSession?
+    private(set) var speakerNames: String = ""
+    private(set) var sessionTitle: String = ""
+
+    // MARK: - Injected Dependencies (1.3)
+
+    private let clock: ClockProtocol
+    private let hapticService: HapticServiceProtocol
+
+    /// Set by LiveCountdownView from its @Environment after the view resolves its environment.
+    var eventState: (any EventStateManagerProtocol)?
+
+    // MARK: - Internal Domain Objects (1.4)
+
+    private let engine: SessionTimerEngine
+    private let scheduler: HapticScheduler
+
+    // MARK: - Timer Task
+
+    private var timerTask: Task<Void, Never>?
+
+    // MARK: - Init
+
+    init(
+        clock: ClockProtocol = SystemClock(),
+        hapticService: HapticServiceProtocol = WatchHapticService()
+    ) {
+        self.clock = clock
+        self.hapticService = hapticService
+        self.engine = SessionTimerEngine(clock: clock)
+        self.scheduler = HapticScheduler(clock: clock, hapticService: hapticService)
+    }
+
+    // MARK: - Timer Control (1.6, 1.7)
+
+    /// Launch a 1-second tick loop. Idempotent — cancels any existing task first.
+    func startTimer() {
+        timerTask?.cancel()
+        timerTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                refreshState()
+            }
+        }
+    }
+
+    /// Cancel the tick loop. Call from view's onDisappear.
+    func stopTimer() {
+        timerTask?.cancel()
+        timerTask = nil
+    }
+
+    // MARK: - State Refresh
+
+    /// Recalculate all published state from wall clock. Internal for testability.
+    func refreshState() {
+        guard let eventState else { return }
+
+        let discovered = findActiveSession(in: eventState)
+
+        // Reset haptic scheduler when session changes
+        if discovered?.id != activeSession?.id {
+            scheduler.reset()
+            if let session = discovered {
+                engine.setActiveSession(session)
+            } else {
+                engine.clearActiveSession()
+            }
+        } else {
+            engine.recalculate()
+        }
+
+        activeSession = discovered
+
+        if let session = discovered {
+            scheduler.evaluate(session: session)
+            nextSession = findNextSession(after: session, in: eventState)
+        } else {
+            nextSession = nil
+        }
+
+        // Propagate engine state to published properties (AC1-AC6)
+        formattedTime = engine.formattedTime
+        urgencyLevel = engine.urgencyLevel
+        progress = calculateProgress()
+        speakerNames = discovered?.speakers.map { $0.fullName }.joined(separator: ", ") ?? ""
+        sessionTitle = discovered?.title ?? ""
+    }
+
+    // MARK: - Session Discovery (1.8, 1.9)
+
+    /// Find the active session by wall-clock comparison. (AC6: no drift after suspension)
+    ///
+    /// 1. In-progress: start <= now <= end
+    /// 2. Overtime: most recently ended session (end < now) — engine shows "+MM:SS"
+    /// 3. Fallback: first upcoming session not yet started
+    private func findActiveSession(in eventState: any EventStateManagerProtocol) -> WatchSession? {
+        guard let event = eventState.currentEvent else { return nil }
+        let now = clock.now
+        let sessions = event.sessions.compactMap { $0.toWatchSession() }
+
+        // In-progress: now is between start and end
+        if let active = sessions.first(where: { $0.startTime <= now && $0.endTime >= now }) {
+            return active
+        }
+
+        // Overtime: session has ended — return most recently ended so engine counts up
+        let ended = sessions.filter { $0.startTime <= now && $0.endTime < now }
+        if let mostRecent = ended.max(by: { $0.endTime < $1.endTime }) {
+            return mostRecent
+        }
+
+        // Nothing started yet: first upcoming session
+        return sessions.first { $0.startTime > now }
+    }
+
+    /// First non-break session that starts after activeSession ends. (1.9)
+    private func findNextSession(
+        after activeSession: WatchSession,
+        in eventState: any EventStateManagerProtocol
+    ) -> WatchSession? {
+        guard let event = eventState.currentEvent else { return nil }
+        let sessions = event.sessions.compactMap { $0.toWatchSession() }
+        return sessions.first { $0.startTime > activeSession.endTime && !$0.isBreak }
+    }
+
+    // MARK: - Progress (1.10)
+
+    /// Progress ring fill: elapsed / duration, clamped [0, 1]. Overtime pins at 1.0.
+    private func calculateProgress() -> Double {
+        guard let session = activeSession else { return 0 }
+        let duration = session.duration
+        guard duration > 0 else { return 0 }
+        // 1.0 - (remainingSeconds / duration) == elapsed / duration
+        return max(0, min(1, 1.0 - (engine.remainingSeconds / duration)))
+    }
+}
