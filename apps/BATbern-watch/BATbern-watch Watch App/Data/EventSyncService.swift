@@ -168,6 +168,23 @@ final class EventSyncService: EventSyncServiceProtocol {
         let cachedEvent = mapToCachedEvent(event)
         syncProgress = 0.2
 
+        // Step 2b: Enrich speaker company names from existing public-zone cache.
+        // The Watch endpoint defers the CUMS cross-service lookup, so company is null.
+        // The public zone (PublicViewModel) already loaded speakers with company names
+        // via the full EMS event endpoint. We reuse that cached data here so that
+        // SpeakerBioView + ImageCachePrefetcher can show/prefetch company logos.
+        let existingSpeakers = (try? modelContext.fetch(FetchDescriptor<CachedSpeaker>())) ?? []
+        let companyByUsername: [String: String] = existingSpeakers.reduce(into: [:]) { map, s in
+            if let company = s.company {
+                map[s.username] = company
+            }
+        }
+        for session in cachedEvent.sessions {
+            for speaker in session.speakers where speaker.company == nil {
+                speaker.company = companyByUsername[speaker.username]
+            }
+        }
+
         // Step 3: Download speaker portraits (20% → 80% progress) — AC#3
         let allSpeakers = cachedEvent.sessions.flatMap { $0.speakers }
         let totalSpeakers = allSpeakers.count
@@ -353,4 +370,5 @@ final class EventSyncService: EventSyncServiceProtocol {
 
         return cachedEvent
     }
+
 }

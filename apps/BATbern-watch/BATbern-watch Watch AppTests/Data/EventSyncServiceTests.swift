@@ -107,6 +107,49 @@ private func makeActiveEventsJSON(
     return json.data(using: .utf8)!
 }
 
+private func makeActiveEventsJSONWithRole(speakerRole: String) -> Data {
+    let json = """
+    {
+        "activeEvents": [{
+            "eventCode": "BATbern99",
+            "title": "BATbern 99 - Test Night",
+            "eventDate": "2026-03-01",
+            "venueName": "Kultur Casino Bern",
+            "typicalStartTime": "18:00",
+            "typicalEndTime": "22:00",
+            "themeImageUrl": null,
+            "currentPublishedPhase": "AGENDA",
+            "eventStatus": "SCHEDULED",
+            "sessions": [{
+                "sessionSlug": "keynote-1",
+                "title": "Opening Keynote",
+                "abstract": null,
+                "sessionType": "talk",
+                "scheduledStartTime": "2026-03-01T17:00:00Z",
+                "scheduledEndTime": "2026-03-01T17:45:00Z",
+                "durationMinutes": 45,
+                "speakers": [{
+                    "username": "john.doe",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "company": null,
+                    "companyLogoUrl": null,
+                    "profilePictureUrl": null,
+                    "bio": null,
+                    "speakerRole": "\(speakerRole)"
+                }],
+                "status": "SCHEDULED",
+                "actualStartTime": null,
+                "actualEndTime": null,
+                "overrunMinutes": null,
+                "completedBy": null
+            }]
+        }]
+    }
+    """
+    return json.data(using: .utf8)!
+}
+
 private func makeEmptyActiveEventsJSON() -> Data {
     return #"{"activeEvents":[]}"#.data(using: .utf8)!
 }
@@ -282,5 +325,52 @@ struct EventSyncServiceTests {
             try await service.syncActiveEvent()
         }
         #expect(authManager.refreshCallCount == 1, "Should call refreshJWT once on 401")
+    }
+
+    // MARK: - D2: SpeakerRole mapping from backend lowercase snake_case
+
+    // MARK: - D2: SpeakerRole decoding from backend lowercase snake_case
+
+    @Test("syncActiveEvent: decodes primary_speaker to .primarySpeaker (D2 debt)")
+    func test_syncActiveEvent_decodesRolePrimarySpeaker() async throws {
+        // Given — backend sends "primary_speaker" (EMS enum.name().toLowerCase())
+        EventSyncMockURLProtocol.requestHandler = { _ in
+            let response = HTTPURLResponse(
+                url: URL(string: "https://example.com")!,
+                statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, makeActiveEventsJSONWithRole(speakerRole: "primary_speaker"))
+        }
+        let service = EventSyncService(
+            authManager: MockAuthManager(),
+            modelContext: try makeModelContext(),
+            session: makeSession()
+        )
+
+        // When
+        try await service.syncActiveEvent()
+
+        // Then: Watch enum raw values now match backend (D2: enum adapted to backend)
+        let role = service.currentEvent?.sessions.first?.speakers.first?.speakerRole
+        #expect(role == .primarySpeaker, "primary_speaker should decode to .primarySpeaker")
+    }
+
+    @Test("syncActiveEvent: decodes co_speaker to .coSpeaker (D2 debt)")
+    func test_syncActiveEvent_decodesRoleCoSpeaker() async throws {
+        EventSyncMockURLProtocol.requestHandler = { _ in
+            let response = HTTPURLResponse(
+                url: URL(string: "https://example.com")!,
+                statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, makeActiveEventsJSONWithRole(speakerRole: "co_speaker"))
+        }
+        let service = EventSyncService(
+            authManager: MockAuthManager(),
+            modelContext: try makeModelContext(),
+            session: makeSession()
+        )
+
+        try await service.syncActiveEvent()
+
+        let role = service.currentEvent?.sessions.first?.speakers.first?.speakerRole
+        #expect(role == .coSpeaker, "co_speaker should decode to .coSpeaker")
     }
 }

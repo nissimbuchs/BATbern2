@@ -21,8 +21,8 @@ private func mapSessionType(_ generated: Session.SessionType) -> SessionType {
 
 private func mapSpeakerRole(_ generated: SessionSpeaker.SpeakerRole) -> SpeakerRole {
     switch generated {
-    case .primarySpeaker: return .keynoteSpeaker
-    case .coSpeaker: return .keynoteSpeaker
+    case .primarySpeaker: return .primarySpeaker
+    case .coSpeaker: return .coSpeaker
     case .moderator: return .moderator
     case .panelist: return .panelist
     }

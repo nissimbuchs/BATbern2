@@ -62,9 +62,10 @@ struct WatchSpeaker: Sendable, Identifiable {
 }
 
 enum SpeakerRole: String, Codable, Sendable {
-    case keynoteSpeaker = "keynote_speaker"
-    case panelist
+    case primarySpeaker = "primary_speaker"
+    case coSpeaker = "co_speaker"
     case moderator
+    case panelist
 }
 
 // MARK: - Urgency Level
