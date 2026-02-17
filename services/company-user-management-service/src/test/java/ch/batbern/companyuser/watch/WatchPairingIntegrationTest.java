@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.hamcrest.Matchers.hasLength;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -215,6 +214,26 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pendingCode").isEmpty());
+    }
+
+    // --- H3: No orphan pending-code accumulation ---
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    @DisplayName("shouldReplaceExistingPendingCode_onNewGeneration")
+    void shouldReplaceExistingPendingCode_onNewGeneration() throws Exception {
+        createPendingCode("111111", LocalDateTime.now().plusHours(10));
+
+        mockMvc.perform(post("/api/v1/users/{username}/watch-pairing", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+
+        // Only one pending code row should remain
+        long pendingCount = watchPairingRepository
+                .findByUsername("john.doe").stream()
+                .filter(p -> p.getPairingCode() != null)
+                .count();
+        assert pendingCount == 1 : "Expected 1 pending code row, got " + pendingCount;
     }
 
     // --- Unauthorized access ---

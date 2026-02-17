@@ -114,7 +114,7 @@ describe('WatchPairingSection', () => {
     );
   });
 
-  it('calls unpairWatch API and refreshes status on Unpair click', async () => {
+  it('calls unpairWatch API after two-step confirmation', async () => {
     const withWatch: PairingStatusResponse = {
       pairedWatches: [{ deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' }],
       pendingCode: null,
@@ -124,11 +124,66 @@ describe('WatchPairingSection', () => {
 
     render(<WatchPairingSection username="john.doe" />);
 
+    // Step 1: click Unpair → shows confirmation buttons
     const unpairBtn = await screen.findByTestId('unpair-button-my-watch');
     fireEvent.click(unpairBtn);
+
+    // Step 2: confirmation button appears
+    const confirmBtn = await screen.findByTestId('unpair-confirm-button-my-watch');
+    fireEvent.click(confirmBtn);
 
     await waitFor(() => {
       expect(mockUnpairWatch).toHaveBeenCalledWith('john.doe', 'my-watch');
     });
+  });
+
+  it('cancels unpair when Cancel is clicked in confirmation', async () => {
+    const withWatch: PairingStatusResponse = {
+      pairedWatches: [{ deviceName: 'my-watch', pairedAt: '2026-01-01T10:00:00Z' }],
+      pendingCode: null,
+    };
+    mockGetPairingStatus.mockResolvedValueOnce(withWatch);
+    mockUnpairWatch.mockResolvedValue(undefined);
+
+    render(<WatchPairingSection username="john.doe" />);
+
+    const unpairBtn = await screen.findByTestId('unpair-button-my-watch');
+    fireEvent.click(unpairBtn);
+
+    const cancelBtn = await screen.findByTestId('unpair-cancel-button-my-watch');
+    fireEvent.click(cancelBtn);
+
+    // Original unpair button is back, API not called
+    await waitFor(() => {
+      expect(screen.getByTestId('unpair-button-my-watch')).toBeTruthy();
+    });
+    expect(mockUnpairWatch).not.toHaveBeenCalled();
+  });
+
+  it('shows countdown text when pending code exists', async () => {
+    const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
+    const withCode: PairingStatusResponse = {
+      pairedWatches: [],
+      pendingCode: { code: '123456', expiresAt },
+    };
+    mockGetPairingStatus.mockResolvedValue(withCode);
+
+    render(<WatchPairingSection username="john.doe" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pairing-code-countdown')).toBeTruthy();
+    });
+    expect(screen.getByTestId('pairing-code-countdown').textContent).toContain('Expires in');
+  });
+
+  it('shows load error when getPairingStatus returns a non-404 error', async () => {
+    mockGetPairingStatus.mockRejectedValue({ response: { status: 500 } });
+
+    render(<WatchPairingSection username="john.doe" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('watch-pairing-error')).toBeTruthy();
+    });
+    expect(screen.getByTestId('watch-pairing-error').textContent).toContain('Failed to load');
   });
 });

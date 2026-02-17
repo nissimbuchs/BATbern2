@@ -94,6 +94,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid JWT
         '403':
           description: Forbidden - not owner or not ORGANIZER role
 
@@ -118,6 +120,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PairingStatusResponse'
+        '401':
+          description: Unauthorized - missing or invalid JWT
         '403':
           description: Forbidden
 
@@ -146,6 +150,8 @@ paths:
           description: Watch unpaired
         '404':
           description: Watch not found
+        '401':
+          description: Unauthorized - missing or invalid JWT
         '403':
           description: Forbidden
 

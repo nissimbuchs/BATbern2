@@ -21,8 +21,10 @@ CREATE INDEX idx_watch_pairings_username ON watch_pairings(username);
 -- Index for code lookup during Watch pairing flow (partial: only rows with active codes)
 CREATE INDEX idx_watch_pairings_code ON watch_pairings(pairing_code) WHERE pairing_code IS NOT NULL;
 
--- Enforce max 2 paired watches per organizer (AC2, NFR19)
--- Only counts rows where pairing is complete (paired_at NOT NULL)
+-- Prevent duplicate paired_at timestamps per user (data integrity guard).
+-- NOTE: This index does NOT cap the count at 2 — the max-2 limit is enforced
+-- at the application layer with a pessimistic lock (WatchPairingService).
+-- PostgreSQL does not support a partial count constraint natively.
 CREATE UNIQUE INDEX idx_watch_pairings_limit
     ON watch_pairings(username, paired_at)
     WHERE paired_at IS NOT NULL;

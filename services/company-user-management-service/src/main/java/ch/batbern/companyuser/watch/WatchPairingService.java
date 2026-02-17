@@ -11,9 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Service for Watch pairing code management.
@@ -31,6 +31,8 @@ public class WatchPairingService {
 
     private static final int MAX_WATCHES = 2;
     private static final int CODE_TTL_HOURS = 24;
+    private static final int MAX_CODE_RETRIES = 10;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final WatchPairingRepository watchPairingRepository;
 
@@ -40,10 +42,14 @@ public class WatchPairingService {
      */
     @Transactional
     public PairingCodeResponse generatePairingCode(String username) {
-        long pairedCount = watchPairingRepository.countByUsernameAndPairedAtNotNull(username);
+        // H1: Pessimistic lock prevents two concurrent requests both passing the max-2 check.
+        long pairedCount = watchPairingRepository.countPairedWatchesForUpdate(username);
         if (pairedCount >= MAX_WATCHES) {
             throw new MaxWatchesExceededException();
         }
+
+        // H3: Delete any pre-existing pending code rows so we don't accumulate orphans.
+        watchPairingRepository.deleteAllPendingCodesByUsername(username);
 
         String code = generateUniqueCode();
 
@@ -96,12 +102,19 @@ public class WatchPairingService {
 
     // --- Private helpers ---
 
+    /**
+     * H2: SecureRandom replaces ThreadLocalRandom — pairing codes are security-sensitive.
+     * L1: MAX_CODE_RETRIES cap prevents theoretical infinite loop.
+     */
     private String generateUniqueCode() {
-        String code;
-        do {
-            int raw = ThreadLocalRandom.current().nextInt(100_000, 1_000_000);
-            code = String.format("%06d", raw);
-        } while (watchPairingRepository.findByPairingCode(code).isPresent());
-        return code;
+        for (int attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
+            int raw = SECURE_RANDOM.nextInt(900_000) + 100_000; // 100000–999999
+            String code = String.valueOf(raw);
+            if (watchPairingRepository.findByPairingCode(code).isEmpty()) {
+                return code;
+            }
+        }
+        throw new IllegalStateException(
+                "Unable to generate a unique pairing code after " + MAX_CODE_RETRIES + " attempts");
     }
 }

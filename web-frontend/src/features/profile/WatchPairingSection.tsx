@@ -32,9 +32,16 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
     try {
       const data = await watchPairingApi.getPairingStatus(username);
       setStatus(data);
-    } catch {
-      // If the user has no pairings yet this may 404 in some configs - treat as empty
-      setStatus({ pairedWatches: [], pendingCode: null });
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } };
+      if (axiosErr?.response?.status === 404) {
+        // No pairings yet — treat as empty
+        setStatus({ pairedWatches: [], pendingCode: null });
+      } else {
+        // Real error (network failure, 500, etc.) — surface it to the user
+        setError('Failed to load pairing status. Please refresh the page.');
+        setStatus({ pairedWatches: [], pendingCode: null });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -128,8 +135,6 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
           {isGenerating ? 'Generating...' : 'Pair Apple Watch'}
         </Button>
       )}
-
-      {status?.pairedWatches.length === 0 && !status?.pendingCode && !canGenerateCode && null}
     </Box>
   );
 };

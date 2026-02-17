@@ -1,6 +1,6 @@
 # Story 2.1: Pairing Code Backend & Web Frontend
 
-Status: review
+Status: done
 
 ## Story
 
@@ -581,9 +581,21 @@ N/A - Story file created by SM agent in YOLO mode
 - OpenAPI spec updated in `docs/api/users-api.openapi.yml` (not company-user-management-api.openapi.yml as originally specified in story — the users API file covers CUMS user endpoints)
 - Frontend service placed at `src/services/api/watchPairingApi.ts` (not `src/services/watchPairingApi.ts`) to match existing project convention
 
-**Test Results:**
+**Test Results (initial):**
 - Backend: 11/11 integration tests pass, full CUMS test suite BUILD SUCCESSFUL
 - Frontend: 6/6 WatchPairingSection component tests pass, 242 test files / 3575 tests pass overall
+
+**Code Review Fixes (2026-02-17):**
+- C1: Implemented Task 4.6 — created `WatchPairingCleanupService` with `@Scheduled(cron="0 0 3 * * *")` + ShedLock
+- H1: Added `countPairedWatchesForUpdate` with `@Lock(PESSIMISTIC_WRITE)` to prevent race condition at max-2 check; corrected misleading DB comment in V13 migration
+- H2: Replaced `ThreadLocalRandom` with `SecureRandom` for pairing code generation
+- H3: Added `deleteAllPendingCodesByUsername` called before inserting new pending code to prevent orphan row accumulation
+- L1: Replaced infinite do-while with MAX_CODE_RETRIES=10 capped loop
+- M1: `loadStatus` now distinguishes 404 (empty) from real errors (shows error message)
+- M2: `PairedWatchCard` now requires two-step confirmation before unpair
+- M3: Added countdown, cancel-unpair, and load-error tests to `WatchPairingSection.test.tsx`
+- M4: Added `401` responses to all three watch-pairing endpoints in `users-api.openapi.yml`
+- L2: Removed dead code on `WatchPairingSection.tsx` line 132
 
 ### File List
 
@@ -595,6 +607,7 @@ N/A - Story file created by SM agent in YOLO mode
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/domain/WatchPairing.java`
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchPairingService.java`
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchPairingController.java`
+- `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/WatchPairingCleanupService.java`
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/repository/WatchPairingRepository.java`
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/PairingCodeResponse.java`
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/watch/dto/PairingStatusResponse.java`
@@ -613,4 +626,4 @@ N/A - Story file created by SM agent in YOLO mode
 **Modified Files:**
 - `services/company-user-management-service/src/main/java/ch/batbern/companyuser/exception/GlobalExceptionHandler.java` — Added handlers for MaxWatchesExceededException (409) and WatchPairingNotFoundException (404)
 - `web-frontend/src/components/user/UserProfileTab/UserProfileTab.tsx` — Added WatchPairingSection for ORGANIZER users
-- `docs/api/users-api.openapi.yml` — Added watch-pairing paths and schemas
+- `docs/api/users-api.openapi.yml` — Added watch-pairing paths and schemas; added 401 responses (code review fix)
