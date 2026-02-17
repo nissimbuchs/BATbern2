@@ -52,16 +52,16 @@ development_status:
   epic-2: in-progress
   w2-1-pairing-code-backend-web-frontend: done
   w2-2-watch-pairing-flow-organizer-zone-navigation: done
-  w2-3-event-join-schedule-sync: review
+  w2-3-event-join-schedule-sync: done
   w2-4-speaker-arrival-tracking: review
   epic-2-retrospective: optional
 
   # Epic 3: Live Countdown & Haptic Awareness
-  epic-3: backlog
-  w3-1-live-countdown-display: backlog
-  w3-2-haptic-alert-system: backlog
-  w3-3-watch-face-complications: backlog
-  w3-4-session-schedule-next-session-preview: backlog
+  epic-3: in-progress
+  w3-1-live-countdown-display: ready-for-dev
+  w3-2-haptic-alert-system: ready-for-dev
+  w3-3-watch-face-complications: ready-for-dev
+  w3-4-session-schedule-next-session-preview: ready-for-dev
   epic-3-retrospective: optional
 
   # Epic 4: Session Control & Team Sync

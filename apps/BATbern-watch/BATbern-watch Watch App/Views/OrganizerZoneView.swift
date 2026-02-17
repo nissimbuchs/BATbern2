@@ -11,6 +11,9 @@
 
 import SwiftUI
 import SwiftData
+import os
+
+private let logger = Logger(subsystem: "ch.batbern.watch", category: "OrganizerZoneView")
 
 struct OrganizerZoneView: View {
     @Environment(AuthManager.self) private var authManager
@@ -65,7 +68,7 @@ struct OrganizerZoneView: View {
                 Task {
                     try? await Task.sleep(nanoseconds: 3_000_000_000)
                     if !isSyncing {
-                        print("⚠️ OrganizerZoneView: JWT not ready after 3s, attempting sync anyway")
+                        logger.warning("JWT not ready after 3s, attempting sync anyway")
                         await performSync()
                     }
                 }
@@ -102,7 +105,7 @@ struct OrganizerZoneView: View {
             }
         } catch {
             // Graceful degradation — show EventPreviewView with cached data if available
-            print("⚠️ OrganizerZoneView: Event sync failed: \(error.localizedDescription)")
+            logger.error("Event sync failed: \(error.localizedDescription)")
         }
 
         isSyncing = false
@@ -111,11 +114,12 @@ struct OrganizerZoneView: View {
 
 #Preview {
     let container = try! ModelContainer(for: CachedSpeaker.self)
+    let auth = AuthManager()
     OrganizerZoneView()
-        .environment(AuthManager())
+        .environment(auth)
         .environment(EventStateManager())
         .environment(ArrivalTracker(
-            authManager: MockAuthManager(),
+            authManager: auth,
             modelContext: container.mainContext
         ))
 }
