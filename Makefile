@@ -175,7 +175,7 @@ test-watch: ## Run watchOS app tests
 	@xcodebuild test -scheme "BATbern-watch Watch App" \
 		-destination 'platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)' \
 		-project apps/BATbern-watch/BATbern-watch.xcodeproj \
-		| grep -E '^(Test|▸|⚠️|❌|error:|warning:|Executed)' || true
+		| grep -E '^(Test|▸|⚠️|❌|✔|✘|◇|error:|warning:|Executed)' || true
 	@echo "✓ watchOS tests complete"
 
 # ═══════════════════════════════════════════════════════════
