@@ -4,6 +4,7 @@
 //
 //  App entry point with SwiftData ModelContainer configuration.
 //  W2.2: Added AuthManager and EventStateManager as environment objects.
+//  W2.4: Added ArrivalTracker as environment object.
 //  Source: docs/watch-app/architecture.md#Data-Architecture
 //
 
@@ -16,8 +17,10 @@ struct BATbernWatchApp: App {
     let modelContainer: ModelContainer
 
     // W2.2: Auth + event state managers injected as environment objects
-    @State private var authManager = AuthManager()
+    // W2.4: ArrivalTracker initialized alongside authManager so it shares the real instance
+    @State private var authManager: AuthManager
     @State private var eventStateManager = EventStateManager()
+    @State private var arrivalTracker: ArrivalTracker
 
     init() {
         do {
@@ -34,10 +37,20 @@ struct BATbernWatchApp: App {
                 isStoredInMemoryOnly: false
             )
 
-            modelContainer = try ModelContainer(
+            let container = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
+            modelContainer = container
+
+            // W2.4: Initialize both together so ArrivalTracker gets the real AuthManager instance.
+            // Do NOT initialize in body via lazy/optional — mutating @State in body causes infinite re-render.
+            let auth = AuthManager()
+            _authManager = State(wrappedValue: auth)
+            _arrivalTracker = State(wrappedValue: ArrivalTracker(
+                authManager: auth,
+                modelContext: container.mainContext
+            ))
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
@@ -48,6 +61,7 @@ struct BATbernWatchApp: App {
             ContentView()
                 .environment(authManager)
                 .environment(eventStateManager)
+                .environment(arrivalTracker)
         }
         .modelContainer(modelContainer)
     }

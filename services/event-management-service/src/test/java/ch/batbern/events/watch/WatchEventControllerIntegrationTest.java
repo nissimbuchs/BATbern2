@@ -11,6 +11,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,9 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
     private ObjectMapper objectMapper;
 
     @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
     private ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
 
     private int eventNumberCounter = 9000;
@@ -86,9 +90,14 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
         // Arrange — create event for today with AGENDA_PUBLISHED state
         Event event = createEvent(ORGANIZER_USERNAME, Instant.now(), EventWorkflowState.AGENDA_PUBLISHED);
         Session session = createSession(event, "intro-keynote", "Introduction Keynote",
+                "keynote",
                 Instant.now().plus(1, ChronoUnit.HOURS),
                 Instant.now().plus(2, ChronoUnit.HOURS));
         createSessionUser(session, "john.doe", SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+
+        // Flush and clear Hibernate first-level cache so the controller sees fresh DB data
+        entityManager.flush();
+        entityManager.clear();
 
         // Act & Assert
         mockMvc.perform(get(ENDPOINT).contentType(MediaType.APPLICATION_JSON))
@@ -124,15 +133,17 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
     }
 
     // ============================================================================
-    // 401: No authentication provided
+    // 403: No authentication provided (TestSecurityConfig uses permitAll + @PreAuthorize)
     // ============================================================================
 
     @Test
-    @DisplayName("shouldReturn401_whenNotAuthenticated")
+    @DisplayName("shouldReturn403_whenNotAuthenticated")
     void shouldReturn401_whenNotAuthenticated() throws Exception {
-        // Act & Assert — no @WithMockUser annotation; request has no auth context
+        // TestSecurityConfig uses permitAll() at HTTP level + @PreAuthorize at method level.
+        // Anonymous users hit @PreAuthorize("hasRole('ORGANIZER')") → AccessDeniedException → 403.
+        // In production, the API Gateway rejects unauthenticated requests with 401 before the service.
         mockMvc.perform(get(ENDPOINT).contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     // ============================================================================
@@ -191,7 +202,7 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
         return eventRepository.save(event);
     }
 
-    private Session createSession(Event event, String slug, String title,
+    private Session createSession(Event event, String slug, String title, String sessionType,
                                   Instant startTime, Instant endTime) {
         Session session = Session.builder()
                 .eventId(event.getId())
@@ -199,7 +210,7 @@ public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest
                 .sessionSlug(slug)
                 .title(title)
                 .description("Test session description")
-                .sessionType("talk")
+                .sessionType(sessionType)
                 .startTime(startTime)
                 .endTime(endTime)
                 .room("Main Hall")

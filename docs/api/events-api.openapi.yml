@@ -3440,8 +3440,187 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/v1/watch/events/{eventCode}/arrivals:
+    get:
+      tags:
+        - Watch
+      summary: Get speaker arrival status for an event
+      description: |
+        Returns all confirmed speaker arrivals for the given event.
+        Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+
+        **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: getArrivalStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      responses:
+        '200':
+          description: Arrival status list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrivalStatusList'
+              examples:
+                withArrivals:
+                  value:
+                    arrivals:
+                      - speakerUsername: "anna.meier"
+                        confirmedBy: "marco.muster"
+                        arrivedAt: "2026-02-16T17:15:00Z"
+                empty:
+                  value:
+                    arrivals: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Watch
+      summary: Confirm a speaker's arrival
+      description: |
+        Confirms a speaker's arrival for the given event.
+        Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+        Also triggers real-time WebSocket broadcast to all organizer watches.
+
+        **REST Fallback**: Used when WebSocket is offline/reconnecting.
+        **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: confirmSpeakerArrival
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmArrivalRequest'
+      responses:
+        '201':
+          description: Arrival confirmed — includes broadcast payload with server-authoritative counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerArrivalBroadcast'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+
+    # ── Watch App Schemas (W2.4) ─────────────────────────────────────────────
+
+    ConfirmArrivalRequest:
+      type: object
+      description: Request body to confirm a speaker's arrival.
+      required:
+        - speakerUsername
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+
+    ArrivalStatusList:
+      type: object
+      description: List of confirmed speaker arrivals for an event.
+      required:
+        - arrivals
+      properties:
+        arrivals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrivalStatus'
+
+    ArrivalStatus:
+      type: object
+      description: A single speaker arrival record.
+      required:
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+
+    ArrivalCount:
+      type: object
+      description: Server-authoritative arrived/total counts for real-time counter sync.
+      required:
+        - arrived
+        - total
+      properties:
+        arrived:
+          type: integer
+          example: 2
+        total:
+          type: integer
+          example: 4
+
+    SpeakerArrivalBroadcast:
+      type: object
+      description: |
+        WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+        Also returned as REST response body for the POST endpoint.
+        Carries individual arrival details plus server-authoritative counts (FR39).
+      required:
+        - type
+        - eventCode
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+        - arrivalCount
+      properties:
+        type:
+          type: string
+          enum: ["SPEAKER_ARRIVED"]
+          example: "SPEAKER_ARRIVED"
+        eventCode:
+          type: string
+          example: "BATbern56"
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        speakerFirstName:
+          type: string
+          example: "Anna"
+        speakerLastName:
+          type: string
+          example: "Meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+        arrivalCount:
+          $ref: '#/components/schemas/ArrivalCount'
 
     # ── Watch App Schemas (W2.3) ─────────────────────────────────────────────
 

@@ -110,7 +110,12 @@ struct OrganizerZoneView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: CachedSpeaker.self)
     OrganizerZoneView()
         .environment(AuthManager())
         .environment(EventStateManager())
+        .environment(ArrivalTracker(
+            authManager: MockAuthManager(),
+            modelContext: container.mainContext
+        ))
 }

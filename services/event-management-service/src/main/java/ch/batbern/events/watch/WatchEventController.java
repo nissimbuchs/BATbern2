@@ -10,13 +10,20 @@ import ch.batbern.events.repository.SpeakerRepository;
 
 import ch.batbern.events.watch.dto.ActiveEventDetail;
 import ch.batbern.events.watch.dto.ActiveEventsResponse;
+import ch.batbern.events.watch.dto.ArrivalStatusListDto;
+import ch.batbern.events.watch.dto.ConfirmArrivalRequest;
 import ch.batbern.events.watch.dto.SessionDetail;
+import ch.batbern.events.watch.dto.SpeakerArrivalBroadcast;
 import ch.batbern.events.watch.dto.SpeakerDetail;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,7 +33,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +69,7 @@ public class WatchEventController {
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
     private final SpeakerRepository speakerRepository;
+    private final WatchSpeakerArrivalService arrivalService;
 
     /**
      * Returns active events assigned to the authenticated organizer.
@@ -67,7 +78,7 @@ public class WatchEventController {
      */
     @GetMapping("/organizers/me/active-events")
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<ActiveEventsResponse> getActiveEvents() {
+    public ResponseEntity<ActiveEventsResponse> getActiveEvents(Authentication authentication) {
         Instant now = Instant.now();
         Instant startDate = now.minus(3, ChronoUnit.DAYS).truncatedTo(ChronoUnit.DAYS);
         Instant endDate = now.plus(3, ChronoUnit.DAYS)
@@ -75,7 +86,7 @@ public class WatchEventController {
                 .plus(1, ChronoUnit.DAYS);  // Include entire end day
 
         List<Event> activeEvents = eventRepository.findActiveEventsForOrganizer(
-                startDate, endDate, ACTIVE_STATES);
+                authentication.getName(), startDate, endDate, ACTIVE_STATES);
 
         List<ActiveEventDetail> eventDetails = activeEvents.stream()
                 .map(this::mapToActiveEventDetail)
@@ -212,5 +223,41 @@ public class WatchEventController {
             return "COMPLETED";
         }
         return "ACTIVE";
+    }
+
+    // W2.4: Speaker Arrival Tracking Endpoints
+
+    /**
+     * Returns all arrival confirmations for an event.
+     * Used by Watch clients on initial load (REST fallback / initial state fetch).
+     * GET /api/v1/watch/events/{eventCode}/arrivals
+     */
+    @GetMapping("/events/{eventCode}/arrivals")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ArrivalStatusListDto> getArrivals(
+            @PathVariable String eventCode,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(new ArrivalStatusListDto(arrivalService.getArrivals(eventCode)));
+    }
+
+    /**
+     * Confirms a speaker's arrival (REST fallback when WebSocket is offline).
+     * Idempotent: confirming an already-arrived speaker is a no-op.
+     * POST /api/v1/watch/events/{eventCode}/arrivals
+     */
+    @PostMapping("/events/{eventCode}/arrivals")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<SpeakerArrivalBroadcast> confirmArrival(
+            @PathVariable String eventCode,
+            @RequestBody ConfirmArrivalRequest request,
+            Authentication authentication
+    ) {
+        SpeakerArrivalBroadcast result = arrivalService.confirmArrival(
+                eventCode,
+                request.speakerUsername(),
+                authentication.getName()
+        );
+        return ResponseEntity.status(201).body(result);
     }
 }

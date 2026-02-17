@@ -38,7 +38,12 @@ struct ContentView: View {
 }
 
 #Preview {
+    let container = try! ModelContainer(for: CachedSpeaker.self)
     ContentView()
         .environment(AuthManager())
         .environment(EventStateManager())
+        .environment(ArrivalTracker(
+            authManager: MockAuthManager(),
+            modelContext: container.mainContext
+        ))
 }

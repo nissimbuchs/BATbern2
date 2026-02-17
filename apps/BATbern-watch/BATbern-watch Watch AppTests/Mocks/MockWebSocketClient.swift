@@ -3,7 +3,7 @@ import Foundation
 
 /// Mock WebSocket client that records actions and emits configurable state updates.
 final class MockWebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
-    private(set) var _isConnected = false
+    var _isConnected = false
     private(set) var connectCalls: [(eventCode: String, accessToken: String)] = []
     private(set) var disconnectCallCount = 0
     private(set) var sentActions: [WatchAction] = []

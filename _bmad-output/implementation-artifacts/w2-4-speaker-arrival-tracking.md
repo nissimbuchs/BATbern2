@@ -1,6 +1,6 @@
 # Story W2.4: Speaker Arrival Tracking
 
-Status: ready-for-dev
+Status: review
 Review: pre-implementation adversarial review complete (2026-02-17) — all HIGH/MEDIUM issues fixed in story design
 
 ## Story
@@ -23,7 +23,7 @@ so that the whole team knows who's here.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Extend WebSocketClientProtocol with Arrival Updates** (AC: #4)
+- [x] **Task 1: Extend WebSocketClientProtocol with Arrival Updates** (AC: #4)
   - [ ] 1.1 Modify `apps/BATbern-watch/BATbern-watch Watch App/Protocols/WebSocketClientProtocol.swift`
   - [ ] 1.2 Add `SpeakerArrivalMessage` struct (separate from `EventStateMessage`):
     ```swift
@@ -97,7 +97,7 @@ so that the whole team knows who's here.
     > ⚠️ [AI-Review][MEDIUM] Without this clarification the dev will leave dead code or route the same
     > event through two different streams causing unpredictable behaviour.
 
-- [ ] **Task 2: ArrivalTracker — Domain Layer** (AC: #1, #3, #4, #5)
+- [x] **Task 2: ArrivalTracker — Domain Layer** (AC: #1, #3, #4, #5)
   - [ ] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Domain/ArrivalTracker.swift`
   - [ ] 2.2 ArrivalTracker responsibilities:
     - Manage speaker arrival state (optimistic + server-confirmed)
@@ -374,7 +374,7 @@ so that the whole team knows who's here.
     }
     ```
 
-- [ ] **Task 3: Full SpeakerArrivalView — Portrait Grid UI** (AC: #1, #2, #5)
+- [x] **Task 3: Full SpeakerArrivalView — Portrait Grid UI** (AC: #1, #2, #5)
   - [ ] 3.1 Replace placeholder in `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/SpeakerArrivalView.swift`
   - [ ] 3.2 Display 2-column portrait grid with arrival badges
   - [ ] 3.3 Show arrival counter header ("0 of N arrived")
@@ -634,7 +634,7 @@ so that the whole team knows who's here.
     }
     ```
 
-- [ ] **Task 4: Inject ArrivalTracker as Environment Object** (AC: #1, #4)
+- [x] **Task 4: Inject ArrivalTracker as Environment Object** (AC: #1, #4)
   - [ ] 4.1 Modify `apps/BATbern-watch/BATbern-watch Watch App/App/BATbernWatchApp.swift`
   - [ ] 4.2 Add `@State private var arrivalTracker: ArrivalTracker` initialized with `authManager` and model context
   - [ ] 4.3 Inject into `ContentView` via `.environment(arrivalTracker)`
@@ -685,13 +685,13 @@ so that the whole team knows who's here.
     > No changes needed to `ContentView.swift` itself — `OrganizerZoneView` → `SpeakerArrivalView`
     > picks up `ArrivalTracker` from the environment automatically.
 
-- [ ] **Task 4b: Fix Xcode Preview injections** (no AC, build quality)
+- [x] **Task 4b: Fix Xcode Preview injections** (no AC, build quality)
   - [ ] 4b.1 Update `#Preview` in `ContentView.swift` — add `.environment(ArrivalTracker(authManager: MockAuthManager(), modelContext: ...))` so the preview doesn't crash when `OrganizerZoneView → SpeakerArrivalView` attempts to resolve `ArrivalTracker` from environment
   - [ ] 4b.2 Update `#Preview` in `OrganizerZoneView.swift` — same injection needed
   > ⚠️ [AI-Review][LOW] Without these fixes, Xcode Previews for ContentView and OrganizerZoneView
   > will crash with "No value for type ArrivalTracker in environment" immediately after Task 4.
 
-- [ ] **Task 5: Backend — Flyway Migration** (AC: #3, #4)
+- [x] **Task 5: Backend — Flyway Migration** (AC: #3, #4)
   - [ ] 5.1 Create `services/event-management-service/src/main/resources/db/migration/V{next}__add_speaker_arrival_tracking.sql`
   - [ ] 5.2 Migration SQL (from architecture.md#Data-Architecture):
     ```sql
@@ -710,7 +710,7 @@ so that the whole team knows who's here.
     ```
   - [ ] 5.3 Run via `./gradlew :services:event-management-service:flywayMigrate` from repo root
 
-- [ ] **Task 6: Backend — SpeakerArrival Entity** (AC: #3, #4)
+- [x] **Task 6: Backend — SpeakerArrival Entity** (AC: #3, #4)
   - [ ] 6.1 Create `services/event-management-service/src/main/java/ch/batbern/events/watch/domain/SpeakerArrival.java`
     ```java
     package ch.batbern.events.watch.domain;
@@ -754,7 +754,7 @@ so that the whole team knows who's here.
     }
     ```
 
-- [ ] **Task 7: Backend — WatchSpeakerArrivalService** (AC: #3, #4, #5)
+- [x] **Task 7: Backend — WatchSpeakerArrivalService** (AC: #3, #4, #5)
   - [ ] 7.1 Create `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSpeakerArrivalService.java`
   - [ ] 7.2 Create `SpeakerArrivalRepository.java` (Spring Data JPA)
   - [ ] 7.3 Service implementation:
@@ -827,7 +827,7 @@ so that the whole team knows who's here.
     }
     ```
 
-- [ ] **Task 8: Backend — REST Controller Endpoints** (AC: #3, #4)
+- [x] **Task 8: Backend — REST Controller Endpoints** (AC: #3, #4)
   - [ ] 8.1 Add to existing `WatchRestController.java` (or create new if not yet exists):
     ```java
     // GET /api/v1/watch/events/{eventCode}/arrivals
@@ -871,7 +871,7 @@ so that the whole team knows who's here.
     ) {}
     ```
 
-- [ ] **Task 9: Backend — WebSocket STOMP Handler** (AC: #3, #4)
+- [x] **Task 9: Backend — WebSocket STOMP Handler** (AC: #3, #4)
   - [ ] 9.1 Add STOMP message handler in `WatchWebSocketController.java` (or equivalent):
     ```java
     // Handles: /app/watch/events/{eventCode}/speaker-arrived
@@ -895,7 +895,7 @@ so that the whole team knows who's here.
     record SpeakerArrivedAction(String speakerUsername) {}
     ```
 
-- [ ] **Task 10: Localization** (AC: all)
+- [x] **Task 10: Localization** (AC: all)
   - [ ] 10.1 Add to `apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings`:
     ```
     "arrival.tonight_speakers" = "Tonight's Speakers";
@@ -925,7 +925,7 @@ so that the whole team knows who's here.
     "arrival.error.server" = "Serverfehler beim Bestätigen der Ankunft.";
     ```
 
-- [ ] **Task 11: Unit Tests — ArrivalTracker** (AC: #1, #3, #4, #5)
+- [x] **Task 11: Unit Tests — ArrivalTracker** (AC: #1, #3, #4, #5)
   - [ ] 11.1 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/Domain/ArrivalTrackerTests.swift` (Swift Testing framework)
   - [ ] 11.2 Test: `confirmArrival_updatesLocalStateOptimistically()`
     - Mock: `MockAuthManager` with `organizerUsername = "marco"`
@@ -955,7 +955,7 @@ so that the whole team knows who's here.
     - Assert: URLSession received POST to `/api/v1/watch/events/{eventCode}/arrivals`
     - Assert: No WebSocket action sent
 
-- [ ] **Task 12: Backend Integration Tests** (AC: #3, #4, #5)
+- [x] **Task 12: Backend Integration Tests** (AC: #3, #4, #5)
   - [ ] 12.1 Create `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSpeakerArrivalIntegrationTest.java`
     (extends `AbstractIntegrationTest` — real PostgreSQL via Testcontainers)
   - [ ] 12.2 Test: `shouldReturnEmptyArrivals_whenNoneConfirmed()`
@@ -1017,7 +1017,7 @@ so that the whole team knows who's here.
     - Class must be annotated with `@SpringBootTest(webEnvironment = RANDOM_PORT)` (not `MOCK`)
     - Inject `@LocalServerPort int port` for the STOMP URL
 
-- [ ] **Task 13: Update OpenAPI Specification** (AC: #3, #4)
+- [x] **Task 13: Update OpenAPI Specification** (AC: #3, #4)
   - [ ] 13.1 Add to `docs/api/event-management-api.openapi.yml`:
     - `GET /api/v1/watch/events/{eventCode}/arrivals` — Returns arrival status for all speakers
     - `POST /api/v1/watch/events/{eventCode}/arrivals` — Confirms speaker arrival (REST fallback)

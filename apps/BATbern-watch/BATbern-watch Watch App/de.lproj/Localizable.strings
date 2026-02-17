@@ -51,6 +51,19 @@
 "preview.check_back_later" = "Kurz vor dem Event zurückkommen";
 "preview.starts_in" = "Beginnt in %@";
 
+/* Speaker Arrival Tracking (W2.4) */
+"arrival.tonight_speakers" = "Heutige Referenten";
+"arrival.counter_format" = "%d von %d angekommen";
+"arrival.confirm_question_format" = "Ist %@ angekommen?";
+"arrival.confirm_arrived" = "Angekommen ✓";
+"arrival.not_yet" = "Noch nicht";
+"arrival.confirmed_by_format" = "Bestätigt von %@";
+"arrival.close" = "Schliessen";
+"arrival.event_starts_at" = "Event beginnt um";
+"arrival.error.not_authenticated" = "Nicht authentifiziert. Bitte Watch koppeln.";
+"arrival.error.no_event" = "Kein aktives Event.";
+"arrival.error.server" = "Serverfehler beim Bestätigen der Ankunft.";
+
 /* Debug Messages (optional, for consistency) */
 "debug.refresh_start" = "🔄 PublicViewModel: Aktualisierung gestartet...";
 "debug.event_received" = "✅ PublicViewModel: WatchEvent empfangen - %@";
