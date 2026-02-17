@@ -17,6 +17,7 @@ class PublicViewModel {
     let apiClient: APIClientProtocol
     let clock: ClockProtocol
     let connectivityMonitor: ConnectivityMonitor
+    let prefetcher: ImageCachePrefetcherProtocol
     private let modelContext: ModelContext
     private var wasOffline: Bool = false  // Track previous connectivity state
 
@@ -64,11 +65,13 @@ class PublicViewModel {
         apiClient: APIClientProtocol = PublicEventService(),
         clock: ClockProtocol = SystemClock(),
         connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor(),
+        prefetcher: ImageCachePrefetcherProtocol = ImageCachePrefetcher(),
         modelContext: ModelContext
     ) {
         self.apiClient = apiClient
         self.clock = clock
         self.connectivityMonitor = connectivityMonitor
+        self.prefetcher = prefetcher
         self.modelContext = modelContext
 
         // Load cached data immediately on init
@@ -181,6 +184,10 @@ class PublicViewModel {
             self.event = newCachedEvent
             self.sessions = newCachedEvent.sessions
             self.lastSynced = clock.now
+
+            // AC#3: Background prefetch all speaker portraits + logos (non-blocking)
+            let allSpeakers = newCachedEvent.sessions.flatMap { $0.speakers }
+            Task { await self.prefetcher.prefetchAll(speakers: allSpeakers) }
 
         } catch let error as APIError {
             // Handle API-specific errors

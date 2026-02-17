@@ -50,7 +50,18 @@ struct EventHeroView: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .overlay(Color.black.opacity(0.6))  // Dimming overlay
+                            // AC#7: Bottom-heavy gradient — image visible at top, text readable at bottom
+                            .overlay(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: .black.opacity(0.3), location: 0.0),
+                                        .init(color: .black.opacity(0.5), location: 0.4),
+                                        .init(color: .black.opacity(0.85), location: 1.0)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                     case .failure, .empty:
                         Color.black
                     @unknown default:
@@ -68,13 +79,13 @@ struct EventHeroView: View {
                 Spacer()
 
                 // BATbern logo with text (larger for hero visibility)
-                BATbernSymbolView(size: 45, color: Color(hex: "#2C5F7C") ?? .blue)
+                BATbernSymbolView(size: 45, color: BATbernWatchStyle.Colors.batbernBlue)
                     .padding(.bottom, 8)
 
                 // Event title (large, centered, white, wrapped) - flexible space
                 Text(event.title)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .font(BATbernWatchStyle.Typography.heroTitle)
+                    .foregroundStyle(BATbernWatchStyle.Colors.textPrimary)
                     .multilineTextAlignment(.center)
                     .lineLimit(5)
                     .minimumScaleFactor(0.7)
@@ -104,15 +115,7 @@ struct EventHeroView: View {
                 }
                 .foregroundStyle(.secondary)
 
-                Spacer(minLength: 16)
-
-                // Scroll affordance (localized)
-                if !event.sessions.isEmpty {
-                    Text(NSLocalizedString("event.hero.scroll_hint", comment: "Scroll hint"))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                        .padding(.top, 4)
-                }
+                // AC#6: Scroll hint removed — .verticalPage TabView provides native page indicator dots
             }
             .padding()
         }
@@ -122,11 +125,11 @@ struct EventHeroView: View {
 
     private var emptyStateContent: some View {
         VStack(spacing: 12) {
-            BATbernSymbolView(size: 32, color: Color(hex: "#2C5F7C") ?? .blue)
+            BATbernSymbolView(size: 32, color: BATbernWatchStyle.Colors.batbernBlue)
 
             Text(NSLocalizedString("event.hero.empty.title", comment: "App title"))
                 .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)
+                .foregroundStyle(BATbernWatchStyle.Colors.batbernBlue)
 
             Text(NSLocalizedString("event.hero.empty.message", comment: "Empty state message"))
                 .font(.caption)

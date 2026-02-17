@@ -45,31 +45,31 @@ struct ConnectionStatusBar: View {
                 if isOffline {
                     // Offline indicator with WiFi slash icon
                     Image(systemName: "wifi.slash")
-                        .font(.caption2)
+                        .font(BATbernWatchStyle.Typography.statusBar)
                         .foregroundStyle(.secondary)
 
                     Text(NSLocalizedString("status.offline", comment: "Offline"))
-                        .font(.caption2)
+                        .font(BATbernWatchStyle.Typography.statusBar)
                         .foregroundStyle(.secondary)
 
                     if let lastSync = lastSynced {
                         Text("·")
-                            .font(.caption2)
+                            .font(BATbernWatchStyle.Typography.statusBar)
                             .foregroundStyle(.tertiary)
 
                         Text(relativeTimeString(from: lastSync))
-                            .font(.caption2)
+                            .font(BATbernWatchStyle.Typography.statusBar)
                             .foregroundStyle(.tertiary)
                     }
                 } else if isStale {
                     // Stale data indicator (connected but old cache)
                     Text(NSLocalizedString("status.updated", comment: "Aktualisiert"))
-                        .font(.caption2)
+                        .font(BATbernWatchStyle.Typography.statusBar)
                         .foregroundStyle(.secondary)
 
                     if let lastSync = lastSynced {
                         Text(relativeTimeString(from: lastSync))
-                            .font(.caption2)
+                            .font(BATbernWatchStyle.Typography.statusBar)
                             .foregroundStyle(.secondary)
                     }
                 }

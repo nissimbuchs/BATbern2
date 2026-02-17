@@ -4,7 +4,6 @@
  */
 
 /* Event Hero Screen */
-"event.hero.scroll_hint" = "▼ Für Programm scrollen";
 "event.hero.empty.title" = "BATbern";
 "event.hero.empty.message" = "Kein anstehendes BATbern Event";
 

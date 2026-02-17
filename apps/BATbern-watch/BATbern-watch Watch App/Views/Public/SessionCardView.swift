@@ -68,11 +68,12 @@ struct SessionCardView: View {
     private var presentationCardLayout: some View {
         VStack(spacing: 12) {
             // Time slot (top, secondary color)
+            // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
             if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
                 Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+                    .padding(.top, 28)
             }
 
             Spacer()
@@ -97,11 +98,12 @@ struct SessionCardView: View {
     private var breakCardLayout: some View {
         VStack(spacing: 8) {
             // Time slot
+            // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
             if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
                 Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+                    .padding(.top, 28)
             }
 
             Spacer()
@@ -144,8 +146,8 @@ struct SessionCardView: View {
     @ViewBuilder
     private var titleText: some View {
         Text(session.title)
-            .font(.system(size: 16, weight: .medium, design: .rounded))
-            .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)  // BATbern Blue tint
+            .font(BATbernWatchStyle.Typography.sessionTitle)
+            .foregroundStyle(BATbernWatchStyle.Colors.batbernBlue)
             .multilineTextAlignment(.center)
             .lineLimit(nil)  // Allow unlimited lines for proper wrapping
             .fixedSize(horizontal: false, vertical: true)  // Enable text wrapping
@@ -232,13 +234,13 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private func singleSpeakerLayout(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: 50)  // Larger size for single speaker
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSize)
             .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private func speakerPortrait(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: 40)
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSizeSmall)
     }
 }
 

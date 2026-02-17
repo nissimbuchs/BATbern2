@@ -2,19 +2,24 @@
 //  PortraitCache.swift
 //  BATbern-watch Watch App
 //
-//  File-based image cache for speaker portraits with offline support.
-//  Source: W1.2 - Session Card Browsing (AC#5)
+//  File-based image cache for speaker portraits and company logos with offline support.
+//  Source: W1.2 - Session Card Browsing (AC#5); W1.5 - UI Polish (AC#3, AC#4, AC#5)
 //
 
 import Foundation
 
-/// File-based cache for speaker portrait images
+/// File-based cache for speaker portrait images and company logos.
 /// Storage: ~100KB per portrait, max ~1MB per event (NFR24 compliance)
 class PortraitCache {
+    // MARK: - Singleton
+
+    static let shared = PortraitCache()
+
     // MARK: - Properties
 
     private let fileManager = FileManager.default
     private let cacheDirectory: URL
+    private let logoDirectory: URL
 
     // MARK: - Initialization
 
@@ -22,9 +27,11 @@ class PortraitCache {
         // Use caches directory (can be purged by system when storage is low)
         let cachesDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
         self.cacheDirectory = cachesDir.appendingPathComponent("PortraitCache", isDirectory: true)
+        self.logoDirectory = cachesDir.appendingPathComponent("LogoCache", isDirectory: true)
 
-        // Create cache directory if needed
+        // Create cache directories if needed
         try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: logoDirectory, withIntermediateDirectories: true)
     }
 
     // MARK: - Cache Operations
@@ -77,6 +84,42 @@ class PortraitCache {
         return data
     }
 
+    // MARK: - Logo Cache Operations (W1.5 AC#5)
+
+    /// Generates a file-system safe cache key from company name
+    private func logoKey(for companyName: String) -> String {
+        companyName
+            .lowercased()
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+    }
+
+    private func logoFileURL(for companyName: String) -> URL {
+        return logoDirectory.appendingPathComponent(logoKey(for: companyName))
+    }
+
+    /// Checks if a company logo is cached locally
+    func isLogoCached(companyName: String) -> Bool {
+        let fileURL = logoFileURL(for: companyName)
+        return fileManager.fileExists(atPath: fileURL.path)
+    }
+
+    /// Retrieves cached company logo data
+    func getLogoForCompany(_ companyName: String) -> Data? {
+        let fileURL = logoFileURL(for: companyName)
+        return try? Data(contentsOf: fileURL)
+    }
+
+    /// Saves company logo data to cache
+    func saveLogo(companyName: String, data: Data) {
+        let fileURL = logoFileURL(for: companyName)
+        try? data.write(to: fileURL, options: .atomic)
+    }
+
+    // MARK: - Portrait Cache Operations
+
     /// Pre-downloads all speaker portraits for offline availability
     func prefetchPortraits(urls: [URL]) async {
         for url in urls {
@@ -99,19 +142,21 @@ class PortraitCache {
         print("🗑️ PortraitCache: Cache cleared")
     }
 
-    /// Returns total cache size in bytes
+    /// Returns total cache size in bytes (portraits + logos)
     func cacheSize() -> Int64 {
-        guard let enumerator = fileManager.enumerator(at: cacheDirectory, includingPropertiesForKeys: [.fileSizeKey]) else {
-            return 0
-        }
-
         var totalSize: Int64 = 0
-        for case let fileURL as URL in enumerator {
-            guard let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
-                  let fileSize = resourceValues.fileSize else {
+
+        for directory in [cacheDirectory, logoDirectory] {
+            guard let enumerator = fileManager.enumerator(at: directory, includingPropertiesForKeys: [.fileSizeKey]) else {
                 continue
             }
-            totalSize += Int64(fileSize)
+            for case let fileURL as URL in enumerator {
+                guard let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+                      let fileSize = resourceValues.fileSize else {
+                    continue
+                }
+                totalSize += Int64(fileSize)
+            }
         }
 
         return totalSize

@@ -1,0 +1,113 @@
+//
+//  ImageCachePrefetcher.swift
+//  BATbern-watch Watch App
+//
+//  Background prefetch coordinator for speaker portraits and company logos.
+//  Source: W1.5 - UI Polish & Image Caching (AC#3, AC#4, AC#5)
+//
+
+import Foundation
+
+// MARK: - Protocol (for testability)
+
+protocol ImageCachePrefetcherProtocol {
+    func prefetchAll(speakers: [CachedSpeaker]) async
+}
+
+// MARK: - Production Implementation
+
+/// Concurrently prefetches all speaker portrait and company logo URLs into PortraitCache.
+/// Runs silently in background — errors per-item are swallowed so one failure cannot stop others.
+class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
+
+    private let portraitCache: PortraitCache
+    private let maxCacheSizeBytes: Int64 = 40 * 1024 * 1024  // 40MB headroom (NFR24: <50MB total)
+
+    init(portraitCache: PortraitCache = .shared) {
+        self.portraitCache = portraitCache
+    }
+
+    /// Prefetch portrait and logo for every speaker concurrently.
+    /// Uses TaskGroup so all downloads run in parallel; one failure does NOT stop others.
+    func prefetchAll(speakers: [CachedSpeaker]) async {
+        // Respect 40MB storage limit before starting any download
+        guard portraitCache.cacheSize() < maxCacheSizeBytes else {
+            print("⚠️ ImageCachePrefetcher: Cache ≥40MB — skipping prefetch to stay within NFR24 budget")
+            return
+        }
+
+        // Deduplicate portrait URLs (multiple sessions can share the same speaker)
+        let uniqueSpeakers = Dictionary(grouping: speakers, by: { $0.username }).compactMap { $0.value.first }
+
+        await withTaskGroup(of: Void.self) { group in
+            for speaker in uniqueSpeakers {
+                group.addTask {
+                    await self.prefetchSpeaker(speaker)
+                }
+            }
+        }
+
+        let totalKB = portraitCache.cacheSize() / 1024
+        print("✅ ImageCachePrefetcher: Prefetch complete — total cache \(totalKB)KB")
+    }
+
+    // MARK: - Private
+
+    private func prefetchSpeaker(_ speaker: CachedSpeaker) async {
+        // Portrait
+        if let urlString = speaker.profilePictureUrl, let url = URL(string: urlString) {
+            await prefetchPortrait(url: url, label: speaker.username)
+        }
+
+        // Company logo (via company API)
+        if let companyName = speaker.company {
+            await prefetchLogo(companyName: companyName)
+        }
+    }
+
+    private func prefetchPortrait(url: URL, label: String) async {
+        guard !portraitCache.isCached(url: url) else { return }
+
+        do {
+            _ = try await portraitCache.downloadAndCache(url: url)
+            print("✅ ImageCachePrefetcher: Portrait cached — \(label)")
+        } catch {
+            print("⚠️ ImageCachePrefetcher: Portrait download failed for \(label): \(error.localizedDescription)")
+        }
+    }
+
+    private func prefetchLogo(companyName: String) async {
+        guard !portraitCache.isLogoCached(companyName: companyName) else { return }
+
+        guard let encodedName = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+              var components = URLComponents(string: "https://api.staging.batbern.ch/api/v1/companies/\(encodedName)") else {
+            return
+        }
+        components.queryItems = [URLQueryItem(name: "expand", value: "logo")]
+        guard let url = components.url else { return }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let company = try JSONDecoder().decode(CompanyLogoResponse.self, from: data)
+            if let logoUrlString = company.logo?.url,
+               let logoUrl = URL(string: logoUrlString) {
+                let (logoData, _) = try await URLSession.shared.data(from: logoUrl)
+                portraitCache.saveLogo(companyName: companyName, data: logoData)
+                print("✅ ImageCachePrefetcher: Logo cached — \(companyName)")
+            }
+        } catch {
+            print("⚠️ ImageCachePrefetcher: Logo download failed for \(companyName): \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - Response Types
+
+private struct CompanyLogoResponse: Codable {
+    let logo: CompanyLogoURL?
+}
+
+private struct CompanyLogoURL: Codable {
+    let url: String
+}
+

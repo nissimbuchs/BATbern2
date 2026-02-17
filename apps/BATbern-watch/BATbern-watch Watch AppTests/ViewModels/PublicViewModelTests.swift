@@ -499,6 +499,86 @@ struct PublicViewModelTests {
         // Periodic refresh logic is validated by code inspection
     }
 
+    // MARK: - W1.5 Image Prefetch Tests (AC#3)
+
+    @Test("Prefetch: prefetchAll is called (non-blocking) after successful refreshEvent")
+    func test_prefetch_calledAfterSuccessfulRefresh() async throws {
+        // Given: Mock API and prefetcher
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(TestData.event())
+        let mockPrefetcher = MockImageCachePrefetcher()
+        let mockClock = MockClock(fixedDate: Date())
+
+        // When: ViewModel initializes and refreshes
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: mockClock,
+            prefetcher: mockPrefetcher,
+            modelContext: modelContext
+        )
+
+        // Wait for background refresh + prefetch task to complete
+        try await Task.sleep(nanoseconds: 700_000_000)  // 0.7s
+
+        // Then: prefetchAll was called
+        #expect(mockPrefetcher.prefetchCallCount > 0, "prefetchAll should be called after successful refresh")
+    }
+
+    @Test("Prefetch: prefetchAll receives all speakers from all sessions")
+    func test_prefetch_receivesAllSpeakers() async throws {
+        // Given: Event with multiple sessions and speakers
+        let speaker1 = TestData.speaker(username: "s1", firstName: "Anna", lastName: "Meier")
+        let speaker2 = TestData.speaker(username: "s2", firstName: "Tom", lastName: "Keller")
+        let testEvent = TestData.event(sessions: [
+            TestData.session(slug: "talk-1", speakers: [speaker1]),
+            TestData.session(slug: "talk-2", speakers: [speaker2])
+        ])
+
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .success(testEvent)
+        let mockPrefetcher = MockImageCachePrefetcher()
+        let mockClock = MockClock(fixedDate: baseTime)
+
+        // When: ViewModel refreshes
+        let viewModel = PublicViewModel(
+            apiClient: mockAPI,
+            clock: mockClock,
+            prefetcher: mockPrefetcher,
+            modelContext: modelContext
+        )
+
+        try await Task.sleep(nanoseconds: 700_000_000)
+
+        // Then: prefetcher received speakers from both sessions
+        #expect(mockPrefetcher.prefetchCallCount > 0, "prefetchAll should have been called")
+        // Speaker count should include speakers from both sessions
+        let speakerUsernames = mockPrefetcher.lastPrefetchedSpeakers.map(\.username)
+        #expect(speakerUsernames.contains("s1"), "Speaker s1 should be in prefetch list")
+        #expect(speakerUsernames.contains("s2"), "Speaker s2 should be in prefetch list")
+    }
+
+    @Test("Prefetch: prefetchAll not called on refresh failure")
+    func test_prefetch_notCalledOnRefreshFailure() async throws {
+        // Given: API fails
+        let mockAPI = MockAPIClient()
+        mockAPI.fetchCurrentEventResult = .failure(MockError.simulatedFailure)
+        let mockPrefetcher = MockImageCachePrefetcher()
+        let mockClock = MockClock(fixedDate: Date())
+
+        // When: ViewModel initializes with failing API
+        _ = PublicViewModel(
+            apiClient: mockAPI,
+            clock: mockClock,
+            prefetcher: mockPrefetcher,
+            modelContext: modelContext
+        )
+
+        try await Task.sleep(nanoseconds: 500_000_000)
+
+        // Then: prefetchAll should not have been called
+        #expect(mockPrefetcher.prefetchCallCount == 0, "prefetchAll should not be called on API failure")
+    }
+
     @Test("Cold launch offline: Shows empty state when no cache and offline")
     func test_coldLaunchOffline_showsEmptyState() async throws {
         // Given: No cached data, offline state
