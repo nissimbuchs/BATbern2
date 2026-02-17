@@ -11,7 +11,9 @@ import Foundation
 // MARK: - Protocol (for testability)
 
 protocol ImageCachePrefetcherProtocol {
-    func prefetchAll(speakers: [CachedSpeaker]) async
+    // @MainActor: CachedSpeaker is a non-Sendable PersistentModel; callers are always
+    // @MainActor-isolated, so the parameter never crosses an actor boundary.
+    @MainActor func prefetchAll(speakers: [CachedSpeaker]) async
 }
 
 // MARK: - Production Implementation
@@ -29,7 +31,7 @@ class ImageCachePrefetcher: ImageCachePrefetcherProtocol {
 
     /// Prefetch portrait and logo for every speaker concurrently.
     /// Uses TaskGroup so all downloads run in parallel; one failure does NOT stop others.
-    func prefetchAll(speakers: [CachedSpeaker]) async {
+    @MainActor func prefetchAll(speakers: [CachedSpeaker]) async {
         // Respect 40MB storage limit before starting any download
         guard portraitCache.cacheSize() < maxCacheSizeBytes else {
             print("⚠️ ImageCachePrefetcher: Cache ≥40MB — skipping prefetch to stay within NFR24 budget")
