@@ -3,7 +3,8 @@
 //  BATbern-watch Watch App
 //
 //  Concrete HapticServiceProtocol implementation using WKInterfaceDevice.
-//  W3.2: Full implementation with distinct patterns, scheduled queue, and
+//  W3.1: Minimal concrete HapticServiceProtocol implementation.
+//  W3.2: Expanded with distinct patterns, scheduled queue, and
 //        Extended Runtime session for background haptic delivery (NFR9).
 //  Source: docs/watch-app/architecture.md#Implementation-Patterns
 //
@@ -75,6 +76,9 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     // MARK: - HapticServiceProtocol — Scheduled Queue
 
     func schedule(_ alert: HapticAlert, at date: Date) {
+        // TODO: W3.x — background scheduled delivery not yet implemented.
+        // HapticScheduler calls play() directly; this queue is currently unused.
+        // Do not rely on schedule() for time-critical alerts until implemented.
         scheduledQueue.append((alert, date))
     }
 

@@ -211,6 +211,116 @@ struct LiveCountdownViewModelTests {
         #expect(abs(laterProgress - 0.25) < 0.01)
     }
 
+    // MARK: - Critical Urgency (H2 — AC4 full coverage)
+
+    @Test("urgencyLevel is .critical at exactly 60s remaining")
+    func urgencyCriticalAt60s() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-2340),
+            end: clock.now.addingTimeInterval(60)
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.urgencyLevel == .critical)
+    }
+
+    // MARK: - Next Session Discovery (M1)
+
+    @Test("nextSession skips break and returns first non-break session after active")
+    func nextSessionSkipsBreak() {
+        let (vm, clock, _, state) = makeVM()
+
+        let active = makeSession(
+            slug: "talk-1",
+            title: "First Talk",
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(2400)
+        )
+        let breakSession = CachedSession(
+            sessionSlug: "coffee-break",
+            title: "Coffee Break",
+            sessionType: .breakTime,
+            startTime: clock.now.addingTimeInterval(2401),
+            endTime: clock.now.addingTimeInterval(3001),
+            speakers: []
+        )
+        let next = makeSession(
+            slug: "talk-2",
+            title: "Second Talk",
+            start: clock.now.addingTimeInterval(3001),
+            end: clock.now.addingTimeInterval(5701)
+        )
+        state.currentEvent = makeEvent(sessions: [active, breakSession, next])
+
+        vm.refreshState()
+
+        #expect(vm.activeSession?.id == "talk-1")
+        #expect(vm.nextSession?.id == "talk-2")
+    }
+
+    @Test("nextSession is nil when active session is the last one")
+    func nextSessionNilWhenLast() {
+        let (vm, clock, _, state) = makeVM()
+
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(2400)
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.activeSession != nil)
+        #expect(vm.nextSession == nil)
+    }
+
+    // MARK: - Break Session Haptic Routing (M2)
+
+    @Test("Break session routes to gong reminder, not threshold alerts")
+    func breakSessionFiresGongNotThresholdAlerts() {
+        let (vm, _, haptics, state) = makeVM()
+
+        // Break ending in 30s — within gong lead time (60s threshold)
+        let breakSession = CachedSession(
+            sessionSlug: "coffee-break",
+            title: "Coffee Break",
+            sessionType: .breakTime,
+            startTime: referenceDate.addingTimeInterval(-1770),
+            endTime: referenceDate.addingTimeInterval(30),
+            speakers: []
+        )
+        state.currentEvent = makeEvent(sessions: [breakSession])
+
+        vm.refreshState()
+
+        #expect(haptics.playedAlerts.contains(.gongReminder))
+        #expect(!haptics.playedAlerts.contains(.fiveMinuteWarning))
+        #expect(!haptics.playedAlerts.contains(.twoMinuteWarning))
+    }
+
+    // MARK: - Fallback Session Discovery (M4)
+
+    @Test("Fallback to upcoming session when no session is currently active")
+    func fallbackToUpcomingSession() {
+        let (vm, clock, _, state) = makeVM()
+
+        // Session starts 1 hour in the future
+        let upcoming = makeSession(
+            slug: "upcoming-talk",
+            title: "Upcoming Talk",
+            start: clock.now.addingTimeInterval(3600),
+            end: clock.now.addingTimeInterval(7200)
+        )
+        state.currentEvent = makeEvent(sessions: [upcoming])
+
+        vm.refreshState()
+
+        #expect(vm.activeSession?.id == "upcoming-talk")
+    }
+
     // MARK: - Wall-Clock Accuracy (3.10, AC6)
 
     @Test("Wall-clock recalculation survives simulated suspension")

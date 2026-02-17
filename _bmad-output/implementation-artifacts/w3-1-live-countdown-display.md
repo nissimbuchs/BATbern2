@@ -1,6 +1,6 @@
 # Story W3.1: Live Countdown Display
 
-Status: review
+Status: done
 
 ## Story
 
@@ -40,13 +40,14 @@ so that I always know how much time remains without doing mental math.
   - [x] 2.1 Replace placeholder in `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift`
   - [x] 2.2 `@Environment(EventStateManager.self)` — reads event/session data
   - [x] 2.3 `@State private var viewModel = LiveCountdownViewModel(...)` — instantiated in view
-  - [x] 2.4 Layout (from UX spec O3):
+  - [x] 2.4 Layout (from UX design-directions.html — Chosen Direction: Progress Ring + Card Stack):
     ```
-    ZStack {
-      // Progress ring (background circle + colored arc)
-      // Countdown text center: formattedTime in SF Mono 40pt bold
-      // Speaker name below timer: SF Pro Rounded 16pt semibold
-      // Talk title below name: SF Pro 13pt, truncated
+    VStack {
+      // Status bar: urgency dot + state label ("ON TRACK" / "5 MIN LEFT" / etc.)
+      // Compact progress ring (96×96pt fixed, not edge-to-edge)
+      //   Inside: formattedTime SF Mono 26pt bold + "REMAINING" label
+      // Speaker card: initials avatar + name (SF Pro Rounded 11pt) + title (9pt)
+      // Next session peek card (optional, dimmed): "NEXT" + speaker name + start time
     }
     ```
   - [x] 2.5 Color mapping (architecture + UX spec):
@@ -57,7 +58,7 @@ so that I always know how much time remains without doing mental math.
   - [x] 2.6 Progress ring: `Circle().trim(from: 0, to: viewModel.progress)` rotated -90° so it starts at top
   - [x] 2.7 `.onAppear { viewModel.startTimer() }` / `.onDisappear { viewModel.stopTimer() }`
   - [x] 2.8 Handle no-active-session edge case: show "No active session" placeholder text
-  - [x] 2.9 `#Preview` with mock session data (e.g., 45-min session, 22 min remaining)
+  - [x] 2.9 ~~`#Preview` removed~~ — no AC requires a preview; organizer zone requires pairing auth that cannot exist in Xcode canvas context. Preview block removed to avoid misleading placeholder.
 
 - [x] **Task 3: Unit Tests for LiveCountdownViewModel** (AC: 2, 3, 4, 5, 6)
   - [x] 3.1 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift`
@@ -71,6 +72,11 @@ so that I always know how much time remains without doing mental math.
   - [x] 3.9 Test: progress advances from 0 → 1 as time elapses (inject MockClock, advance time)
   - [x] 3.10 Test: wall-clock recalculation survives simulated suspension — `clock.advance(by: 1800)`, `recalculate()` gives correct value
   - [x] 3.11 Use `MockClock` and `MockHapticService` (both already exist in Mocks/ folder)
+  - [x] 3.12 Test: `urgencyLevel == .critical` at exactly 60s remaining (AC4 full coverage)
+  - [x] 3.13 Test: `nextSession` skips break and returns first non-break session after active
+  - [x] 3.14 Test: `nextSession` is nil when active session is the last one
+  - [x] 3.15 Test: break session routes to `evaluateBreakGong` — fires `.gongReminder`, not threshold alerts
+  - [x] 3.16 Test: fallback to upcoming session when no session is currently active
 
 ## Dev Notes
 
@@ -293,7 +299,7 @@ None — no build errors or failures encountered. SourceKit showed expected "typ
 - **Task 1**: `LiveCountdownViewModel` created with `@Observable @MainActor`, injectable `clock`/`hapticService`/`eventState`, owns `SessionTimerEngine` + `HapticScheduler`. `refreshState()` is `internal` (non-private) to enable direct testing without async timer. `eventState` is a `var` set by the view from `@Environment` after resolution.
 - **Task 1 supplemental**: `CachedSession+WatchSession.swift` added — conversion extensions missing from codebase (`CachedSession.toWatchSession()` and `CachedSpeaker.toWatchSpeaker()`). `WatchHapticService.swift` added — minimal `WKInterfaceDevice`-based haptic service (concrete `HapticServiceProtocol` was absent; required for W3.1 compilation; W3.2 expands patterns).
 - **Task 2**: `LiveCountdownView` replaces placeholder. Uses `@State private var viewModel = LiveCountdownViewModel()`, sets `viewModel.eventState = eventState` in `.onAppear` (post-environment-resolution pattern). ZStack with background ring, progress arc (trim + rotation), countdown text (SF Mono 40pt), speaker name (SF Pro Rounded 16pt), talk title (SF Pro 13pt). Color mapping matches architecture spec. `#Preview` shows no-session placeholder (avoids mock data in production target).
-- **Task 3**: 9 test cases covering AC2-AC6 via `MockClock`/`MockHapticService`. Tests use `MockEventStateManager` (in-test mock) with `CachedEvent`/`CachedSession` objects created in-memory. `@Suite @MainActor` required since ViewModel is `@MainActor`. Note: if SwiftData detached-model behavior causes test failures, add in-memory `ModelContainer` (same pattern as `LocalCacheTests.swift`).
+- **Task 3**: 14 test cases covering AC2-AC6 via `MockClock`/`MockHapticService`. Tests use `MockEventStateManager` (in-test mock) with `CachedEvent`/`CachedSession` objects created in-memory. `@Suite @MainActor` required since ViewModel is `@MainActor`. Note: if SwiftData detached-model behavior causes test failures, add in-memory `ModelContainer` (same pattern as `LocalCacheTests.swift`). Code review added 5 tests: `.critical` urgency (H2 AC4 gap), `nextSession` discovery (2 cases), break session haptic routing, and fallback session discovery.
 
 ### File List
 
@@ -301,10 +307,13 @@ None — no build errors or failures encountered. SourceKit showed expected "typ
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/WatchHapticService.swift` — NEW: Minimal WKInterfaceDevice-based HapticServiceProtocol implementation
 - `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift` — NEW: @Observable @MainActor countdown ViewModel
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift` — MODIFIED: Replaced placeholder with full O3 implementation
-- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift` — NEW: 9 unit tests for LiveCountdownViewModel
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift` — NEW: 14 unit tests for LiveCountdownViewModel (9 original + 5 added in code review)
 - `_bmad-output/implementation-artifacts/w3-1-live-countdown-display.md` — MODIFIED: Task checkboxes, Dev Agent Record, Status → review
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — MODIFIED: w3-1 → review
 
 ### Change Log
 
 - 2026-02-17: W3.1 implementation complete — LiveCountdownViewModel + LiveCountdownView + unit tests. Added CachedSession+WatchSession conversion and WatchHapticService. All tasks [x]. Status → review.
+- 2026-02-17: Code review — removed `#Preview` from LiveCountdownView (no AC requires it; organizer zone requires pairing auth unavailable in Xcode canvas).
+- 2026-02-17: Code review fixes — 5 tests added (critical urgency, nextSession ×2, break routing, fallback discovery); WatchHapticService.schedule() TODO comment; WatchHapticService header corrected W3.2→W3.1. All HIGH+MEDIUM issues resolved. Status → done.
+- 2026-02-17: Design compliance fix — LiveCountdownView rebuilt to match chosen design direction (Progress Ring + Card Stack). Ring is now compact 96×96pt with 26pt countdown; speaker card with initials avatar; next session peek card; status bar with urgency label. Previous implementation was full-screen ring (Direction 3 style).
