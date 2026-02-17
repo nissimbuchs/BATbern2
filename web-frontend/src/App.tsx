@@ -107,6 +107,11 @@ const ContentSubmissionPage = React.lazy(
 // Story 6.4: Speaker Portal - Dashboard
 const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
 
+// Story 9.1: Speaker Portal - JWT Magic Login
+const SpeakerMagicLoginPage = React.lazy(
+  () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
+);
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -246,6 +251,9 @@ function App() {
 
                     {/* Story 6.4: Speaker Portal - Dashboard */}
                     <Route path="/speaker-portal/dashboard" element={<SpeakerDashboardPage />} />
+
+                    {/* Story 9.1: Speaker Portal - JWT Magic Login */}
+                    <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
 
                     <Route
                       path="/search"

@@ -1,6 +1,6 @@
 # Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -19,41 +19,41 @@ so that I can access the speaker portal without creating a separate password.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `generateJwtToken()` to `MagicLinkService` (AC: 1, 6)
-  - [ ] 1.1 Write failing unit tests for `generateJwtToken(UUID speakerPoolId)` in `MagicLinkServiceTest`
-  - [ ] 1.2 Add JJWT library dependency to `event-management-service/build.gradle`
-  - [ ] 1.3 Add RSA key pair config: `${JWT_PRIVATE_KEY}` / `${JWT_PUBLIC_KEY}` env refs in `application.yml`; embed Base64-encoded test keys in `application-test.yml`; see E2 note in Dev Notes for details
-  - [ ] 1.4 Implement `generateJwtToken()` using RS256 with claims: `sub`=speakerPoolId, `email`=`speakerPool.getEmail()`, `roles`=["SPEAKER"], `speakerPoolId`, `exp`=+30 days, `iss`="batbern"
-  - [ ] 1.5 Verify tests pass (GREEN phase)
-- [ ] Task 2: Create `POST /api/v1/auth/speaker-magic-login` endpoint (AC: 2, 3, 5)
-  - [ ] 2.1 Write failing integration test for the endpoint in `SpeakerMagicLoginControllerTest extends AbstractIntegrationTest`
-  - [ ] 2.2 Create `SpeakerMagicLoginController` in `services/event-management-service/src/main/java/ch/batbern/events/controller/`
-  - [ ] 2.3 Create `SpeakerMagicLoginRequest` DTO (fields: `jwtToken: String`)
-  - [ ] 2.4 Create `SpeakerAuthResponse` DTO (fields: `speakerPoolId`, `speakerName`, `eventCode`, `eventTitle`, `sessionToken`)
-  - [ ] 2.5 Implement controller method: validate JWT claims → look up `SpeakerPool` → call `magicLinkService.generateToken(speakerPoolId, TokenAction.VIEW)` to issue session token → set HTTP-only cookie → return 200 with speaker context + sessionToken
-  - [ ] 2.6 Handle invalid/expired JWT: return 401 with error message "Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator."
-  - [ ] 2.7 Verify integration tests pass
-- [ ] Task 3: Update `SecurityConfig` in API Gateway (AC: 2, 3)
-  - [ ] 3.1 Add `permitAll()` for `POST /api/v1/auth/speaker-magic-login` to `api-gateway/SecurityConfig.java`
-  - [ ] 3.2 KEEP existing `permitAll()` entries for `/api/v1/speaker-portal/**` unchanged — DO NOT require JWT here yet (Story 9.4 handles migration; changing this now breaks all existing Epic 6 token-based speakers)
-  - [ ] 3.3 Write a test verifying the new auth endpoint is accessible without prior auth
-- [ ] Task 4: Update invitation email to include JWT magic link (AC: 1)
-  - [ ] 4.1 Open `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java`
-  - [ ] 4.2 Add `magicLinkService` as constructor dependency to `SpeakerInvitationEmailService`
-  - [ ] 4.3 Add call `magicLinkService.generateJwtToken(speakerPoolId)` to generate JWT before sending email (alongside existing `respondToken` + `dashboardToken` generation)
-  - [ ] 4.4 In `buildEmailContent()` method, add new variable: `String jwtMagicLink = baseUrl + "/speaker-portal/magic-login?jwt=" + jwtToken;`
-  - [ ] 4.5 Add `{{JWT_MAGIC_LINK}}` variable to both `email-templates/speaker-invitation-de.html` and `speaker-invitation-en.html` (existing token links stay for backward compat)
-  - [ ] 4.6 Write test in `SpeakerInvitationEmailServiceTest` verifying new JWT link format is present in rendered email
+- [x] Task 1: Add `generateJwtToken()` to `MagicLinkService` (AC: 1, 6)
+  - [x] 1.1 Write failing unit tests for `generateJwtToken(UUID speakerPoolId)` in `MagicLinkServiceTest`
+  - [x] 1.2 Add JJWT library dependency to `event-management-service/build.gradle` (already at 0.13.0 — no change needed)
+  - [x] 1.3 Add RSA key pair config: `${JWT_PRIVATE_KEY}` / `${JWT_PUBLIC_KEY}` env refs in `application.yml`; embed Base64-encoded test keys in `application-test.yml`; see E2 note in Dev Notes for details
+  - [x] 1.4 Implement `generateJwtToken()` using RS256 with claims: `sub`=speakerPoolId, `email`=`speakerPool.getEmail()`, `roles`=["SPEAKER"], `speakerPoolId`, `exp`=+30 days, `iss`="batbern"
+  - [x] 1.5 Verify tests pass (GREEN phase) — 22/22 tests passing (4 new JWT tests)
+- [x] Task 2: Create `POST /api/v1/auth/speaker-magic-login` endpoint (AC: 2, 3, 5)
+  - [x] 2.1 Write failing integration test for the endpoint in `SpeakerMagicLoginControllerTest extends AbstractIntegrationTest`
+  - [x] 2.2 Create `SpeakerMagicLoginController` in `services/event-management-service/src/main/java/ch/batbern/events/controller/`
+  - [x] 2.3 Create `SpeakerMagicLoginRequest` DTO (fields: `jwtToken: String`)
+  - [x] 2.4 Create `SpeakerAuthResponse` DTO (fields: `speakerPoolId`, `speakerName`, `eventCode`, `eventTitle`, `sessionToken`)
+  - [x] 2.5 Implement controller method: validate JWT claims → look up `SpeakerPool` → call `magicLinkService.generateToken(speakerPoolId, TokenAction.VIEW)` to issue session token → set HTTP-only cookie → return 200 with speaker context + sessionToken
+  - [x] 2.6 Handle invalid/expired JWT: return 401 with error message "Dieser Link ist nicht mehr gültig. Bitte kontaktiere den Organisator."
+  - [x] 2.7 Verify integration tests pass — 5/5 integration tests passing
+- [x] Task 3: Update `SecurityConfig` in API Gateway (AC: 2, 3)
+  - [x] 3.1 Add `permitAll()` for `POST /api/v1/auth/speaker-magic-login` to `api-gateway/SecurityConfig.java`
+  - [x] 3.2 KEEP existing `permitAll()` entries for `/api/v1/speaker-portal/**` unchanged — DO NOT require JWT here yet (Story 9.4 handles migration; changing this now breaks all existing Epic 6 token-based speakers)
+  - [x] 3.3 Write a test verifying the new auth endpoint is accessible without prior auth
+- [x] Task 4: Update invitation email to include JWT magic link (AC: 1)
+  - [x] 4.1 Open `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java`
+  - [x] 4.2 Add `magicLinkService` as constructor dependency to `SpeakerInvitationEmailService`
+  - [x] 4.3 Add call `magicLinkService.generateJwtToken(speakerPoolId)` to generate JWT before sending email (alongside existing `respondToken` + `dashboardToken` generation)
+  - [x] 4.4 In `loadEmailTemplate()` method, add new variable: `String jwtMagicLink = baseUrl + "/speaker-portal/magic-login?jwt=" + jwtToken;`
+  - [x] 4.5 Add `{{jwtMagicLink}}` variable to both `email-templates/speaker-invitation-de.html` and `speaker-invitation-en.html` (existing token links stay for backward compat)
+  - [x] 4.6 Write test in `SpeakerInvitationEmailServiceTest` verifying new JWT link format is present in rendered email — PASSED
   - Note: Existing `?token=` links (acceptLink, declineLink, dashboardLink) MUST remain in email for backward compat during grace period
-- [ ] Task 5: Frontend - Handle magic link JWT flow (AC: 2, 3, 5)
-  - [ ] 5.1 Create `SpeakerMagicLoginPage.tsx` at `web-frontend/src/pages/speaker-portal/SpeakerMagicLoginPage.tsx`
-  - [ ] 5.2 Extract `?jwt=` query param from URL using `useSearchParams()`
-  - [ ] 5.3 Call `speakerAuthService.validateMagicLink(jwt)` which POSTs to `/api/v1/auth/speaker-magic-login`
-  - [ ] 5.4 On success: redirect to `/speaker-portal/dashboard?token=${response.sessionToken}` (uses existing dashboard flow — do NOT change `SpeakerDashboardPage.tsx` in this story)
-  - [ ] 5.5 On error: show error message with contact info (AC: 5)
-  - [ ] 5.6 Create `speakerAuthService.ts` at `web-frontend/src/services/speakerAuthService.ts`
-  - [ ] 5.7 Add route `/speaker-portal/magic-login` in app router pointing to `SpeakerMagicLoginPage` (insert alongside existing speaker-portal routes in `App.tsx` around line 239)
-  - [ ] 5.8 Write unit tests for `SpeakerMagicLoginPage` with Vitest
+- [x] Task 5: Frontend - Handle magic link JWT flow (AC: 2, 3, 5)
+  - [x] 5.1 Create `SpeakerMagicLoginPage.tsx` at `web-frontend/src/pages/speaker-portal/SpeakerMagicLoginPage.tsx`
+  - [x] 5.2 Extract `?jwt=` query param from URL using `useSearchParams()`
+  - [x] 5.3 Call `speakerAuthService.validateMagicLink(jwt)` which POSTs to `/api/v1/auth/speaker-magic-login`
+  - [x] 5.4 On success: redirect to `/speaker-portal/dashboard?token=${response.sessionToken}` (uses existing dashboard flow — do NOT change `SpeakerDashboardPage.tsx` in this story)
+  - [x] 5.5 On error: show error message with contact info (AC: 5)
+  - [x] 5.6 Create `speakerAuthService.ts` at `web-frontend/src/services/speakerAuthService.ts`
+  - [x] 5.7 Add route `/speaker-portal/magic-login` in app router pointing to `SpeakerMagicLoginPage` (App.tsx)
+  - [x] 5.8 Write unit tests for `SpeakerMagicLoginPage` with Vitest — 5/5 passing
 
 ## Dev Notes
 
