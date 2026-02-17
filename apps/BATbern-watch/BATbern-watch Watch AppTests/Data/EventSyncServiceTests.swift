@@ -12,6 +12,35 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
+// MARK: - EventSyncMockURLProtocol
+
+/// Separate URLProtocol subclass for EventSyncServiceTests.
+/// Has its OWN static requestHandler so it never interferes with MockURLProtocol.requestHandler
+/// used by ArrivalTrackerTests (which runs concurrently in a different suite).
+final class EventSyncMockURLProtocol: URLProtocol {
+    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let handler = EventSyncMockURLProtocol.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
+            return
+        }
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
 // MARK: - Mock PortraitCache
 
 /// M2/M3 fix: Conforms to PortraitCacheable so it can be injected into EventSyncService.
@@ -90,7 +119,7 @@ private func makeModelContext() throws -> ModelContext {
 }
 
 private func makeSession(config: URLSessionConfiguration = .ephemeral) -> URLSession {
-    config.protocolClasses = [MockURLProtocol.self]
+    config.protocolClasses = [EventSyncMockURLProtocol.self]
     return URLSession(configuration: config)
 }
 
@@ -107,7 +136,7 @@ struct EventSyncServiceTests {
         // Given
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
-        MockURLProtocol.requestHandler = { _ in
+        EventSyncMockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -138,7 +167,7 @@ struct EventSyncServiceTests {
         // Given
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
-        MockURLProtocol.requestHandler = { _ in
+        EventSyncMockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -165,7 +194,7 @@ struct EventSyncServiceTests {
         // Given
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
-        MockURLProtocol.requestHandler = { _ in
+        EventSyncMockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -199,7 +228,7 @@ struct EventSyncServiceTests {
         // Given — inject MockPortraitCache to intercept portrait downloads (M3 fix)
         // Previously used URLProtocol interception on URLSession.shared, which didn't
         // actually capture calls since PortraitCache used URLSession.shared (not the mock session).
-        MockURLProtocol.requestHandler = { _ in
+        EventSyncMockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -236,7 +265,7 @@ struct EventSyncServiceTests {
         // Given
         let authManager = MockAuthManager()
         let modelContext = try makeModelContext()
-        MockURLProtocol.requestHandler = { _ in
+        EventSyncMockURLProtocol.requestHandler = { _ in
             let response = HTTPURLResponse(
                 url: URL(string: "https://example.com")!,
                 statusCode: 401, httpVersion: nil, headerFields: nil)!

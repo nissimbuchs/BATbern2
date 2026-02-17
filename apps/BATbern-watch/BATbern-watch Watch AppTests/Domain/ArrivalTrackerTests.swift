@@ -11,57 +11,11 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-// MARK: - MockURLProtocol
-
-/// URLProtocol subclass for mocking URLSession network responses in unit tests.
-final class MockURLProtocol: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
-
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-    override func startLoading() {
-        guard let handler = MockURLProtocol.requestHandler else {
-            client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
-            return
-        }
-        do {
-            let (response, data) = try handler(request)
-            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: data)
-            client?.urlProtocolDidFinishLoading(self)
-        } catch {
-            client?.urlProtocol(self, didFailWithError: error)
-        }
-    }
-
-    override func stopLoading() {}
-
-    /// Creates a URLSession pre-configured to use MockURLProtocol.
-    static func makeSession() -> URLSession {
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [MockURLProtocol.self]
-        return URLSession(configuration: config)
-    }
-
-    /// Makes a session that returns empty arrivals list for any GET request.
-    static func makeEmptyArrivalsSession() -> URLSession {
-        requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://localhost")!,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (response, "{\"arrivals\":[]}".data(using: .utf8)!)
-        }
-        return makeSession()
-    }
-}
-
 // MARK: - ArrivalTrackerTests
 
-@Suite("ArrivalTracker")
+// .serialized prevents concurrent test execution so SwiftData model context mutations
+// from one test do not interfere with another test that runs in parallel.
+@Suite("ArrivalTracker", .serialized)
 @MainActor
 struct ArrivalTrackerTests {
 
@@ -73,7 +27,6 @@ struct ArrivalTrackerTests {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         modelContainer = try ModelContainer(for: schema, configurations: [config])
         modelContext = ModelContext(modelContainer)
-        MockURLProtocol.requestHandler = nil
     }
 
     // MARK: - Helpers
@@ -90,11 +43,22 @@ struct ArrivalTrackerTests {
         return speaker
     }
 
+    /// Default fetcher that returns empty arrivals — used when no custom fetcher is needed.
+    private static let emptyArrivalsFetcher: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { _ in
+        let response = HTTPURLResponse(
+            url: URL(string: "https://localhost")!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: ["Content-Type": "application/json"]
+        )!
+        return ("{\"arrivals\":[]}".data(using: .utf8)!, response)
+    }
+
     private func makeTracker(
         organizerUsername: String = "marco.muster",
         jwt: String? = "mock-jwt",
         wsClient: MockWebSocketClient? = nil,
-        urlSession: URLSession? = nil
+        fetcher: (@Sendable (URLRequest) async throws -> (Data, URLResponse))? = nil
     ) -> ArrivalTracker {
         let auth = MockAuthManager(
             organizerUsername: organizerUsername,
@@ -104,7 +68,7 @@ struct ArrivalTrackerTests {
             authManager: auth,
             modelContext: modelContext,
             webSocketClient: wsClient,
-            urlSession: urlSession ?? MockURLProtocol.makeEmptyArrivalsSession()
+            httpFetcher: fetcher ?? Self.emptyArrivalsFetcher
         )
     }
 
@@ -190,32 +154,28 @@ struct ArrivalTrackerTests {
     func fetchInitialArrivals_appliesStateToCachedSpeakers() async throws {
         let speaker = makeSpeaker(username: "anna.meier", arrived: false)
 
-        // Mock URLSession to return pre-populated arrivals
-        MockURLProtocol.requestHandler = { request in
-            #expect(request.httpMethod == "GET")
+        let json = """
+        {
+            "arrivals": [
+                {
+                    "speakerUsername": "anna.meier",
+                    "confirmedBy": "marco",
+                    "arrivedAt": "2026-02-16T17:15:00.000Z"
+                }
+            ]
+        }
+        """
+        let fetcher: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { request in
             let response = HTTPURLResponse(
                 url: request.url!,
                 statusCode: 200,
                 httpVersion: nil,
                 headerFields: ["Content-Type": "application/json"]
             )!
-            let json = """
-            {
-                "arrivals": [
-                    {
-                        "speakerUsername": "anna.meier",
-                        "confirmedBy": "marco",
-                        "arrivedAt": "2026-02-16T17:15:00.000Z"
-                    }
-                ]
-            }
-            """
-            return (response, json.data(using: .utf8)!)
+            return (json.data(using: .utf8)!, response)
         }
 
-        let session = MockURLProtocol.makeSession()
-        let tracker = makeTracker(urlSession: session)
-
+        let tracker = makeTracker(fetcher: fetcher)
         await tracker.startListening(eventCode: "BATbern56")
 
         #expect(speaker.arrived == true)
@@ -229,30 +189,35 @@ struct ArrivalTrackerTests {
         let wsClient = MockWebSocketClient()
         wsClient._isConnected = false  // Not connected
 
-        var capturedRequest: URLRequest?
-        MockURLProtocol.requestHandler = { request in
+        // Capture the request synchronously via an actor-isolated box to avoid the
+        // @Sendable-closure / @MainActor mutable-capture restriction.
+        final class RequestCapture: @unchecked Sendable {
+            var captured: URLRequest?
+        }
+        let capture = RequestCapture()
+
+        let fetcher: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { request in
             if request.httpMethod == "POST" {
-                capturedRequest = request
+                capture.captured = request
                 let response = HTTPURLResponse(
                     url: request.url!,
                     statusCode: 201,
                     httpVersion: nil,
                     headerFields: nil
                 )!
-                return (response, Data())
+                return (Data(), response)
             }
-            // GET for initial arrivals
+            // GET for initial arrivals — return empty arrivals
             let response = HTTPURLResponse(
                 url: request.url!,
                 statusCode: 200,
                 httpVersion: nil,
                 headerFields: ["Content-Type": "application/json"]
             )!
-            return (response, "{\"arrivals\":[]}".data(using: .utf8)!)
+            return ("{\"arrivals\":[]}".data(using: .utf8)!, response)
         }
 
-        let session = MockURLProtocol.makeSession()
-        let tracker = makeTracker(wsClient: wsClient, urlSession: session)
+        let tracker = makeTracker(wsClient: wsClient, fetcher: fetcher)
 
         // Set event code via startListening
         await tracker.startListening(eventCode: "BATbern56")
@@ -263,8 +228,8 @@ struct ArrivalTrackerTests {
 
         // Verify REST was used (not WebSocket)
         #expect(wsClient.sentActions.isEmpty)
-        let urlString = capturedRequest?.url?.absoluteString ?? ""
+        let urlString = capture.captured?.url?.absoluteString ?? ""
         #expect(urlString.contains("/api/v1/watch/events/BATbern56/arrivals"))
-        #expect(capturedRequest?.httpMethod == "POST")
+        #expect(capture.captured?.httpMethod == "POST")
     }
 }

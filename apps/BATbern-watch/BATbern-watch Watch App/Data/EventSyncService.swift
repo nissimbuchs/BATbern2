@@ -209,7 +209,7 @@ final class EventSyncService: EventSyncServiceProtocol {
 
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await fetchData(for: request)
         } catch {
             throw SyncError.networkError
         }
@@ -229,6 +229,24 @@ final class EventSyncService: EventSyncServiceProtocol {
 
         let wrapper = try JSONDecoder().decode(ActiveEventsWrapper.self, from: data)
         return wrapper.activeEvents
+    }
+
+    // MARK: - Networking Helper
+
+    /// Uses completion-handler dataTask instead of Swift async data(for:) because the async
+    /// path bypasses URLProtocol on watchOS Simulator (test mocks don't intercept it).
+    private func fetchData(for request: URLRequest) async throws -> (Data, URLResponse) {
+        try await withCheckedThrowingContinuation { continuation in
+            session.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let data = data, let response = response {
+                    continuation.resume(returning: (data, response))
+                } else {
+                    continuation.resume(throwing: URLError(.unknown))
+                }
+            }.resume()
+        }
     }
 
     // MARK: - Mock Support (TESTING_MODE only)

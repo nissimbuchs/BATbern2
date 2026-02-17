@@ -40,7 +40,10 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     private let authManager: AuthManagerProtocol
     private let modelContext: ModelContext
     private let webSocketClient: WebSocketClientProtocol?
-    private let urlSession: URLSession
+    // Stored as a closure so tests can inject a direct mock without going through URLSession
+    // or URLProtocol (which is unreliable on watchOS simulator for @Observable @MainActor classes).
+    @ObservationIgnored
+    private let httpFetcher: @Sendable (URLRequest) async throws -> (Data, URLResponse)
 
     // MARK: - Private State
 
@@ -49,6 +52,7 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
 
     // MARK: - Init
 
+    /// Production init. Wraps `urlSession` in the http fetcher closure.
     init(
         authManager: AuthManagerProtocol,
         modelContext: ModelContext,
@@ -58,7 +62,35 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         self.authManager = authManager
         self.modelContext = modelContext
         self.webSocketClient = webSocketClient
-        self.urlSession = urlSession
+        let capturedSession = urlSession
+        self.httpFetcher = { request in
+            try await withCheckedThrowingContinuation { continuation in
+                capturedSession.dataTask(with: request) { data, response, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let data = data, let response = response {
+                        continuation.resume(returning: (data, response))
+                    } else {
+                        continuation.resume(throwing: URLError(.unknown))
+                    }
+                }.resume()
+            }
+        }
+    }
+
+    /// Test-only init. Accepts an http fetcher closure directly, bypassing URLSession and
+    /// URLProtocol entirely (URLProtocol interception is unreliable on watchOS simulator
+    /// for @Observable @MainActor classes).
+    init(
+        authManager: AuthManagerProtocol,
+        modelContext: ModelContext,
+        webSocketClient: WebSocketClientProtocol? = nil,
+        httpFetcher: @escaping @Sendable (URLRequest) async throws -> (Data, URLResponse)
+    ) {
+        self.authManager = authManager
+        self.modelContext = modelContext
+        self.webSocketClient = webSocketClient
+        self.httpFetcher = httpFetcher
     }
 
     // MARK: - Public API
@@ -122,7 +154,7 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
             request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-            let (data, response) = try await urlSession.data(for: request)
+            let (data, response) = try await httpFetcher(request)
 
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else { return }
@@ -152,8 +184,13 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     private func startWebSocketListener() {
         guard let wsClient = webSocketClient else { return }
 
+        // Call arrivalUpdates() BEFORE creating the Task so the AsyncStream's continuation
+        // is stored in wsClient synchronously. Any emitArrival() calls that happen before
+        // the Task has a chance to run will buffer into the stream and be delivered later.
+        let updates = wsClient.arrivalUpdates()
+
         listeningTask = Task { [weak self] in
-            for await message in wsClient.arrivalUpdates() {
+            for await message in updates {
                 guard !Task.isCancelled else { break }
                 await self?.processArrivalMessage(message)
             }
@@ -198,7 +235,7 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (_, response) = try await urlSession.data(for: request)
+        let (_, response) = try await httpFetcher(request)
 
         guard let httpResponse = response as? HTTPURLResponse,
               (200...201).contains(httpResponse.statusCode) else {
