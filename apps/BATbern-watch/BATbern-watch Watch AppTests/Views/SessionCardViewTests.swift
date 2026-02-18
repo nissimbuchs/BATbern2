@@ -159,4 +159,85 @@ final class SessionCardViewTests: XCTestCase {
         XCTAssertNotNil(view)
         // Would verify speaker area is not present
     }
+
+    // MARK: - Status Badge Tests (W3.4 AC1)
+
+    func test_badgeStatus_completedWhenEndTimeIsInThePast() {
+        // Given
+        let session = CachedSession(
+            sessionSlug: "past",
+            title: "Past Session",
+            startTime: Date(timeIntervalSinceNow: -90 * 60),
+            endTime: Date(timeIntervalSinceNow: -45 * 60)
+        )
+        // When
+        let status = SessionBadgeStatus.status(for: session, at: Date())
+        // Then
+        XCTAssertEqual(status, .completed)
+    }
+
+    func test_badgeStatus_activeWhenNowIsBetweenStartAndEnd() {
+        // Given
+        let session = CachedSession(
+            sessionSlug: "active",
+            title: "Active Session",
+            startTime: Date(timeIntervalSinceNow: -20 * 60),
+            endTime: Date(timeIntervalSinceNow: 25 * 60)
+        )
+        // When
+        let status = SessionBadgeStatus.status(for: session, at: Date())
+        // Then
+        XCTAssertEqual(status, .active)
+    }
+
+    func test_badgeStatus_upcomingWhenStartTimeIsInTheFuture() {
+        // Given
+        let session = CachedSession(
+            sessionSlug: "future",
+            title: "Future Session",
+            startTime: Date(timeIntervalSinceNow: 30 * 60),
+            endTime: Date(timeIntervalSinceNow: 75 * 60)
+        )
+        // When
+        let status = SessionBadgeStatus.status(for: session, at: Date())
+        // Then
+        XCTAssertEqual(status, .upcoming)
+    }
+
+    func test_badgeStatus_nilWhenStartTimeIsMissing() {
+        // Given
+        let session = CachedSession(
+            sessionSlug: "no-start",
+            title: "No Start Session",
+            startTime: nil,
+            endTime: Date(timeIntervalSinceNow: 60 * 60)
+        )
+        // When
+        let status = SessionBadgeStatus.status(for: session, at: Date())
+        // Then
+        XCTAssertNil(status)
+    }
+
+    func test_badgeStatus_nilWhenEndTimeIsMissing() {
+        // Given
+        let session = CachedSession(
+            sessionSlug: "no-end",
+            title: "No End Session",
+            startTime: Date(timeIntervalSinceNow: -30 * 60),
+            endTime: nil
+        )
+        // When
+        let status = SessionBadgeStatus.status(for: session, at: Date())
+        // Then
+        XCTAssertNil(status)
+    }
+
+    func test_badgeStatus_labelAndColor() {
+        XCTAssertEqual(SessionBadgeStatus.completed.label, "Done")
+        XCTAssertEqual(SessionBadgeStatus.active.label, "Active")
+        XCTAssertEqual(SessionBadgeStatus.upcoming.label, "Upcoming")
+
+        XCTAssertEqual(SessionBadgeStatus.completed.color, .gray)
+        XCTAssertEqual(SessionBadgeStatus.active.color, .teal)
+    }
 }

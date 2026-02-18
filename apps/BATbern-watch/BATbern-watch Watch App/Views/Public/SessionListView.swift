@@ -11,6 +11,8 @@ import SwiftData
 
 struct SessionListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AuthManager.self) private var authManager
+    @Environment(EventStateManager.self) private var eventState
     @State private var viewModel: PublicViewModel?
     @State private var selectedPageIndex: Int = 0
 
@@ -47,7 +49,8 @@ struct SessionListView: View {
                 SessionCardView(
                     session: session,
                     phase: vm.event?.currentPublishedPhase,
-                    statusBarVisible: statusBarVisible(vm: vm)
+                    statusBarVisible: statusBarVisible(vm: vm),
+                    showStatusBadge: authManager.isPaired && eventState.isLive
                 )
                 .tag(index + 1)
             }
@@ -75,9 +78,13 @@ struct SessionListView: View {
 #Preview("With Sessions") {
     SessionListView()
         .modelContainer(for: [CachedEvent.self, CachedSession.self], inMemory: true)
+        .environment(AuthManager())
+        .environment(EventStateManager())
 }
 
 #Preview("Empty State") {
     SessionListView()
         .modelContainer(for: [CachedEvent.self], inMemory: true)
+        .environment(AuthManager())
+        .environment(EventStateManager())
 }

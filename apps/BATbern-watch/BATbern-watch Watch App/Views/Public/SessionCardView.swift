@@ -9,10 +9,41 @@
 
 import SwiftUI
 
+// MARK: - Session Status Badge
+
+enum SessionBadgeStatus: Equatable {
+    case completed, active, upcoming
+
+    var label: String {
+        switch self {
+        case .completed: return "Done"
+        case .active:    return "Active"
+        case .upcoming:  return "Upcoming"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .completed: return .gray
+        case .active:    return .teal
+        case .upcoming:  return Color(white: 0.55)
+        }
+    }
+
+    /// Pure function — testable without SwiftUI.
+    static func status(for session: CachedSession, at now: Date) -> SessionBadgeStatus? {
+        guard let start = session.startTime, let end = session.endTime else { return nil }
+        if end < now { return .completed }
+        if start <= now && now <= end { return .active }
+        return .upcoming
+    }
+}
+
 struct SessionCardView: View {
     let session: CachedSession
     let phase: String?  // TOPIC, SPEAKERS, or AGENDA
     var statusBarVisible: Bool = false  // Extra top padding when ConnectionStatusBar is shown
+    var showStatusBadge: Bool = false   // True when organizer is paired and event is live
 
     // MARK: - Computed Properties
 
@@ -73,13 +104,20 @@ struct SessionCardView: View {
     @ViewBuilder
     private var presentationCardLayout: some View {
         VStack(spacing: 12) {
-            // Time slot (top, secondary color)
+            // Time slot (top, secondary color) + optional organizer status badge (W3.4 AC1)
             // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
             if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
-                Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, timeSlotTopPadding)
+                HStack {
+                    Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, timeSlotTopPadding)
             }
 
             Spacer()
@@ -103,13 +141,20 @@ struct SessionCardView: View {
     @ViewBuilder
     private var breakCardLayout: some View {
         VStack(spacing: 8) {
-            // Time slot
+            // Time slot + optional organizer status badge (W3.4 AC1)
             // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
             if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
-                Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, timeSlotTopPadding)
+                HStack {
+                    Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, timeSlotTopPadding)
             }
 
             Spacer()
@@ -129,6 +174,18 @@ struct SessionCardView: View {
             Spacer()
         }
         .padding(.horizontal, 12)
+    }
+
+    // MARK: - Status Badge (W3.4 AC1)
+
+    @ViewBuilder
+    private func statusBadgeView(_ status: SessionBadgeStatus) -> some View {
+        Text(status.label)
+            .font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(status.color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(status.color.opacity(0.15), in: Capsule())
     }
 
     // MARK: - Title Area (AC#2, AC#6, W1.3 AC#1, AC#5, AC#6)
