@@ -1,6 +1,6 @@
 # Story W3.4: Session Schedule & Next Session Preview
 
-Status: review
+Status: done
 
 ## Story
 
@@ -149,6 +149,7 @@ claude-sonnet-4-6
 ### Change Log
 
 - 2026-02-18: W3.4 implementation — added session status badges to public view for organizer context; simplified approach eliminates new O7 screen
+- 2026-02-18: Code review fixes — M1: badge decoupled from showTimeSlots guard (now shows in all phases); M2: badge tests use fixed anchor date per CLAUDE.md; M3: added showStatusBadge:false suppression tests; L1: added upcoming.color assertion; L2: upcoming color changed from Color(white:0.55) to .secondary
 
 ### File List
 

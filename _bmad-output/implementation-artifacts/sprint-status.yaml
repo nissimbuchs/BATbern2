@@ -61,7 +61,7 @@ development_status:
   w3-1-live-countdown-display: done
   w3-2-haptic-alert-system: done
   w3-3-watch-face-complications: done
-  w3-4-session-schedule-next-session-preview: review
+  w3-4-session-schedule-next-session-preview: done
   epic-3-retrospective: optional
 
   # Epic 4: Session Control & Team Sync

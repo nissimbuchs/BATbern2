@@ -13,6 +13,9 @@ import SwiftUI
 @MainActor
 final class SessionCardViewTests: XCTestCase {
 
+    // Fixed anchor date for deterministic badge tests (per CLAUDE.md: avoid Date(timeIntervalSinceNow:))
+    private let fixedNow = Date(timeIntervalSinceReferenceDate: 0) // 2001-01-01 00:00:00 UTC
+
     // MARK: - Test Data Factory
 
     private func makePresentationSession(
@@ -161,17 +164,19 @@ final class SessionCardViewTests: XCTestCase {
     }
 
     // MARK: - Status Badge Tests (W3.4 AC1)
+    // All badge tests use fixedNow as the clock anchor — avoids Date(timeIntervalSinceNow:)
+    // which creates relative-date test fragility (per CLAUDE.md).
 
     func test_badgeStatus_completedWhenEndTimeIsInThePast() {
         // Given
         let session = CachedSession(
             sessionSlug: "past",
             title: "Past Session",
-            startTime: Date(timeIntervalSinceNow: -90 * 60),
-            endTime: Date(timeIntervalSinceNow: -45 * 60)
+            startTime: fixedNow.addingTimeInterval(-90 * 60),
+            endTime: fixedNow.addingTimeInterval(-45 * 60)
         )
         // When
-        let status = SessionBadgeStatus.status(for: session, at: Date())
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
         // Then
         XCTAssertEqual(status, .completed)
     }
@@ -181,11 +186,11 @@ final class SessionCardViewTests: XCTestCase {
         let session = CachedSession(
             sessionSlug: "active",
             title: "Active Session",
-            startTime: Date(timeIntervalSinceNow: -20 * 60),
-            endTime: Date(timeIntervalSinceNow: 25 * 60)
+            startTime: fixedNow.addingTimeInterval(-20 * 60),
+            endTime: fixedNow.addingTimeInterval(25 * 60)
         )
         // When
-        let status = SessionBadgeStatus.status(for: session, at: Date())
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
         // Then
         XCTAssertEqual(status, .active)
     }
@@ -195,11 +200,11 @@ final class SessionCardViewTests: XCTestCase {
         let session = CachedSession(
             sessionSlug: "future",
             title: "Future Session",
-            startTime: Date(timeIntervalSinceNow: 30 * 60),
-            endTime: Date(timeIntervalSinceNow: 75 * 60)
+            startTime: fixedNow.addingTimeInterval(30 * 60),
+            endTime: fixedNow.addingTimeInterval(75 * 60)
         )
         // When
-        let status = SessionBadgeStatus.status(for: session, at: Date())
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
         // Then
         XCTAssertEqual(status, .upcoming)
     }
@@ -210,10 +215,10 @@ final class SessionCardViewTests: XCTestCase {
             sessionSlug: "no-start",
             title: "No Start Session",
             startTime: nil,
-            endTime: Date(timeIntervalSinceNow: 60 * 60)
+            endTime: fixedNow.addingTimeInterval(60 * 60)
         )
         // When
-        let status = SessionBadgeStatus.status(for: session, at: Date())
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
         // Then
         XCTAssertNil(status)
     }
@@ -223,21 +228,47 @@ final class SessionCardViewTests: XCTestCase {
         let session = CachedSession(
             sessionSlug: "no-end",
             title: "No End Session",
-            startTime: Date(timeIntervalSinceNow: -30 * 60),
+            startTime: fixedNow.addingTimeInterval(-30 * 60),
             endTime: nil
         )
         // When
-        let status = SessionBadgeStatus.status(for: session, at: Date())
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
         // Then
         XCTAssertNil(status)
     }
 
     func test_badgeStatus_labelAndColor() {
+        // Labels
         XCTAssertEqual(SessionBadgeStatus.completed.label, "Done")
         XCTAssertEqual(SessionBadgeStatus.active.label, "Active")
         XCTAssertEqual(SessionBadgeStatus.upcoming.label, "Upcoming")
-
+        // Colors (L1 fix: all three verified)
         XCTAssertEqual(SessionBadgeStatus.completed.color, .gray)
         XCTAssertEqual(SessionBadgeStatus.active.color, .teal)
+        XCTAssertEqual(SessionBadgeStatus.upcoming.color, .secondary)
+    }
+
+    // MARK: - showStatusBadge Flag Tests (Task 2.4)
+
+    func test_sessionCardView_showStatusBadgeDefaultsFalse() {
+        // Task 2.4: badge is NOT shown when showStatusBadge is false (default)
+        let session = makePresentationSession()
+        let view = SessionCardView(session: session, phase: "AGENDA")
+        XCTAssertFalse(view.showStatusBadge, "showStatusBadge must default to false — badge hidden for public users")
+    }
+
+    func test_sessionCardView_showStatusBadgeFalse_suppressesBadgeEvenWithValidStatus() {
+        // Task 2.4: even when the session has a computable status, showStatusBadge:false hides it
+        let session = CachedSession(
+            sessionSlug: "active",
+            title: "Active Session",
+            startTime: fixedNow.addingTimeInterval(-20 * 60),
+            endTime: fixedNow.addingTimeInterval(25 * 60)
+        )
+        // The status function confirms a badge WOULD be shown...
+        XCTAssertEqual(SessionBadgeStatus.status(for: session, at: fixedNow), .active)
+        // ...but the view is constructed with showStatusBadge: false → badge suppressed
+        let view = SessionCardView(session: session, phase: "AGENDA", showStatusBadge: false)
+        XCTAssertFalse(view.showStatusBadge)
     }
 }

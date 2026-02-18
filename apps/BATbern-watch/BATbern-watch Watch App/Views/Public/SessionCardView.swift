@@ -26,7 +26,7 @@ enum SessionBadgeStatus: Equatable {
         switch self {
         case .completed: return .gray
         case .active:    return .teal
-        case .upcoming:  return Color(white: 0.55)
+        case .upcoming:  return .secondary
         }
     }
 
@@ -99,12 +99,14 @@ struct SessionCardView: View {
     private var presentationCardLayout: some View {
         VStack(spacing: 12) {
             // Time slot (top, secondary color) + optional organizer status badge (W3.4 AC1)
-            // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
-            if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
                 HStack {
-                    Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     if showStatusBadge,
                        let status = SessionBadgeStatus.status(for: session, at: Date()) {
@@ -136,12 +138,14 @@ struct SessionCardView: View {
     private var breakCardLayout: some View {
         VStack(spacing: 8) {
             // Time slot + optional organizer status badge (W3.4 AC1)
-            // .padding(.top, 28): clears system clock area (~24pt) + 4pt buffer (AC#1)
-            if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
                 HStack {
-                    Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     if showStatusBadge,
                        let status = SessionBadgeStatus.status(for: session, at: Date()) {
