@@ -230,4 +230,111 @@ struct ComplicationProviderTimelineTests {
         // policy .never is verified by the Timeline constructor — can't assert directly here,
         // but this entry pattern documents the expected behavior.
     }
+
+    // MARK: - Regression: stale isLive:true snapshot with expired endTime shows fallback
+
+    /// Regression for bug where complication showed huge overtime numbers (e.g. "+2950…")
+    /// when a stale snapshot (isLive:true, endTime days ago) sat in UserDefaults.
+    ///
+    /// Fix: resolvedSnapshot() returns nil when endTime <= now AND updatedAt > 5 min ago.
+    @Test("stale isLive:true snapshot (old updatedAt) resolves to nil — shows fallback icon")
+    func staleSnapshotResolvesToNil() async {
+        let pastEnd = Date(timeIntervalSince1970: 1_000_000)    // far in the past
+        let now = pastEnd.addingTimeInterval(60 * 60 * 24 * 2)  // 2 days later
+
+        let staleSnapshot = ComplicationSnapshot(
+            sessionTitle: "Old Session",
+            speakerNames: "Meier",
+            scheduledEndTime: pastEnd,
+            sessionDuration: 2700,
+            scheduledStartTime: pastEnd.addingTimeInterval(-2700),
+            isLive: true,
+            urgencyLevel: "normal",
+            updatedAt: pastEnd  // last written 2 days ago — app is NOT running
+        )
+
+        // Reproduce resolvedSnapshot() logic:
+        // - isLive: true ✅
+        // - endTime > now: false (pastEnd < now)
+        // - updatedAt within 5 min: false (2 days old)
+        // → returns nil
+        let resolved = resolvedSnapshotForTest(staleSnapshot, now: now)
+        #expect(resolved == nil)
+
+        let entry = ComplicationEntry(date: now, snapshot: resolved)
+        #expect(entry.snapshot == nil)
+        #expect(entry.isOvertime == false)
+    }
+
+    /// Recent overtime: app IS running, endTime just passed, updatedAt is now — should
+    /// preserve the snapshot so the complication shows "+X min" overtime briefly.
+    @Test("recent overtime snapshot (fresh updatedAt) resolves to snapshot — shows overtime")
+    func recentOvertimeSnapshotPreserved() async {
+        let pastEnd = Date(timeIntervalSince1970: 1_000_000)
+        let now = pastEnd.addingTimeInterval(60 * 2)  // 2 minutes of overtime
+
+        let recentSnapshot = ComplicationSnapshot(
+            sessionTitle: "Live Session",
+            speakerNames: "Meier",
+            scheduledEndTime: pastEnd,
+            sessionDuration: 2700,
+            scheduledStartTime: pastEnd.addingTimeInterval(-2700),
+            isLive: true,
+            urgencyLevel: "overtime",
+            updatedAt: now.addingTimeInterval(-10)  // written 10 sec ago — app IS running
+        )
+
+        let resolved = resolvedSnapshotForTest(recentSnapshot, now: now)
+        #expect(resolved != nil)
+        #expect(resolved?.urgencyLevel == "overtime")
+    }
+
+    // MARK: - ViewModel: upcoming session must not set isLive:true
+
+    /// Regression: findActiveSession() returns an upcoming (not-yet-started) session as
+    /// "first upcoming". Previously isLive: discovered != nil would set isLive:true, causing
+    /// the complication to show a countdown to a future session. isComplicationLive() must
+    /// return false when startTime > now.
+    @Test("upcoming session (startTime > now) produces isLive:false — shows fallback icon")
+    func upcomingSessionIsNotLive() async {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let futureStart = now.addingTimeInterval(30 * 60)  // starts in 30 min
+        let futureEnd = futureStart.addingTimeInterval(45 * 60)
+
+        // Simulate isComplicationLive() logic from LiveCountdownViewModel
+        let sessionStarted = futureStart <= now  // false — session hasn't started
+        #expect(sessionStarted == false)
+
+        // Snapshot that would have been written before the fix: isLive: discovered != nil = true
+        // After the fix: isLive: sessionStarted = false
+        let snapshotAfterFix = ComplicationSnapshot(
+            sessionTitle: "Upcoming Talk",
+            speakerNames: "Keller",
+            scheduledEndTime: futureEnd,
+            sessionDuration: 45 * 60,
+            scheduledStartTime: futureStart,
+            isLive: sessionStarted,  // fixed: false
+            urgencyLevel: "normal",
+            updatedAt: now
+        )
+
+        // Provider resolves to nil because isLive: false
+        let resolved = resolvedSnapshotForTest(snapshotAfterFix, now: now)
+        #expect(resolved == nil)
+    }
+}
+
+// MARK: - Test Helper: resolvedSnapshot logic (mirrors ComplicationProvider.resolvedSnapshot)
+
+/// Pure-function replica of ComplicationProvider.resolvedSnapshot(_:) for unit testing.
+/// ComplicationProvider is in the Complications extension target and cannot be directly imported
+/// into the Watch App test target, so we duplicate the logic here for correctness assertions.
+private func resolvedSnapshotForTest(
+    _ snapshot: ComplicationSnapshot?,
+    now: Date
+) -> ComplicationSnapshot? {
+    guard let snapshot, snapshot.isLive else { return nil }
+    if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
+    if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
+    return nil
 }

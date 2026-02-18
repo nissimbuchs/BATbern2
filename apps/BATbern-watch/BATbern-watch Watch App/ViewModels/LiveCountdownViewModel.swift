@@ -138,17 +138,30 @@ final class LiveCountdownViewModel {
         speakerNames = discovered?.speakers.map { $0.fullName }.joined(separator: ", ") ?? ""
         sessionTitle = discovered?.title ?? ""
 
-        // W3.3: Write snapshot to App Group store so complication extension can read it
+        // W3.3: Write snapshot to App Group store so complication extension can read it.
+        // isLive is only true when the session has actually started (startTime <= now).
+        // Upcoming sessions (startTime > now) must not set isLive:true — the complication
+        // would otherwise show a countdown to a future session as if it were active.
         ComplicationDataStore.write(ComplicationSnapshot(
             sessionTitle: discovered?.title,
             speakerNames: formattedSpeakerNames,
             scheduledEndTime: discovered?.endTime,
             sessionDuration: discovered?.duration,
             scheduledStartTime: discovered?.startTime,
-            isLive: discovered != nil,
+            isLive: isComplicationLive(discovered),
             urgencyLevel: engine.urgencyLevel.rawValue,
             updatedAt: clock.now
         ))
+    }
+
+    // MARK: - Complication Live State (W3.3)
+
+    /// True when the session has actually started (startTime <= now), whether in-progress or overtime.
+    /// Returns false for upcoming sessions (startTime > now) — the complication must not show
+    /// a countdown to a future session as if it were live.
+    private func isComplicationLive(_ session: WatchSession?) -> Bool {
+        guard let session else { return false }
+        return session.startTime <= clock.now
     }
 
     // MARK: - Complication Speaker Names (W3.3)
