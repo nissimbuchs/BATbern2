@@ -1,6 +1,5 @@
 package ch.batbern.events.watch;
 
-import ch.batbern.events.watch.dto.WatchActionMessage;
 import ch.batbern.events.watch.dto.WatchStateUpdateMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
