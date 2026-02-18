@@ -30,6 +30,20 @@ import OSLog
 /// @unchecked Sendable acknowledges that synchronization is handled by the call sites.
 final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRuntimeSessionDelegate, @unchecked Sendable {
 
+    // MARK: - Haptic Timing Constants
+    //
+    // Named to surface their design intent: multiple rapid plays create a distinct
+    // multi-tap feel. Centralised here so on-device tuning changes one place only.
+
+    private enum HapticTiming {
+        /// Gap between the two taps of the double-tap pattern (2-min warning). AC2.
+        static let doubleTapGap: TimeInterval = 0.2
+        /// Gap between tap 1 and tap 2 of the triple-tap pattern (time's up / gong). AC3, AC5.
+        static let tripleTapFirstGap: TimeInterval = 0.15
+        /// Gap between tap 1 and tap 3 of the triple-tap pattern. AC3, AC5.
+        static let tripleTapSecondGap: TimeInterval = 0.30
+    }
+
     // MARK: - State
 
     private(set) var scheduledQueue: [(alert: HapticAlert, at: Date)] = []
@@ -47,17 +61,17 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
         case .twoMinuteWarning:
             // Double tap — distinctly different from single (AC2)
             WKInterfaceDevice.current().play(.notification)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.doubleTapGap) {
                 WKInterfaceDevice.current().play(.notification)
             }
 
         case .timesUp, .gongReminder:
             // Triple tap — "last call" feel, distinct from 2-min pattern (AC3, AC5)
             WKInterfaceDevice.current().play(.notification)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.tripleTapFirstGap) {
                 WKInterfaceDevice.current().play(.notification)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.tripleTapSecondGap) {
                 WKInterfaceDevice.current().play(.notification)
             }
 
@@ -93,17 +107,23 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     // MARK: - Extended Runtime Session (AC6 / NFR9)
 
     func startEventSession() {
+        #if targetEnvironment(simulator)
+        logger.info("Extended runtime session skipped (simulator — device only)")
+        #else
         guard extendedSession?.state != .running else { return }
         let session = WKExtendedRuntimeSession()
         session.delegate = self
         session.start()
         extendedSession = session
         logger.info("Extended runtime session starting")
+        #endif
     }
 
     func stopEventSession() {
+        #if !targetEnvironment(simulator)
         extendedSession?.invalidate()
         extendedSession = nil
+        #endif
         logger.info("Extended runtime session stopped")
     }
 
@@ -118,13 +138,22 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
         didInvalidateWith reason: WKExtendedRuntimeSessionInvalidationReason,
         error: (any Error)?
     ) {
-        extendedSession = nil
+        // Identity check: extendedRuntimeSessionWillExpire may have already cleared extendedSession
+        // and started a new session before this callback fires for the OLD session. Without the
+        // check, setting nil here would orphan the new session.
+        if extendedRuntimeSession === extendedSession {
+            extendedSession = nil
+        }
         logger.warning("Extended runtime session invalidated: \(reason.rawValue, privacy: .public)")
     }
 
     func extendedRuntimeSessionWillExpire(_ extendedRuntimeSession: WKExtendedRuntimeSession) {
-        // Session nearing expiry — restart to maintain coverage for rest of event (3.3)
+        // Session nearing expiry — restart to maintain coverage for rest of event (3.3).
+        // Clear extendedSession BEFORE invalidating: ensures startEventSession()'s guard
+        // passes (old session may still report .running) and ensures didInvalidateWith's
+        // identity check does NOT clear the newly created session.
         logger.info("Extended runtime session expiring — restarting")
+        extendedSession = nil
         extendedRuntimeSession.invalidate()
         startEventSession()
     }
