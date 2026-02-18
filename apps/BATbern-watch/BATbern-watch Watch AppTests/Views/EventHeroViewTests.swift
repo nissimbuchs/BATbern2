@@ -68,7 +68,6 @@ struct EventHeroViewTests {
         let authManager = MockAuthManager(isPaired: false, currentJWT: nil)
         let controller = EventDataController(
             publicClient: mockAPI,
-            organizerClient: MockOrganizerEventClient(),
             authManager: authManager,
             modelContext: container.mainContext,
             skipAutoSync: true

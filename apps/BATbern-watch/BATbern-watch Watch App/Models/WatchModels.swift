@@ -12,6 +12,8 @@ struct WatchEvent: Sendable, Identifiable {
     let venueName: String
     let sessions: [WatchSession]
     var currentPublishedPhase: String?  // W1.2: Progressive publishing (TOPIC, SPEAKERS, AGENDA)
+    var typicalStartTime: String = "18:00"
+    var typicalEndTime: String = "22:00"
 }
 
 struct WatchSession: Sendable, Identifiable {

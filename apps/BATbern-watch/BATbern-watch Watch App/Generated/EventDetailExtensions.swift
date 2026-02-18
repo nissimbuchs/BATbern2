@@ -44,7 +44,9 @@ extension EventDetail {
             themeImageUrl: themeImageUrl,
             venueName: venueName,
             sessions: watchSessions,
-            currentPublishedPhase: phaseString
+            currentPublishedPhase: phaseString,
+            typicalStartTime: typicalStartTime ?? "18:00",
+            typicalEndTime: typicalEndTime ?? "22:00"
         )
     }
 
@@ -160,8 +162,8 @@ extension WatchEvent {
             eventDate: date,
             themeImageUrl: themeImageUrl,
             venueName: venueName,
-            typicalStartTime: "18:00",  // Default
-            typicalEndTime: "22:00",     // Default
+            typicalStartTime: typicalStartTime,
+            typicalEndTime: typicalEndTime,
             currentPublishedPhase: currentPublishedPhase,
             sessions: cachedSessions,
             lastSyncTimestamp: Date()

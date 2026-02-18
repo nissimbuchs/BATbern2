@@ -2,10 +2,8 @@
 //  EventSyncServiceTests.swift
 //  BATbern-watch Watch AppTests
 //
-//  Tests for event sync behaviour — migrated to EventDataController.
-//  EventSyncService was the old sync owner; EventDataController is the new unified source.
-//  The organizer-endpoint network layer is now injected via OrganizerEventClientProtocol,
-//  enabling clean protocol-based mocking without URLProtocol.
+//  Tests for EventDataController sync behaviour.
+//  Always uses GET /api/v1/events/current (same endpoint for both zones).
 //
 
 import Testing
@@ -13,19 +11,7 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-// MARK: - MockOrganizerEventClient
-
-final class MockOrganizerEventClient: OrganizerEventClientProtocol, @unchecked Sendable {
-    var result: Result<[ActiveEventResponse], Error> = .success([])
-    private(set) var callCount = 0
-
-    func fetchActiveEvents(jwt: String) async throws -> [ActiveEventResponse] {
-        callCount += 1
-        return try result.get()
-    }
-}
-
-// MARK: - MockPortraitCache (reused from original tests)
+// MARK: - MockPortraitCache
 
 /// Replaces real portrait download with in-memory stub, making assertions reliable.
 final class MockPortraitCache: PortraitCacheable, @unchecked Sendable {
@@ -49,63 +35,60 @@ private func makeModelContext() throws -> ModelContext {
     return ModelContext(container)
 }
 
-private func makeActiveEventResponse(
-    eventCode: String = "BATbern99",
+private func makePublicEvent(
+    code: String = "BATbern99",
     title: String = "BATbern 99 - Test Night",
-    speakerRole: String = "panelist",
-    profilePictureUrl: String? = nil
-) -> ActiveEventResponse {
-    ActiveEventResponse(
-        eventCode: eventCode,
+    speakerRole: SpeakerRole = .panelist,
+    profilePictureUrl: String? = nil,
+    currentPublishedPhase: String? = "AGENDA"
+) -> WatchEvent {
+    let speaker = WatchSpeaker(
+        id: "john.doe",
+        firstName: "John",
+        lastName: "Doe",
+        company: nil,
+        companyLogoUrl: nil,
+        profilePictureUrl: profilePictureUrl,
+        bio: nil,
+        speakerRole: speakerRole,
+        arrived: false,
+        arrivedConfirmedBy: nil,
+        arrivedAt: nil
+    )
+    let session = WatchSession(
+        id: "keynote-1",
+        title: "Opening Keynote",
+        abstract: nil,
+        sessionType: .presentation,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(2700),
+        speakers: [speaker],
+        state: .scheduled,
+        actualStartTime: nil,
+        overrunMinutes: nil
+    )
+    return WatchEvent(
+        id: code,
         title: title,
-        eventDate: "2026-03-01",
-        venueName: "Kultur Casino Bern",
-        typicalStartTime: "18:00",
-        typicalEndTime: "22:00",
+        date: Date(),
         themeImageUrl: nil,
-        currentPublishedPhase: "AGENDA",
-        eventStatus: "SCHEDULED",
-        sessions: [
-            WatchSessionResponse(
-                sessionSlug: "keynote-1",
-                title: "Opening Keynote",
-                abstract: nil,
-                sessionType: "talk",
-                scheduledStartTime: "2026-03-01T17:00:00Z",
-                scheduledEndTime: "2026-03-01T17:45:00Z",
-                durationMinutes: 45,
-                speakers: [
-                    WatchSpeakerResponse(
-                        username: "john.doe",
-                        firstName: "John",
-                        lastName: "Doe",
-                        company: nil,
-                        companyLogoUrl: nil,
-                        profilePictureUrl: profilePictureUrl,
-                        bio: nil,
-                        speakerRole: speakerRole
-                    )
-                ],
-                status: "SCHEDULED",
-                actualStartTime: nil,
-                actualEndTime: nil,
-                overrunMinutes: nil,
-                completedBy: nil
-            )
-        ]
+        venueName: "Kultur Casino Bern",
+        sessions: [session],
+        currentPublishedPhase: currentPublishedPhase,
+        typicalStartTime: "18:00",
+        typicalEndTime: "22:00"
     )
 }
 
 @MainActor
 private func makeController(
     authManager: MockAuthManager? = nil,
-    organizerClient: MockOrganizerEventClient,
+    publicClient: MockAPIClient? = nil,
     portraitCache: MockPortraitCache? = nil,
     modelContext: ModelContext
 ) -> EventDataController {
     EventDataController(
-        publicClient: MockAPIClient(),
-        organizerClient: organizerClient,
+        publicClient: publicClient ?? MockAPIClient(),
         authManager: authManager ?? MockAuthManager(),
         portraitCache: portraitCache ?? MockPortraitCache(),
         modelContext: modelContext,
@@ -121,13 +104,13 @@ struct EventSyncServiceTests {
 
     // MARK: - AC#1: Full schedule sync returns event data
 
-    @Test("forceSync: maps organizer response to CachedEvent when paired")
-    func test_forceSync_mapsToCachedEvent_whenPaired() async throws {
+    @Test("forceSync: maps public endpoint response to CachedEvent")
+    func test_forceSync_mapsToCachedEvent() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([makeActiveEventResponse()])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(makePublicEvent())
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
@@ -147,12 +130,12 @@ struct EventSyncServiceTests {
     // MARK: - AC#4: No active event returns nil currentEvent
 
     @Test("forceSync: currentEvent remains nil when backend returns empty list")
-    func test_forceSync_currentEventNil_whenEmptyList() async throws {
+    func test_forceSync_currentEventNil_whenNoCurrentEvent() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .failure(APIError.noCurrentEvent)
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
@@ -169,10 +152,10 @@ struct EventSyncServiceTests {
     @Test("forceSync: progress reaches 1.0 on completion")
     func test_forceSync_progressReaches1_onCompletion() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([makeActiveEventResponse()])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(makePublicEvent())
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
         #expect(controller.syncProgress == 0.0, "Progress should start at 0.0")
@@ -190,13 +173,13 @@ struct EventSyncServiceTests {
     @Test("forceSync: downloads portrait for speaker with profilePictureUrl")
     func test_forceSync_downloadsPortrait_whenUrlPresent() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([
-            makeActiveEventResponse(profilePictureUrl: "https://example.com/speaker.jpg")
-        ])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(
+            makePublicEvent(profilePictureUrl: "https://example.com/speaker.jpg")
+        )
         let mockPortraitCache = MockPortraitCache()
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             portraitCache: mockPortraitCache,
             modelContext: try makeModelContext()
         )
@@ -220,11 +203,11 @@ struct EventSyncServiceTests {
         // Given — per MEMORY.md: refreshJWT must NOT be called inside sync to avoid
         // the 401 → refreshJWT → onChange(currentJWT) → sync → 401 infinite loop.
         let authManager = MockAuthManager()
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .failure(SyncError.authenticationRequired)
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .failure(SyncError.authenticationRequired)
         let controller = makeController(
             authManager: authManager,
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
@@ -238,15 +221,15 @@ struct EventSyncServiceTests {
                 "refreshJWT must not be called on 401 — prevents auth retry loop")
     }
 
-    // MARK: - D2: SpeakerRole decoding from backend lowercase snake_case
+    // MARK: - D2: SpeakerRole decoded from WatchEvent
 
     @Test("forceSync: decodes primary_speaker to .primarySpeaker")
     func test_forceSync_decodesRolePrimarySpeaker() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([makeActiveEventResponse(speakerRole: "primary_speaker")])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(makePublicEvent(speakerRole: .primarySpeaker))
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
@@ -261,10 +244,10 @@ struct EventSyncServiceTests {
     @Test("forceSync: decodes co_speaker to .coSpeaker")
     func test_forceSync_decodesRoleCoSpeaker() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([makeActiveEventResponse(speakerRole: "co_speaker")])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(makePublicEvent(speakerRole: .coSpeaker))
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
@@ -276,15 +259,12 @@ struct EventSyncServiceTests {
         #expect(role == .coSpeaker)
     }
 
-    // MARK: - Public endpoint fallback
+    // MARK: - Single endpoint (always public)
 
-    @Test("forceSync: uses public endpoint when not paired")
-    func test_forceSync_usesPublicEndpoint_whenNotPaired() async throws {
-        // Given
-        let authManager = MockAuthManager(isPaired: false, currentJWT: nil)
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .failure(SyncError.notAuthenticated)  // Should never be called
-
+    @Test("forceSync: uses public endpoint regardless of isPaired state")
+    func test_forceSync_alwaysUsesPublicEndpoint() async throws {
+        // Given — even when paired, same public endpoint is used
+        let authManager = MockAuthManager(isPaired: true, currentJWT: "some-jwt")
         let mockPublicClient = MockAPIClient()
         mockPublicClient.fetchCurrentEventResult = .success(WatchEvent(
             id: "public-event",
@@ -298,7 +278,6 @@ struct EventSyncServiceTests {
 
         let controller = EventDataController(
             publicClient: mockPublicClient,
-            organizerClient: organizerClient,
             authManager: authManager,
             modelContext: try makeModelContext(),
             skipAutoSync: true
@@ -307,7 +286,7 @@ struct EventSyncServiceTests {
         // When
         await controller.forceSync()
 
-        // Then: public endpoint was used, organizer endpoint not called
+        // Then: public endpoint was used
         #expect(controller.currentEvent?.eventCode == "public-event")
         #expect(mockPublicClient.fetchCurrentEventCallCount == 1)
     }
@@ -317,22 +296,22 @@ struct EventSyncServiceTests {
     @Test("syncIfNeeded: skips second call within 60s cooldown")
     func test_syncIfNeeded_skipsWithin60sCooldown() async throws {
         // Given
-        let organizerClient = MockOrganizerEventClient()
-        organizerClient.result = .success([makeActiveEventResponse()])
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(makePublicEvent())
         let controller = makeController(
-            organizerClient: organizerClient,
+            publicClient: mockPublicClient,
             modelContext: try makeModelContext()
         )
 
         // When: first sync
         await controller.syncIfNeeded()
-        let callCountAfterFirst = organizerClient.callCount
+        let callCountAfterFirst = mockPublicClient.fetchCurrentEventCallCount
 
         // Second call immediately after — should be skipped by 60s cooldown
         await controller.syncIfNeeded()
 
-        // Then: organizer client called exactly once
-        #expect(organizerClient.callCount == callCountAfterFirst,
+        // Then: public client called exactly once
+        #expect(mockPublicClient.fetchCurrentEventCallCount == callCountAfterFirst,
                 "Second syncIfNeeded within 60s should be skipped")
     }
 }

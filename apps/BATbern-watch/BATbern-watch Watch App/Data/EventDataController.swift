@@ -4,7 +4,8 @@
 //
 //  Unified event data source for both public and organizer zones.
 //  Single 5-min refresh timer, single SwiftData write path, single portrait cache.
-//  Uses organizer endpoint when paired, public endpoint otherwise.
+//  Always uses GET /api/v1/events/current — same endpoint for both zones.
+//  The organizer zone adds behavior (arrival tracking, countdown) on top of this shared data.
 //
 
 import Foundation
@@ -30,7 +31,6 @@ final class EventDataController {
     // MARK: - Dependencies
 
     private let publicClient: APIClientProtocol
-    private let organizerClient: OrganizerEventClientProtocol
     private let authManager: AuthManagerProtocol
     private let portraitCache: any PortraitCacheable
     private let modelContext: ModelContext
@@ -46,7 +46,6 @@ final class EventDataController {
 
     init(
         publicClient: APIClientProtocol = PublicEventService(),
-        organizerClient: OrganizerEventClientProtocol = WatchOrganizerEventService(),
         authManager: AuthManagerProtocol,
         portraitCache: any PortraitCacheable = PortraitCache.shared,
         modelContext: ModelContext,
@@ -55,7 +54,6 @@ final class EventDataController {
         skipAutoSync: Bool = false
     ) {
         self.publicClient = publicClient
-        self.organizerClient = organizerClient
         self.authManager = authManager
         self.portraitCache = portraitCache
         self.modelContext = modelContext
@@ -133,7 +131,7 @@ final class EventDataController {
         syncProgress = 0.0
 
         do {
-            let cachedEvent = try await fetchFromBestSource()
+            let cachedEvent = try await fetchFromPublicEndpoint()
             await persistEvent(cachedEvent)
             currentEvent = cachedEvent
             lastSynced = clock.now
@@ -155,17 +153,7 @@ final class EventDataController {
         isLoading = false
     }
 
-    // MARK: - Private: Source Selection
-
-    /// Chooses the best data source: organizer endpoint when paired, public otherwise.
-    /// Portrait URLs are always populated — the public endpoint returns them natively;
-    /// the organizer endpoint gets them injected here (single enrichment path).
-    private func fetchFromBestSource() async throws -> CachedEvent {
-        if authManager.isPaired, let jwt = authManager.currentJWT {
-            return try await fetchFromOrganizerEndpoint(jwt: jwt)
-        }
-        return try await fetchFromPublicEndpoint()
-    }
+    // MARK: - Private: Fetch
 
     private func fetchFromPublicEndpoint() async throws -> CachedEvent {
         syncProgress = 0.1
@@ -181,52 +169,6 @@ final class EventDataController {
             case .noCurrentEvent: throw SyncError.noActiveEvent
             case .networkError:   throw SyncError.networkError
             default:              throw SyncError.networkError
-            }
-        }
-    }
-
-    private func fetchFromOrganizerEndpoint(jwt: String) async throws -> CachedEvent {
-        syncProgress = 0.1
-        let events = try await organizerClient.fetchActiveEvents(jwt: jwt)
-        syncProgress = 0.2
-
-        guard let event = events.first else {
-            throw SyncError.noActiveEvent
-        }
-
-        let cachedEvent = mapToCachedEvent(event)
-        syncProgress = 0.3
-
-        // Enrich portrait URLs + company from the public endpoint's data.
-        // The organizer endpoint omits profilePictureUrl (CDN-served by EMS public endpoint)
-        // and defers the CUMS cross-service lookup so company is null.
-        // We fill these in from existing CachedSpeaker records (previously written by
-        // the public endpoint path) so SpeakerPortraitView and ImageCachePrefetcher work.
-        enrichSpeakerFieldsFromCache(cachedEvent)
-        syncProgress = 0.4
-
-        await prefetchPortraits(for: cachedEvent)
-        return cachedEvent
-    }
-
-    // MARK: - Private: Portrait Enrichment (organizer path only)
-
-    private func enrichSpeakerFieldsFromCache(_ cachedEvent: CachedEvent) {
-        let existingSpeakers = (try? modelContext.fetch(FetchDescriptor<CachedSpeaker>())) ?? []
-        let companyByUsername: [String: String] = existingSpeakers.reduce(into: [:]) { map, s in
-            if let company = s.company { map[s.username] = company }
-        }
-        let portraitUrlByUsername: [String: String] = existingSpeakers.reduce(into: [:]) { map, s in
-            if let url = s.profilePictureUrl { map[s.username] = url }
-        }
-        for session in cachedEvent.sessions {
-            for speaker in session.speakers {
-                if speaker.company == nil {
-                    speaker.company = companyByUsername[speaker.username]
-                }
-                if speaker.profilePictureUrl == nil {
-                    speaker.profilePictureUrl = portraitUrlByUsername[speaker.username]
-                }
             }
         }
     }
@@ -301,55 +243,6 @@ final class EventDataController {
             wasOffline = true
             isOffline = true
         }
-    }
-
-    // MARK: - Private: DTO Mapping (organizer endpoint)
-
-    private func mapToCachedEvent(_ response: ActiveEventResponse) -> CachedEvent {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        let eventDate = dateFormatter.date(from: response.eventDate) ?? Date()
-
-        let cachedEvent = CachedEvent(
-            eventCode: response.eventCode,
-            title: response.title,
-            eventDate: eventDate,
-            themeImageUrl: response.themeImageUrl,
-            venueName: response.venueName,
-            typicalStartTime: response.typicalStartTime ?? "18:00",
-            typicalEndTime: response.typicalEndTime ?? "22:00",
-            currentPublishedPhase: response.currentPublishedPhase,
-            lastSyncTimestamp: Date()
-        )
-
-        let iso = ISO8601DateFormatter()
-        cachedEvent.sessions = response.sessions.map { sessionResp in
-            let cachedSession = CachedSession(
-                sessionSlug: sessionResp.sessionSlug,
-                title: sessionResp.title,
-                abstract: sessionResp.abstract,
-                sessionType: sessionResp.sessionType.flatMap { SessionType(rawValue: $0) },
-                startTime: sessionResp.scheduledStartTime.flatMap { iso.date(from: $0) },
-                endTime: sessionResp.scheduledEndTime.flatMap { iso.date(from: $0) },
-                actualStartTime: sessionResp.actualStartTime.flatMap { iso.date(from: $0) },
-                overrunMinutes: sessionResp.overrunMinutes
-            )
-            cachedSession.speakers = sessionResp.speakers.map { speakerResp in
-                CachedSpeaker(
-                    username: speakerResp.username,
-                    firstName: speakerResp.firstName ?? "",
-                    lastName: speakerResp.lastName ?? "",
-                    company: speakerResp.company,
-                    companyLogoUrl: speakerResp.companyLogoUrl,
-                    profilePictureUrl: speakerResp.profilePictureUrl,
-                    bio: speakerResp.bio,
-                    speakerRole: speakerResp.speakerRole.flatMap { SpeakerRole(rawValue: $0) } ?? .panelist
-                )
-            }
-            return cachedSession
-        }
-
-        return cachedEvent
     }
 
     // MARK: - Mock Support (TESTING_MODE only)
