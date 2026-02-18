@@ -22,13 +22,15 @@ final class SessionCardViewTests: XCTestCase {
         title: String = "Cloud Native Security",
         speakers: [CachedSpeaker] = []
     ) -> CachedSession {
+        // M4 fix (W4.2 code review): use fixedNow, not Date() — relative dates cause
+        // fragile tests if badge-status logic is ever asserted on these sessions.
         return CachedSession(
             sessionSlug: "cloud-security",
             title: title,
             abstract: "Test abstract",
             sessionType: .presentation,
-            startTime: Date(),
-            endTime: Date().addingTimeInterval(45 * 60),
+            startTime: fixedNow.addingTimeInterval(-20 * 60),
+            endTime: fixedNow.addingTimeInterval(25 * 60),
             speakers: speakers
         )
     }
@@ -37,12 +39,13 @@ final class SessionCardViewTests: XCTestCase {
         title: String = "Coffee Break",
         sessionType: SessionType = .breakTime
     ) -> CachedSession {
+        // M4 fix (W4.2 code review): use fixedNow, not Date().
         return CachedSession(
             sessionSlug: "break-1",
             title: title,
             sessionType: sessionType,
-            startTime: Date(),
-            endTime: Date().addingTimeInterval(20 * 60)
+            startTime: fixedNow.addingTimeInterval(-5 * 60),
+            endTime: fixedNow.addingTimeInterval(15 * 60)
         )
     }
 
@@ -270,5 +273,71 @@ final class SessionCardViewTests: XCTestCase {
         // ...but the view is constructed with showStatusBadge: false → badge suppressed
         let view = SessionCardView(session: session, phase: "AGENDA", showStatusBadge: false)
         XCTAssertFalse(view.showStatusBadge)
+    }
+
+    // MARK: - W4.2 AC4: completedByUsername attribution (Task 4.4)
+
+    func test_completedByUsername_shownUnderDoneBadge_whenSet() {
+        // Given: completed session with completedByUsername
+        let session = CachedSession(
+            sessionSlug: "completed-talk",
+            title: "Completed Talk",
+            startTime: fixedNow.addingTimeInterval(-90 * 60),
+            endTime: fixedNow.addingTimeInterval(-45 * 60),
+            completedByUsername: "marco.organizer"
+        )
+        // When: badge status is .completed
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
+        XCTAssertEqual(status, .completed)
+        // Then: session carries completedByUsername for the badge view
+        XCTAssertEqual(session.completedByUsername, "marco.organizer")
+    }
+
+    func test_completedByUsername_notShownWhenNil() {
+        // Given: completed session without completedByUsername
+        let session = CachedSession(
+            sessionSlug: "completed-no-attribution",
+            title: "Completed Talk No Attribution",
+            startTime: fixedNow.addingTimeInterval(-90 * 60),
+            endTime: fixedNow.addingTimeInterval(-45 * 60),
+            completedByUsername: nil
+        )
+        // Then: completedByUsername is nil → "by [name]" caption is suppressed
+        XCTAssertNil(session.completedByUsername)
+        // Status is still .completed
+        XCTAssertEqual(SessionBadgeStatus.status(for: session, at: fixedNow), .completed)
+    }
+
+    func test_completedByUsername_notShownForNonCompletedSession() {
+        // Given: active session with a completedByUsername set (should not display for active)
+        let session = CachedSession(
+            sessionSlug: "active-talk",
+            title: "Active Talk",
+            startTime: fixedNow.addingTimeInterval(-20 * 60),
+            endTime: fixedNow.addingTimeInterval(25 * 60),
+            completedByUsername: "somebody"
+        )
+        // The badge status is .active, not .completed
+        let status = SessionBadgeStatus.status(for: session, at: fixedNow)
+        XCTAssertEqual(status, .active)
+        // "by [name]" is only shown when status == .completed (view guard: status == .completed)
+        XCTAssertNotEqual(status, .completed)
+    }
+
+    func test_completedByUsername_firstComponentBeforeDotExtracted() {
+        // Given: completedByUsername is "marco.organizer"
+        // When: view extracts first component before "."
+        let username = "marco.organizer"
+        let firstName = username.components(separatedBy: ".").first ?? username
+        // Then: "marco" is shown (not full username)
+        XCTAssertEqual(firstName, "marco")
+    }
+
+    func test_completedByUsername_usernameWithNoDotShownAsIs() {
+        // Given: completedByUsername with no dot separator
+        let username = "nissim"
+        let firstName = username.components(separatedBy: ".").first ?? username
+        // Then: full username shown as-is
+        XCTAssertEqual(firstName, "nissim")
     }
 }

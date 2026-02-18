@@ -25,7 +25,7 @@ import Foundation
 @MainActor
 final class LiveCountdownViewModel {
 
-    // MARK: - Published State (AC1-AC6)
+    // MARK: - Published State (AC1-AC6, W4.2)
 
     private(set) var formattedTime: String = "00:00"
     private(set) var urgencyLevel: UrgencyLevel = .normal
@@ -34,6 +34,8 @@ final class LiveCountdownViewModel {
     private(set) var nextSession: WatchSession?
     private(set) var speakerNames: String = ""
     private(set) var sessionTitle: String = ""
+    /// W4.2 AC1: true when session is at or past 0:00 (urgencyLevel == .overtime).
+    private(set) var canMarkDone: Bool = false
 
     // MARK: - Injected Dependencies (1.3)
 
@@ -87,6 +89,12 @@ final class LiveCountdownViewModel {
         hapticService.stopEventSession()
     }
 
+    /// W4.2 AC3: Fire actionConfirm haptic immediately on Done tap (optimistic feedback).
+    /// Keeps haptic logic in ViewModel — view never accesses hapticService directly.
+    func triggerActionConfirm() {
+        hapticService.play(.actionConfirm)
+    }
+
     // MARK: - State Refresh
 
     /// Recalculate all published state from wall clock. Internal for testability.
@@ -98,6 +106,7 @@ final class LiveCountdownViewModel {
         // Reset haptic scheduler when session changes
         if discovered?.id != activeSession?.id {
             scheduler.reset()
+            canMarkDone = false
             if let session = discovered {
                 engine.setActiveSession(session)
             } else {
@@ -121,9 +130,10 @@ final class LiveCountdownViewModel {
             nextSession = nil
         }
 
-        // Propagate engine state to published properties (AC1-AC6)
+        // Propagate engine state to published properties (AC1-AC6, W4.2)
         formattedTime = engine.formattedTime
         urgencyLevel = engine.urgencyLevel
+        canMarkDone = (urgencyLevel == .overtime)
         progress = calculateProgress()
         speakerNames = discovered?.speakers.map { $0.fullName }.joined(separator: ", ") ?? ""
         sessionTitle = discovered?.title ?? ""

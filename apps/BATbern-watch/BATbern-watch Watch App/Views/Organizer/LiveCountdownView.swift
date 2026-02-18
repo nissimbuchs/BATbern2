@@ -16,6 +16,10 @@ struct LiveCountdownView: View {
     @Environment(WebSocketService.self) private var webSocketService
     @State private var viewModel = LiveCountdownViewModel()
     @State private var portraitData: Data?
+    /// W4.2 Task 2: Controls Done button sending state.
+    @State private var isSendingDone: Bool = false
+    /// W4.2 Task 3: Controls presentation of O6 SessionTransitionView.
+    @State private var showTransition: Bool = false
 
     var body: some View {
         Group {
@@ -42,6 +46,28 @@ struct LiveCountdownView: View {
         .onChange(of: dataController.lastSynced) { _, _ in
             // lastSynced updates when applyServerState runs — timer ticks confirming live
         }
+        // W4.2 Task 10: Observe SESSION_ENDED signal — show O6 when next session exists.
+        .onChange(of: webSocketService.sessionEndedEvent) { _, event in
+            guard event != nil else { return }
+            if viewModel.nextSession != nil {
+                showTransition = true
+            }
+            webSocketService.sessionEndedEvent = nil
+        }
+        // M2 fix (W4.2 code review): reset isSendingDone only when session has actually
+        // advanced (canMarkDone goes false), not on sendAction return. This prevents the
+        // Done button from briefly re-enabling between sendAction and SESSION_ENDED broadcast.
+        .onChange(of: viewModel.canMarkDone) { _, newValue in
+            if !newValue {
+                isSendingDone = false
+            }
+        }
+        // W4.2 Task 10: Full-screen O6 SessionTransitionView — only when nextSession is set.
+        .fullScreenCover(isPresented: $showTransition) {
+            if let next = viewModel.nextSession {
+                SessionTransitionView(nextSession: next, onDismiss: { showTransition = false })
+            }
+        }
     }
 
     // MARK: - Countdown Content
@@ -63,7 +89,12 @@ struct LiveCountdownView: View {
             compactRing
             speakerCard
             if let next = viewModel.nextSession {
-                nextSessionCard(next: next)
+                // W4.2 Task 0.5: replaced inline nextSessionCard() with NextSessionPeekView
+                NextSessionPeekView(session: next, style: .compact)
+            }
+            // W4.2 Task 2.3: Done button — only when session is at or past 0:00
+            if viewModel.canMarkDone {
+                doneButton
             }
         }
         .padding(.horizontal, 10)
@@ -169,35 +200,26 @@ struct LiveCountdownView: View {
         }
     }
 
-    // MARK: - Next Session Peek Card
+    // MARK: - Done Button (W4.2 Task 2)
 
-    /// Dimmed card peeking below — next non-break session name + start time.
-    private func nextSessionCard(next: WatchSession) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 1) {
-                Text("NEXT")
-                    .font(.system(size: 7))
-                    .foregroundStyle(Color(white: 0.4))
-                    .kerning(0.5)
-                Text(next.speakers.first?.fullName ?? next.title)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+    /// "Done" button — appears only when canMarkDone (urgencyLevel == .overtime).
+    /// On tap: fires actionConfirm haptic optimistically, then sends endSession to server.
+    ///
+    /// M2 fix (W4.2 code review): isSendingDone is reset only when canMarkDone goes false
+    /// (i.e., when SESSION_ENDED broadcast arrives and session advances). Resetting on
+    /// sendAction return would re-enable the button before the server confirms, violating AC4.
+    private var doneButton: some View {
+        Button("Done") {
+            viewModel.triggerActionConfirm()
+            guard let slug = viewModel.activeSession?.id, !slug.isEmpty else { return }
+            isSendingDone = true
+            Task {
+                await webSocketService.sendAction(.endSession(sessionSlug: slug))
             }
-            Spacer()
-            Text(startTimeString(next.startTime))
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundStyle(Color(white: 0.3))
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Color(white: 0.067))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(white: 0.10), lineWidth: 1)
-        )
-        .opacity(0.6)
+        .buttonStyle(.borderedProminent)
+        .tint(.teal)
+        .disabled(isSendingDone)
     }
 
     // MARK: - No-Session State

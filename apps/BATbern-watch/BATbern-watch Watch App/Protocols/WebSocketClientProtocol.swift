@@ -106,3 +106,11 @@ struct ConnectedOrganizer: Sendable, Equatable {
     let username: String
     let firstName: String
 }
+
+/// W4.2 Task 5.3: SESSION_ENDED event consumed by LiveCountdownView to trigger O6.
+/// Reset to nil after the view consumes it (avoids persistent stale signal).
+struct SessionEndedEvent: Sendable, Equatable {
+    let sessionSlug: String
+    let completedBy: String
+    let timestamp: Date
+}

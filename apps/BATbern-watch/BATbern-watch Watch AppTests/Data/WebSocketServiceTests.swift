@@ -212,6 +212,127 @@ struct WebSocketServiceTests {
         #expect(service.connectedOrganizers.count == 2)
     }
 
+    // MARK: - sendAction delegation (W4.2 Task 5.4)
+
+    @Test("sendAction: delegates to webSocketClient.sentActions with correct action")
+    func sendAction_delegatesToWebSocketClient() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        let action = WatchAction.endSession(sessionSlug: "cloud-native-pitfalls")
+        await service.sendAction(action)
+
+        #expect(wsClient.sentActions.count == 1)
+        #expect(wsClient.sentActions.first == action)
+    }
+
+    @Test("sendAction: swallows error when client throws (never re-throws to caller)")
+    func sendAction_swallowsClientError() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        wsClient.sendActionShouldFail = true
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        // Should not throw — error is logged and swallowed
+        await service.sendAction(.endSession(sessionSlug: "cloud-native-pitfalls"))
+        // wsClient recorded nothing (it threw before appending)
+        #expect(wsClient.sentActions.isEmpty)
+    }
+
+    @Test("sendAction: multiple actions are sent in order")
+    func sendAction_multipleActionsInOrder() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        await service.sendAction(.endSession(sessionSlug: "talk-1"))
+        await service.sendAction(.startSession(sessionSlug: "talk-2"))
+
+        #expect(wsClient.sentActions.count == 2)
+        #expect(wsClient.sentActions[0] == .endSession(sessionSlug: "talk-1"))
+        #expect(wsClient.sentActions[1] == .startSession(sessionSlug: "talk-2"))
+    }
+
+    // MARK: - sessionEndedEvent (W4.2 Task 5.2/5.3)
+
+    @Test("SESSION_ENDED message sets sessionEndedEvent on service")
+    func sessionEndedMessage_setsSessionEndedEvent() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        #expect(service.sessionEndedEvent == nil)
+
+        let timestamp = Date()
+        let message = EventStateMessage(
+            type: .sessionEnded,
+            sessionSlug: "cloud-native-pitfalls",
+            initiatedBy: "marco.organizer",
+            timestamp: timestamp
+        )
+        wsClient.emit(message)
+
+        try await waitFor(
+            { service.sessionEndedEvent != nil },
+            description: "sessionEndedEvent set by SESSION_ENDED message"
+        )
+
+        #expect(service.sessionEndedEvent?.sessionSlug == "cloud-native-pitfalls")
+        #expect(service.sessionEndedEvent?.completedBy == "marco.organizer")
+    }
+
+    @Test("Non-SESSION_ENDED message does NOT set sessionEndedEvent")
+    func nonSessionEndedMessage_doesNotSetSessionEndedEvent() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        let message = EventStateMessage(
+            type: .heartbeat,
+            timestamp: Date()
+        )
+        wsClient.emit(message)
+
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(service.sessionEndedEvent == nil)
+    }
+
+    @Test("SESSION_ENDED without sessionSlug does NOT set sessionEndedEvent")
+    func sessionEndedWithoutSlug_doesNotSetEvent() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        let message = EventStateMessage(
+            type: .sessionEnded,
+            sessionSlug: nil,  // no slug
+            timestamp: Date()
+        )
+        wsClient.emit(message)
+
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(service.sessionEndedEvent == nil)
+    }
+
     // MARK: - disconnect() cancels tasks
 
     @Test("disconnect: resets presence state")

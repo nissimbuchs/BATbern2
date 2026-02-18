@@ -9,12 +9,15 @@ import java.util.List;
  * JSON shape:
  * {
  *   "type": "STATE_UPDATE",
- *   "trigger": "ORGANIZER_JOINED",
+ *   "trigger": "SESSION_ENDED",
  *   "eventCode": "BATbern56",
  *   "sessions": [...],
  *   "connectedOrganizers": [...],
- *   "serverTimestamp": "2026-02-18T18:00:00Z"
+ *   "serverTimestamp": "2026-02-18T18:00:00Z",
+ *   "sessionSlug": "cloud-native-pitfalls",
+ *   "initiatedBy": "marco.organizer"
  * }
+ * W4.2 Task 8.1: sessionSlug and initiatedBy added; null for non-session-control triggers.
  */
 public record WatchStateUpdateMessage(
         String type,
@@ -22,7 +25,9 @@ public record WatchStateUpdateMessage(
         String eventCode,
         List<SessionStateDto> sessions,
         List<ConnectedOrganizerDto> connectedOrganizers,
-        String serverTimestamp
+        String serverTimestamp,
+        String sessionSlug,   // W4.2: slug of session that triggered (null for presence events)
+        String initiatedBy    // W4.2: organizer who triggered the action (null for presence events)
 ) {
 
     /**

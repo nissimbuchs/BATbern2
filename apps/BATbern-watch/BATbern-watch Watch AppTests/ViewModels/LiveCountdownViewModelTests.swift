@@ -341,6 +341,77 @@ struct LiveCountdownViewModelTests {
         #expect(haptics.stopEventSessionCallCount == 1)
     }
 
+    // MARK: - canMarkDone (W4.2 AC1, Task 1.3)
+
+    @Test("canMarkDone is false when time remains (not yet overtime)")
+    func canMarkDone_isFalseWhenTimeRemains() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(600)  // 10 min remaining
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.urgencyLevel != .overtime)
+        #expect(vm.canMarkDone == false)
+    }
+
+    @Test("canMarkDone is true when urgencyLevel == .overtime (past end time)")
+    func canMarkDone_isTrueWhenOvertime() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-3750),
+            end: clock.now.addingTimeInterval(-150)  // 150s past end
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.urgencyLevel == .overtime)
+        #expect(vm.canMarkDone == true)
+    }
+
+    @Test("canMarkDone resets to false when session advances to a new session")
+    func canMarkDone_resetToFalseOnSessionChange() {
+        let (vm, clock, _, state) = makeVM()
+
+        // Step 1: overtime session → canMarkDone becomes true
+        let overtimeSession = makeSession(
+            slug: "overtime-talk",
+            start: clock.now.addingTimeInterval(-3750),
+            end: clock.now.addingTimeInterval(-150)
+        )
+        state.currentEvent = makeEvent(sessions: [overtimeSession])
+        vm.refreshState()
+        #expect(vm.canMarkDone == true)
+
+        // Step 2: new session becomes active — canMarkDone must reset to false
+        clock.advance(by: 200)
+        let newSession = makeSession(
+            slug: "next-talk",
+            start: clock.now.addingTimeInterval(-60),
+            end: clock.now.addingTimeInterval(2700)
+        )
+        state.currentEvent = makeEvent(sessions: [newSession])
+        vm.refreshState()
+
+        #expect(vm.activeSession?.id == "next-talk")
+        #expect(vm.canMarkDone == false)
+    }
+
+    // MARK: - triggerActionConfirm (W4.2 AC3, Task 2)
+
+    @Test("triggerActionConfirm fires actionConfirm haptic immediately")
+    func triggerActionConfirm_firesActionConfirmHaptic() {
+        let (vm, _, haptics, _) = makeVM()
+
+        vm.triggerActionConfirm()
+
+        #expect(haptics.playedAlerts.contains(.actionConfirm))
+    }
+
     // MARK: - Wall-Clock Accuracy (3.10, AC6)
 
     @Test("Wall-clock recalculation survives simulated suspension")

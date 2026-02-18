@@ -81,7 +81,25 @@ public class WatchPresenceService {
         return buildStateUpdate(eventCode, "STATE_UPDATE");
     }
 
+    /**
+     * Broadcasts SESSION_ENDED state update to all Watch clients on the event's state topic.
+     * W4.2 Task 7.3: Includes sessionSlug and initiatedBy so the Watch can identify
+     * which session was completed and who triggered it.
+     */
+    public void broadcastSessionEnded(String eventCode, String sessionSlug, String completedByUsername) {
+        WatchStateUpdateMessage message = buildStateUpdate(
+                eventCode, "SESSION_ENDED", sessionSlug, completedByUsername);
+        messagingTemplate.convertAndSend("/topic/events/" + eventCode + "/state", message);
+        log.debug("Broadcast SESSION_ENDED for session {} by {} on event {}",
+                sessionSlug, completedByUsername, eventCode);
+    }
+
     private WatchStateUpdateMessage buildStateUpdate(String eventCode, String trigger) {
+        return buildStateUpdate(eventCode, trigger, null, null);
+    }
+
+    private WatchStateUpdateMessage buildStateUpdate(
+            String eventCode, String trigger, String sessionSlug, String initiatedBy) {
         List<Session> sessions = sessionRepository.findByEventCode(eventCode);
         List<WatchStateUpdateMessage.SessionStateDto> sessionDtos = sessions.stream()
                 .map(this::toSessionStateDto)
@@ -98,8 +116,23 @@ public class WatchPresenceService {
                 eventCode,
                 sessionDtos,
                 new ArrayList<>(organizers),
-                Instant.now().toString()
+                Instant.now().toString(),
+                sessionSlug,
+                initiatedBy
         );
+    }
+
+    /**
+     * Returns true if the organizer is currently present (joined) in the event.
+     * Used by WatchWebSocketController to gate session-control actions to joined organizers only.
+     * H1 fix (W4.2 code review): prevents cross-event action injection by ORGANIZER-role tokens.
+     *
+     * @param eventCode event identifier
+     * @param username  organizer's username
+     */
+    public boolean isOrganizerPresent(String eventCode, String username) {
+        Set<OrganizerPresence> presence = presenceByEvent.get(eventCode);
+        return presence != null && presence.stream().anyMatch(p -> p.username().equals(username));
     }
 
     /**

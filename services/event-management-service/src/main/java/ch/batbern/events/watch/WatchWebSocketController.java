@@ -1,5 +1,6 @@
 package ch.batbern.events.watch;
 
+import ch.batbern.events.watch.dto.WatchActionMessage;
 import ch.batbern.events.watch.dto.WatchStateUpdateMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,13 +18,14 @@ import java.security.Principal;
  * STOMP WebSocket controller for Watch organizer actions.
  *
  * W2.4: Speaker arrival via WebSocket (FR38 — sync to all watches within 3 seconds).
- * W4.1: Organizer presence join/leave + action stub (AC1, AC2, AC4).
+ * W4.1: Organizer presence join/leave (AC1, AC2, AC4).
+ * W4.2: Session control dispatch — endSession action (AC1, AC2, AC4).
  *
  * Message flows:
  * Watch → /app/watch/events/{eventCode}/speaker-arrived  → arrival broadcast
  * Watch → /app/watch/events/{eventCode}/join             → presence join + state snapshot
  * Watch → /app/watch/events/{eventCode}/leave            → presence leave
- * Watch → /app/watch/events/{eventCode}/action           → stub (W4.2 implements dispatch)
+ * Watch → /app/watch/events/{eventCode}/action           → session control dispatch
  */
 @Slf4j
 @Controller
@@ -33,6 +35,7 @@ public class WatchWebSocketController {
     private final WatchSpeakerArrivalService arrivalService;
     private final WatchPresenceService presenceService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final WatchSessionService watchSessionService;
 
     /**
      * Handles speaker arrival action sent by organizer Watch.
@@ -82,17 +85,39 @@ public class WatchWebSocketController {
     }
 
     /**
-     * Action stub — logs and echoes ACK.
-     * W4.1 Task 9.3: No state mutation in W4.1; W4.2+ implements actual dispatch.
+     * Dispatches session control actions from Watch organizers.
+     * W4.2 Task 6.1 (AC1, AC2, AC4): Routes END_SESSION to WatchSessionService.
+     *
+     * Security (H1 fix, W4.2 code review): only organizers present in the event (i.e., who
+     * already sent a JOIN) may execute session-control actions. This prevents a valid
+     * ORGANIZER-role JWT from ending sessions in arbitrary events they haven't joined.
+     *
+     * M5 fix: sessionSlug is validated non-null/non-blank before dispatch to avoid
+     * misleading SessionNotFoundException("null") for malformed STOMP frames.
      */
     @MessageMapping("/watch/events/{eventCode}/action")
     public void handleAction(
             @DestinationVariable String eventCode,
-            @Payload Object action,
+            @Payload WatchActionMessage action,
             Principal principal
     ) {
-        log.info("Watch action received on event {} from {}: {}", eventCode, principal.getName(), action);
-        // W4.2+ will dispatch to session control service
+        String username = principal.getName();
+        if (!presenceService.isOrganizerPresent(eventCode, username)) {
+            log.warn("Action {} rejected: organizer {} is not present in event {}",
+                    action.type(), username, eventCode);
+            return;
+        }
+        switch (action.type()) {
+            case "END_SESSION" -> {
+                if (action.sessionSlug() == null || action.sessionSlug().isBlank()) {
+                    log.warn("END_SESSION rejected: missing sessionSlug from organizer {} in event {}",
+                            username, eventCode);
+                    return;
+                }
+                watchSessionService.endSession(eventCode, action.sessionSlug(), username);
+            }
+            default -> log.warn("Unknown action type: {}", action.type());
+        }
     }
 
     /**

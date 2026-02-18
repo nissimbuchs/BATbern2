@@ -174,16 +174,24 @@ struct SessionCardView: View {
         .padding(.horizontal, 12)
     }
 
-    // MARK: - Status Badge (W3.4 AC1)
+    // MARK: - Status Badge (W3.4 AC1, W4.2 AC4)
 
     @ViewBuilder
     private func statusBadgeView(_ status: SessionBadgeStatus) -> some View {
-        Text(status.label)
-            .font(.system(size: 9, weight: .semibold))
-            .foregroundStyle(status.color)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(status.color.opacity(0.15), in: Capsule())
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(status.label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(status.color)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(status.color.opacity(0.15), in: Capsule())
+            // W4.2 AC4: "by [firstName]" shown under "Done" badge when completedByUsername is set
+            if status == .completed, let completedBy = session.completedByUsername, !completedBy.isEmpty {
+                Text("by \(completedBy.components(separatedBy: ".").first ?? completedBy)")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     // MARK: - Title Area (AC#2, AC#6, W1.3 AC#1, AC#5, AC#6)

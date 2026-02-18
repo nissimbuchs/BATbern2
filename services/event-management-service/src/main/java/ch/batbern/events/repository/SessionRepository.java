@@ -111,6 +111,17 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventCode(@Param("eventCode") String eventCode);
 
     /**
+     * Find a session by event code and session slug.
+     * W4.2 Task 9.1: Used by WatchSessionService.endSession() to look up the session
+     * being advanced by an organizer action without joining via eventId.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode AND s.sessionSlug = :sessionSlug")
+    Optional<Session> findByEventCodeAndSessionSlug(
+            @Param("eventCode") String eventCode,
+            @Param("sessionSlug") String sessionSlug
+    );
+
+    /**
      * Count all sessions for a specific event
      * Story BAT-11 (5.7): Workflow validation for agenda publishing
      */

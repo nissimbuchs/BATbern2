@@ -273,6 +273,8 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         let stateUpdate = serverMsg.toWatchStateUpdate()
         let message = EventStateMessage(
             type: serverMsg.messageType,
+            sessionSlug: serverMsg.sessionSlug,
+            initiatedBy: serverMsg.initiatedBy,
             timestamp: stateUpdate.serverTimestamp,
             stateUpdate: stateUpdate
         )
@@ -405,9 +407,12 @@ enum WebSocketClientError: Error, LocalizedError {
 
 /// JSON shape of the server's WatchStateUpdateMessage broadcast.
 /// Source: story W4.1 Dev Notes — WatchStateUpdateMessage JSON Shape.
+/// W4.2 Task 8.2: Added sessionSlug and initiatedBy top-level fields.
 private struct WatchStateServerMessage: Decodable {
     let type: String
     let trigger: String?
+    let sessionSlug: String?     // W4.2: slug of session that triggered the update
+    let initiatedBy: String?     // W4.2: username of organizer who took the action
     let eventCode: String
     let sessions: [SessionDto]
     let connectedOrganizers: [OrganizerDto]

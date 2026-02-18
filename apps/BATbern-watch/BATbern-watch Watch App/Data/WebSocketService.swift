@@ -23,10 +23,13 @@ private let logger = Logger(subsystem: "ch.batbern.watch", category: "WebSocketS
 @MainActor
 final class WebSocketService {
 
-    // MARK: - Published State (Task 3.8)
+    // MARK: - Published State (Task 3.8, W4.2)
 
     var presenceCount: Int = 0
     var connectedOrganizers: [ConnectedOrganizer] = []
+    /// W4.2 Task 5.2/5.3: Set when SESSION_ENDED broadcast received. LiveCountdownView observes
+    /// this via .onChange and resets it to nil after consuming (avoids persistent stale signal).
+    var sessionEndedEvent: SessionEndedEvent?
 
     // MARK: - Connection State
 
@@ -104,6 +107,17 @@ final class WebSocketService {
         logger.info("WebSocketService disconnected")
     }
 
+    /// W4.2 Task 5.1: Send a WatchAction to the server via the WebSocket client.
+    /// Called from LiveCountdownView's Done button tap.
+    /// NEVER throws to caller — errors are logged and swallowed (view doesn't need to handle them).
+    func sendAction(_ action: WatchAction) async {
+        do {
+            try await webSocketClient.sendAction(action)
+        } catch {
+            logger.error("WebSocketService.sendAction failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
     /// Reconnect with a new JWT (called by JWT observation when token rotates).
     /// Task 3.7: NEVER calls authManager.refreshJWT().
     func reconnect(with jwt: String) async {
@@ -137,6 +151,14 @@ final class WebSocketService {
                     await eventDataController.applyServerState(stateUpdate)
                     connectedOrganizers = stateUpdate.connectedOrganizers
                     presenceCount = stateUpdate.connectedOrganizers.count
+                }
+                // W4.2 Task 5.2: Set sessionEndedEvent for LiveCountdownView O6 trigger.
+                if message.type == .sessionEnded, let slug = message.sessionSlug {
+                    sessionEndedEvent = SessionEndedEvent(
+                        sessionSlug: slug,
+                        completedBy: message.initiatedBy ?? "",
+                        timestamp: message.timestamp
+                    )
                 }
                 wasConnected = true
             }
