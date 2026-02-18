@@ -75,6 +75,8 @@ public class SecurityConfig {
 
                 // Story BAT-7: WebSocket endpoints for real-time notifications
                 .requestMatchers("/ws/**").permitAll()
+                // W4.1: Raw WebSocket for Watch clients — auth handled at STOMP level by JwtStompInterceptor
+                .requestMatchers("/api/v1/watch/ws").permitAll()
 
                 // Story 4.1.3: Public event discovery endpoints
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()

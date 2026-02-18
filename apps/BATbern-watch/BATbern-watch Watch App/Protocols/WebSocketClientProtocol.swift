@@ -32,11 +32,29 @@ enum WatchAction: Sendable, Equatable {
 }
 
 /// State update received from server broadcast.
+/// W4.1: stateUpdate carries full server state so WebSocketService can call
+/// EventDataController.applyServerState() without a separate channel.
 struct EventStateMessage: Sendable {
     let type: EventStateMessageType
     let sessionSlug: String?
     let initiatedBy: String?
     let timestamp: Date
+    /// Full server state payload — present on every broadcast from the state topic.
+    let stateUpdate: WatchStateUpdate?
+
+    init(
+        type: EventStateMessageType,
+        sessionSlug: String? = nil,
+        initiatedBy: String? = nil,
+        timestamp: Date,
+        stateUpdate: WatchStateUpdate? = nil
+    ) {
+        self.type = type
+        self.sessionSlug = sessionSlug
+        self.initiatedBy = initiatedBy
+        self.timestamp = timestamp
+        self.stateUpdate = stateUpdate
+    }
 }
 
 /// Session state message types. Speaker arrivals are handled exclusively
@@ -61,4 +79,30 @@ struct SpeakerArrivalMessage: Sendable {
     let arrivedCount: Int
     /// Server-authoritative total speaker count for tonight.
     let totalCount: Int
+}
+
+// MARK: - W4.1 Server State Types
+
+/// Full server state broadcast — applied to local cache via EventDataController.applyServerState().
+/// Source: story W4.1, Task 2.2 / Dev Notes WatchStateUpdateMessage JSON Shape.
+struct WatchStateUpdate: Sendable {
+    let sessions: [SessionStateUpdate]
+    let connectedOrganizers: [ConnectedOrganizer]
+    let serverTimestamp: Date
+}
+
+/// Per-session state from the server broadcast.
+struct SessionStateUpdate: Sendable {
+    let sessionSlug: String
+    let status: String
+    let actualStartTime: Date?
+    let actualEndTime: Date?
+    let overrunMinutes: Int?
+    let completedByUsername: String?
+}
+
+/// Organizer presence entry from the server broadcast.
+struct ConnectedOrganizer: Sendable, Equatable {
+    let username: String
+    let firstName: String
 }

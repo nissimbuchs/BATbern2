@@ -72,7 +72,7 @@ development_status:
   #   A1: Pre-implementation review in story template  [x] w4-1 story — Pre-Implementation Review section
   #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
   epic-4: in-progress
-  w4-1-websocket-real-time-infrastructure: in-progress
+  w4-1-websocket-real-time-infrastructure: done
   w4-2-session-advance-transition: ready-for-dev
   w4-3-overrun-detection-schedule-cascade: ready-for-dev
   w4-4-break-management-event-lifecycle: ready-for-dev

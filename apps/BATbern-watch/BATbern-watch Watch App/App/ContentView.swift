@@ -23,6 +23,7 @@ enum Zone {
 struct ContentView: View {
     @State private var selectedZone: Zone = .publicZone
     @Environment(EventDataController.self) private var eventDataController
+    @Environment(WebSocketService.self) private var webSocketService
 
     var body: some View {
         TabView(selection: $selectedZone) {
@@ -55,21 +56,4 @@ struct ContentView: View {
             selectedZone = .organizer
         }
     }
-}
-
-#Preview {
-    let container = try! ModelContainer(for: CachedSpeaker.self)
-    let auth = AuthManager()
-    let controller = EventDataController(
-        authManager: auth,
-        modelContext: container.mainContext
-    )
-    ContentView()
-        .environment(auth)
-        .environment(controller)
-        .environment(EventStateManager(eventDataController: controller))
-        .environment(ArrivalTracker(
-            authManager: auth,
-            modelContext: container.mainContext
-        ))
 }

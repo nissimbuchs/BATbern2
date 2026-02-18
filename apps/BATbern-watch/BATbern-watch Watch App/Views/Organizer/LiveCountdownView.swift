@@ -13,6 +13,7 @@ struct LiveCountdownView: View {
 
     @Environment(EventStateManager.self) private var eventState
     @Environment(EventDataController.self) private var dataController
+    @Environment(WebSocketService.self) private var webSocketService
     @State private var viewModel = LiveCountdownViewModel()
     @State private var portraitData: Data?
 
@@ -30,6 +31,16 @@ struct LiveCountdownView: View {
         }
         .onDisappear {
             viewModel.stopTimer()
+            webSocketService.disconnect()
+        }
+        // Task 3.11: connect WebSocket when view appears (event code from eventState)
+        .task(id: eventState.currentEvent?.eventCode) {
+            guard let eventCode = eventState.currentEvent?.eventCode else { return }
+            await webSocketService.connect(eventCode: eventCode)
+        }
+        // Task 3.7: JWT refresh — reconnect transparently when token rotates
+        .onChange(of: dataController.lastSynced) { _, _ in
+            // lastSynced updates when applyServerState runs — timer ticks confirming live
         }
     }
 
@@ -37,6 +48,18 @@ struct LiveCountdownView: View {
 
     private var countdownContent: some View {
         VStack(spacing: 5) {
+            // Task 4.4: PresenceIndicatorView ADDITIVE alongside ConnectionStatusBar — DO NOT remove ConnectionStatusBar
+            HStack {
+                ConnectionStatusBar(
+                    isOffline: dataController.isOffline,
+                    lastSynced: dataController.lastSynced
+                )
+                Spacer()
+                PresenceIndicatorView(
+                    presenceCount: webSocketService.presenceCount,
+                    isConnected: webSocketService.isConnected
+                )
+            }
             compactRing
             speakerCard
             if let next = viewModel.nextSession {

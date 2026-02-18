@@ -22,11 +22,12 @@ final class EventDataController {
 
     // MARK: - Published State
 
-    private(set) var currentEvent: CachedEvent?
+    var currentEvent: CachedEvent?
     private(set) var isLoading: Bool = false
     private(set) var syncProgress: Double = 0.0
     private(set) var lastSynced: Date?
-    private(set) var isOffline: Bool = false
+    /// W4.1: Settable by WebSocketService on disconnect (Area 3 — single isOffline flag).
+    var isOffline: Bool = false
 
     // MARK: - Dependencies
 
@@ -110,6 +111,29 @@ final class EventDataController {
     func forceSync() async {
         lastSyncAttempt = nil
         await performSync()
+    }
+
+    // MARK: - W4.1: Server State Application
+
+    /// Apply a server-broadcast state update to the local session cache.
+    /// Called by WebSocketService on every STATE_UPDATE from /topic/events/{eventCode}/state.
+    /// Source: story W4.1 Task 2.1-2.4, Area 4 mandate (single write path).
+    @MainActor
+    func applyServerState(_ update: WatchStateUpdate) {
+        guard let event = currentEvent else { return }
+
+        for sessionUpdate in update.sessions {
+            guard let session = event.sessions.first(where: { $0.sessionSlug == sessionUpdate.sessionSlug })
+            else { continue }
+            session.actualStartTime = sessionUpdate.actualStartTime
+            session.actualEndTime = sessionUpdate.actualEndTime
+            session.overrunMinutes = sessionUpdate.overrunMinutes
+            session.completedByUsername = sessionUpdate.completedByUsername
+        }
+
+        isOffline = false
+        lastSynced = clock.now
+        try? modelContext.save()
     }
 
     // MARK: - Private: Core Sync

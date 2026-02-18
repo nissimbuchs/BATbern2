@@ -20,10 +20,12 @@ struct BATbernWatchApp: App {
     // Auth + event state managers injected as environment objects.
     // EventDataController is the unified event data source; EventStateManager reads from it.
     // ArrivalTracker initialized alongside authManager so it shares the real instance.
+    // W4.1: WebSocketClient is created ONCE and shared between WebSocketService + ArrivalTracker.
     @State private var authManager: AuthManager
     @State private var eventDataController: EventDataController
     @State private var eventStateManager: EventStateManager
     @State private var arrivalTracker: ArrivalTracker
+    @State private var webSocketService: WebSocketService
 
     init() {
         do {
@@ -54,14 +56,27 @@ struct BATbernWatchApp: App {
                 authManager: auth,
                 modelContext: container.mainContext
             )
+
+            // W4.1 Task 11.1-11.3: ONE concrete WebSocketClient shared by WebSocketService
+            // and ArrivalTracker. State stream → WebSocketService; arrival stream → ArrivalTracker.
+            let webSocketClient = WebSocketClient()
+
             _authManager = State(wrappedValue: auth)
             _eventDataController = State(wrappedValue: controller)
             _eventStateManager = State(wrappedValue: EventStateManager(
                 eventDataController: controller
             ))
+            // Task 11.2: pass concrete WebSocketClient to ArrivalTracker (replaces polling fallback)
             _arrivalTracker = State(wrappedValue: ArrivalTracker(
                 authManager: auth,
-                modelContext: container.mainContext
+                modelContext: container.mainContext,
+                webSocketClient: webSocketClient
+            ))
+            // Task 3.10: WebSocketService with shared WebSocketClient
+            _webSocketService = State(wrappedValue: WebSocketService(
+                webSocketClient: webSocketClient,
+                eventDataController: controller,
+                authManager: auth
             ))
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
@@ -75,6 +90,7 @@ struct BATbernWatchApp: App {
                 .environment(eventDataController)
                 .environment(eventStateManager)
                 .environment(arrivalTracker)
+                .environment(webSocketService)
                 // W3.3 AC4: Complication tap opens O3 (LiveCountdownView)
                 .onOpenURL { url in
                     if url.scheme == "batbern-watch",

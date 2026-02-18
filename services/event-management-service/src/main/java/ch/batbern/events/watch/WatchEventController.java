@@ -162,6 +162,12 @@ public class WatchEventController {
         // Derive session status from timing (session status fields deferred to W4)
         String status = deriveSessionStatus(session);
 
+        String actualStart = session.getActualStartTime() != null
+                ? ISO_FORMATTER.format(session.getActualStartTime()) : null;
+        String actualEnd = session.getActualEndTime() != null
+                ? ISO_FORMATTER.format(session.getActualEndTime()) : null;
+        int overrun = session.getOverrunMinutes() != null ? session.getOverrunMinutes() : 0;
+
         return new SessionDetail(
                 session.getSessionSlug(),
                 session.getTitle(),
@@ -172,10 +178,10 @@ public class WatchEventController {
                 durationMinutes,
                 speakerDetails,
                 status,
-                null,   // actualStartTime — W4 implements session control
-                null,   // actualEndTime
-                0,      // overrunMinutes
-                null    // completedBy
+                actualStart,
+                actualEnd,
+                overrun,
+                session.getCompletedByUsername()
         );
     }
 

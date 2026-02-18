@@ -182,6 +182,59 @@ struct ArrivalTrackerTests {
         #expect(speaker.arrivedConfirmedBy == "marco")
     }
 
+    // MARK: - Test 11.5: WebSocket path exercised — arrived = true, REST polling timer NOT fired
+
+    @Test("W4.1/11.5: startListening with wsClient → emitArrival → speaker.arrived = true, no polling loop")
+    func webSocketPath_setsArrivedTrue_andDoesNotPoll() async throws {
+        let wsClient = MockWebSocketClient()
+        wsClient._isConnected = true
+
+        // Count REST calls to verify no repeated polling
+        final class CallCounter: @unchecked Sendable { var count = 0 }
+        let restCallCounter = CallCounter()
+
+        let fetcher: @Sendable (URLRequest) async throws -> (Data, URLResponse) = { request in
+            restCallCounter.count += 1
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return ("{\"arrivals\":[]}".data(using: .utf8)!, response)
+        }
+
+        let speaker = makeSpeaker(username: "anna.meier", arrived: false)
+
+        let tracker = makeTracker(wsClient: wsClient, fetcher: fetcher)
+        await tracker.startListening(eventCode: "BATbern56")
+
+        // wsClient.connect was called exactly once (initial connect via ArrivalTracker wiring)
+        // REST was called exactly once (initial arrivals fetch — not a polling loop)
+        #expect(restCallCounter.count == 1)
+
+        // Emit arrival via WebSocket
+        wsClient.emitArrival(SpeakerArrivalMessage(
+            speakerUsername: "anna.meier",
+            speakerFirstName: "Anna",
+            speakerLastName: "Meier",
+            confirmedBy: "marco",
+            arrivedAt: Date(),
+            arrivedCount: 1,
+            totalCount: 3
+        ))
+
+        // Allow stream consumer task to process the message
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // speaker.arrived is set by processArrivalMessage → updateSpeakerArrival
+        #expect(speaker.arrived == true)
+
+        // Wait a bit longer — confirm REST is not called again (no polling loop)
+        try await Task.sleep(nanoseconds: 200_000_000)
+        #expect(restCallCounter.count == 1)
+    }
+
     // MARK: - Test 11.6: REST fallback when WebSocket disconnected
 
     @Test("confirmArrival: uses REST fallback when WebSocket is disconnected")

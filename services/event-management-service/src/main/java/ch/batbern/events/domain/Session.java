@@ -110,6 +110,22 @@ public class Session {
     private String materialsStatus;  // NONE, PARTIAL, COMPLETE
 
     /**
+     * W4.1: Session control fields — populated by organizer session control actions (W4.2+).
+     * Stored via V56 migration; broadcast via WatchPresenceService in real-time STATE_UPDATE.
+     */
+    @Column(name = "actual_start_time")
+    private Instant actualStartTime;
+
+    @Column(name = "actual_end_time")
+    private Instant actualEndTime;
+
+    @Column(name = "overrun_minutes")
+    private Integer overrunMinutes;
+
+    @Column(name = "completed_by_username", length = 100)
+    private String completedByUsername;
+
+    /**
      * Link to speaker pool entry (one session per speaker)
      * Story BAT-11 (5.7): V20 added speaker_pool.session_id FK
      * This allows tracking which speaker is assigned to which session/slot
