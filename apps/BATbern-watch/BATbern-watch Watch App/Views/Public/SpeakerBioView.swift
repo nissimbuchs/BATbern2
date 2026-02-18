@@ -33,9 +33,11 @@ struct SpeakerBioView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // Large Portrait (~80pt, circular) — PortraitCache backed (AC#4)
+                // Large Portrait (circular) — PortraitCache backed (AC#4). Size adapts to
+                // device: 60pt (40mm SE) / 70pt (44mm SE, 41mm S9) / 80pt (45mm S9, Ultra).
                 portraitImage
-                    .frame(width: 80, height: 80)
+                    .frame(width: BATbernWatchStyle.Spacing.bioPortraitSize,
+                           height: BATbernWatchStyle.Spacing.bioPortraitSize)
                     .clipShape(Circle())
 
                 // Speaker Name

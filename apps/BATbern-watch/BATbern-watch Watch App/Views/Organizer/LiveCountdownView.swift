@@ -87,6 +87,7 @@ struct LiveCountdownView: View {
                     .font(.system(size: 26, weight: .bold, design: .monospaced))
                     .foregroundStyle(countdownColor)
                     .minimumScaleFactor(0.6)
+                    .lineLimit(1)
                 if viewModel.urgencyLevel != .overtime {
                     Text("REMAINING")
                         .font(.system(size: 7))
@@ -94,8 +95,10 @@ struct LiveCountdownView: View {
                         .kerning(0.3)
                 }
             }
+            .padding(.horizontal, 9)
         }
-        .frame(width: 96, height: 96)
+        .frame(width: BATbernWatchStyle.Spacing.countdownRingSize,
+               height: BATbernWatchStyle.Spacing.countdownRingSize)
     }
 
     // MARK: - Speaker Card (AC1)
