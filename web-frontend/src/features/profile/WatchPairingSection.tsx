@@ -10,7 +10,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Alert, Box, Button, Typography } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import WatchIcon from '@mui/icons-material/Watch';
 import PairingCodeDisplay from './PairingCodeDisplay';
 import PairedWatchCard from './PairedWatchCard';
@@ -87,7 +88,7 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-        <CircularProgress size={24} />
+        <BATbernLoader size={24} />
       </Box>
     );
   }

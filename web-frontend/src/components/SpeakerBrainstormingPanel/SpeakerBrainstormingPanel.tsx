@@ -21,11 +21,11 @@ import {
   ListItemText,
   Chip,
   Alert,
-  CircularProgress,
   Divider,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useSpeakerPool, useAddSpeakerToPool } from '@/hooks/useSpeakerPool';
 import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
@@ -197,7 +197,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
 
           {isLoading && (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
-              <CircularProgress />
+              <BATbernLoader size={48} />
             </Box>
           )}
 

@@ -7,7 +7,6 @@ import {
   Avatar,
   Stack,
   Chip,
-  CircularProgress,
   Alert,
   Select,
   MenuItem,
@@ -25,6 +24,7 @@ import {
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 
 interface PartnerActivityTabProps {
@@ -97,7 +97,7 @@ const PartnerActivityTab: React.FC<PartnerActivityTabProps> = ({ companyName }) 
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-        <CircularProgress />
+        <BATbernLoader size={48} />
       </Box>
     );
   }

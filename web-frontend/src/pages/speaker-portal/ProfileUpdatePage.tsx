@@ -29,6 +29,7 @@ import {
   FileText,
   ArrowRight,
 } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService, ProfileUpdateRequest } from '@/services/speakerPortalService';
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
 
@@ -230,7 +231,7 @@ const ProfileUpdatePage = () => {
         {/* Loading State */}
         {pageState === 'loading' && (
           <div className="text-center py-24" role="status" aria-label="Loading profile">
-            <Loader2 className="h-16 w-16 text-blue-400 mx-auto mb-4 animate-spin" />
+            <BATbernLoader size={64} />
             <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Profile...</h2>
             <p className="text-zinc-400">Please wait while we load your profile.</p>
           </div>

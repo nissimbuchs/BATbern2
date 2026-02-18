@@ -17,7 +17,6 @@ import {
   Paper,
   Typography,
   Box,
-  CircularProgress,
   Alert,
   Button,
   ToggleButtonGroup,
@@ -30,6 +29,7 @@ import {
   ViewKanban as BoardIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTopics, useTopic } from '@/hooks/useTopics';
 import { useEvent, useEvents } from '@/hooks/useEvents';
 import { useUserList } from '@/hooks/useUserManagement/useUserList';
@@ -237,7 +237,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                 alignItems: 'center',
               }}
             >
-              <CircularProgress />
+              <BATbernLoader size={48} />
             </Paper>
           )}
 

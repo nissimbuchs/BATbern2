@@ -13,9 +13,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Paper, Typography, Box, Stack, CircularProgress, Alert, Container } from '@mui/material';
+import { Paper, Typography, Box, Stack, Alert, Container } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEvents } from '@/hooks/useEvents';
@@ -117,7 +118,7 @@ export const EventManagementDashboard: React.FC = () => {
   if (isLoadingEvents && isLoadingNotifications) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
+        <BATbernLoader size={48} />
       </Box>
     );
   }

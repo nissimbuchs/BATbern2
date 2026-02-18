@@ -5,13 +5,14 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Box, Tabs, Tab, CircularProgress, Alert } from '@mui/material';
+import { Box, Tabs, Tab, Alert } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserAccount/useUserAccount';
 import UserProfileTab from '@components/user/UserProfileTab/UserProfileTab';
 import UserSettingsTab from '@components/user/UserSettingsTab/UserSettingsTab';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 
 interface TabPanelProps {
@@ -76,7 +77,7 @@ const UserAccountPage: React.FC = () => {
         }}
         data-testid="loading-state"
       >
-        <CircularProgress />
+        <BATbernLoader size={48} />
       </Box>
     );
   }

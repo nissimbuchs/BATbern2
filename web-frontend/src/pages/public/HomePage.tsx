@@ -30,7 +30,7 @@ import { TestimonialSection } from '@/components/public/Testimonials/Testimonial
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
-import { Loader2 } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 
 const HomePage = () => {
@@ -74,7 +74,7 @@ const HomePage = () => {
     return (
       <PublicLayout>
         <div className="container mx-auto px-4 py-24 flex justify-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-400" />
+          <BATbernLoader size={48} />
         </div>
       </PublicLayout>
     );

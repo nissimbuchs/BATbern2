@@ -26,11 +26,11 @@ import {
   List,
   ListItem,
   ListItemText,
-  CircularProgress,
   Alert,
   Tooltip,
   Chip,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -95,7 +95,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
-        <CircularProgress />
+        <BATbernLoader size={48} />
       </Box>
     );
   }

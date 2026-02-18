@@ -10,7 +10,7 @@ import { PublicLayout } from '@/components/public/PublicLayout';
 import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 
 const RegistrationPage = () => {
@@ -44,7 +44,7 @@ const RegistrationPage = () => {
             role="status"
             aria-label="Loading event details"
           >
-            <Loader2 className="h-12 w-12 animate-spin text-blue-400" aria-hidden="true" />
+            <BATbernLoader size={48} />
           </div>
         )}
 

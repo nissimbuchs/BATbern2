@@ -12,16 +12,8 @@
  */
 
 import React from 'react';
-import {
-  Box,
-  LinearProgress,
-  Typography,
-  Alert,
-  CircularProgress,
-  Button,
-  Stack,
-  Chip,
-} from '@mui/material';
+import { Box, LinearProgress, Typography, Alert, Button, Stack, Chip } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { Warning as WarningIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -62,7 +54,7 @@ export const WorkflowProgressBarWithQuery: React.FC<WorkflowProgressBarWithQuery
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
-        <CircularProgress size={24} />
+        <BATbernLoader size={24} />
         <Typography variant="body2" color="text.secondary">
           {t('workflow.loading')}
         </Typography>

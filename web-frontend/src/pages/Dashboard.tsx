@@ -7,7 +7,8 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useAuth } from '@/hooks/useAuth';
 
 const Dashboard: React.FC = () => {
@@ -40,7 +41,7 @@ const Dashboard: React.FC = () => {
       <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
         Dashboard
       </Typography>
-      <CircularProgress aria-label="Loading dashboard" />
+      <BATbernLoader size={48} />
       <Typography variant="body2" color="text.primary">
         Loading your dashboard...
       </Typography>

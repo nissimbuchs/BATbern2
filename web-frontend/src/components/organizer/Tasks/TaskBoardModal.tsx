@@ -38,6 +38,7 @@ import {
   Alert,
   Tooltip,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Close as CloseIcon,
   Add as AddIcon,
@@ -197,7 +198,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
         <DialogContent dividers>
           {isLoading && (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-              <CircularProgress />
+              <BATbernLoader size={48} />
             </Box>
           )}
 

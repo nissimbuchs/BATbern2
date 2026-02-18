@@ -60,6 +60,7 @@ import {
   useDroppable,
 } from '@dnd-kit/core';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { CustomTaskModal } from '@/components/organizer/Tasks/CustomTaskModal';
 import { TaskCard } from '@/components/organizer/Tasks/TaskCard';
 import { useAuth } from '@/hooks/useAuth';
@@ -240,7 +241,7 @@ const TaskBoardPage: React.FC = () => {
         {/* Task Board Content */}
         {isLoading && (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-            <CircularProgress />
+            <BATbernLoader size={48} />
           </Box>
         )}
 

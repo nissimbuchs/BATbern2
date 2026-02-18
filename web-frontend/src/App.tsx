@@ -6,10 +6,12 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { Box, CircularProgress } from '@mui/material';
+import { Box } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from '@hooks/useAuth';
+import HomePage from '@pages/public/HomePage';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import {
@@ -75,7 +77,7 @@ const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'))
 const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 4.2
-const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+// HomePage is eagerly imported (top of file) to avoid double-spinner on first load.
 const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
@@ -117,7 +119,7 @@ const PageLoader = () => (
       minHeight: '50vh',
     }}
   >
-    <CircularProgress />
+    <BATbernLoader size={48} />
   </Box>
 );
 

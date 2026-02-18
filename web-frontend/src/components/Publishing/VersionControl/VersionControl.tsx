@@ -19,6 +19,7 @@ import {
   Tooltip,
   TextField,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { Restore, CheckCircle, HourglassEmpty, Error } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
@@ -150,7 +151,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
 
       {isLoadingVersions ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress data-testid="version-history-loading" />
+          <BATbernLoader size={40} data-testid="version-history-loading" />
         </Box>
       ) : (
         <TableContainer>

@@ -12,11 +12,11 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   Box,
   Typography,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import apiClient from '@/services/api/apiClient';
@@ -85,7 +85,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-        <CircularProgress aria-label={t('userDetail.eventsTable.loading')} />
+        <BATbernLoader size={40} />
       </Box>
     );
   }

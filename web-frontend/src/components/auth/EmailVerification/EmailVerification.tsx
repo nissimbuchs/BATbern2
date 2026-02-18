@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { CheckCircle } from '@mui/icons-material';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { useEmailVerification, useResendVerification } from '@/hooks/useEmailVerification';
@@ -83,7 +84,7 @@ export const EmailVerification: React.FC = () => {
   if (autoCode && isLoading) {
     return (
       <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8, textAlign: 'center' }}>
-        <CircularProgress size={64} />
+        <BATbernLoader size={64} />
         <Typography variant="h5" sx={{ mt: 2 }}>
           {t('verify.verifying')}
         </Typography>

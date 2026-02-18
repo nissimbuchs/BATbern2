@@ -23,6 +23,7 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { ArrowBack, Visibility, VisibilityOff } from '@mui/icons-material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useResetPassword, type ResetPasswordError } from '@/hooks/useResetPassword';
 import { authService } from '@/services/auth/authService';
 import {
@@ -136,7 +137,7 @@ export const ResetPasswordForm: React.FC = () => {
             ? t('auth:reset.loggingIn', 'Logging you in...')
             : t('auth:reset.redirecting')}
         </Typography>
-        <CircularProgress size={24} sx={{ mt: 2 }} />
+        <BATbernLoader size={32} />
       </Box>
     );
   }

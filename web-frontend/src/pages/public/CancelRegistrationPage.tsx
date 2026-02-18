@@ -12,7 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
-import { CheckCircle2, XCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { eventApiClient } from '@/services/eventApiClient';
 
 type CancellationState = 'loading' | 'success' | 'error';
@@ -86,7 +87,7 @@ const CancelRegistrationPage = () => {
         {/* Loading State */}
         {state === 'loading' && (
           <div className="text-center py-24">
-            <Loader2 className="h-16 w-16 text-blue-400 mx-auto mb-4 animate-spin" />
+            <BATbernLoader size={64} />
             <h2 className="text-2xl font-light mb-2">{t('cancellation.loading.title')}</h2>
             <p className="text-zinc-400">{t('cancellation.loading.message')}</p>
           </div>

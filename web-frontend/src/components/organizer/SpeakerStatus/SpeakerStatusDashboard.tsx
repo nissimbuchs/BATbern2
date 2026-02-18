@@ -23,6 +23,7 @@ import {
   Chip,
   Box,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
@@ -74,8 +75,8 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
 
   if (isLoading || speakersLoading) {
     return (
-      <Box>
-        <LinearProgress />
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+        <BATbernLoader size={40} />
       </Box>
     );
   }

@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Box, CircularProgress, Typography, Alert } from '@mui/material';
+import { Box, Typography, Alert } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useAuth } from '@hooks/useAuth';
 import type { ProtectedRouteProps } from './types';
 
@@ -35,7 +36,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
           Loading
         </Typography>
-        <CircularProgress size={40} aria-label="Loading, please wait" />
+        <BATbernLoader size={40} />
         <Typography variant="body2" color="text.primary">
           Checking authentication...
         </Typography>

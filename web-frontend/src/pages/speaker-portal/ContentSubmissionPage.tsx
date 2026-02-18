@@ -20,6 +20,7 @@ import { PublicLayout } from '@/components/public/PublicLayout';
 import { speakerPortalService, ContentSubmitResponse } from '@/services/speakerPortalService';
 import PresentationUpload from '@/components/speaker-portal/PresentationUpload';
 import { User, LayoutDashboard } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 
 // Constants
 const MAX_TITLE_LENGTH = 200;
@@ -229,11 +230,7 @@ export default function ContentSubmissionPage() {
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center">
-            <div
-              role="status"
-              aria-label="Loading"
-              className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"
-            />
+            <BATbernLoader size={48} />
             <p className="text-gray-400">Loading content...</p>
           </div>
         </div>

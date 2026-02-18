@@ -29,6 +29,7 @@ import {
   ThumbsUp,
   ThumbsDown,
 } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   speakerPortalService,
   SpeakerResponseType,
@@ -213,7 +214,7 @@ const InvitationResponsePage = () => {
         {/* Loading State */}
         {pageState === 'loading' && (
           <div className="text-center py-24" role="status" aria-label="Loading invitation">
-            <Loader2 className="h-16 w-16 text-blue-400 mx-auto mb-4 animate-spin" />
+            <BATbernLoader size={64} />
             <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Invitation...</h2>
             <p className="text-zinc-400">Please wait while we verify your link.</p>
           </div>

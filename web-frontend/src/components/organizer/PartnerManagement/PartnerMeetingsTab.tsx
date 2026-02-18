@@ -7,13 +7,13 @@ import {
   Stack,
   Chip,
   Button,
-  CircularProgress,
   Alert,
   Link,
   Divider,
 } from '@mui/material';
 import { Add as AddIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 
 interface PartnerMeetingsTabProps {
@@ -56,7 +56,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <CircularProgress />
+        <BATbernLoader size={48} />
       </Box>
     );
   }
