@@ -65,17 +65,17 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Session Control & Team Sync
-  # GATE G1: epic-4-reuse-map.md produced (2026-02-18) — awaiting SM review
-  # Gate checklist before W4.1 story creation:
-  #   G1: epic-4-reuse-map.md reviewed by SM          [ ]
-  #   D1: WatchHapticService.schedule() firing logic   [ ] (blocks W4.1)
-  #   A1: Pre-implementation review in story template  [ ]
-  #   A2: Design direction block in story template     [ ]
-  epic-4: backlog
-  w4-1-websocket-real-time-infrastructure: backlog
-  w4-2-session-advance-transition: backlog
-  w4-3-overrun-detection-schedule-cascade: backlog
-  w4-4-break-management-event-lifecycle: backlog
+  # GATE G1: epic-4-reuse-map.md reviewed by SM (2026-02-18) ✅
+  # Gate checklist — all cleared before W4.1 story creation:
+  #   G1: epic-4-reuse-map.md reviewed by SM          [x] 2026-02-18
+  #   D1: WatchHapticService.schedule() firing logic   [x] commit 5c49e211
+  #   A1: Pre-implementation review in story template  [x] w4-1 story — Pre-Implementation Review section
+  #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
+  epic-4: in-progress
+  w4-1-websocket-real-time-infrastructure: in-progress
+  w4-2-session-advance-transition: ready-for-dev
+  w4-3-overrun-detection-schedule-cascade: ready-for-dev
+  w4-4-break-management-event-lifecycle: ready-for-dev
   epic-4-retrospective: optional
 
   # Epic 5: Offline Resilience
