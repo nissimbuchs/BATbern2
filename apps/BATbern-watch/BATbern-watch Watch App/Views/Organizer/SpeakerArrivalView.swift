@@ -32,40 +32,43 @@ struct SpeakerArrivalView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                // Arrival counter header (AC1, FR39)
-                arrivalCounterHeader
+        GeometryReader { geo in
+            let portraitSize = Self.cellPortraitSize(screenWidth: geo.size.width)
+            ScrollView {
+                VStack(spacing: 8) {
+                    // Arrival counter header (AC1, FR39)
+                    arrivalCounterHeader
 
-                // Portrait grid (2 columns, AC1)
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: 8),
-                        GridItem(.flexible(), spacing: 8)
-                    ],
-                    spacing: 8
-                ) {
-                    ForEach(uniqueSpeakers) { speaker in
-                        SpeakerPortraitCell(speaker: speaker)
-                            .onTapGesture {
-                                selectedSpeaker = speaker
-                            }
+                    // Portrait grid (2 columns, AC1)
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)
+                        ],
+                        spacing: 8
+                    ) {
+                        ForEach(uniqueSpeakers) { speaker in
+                            SpeakerPortraitCell(speaker: speaker, portraitSize: portraitSize)
+                                .onTapGesture {
+                                    selectedSpeaker = speaker
+                                }
+                        }
+                    }
+
+                    // Event start reminder
+                    if let event = eventState.currentEvent {
+                        Text(
+                            NSLocalizedString("arrival.event_starts_at", comment: "")
+                                + " "
+                                + SwissDateFormatter.formatTimeString(event.typicalStartTime)
+                        )
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
                     }
                 }
-
-                // Event start reminder
-                if let event = eventState.currentEvent {
-                    Text(
-                        NSLocalizedString("arrival.event_starts_at", comment: "")
-                            + " "
-                            + SwissDateFormatter.formatTimeString(event.typicalStartTime)
-                    )
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
-                }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
         }
         // Confirmation sheet (AC2, AC5)
         .sheet(item: $selectedSpeaker) { speaker in
@@ -85,6 +88,16 @@ struct SpeakerArrivalView: View {
         .onDisappear {
             arrivalTracker.stopListening()
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Computes the portrait circle diameter so cells fill the screen without overflow.
+    /// Two columns with 8pt column spacing and 4pt horizontal padding each side.
+    private static func cellPortraitSize(screenWidth: CGFloat) -> CGFloat {
+        let cellWidth = (screenWidth - 8 - 8) / 2   // 8 = column spacing, 8 = total horizontal padding
+        let cellPadding: CGFloat = 12                // 6pt padding each side inside the cell
+        return min(cellWidth - cellPadding, 52)
     }
 
     // MARK: - Subviews
@@ -113,22 +126,33 @@ struct SpeakerArrivalView: View {
 
 struct SpeakerPortraitCell: View {
     let speaker: CachedSpeaker
+    let portraitSize: CGFloat
+
+    @State private var portraitData: Data?
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            VStack(spacing: 4) {
-                // Portrait — SpeakerPortraitView already renders fullName below the image
-                SpeakerPortraitView(
-                    speaker: speaker,
-                    size: 52
-                )
+            VStack(spacing: 3) {
+                // Portrait circle only — company logo omitted to prevent overflow on small watches.
+                // Logo is visible in ArrivalConfirmationView (full-width sheet).
+                portraitCircle
+                    .frame(width: portraitSize, height: portraitSize)
+                    .clipShape(Circle())
+
+                // Full name, scaled down to fit the cell width on any watch size.
+                Text(speaker.fullName)
+                    .font(.system(size: 11))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .foregroundStyle(speaker.arrived ? .primary : .secondary)
+                    .frame(maxWidth: portraitSize + 12)
             }
             .padding(6)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(speaker.arrived
                         ? Color.green.opacity(0.1)
-                        : Color.gray.opacity(0.15)  // systemGray6 unavailable on watchOS
+                        : Color.gray.opacity(0.15)
                     )
             )
 
@@ -141,6 +165,36 @@ struct SpeakerPortraitCell: View {
                     .offset(x: 4, y: 4)
             }
         }
+        .task {
+            await loadPortrait()
+        }
+    }
+
+    @ViewBuilder
+    private var portraitCircle: some View {
+        if let data = portraitData, let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        } else {
+            Circle()
+                .fill(.secondary.opacity(0.3))
+                .overlay(
+                    Image(systemName: "person.crop.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .font(.system(size: portraitSize * 0.6))
+                )
+        }
+    }
+
+    private func loadPortrait() async {
+        guard let urlString = speaker.profilePictureUrl,
+              let url = URL(string: urlString) else { return }
+        if let cached = PortraitCache.shared.getCachedPortrait(url: url) {
+            portraitData = cached
+            return
+        }
+        portraitData = try? await PortraitCache.shared.downloadAndCache(url: url)
     }
 }
 
