@@ -62,9 +62,15 @@ development_status:
   w3-2-haptic-alert-system: done
   w3-3-watch-face-complications: done
   w3-4-session-schedule-next-session-preview: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: Session Control & Team Sync
+  # GATE G1: epic-4-reuse-map.md produced (2026-02-18) — awaiting SM review
+  # Gate checklist before W4.1 story creation:
+  #   G1: epic-4-reuse-map.md reviewed by SM          [ ]
+  #   D1: WatchHapticService.schedule() firing logic   [ ] (blocks W4.1)
+  #   A1: Pre-implementation review in story template  [ ]
+  #   A2: Design direction block in story template     [ ]
   epic-4: backlog
   w4-1-websocket-real-time-infrastructure: backlog
   w4-2-session-advance-transition: backlog

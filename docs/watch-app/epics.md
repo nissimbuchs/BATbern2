@@ -359,6 +359,21 @@ As an organizer, I want to scroll through the full schedule in the organizer zon
 
 ### Epic 4: Session Control & Team Sync (4 stories)
 
+> **⛔ GATE G1 — Architectural Audit Required**
+> Read `docs/watch-app/epic-4-reuse-map.md` in full before creating any W4.x story.
+> That document is the binding architectural contract for this entire epic.
+> All extension mandates in it are non-negotiable — story ACs and tasks must enforce them.
+>
+> **Gate checklist (SM must confirm before creating W4.1):**
+> - [ ] G1: `epic-4-reuse-map.md` reviewed — extension mandates understood
+> - [ ] D1: `WatchHapticService.schedule()` firing logic implemented and tested (blocks W4.1 only)
+> - [ ] A1: Pre-implementation adversarial review section added to story template
+> - [ ] A2: Design direction block added to story template
+>
+> **Hard rule for all W4.x stories:** `EventStateManager` + `EventDataController` are the
+> single source of truth. No parallel organizer state manager. No duplicate session discovery.
+> WebSocket state updates flow through `EventDataController`, never around it.
+
 #### W4.1: WebSocket Real-Time Infrastructure
 
 As an organizer, I want my Watch to maintain a real-time connection to the backend, so that all state changes sync instantly across all organizer watches.
@@ -369,6 +384,14 @@ As an organizer, I want my Watch to maintain a real-time connection to the backe
 - Given my WebSocket connection drops When WiFi is still available Then the client reconnects with exponential backoff
 - Given multiple organizers are connected When I view the organizer zone Then I see a presence indicator showing connected organizer count (FR20)
 - Given the backend validates my JWT When my token is expired Then the Watch refreshes via pairing token and reconnects transparently
+
+**Architectural constraints (reuse-map Area 1, 3, 4):**
+- **D1 hard dependency:** `WatchHapticService.schedule()` must fire scheduled alerts before this story is Dev-assigned. Confirm D1 complete in Pre-Implementation Review.
+- **Implement `WebSocketClientProtocol`** — the full contract is already defined in `Protocols/WebSocketClientProtocol.swift`. `MockWebSocketClient` already exists for tests. Do not redefine the protocol.
+- **WebSocket state flows through `EventDataController`** — when `SESSION_STARTED` / `SESSION_ENDED` / `SESSION_EXTENDED` messages arrive, the concrete WebSocket service calls an `EventDataController` method (e.g., `applyServerState(_:)`) to update `currentEvent`. `EventStateManager` recalculates derivatives automatically. Do not create an `OrganizerStateManager`.
+- **Connectivity indicator: use `ConnectionStatusBar`** (already in `Views/Shared/`). Route WebSocket disconnection into `EventDataController.isOffline`. One flag, one visual component.
+- **Presence indicator (FR20) is a separate additive view** — a `PresenceIndicatorView` added alongside `ConnectionStatusBar` in `LiveCountdownView`. It does not replace `ConnectionStatusBar`.
+- **`HapticAlert.connectionLost` + `WatchHapticService.play(.connectionLost)`** — use as-is for the disconnect haptic. No new haptic path.
 
 #### W4.2: Session Advance & Transition
 
@@ -381,6 +404,15 @@ As an organizer, I want to tap "Done" to advance the schedule for all organizer 
 - Given another organizer taps "Done" first When I see the result Then I see "Completed by [name]" attribution — no duplicate action needed (idempotent)
 - Given a break follows the completed session When Done is tapped Then the view transitions to O5 (Break + Gong)
 
+**Architectural constraints (reuse-map Area 1, 4):**
+- **O6 data source: `LiveCountdownViewModel.nextSession`** — the next session is already computed by `findNextSession()` in the existing ViewModel. O6 reads from the same `@Observable` instance as `LiveCountdownView`. Do not reimplement next-session discovery.
+- **Prerequisite refactor:** extract `nextSessionCard()` from `LiveCountdownView` into a shared `NextSessionPeekView` (compact/prominent modes). This is a required subtask — Dev cannot build O6 without it.
+- **Portrait loading: `PortraitCache.shared`** — same pattern as `loadPortrait()` in `LiveCountdownView`. No new portrait fetch path.
+- **"Completed by [name]" in O7:** use `SessionBadgeStatus.completed` and `CachedSession.completedByUsername` (already in schema). No new status types.
+- **`WatchAction.endSession(sessionSlug:)`** — already defined. Use it. Do not add new action types for this story.
+- **`HapticAlert.actionConfirm`** — already defined. Use for the Done-tap success haptic.
+- **Server response updates `CachedSession` fields via `EventDataController`:** `completedByUsername`, `actualEndTime`. These columns exist in the schema. No migration needed.
+
 #### W4.3: Overrun Detection & Schedule Cascade
 
 As an organizer, I want the Watch to detect overruns and let me shift the entire remaining schedule with one tap, so that one speaker running late doesn't cascade into chaos.
@@ -391,6 +423,13 @@ As an organizer, I want the Watch to detect overruns and let me shift the entire
 - Given I'm on O3 during a session When the overrun grows Then I see "+N:NN over" in red with a delay impact indicator (FR10)
 - Given two organizers try to cascade simultaneously When the first action is processed Then the second sees the already-shifted schedule (idempotent, first-wins)
 
+**Architectural constraints (reuse-map Area 4):**
+- **Overrun detection: `LiveCountdownViewModel.urgencyLevel == .overtime`** — already computed by `SessionTimerEngine`. O3 already shows red "+MM:SS" in overtime. W4.3 adds the "Done" button and O4 prompt on top of existing state. Do not add a parallel overrun flag.
+- **`WatchAction.extendSession(sessionSlug:minutes:)`** — already defined for the cascade action. Use it.
+- **Cascade result flows through `EventDataController`** — the server recalculates all downstream session times and broadcasts the updated schedule. The WebSocket service calls `EventDataController.applyServerState(_:)` with the new schedule. `LiveCountdownViewModel` recalculates from updated `CachedSession.startTime`/`endTime`. No "cascade state" variable anywhere in the client.
+- **`CachedSession.overrunMinutes`** — already in schema. Populate from server response. No migration needed.
+- **Conflict resolution is server-side (first-wins).** Client reconciles to server-authoritative state after broadcast. No client-side merge logic.
+
 #### W4.4: Break Management & Event Lifecycle
 
 As an organizer, I want to see break countdowns with gong timers and have the event flow managed end-to-end, so that the entire evening runs smoothly.
@@ -400,6 +439,14 @@ As an organizer, I want to see break countdowns with gong timers and have the ev
 - Given the gong reminder time arrives When the threshold is reached Then I feel the gong haptic and see a visual reminder
 - Given the break ends When the next session starts Then the view auto-transitions to O3 (countdown for next talk)
 - Given the final session completes When I tap "Done" Then the event state transitions to COMPLETED across all watches
+
+**Architectural constraints (reuse-map Area 2, 4):**
+- **Gong haptic: already implemented.** `LiveCountdownViewModel.refreshState()` already calls `HapticScheduler.evaluateBreakGong()` on every tick when `activeSession.isBreak`. The haptic fires automatically. W4.4 adds only the **visual gong reminder overlay** — no new haptic logic.
+- **Break countdown: `LiveCountdownViewModel.formattedTime` + `urgencyLevel`** — the same timer state used by O3. O5 is a different visual presentation of the same running timer. Do not start a second timer.
+- **Prerequisite refactor:** extract `breakCardLayout` from `SessionCardView` into a shared `BreakCardLayout` component. This is a required subtask — Dev cannot build O5 without it. The break icon mapping (`breakIcon`) and session-type detection (`isBreakSession`) move to the shared component.
+- **Next speaker in O5: `LiveCountdownViewModel.nextSession`** — same source as Area 1. Do not re-query sessions.
+- **COMPLETED transition: `EventStateManager.isLive` becomes `false`** when the server broadcasts the event-completed state. `OrganizerZoneView` re-routes automatically. No new "event completed" flag needed on the client.
+- **`WatchHapticService.schedule()` (D1) is NOT required for W4.4.** The break gong fires via `evaluateBreakGong()` on the tick loop, not via the scheduled queue.
 
 ---
 
