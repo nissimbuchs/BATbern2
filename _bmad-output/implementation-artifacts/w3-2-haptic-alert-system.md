@@ -1,6 +1,6 @@
 # Story W3.2: Haptic Alert System
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -87,6 +87,13 @@ so that I know the time state without looking at my Watch.
   - [x] 4.6 Duplicate scheduling yields two entries — 1 test ✅
   - [x] 4.7 Manual/on-device verification required (haptics are no-ops in Simulator) — documented in test file
   - [x] 4.8 Integration path covered by existing `HapticSchedulerTests.swift` using `MockHapticService` ✅
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] Fix `extendedRuntimeSessionWillExpire` race condition — set `extendedSession = nil` before calling `startEventSession()`, and add identity check (`===`) in `didInvalidateWith` to prevent orphaned sessions after session expiry [WatchHapticService.swift:125-130]
+- [ ] [AI-Review][HIGH] Fix failing `ArrivalTrackerTests.swift:91` — test expects `"marco"` (username) but `ArrivalTracker` now uses `organizerFirstName` (`"Marco"`); update assertion to match W2.4 intentional change [ArrivalTrackerTests.swift:91]
+- [ ] [AI-Review][MEDIUM] Add `startEventSessionCallCount`/`stopEventSessionCallCount` tracking to `MockHapticService` and add ViewModel test asserting `startTimer()` calls `startEventSession()` (AC6 wiring untested at ViewModel level) [MockHapticService.swift, LiveCountdownViewModelTests.swift]
+- [ ] [AI-Review][MEDIUM] Extract haptic timing gaps to named constants — `0.2`, `0.15`, `0.30` are design-critical values with no names; suggest `HapticTiming.doubleTapGap`, `tripleTapFirstGap`, `tripleTapSecondGap` [WatchHapticService.swift:51,57,60]
 
 ## Dev Notes
 
