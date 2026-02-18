@@ -128,33 +128,19 @@ struct SpeakerPortraitCell: View {
     let speaker: CachedSpeaker
     let portraitSize: CGFloat
 
-    @State private var portraitData: Data?
-
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            VStack(spacing: 3) {
-                // Portrait circle only — company logo omitted to prevent overflow on small watches.
-                // Logo is visible in ArrivalConfirmationView (full-width sheet).
-                portraitCircle
-                    .frame(width: portraitSize, height: portraitSize)
-                    .clipShape(Circle())
-
-                // Full name, scaled down to fit the cell width on any watch size.
-                Text(speaker.fullName)
-                    .font(.system(size: 11))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .foregroundStyle(speaker.arrived ? .primary : .secondary)
-                    .frame(maxWidth: portraitSize + 12)
-            }
-            .padding(6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(speaker.arrived
-                        ? Color.green.opacity(0.1)
-                        : Color.gray.opacity(0.15)
-                    )
-            )
+            // Portrait + name — company logo hidden to prevent overflow on small watches.
+            // Logo is visible in ArrivalConfirmationView (full-width sheet).
+            SpeakerPortraitView(speaker: speaker, size: portraitSize, showCompanyLogo: false)
+                .padding(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(speaker.arrived
+                            ? Color.green.opacity(0.1)
+                            : Color.gray.opacity(0.15)
+                        )
+                )
 
             // Green checkmark badge (AC3)
             if speaker.arrived {
@@ -165,36 +151,6 @@ struct SpeakerPortraitCell: View {
                     .offset(x: 4, y: 4)
             }
         }
-        .task {
-            await loadPortrait()
-        }
-    }
-
-    @ViewBuilder
-    private var portraitCircle: some View {
-        if let data = portraitData, let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-        } else {
-            Circle()
-                .fill(.secondary.opacity(0.3))
-                .overlay(
-                    Image(systemName: "person.crop.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.system(size: portraitSize * 0.6))
-                )
-        }
-    }
-
-    private func loadPortrait() async {
-        guard let urlString = speaker.profilePictureUrl,
-              let url = URL(string: urlString) else { return }
-        if let cached = PortraitCache.shared.getCachedPortrait(url: url) {
-            portraitData = cached
-            return
-        }
-        portraitData = try? await PortraitCache.shared.downloadAndCache(url: url)
     }
 }
 

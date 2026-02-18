@@ -12,14 +12,21 @@ import SwiftUI
 struct SpeakerPortraitView: View {
     let speaker: CachedSpeaker
     let size: CGFloat
+    let showCompanyLogo: Bool
     let portraitCache: PortraitCache
 
     @State private var portraitData: Data?
     @State private var logoData: Data?
 
-    init(speaker: CachedSpeaker, size: CGFloat = 40, portraitCache: PortraitCache = .shared) {
+    init(
+        speaker: CachedSpeaker,
+        size: CGFloat = 40,
+        showCompanyLogo: Bool = true,
+        portraitCache: PortraitCache = .shared
+    ) {
         self.speaker = speaker
         self.size = size
+        self.showCompanyLogo = showCompanyLogo
         self.portraitCache = portraitCache
     }
 
@@ -32,8 +39,8 @@ struct SpeakerPortraitView: View {
                     .frame(width: size, height: size)
                     .clipShape(Circle())
 
-                // Company logo — PortraitCache backed (AC#5)
-                if let data = logoData, let uiImage = UIImage(data: data) {
+                // Company logo — PortraitCache backed (AC#5); hidden in compact contexts
+                if showCompanyLogo, let data = logoData, let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -47,18 +54,19 @@ struct SpeakerPortraitView: View {
                 .foregroundStyle(BATbernWatchStyle.Colors.textPrimary)
                 .lineLimit(1)
 
-            // Company name — only shown when no logo available (logo takes priority)
-            if logoData == nil, let company = speaker.company {
+            // Company name — only shown when logo is enabled but unavailable (logo takes priority)
+            if showCompanyLogo, logoData == nil, let company = speaker.company {
                 Text(company)
                     .font(BATbernWatchStyle.Typography.companyName)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
-        .frame(minWidth: size + 40)
+        // minWidth only needed when a logo can appear beside the portrait
+        .frame(minWidth: showCompanyLogo ? size + 40 : 0)
         .task {
             await loadPortrait()
-            if let companyName = speaker.company {
+            if showCompanyLogo, let companyName = speaker.company {
                 await loadLogo(companyName: companyName)
             }
         }

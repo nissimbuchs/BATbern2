@@ -168,20 +168,28 @@ final class EventSyncService: EventSyncServiceProtocol {
         let cachedEvent = mapToCachedEvent(event)
         syncProgress = 0.2
 
-        // Step 2b: Enrich speaker company names from existing public-zone cache.
+        // Step 2b: Enrich speaker fields from existing public-zone cache.
         // The Watch endpoint defers the CUMS cross-service lookup, so company is null.
-        // The public zone (PublicViewModel) already loaded speakers with company names
+        // It also omits profilePictureUrl (served via the CDN on the public EMS endpoint).
+        // The public zone (PublicViewModel) already loaded speakers with these values
         // via the full EMS event endpoint. We reuse that cached data here so that
-        // SpeakerBioView + ImageCachePrefetcher can show/prefetch company logos.
+        // SpeakerBioView, SpeakerPortraitView, and ImageCachePrefetcher work correctly
+        // in the organizer zone without requiring a separate portrait-fetch pass.
         let existingSpeakers = (try? modelContext.fetch(FetchDescriptor<CachedSpeaker>())) ?? []
         let companyByUsername: [String: String] = existingSpeakers.reduce(into: [:]) { map, s in
-            if let company = s.company {
-                map[s.username] = company
-            }
+            if let company = s.company { map[s.username] = company }
+        }
+        let portraitUrlByUsername: [String: String] = existingSpeakers.reduce(into: [:]) { map, s in
+            if let url = s.profilePictureUrl { map[s.username] = url }
         }
         for session in cachedEvent.sessions {
-            for speaker in session.speakers where speaker.company == nil {
-                speaker.company = companyByUsername[speaker.username]
+            for speaker in session.speakers {
+                if speaker.company == nil {
+                    speaker.company = companyByUsername[speaker.username]
+                }
+                if speaker.profilePictureUrl == nil {
+                    speaker.profilePictureUrl = portraitUrlByUsername[speaker.username]
+                }
             }
         }
 
