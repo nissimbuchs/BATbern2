@@ -2,8 +2,9 @@
 //  PublicViewModelTests.swift
 //  BATbern-watch Watch AppTests
 //
-//  Tests for PublicViewModel cache-first loading and background refresh.
-//  Uses MockAPIClient and MockClock for deterministic testing.
+//  Tests for PublicViewModel presentation logic.
+//  PublicViewModel is now presentation-only — data sourced from EventDataController.
+//  Network/cache/connectivity behaviour is tested in EventSyncServiceTests.swift.
 //
 
 import Testing
@@ -11,160 +12,35 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-@Suite("PublicViewModel Tests")
+@Suite("PublicViewModel Tests", .serialized)
+@MainActor
 struct PublicViewModelTests {
-    private var modelContainer: ModelContainer
-    private var modelContext: ModelContext
 
-    // Shared test fixtures
-    private let baseTime = Date(timeIntervalSince1970: 1742040000)
-    private var sampleWatchEvent: WatchEvent {
-        TestData.event(
-            sessions: [
-                TestData.session(slug: "keynote", title: "Opening Keynote"),
-                TestData.session(slug: "talk-1", title: "Cloud-Native Pitfalls")
-            ]
-        )
-    }
+    // MARK: - Helpers
 
-    init() throws {
-        // In-memory model container for testing
+    private func makeContainer() throws -> ModelContainer {
         let schema = Schema([CachedEvent.self, CachedSession.self, CachedSpeaker.self, PairingInfo.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        modelContainer = try ModelContainer(for: schema, configurations: [config])
-        modelContext = ModelContext(modelContainer)
+        return try ModelContainer(for: schema, configurations: [config])
     }
 
-    @Test("Cache-first loading: ViewModel populates event and sessions on success")
-    func test_cacheFirstLoading_populatesEventAndSessions() async throws {
-        // Given: Mock API client returns a test event
-        let mockAPI = MockAPIClient()
-        let testEvent = TestData.event()
-        mockAPI.fetchCurrentEventResult = .success(testEvent)
-
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes and refreshes
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
+    private func makeController(event: CachedEvent? = nil, modelContext: ModelContext) -> EventDataController {
+        if let event = event {
+            modelContext.insert(event)
+            try? modelContext.save()
+        }
+        return EventDataController(
+            authManager: MockAuthManager(isPaired: false, currentJWT: nil),
+            modelContext: modelContext,
+            skipAutoSync: true
         )
-
-        // Wait for background refresh to complete
-        try await Task.sleep(nanoseconds: 500_000_000)  // 0.5s
-
-        // Then: Event and sessions are populated
-        #expect(viewModel.event != nil, "Event should be populated")
-        #expect(viewModel.sessions.count > 0, "Sessions should be populated")
-        #expect(viewModel.event?.eventCode == testEvent.id, "Event code should match test data")
     }
 
-    @Test("Background refresh: API client is called on init")
-    func test_backgroundRefresh_callsAPIClient() async throws {
-        // Given: Mock API client
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(TestData.event())
-        let mockClock = MockClock(fixedDate: Date())
+    // MARK: - displayableSessions
 
-        // When: ViewModel initializes
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
-        // Wait for background refresh
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: API client was called
-        #expect(mockAPI.fetchCurrentEventCallCount > 0, "API client should be called for refresh")
-    }
-
-    @Test("Empty state: No event when API returns failure")
-    func test_emptyState_noEventOnAPIFailure() async throws {
-        // Given: Mock API client returns failure
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(MockError.simulatedFailure)
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
-        // Wait for background refresh
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: No event is set
-        #expect(viewModel.event == nil, "Event should be nil on API failure")
-        #expect(viewModel.sessions.isEmpty, "Sessions should be empty")
-    }
-
-    @Test("Error recovery: ViewModel recovers after initial failure")
-    func test_errorRecovery_recoversAfterFailure() async throws {
-        // Given: Mock API client initially fails, then succeeds
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(MockError.simulatedFailure)
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
-        // Wait for first refresh (failure)
-        try await Task.sleep(nanoseconds: 500_000_000)
-        #expect(viewModel.event == nil, "Event should be nil after first failure")
-
-        // When: API now returns success
-        mockAPI.fetchCurrentEventResult = .success(TestData.event())
-        await viewModel.refreshEvent()
-
-        // Wait for refresh
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: Event is now populated
-        #expect(viewModel.event != nil, "Event should be populated after recovery")
-    }
-
-    @Test("Offline indicator: Shows offline state on network error")
-    func test_offlineIndicator_showsOfflineOnNetworkError() async throws {
-        // Given: Mock API client returns network error
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(APIError.networkError(MockError.simulatedFailure))
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel refreshes
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
-        // Wait for refresh
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: Offline indicator is set
-        #expect(viewModel.isOffline, "isOffline should be true on network error")
-    }
-
-    // MARK: - W1.2 Session Browsing Tests
-
-    @Test("displayableSessions filters out placeholder sessions (null sessionType)")
-    func test_displayableSessions_filtersPlaceholders() async throws {
-        // Given: Event with valid and placeholder sessions
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
+    @Test("displayableSessions filters out placeholder sessions (nil sessionType)")
+    func test_displayableSessions_filtersPlaceholders() throws {
+        let container = try makeContainer()
 
         let validSession = CachedSession(
             sessionSlug: "valid",
@@ -173,15 +49,13 @@ struct PublicViewModelTests {
             startTime: Date(),
             endTime: Date().addingTimeInterval(3600)
         )
-
         let placeholderSession = CachedSession(
             sessionSlug: "placeholder",
             title: "Placeholder",
-            sessionType: nil,  // Null type = placeholder
+            sessionType: nil,
             startTime: Date(),
             endTime: Date()
         )
-
         let event = CachedEvent(
             eventCode: "test",
             title: "Test",
@@ -192,201 +66,139 @@ struct PublicViewModelTests {
             sessions: [validSession, placeholderSession]
         )
 
-        // When: Event is loaded
-        viewModel.event = event
-        viewModel.sessions = [validSession, placeholderSession]
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
-        // Then: Only valid session is displayable
         #expect(viewModel.displayableSessions.count == 1)
         #expect(viewModel.displayableSessions.first?.sessionSlug == "valid")
     }
 
     @Test("displayableSessions sorts by startTime")
-    func test_displayableSessions_sortsByStartTime() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
+    func test_displayableSessions_sortsByStartTime() throws {
+        let container = try makeContainer()
+        let now = Date()
 
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
-        let session3pm = CachedSession(
+        let session3h = CachedSession(
             sessionSlug: "session-3",
             title: "Third",
             sessionType: .presentation,
-            startTime: Calendar.current.date(byAdding: .hour, value: 3, to: Date())!,
-            endTime: Calendar.current.date(byAdding: .hour, value: 4, to: Date())!
+            startTime: now.addingTimeInterval(3 * 3600),
+            endTime: now.addingTimeInterval(4 * 3600)
         )
-
-        let session1pm = CachedSession(
+        let session1h = CachedSession(
             sessionSlug: "session-1",
             title: "First",
             sessionType: .keynote,
-            startTime: Calendar.current.date(byAdding: .hour, value: 1, to: Date())!,
-            endTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date())!
+            startTime: now.addingTimeInterval(1 * 3600),
+            endTime: now.addingTimeInterval(2 * 3600)
+        )
+        let event = CachedEvent(
+            eventCode: "test",
+            title: "Test",
+            eventDate: now,
+            venueName: "Venue",
+            typicalStartTime: "14:00",
+            typicalEndTime: "18:00",
+            sessions: [session3h, session1h]
         )
 
-        // When: Sessions loaded out of order
-        viewModel.sessions = [session3pm, session1pm]
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
-        // Then: Sorted by start time
         let displayable = viewModel.displayableSessions
         #expect(displayable.count == 2)
         #expect(displayable[0].sessionSlug == "session-1")
         #expect(displayable[1].sessionSlug == "session-3")
     }
 
+    // MARK: - hasSpeakerPhase
+
     @Test("hasSpeakerPhase is true for SPEAKERS phase")
-    func test_hasSpeakerPhase_trueSPEAKERS() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
+    func test_hasSpeakerPhase_trueSPEAKERS() throws {
+        let container = try makeContainer()
         let event = CachedEvent(
-            eventCode: "test",
-            title: "Test",
-            eventDate: Date(),
-            venueName: "Venue",
-            typicalStartTime: "14:00",
-            typicalEndTime: "18:00",
-            currentPublishedPhase: "SPEAKERS"
+            eventCode: "test", title: "Test", eventDate: Date(), venueName: "Venue",
+            typicalStartTime: "14:00", typicalEndTime: "18:00", currentPublishedPhase: "SPEAKERS"
         )
-
-        viewModel.event = event
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
         #expect(viewModel.hasSpeakerPhase == true)
     }
 
     @Test("hasSpeakerPhase is true for AGENDA phase")
-    func test_hasSpeakerPhase_trueAGENDA() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
+    func test_hasSpeakerPhase_trueAGENDA() throws {
+        let container = try makeContainer()
         let event = CachedEvent(
-            eventCode: "test",
-            title: "Test",
-            eventDate: Date(),
-            venueName: "Venue",
-            typicalStartTime: "14:00",
-            typicalEndTime: "18:00",
-            currentPublishedPhase: "AGENDA"
+            eventCode: "test", title: "Test", eventDate: Date(), venueName: "Venue",
+            typicalStartTime: "14:00", typicalEndTime: "18:00", currentPublishedPhase: "AGENDA"
         )
-
-        viewModel.event = event
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
         #expect(viewModel.hasSpeakerPhase == true)
     }
 
     @Test("hasSpeakerPhase is false for TOPIC phase")
-    func test_hasSpeakerPhase_falseTOPIC() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
-
+    func test_hasSpeakerPhase_falseTOPIC() throws {
+        let container = try makeContainer()
         let event = CachedEvent(
-            eventCode: "test",
-            title: "Test",
-            eventDate: Date(),
-            venueName: "Venue",
-            typicalStartTime: "14:00",
-            typicalEndTime: "18:00",
-            currentPublishedPhase: "TOPIC"
+            eventCode: "test", title: "Test", eventDate: Date(), venueName: "Venue",
+            typicalStartTime: "14:00", typicalEndTime: "18:00", currentPublishedPhase: "TOPIC"
         )
-
-        viewModel.event = event
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
         #expect(viewModel.hasSpeakerPhase == false)
     }
 
-    @Test("hasAgendaPhase is true only for AGENDA")
-    func test_hasAgendaPhase_trueOnlyForAgenda() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
+    // MARK: - hasAgendaPhase
 
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
+    @Test("hasAgendaPhase is true for AGENDA phase")
+    func test_hasAgendaPhase_trueForAGENDA() throws {
+        let container = try makeContainer()
+        let event = CachedEvent(
+            eventCode: "test", title: "Test", eventDate: Date(), venueName: "Venue",
+            typicalStartTime: "14:00", typicalEndTime: "18:00", currentPublishedPhase: "AGENDA"
         )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
-        let eventAgenda = CachedEvent(
-            eventCode: "test",
-            title: "Test",
-            eventDate: Date(),
-            venueName: "Venue",
-            typicalStartTime: "14:00",
-            typicalEndTime: "18:00",
-            currentPublishedPhase: "AGENDA"
-        )
-
-        viewModel.event = eventAgenda
         #expect(viewModel.hasAgendaPhase == true)
+    }
 
-        let eventSpeakers = CachedEvent(
-            eventCode: "test",
-            title: "Test",
-            eventDate: Date(),
-            venueName: "Venue",
-            typicalStartTime: "14:00",
-            typicalEndTime: "18:00",
-            currentPublishedPhase: "SPEAKERS"
+    @Test("hasAgendaPhase is false for SPEAKERS phase")
+    func test_hasAgendaPhase_falseForSPEAKERS() throws {
+        let container = try makeContainer()
+        let event = CachedEvent(
+            eventCode: "test", title: "Test", eventDate: Date(), venueName: "Venue",
+            typicalStartTime: "14:00", typicalEndTime: "18:00", currentPublishedPhase: "SPEAKERS"
         )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
-        viewModel.event = eventSpeakers
         #expect(viewModel.hasAgendaPhase == false)
     }
 
-    @Test("isBreakSession returns true for break types")
-    func test_isBreakSession_trueForBreaks() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
+    // MARK: - isBreakSession
 
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
+    @Test("isBreakSession returns true for break types")
+    func test_isBreakSession_trueForBreaks() throws {
+        let container = try makeContainer()
+        let controller = makeController(modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
         let breakSession = CachedSession(
-            sessionSlug: "break",
-            title: "Break",
-            sessionType: .breakTime,
-            startTime: Date(),
-            endTime: Date()
+            sessionSlug: "break", title: "Break",
+            sessionType: .breakTime, startTime: Date(), endTime: Date()
         )
-
         let lunchSession = CachedSession(
-            sessionSlug: "lunch",
-            title: "Lunch",
-            sessionType: .lunch,
-            startTime: Date(),
-            endTime: Date()
+            sessionSlug: "lunch", title: "Lunch",
+            sessionType: .lunch, startTime: Date(), endTime: Date()
         )
-
         let networkingSession = CachedSession(
-            sessionSlug: "networking",
-            title: "Networking",
-            sessionType: .networking,
-            startTime: Date(),
-            endTime: Date()
+            sessionSlug: "networking", title: "Networking",
+            sessionType: .networking, startTime: Date(), endTime: Date()
         )
 
         #expect(viewModel.isBreakSession(breakSession) == true)
@@ -395,380 +207,21 @@ struct PublicViewModelTests {
     }
 
     @Test("isBreakSession returns false for presentation types")
-    func test_isBreakSession_falseForPresentations() async throws {
-        let mockAPI = MockAPIClient()
-        let mockClock = MockClock(fixedDate: Date())
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            modelContext: modelContext
-        )
+    func test_isBreakSession_falseForPresentations() throws {
+        let container = try makeContainer()
+        let controller = makeController(modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
 
         let keynote = CachedSession(
-            sessionSlug: "keynote",
-            title: "Keynote",
-            sessionType: .keynote,
-            startTime: Date(),
-            endTime: Date()
+            sessionSlug: "keynote", title: "Keynote",
+            sessionType: .keynote, startTime: Date(), endTime: Date()
         )
-
         let presentation = CachedSession(
-            sessionSlug: "pres",
-            title: "Presentation",
-            sessionType: .presentation,
-            startTime: Date(),
-            endTime: Date()
+            sessionSlug: "pres", title: "Presentation",
+            sessionType: .presentation, startTime: Date(), endTime: Date()
         )
 
         #expect(viewModel.isBreakSession(keynote) == false)
         #expect(viewModel.isBreakSession(presentation) == false)
-    }
-
-    // MARK: - W1.4 Connectivity Tests
-
-    @Test("Connectivity monitoring: ViewModel starts monitoring on init")
-    func test_connectivityMonitoring_startsOnInit() async throws {
-        // Given: Mock connectivity monitor
-        let mockConnectivity = MockConnectivityMonitor()
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(TestData.event())
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            connectivityMonitor: mockConnectivity,
-            modelContext: modelContext
-        )
-
-        // Then: Connectivity monitoring should be started
-        #expect(mockConnectivity.startCallCount > 0, "Connectivity monitor should be started")
-    }
-
-    @Test("Offline handling: ViewModel shows cached data when offline")
-    func test_offlineHandling_showsCachedData() async throws {
-        // Given: Cached event exists
-        let testEvent = TestData.event()
-        let cache = LocalCache(modelContext: modelContext)
-        cache.saveEvent(testEvent.toCachedEvent())
-
-        // Mock API that fails (simulating offline)
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(APIError.networkError(NSError(domain: "test", code: -1)))
-
-        let mockConnectivity = MockConnectivityMonitor()
-        mockConnectivity.simulateDisconnected()
-
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes while offline
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            connectivityMonitor: mockConnectivity,
-            modelContext: modelContext
-        )
-
-        // Wait for background refresh attempt
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: Cached event should still be available
-        #expect(viewModel.event != nil, "Cached event should be available offline")
-        #expect(viewModel.isOffline == true, "Offline flag should be set")
-    }
-
-    @Test("Background refresh: Triggers every 5 minutes when connected")
-    func test_backgroundRefresh_triggersEvery5Minutes() async throws {
-        // Given: Mock API client
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(TestData.event())
-
-        let mockConnectivity = MockConnectivityMonitor()
-        mockConnectivity.simulateConnected()
-
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            connectivityMonitor: mockConnectivity,
-            modelContext: modelContext
-        )
-
-        // Wait for initial refresh
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        let initialCallCount = mockAPI.fetchCurrentEventCallCount
-
-        // Then: Initial refresh should have happened
-        #expect(initialCallCount > 0, "Initial refresh should be triggered")
-
-        // Note: Testing full 5-minute cycle would make tests too slow
-        // Periodic refresh logic is validated by code inspection
-    }
-
-    // MARK: - W1.5 Image Prefetch Tests (AC#3)
-
-    @Test("Prefetch: prefetchAll is called (non-blocking) after successful refreshEvent")
-    func test_prefetch_calledAfterSuccessfulRefresh() async throws {
-        // Given: Mock API and prefetcher
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(TestData.event())
-        let mockPrefetcher = MockImageCachePrefetcher()
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes and refreshes
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            prefetcher: mockPrefetcher,
-            modelContext: modelContext
-        )
-
-        // Wait until prefetchAll is actually called (condition-driven, not arbitrary sleep)
-        try await AsyncTestHelpers.waitFor { mockPrefetcher.prefetchCallCount > 0 }
-
-        // Then: prefetchAll was called
-        #expect(mockPrefetcher.prefetchCallCount > 0, "prefetchAll should be called after successful refresh")
-    }
-
-    @Test("Prefetch: prefetchAll receives all speakers from all sessions")
-    func test_prefetch_receivesAllSpeakers() async throws {
-        // Given: Event with multiple sessions and speakers
-        let speaker1 = TestData.speaker(username: "s1", firstName: "Anna", lastName: "Meier")
-        let speaker2 = TestData.speaker(username: "s2", firstName: "Tom", lastName: "Keller")
-        let testEvent = TestData.event(sessions: [
-            TestData.session(slug: "talk-1", speakers: [speaker1]),
-            TestData.session(slug: "talk-2", speakers: [speaker2])
-        ])
-
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(testEvent)
-        let mockPrefetcher = MockImageCachePrefetcher()
-        let mockClock = MockClock(fixedDate: baseTime)
-
-        // When: ViewModel refreshes
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            prefetcher: mockPrefetcher,
-            modelContext: modelContext
-        )
-
-        // Wait until prefetchAll is called (condition-driven, not arbitrary sleep)
-        try await AsyncTestHelpers.waitFor { mockPrefetcher.prefetchCallCount > 0 }
-
-        // Then: prefetcher received speakers from both sessions
-        let speakerUsernames = mockPrefetcher.lastPrefetchedSpeakers.map(\.username)
-        #expect(speakerUsernames.contains("s1"), "Speaker s1 should be in prefetch list")
-        #expect(speakerUsernames.contains("s2"), "Speaker s2 should be in prefetch list")
-    }
-
-    @Test("Prefetch: prefetchAll not called on refresh failure")
-    func test_prefetch_notCalledOnRefreshFailure() async throws {
-        // Given: API fails
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(MockError.simulatedFailure)
-        let mockPrefetcher = MockImageCachePrefetcher()
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes with failing API
-        _ = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            prefetcher: mockPrefetcher,
-            modelContext: modelContext
-        )
-
-        // Wait until API was called (so we know the refresh attempt completed)
-        try await AsyncTestHelpers.waitFor { mockAPI.fetchCurrentEventCallCount > 0 }
-
-        // Then: prefetchAll should not have been called (API failed before reaching prefetch)
-        #expect(mockPrefetcher.prefetchCallCount == 0, "prefetchAll should not be called on API failure")
-    }
-
-    @Test("Cold launch offline: Shows empty state when no cache and offline")
-    func test_coldLaunchOffline_showsEmptyState() async throws {
-        // Given: No cached data, offline state
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .failure(APIError.networkError(NSError(domain: "test", code: -1)))
-
-        let mockConnectivity = MockConnectivityMonitor()
-        mockConnectivity.simulateDisconnected()
-
-        let mockClock = MockClock(fixedDate: Date())
-
-        // When: ViewModel initializes with no cache
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: mockClock,
-            connectivityMonitor: mockConnectivity,
-            modelContext: modelContext
-        )
-
-        // Wait for background refresh attempt
-        try await Task.sleep(nanoseconds: 500_000_000)
-
-        // Then: Should show empty state
-        #expect(viewModel.event == nil, "No event should be available")
-        #expect(viewModel.isOffline == true, "Offline flag should be set")
-        #expect(viewModel.sessions.isEmpty, "No sessions should be available")
-    }
-
-    // MARK: - Issue #6: Phase Change Detection (AC#8)
-
-    @Test("Phase transition: UI updates when phase changes from TOPIC to SPEAKERS")
-    func test_phaseTransition_updatesSpeakerVisibility() async throws {
-        // Given: Event in TOPIC phase
-        var topicEvent = sampleWatchEvent
-        topicEvent.currentPublishedPhase = "TOPIC"
-
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(topicEvent)
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            connectivityMonitor: MockConnectivityMonitor(),
-            modelContext: modelContext
-        )
-
-        // Wait for initial fetch
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        // Then: Should be in TOPIC phase
-        #expect(viewModel.event?.currentPublishedPhase == "TOPIC")
-        #expect(viewModel.hasSpeakerPhase == false, "Should not have speaker phase")
-        #expect(viewModel.hasAgendaPhase == false, "Should not have agenda phase")
-
-        // When: Server changes phase to SPEAKERS
-        var speakersEvent = sampleWatchEvent
-        speakersEvent.currentPublishedPhase = "SPEAKERS"
-        mockAPI.fetchCurrentEventResult = .success(speakersEvent)
-
-        // Trigger background refresh
-        await viewModel.refreshEvent()
-
-        // Then: UI state should update to show speakers
-        #expect(viewModel.event?.currentPublishedPhase == "SPEAKERS")
-        #expect(viewModel.hasSpeakerPhase == true, "Should now have speaker phase")
-        #expect(viewModel.hasAgendaPhase == false, "Should not have agenda phase yet")
-    }
-
-    // MARK: - Issue #7: Progressive Publishing Integration (AC#1, AC#2, AC#3)
-
-    @Test("Progressive publishing: TOPIC phase hides speakers and times")
-    func test_progressivePublishing_topicPhaseHidesSpeakers() async throws {
-        // Given: Event in TOPIC phase
-        var topicEvent = sampleWatchEvent
-        topicEvent.currentPublishedPhase = "TOPIC"
-
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(topicEvent)
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            connectivityMonitor: MockConnectivityMonitor(),
-            modelContext: modelContext
-        )
-
-        // Wait for fetch
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        // Then: Speaker phase should be disabled (AC#1)
-        #expect(viewModel.hasSpeakerPhase == false)
-        #expect(viewModel.hasAgendaPhase == false)
-        #expect(viewModel.event?.currentPublishedPhase == "TOPIC")
-    }
-
-    @Test("Progressive publishing: SPEAKERS phase shows speakers but hides abstracts")
-    func test_progressivePublishing_speakersPhaseShowsSpeakers() async throws {
-        // Given: Event in SPEAKERS phase
-        var speakersEvent = sampleWatchEvent
-        speakersEvent.currentPublishedPhase = "SPEAKERS"
-
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(speakersEvent)
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            connectivityMonitor: MockConnectivityMonitor(),
-            modelContext: modelContext
-        )
-
-        // Wait for fetch
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        // Then: Speaker phase enabled, agenda phase disabled (AC#2)
-        #expect(viewModel.hasSpeakerPhase == true)
-        #expect(viewModel.hasAgendaPhase == false)
-        #expect(viewModel.event?.currentPublishedPhase == "SPEAKERS")
-    }
-
-    @Test("Progressive publishing: AGENDA phase enables full access")
-    func test_progressivePublishing_agendaPhaseFullAccess() async throws {
-        // Given: Event in AGENDA phase
-        var agendaEvent = sampleWatchEvent
-        agendaEvent.currentPublishedPhase = "AGENDA"
-
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(agendaEvent)
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            connectivityMonitor: MockConnectivityMonitor(),
-            modelContext: modelContext
-        )
-
-        // Wait for fetch
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        // Then: Both phases enabled (AC#3)
-        #expect(viewModel.hasSpeakerPhase == true)
-        #expect(viewModel.hasAgendaPhase == true)
-        #expect(viewModel.event?.currentPublishedPhase == "AGENDA")
-    }
-
-    // MARK: - Issue #8: Portrait Offline Support (AC#4, Task 7)
-
-    @Test("Portrait offline: ViewModel maintains speaker data when offline")
-    func test_portraitOffline_maintainsSpeakerData() async throws {
-        // Given: Event with speakers cached
-        let mockAPI = MockAPIClient()
-        mockAPI.fetchCurrentEventResult = .success(sampleWatchEvent)
-
-        let mockConnectivity = MockConnectivityMonitor()
-
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            connectivityMonitor: mockConnectivity,
-            modelContext: modelContext
-        )
-
-        // Wait for initial fetch
-        try await Task.sleep(nanoseconds: 100_000_000)
-
-        // Verify speakers are loaded
-        let speakerCount = viewModel.sessions.flatMap { $0.speakers }.count
-        #expect(speakerCount > 0, "Should have speakers loaded")
-
-        // When: Go offline
-        mockConnectivity.simulateDisconnected()
-        mockAPI.fetchCurrentEventResult = .failure(APIError.networkError(NSError(domain: "test", code: -1)))
-
-        // Trigger refresh (will fail, but should keep cached data)
-        await viewModel.refreshEvent()
-
-        // Then: Speaker data should still be available from cache
-        let offlineSpeakerCount = viewModel.sessions.flatMap { $0.speakers }.count
-        #expect(offlineSpeakerCount == speakerCount, "Should maintain speaker data offline")
-        #expect(viewModel.isOffline == true, "Offline flag should be set")
     }
 }

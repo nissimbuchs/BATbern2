@@ -13,6 +13,7 @@ import SwiftData
 @testable import BATbern_watch_Watch_App
 
 @Suite("EventHeroView Tests")
+@MainActor
 struct EventHeroViewTests {
 
     // MARK: - AC#6: Scroll Hint Removed
@@ -50,10 +51,10 @@ struct EventHeroViewTests {
         #expect(stops.last?.opacity ?? 0 >= 0.8, "Bottom gradient opacity should be ≥ 0.8 for readability")
     }
 
-    // MARK: - PublicViewModel-driven state (tests via ViewModel since view needs Xcode to render)
+    // MARK: - EventDataController-driven state
 
-    @Test("AC7: ViewModel correctly provides event with themeImageUrl for gradient to render")
-    func test_viewModel_providesEventWithThemeImageForHero() async throws {
+    @Test("AC7: EventDataController correctly provides event with themeImageUrl for gradient to render")
+    func test_controller_providesEventWithThemeImageForHero() async throws {
         // Given: Mock event with theme image
         let mockAPI = MockAPIClient()
         let testEvent = TestData.event(themeImageUrl: "https://cdn.batbern.ch/themes/spring-2026.jpg")
@@ -62,18 +63,20 @@ struct EventHeroViewTests {
         let schema = Schema([CachedEvent.self, CachedSession.self, CachedSpeaker.self, PairingInfo.self])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: schema, configurations: [config])
-        let context = ModelContext(container)
 
-        // When: ViewModel loads event
-        let viewModel = PublicViewModel(
-            apiClient: mockAPI,
-            clock: MockClock(fixedDate: Date()),
-            modelContext: context
+        // When: Controller syncs via public endpoint (not paired)
+        let authManager = MockAuthManager(isPaired: false, currentJWT: nil)
+        let controller = EventDataController(
+            publicClient: mockAPI,
+            organizerClient: MockOrganizerEventClient(),
+            authManager: authManager,
+            modelContext: container.mainContext,
+            skipAutoSync: true
         )
-
-        try await Task.sleep(nanoseconds: 500_000_000)
+        await controller.forceSync()
 
         // Then: Event has theme image URL (hero will render gradient over it)
-        #expect(viewModel.event?.themeImageUrl != nil, "Event should have a theme image URL for gradient to overlay")
+        #expect(controller.currentEvent?.themeImageUrl != nil,
+                "Event should have a theme image URL for gradient to overlay")
     }
 }

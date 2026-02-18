@@ -11,15 +11,14 @@ import SwiftUI
 import SwiftData
 
 struct EventHeroView: View {
-    @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: PublicViewModel?
+    @Environment(EventDataController.self) private var eventDataController
 
     var body: some View {
         Group {
-            if let vm = viewModel, let event = vm.event {
+            if let event = eventDataController.currentEvent {
                 // Event Hero (P1)
                 eventHeroContent(event: event)
-            } else if let vm = viewModel, vm.isLoading {
+            } else if eventDataController.isLoading {
                 // Loading state
                 ProgressView()
                     .tint(.white)
@@ -30,11 +29,6 @@ struct EventHeroView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
-        .onAppear {
-            if viewModel == nil {
-                viewModel = PublicViewModel(modelContext: modelContext)
-            }
-        }
     }
 
     // MARK: - Event Hero Content
@@ -141,11 +135,25 @@ struct EventHeroView: View {
 }
 
 #Preview("Event Loaded") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     EventHeroView()
-        .modelContainer(for: [CachedEvent.self], inMemory: true)
+        .modelContainer(container)
+        .environment(controller)
 }
 
 #Preview("Empty State") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     EventHeroView()
-        .modelContainer(for: [CachedEvent.self], inMemory: true)
+        .modelContainer(container)
+        .environment(controller)
 }

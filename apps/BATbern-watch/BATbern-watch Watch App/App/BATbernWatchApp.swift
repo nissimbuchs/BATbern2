@@ -5,6 +5,7 @@
 //  App entry point with SwiftData ModelContainer configuration.
 //  W2.2: Added AuthManager and EventStateManager as environment objects.
 //  W2.4: Added ArrivalTracker as environment object.
+//  Refactor: EventDataController is the unified event data source for both zones.
 //  Source: docs/watch-app/architecture.md#Data-Architecture
 //
 
@@ -16,10 +17,12 @@ struct BATbernWatchApp: App {
     // SwiftData ModelContainer for local cache
     let modelContainer: ModelContainer
 
-    // W2.2: Auth + event state managers injected as environment objects
-    // W2.4: ArrivalTracker initialized alongside authManager so it shares the real instance
+    // Auth + event state managers injected as environment objects.
+    // EventDataController is the unified event data source; EventStateManager reads from it.
+    // ArrivalTracker initialized alongside authManager so it shares the real instance.
     @State private var authManager: AuthManager
-    @State private var eventStateManager = EventStateManager()
+    @State private var eventDataController: EventDataController
+    @State private var eventStateManager: EventStateManager
     @State private var arrivalTracker: ArrivalTracker
 
     init() {
@@ -43,10 +46,19 @@ struct BATbernWatchApp: App {
             )
             modelContainer = container
 
-            // W2.4: Initialize both together so ArrivalTracker gets the real AuthManager instance.
-            // Do NOT initialize in body via lazy/optional — mutating @State in body causes infinite re-render.
+            // Initialize together so each instance gets the real sibling instance.
+            // Do NOT initialize in body via lazy/optional — mutating @State in body causes
+            // infinite re-render.
             let auth = AuthManager()
+            let controller = EventDataController(
+                authManager: auth,
+                modelContext: container.mainContext
+            )
             _authManager = State(wrappedValue: auth)
+            _eventDataController = State(wrappedValue: controller)
+            _eventStateManager = State(wrappedValue: EventStateManager(
+                eventDataController: controller
+            ))
             _arrivalTracker = State(wrappedValue: ArrivalTracker(
                 authManager: auth,
                 modelContext: container.mainContext
@@ -60,6 +72,7 @@ struct BATbernWatchApp: App {
         WindowGroup {
             ContentView()
                 .environment(authManager)
+                .environment(eventDataController)
                 .environment(eventStateManager)
                 .environment(arrivalTracker)
                 // W3.3 AC4: Complication tap opens O3 (LiveCountdownView)

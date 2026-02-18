@@ -17,35 +17,42 @@ struct PairingView: View {
     @State private var focusedDigit: Int = 0
     @State private var isPairing: Bool = false
     @State private var errorMessage: String?
+    @FocusState private var crownFocused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 10) {
-                Text(NSLocalizedString("pairing.title", comment: "Pairing screen title"))
-                    .font(.headline)
+        // No ScrollView: ScrollView owns the Crown sequencer and conflicts with
+        // .digitalCrownRotation on child views, causing the "Crown Sequencer set
+        // up without a view property" warning and broken Crown input.
+        // The content fits on all watch sizes because the button is in safeAreaInset.
+        VStack(spacing: 8) {
+            Text(NSLocalizedString("pairing.title", comment: "Pairing screen title"))
+                .font(.headline)
 
-                // 6-digit display with Crown-scroll interaction
-                digitPicker
+            // 6-digit display with Crown-scroll interaction
+            digitPicker
 
-                Text(NSLocalizedString("pairing.instructions", comment: "Crown/tap instructions"))
+            Text(NSLocalizedString("pairing.instructions", comment: "Crown/tap instructions"))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            if let errorMessage {
+                Text(errorMessage)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.caption2)
-                        .foregroundStyle(.red)
-                        .multilineTextAlignment(.center)
-                }
-
-                Button(NSLocalizedString("pairing.button", comment: "Pair button")) {
-                    Task { await pairWatch() }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isPairing)
             }
-            .padding()
+        }
+        .padding(.horizontal)
+        .padding(.top, 4)
+        // Pin button to bottom so it is always visible regardless of screen size.
+        .safeAreaInset(edge: .bottom, spacing: 4) {
+            Button(NSLocalizedString("pairing.button", comment: "Pair button")) {
+                Task { await pairWatch() }
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.horizontal)
+            .disabled(isPairing)
         }
     }
 
@@ -58,6 +65,7 @@ struct PairingView: View {
             }
         }
         .focusable()
+        .focused($crownFocused)
         .digitalCrownRotation(
             Binding(
                 get: { Double(digits[focusedDigit]) },
@@ -73,10 +81,19 @@ struct PairingView: View {
             isContinuous: false
         )
         .onTapGesture {
-            // AC1: Tap advances to next digit
-            let next = (focusedDigit + 1) % 6
-            focusedDigit = next
-            WKInterfaceDevice.current().play(.click)
+            if crownFocused {
+                // AC1: Already focused — tap advances to next digit
+                focusedDigit = (focusedDigit + 1) % 6
+                WKInterfaceDevice.current().play(.click)
+            } else {
+                // Not focused (e.g. scrolled away): reclaim Crown without advancing
+                crownFocused = true
+            }
+        }
+        .onAppear {
+            // Auto-claim Crown focus so the first digit is live immediately,
+            // without requiring an initial tap.
+            Task { @MainActor in crownFocused = true }
         }
     }
 

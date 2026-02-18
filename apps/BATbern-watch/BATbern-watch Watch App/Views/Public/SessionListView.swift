@@ -10,26 +10,21 @@ import SwiftUI
 import SwiftData
 
 struct SessionListView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(AuthManager.self) private var authManager
     @Environment(EventStateManager.self) private var eventState
-    @State private var viewModel: PublicViewModel?
+    @Environment(EventDataController.self) private var eventDataController
     @State private var selectedPageIndex: Int = 0
 
+    // PublicViewModel is a pure presentation pass-through — no async init.
+    // Creating it inline ensures the TabView (and its Crown sequencer) is always
+    // present from the very first render, preventing the "CrownSequencer set up
+    // without a view property" warning that corrupts page indicator state.
+    private var viewModel: PublicViewModel {
+        PublicViewModel(eventDataController: eventDataController)
+    }
+
     var body: some View {
-        Group {
-            if let vm = viewModel {
-                verticalPagingView(vm: vm)
-            } else {
-                ProgressView()
-                    .tint(.white)
-            }
-        }
-        .onAppear {
-            if viewModel == nil {
-                viewModel = PublicViewModel(modelContext: modelContext)
-            }
-        }
+        verticalPagingView(vm: viewModel)
     }
 
     // MARK: - Vertical Paging View (AC#1, AC#4)
@@ -76,15 +71,29 @@ struct SessionListView: View {
 // MARK: - Previews
 
 #Preview("With Sessions") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self, CachedSession.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     SessionListView()
-        .modelContainer(for: [CachedEvent.self, CachedSession.self], inMemory: true)
-        .environment(AuthManager())
-        .environment(EventStateManager())
+        .modelContainer(container)
+        .environment(auth)
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
 }
 
 #Preview("Empty State") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     SessionListView()
-        .modelContainer(for: [CachedEvent.self], inMemory: true)
-        .environment(AuthManager())
-        .environment(EventStateManager())
+        .modelContainer(container)
+        .environment(auth)
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
 }

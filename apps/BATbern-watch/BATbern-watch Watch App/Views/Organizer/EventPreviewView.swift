@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// Shown when paired but no event is imminent:
 /// - No event: "No active event" message.
@@ -88,6 +89,14 @@ struct EventPreviewView: View {
 }
 
 #Preview("No Event") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext,
+        skipAutoSync: true
+    )
     EventPreviewView()
-        .environment(EventStateManager())
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
 }

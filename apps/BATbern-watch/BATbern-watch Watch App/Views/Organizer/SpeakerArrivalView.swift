@@ -252,12 +252,20 @@ struct ArrivalConfirmationView: View {
 // Note: @Environment(ArrivalTracker.self) binds to concrete type — SwiftUI limitation;
 // protocol injection via EnvironmentKey would require more boilerplate than it saves.
 #Preview {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedSpeaker.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext,
+        skipAutoSync: true
+    )
     NavigationStack {
         SpeakerArrivalView()
     }
     .environment(ArrivalTracker(
-        authManager: AuthManager(),
-        modelContext: try! ModelContainer(for: CachedSpeaker.self).mainContext
+        authManager: auth,
+        modelContext: container.mainContext
     ))
-    .environment(EventStateManager())
+    .environment(controller)
+    .environment(EventStateManager(eventDataController: controller))
 }

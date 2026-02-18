@@ -50,9 +50,14 @@ struct ContentView: View {
 #Preview {
     let container = try! ModelContainer(for: CachedSpeaker.self)
     let auth = AuthManager()
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     ContentView()
         .environment(auth)
-        .environment(EventStateManager())
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
         .environment(ArrivalTracker(
             authManager: auth,
             modelContext: container.mainContext

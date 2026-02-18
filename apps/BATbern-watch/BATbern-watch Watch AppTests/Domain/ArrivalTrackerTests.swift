@@ -88,7 +88,7 @@ struct ArrivalTrackerTests {
         try await tracker.confirmArrival(speaker: speaker)
 
         #expect(speaker.arrived == true)
-        #expect(speaker.arrivedConfirmedBy == "marco")
+        #expect(speaker.arrivedConfirmedBy == "Marco")  // organizerFirstName takes precedence over username
         #expect(speaker.arrivedAt != nil)
         #expect(wsClient.sentActions.contains(.speakerArrived(speakerUsername: "anna.meier")))
     }

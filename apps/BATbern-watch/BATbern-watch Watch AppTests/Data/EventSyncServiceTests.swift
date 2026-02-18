@@ -2,9 +2,10 @@
 //  EventSyncServiceTests.swift
 //  BATbern-watch Watch AppTests
 //
-//  Unit tests for EventSyncService — W2.3 schedule sync.
-//  Tests cover: happy-path sync, no active event, progress tracking,
-//  portrait download, and 401 JWT refresh flow.
+//  Tests for event sync behaviour — migrated to EventDataController.
+//  EventSyncService was the old sync owner; EventDataController is the new unified source.
+//  The organizer-endpoint network layer is now injected via OrganizerEventClientProtocol,
+//  enabling clean protocol-based mocking without URLProtocol.
 //
 
 import Testing
@@ -12,39 +13,21 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-// MARK: - EventSyncMockURLProtocol
+// MARK: - MockOrganizerEventClient
 
-/// Separate URLProtocol subclass for EventSyncServiceTests.
-/// Has its OWN static requestHandler so it never interferes with MockURLProtocol.requestHandler
-/// used by ArrivalTrackerTests (which runs concurrently in a different suite).
-final class EventSyncMockURLProtocol: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+final class MockOrganizerEventClient: OrganizerEventClientProtocol, @unchecked Sendable {
+    var result: Result<[ActiveEventResponse], Error> = .success([])
+    private(set) var callCount = 0
 
-    override class func canInit(with request: URLRequest) -> Bool { true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
-
-    override func startLoading() {
-        guard let handler = EventSyncMockURLProtocol.requestHandler else {
-            client?.urlProtocol(self, didFailWithError: URLError(.resourceUnavailable))
-            return
-        }
-        do {
-            let (response, data) = try handler(request)
-            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            client?.urlProtocol(self, didLoad: data)
-            client?.urlProtocolDidFinishLoading(self)
-        } catch {
-            client?.urlProtocol(self, didFailWithError: error)
-        }
+    func fetchActiveEvents(jwt: String) async throws -> [ActiveEventResponse] {
+        callCount += 1
+        return try result.get()
     }
-
-    override func stopLoading() {}
 }
 
-// MARK: - Mock PortraitCache
+// MARK: - MockPortraitCache (reused from original tests)
 
-/// M2/M3 fix: Conforms to PortraitCacheable so it can be injected into EventSyncService.
-/// Replaces real network calls with in-memory stubs, making portrait download assertions reliable.
+/// Replaces real portrait download with in-memory stub, making assertions reliable.
 final class MockPortraitCache: PortraitCacheable, @unchecked Sendable {
     var downloadCallCount = 0
     var downloadedURLs: [URL] = []
@@ -59,101 +42,6 @@ final class MockPortraitCache: PortraitCacheable, @unchecked Sendable {
 
 // MARK: - Helpers
 
-private func makeActiveEventsJSON(
-    eventCode: String = "BATbern99",
-    title: String = "BATbern 99 - Test Night",
-    includePortrait: Bool = false
-) -> Data {
-    let portraitURL = includePortrait ? "\"https://example.com/speaker.jpg\"" : "null"
-    let json = """
-    {
-        "activeEvents": [{
-            "eventCode": "\(eventCode)",
-            "title": "\(title)",
-            "eventDate": "2026-03-01",
-            "venueName": "Kultur Casino Bern",
-            "typicalStartTime": "18:00",
-            "typicalEndTime": "22:00",
-            "themeImageUrl": null,
-            "currentPublishedPhase": "AGENDA",
-            "eventStatus": "SCHEDULED",
-            "sessions": [{
-                "sessionSlug": "keynote-1",
-                "title": "Opening Keynote",
-                "abstract": null,
-                "sessionType": "talk",
-                "scheduledStartTime": "2026-03-01T17:00:00Z",
-                "scheduledEndTime": "2026-03-01T17:45:00Z",
-                "durationMinutes": 45,
-                "speakers": [{
-                    "username": "john.doe",
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "company": null,
-                    "companyLogoUrl": null,
-                    "profilePictureUrl": \(portraitURL),
-                    "bio": null,
-                    "speakerRole": "panelist"
-                }],
-                "status": "SCHEDULED",
-                "actualStartTime": null,
-                "actualEndTime": null,
-                "overrunMinutes": null,
-                "completedBy": null
-            }]
-        }]
-    }
-    """
-    return json.data(using: .utf8)!
-}
-
-private func makeActiveEventsJSONWithRole(speakerRole: String) -> Data {
-    let json = """
-    {
-        "activeEvents": [{
-            "eventCode": "BATbern99",
-            "title": "BATbern 99 - Test Night",
-            "eventDate": "2026-03-01",
-            "venueName": "Kultur Casino Bern",
-            "typicalStartTime": "18:00",
-            "typicalEndTime": "22:00",
-            "themeImageUrl": null,
-            "currentPublishedPhase": "AGENDA",
-            "eventStatus": "SCHEDULED",
-            "sessions": [{
-                "sessionSlug": "keynote-1",
-                "title": "Opening Keynote",
-                "abstract": null,
-                "sessionType": "talk",
-                "scheduledStartTime": "2026-03-01T17:00:00Z",
-                "scheduledEndTime": "2026-03-01T17:45:00Z",
-                "durationMinutes": 45,
-                "speakers": [{
-                    "username": "john.doe",
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "company": null,
-                    "companyLogoUrl": null,
-                    "profilePictureUrl": null,
-                    "bio": null,
-                    "speakerRole": "\(speakerRole)"
-                }],
-                "status": "SCHEDULED",
-                "actualStartTime": null,
-                "actualEndTime": null,
-                "overrunMinutes": null,
-                "completedBy": null
-            }]
-        }]
-    }
-    """
-    return json.data(using: .utf8)!
-}
-
-private func makeEmptyActiveEventsJSON() -> Data {
-    return #"{"activeEvents":[]}"#.data(using: .utf8)!
-}
-
 private func makeModelContext() throws -> ModelContext {
     let schema = Schema([CachedEvent.self, CachedSession.self, CachedSpeaker.self, PairingInfo.self])
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -161,216 +49,290 @@ private func makeModelContext() throws -> ModelContext {
     return ModelContext(container)
 }
 
-private func makeSession(config: URLSessionConfiguration = .ephemeral) -> URLSession {
-    config.protocolClasses = [EventSyncMockURLProtocol.self]
-    return URLSession(configuration: config)
+private func makeActiveEventResponse(
+    eventCode: String = "BATbern99",
+    title: String = "BATbern 99 - Test Night",
+    speakerRole: String = "panelist",
+    profilePictureUrl: String? = nil
+) -> ActiveEventResponse {
+    ActiveEventResponse(
+        eventCode: eventCode,
+        title: title,
+        eventDate: "2026-03-01",
+        venueName: "Kultur Casino Bern",
+        typicalStartTime: "18:00",
+        typicalEndTime: "22:00",
+        themeImageUrl: nil,
+        currentPublishedPhase: "AGENDA",
+        eventStatus: "SCHEDULED",
+        sessions: [
+            WatchSessionResponse(
+                sessionSlug: "keynote-1",
+                title: "Opening Keynote",
+                abstract: nil,
+                sessionType: "talk",
+                scheduledStartTime: "2026-03-01T17:00:00Z",
+                scheduledEndTime: "2026-03-01T17:45:00Z",
+                durationMinutes: 45,
+                speakers: [
+                    WatchSpeakerResponse(
+                        username: "john.doe",
+                        firstName: "John",
+                        lastName: "Doe",
+                        company: nil,
+                        companyLogoUrl: nil,
+                        profilePictureUrl: profilePictureUrl,
+                        bio: nil,
+                        speakerRole: speakerRole
+                    )
+                ],
+                status: "SCHEDULED",
+                actualStartTime: nil,
+                actualEndTime: nil,
+                overrunMinutes: nil,
+                completedBy: nil
+            )
+        ]
+    )
+}
+
+@MainActor
+private func makeController(
+    authManager: MockAuthManager? = nil,
+    organizerClient: MockOrganizerEventClient,
+    portraitCache: MockPortraitCache? = nil,
+    modelContext: ModelContext
+) -> EventDataController {
+    EventDataController(
+        publicClient: MockAPIClient(),
+        organizerClient: organizerClient,
+        authManager: authManager ?? MockAuthManager(),
+        portraitCache: portraitCache ?? MockPortraitCache(),
+        modelContext: modelContext,
+        skipAutoSync: true
+    )
 }
 
 // MARK: - Test Suite
 
-@Suite("EventSyncService Tests", .serialized)
+@Suite("EventDataController Tests", .serialized)
 @MainActor
 struct EventSyncServiceTests {
 
     // MARK: - AC#1: Full schedule sync returns event data
 
-    @Test("syncActiveEvent: maps response to CachedEvent and sets currentEvent")
-    func test_syncActiveEvent_mapsResponseToCachedEvent() async throws {
+    @Test("forceSync: maps organizer response to CachedEvent when paired")
+    func test_forceSync_mapsToCachedEvent_whenPaired() async throws {
         // Given
-        let authManager = MockAuthManager()
-        let modelContext = try makeModelContext()
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeActiveEventsJSON())
-        }
-        let service = EventSyncService(
-            authManager: authManager,
-            modelContext: modelContext,
-            session: makeSession()
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([makeActiveEventResponse()])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
 
         // When
-        try await service.syncActiveEvent()
+        await controller.forceSync()
 
         // Then
-        #expect(service.currentEvent != nil, "currentEvent should be set after sync")
-        #expect(service.currentEvent?.eventCode == "BATbern99", "Event code should match")
-        #expect(service.currentEvent?.title == "BATbern 99 - Test Night", "Title should match")
-        #expect(service.currentEvent?.sessions.count == 1, "Should have 1 session")
-        #expect(service.currentEvent?.sessions.first?.speakers.count == 1, "Session should have 1 speaker")
-        #expect(service.syncState == .completed, "Sync state should be completed")
+        #expect(controller.currentEvent != nil, "currentEvent should be set after sync")
+        #expect(controller.currentEvent?.eventCode == "BATbern99")
+        #expect(controller.currentEvent?.title == "BATbern 99 - Test Night")
+        #expect(controller.currentEvent?.sessions.count == 1)
+        #expect(controller.currentEvent?.sessions.first?.speakers.count == 1)
+        #expect(!controller.isLoading, "isLoading should be false after sync")
+        #expect(controller.syncProgress == 1.0)
     }
 
-    // MARK: - AC#4: No active event returns empty state
+    // MARK: - AC#4: No active event returns nil currentEvent
 
-    @Test("syncActiveEvent: sets noActiveEvent state when backend returns empty list")
-    func test_syncActiveEvent_setsNoActiveEventState_whenEmptyList() async throws {
+    @Test("forceSync: currentEvent remains nil when backend returns empty list")
+    func test_forceSync_currentEventNil_whenEmptyList() async throws {
         // Given
-        let authManager = MockAuthManager()
-        let modelContext = try makeModelContext()
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeEmptyActiveEventsJSON())
-        }
-        let service = EventSyncService(
-            authManager: authManager,
-            modelContext: modelContext,
-            session: makeSession()
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
 
         // When
-        try await service.syncActiveEvent()
+        await controller.forceSync()
 
         // Then
-        #expect(service.currentEvent == nil, "currentEvent should remain nil")
-        #expect(service.syncState == .noActiveEvent, "Sync state should be noActiveEvent")
+        #expect(controller.currentEvent == nil)
+        #expect(!controller.isLoading)
     }
 
-    // MARK: - Progress reporting increments through phases
+    // MARK: - Progress reporting
 
-    @Test("syncActiveEvent: progress starts at 0.0 and reaches 1.0 on completion")
-    func test_syncActiveEvent_progressAdvances() async throws {
+    @Test("forceSync: progress reaches 1.0 on completion")
+    func test_forceSync_progressReaches1_onCompletion() async throws {
         // Given
-        let authManager = MockAuthManager()
-        let modelContext = try makeModelContext()
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeActiveEventsJSON())
-        }
-        let service = EventSyncService(
-            authManager: authManager,
-            modelContext: modelContext,
-            session: makeSession()
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([makeActiveEventResponse()])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
-
-        // Verify initial state before sync
-        #expect(service.syncProgress == 0.0, "Progress should start at 0.0")
-        #expect(service.syncState == .idle, "State should start idle")
+        #expect(controller.syncProgress == 0.0, "Progress should start at 0.0")
 
         // When
-        try await service.syncActiveEvent()
+        await controller.forceSync()
 
-        // Then: final progress should be 1.0
-        // NOTE (M4): Intermediate steps (0.1 → 0.2 → 0.8 → 0.9) require concurrent
-        // observation with withObservationTracking or AsyncStream — out of scope for this
-        // synchronous unit test. Verified via manual testing and E2E sync flow.
-        #expect(service.syncProgress == 1.0, "Progress should reach 100% on completion")
-        #expect(service.syncState == .completed, "State should be completed at 100%")
+        // Then
+        #expect(controller.syncProgress == 1.0)
+        #expect(!controller.isLoading)
     }
 
-    // MARK: - Portrait download triggered for speakers with profilePictureUrl
+    // MARK: - Portrait download
 
-    @Test("syncActiveEvent: downloads portrait via MockPortraitCache when profilePictureUrl is present")
-    func test_syncActiveEvent_downloadsPortraitForSpeaker() async throws {
-        // Given — inject MockPortraitCache to intercept portrait downloads (M3 fix)
-        // Previously used URLProtocol interception on URLSession.shared, which didn't
-        // actually capture calls since PortraitCache used URLSession.shared (not the mock session).
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeActiveEventsJSON(includePortrait: true))
-        }
-        let authManager = MockAuthManager()
-        let modelContext = try makeModelContext()
+    @Test("forceSync: downloads portrait for speaker with profilePictureUrl")
+    func test_forceSync_downloadsPortrait_whenUrlPresent() async throws {
+        // Given
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([
+            makeActiveEventResponse(profilePictureUrl: "https://example.com/speaker.jpg")
+        ])
         let mockPortraitCache = MockPortraitCache()
-        let service = EventSyncService(
-            authManager: authManager,
-            modelContext: modelContext,
+        let controller = makeController(
+            organizerClient: organizerClient,
             portraitCache: mockPortraitCache,
-            session: makeSession()
+            modelContext: try makeModelContext()
         )
 
         // When
-        try await service.syncActiveEvent()
+        await controller.forceSync()
 
-        // Then: portrait was downloaded exactly once (1 speaker with profilePictureUrl)
-        #expect(service.syncState == .completed, "Sync should complete")
+        // Then
+        #expect(!controller.isLoading)
         #expect(mockPortraitCache.downloadCallCount == 1,
                 "downloadAndCache should be called once for the speaker portrait")
-        #expect(mockPortraitCache.downloadedURLs.first?.absoluteString == "https://example.com/speaker.jpg",
-                "Should download the correct portrait URL")
-        #expect(service.currentEvent?.sessions.first?.speakers.first?.profilePictureUrl
-                == "https://example.com/speaker.jpg",
-                "Speaker profile picture URL should be persisted in CachedSpeaker")
+        #expect(mockPortraitCache.downloadedURLs.first?.absoluteString == "https://example.com/speaker.jpg")
+        #expect(controller.currentEvent?.sessions.first?.speakers.first?.profilePictureUrl
+                == "https://example.com/speaker.jpg")
     }
 
-    // MARK: - 401 triggers JWT refresh and rethrows
+    // MARK: - 401 graceful degradation
 
-    @Test("syncActiveEvent: calls refreshJWT and throws on 401 response")
-    func test_syncActiveEvent_callsRefreshJWT_on401() async throws {
-        // Given
+    @Test("forceSync: graceful degradation on 401 — no crash, no JWT refresh call")
+    func test_forceSync_gracefulDegradation_on401() async throws {
+        // Given — per MEMORY.md: refreshJWT must NOT be called inside sync to avoid
+        // the 401 → refreshJWT → onChange(currentJWT) → sync → 401 infinite loop.
         let authManager = MockAuthManager()
-        let modelContext = try makeModelContext()
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 401, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        let service = EventSyncService(
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .failure(SyncError.authenticationRequired)
+        let controller = makeController(
             authManager: authManager,
-            modelContext: modelContext,
-            session: makeSession()
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
 
-        // When / Then
-        await #expect(throws: SyncError.authenticationRequired) {
-            try await service.syncActiveEvent()
-        }
-        #expect(authManager.refreshCallCount == 1, "Should call refreshJWT once on 401")
-    }
+        // When
+        await controller.forceSync()
 
-    // MARK: - D2: SpeakerRole mapping from backend lowercase snake_case
+        // Then: no crash, currentEvent stays nil, refreshJWT NOT called
+        #expect(controller.currentEvent == nil)
+        #expect(!controller.isLoading)
+        #expect(authManager.refreshCallCount == 0,
+                "refreshJWT must not be called on 401 — prevents auth retry loop")
+    }
 
     // MARK: - D2: SpeakerRole decoding from backend lowercase snake_case
 
-    @Test("syncActiveEvent: decodes primary_speaker to .primarySpeaker (D2 debt)")
-    func test_syncActiveEvent_decodesRolePrimarySpeaker() async throws {
-        // Given — backend sends "primary_speaker" (EMS enum.name().toLowerCase())
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeActiveEventsJSONWithRole(speakerRole: "primary_speaker"))
-        }
-        let service = EventSyncService(
-            authManager: MockAuthManager(),
-            modelContext: try makeModelContext(),
-            session: makeSession()
+    @Test("forceSync: decodes primary_speaker to .primarySpeaker")
+    func test_forceSync_decodesRolePrimarySpeaker() async throws {
+        // Given
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([makeActiveEventResponse(speakerRole: "primary_speaker")])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
 
         // When
-        try await service.syncActiveEvent()
+        await controller.forceSync()
 
-        // Then: Watch enum raw values now match backend (D2: enum adapted to backend)
-        let role = service.currentEvent?.sessions.first?.speakers.first?.speakerRole
-        #expect(role == .primarySpeaker, "primary_speaker should decode to .primarySpeaker")
+        // Then
+        let role = controller.currentEvent?.sessions.first?.speakers.first?.speakerRole
+        #expect(role == .primarySpeaker)
     }
 
-    @Test("syncActiveEvent: decodes co_speaker to .coSpeaker (D2 debt)")
-    func test_syncActiveEvent_decodesRoleCoSpeaker() async throws {
-        EventSyncMockURLProtocol.requestHandler = { _ in
-            let response = HTTPURLResponse(
-                url: URL(string: "https://example.com")!,
-                statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, makeActiveEventsJSONWithRole(speakerRole: "co_speaker"))
-        }
-        let service = EventSyncService(
-            authManager: MockAuthManager(),
-            modelContext: try makeModelContext(),
-            session: makeSession()
+    @Test("forceSync: decodes co_speaker to .coSpeaker")
+    func test_forceSync_decodesRoleCoSpeaker() async throws {
+        // Given
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([makeActiveEventResponse(speakerRole: "co_speaker")])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
         )
 
-        try await service.syncActiveEvent()
+        // When
+        await controller.forceSync()
 
-        let role = service.currentEvent?.sessions.first?.speakers.first?.speakerRole
-        #expect(role == .coSpeaker, "co_speaker should decode to .coSpeaker")
+        // Then
+        let role = controller.currentEvent?.sessions.first?.speakers.first?.speakerRole
+        #expect(role == .coSpeaker)
+    }
+
+    // MARK: - Public endpoint fallback
+
+    @Test("forceSync: uses public endpoint when not paired")
+    func test_forceSync_usesPublicEndpoint_whenNotPaired() async throws {
+        // Given
+        let authManager = MockAuthManager(isPaired: false, currentJWT: nil)
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .failure(SyncError.notAuthenticated)  // Should never be called
+
+        let mockPublicClient = MockAPIClient()
+        mockPublicClient.fetchCurrentEventResult = .success(WatchEvent(
+            id: "public-event",
+            title: "Public Event",
+            date: Date(),
+            themeImageUrl: nil,
+            venueName: "Bern",
+            sessions: [],
+            currentPublishedPhase: nil
+        ))
+
+        let controller = EventDataController(
+            publicClient: mockPublicClient,
+            organizerClient: organizerClient,
+            authManager: authManager,
+            modelContext: try makeModelContext(),
+            skipAutoSync: true
+        )
+
+        // When
+        await controller.forceSync()
+
+        // Then: public endpoint was used, organizer endpoint not called
+        #expect(controller.currentEvent?.eventCode == "public-event")
+        #expect(mockPublicClient.fetchCurrentEventCallCount == 1)
+    }
+
+    // MARK: - 60s guard
+
+    @Test("syncIfNeeded: skips second call within 60s cooldown")
+    func test_syncIfNeeded_skipsWithin60sCooldown() async throws {
+        // Given
+        let organizerClient = MockOrganizerEventClient()
+        organizerClient.result = .success([makeActiveEventResponse()])
+        let controller = makeController(
+            organizerClient: organizerClient,
+            modelContext: try makeModelContext()
+        )
+
+        // When: first sync
+        await controller.syncIfNeeded()
+        let callCountAfterFirst = organizerClient.callCount
+
+        // Second call immediately after — should be skipped by 60s cooldown
+        await controller.syncIfNeeded()
+
+        // Then: organizer client called exactly once
+        #expect(organizerClient.callCount == callCountAfterFirst,
+                "Second syncIfNeeded within 60s should be skipped")
     }
 }
