@@ -110,6 +110,11 @@ public class WatchWebSocketController {
             if (firstName != null && !firstName.isBlank()) {
                 return firstName;
             }
+            // Cognito tokens without given_name: derive display name from email prefix
+            String email = jwt.getClaimAsString("email");
+            if (email != null && email.contains("@")) {
+                return email.substring(0, email.indexOf('@'));
+            }
         }
         return fallback;
     }
