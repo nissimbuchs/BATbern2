@@ -12,6 +12,7 @@ import SwiftUI
 struct LiveCountdownView: View {
 
     @Environment(EventStateManager.self) private var eventState
+    @Environment(EventDataController.self) private var dataController
     @State private var viewModel = LiveCountdownViewModel()
     @State private var portraitData: Data?
 
@@ -36,7 +37,6 @@ struct LiveCountdownView: View {
 
     private var countdownContent: some View {
         VStack(spacing: 5) {
-            statusBar
             compactRing
             speakerCard
             if let next = viewModel.nextSession {
@@ -45,21 +45,6 @@ struct LiveCountdownView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-    }
-
-    // MARK: - Status Bar
-
-    /// Connection indicator + urgency state label (e.g. "ON TRACK", "5 MIN LEFT").
-    private var statusBar: some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(countdownColor)
-                .frame(width: 5, height: 5)
-            Spacer()
-            Text(stateLabel)
-                .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(countdownColor)
-        }
     }
 
     // MARK: - Compact Progress Ring (AC1-AC5)

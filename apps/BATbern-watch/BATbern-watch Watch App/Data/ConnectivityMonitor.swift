@@ -11,6 +11,9 @@
 import Foundation
 import Network
 import Observation
+import OSLog
+
+private let logger = Logger(subsystem: "ch.batbern.watch", category: "Connectivity")
 
 @Observable
 class ConnectivityMonitor {
@@ -44,12 +47,18 @@ class ConnectivityMonitor {
                     self.previousConnectionState = newState
                     self.isConnected = newState
                     self.onConnectivityChanged?(newState)
+                    if newState {
+                        logger.info("📶 ONLINE — network path satisfied")
+                    } else {
+                        logger.warning("📵 OFFLINE — network path unsatisfied")
+                    }
                 } else {
                     self.isConnected = newState
                 }
             }
         }
         monitor.start(queue: queue)
+        logger.info("ConnectivityMonitor started")
     }
 
     /// Stop monitoring and cancel NWPathMonitor

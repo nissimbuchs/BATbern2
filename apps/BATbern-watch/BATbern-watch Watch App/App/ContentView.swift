@@ -22,6 +22,7 @@ enum Zone {
 
 struct ContentView: View {
     @State private var selectedZone: Zone = .publicZone
+    @Environment(EventDataController.self) private var eventDataController
 
     var body: some View {
         TabView(selection: $selectedZone) {
@@ -37,6 +38,15 @@ struct ContentView: View {
                 .tag(Zone.organizer)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))  // Horizontal paging, no dots
+        .overlay(alignment: .topLeading) {
+            // Single unified connectivity badge — covers every screen in both zones.
+            // offset(y: -22): nudges into the system clock row (undocumented, brittle).
+            ConnectionStatusBar(
+                isOffline: eventDataController.isOffline,
+                lastSynced: eventDataController.lastSynced
+            )
+            .offset(y: -40)
+        }
         .onAppear {
             selectedZone = .publicZone  // Always launch in Public Zone
         }

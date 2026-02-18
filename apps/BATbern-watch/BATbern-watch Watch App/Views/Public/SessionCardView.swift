@@ -42,7 +42,6 @@ enum SessionBadgeStatus: Equatable {
 struct SessionCardView: View {
     let session: CachedSession
     let phase: String?  // TOPIC, SPEAKERS, or AGENDA
-    var statusBarVisible: Bool = false  // Extra top padding when ConnectionStatusBar is shown
     var showStatusBadge: Bool = false   // True when organizer is paired and event is live
 
     // MARK: - Computed Properties
@@ -66,11 +65,6 @@ struct SessionCardView: View {
 
     private var speakerTapsEnabled: Bool {
         phase == "SPEAKERS" || phase == "AGENDA"
-    }
-
-    /// Top padding for time slot: clears system clock (28pt) + status bar (~24pt) when visible
-    private var timeSlotTopPadding: CGFloat {
-        statusBarVisible ? 52 : BATbernWatchStyle.Spacing.cardTopPadding
     }
 
     private var breakIcon: String {
@@ -117,7 +111,7 @@ struct SessionCardView: View {
                         statusBadgeView(status)
                     }
                 }
-                .padding(.top, timeSlotTopPadding)
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
             }
 
             Spacer()
@@ -154,7 +148,7 @@ struct SessionCardView: View {
                         statusBadgeView(status)
                     }
                 }
-                .padding(.top, timeSlotTopPadding)
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
             }
 
             Spacer()
