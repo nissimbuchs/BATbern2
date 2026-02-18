@@ -17,6 +17,10 @@ struct SessionTransitionViewTests {
 
     // MARK: - Fixtures
 
+    // Fixed anchor date per project testing standards (CLAUDE.md: avoid Date(timeIntervalSinceNow:))
+    // Review fix item 2: replaced Date().addingTimeInterval(...) with fixed Date(timeIntervalSinceReferenceDate: 0)
+    private let fixedNow = Date(timeIntervalSinceReferenceDate: 0) // 2001-01-01 00:00:00 UTC
+
     private func makeNextSession(
         slug: String = "microservices-mistakes",
         title: String = "Microservices Mistakes You'll Make",
@@ -38,8 +42,8 @@ struct SessionTransitionViewTests {
             title: title,
             abstract: nil,
             sessionType: .presentation,
-            startTime: Date().addingTimeInterval(300),
-            endTime: Date().addingTimeInterval(3000),
+            startTime: fixedNow.addingTimeInterval(300),
+            endTime: fixedNow.addingTimeInterval(3000),
             speakers: withSpeaker ? [speaker] : [],
             state: .scheduled
         )

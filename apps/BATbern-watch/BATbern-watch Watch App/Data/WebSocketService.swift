@@ -28,8 +28,13 @@ final class WebSocketService {
     var presenceCount: Int = 0
     var connectedOrganizers: [ConnectedOrganizer] = []
     /// W4.2 Task 5.2/5.3: Set when SESSION_ENDED broadcast received. LiveCountdownView observes
-    /// this via .onChange and resets it to nil after consuming (avoids persistent stale signal).
-    var sessionEndedEvent: SessionEndedEvent?
+    /// this via .onChange and resets it to nil after consuming via consumeSessionEndedEvent().
+    /// Review fix (items 1+6): private(set) prevents direct mutation from views;
+    /// sessionEndedQueue buffers back-to-back SESSION_ENDED messages so no signal is dropped.
+    private(set) var sessionEndedEvent: SessionEndedEvent?
+
+    /// Internal queue for rapid back-to-back SESSION_ENDED messages (review fix item 1).
+    private var sessionEndedQueue: [SessionEndedEvent] = []
 
     // MARK: - Connection State
 
@@ -107,6 +112,18 @@ final class WebSocketService {
         logger.info("WebSocketService disconnected")
     }
 
+    /// W4.2 Review fix (items 1+6): Consumes the current SESSION_ENDED event signal and
+    /// advances to the next queued event (if any). Called by LiveCountdownView after handling
+    /// the event — encapsulates state reset inside the service instead of direct nil mutation from view.
+    func consumeSessionEndedEvent() {
+        if let next = sessionEndedQueue.first {
+            sessionEndedQueue.removeFirst()
+            sessionEndedEvent = next
+        } else {
+            sessionEndedEvent = nil
+        }
+    }
+
     /// W4.2 Task 5.1: Send a WatchAction to the server via the WebSocket client.
     /// Called from LiveCountdownView's Done button tap.
     /// NEVER throws to caller — errors are logged and swallowed (view doesn't need to handle them).
@@ -152,13 +169,19 @@ final class WebSocketService {
                     connectedOrganizers = stateUpdate.connectedOrganizers
                     presenceCount = stateUpdate.connectedOrganizers.count
                 }
-                // W4.2 Task 5.2: Set sessionEndedEvent for LiveCountdownView O6 trigger.
+                // W4.2 Task 5.2: Signal LiveCountdownView O6 trigger via SESSION_ENDED.
+                // Review fix item 1: queue rapid back-to-back events so no signal is dropped.
                 if message.type == .sessionEnded, let slug = message.sessionSlug {
-                    sessionEndedEvent = SessionEndedEvent(
+                    let event = SessionEndedEvent(
                         sessionSlug: slug,
                         completedBy: message.initiatedBy ?? "",
                         timestamp: message.timestamp
                     )
+                    if sessionEndedEvent == nil {
+                        sessionEndedEvent = event
+                    } else {
+                        sessionEndedQueue.append(event)
+                    }
                 }
                 wasConnected = true
             }

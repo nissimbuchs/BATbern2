@@ -93,6 +93,20 @@ class WatchPresenceServiceTest {
     }
 
     @Test
+    @DisplayName("should_removePresenceMapEntry_when_lastOrganizerLeaves")
+    void should_removePresenceMapEntry_when_lastOrganizerLeaves() {
+        // Review fix item 4: presence entry is cleaned up when set becomes empty
+        when(sessionRepository.findByEventCode("BATbern56")).thenReturn(List.of());
+
+        service.joinEvent("BATbern56", "marco.organizer", "Marco");
+        service.leaveEvent("BATbern56", "marco.organizer");
+
+        // After last organizer leaves, state update should show empty organizers
+        WatchStateUpdateMessage state = service.buildStateUpdate("BATbern56");
+        assertThat(state.connectedOrganizers()).isEmpty();
+    }
+
+    @Test
     @DisplayName("should_includeSessions_when_buildStateUpdate")
     void should_includeSessions_when_buildStateUpdate() {
         Session session = Session.builder()

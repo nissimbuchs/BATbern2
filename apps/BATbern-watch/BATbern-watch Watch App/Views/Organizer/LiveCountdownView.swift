@@ -47,12 +47,14 @@ struct LiveCountdownView: View {
             // lastSynced updates when applyServerState runs — timer ticks confirming live
         }
         // W4.2 Task 10: Observe SESSION_ENDED signal — show O6 when next session exists.
+        // Review fix item 6: use consumeSessionEndedEvent() instead of direct nil mutation
+        // to keep reset logic encapsulated inside WebSocketService. Also advances queued events.
         .onChange(of: webSocketService.sessionEndedEvent) { _, event in
             guard event != nil else { return }
             if viewModel.nextSession != nil {
                 showTransition = true
             }
-            webSocketService.sessionEndedEvent = nil
+            webSocketService.consumeSessionEndedEvent()
         }
         // M2 fix (W4.2 code review): reset isSendingDone only when session has actually
         // advanced (canMarkDone goes false), not on sendAction return. This prevents the

@@ -10,6 +10,13 @@ public class SessionNotFoundException extends RuntimeException {
         super("Session not found: " + sessionSlug);
     }
 
+    /**
+     * W4.2 review fix item 3: includes eventCode so multi-event debugging is faster.
+     */
+    public SessionNotFoundException(String sessionSlug, String eventCode) {
+        super(String.format("sessionSlug '%s' not found in event '%s'", sessionSlug, eventCode));
+    }
+
     public SessionNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }

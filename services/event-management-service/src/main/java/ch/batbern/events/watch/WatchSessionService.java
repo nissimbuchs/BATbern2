@@ -39,7 +39,7 @@ public class WatchSessionService {
     @Transactional
     public void endSession(String eventCode, String sessionSlug, String completedByUsername) {
         var session = sessionRepository.findByEventCodeAndSessionSlug(eventCode, sessionSlug)
-                .orElseThrow(() -> new SessionNotFoundException(sessionSlug));
+                .orElseThrow(() -> new SessionNotFoundException(sessionSlug, eventCode));
 
         if (session.getCompletedByUsername() != null) {
             log.info("Session {} already completed by {} — idempotent skip, re-broadcasting",

@@ -68,6 +68,11 @@ public class WatchPresenceService {
             boolean removed = presence.removeIf(p -> p.username().equals(username));
             if (removed) {
                 log.debug("Organizer {} left event {} ({} remaining)", username, eventCode, presence.size());
+                // Review fix item 4: remove entry when set empties to prevent unbounded map growth.
+                if (presence.isEmpty()) {
+                    presenceByEvent.remove(eventCode);
+                    log.debug("Removed empty presence set for completed event {}", eventCode);
+                }
                 broadcastState(eventCode, "ORGANIZER_LEFT");
             }
         }

@@ -103,11 +103,12 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventCodeAndStartTimeIsNull(@Param("eventCode") String eventCode);
 
     /**
-     * Find all sessions by event code (joins with events table)
-     * Story BAT-11 (5.7): Slot Assignment - for conflict detection
+     * Find all sessions by event code.
+     * Story BAT-11 (5.7): Slot Assignment - for conflict detection.
+     * Review fix item 5: aligned to use s.eventCode directly (same strategy as findByEventCodeAndSessionSlug)
+     * instead of a JOIN through Event, since Session.eventCode is a persistent denormalized column.
      */
-    @Query("SELECT s FROM Session s JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
-           + "WHERE e.eventCode = :eventCode")
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode")
     List<Session> findByEventCode(@Param("eventCode") String eventCode);
 
     /**

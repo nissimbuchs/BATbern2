@@ -73,7 +73,7 @@ development_status:
   #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
   epic-4: in-progress
   w4-1-websocket-real-time-infrastructure: done
-  w4-2-session-advance-transition: done
+  w4-2-session-advance-transition: in-progress
   w4-3-overrun-detection-schedule-cascade: ready-for-dev
   w4-4-break-management-event-lifecycle: ready-for-dev
   epic-4-retrospective: optional

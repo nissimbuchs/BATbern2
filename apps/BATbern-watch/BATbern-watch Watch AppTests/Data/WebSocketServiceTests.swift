@@ -313,6 +313,54 @@ struct WebSocketServiceTests {
         #expect(service.sessionEndedEvent == nil)
     }
 
+    @Test("Rapid SESSION_ENDED messages: second is queued and delivered after consume (review fix item 1)")
+    func rapidSessionEndedMessages_secondDeliveredAfterConsume() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        let first = EventStateMessage(
+            type: .sessionEnded,
+            sessionSlug: "talk-1",
+            initiatedBy: "marco.organizer",
+            timestamp: Date()
+        )
+        let second = EventStateMessage(
+            type: .sessionEnded,
+            sessionSlug: "talk-2",
+            initiatedBy: "lisa.organizer",
+            timestamp: Date()
+        )
+        // Emit both before .onChange fires
+        wsClient.emit(first)
+        wsClient.emit(second)
+
+        try await waitFor(
+            { service.sessionEndedEvent != nil },
+            description: "first sessionEndedEvent set"
+        )
+
+        // First event is delivered; second is queued
+        #expect(service.sessionEndedEvent?.sessionSlug == "talk-1")
+
+        // Consume first — second should be delivered from queue
+        service.consumeSessionEndedEvent()
+
+        try await waitFor(
+            { service.sessionEndedEvent?.sessionSlug == "talk-2" },
+            description: "second sessionEndedEvent delivered from queue"
+        )
+
+        #expect(service.sessionEndedEvent?.sessionSlug == "talk-2")
+
+        // Consume second — queue now empty
+        service.consumeSessionEndedEvent()
+        #expect(service.sessionEndedEvent == nil)
+    }
+
     @Test("SESSION_ENDED without sessionSlug does NOT set sessionEndedEvent")
     func sessionEndedWithoutSlug_doesNotSetEvent() async throws {
         let (_, ctx) = try makeContainer()
