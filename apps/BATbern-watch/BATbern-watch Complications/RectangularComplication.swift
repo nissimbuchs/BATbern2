@@ -46,12 +46,12 @@ struct RectangularView: View {
                 // Middle: MM:SS bold — "+MM:SS" when overtime (per UX design)
                 Text(entry.formattedCountdown)
                     .font(.system(.title3, design: .monospaced).bold())
-                    .foregroundStyle(isLuminanceReduced ? .gray : urgencyColor)
+                    .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
 
                 // Bottom: linear progress bar — full bar at 1.0 (overtime) per UX design
                 ProgressView(value: entry.progress)
                     .progressViewStyle(.linear)
-                    .tint(isLuminanceReduced ? .gray : urgencyColor)
+                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
             }
         } else {
             // AC5: No active session fallback
@@ -65,13 +65,4 @@ struct RectangularView: View {
         }
     }
 
-    // MARK: - Urgency Color (per ux-design-directions.html legend)
-    private var urgencyColor: Color {
-        switch entry.snapshot?.urgencyLevel {
-        case "caution": return .yellow
-        case "warning", "critical": return .orange
-        case "overtime": return .red
-        default: return .green
-        }
-    }
 }

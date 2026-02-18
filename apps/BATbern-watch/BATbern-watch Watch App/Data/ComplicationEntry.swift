@@ -76,6 +76,19 @@ struct ComplicationEntry: TimelineEntry {
         Int((remainingSeconds ?? 0) / 60)
     }
 
+    // MARK: - Urgency Color
+
+    /// Maps urgencyLevel string to a SwiftUI Color per the ux-design-directions.html legend.
+    /// Single source of truth — used by CircularView, RectangularView, and CornerView.
+    var urgencyColor: Color {
+        switch snapshot?.urgencyLevel {
+        case "caution":             return .yellow   // 2-5 min — Warning
+        case "warning", "critical": return .orange   // <2 min  — Urgent
+        case "overtime":            return .red      // Overrun
+        default:                    return .green    // >5 min  — On Track (#22c55e)
+        }
+    }
+
     // MARK: - Progress Ring
 
     /// Progress fraction [0, 1]: elapsed / duration. Pins at 1.0 when overtime.

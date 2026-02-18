@@ -40,11 +40,11 @@ struct CircularView: View {
                 // Progress ring — fills as session progresses
                 ProgressView(value: entry.progress)
                     .progressViewStyle(.circular)
-                    .tint(isLuminanceReduced ? .gray : urgencyColor)
+                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
                 // Center: minutes ("24") or overtime ("+4") — per UX design
                 Text(entry.displayMinutes)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(isLuminanceReduced ? .gray : urgencyColor)
+                    .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
             } else {
                 // AC5: No active session — show BATbern icon fallback
                 Image(systemName: "calendar.badge.clock")
@@ -53,13 +53,4 @@ struct CircularView: View {
         }
     }
 
-    // MARK: - Urgency Color (per ux-design-directions.html legend)
-    private var urgencyColor: Color {
-        switch entry.snapshot?.urgencyLevel {
-        case "caution": return .yellow          // 2-5 min — UX "Warning" yellow
-        case "warning", "critical": return .orange  // 1-2 min / <1 min — UX "Urgent" orange
-        case "overtime": return .red            // UX "Time's Up/Overrun" red
-        default: return .green                  // >5 min — UX "On Track" green (#22c55e)
-        }
-    }
 }

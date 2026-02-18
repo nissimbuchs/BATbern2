@@ -39,7 +39,7 @@ struct CornerView: View {
             // Minutes-only per UX design: "24" normal, "+4" overtime
             Text(entry.displayMinutes)
                 .font(.system(.title2, design: .monospaced).bold())
-                .foregroundStyle(isLuminanceReduced ? .gray : urgencyColor)
+                .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
         } else {
             // AC5: No active session — minimal icon
             Image(systemName: "calendar")
@@ -47,13 +47,4 @@ struct CornerView: View {
         }
     }
 
-    // MARK: - Urgency Color (per ux-design-directions.html legend)
-    private var urgencyColor: Color {
-        switch entry.snapshot?.urgencyLevel {
-        case "caution": return .yellow
-        case "warning", "critical": return .orange
-        case "overtime": return .red
-        default: return .green
-        }
-    }
 }

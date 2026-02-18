@@ -43,22 +43,43 @@ enum ComplicationDataStore {
     static let appGroupID = "group.ch.batbern.watch"
     static let snapshotKey = "complication_snapshot"
 
+    // Shared encoder/decoder — avoids allocating new instances on every write (called each second).
+    private static let encoder = JSONEncoder()
+    private static let decoder = JSONDecoder()
+
+    // MARK: - Production API
+
     /// Persist a snapshot to the App Group store and ask WidgetKit to refresh.
     /// Must be called from the main app process only.
     static func write(_ snapshot: ComplicationSnapshot) {
         guard let defaults = UserDefaults(suiteName: appGroupID),
-              let data = try? JSONEncoder().encode(snapshot) else { return }
+              let data = try? encoder.encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
-        defaults.synchronize()
         WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// Read the latest snapshot from the App Group store.
     /// Returns nil when no session data has been written yet.
     static func read() -> ComplicationSnapshot? {
-        guard let defaults = UserDefaults(suiteName: appGroupID),
+        read(from: UserDefaults(suiteName: appGroupID))
+    }
+
+    // MARK: - Injectable API (unit tests)
+
+    /// Write to a caller-supplied UserDefaults. Does NOT trigger WidgetCenter reload.
+    /// Use in unit tests to bypass the App Group requirement.
+    static func write(_ snapshot: ComplicationSnapshot, to defaults: UserDefaults?) {
+        guard let defaults,
+              let data = try? encoder.encode(snapshot) else { return }
+        defaults.set(data, forKey: snapshotKey)
+    }
+
+    /// Read from a caller-supplied UserDefaults.
+    /// Use in unit tests to bypass the App Group requirement.
+    static func read(from defaults: UserDefaults?) -> ComplicationSnapshot? {
+        guard let defaults,
               let data = defaults.data(forKey: snapshotKey),
-              let snapshot = try? JSONDecoder().decode(ComplicationSnapshot.self, from: data)
+              let snapshot = try? decoder.decode(ComplicationSnapshot.self, from: data)
         else { return nil }
         return snapshot
     }

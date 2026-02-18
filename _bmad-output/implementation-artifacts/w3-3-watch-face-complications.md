@@ -1,6 +1,6 @@
 # Story W3.3: Watch Face Complications
 
-Status: review
+Status: done
 
 ## Story
 
@@ -439,6 +439,8 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 
 6. **`WKCompanionAppBundleIdentifier` required (post-review fix 2026-02-17)**: The extension `Info.plist` was missing this key, causing complications not to appear in the watch face picker. Added `BATbern.BATbern-watch.watchkitapp` (= the Watch App's `PRODUCT_BUNDLE_IDENTIFIER`). This key is required for watchOS to associate the WidgetKit extension with its companion Watch app.
 
+7. **Review Follow-ups (2026-02-18)**: Addressed 5 findings — (M1) extracted `urgencyColor` from 3 duplicated view private vars into `ComplicationEntry.urgencyColor` (single source of truth); (M2) fixed `readReturnsNilWhenEmpty` test to `#expect(result == nil)` instead of `_ = result`; (M3) added injectable `write(_:to:)` + `read(from:)` overloads to `ComplicationDataStore` and rewrote `writeReadRoundTrip` to use them; (L1) removed deprecated `defaults.synchronize()`; (L4) added static `encoder`/`decoder` to avoid per-call allocations.
+
 4. **`ComplicationDataStore.write()` call site**: Added to `LiveCountdownViewModel.refreshState()` — called every second during a live session. `WidgetCenter.reloadAllTimelines()` is called inside `write()`, which is safe from `@MainActor` per Apple docs.
 
 5. **Speaker names**: `formattedSpeakerNames` (last names only, max 2) added to `LiveCountdownViewModel` for the narrow C2 complication. The existing `speakerNames` property (full names, all speakers) is kept for the O3 view.
@@ -461,3 +463,9 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 - `apps/BATbern-watch/BATbern-watch Watch App/App/ContentView.swift` — added `Notification.Name.openOrganizerZone` extension, `.onReceive` handler
 - `apps/BATbern-watch/BATbern-watch Watch App/Info.plist` — added `CFBundleURLTypes` for `batbern-watch://` scheme
 - `apps/BATbern-watch/BATbern-watch Complications/Info.plist` — added `WKCompanionAppBundleIdentifier` (required for face picker)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationEntry.swift` — added `urgencyColor` property (review fix M1)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift` — injectable write/read overloads, static encoder/decoder, removed synchronize() (review fixes M3, L1, L4)
+- `apps/BATbern-watch/BATbern-watch Complications/CircularComplication.swift` — use entry.urgencyColor (review fix M1)
+- `apps/BATbern-watch/BATbern-watch Complications/RectangularComplication.swift` — use entry.urgencyColor (review fix M1)
+- `apps/BATbern-watch/BATbern-watch Complications/CornerComplication.swift` — use entry.urgencyColor (review fix M1)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift` — fixed M2/M3 tests

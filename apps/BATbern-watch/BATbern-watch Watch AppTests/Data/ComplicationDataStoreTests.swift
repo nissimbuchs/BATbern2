@@ -15,18 +15,10 @@ import Foundation
 @Suite("ComplicationDataStore Tests")
 struct ComplicationDataStoreTests {
 
-    // Unique key prefix per test run to avoid cross-test pollution in App Group defaults
-    private func makeStore() -> (key: String, defaults: UserDefaults) {
-        let key = "test_snapshot_\(UUID().uuidString)"
-        // Use standard defaults (no real App Group in test target) — override key for isolation
-        let defaults = UserDefaults.standard
-        return (key, defaults)
-    }
+    // MARK: - 5.2 Round-trip via injectable API (no App Group required)
 
-    // MARK: - 5.2 Round-trip encode/decode
-
-    @Test("write then read returns same ComplicationSnapshot")
-    func writeReadRoundTrip() throws {
+    @Test("write(_:to:) then read(from:) round-trips a ComplicationSnapshot")
+    func writeReadRoundTrip() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let original = ComplicationSnapshot(
             sessionTitle: "Cloud-Native Security",
@@ -39,36 +31,30 @@ struct ComplicationDataStoreTests {
             updatedAt: now
         )
 
-        // Write directly to standard UserDefaults with isolated key for test
-        let data = try JSONEncoder().encode(original)
-        UserDefaults.standard.set(data, forKey: "test_roundtrip_key")
+        // Use injectable API: writes to UserDefaults.standard, skips WidgetCenter reload.
+        let testDefaults = UserDefaults.standard
+        ComplicationDataStore.write(original, to: testDefaults)
+        let decoded = ComplicationDataStore.read(from: testDefaults)
 
-        let decoded = try #require(
-            UserDefaults.standard.data(forKey: "test_roundtrip_key")
-                .flatMap { try? JSONDecoder().decode(ComplicationSnapshot.self, from: $0) }
-        )
+        #expect(decoded?.sessionTitle == "Cloud-Native Security")
+        #expect(decoded?.speakerNames == "Meier, Keller")
+        #expect(decoded?.isLive == true)
+        #expect(decoded?.urgencyLevel == "normal")
+        #expect(decoded?.sessionDuration == 2700)
 
-        #expect(decoded.sessionTitle == "Cloud-Native Security")
-        #expect(decoded.speakerNames == "Meier, Keller")
-        #expect(decoded.isLive == true)
-        #expect(decoded.urgencyLevel == "normal")
-        #expect(decoded.sessionDuration == 2700)
-
-        UserDefaults.standard.removeObject(forKey: "test_roundtrip_key")
+        // Clean up to avoid cross-test pollution
+        testDefaults.removeObject(forKey: ComplicationDataStore.snapshotKey)
     }
 
     // MARK: - 5.3 read() returns nil when no data
 
-    @Test("read returns nil when App Group has no data")
+    @Test("read() returns nil when App Group is unavailable (test environment)")
     func readReturnsNilWhenEmpty() {
-        // Use a suiteName that doesn't exist → UserDefaults(suiteName:) returns nil
-        // ComplicationDataStore.read() guards against nil defaults and nil data
+        // In the test sandbox, UserDefaults(suiteName: "group.ch.batbern.watch") returns nil
+        // because the App Group isn't registered. ComplicationDataStore.read() guards against
+        // nil defaults and returns nil — assert this explicitly.
         let result = ComplicationDataStore.read()
-        // In test environment App Group "group.ch.batbern.watch" isn't registered,
-        // so UserDefaults(suiteName:) returns nil → read() returns nil
-        // This test documents the expected nil-safe behavior
-        // (result may be nil or a stale value from a prior test run — we just verify no crash)
-        _ = result  // no crash = pass
+        #expect(result == nil)
     }
 }
 
