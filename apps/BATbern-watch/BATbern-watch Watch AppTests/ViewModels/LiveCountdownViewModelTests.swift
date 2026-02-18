@@ -321,6 +321,26 @@ struct LiveCountdownViewModelTests {
         #expect(vm.activeSession?.id == "upcoming-talk")
     }
 
+    // MARK: - Extended Runtime Session Lifecycle (AC6 wiring)
+
+    @Test("startTimer calls startEventSession — AC6 background haptic delivery wired")
+    func startTimer_callsStartEventSession() {
+        let (vm, _, haptics, _) = makeVM()
+        #expect(haptics.startEventSessionCallCount == 0)
+        vm.startTimer()
+        #expect(haptics.startEventSessionCallCount == 1)
+        vm.stopTimer()
+    }
+
+    @Test("stopTimer calls stopEventSession — Extended Runtime session released on dismiss")
+    func stopTimer_callsStopEventSession() {
+        let (vm, _, haptics, _) = makeVM()
+        vm.startTimer()
+        #expect(haptics.stopEventSessionCallCount == 0)
+        vm.stopTimer()
+        #expect(haptics.stopEventSessionCallCount == 1)
+    }
+
     // MARK: - Wall-Clock Accuracy (3.10, AC6)
 
     @Test("Wall-clock recalculation survives simulated suspension")
