@@ -48,11 +48,13 @@ struct ComplicationDataStoreTests {
 
     // MARK: - 5.3 read() returns nil when no data
 
-    @Test("read() returns nil when App Group is unavailable (test environment)")
+    @Test("read() returns nil when no snapshot has been stored")
     func readReturnsNilWhenEmpty() {
-        // In the test sandbox, UserDefaults(suiteName: "group.ch.batbern.watch") returns nil
-        // because the App Group isn't registered. ComplicationDataStore.read() guards against
-        // nil defaults and returns nil — assert this explicitly.
+        // Other tests (e.g. LiveCountdownViewModelTests) call refreshState() which writes to
+        // the App Group UserDefaults. Clear the key before asserting so this test is order-
+        // independent regardless of whether the App Group suite is available in the simulator.
+        UserDefaults(suiteName: ComplicationDataStore.appGroupID)?
+            .removeObject(forKey: ComplicationDataStore.snapshotKey)
         let result = ComplicationDataStore.read()
         #expect(result == nil)
     }

@@ -149,4 +149,76 @@ struct WatchHapticServiceTests {
     // The equivalent integration path (HapticScheduler → MockHapticService.play()) is
     // comprehensively covered in HapticSchedulerTests.swift (11 test cases).
     // See: BATbern-watch Watch AppTests/Domain/HapticSchedulerTests.swift
+
+    // MARK: - D1 Scheduled Firing
+
+    @Test("schedule() removes the entry from the queue after the delay elapses")
+    func scheduledAlertRemovesFromQueueAfterDelay() async {
+        let service = WatchHapticService()
+
+        service.schedule(.fiveMinuteWarning, at: Date(timeIntervalSinceNow: 0.05))
+        #expect(service.scheduledQueue.count == 1)  // Queued immediately
+
+        try? await Task.sleep(nanoseconds: 150_000_000)  // Wait 0.15s — past the 0.05s fire time
+
+        #expect(service.scheduledQueue.isEmpty)  // Task fired, entry removed
+    }
+
+    @Test("schedule() with a past date fires immediately on next runloop turn")
+    func schedulePastDateFiresImmediately() async {
+        let service = WatchHapticService()
+
+        service.schedule(.timesUp, at: Date(timeIntervalSinceNow: -5))  // 5s ago
+
+        try? await Task.sleep(nanoseconds: 100_000_000)  // Small yield
+
+        #expect(service.scheduledQueue.isEmpty)
+    }
+
+    @Test("cancelAll() before scheduled time prevents the entry from re-appearing after delay")
+    func cancelAllBeforeFireTimePreventsPlay() async {
+        let service = WatchHapticService()
+
+        service.schedule(.fiveMinuteWarning, at: Date(timeIntervalSinceNow: 0.1))
+        service.cancelAll()
+
+        #expect(service.scheduledQueue.isEmpty)  // Cleared immediately
+
+        try? await Task.sleep(nanoseconds: 200_000_000)  // Wait past fire time
+
+        #expect(service.scheduledQueue.isEmpty)  // Did not re-add on wakeup
+    }
+
+    @Test("cancel() before fire time suppresses that alert via the queue guard")
+    func cancelBeforeFireTimeSuppressesViaGuard() async {
+        let service = WatchHapticService()
+        let fireAt = Date(timeIntervalSinceNow: 0.1)
+
+        service.schedule(.fiveMinuteWarning, at: fireAt)
+        service.schedule(.twoMinuteWarning, at: fireAt)
+
+        service.cancel(.fiveMinuteWarning)
+
+        #expect(service.scheduledQueue.count == 1)
+        #expect(service.scheduledQueue[0].alert == .twoMinuteWarning)
+
+        try? await Task.sleep(nanoseconds: 200_000_000)  // Wait past fire time
+
+        // twoMinuteWarning fired and was removed; fiveMinuteWarning guard prevented play
+        #expect(service.scheduledQueue.isEmpty)
+    }
+
+    @Test("stopEventSession() before fire time cancels the scheduled task")
+    func stopEventSessionCancelsScheduledTask() async {
+        let service = WatchHapticService()
+
+        service.schedule(.gongReminder, at: Date(timeIntervalSinceNow: 0.1))
+        service.stopEventSession()
+
+        #expect(service.scheduledQueue.isEmpty)  // cancelAll() inside stop clears queue
+
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
+        #expect(service.scheduledQueue.isEmpty)  // Task was cancelled — nothing re-added
+    }
 }

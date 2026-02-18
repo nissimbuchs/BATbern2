@@ -115,11 +115,24 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     // MARK: - HapticServiceProtocol — Scheduled Queue
 
     func schedule(_ alert: HapticAlert, at date: Date) {
-        // TODO: Epic W4 (no story filed yet) — server-triggered pre-scheduling.
-        // HapticScheduler calls play() directly via the timer loop; this queue is currently
-        // unused for time-critical alerts. Implement when WebSocket (W4.1) lets the server
-        // push haptic commands that need to fire at a specific wall-clock time.
-        scheduledQueue.append((alert, date))
+        let delay = max(0, date.timeIntervalSince(Date()))
+        let task = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard let self else { return }
+                // Guard: if cancel() removed this entry while we slept, suppress play.
+                // cancelAll() / stopEventSession() suppress via Task cancellation (catch below).
+                guard self.scheduledQueue.contains(where: { $0.alert == alert && $0.at == date }) else {
+                    return
+                }
+                self.scheduledQueue.removeAll { $0.alert == alert && $0.at == date }
+                self.play(alert)
+            } catch {
+                // Cancelled by stopEventSession() or cancelAll() — alert suppressed intentionally.
+            }
+        }
+        scheduledQueue.append((alert: alert, at: date))
+        pendingHapticTasks.append(task)
     }
 
     func cancelAll() {
@@ -148,8 +161,7 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     }
 
     func stopEventSession() {
-        pendingHapticTasks.forEach { $0.cancel() }
-        pendingHapticTasks.removeAll()
+        cancelAll()
         #if !targetEnvironment(simulator)
         extendedSession?.invalidate()
         extendedSession = nil
