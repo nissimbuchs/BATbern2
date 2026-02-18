@@ -69,7 +69,7 @@ const AboutPage = () => {
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <BATbernLoader size={32} />
+              <BATbernLoader size={64} />
             </div>
           ) : organizers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

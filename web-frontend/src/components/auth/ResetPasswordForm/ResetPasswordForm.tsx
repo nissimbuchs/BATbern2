@@ -137,7 +137,7 @@ export const ResetPasswordForm: React.FC = () => {
             ? t('auth:reset.loggingIn', 'Logging you in...')
             : t('auth:reset.redirecting')}
         </Typography>
-        <BATbernLoader size={32} />
+        <BATbernLoader size={64} />
       </Box>
     );
   }

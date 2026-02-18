@@ -95,7 +95,7 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

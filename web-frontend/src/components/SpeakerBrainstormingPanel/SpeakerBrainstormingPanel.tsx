@@ -197,7 +197,7 @@ export const SpeakerBrainstormingPanel: React.FC<SpeakerBrainstormingPanelProps>
 
           {isLoading && (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight={100}>
-              <BATbernLoader size={48} />
+              <BATbernLoader size={96} />
             </Box>
           )}
 

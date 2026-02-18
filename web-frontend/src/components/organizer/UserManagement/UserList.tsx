@@ -96,7 +96,7 @@ const UserList: React.FC = () => {
           justifyContent="center"
           minHeight="400px"
         >
-          <BATbernLoader size={48} />
+          <BATbernLoader size={96} />
           <Typography variant="body1" sx={{ mt: 2 }}>
             {t('loading.users')}
           </Typography>

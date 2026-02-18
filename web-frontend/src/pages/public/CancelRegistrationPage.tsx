@@ -87,7 +87,7 @@ const CancelRegistrationPage = () => {
         {/* Loading State */}
         {state === 'loading' && (
           <div className="text-center py-24">
-            <BATbernLoader size={64} />
+            <BATbernLoader size={128} />
             <h2 className="text-2xl font-light mb-2">{t('cancellation.loading.title')}</h2>
             <p className="text-zinc-400">{t('cancellation.loading.message')}</p>
           </div>

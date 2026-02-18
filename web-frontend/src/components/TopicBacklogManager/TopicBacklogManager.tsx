@@ -237,7 +237,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                 alignItems: 'center',
               }}
             >
-              <BATbernLoader size={48} />
+              <BATbernLoader size={96} />
             </Paper>
           )}
 

@@ -88,7 +88,7 @@ const WatchPairingSection: React.FC<WatchPairingSectionProps> = ({ username }) =
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-        <BATbernLoader size={24} />
+        <BATbernLoader size={48} />
       </Box>
     );
   }

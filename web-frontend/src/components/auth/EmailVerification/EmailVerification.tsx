@@ -84,7 +84,7 @@ export const EmailVerification: React.FC = () => {
   if (autoCode && isLoading) {
     return (
       <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8, textAlign: 'center' }}>
-        <BATbernLoader size={64} />
+        <BATbernLoader size={128} />
         <Typography variant="h5" sx={{ mt: 2 }}>
           {t('verify.verifying')}
         </Typography>

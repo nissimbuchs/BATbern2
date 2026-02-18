@@ -36,7 +36,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
           Loading
         </Typography>
-        <BATbernLoader size={40} />
+        <BATbernLoader size={80} />
         <Typography variant="body2" color="text.primary">
           Checking authentication...
         </Typography>

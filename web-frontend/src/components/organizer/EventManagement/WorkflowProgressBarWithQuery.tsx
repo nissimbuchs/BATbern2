@@ -54,7 +54,7 @@ export const WorkflowProgressBarWithQuery: React.FC<WorkflowProgressBarWithQuery
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2 }}>
-        <BATbernLoader size={24} />
+        <BATbernLoader size={48} />
         <Typography variant="body2" color="text.secondary">
           {t('workflow.loading')}
         </Typography>

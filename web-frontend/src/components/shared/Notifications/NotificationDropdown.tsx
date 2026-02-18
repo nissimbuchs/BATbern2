@@ -235,7 +235,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
           {/* Loading state */}
           {isLoading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <BATbernLoader size={32} />
+              <BATbernLoader size={64} />
             </Box>
           )}
 

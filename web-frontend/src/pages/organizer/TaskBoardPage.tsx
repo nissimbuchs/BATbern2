@@ -241,7 +241,7 @@ const TaskBoardPage: React.FC = () => {
         {/* Task Board Content */}
         {isLoading && (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-            <BATbernLoader size={48} />
+            <BATbernLoader size={96} />
           </Box>
         )}
 

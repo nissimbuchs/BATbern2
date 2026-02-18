@@ -214,7 +214,7 @@ const InvitationResponsePage = () => {
         {/* Loading State */}
         {pageState === 'loading' && (
           <div className="text-center py-24" role="status" aria-label="Loading invitation">
-            <BATbernLoader size={64} />
+            <BATbernLoader size={128} />
             <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Invitation...</h2>
             <p className="text-zinc-400">Please wait while we verify your link.</p>
           </div>

@@ -87,7 +87,7 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
-        <BATbernLoader size={32} />
+        <BATbernLoader size={64} />
       </Box>
     );
   }

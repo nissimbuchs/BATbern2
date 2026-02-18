@@ -223,7 +223,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

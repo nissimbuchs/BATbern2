@@ -299,7 +299,7 @@ const ProfilePhotoUpload = ({
             className="hidden"
             aria-label="Upload profile photo"
           />
-          {isUploading ? <BATbernLoader size={32} /> : <Upload className="h-8 w-8 text-zinc-400" />}
+          {isUploading ? <BATbernLoader size={64} /> : <Upload className="h-8 w-8 text-zinc-400" />}
         </div>
       )}
 

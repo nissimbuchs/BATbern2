@@ -44,7 +44,7 @@ const RegistrationPage = () => {
             role="status"
             aria-label="Loading event details"
           >
-            <BATbernLoader size={48} />
+            <BATbernLoader size={96} />
           </div>
         )}
 

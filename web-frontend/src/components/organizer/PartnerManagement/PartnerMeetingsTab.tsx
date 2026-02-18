@@ -56,7 +56,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

@@ -118,7 +118,7 @@ export const EventManagementDashboard: React.FC = () => {
   if (isLoadingEvents && isLoadingNotifications) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

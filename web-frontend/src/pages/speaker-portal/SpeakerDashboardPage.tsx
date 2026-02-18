@@ -310,7 +310,7 @@ const SpeakerDashboardPage = () => {
           {/* Loading state (AC8) */}
           {pageState === 'loading' && (
             <div className="flex flex-col items-center justify-center py-20">
-              <BATbernLoader size={32} />
+              <BATbernLoader size={64} />
               <p className="text-muted-foreground">{t('speakerPortal.dashboard.loading')}</p>
             </div>
           )}

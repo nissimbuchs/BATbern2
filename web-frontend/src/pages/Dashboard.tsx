@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
       <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
         Dashboard
       </Typography>
-      <BATbernLoader size={48} />
+      <BATbernLoader size={96} />
       <Typography variant="body2" color="text.primary">
         Loading your dashboard...
       </Typography>

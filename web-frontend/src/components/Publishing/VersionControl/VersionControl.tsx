@@ -151,7 +151,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ eventCode }) => 
 
       {isLoadingVersions ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <BATbernLoader size={40} data-testid="version-history-loading" />
+          <BATbernLoader size={80} data-testid="version-history-loading" />
         </Box>
       ) : (
         <TableContainer>

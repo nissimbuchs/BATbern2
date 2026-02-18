@@ -230,7 +230,7 @@ export default function ContentSubmissionPage() {
       <PublicLayout>
         <div className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center">
-            <BATbernLoader size={48} />
+            <BATbernLoader size={96} />
             <p className="text-gray-400">Loading content...</p>
           </div>
         </div>

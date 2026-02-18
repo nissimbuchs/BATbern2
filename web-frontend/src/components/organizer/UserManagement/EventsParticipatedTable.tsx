@@ -85,7 +85,7 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-        <BATbernLoader size={40} />
+        <BATbernLoader size={80} />
       </Box>
     );
   }

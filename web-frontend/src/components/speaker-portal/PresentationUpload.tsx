@@ -307,7 +307,7 @@ const PresentationUpload = ({
 
         {isUploading ? (
           <>
-            <BATbernLoader size={48} />
+            <BATbernLoader size={96} />
             <p className="text-white font-medium">{selectedFileName}</p>
           </>
         ) : (

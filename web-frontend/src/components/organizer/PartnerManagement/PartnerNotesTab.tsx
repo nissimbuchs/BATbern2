@@ -110,7 +110,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

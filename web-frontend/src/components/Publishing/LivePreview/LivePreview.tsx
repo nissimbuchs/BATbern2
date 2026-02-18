@@ -190,7 +190,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
               gap: 2,
             }}
           >
-            <BATbernLoader size={48} data-testid="preview-loading-spinner" />
+            <BATbernLoader size={96} data-testid="preview-loading-spinner" />
             <Typography variant="body2" color="text.secondary">
               Refreshing preview...
             </Typography>

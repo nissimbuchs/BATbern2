@@ -119,7 +119,7 @@ const PageLoader = () => (
       minHeight: '50vh',
     }}
   >
-    <BATbernLoader size={48} />
+    <BATbernLoader size={96} />
   </Box>
 );
 

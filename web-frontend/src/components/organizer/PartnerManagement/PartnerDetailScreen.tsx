@@ -73,7 +73,7 @@ export const PartnerDetailScreen: React.FC = () => {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <BATbernLoader size={48} />
+          <BATbernLoader size={96} />
         </Box>
         <Stack spacing={2} sx={{ mt: 4 }}>
           <Skeleton variant="rectangular" height={200} />

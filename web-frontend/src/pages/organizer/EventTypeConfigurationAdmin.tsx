@@ -101,7 +101,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
   if (isLoading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
-        <BATbernLoader size={48} />
+        <BATbernLoader size={96} />
       </Container>
     );
   }

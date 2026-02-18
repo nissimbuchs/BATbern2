@@ -231,7 +231,7 @@ const ProfileUpdatePage = () => {
         {/* Loading State */}
         {pageState === 'loading' && (
           <div className="text-center py-24" role="status" aria-label="Loading profile">
-            <BATbernLoader size={64} />
+            <BATbernLoader size={128} />
             <h2 className="text-2xl font-light text-zinc-100 mb-2">Loading Profile...</h2>
             <p className="text-zinc-400">Please wait while we load your profile.</p>
           </div>

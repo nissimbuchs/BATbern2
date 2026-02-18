@@ -187,7 +187,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <BATbernLoader size={48} />
+          <BATbernLoader size={96} />
         </Box>
       ) : content ? (
         <>

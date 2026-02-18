@@ -735,7 +735,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
           {isLoading && (
             <Box display="flex" justifyContent="center" p={4}>
-              <BATbernLoader size={48} />
+              <BATbernLoader size={96} />
             </Box>
           )}
 

@@ -76,7 +76,7 @@ export const SpeakerStatusDashboard: React.FC<SpeakerStatusDashboardProps> = ({ 
   if (isLoading || speakersLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-        <BATbernLoader size={40} />
+        <BATbernLoader size={80} />
       </Box>
     );
   }
