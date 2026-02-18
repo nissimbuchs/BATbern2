@@ -24,14 +24,24 @@ import Foundation
 @MainActor
 struct WatchHapticServiceTests {
 
-    // MARK: - 4.3 Protocol Conformance (compile-time)
+    // MARK: - 4.3 Protocol Conformance (compile-time + smoke)
 
     /// Verifies that WatchHapticService satisfies the HapticServiceProtocol contract.
-    /// This is a compile-time check — if it compiles, it passes.
-    @Test("WatchHapticService conforms to HapticServiceProtocol")
+    ///
+    /// The type annotation `let service: HapticServiceProtocol` is the authoritative
+    /// compile-time check — this test will not compile if the conformance is broken.
+    /// The method calls below smoke-test the full protocol surface without crashing.
+    @Test("WatchHapticService conforms to HapticServiceProtocol — compile-time and smoke test")
     func protocolConformance() {
+        // Compile-time: fails to compile if WatchHapticService drops HapticServiceProtocol.
         let service: HapticServiceProtocol = WatchHapticService()
-        #expect(service is WatchHapticService)
+        // Smoke: all protocol methods are callable without crashing (WKInterfaceDevice is
+        // a no-op in Simulator; startEventSession/stopEventSession guarded by #if simulator).
+        service.schedule(.fiveMinuteWarning, at: Date(timeIntervalSinceNow: 60))
+        service.cancel(.fiveMinuteWarning)
+        service.cancelAll()
+        service.startEventSession()
+        service.stopEventSession()
     }
 
     // MARK: - 4.4 cancel() removes correct alert

@@ -27,7 +27,12 @@ import OSLog
 ///
 /// Thread safety: All methods are called from @MainActor context (LiveCountdownViewModel).
 /// WKExtendedRuntimeSessionDelegate callbacks are dispatched to the main thread by WatchKit.
-/// @unchecked Sendable acknowledges that synchronization is handled by the call sites.
+/// @unchecked Sendable is used instead of @MainActor because WKExtendedRuntimeSessionDelegate
+/// infers @MainActor on the conforming class, which breaks default parameter expressions such as
+/// `WatchHapticService()` in LiveCountdownViewModel.init(). The invariant is:
+///   - scheduledQueue, extendedSession, pendingHapticTasks — ONLY accessed from @MainActor.
+/// Violating this invariant produces a data race that the compiler cannot detect. Do not call
+/// these methods from a non-@MainActor context.
 final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRuntimeSessionDelegate, @unchecked Sendable {
 
     // MARK: - Haptic Timing Constants
@@ -48,6 +53,10 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
 
     private(set) var scheduledQueue: [(alert: HapticAlert, at: Date)] = []
     private var extendedSession: WKExtendedRuntimeSession?
+    /// Pending delayed-tap Tasks for multi-tap haptic patterns (double/triple).
+    /// Cancelled by stopEventSession() and cancelAll() so in-flight taps are suppressed
+    /// when the session ends or the view is dismissed mid-pattern.
+    private var pendingHapticTasks: [Task<Void, Never>] = []
     private let logger = Logger(subsystem: "ch.batbern.watch", category: "WatchHapticService")
 
     // MARK: - HapticServiceProtocol — Immediate Playback
@@ -59,21 +68,37 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
             WKInterfaceDevice.current().play(.notification)
 
         case .twoMinuteWarning:
-            // Double tap — distinctly different from single (AC2)
+            // Double tap — distinctly different from single (AC2).
+            // Uses a cancellable Task so stopEventSession() can suppress the delayed tap
+            // if the session ends or the view is dismissed within the 200ms window.
             WKInterfaceDevice.current().play(.notification)
-            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.doubleTapGap) {
-                WKInterfaceDevice.current().play(.notification)
+            let doubleTap = Task { @MainActor in
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.doubleTapGap * 1_000_000_000))
+                    WKInterfaceDevice.current().play(.notification)
+                } catch {
+                    // Cancelled by stopEventSession() — second tap suppressed intentionally.
+                }
             }
+            pendingHapticTasks.append(doubleTap)
 
         case .timesUp, .gongReminder:
-            // Triple tap — "last call" feel, distinct from 2-min pattern (AC3, AC5)
+            // Triple tap — "last call" feel, distinct from 2-min pattern (AC3, AC5).
+            // Both delayed taps are cancellable (see doubleTap comment above).
             WKInterfaceDevice.current().play(.notification)
-            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.tripleTapFirstGap) {
-                WKInterfaceDevice.current().play(.notification)
+            let tripleTap2 = Task { @MainActor in
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.tripleTapFirstGap * 1_000_000_000))
+                    WKInterfaceDevice.current().play(.notification)
+                } catch { /* Cancelled — tap 2 suppressed. */ }
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + HapticTiming.tripleTapSecondGap) {
-                WKInterfaceDevice.current().play(.notification)
+            let tripleTap3 = Task { @MainActor in
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.tripleTapSecondGap * 1_000_000_000))
+                    WKInterfaceDevice.current().play(.notification)
+                } catch { /* Cancelled — tap 3 suppressed. */ }
             }
+            pendingHapticTasks.append(contentsOf: [tripleTap2, tripleTap3])
 
         case .overtimePulse:
             // Rhythmic pulse — "keep going" feel (AC4)
@@ -90,13 +115,16 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     // MARK: - HapticServiceProtocol — Scheduled Queue
 
     func schedule(_ alert: HapticAlert, at date: Date) {
-        // TODO: W3.x — background scheduled delivery not yet implemented.
-        // HapticScheduler calls play() directly; this queue is currently unused.
-        // Do not rely on schedule() for time-critical alerts until implemented.
+        // TODO: Epic W4 (no story filed yet) — server-triggered pre-scheduling.
+        // HapticScheduler calls play() directly via the timer loop; this queue is currently
+        // unused for time-critical alerts. Implement when WebSocket (W4.1) lets the server
+        // push haptic commands that need to fire at a specific wall-clock time.
         scheduledQueue.append((alert, date))
     }
 
     func cancelAll() {
+        pendingHapticTasks.forEach { $0.cancel() }
+        pendingHapticTasks.removeAll()
         scheduledQueue.removeAll()
     }
 
@@ -120,6 +148,8 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     }
 
     func stopEventSession() {
+        pendingHapticTasks.forEach { $0.cancel() }
+        pendingHapticTasks.removeAll()
         #if !targetEnvironment(simulator)
         extendedSession?.invalidate()
         extendedSession = nil
@@ -143,6 +173,9 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
         // check, setting nil here would orphan the new session.
         if extendedRuntimeSession === extendedSession {
             extendedSession = nil
+        }
+        if let error {
+            logger.error("Extended runtime session error: \(error.localizedDescription, privacy: .public)")
         }
         logger.warning("Extended runtime session invalidated: \(reason.rawValue, privacy: .public)")
     }

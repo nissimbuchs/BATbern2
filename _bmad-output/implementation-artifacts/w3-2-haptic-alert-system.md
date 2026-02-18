@@ -1,6 +1,6 @@
 # Story W3.2: Haptic Alert System
 
-Status: review
+Status: done
 
 ## Story
 
@@ -88,12 +88,20 @@ so that I know the time state without looking at my Watch.
   - [x] 4.7 Manual/on-device verification required (haptics are no-ops in Simulator) — documented in test file
   - [x] 4.8 Integration path covered by existing `HapticSchedulerTests.swift` using `MockHapticService` ✅
 
-### Review Follow-ups (AI)
+### Review Follow-ups (AI) — Cycle 1 (2026-02-18)
 
 - [x] [AI-Review][HIGH] Fix `extendedRuntimeSessionWillExpire` race condition — set `extendedSession = nil` before calling `startEventSession()`, and add identity check (`===`) in `didInvalidateWith` to prevent orphaned sessions after session expiry [WatchHapticService.swift:125-130]
 - [x] [AI-Review][HIGH] Fix failing `ArrivalTrackerTests.swift:91` — test expects `"marco"` (username) but `ArrivalTracker` now uses `organizerFirstName` (`"Marco"`); update assertion to match W2.4 intentional change [ArrivalTrackerTests.swift:91]
 - [x] [AI-Review][MEDIUM] Add `startEventSessionCallCount`/`stopEventSessionCallCount` tracking to `MockHapticService` and add ViewModel test asserting `startTimer()` calls `startEventSession()` (AC6 wiring untested at ViewModel level) [MockHapticService.swift, LiveCountdownViewModelTests.swift]
 - [x] [AI-Review][MEDIUM] Extract haptic timing gaps to named constants — `0.2`, `0.15`, `0.30` are design-critical values with no names; suggest `HapticTiming.doubleTapGap`, `tripleTapFirstGap`, `tripleTapSecondGap` [WatchHapticService.swift:51,57,60]
+
+### Review Follow-ups (AI) — Cycle 2 (2026-02-18)
+
+- [x] [AI-Review][MEDIUM] Replace non-cancellable `DispatchQueue.main.asyncAfter` in multi-tap patterns with cancellable `Task` — added `pendingHapticTasks` array, cancelled in `stopEventSession()` and `cancelAll()` [WatchHapticService.swift]
+- [x] [AI-Review][MEDIUM] Log `error` parameter in `extendedRuntimeSession(_:didInvalidateWith:error:)` — was silently discarded, now logged at `.error` level [WatchHapticService.swift:176-178]
+- [x] [AI-Review][MEDIUM] Fix tautological `protocolConformance()` test — removed always-true `#expect(service is WatchHapticService)`; replaced with compile-time annotation + protocol surface smoke test [WatchHapticServiceTests.swift]
+- [x] [AI-Review][MEDIUM] Strengthen `@unchecked Sendable` documentation — expanded class-level comment to name each mutable member and the @MainActor invariant explicitly [WatchHapticService.swift:30-35]
+- [x] [AI-Review][LOW] Fix `schedule()` TODO reference from undefined "W3.x" to "Epic W4 (no story filed yet) — server-triggered pre-scheduling via W4.1 WebSocket" [WatchHapticService.swift]
 
 ## Dev Notes
 
@@ -283,7 +291,8 @@ claude-sonnet-4-5-20250929
 - **Task 3**: No `Info.plist` changes needed (watchOS 8+ extended runtime needs no plist entries for general sessions).
 - **Task 4**: 8 unit tests in `WatchHapticServiceTests.swift` — all pass. `@MainActor` annotation added to `LiveCountdownViewModel.init()` to silence warnings introduced by `WKExtendedRuntimeSessionDelegate`'s actor inference.
 - **Results**: 127 tests pass, 0 failures, no regressions.
-- **Review Follow-ups (2026-02-18)**: Addressed all 4 code review findings — race condition fix in `extendedRuntimeSessionWillExpire` (identity check + nil-before-restart), ArrivalTrackerTests:91 already correct in committed code, added `startEventSessionCallCount`/`stopEventSessionCallCount` to MockHapticService + 2 new ViewModel tests for AC6 wiring, extracted `HapticTiming` constants enum. All tests pass.
+- **Review Follow-ups Cycle 1 (2026-02-18)**: Addressed all 4 code review findings — race condition fix in `extendedRuntimeSessionWillExpire` (identity check + nil-before-restart), ArrivalTrackerTests:91 already correct in committed code, added `startEventSessionCallCount`/`stopEventSessionCallCount` to MockHapticService + 2 new ViewModel tests for AC6 wiring, extracted `HapticTiming` constants enum. All tests pass.
+- **Review Follow-ups Cycle 2 (2026-02-18)**: Addressed 5 findings — (M1) replaced `DispatchQueue.main.asyncAfter` with cancellable `Task` in multi-tap patterns + `pendingHapticTasks` array cancelled by `stopEventSession()`/`cancelAll()`; (M2) log `error` param in `didInvalidateWith`; (M3) fixed tautological `protocolConformance()` test to compile-time + protocol surface smoke; (M4) expanded `@unchecked Sendable` doc with named mutable members and @MainActor invariant; (L1) updated `schedule()` TODO from "W3.x" to "Epic W4 / W4.1 WebSocket".
 
 ### File List
 
@@ -295,8 +304,11 @@ claude-sonnet-4-5-20250929
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/WatchHapticService.swift` — race condition fix + HapticTiming constants (review follow-ups)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Mocks/MockHapticService.swift` — added session lifecycle tracking (review follow-up)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift` — added AC6 wiring tests (review follow-up)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/WatchHapticService.swift` — cancellable Tasks for multi-tap, error logging, @unchecked doc, TODO fix (review cycle 2)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/WatchHapticServiceTests.swift` — fixed tautological protocolConformance() test (review cycle 2)
 
 ### Change Log
 
 - **2026-02-17** (W3.2): Implemented haptic alert system — distinct multi-tap patterns, Extended Runtime session for background delivery, break gong routing, 8 unit tests. 127/127 tests pass.
-- **2026-02-18** (W3.2 review follow-ups): Addressed code review findings — 4 items resolved (2 HIGH, 2 MEDIUM). All tests pass.
+- **2026-02-18** (W3.2 review follow-ups cycle 1): Addressed code review findings — 4 items resolved (2 HIGH, 2 MEDIUM). All tests pass.
+- **2026-02-18** (W3.2 review follow-ups cycle 2): 5 additional findings resolved — cancellable Task-based multi-tap haptics, error logging, tautological test fix, @unchecked Sendable doc, TODO reference updated to Epic W4/W4.1. All tests pass.
