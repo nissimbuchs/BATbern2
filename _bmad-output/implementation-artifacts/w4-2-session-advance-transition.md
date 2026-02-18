@@ -1,6 +1,6 @@
 # Story W4.2: Session Advance & Transition
 
-Status: in-progress
+Status: review
 
 ---
 
@@ -172,12 +172,12 @@ so that transitions are seamless.
 
 ### Review Follow-ups (AI)
 
-- [ ] [AI-Review][LOW] `WebSocketService.sessionEndedEvent` is a single optional — rapid back-to-back SESSION_ENDED messages overwrite each other before `.onChange` fires. Replace with a queue or `AsyncStream`-style delivery to guarantee no signal is missed. [`WebSocketService.swift:156`]
-- [ ] [AI-Review][LOW] `SessionTransitionViewTests` fixture uses `Date().addingTimeInterval(...)` instead of a fixed anchor date — inconsistent with project testing standards (`fixedNow` pattern). Replace with a fixed `Date(timeIntervalSince1970:)`. [`SessionTransitionViewTests.swift:42-43`]
-- [ ] [AI-Review][LOW] `WatchSessionService.SessionNotFoundException` message only contains `sessionSlug`, not `eventCode`. In a multi-event system this slows debugging. Change to `"sessionSlug '%s' not found in event '%s'"`. [`WatchSessionService.java:42`]
-- [ ] [AI-Review][LOW] `WatchPresenceService.presenceByEvent` ConcurrentHashMap grows unbounded — entries for completed events are never removed. Add cleanup (e.g. call `presenceByEvent.remove(eventCode)` when event is closed or presence set drops to empty). [`WatchPresenceService.java:36`]
-- [ ] [AI-Review][LOW] `SessionRepository` has two inconsistent ways to query by event code: `findByEventCode` does a JOIN through `Event` on `eventId`; `findByEventCodeAndSessionSlug` uses `s.eventCode` directly. Align both to the same strategy for maintainability. [`SessionRepository.java:109,118`]
-- [ ] [AI-Review][LOW] `LiveCountdownView` mutates `webSocketService.sessionEndedEvent = nil` directly from a view. Encapsulate as `webSocketService.consumeSessionEndedEvent()` to keep the reset logic inside the service. [`LiveCountdownView.swift:55`]
+- [x] [AI-Review][LOW] `WebSocketService.sessionEndedEvent` is a single optional — rapid back-to-back SESSION_ENDED messages overwrite each other before `.onChange` fires. Replace with a queue or `AsyncStream`-style delivery to guarantee no signal is missed. [`WebSocketService.swift:156`]
+- [x] [AI-Review][LOW] `SessionTransitionViewTests` fixture uses `Date().addingTimeInterval(...)` instead of a fixed anchor date — inconsistent with project testing standards (`fixedNow` pattern). Replace with a fixed `Date(timeIntervalSince1970:)`. [`SessionTransitionViewTests.swift:42-43`]
+- [x] [AI-Review][LOW] `WatchSessionService.SessionNotFoundException` message only contains `sessionSlug`, not `eventCode`. In a multi-event system this slows debugging. Change to `"sessionSlug '%s' not found in event '%s'"`. [`WatchSessionService.java:42`]
+- [x] [AI-Review][LOW] `WatchPresenceService.presenceByEvent` ConcurrentHashMap grows unbounded — entries for completed events are never removed. Add cleanup (e.g. call `presenceByEvent.remove(eventCode)` when event is closed or presence set drops to empty). [`WatchPresenceService.java:36`]
+- [x] [AI-Review][LOW] `SessionRepository` has two inconsistent ways to query by event code: `findByEventCode` does a JOIN through `Event` on `eventId`; `findByEventCodeAndSessionSlug` uses `s.eventCode` directly. Align both to the same strategy for maintainability. [`SessionRepository.java:109,118`]
+- [x] [AI-Review][LOW] `LiveCountdownView` mutates `webSocketService.sessionEndedEvent = nil` directly from a view. Encapsulate as `webSocketService.consumeSessionEndedEvent()` to keep the reset logic inside the service. [`LiveCountdownView.swift:55`]
 
 ---
 
@@ -433,6 +433,14 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - M5: `handleAction` rejects `END_SESSION` with null/blank `sessionSlug` before reaching `WatchSessionService`
 - Tests: `WatchPresenceControllerTest` updated for presence mock + 2 new tests (cross-event rejection, null sessionSlug)
 
+**Review Follow-up Session (2026-02-18, 6 LOW items):**
+- ✅ Resolved review finding [LOW]: WebSocketService queue — added `private var sessionEndedQueue`, `consumeSessionEndedEvent()`, `private(set)` on `sessionEndedEvent`; queue test added to `WebSocketServiceTests`
+- ✅ Resolved review finding [LOW]: SessionTransitionViewTests fixture now uses `fixedNow = Date(timeIntervalSinceReferenceDate: 0)` instead of `Date().addingTimeInterval(...)`
+- ✅ Resolved review finding [LOW]: SessionNotFoundException now includes eventCode via new 2-arg constructor `SessionNotFoundException(sessionSlug, eventCode)`
+- ✅ Resolved review finding [LOW]: WatchPresenceService.leaveEvent removes empty map entries; cleanup test added to WatchPresenceServiceTest
+- ✅ Resolved review finding [LOW]: SessionRepository.findByEventCode aligned to direct `s.eventCode` column (no JOIN)
+- ✅ Resolved review finding [LOW]: LiveCountdownView calls `consumeSessionEndedEvent()` instead of direct `webSocketService.sessionEndedEvent = nil`
+
 **In-progress (paused per user request):**
 
 **watchOS — DONE:**
@@ -502,9 +510,12 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 **Backend — Modified:**
 - `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchWebSocketController.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchPresenceService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/WatchStateUpdateMessage.java`
 - `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/SessionNotFoundException.java`
 - `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchPresenceControllerTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchPresenceServiceTest.java`
 
 ---
 
@@ -513,3 +524,4 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - **2026-02-18** (claude-sonnet-4-6): Session 1 — Implemented watchOS tasks (0–5, 7.3, 8, 9.1, 10.1–10.3): NextSessionPeekView, canMarkDone, Done button, SessionTransitionView, SessionCardView attribution, WebSocketService session-ended signal. All watchOS unit tests created.
 - **2026-02-18** (claude-sonnet-4-6): Session 2 — Completed backend tasks (6, 7.1/7.2, 7.4, 9.2) and Swift Task 10.4: WatchSessionService.endSession() with idempotency; WatchWebSocketController dispatch; WatchSessionServiceTest (5 integration tests); LiveCountdownViewTests transition guard tests. All backend tests passing, Checkstyle clean.
 - **2026-02-18** (claude-sonnet-4-6): Session 3 (Code Review) — Applied 6 fixes from adversarial review: H1 event-level auth guard, M1 File List, M2 Done button AC4 gap, M3 task cancellation, M4 test dates, M5 null sessionSlug guard. Added 2 new controller tests.
+- **2026-02-18** (claude-sonnet-4-6): Session 4 (Review follow-ups) — Addressed 6 LOW code-review findings: WebSocketService queue + consumeSessionEndedEvent(); SessionTransitionViewTests fixedNow anchor; SessionNotFoundException eventCode in message; WatchPresenceService empty-map cleanup; SessionRepository query alignment; LiveCountdownView encapsulated nil-reset.
