@@ -179,17 +179,29 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     // MARK: - Private: WebSocket Listener
 
     private func startWebSocketListener() {
-        guard let wsClient = webSocketClient else { return }
+        if let wsClient = webSocketClient {
+            // Call arrivalUpdates() BEFORE creating the Task so the AsyncStream's continuation
+            // is stored in wsClient synchronously. Any emitArrival() calls that happen before
+            // the Task has a chance to run will buffer into the stream and be delivered later.
+            let updates = wsClient.arrivalUpdates()
 
-        // Call arrivalUpdates() BEFORE creating the Task so the AsyncStream's continuation
-        // is stored in wsClient synchronously. Any emitArrival() calls that happen before
-        // the Task has a chance to run will buffer into the stream and be delivered later.
-        let updates = wsClient.arrivalUpdates()
-
-        listeningTask = Task { [weak self] in
-            for await message in updates {
-                guard !Task.isCancelled else { break }
-                await self?.processArrivalMessage(message)
+            listeningTask = Task { [weak self] in
+                for await message in updates {
+                    guard !Task.isCancelled else { break }
+                    await self?.processArrivalMessage(message)
+                }
+            }
+        } else {
+            // No WebSocket client wired up yet (production WebSocket client pending W4).
+            // Fall back to polling every 5 seconds so AC4 real-time sync still works
+            // across devices via the REST endpoint.
+            guard let eventCode = currentEventCode else { return }
+            listeningTask = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
+                    guard !Task.isCancelled, let self else { break }
+                    await self.fetchInitialArrivals(eventCode: eventCode)
+                }
             }
         }
     }
@@ -215,8 +227,7 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
     // MARK: - Private: REST Fallback
 
     private func confirmArrivalViaREST(eventCode: String, speakerUsername: String) async throws {
-        guard let jwt = authManager.currentJWT,
-              let organizerUsername = authManager.organizerUsername else {
+        guard let jwt = authManager.currentJWT else {
             throw ArrivalError.notAuthenticated
         }
 
@@ -226,10 +237,9 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
         request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body: [String: String] = [
-            "speakerUsername": speakerUsername,
-            "confirmedBy": organizerUsername
-        ]
+        // Backend reads confirmedBy from authentication.getName() — do not send it in body.
+        // ConfirmArrivalRequest only declares speakerUsername; extra fields cause 400.
+        let body: [String: String] = ["speakerUsername": speakerUsername]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (_, response) = try await httpFetcher(request)
