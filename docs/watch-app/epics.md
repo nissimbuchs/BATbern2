@@ -366,7 +366,7 @@ As an organizer, I want to scroll through the full schedule in the organizer zon
 >
 > **Gate checklist (SM must confirm before creating W4.1):**
 > - [ ] G1: `epic-4-reuse-map.md` reviewed — extension mandates understood
-> - [ ] D1: `WatchHapticService.schedule()` firing logic implemented and tested (blocks W4.1 only)
+> - [x] D1: `WatchHapticService.schedule()` firing logic implemented and tested (blocks W4.1 only) ✅
 > - [ ] A1: Pre-implementation adversarial review section added to story template
 > - [ ] A2: Design direction block added to story template
 >
@@ -386,7 +386,7 @@ As an organizer, I want my Watch to maintain a real-time connection to the backe
 - Given the backend validates my JWT When my token is expired Then the Watch refreshes via pairing token and reconnects transparently
 
 **Architectural constraints (reuse-map Area 1, 3, 4):**
-- **D1 hard dependency:** `WatchHapticService.schedule()` must fire scheduled alerts before this story is Dev-assigned. Confirm D1 complete in Pre-Implementation Review.
+- **D1 complete ✅** — `WatchHapticService.schedule()` fires scheduled alerts (implemented 2026-02-18, commit `5c49e211`). D1 no longer blocks W4.1.
 - **Implement `WebSocketClientProtocol`** — the full contract is already defined in `Protocols/WebSocketClientProtocol.swift`. `MockWebSocketClient` already exists for tests. Do not redefine the protocol.
 - **WebSocket state flows through `EventDataController`** — when `SESSION_STARTED` / `SESSION_ENDED` / `SESSION_EXTENDED` messages arrive, the concrete WebSocket service calls an `EventDataController` method (e.g., `applyServerState(_:)`) to update `currentEvent`. `EventStateManager` recalculates derivatives automatically. Do not create an `OrganizerStateManager`.
 - **Connectivity indicator: use `ConnectionStatusBar`** (already in `Views/Shared/`). Route WebSocket disconnection into `EventDataController.isOffline`. One flag, one visual component.
