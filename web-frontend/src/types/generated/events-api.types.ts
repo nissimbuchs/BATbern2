@@ -1369,10 +1369,231 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/watch/organizers/me/active-events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get active events for authenticated organizer
+     * @description Returns active events assigned to the authenticated organizer.
+     *     Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+     *
+     *     **Story W2.3**: Event Join & Schedule Sync
+     *     - AC#1: Full schedule including sessions and speaker metadata
+     *     - AC#4: Empty list when no active events
+     *     - AC#5: Event preview data when event is >1h away
+     *
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    get: operations['getActiveEventsForOrganizer'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/watch/events/{eventCode}/arrivals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker arrival status for an event
+     * @description Returns all confirmed speaker arrivals for the given event.
+     *     Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+     *
+     *     **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    get: operations['getArrivalStatus'];
+    put?: never;
+    /**
+     * Confirm a speaker's arrival
+     * @description Confirms a speaker's arrival for the given event.
+     *     Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+     *     Also triggers real-time WebSocket broadcast to all organizer watches.
+     *
+     *     **REST Fallback**: Used when WebSocket is offline/reconnecting.
+     *     **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    post: operations['confirmSpeakerArrival'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Request body to confirm a speaker's arrival. */
+    ConfirmArrivalRequest: {
+      /** @example anna.meier */
+      speakerUsername: string;
+    };
+    /** @description List of confirmed speaker arrivals for an event. */
+    ArrivalStatusList: {
+      arrivals: components['schemas']['ArrivalStatus'][];
+    };
+    /** @description A single speaker arrival record. */
+    ArrivalStatus: {
+      /** @example anna.meier */
+      speakerUsername: string;
+      /** @example marco.muster */
+      confirmedBy: string;
+      /**
+       * Format: date-time
+       * @example 2026-02-16T17:15:00Z
+       */
+      arrivedAt: string;
+    };
+    /** @description Server-authoritative arrived/total counts for real-time counter sync. */
+    ArrivalCount: {
+      /** @example 2 */
+      arrived: number;
+      /** @example 4 */
+      total: number;
+    };
+    /**
+     * @description WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+     *     Also returned as REST response body for the POST endpoint.
+     *     Carries individual arrival details plus server-authoritative counts (FR39).
+     */
+    SpeakerArrivalBroadcast: {
+      /**
+       * @example SPEAKER_ARRIVED
+       * @enum {string}
+       */
+      type: 'SPEAKER_ARRIVED';
+      /** @example BATbern56 */
+      eventCode: string;
+      /** @example anna.meier */
+      speakerUsername: string;
+      /** @example Anna */
+      speakerFirstName?: string;
+      /** @example Meier */
+      speakerLastName?: string;
+      /** @example marco.muster */
+      confirmedBy: string;
+      /**
+       * Format: date-time
+       * @example 2026-02-16T17:15:00Z
+       */
+      arrivedAt: string;
+      arrivalCount: components['schemas']['ArrivalCount'];
+    };
+    /** @description Response wrapper for the organizer's active events (W2.3). */
+    ActiveEventsResponse: {
+      activeEvents: components['schemas']['ActiveEventDetail'][];
+    };
+    /** @description Full event detail for Watch organizer sync, including sessions and speakers. */
+    ActiveEventDetail: {
+      /** @example BATbern57 */
+      eventCode: string;
+      /** @example BATbern 57 - Cloud Native Architectures */
+      title: string;
+      /**
+       * Format: date
+       * @example 2026-03-01
+       */
+      eventDate: string;
+      /** @example Kultur Casino Bern */
+      venueName: string;
+      /**
+       * @description HH:mm in Europe/Zurich timezone, derived from first session
+       * @example 18:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * @description HH:mm in Europe/Zurich timezone, derived from last session
+       * @example 22:00
+       */
+      typicalEndTime?: string | null;
+      /** @example https://cdn.example.com/theme/batbern57.jpg */
+      themeImageUrl?: string | null;
+      /** @example AGENDA */
+      currentPublishedPhase?: string | null;
+      /**
+       * @example SCHEDULED
+       * @enum {string}
+       */
+      eventStatus: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+      sessions: components['schemas']['WatchSessionDetail'][];
+    };
+    /** @description Session detail for Watch organizer sync. */
+    WatchSessionDetail: {
+      /** @example cloud-keynote */
+      sessionSlug: string;
+      /** @example Cloud Architecture Keynote */
+      title: string;
+      abstract?: string | null;
+      /** @example talk */
+      sessionType?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-03-01T17:00:00Z
+       */
+      scheduledStartTime?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-03-01T17:45:00Z
+       */
+      scheduledEndTime?: string | null;
+      /** @example 45 */
+      durationMinutes?: number | null;
+      speakers: components['schemas']['WatchSpeakerDetail'][];
+      /**
+       * @description Derived from timing relative to now; W4 adds real-time override.
+       * @example SCHEDULED
+       * @enum {string|null}
+       */
+      status?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | null;
+      /**
+       * Format: date-time
+       * @description Populated in W4 (session control). Always null in W2.3.
+       */
+      actualStartTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Populated in W4 (session control). Always null in W2.3.
+       */
+      actualEndTime?: string | null;
+      /**
+       * @description Populated in W4. Always 0 in W2.3.
+       * @example 0
+       */
+      overrunMinutes?: number;
+      /** @description Populated in W4. Always null in W2.3. */
+      completedBy?: string | null;
+    };
+    /** @description Speaker detail for Watch organizer sync. */
+    WatchSpeakerDetail: {
+      /** @example john.doe */
+      username: string;
+      /** @example John */
+      firstName?: string | null;
+      /** @example Doe */
+      lastName?: string | null;
+      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      company?: string | null;
+      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      companyLogoUrl?: string | null;
+      /** @example https://cdn.example.com/portrait/john.doe.jpg */
+      profilePictureUrl?: string | null;
+      /** @example Cloud architect with 10 years experience */
+      bio?: string | null;
+      /** @example panelist */
+      speakerRole?: string | null;
+    };
     Event: {
       /**
        * @description Human-readable event identifier in format "BATbern{number}".
@@ -5300,6 +5521,82 @@ export interface operations {
       };
       403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getActiveEventsForOrganizer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Active events list (may be empty) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActiveEventsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getArrivalStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Arrival status list (may be empty) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ArrivalStatusList'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmSpeakerArrival: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmArrivalRequest'];
+      };
+    };
+    responses: {
+      /** @description Arrival confirmed — includes broadcast payload with server-authoritative counts */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerArrivalBroadcast'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }
