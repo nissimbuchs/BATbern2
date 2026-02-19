@@ -381,7 +381,18 @@
       "contact": "Contact",
       "respond": "Respond",
       "updateProfile": "Update Profile",
-      "submitContent": "Submit Content"
+      "submitContent": "Submit Content",
+      "speakerStatus": "Speaker status",
+      "contentStatus": "Content status",
+      "materialProgress": "Material submission progress",
+      "deadlines": "Deadlines",
+      "urgent": "Urgent",
+      "soon": "Due soon",
+      "onTime": "On time",
+      "actions": "Actions",
+      "pastEvent": "Past event",
+      "materialAvailable": "Material available",
+      "noMaterials": "No materials"
     },
     "content": {
       "title": "Submit Your Content",

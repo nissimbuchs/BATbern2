@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.JwtConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerInvitationToken;
@@ -11,12 +12,15 @@ import ch.batbern.events.repository.SpeakerInvitationTokenRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.shared.types.TokenAction;
+import ch.batbern.shared.utils.LoggingUtils;
+import io.jsonwebtoken.Jwts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -26,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -33,11 +38,13 @@ import java.util.UUID;
 /**
  * Service for magic link token generation and validation.
  * Story 6.1a: Magic Link Infrastructure
+ * Story 9.1: JWT Token Generation for speaker portal access
  *
  * Provides passwordless authentication for the speaker portal:
  * - Generates secure tokens (32-byte random, base64url encoded)
  * - Validates tokens (hash lookup, expiry check, single-use enforcement)
  * - Returns speaker context for valid tokens
+ * - Generates long-lived JWT tokens for speaker portal access (Story 9.1)
  *
  * SECURITY:
  * - Only token hash (SHA-256) is stored in database
@@ -68,17 +75,20 @@ public class MagicLinkService {
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
+    private final JwtConfig jwtConfig;
     private final SecureRandom secureRandom;
 
     public MagicLinkService(
             SpeakerInvitationTokenRepository tokenRepository,
             SpeakerPoolRepository speakerPoolRepository,
             EventRepository eventRepository,
-            SessionRepository sessionRepository) {
+            SessionRepository sessionRepository,
+            JwtConfig jwtConfig) {
         this.tokenRepository = tokenRepository;
         this.speakerPoolRepository = speakerPoolRepository;
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
+        this.jwtConfig = jwtConfig;
         this.secureRandom = new SecureRandom();
     }
 
@@ -130,6 +140,40 @@ public class MagicLinkService {
         LOG.info("Generated {} token for speaker pool: {}", action, speakerPoolId);
 
         return plaintextToken;
+    }
+
+    /**
+     * Generate a JWT token for speaker portal access (Story 9.1).
+     *
+     * The JWT is signed with RS256 and contains the speaker's identity claims.
+     * Unlike magic link tokens, JWTs are stateless and reusable for 30 days.
+     *
+     * @param speakerPoolId the speaker pool entry
+     * @return signed RS256 JWT string (30-day expiry, reusable)
+     */
+    @Transactional(readOnly = true)
+    public String generateJwtToken(UUID speakerPoolId) {
+        SpeakerPool speakerPool = speakerPoolRepository.findById(speakerPoolId)
+                .orElseThrow(() -> new IllegalArgumentException("SpeakerPool not found: " + speakerPoolId));
+
+        KeyPair keyPair = jwtConfig.getKeyPair();
+        Instant now = Instant.now();
+
+        String jwt = Jwts.builder()
+                .subject(speakerPoolId.toString())
+                .issuer(jwtConfig.getIssuer())
+                .issuedAt(java.util.Date.from(now))
+                .expiration(java.util.Date.from(now.plus(jwtConfig.getExpiryDays(), ChronoUnit.DAYS)))
+                .claim("email", speakerPool.getEmail())
+                .claim("roles", List.of("SPEAKER"))
+                .claim("speakerPoolId", speakerPoolId.toString())
+                .signWith(keyPair.getPrivate(), Jwts.SIG.RS256)
+                .compact();
+
+        String maskedEmail = LoggingUtils.maskEmail(
+                speakerPool.getEmail() != null ? speakerPool.getEmail() : "unknown");
+        LOG.info("Generated JWT token for speaker pool: {} (email: {})", speakerPoolId, maskedEmail);
+        return jwt;
     }
 
     /**

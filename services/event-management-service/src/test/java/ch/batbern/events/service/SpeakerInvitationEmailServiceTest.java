@@ -53,6 +53,9 @@ class SpeakerInvitationEmailServiceTest {
     @Mock
     private SessionRepository sessionRepository;
 
+    @Mock
+    private MagicLinkService magicLinkService;
+
     private SpeakerInvitationEmailService invitationEmailService;
 
     private SpeakerPool speaker;
@@ -63,8 +66,9 @@ class SpeakerInvitationEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        invitationEmailService = new SpeakerInvitationEmailService(emailService, sessionRepository);
+        invitationEmailService = new SpeakerInvitationEmailService(emailService, sessionRepository, magicLinkService);
         ReflectionTestUtils.setField(invitationEmailService, "baseUrl", "https://batbern.ch");
+        when(magicLinkService.generateJwtToken(any())).thenReturn("test.jwt.token");
         ReflectionTestUtils.setField(invitationEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(invitationEmailService, "organizerEmail", "events@batbern.ch");
 
@@ -277,6 +281,24 @@ class SpeakerInvitationEmailServiceTest {
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("10.03.2026");
+        }
+
+        @Test
+        @DisplayName("should include JWT magic link in invitation email")
+        void should_includeJwtMagicLink_when_emailSent() {
+            // Given - Story 9.1: JWT magic link for speaker portal
+            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+            // When
+            invitationEmailService.sendInvitationEmail(
+                    speaker, event, respondToken, dashboardToken, Locale.ENGLISH);
+
+            // Then
+            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            String emailBody = bodyCaptor.getValue();
+            assertThat(emailBody).contains(
+                    "https://batbern.ch/speaker-portal/magic-login?jwt=test.jwt.token");
         }
 
         @Test
