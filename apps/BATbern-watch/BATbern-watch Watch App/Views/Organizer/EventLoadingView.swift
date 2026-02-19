@@ -16,9 +16,7 @@ struct EventLoadingView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ProgressView(value: progress, total: 1.0)
-                .progressViewStyle(.circular)
-                .scaleEffect(1.4)
+            BATbernSpinnerView(size: 52)
 
             VStack(spacing: 4) {
                 Text(NSLocalizedString("sync.connecting_to_event", comment: "Connecting to event"))
@@ -32,11 +30,6 @@ struct EventLoadingView: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
                 }
-
-                Text("\(Int(progress * 100))%")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
             }
         }
         .padding()

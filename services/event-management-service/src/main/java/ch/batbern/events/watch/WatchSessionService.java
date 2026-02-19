@@ -109,13 +109,15 @@ public class WatchSessionService {
         }
 
         // Extend current session end time — truncate to minute so fractional seconds never accumulate
-        Instant oldEnd = session.getEndTime();
-        session.setEndTime(oldEnd.truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
+        Instant oldEnd = session.getEndTime().truncatedTo(ChronoUnit.MINUTES);
+        session.setEndTime(oldEnd.plusSeconds(minutesAdded * 60L));
         sessionRepository.save(session);
 
-        // Cascade: shift all sessions starting after the old end time
+        // Cascade: shift all sessions starting at or after the old end time.
+        // Uses >= so back-to-back sessions (nextSession.startTime == oldEnd) are included.
         var downstream = sessionRepository
-                .findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(eventCode, oldEnd);
+                .findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
+                        eventCode, oldEnd);
         for (var ds : downstream) {
             ds.setStartTime(ds.getStartTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
             ds.setEndTime(ds.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
