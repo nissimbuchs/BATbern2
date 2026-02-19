@@ -12,13 +12,23 @@ import SwiftUI
 struct ConnectionStatusBar: View {
     let isOffline: Bool
     let lastSynced: Date?
+    let presenceCount: Int
+    let isConnected: Bool
     let clock: ClockProtocol
 
     // MARK: - Initialization
 
-    init(isOffline: Bool, lastSynced: Date?, clock: ClockProtocol = SystemClock()) {
+    init(
+        isOffline: Bool,
+        lastSynced: Date?,
+        presenceCount: Int = 0,
+        isConnected: Bool = true,
+        clock: ClockProtocol = SystemClock()
+    ) {
         self.isOffline = isOffline
         self.lastSynced = lastSynced
+        self.presenceCount = presenceCount
+        self.isConnected = isConnected
         self.clock = clock
     }
 
@@ -53,8 +63,20 @@ struct ConnectionStatusBar: View {
                     .padding(.vertical, 2)
                     .background(Color(white: 0.18), in: Capsule())
             }
+
+            if presenceCount > 0 {
+                Text("·")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                Image(systemName: presenceCount > 1 ? "person.2.fill" : "person.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isConnected ? .teal : .orange)
+                Text("\(presenceCount)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isConnected ? .teal : .orange)
+            }
         }
-        .padding(.leading, 10)
+        .frame(maxWidth: .infinity)
         .padding(.top, 4)
     }
 

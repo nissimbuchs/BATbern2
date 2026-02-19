@@ -39,12 +39,14 @@ struct ContentView: View {
                 .tag(Zone.organizer)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))  // Horizontal paging, no dots
-        .overlay(alignment: .topLeading) {
+        .overlay(alignment: .top) {
             // Single unified connectivity badge — covers every screen in both zones.
-            // offset(y: -22): nudges into the system clock row (undocumented, brittle).
+            // Centered; organizer presence count appears here when in organizer zone.
             ConnectionStatusBar(
                 isOffline: eventDataController.isOffline,
-                lastSynced: eventDataController.lastSynced
+                lastSynced: eventDataController.lastSynced,
+                presenceCount: webSocketService.presenceCount,
+                isConnected: webSocketService.isConnected
             )
             .offset(y: -40)
         }

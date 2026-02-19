@@ -163,22 +163,38 @@ class WatchDelayToPreviousTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_throwIllegalStateException_when_noPreviousSession")
-    void should_throwIllegalStateException_when_noPreviousSession() {
+    @DisplayName("should_shiftAllSessionsForward_when_noPreviousSession")
+    void should_shiftAllSessionsForward_when_noPreviousSession() {
         Event event = saveEvent("BATbern72", 9022);
         Instant baseTime = Instant.parse("2026-02-14T18:00:00Z");
 
-        // Only one session — no previous exists
-        Session session = saveSession(event.getId(), "BATbern72", "first-session-ever",
+        // Session A: first session (no previous)
+        Session sessionA = saveSession(event.getId(), "BATbern72", "first-session-ever",
                 baseTime, baseTime.plus(45, ChronoUnit.MINUTES));
-        session.setActualStartTime(baseTime);
-        sessionRepository.save(session);
+        sessionA.setActualStartTime(baseTime);
+        sessionRepository.save(sessionA);
 
-        assertThatThrownBy(() ->
-                watchSessionService.delayToPreviousSession(
-                        "BATbern72", "first-session-ever", 5, "marco.organizer")
-        ).isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("No previous session");
+        // Session B: downstream session that must also shift
+        saveSession(event.getId(), "BATbern72", "second-session",
+                baseTime.plus(45, ChronoUnit.MINUTES), baseTime.plus(90, ChronoUnit.MINUTES));
+
+        // Should NOT throw — first session delay shifts everything forward
+        watchSessionService.delayToPreviousSession(
+                "BATbern72", "first-session-ever", 5, "marco.organizer");
+
+        Session updatedA = sessionRepository
+                .findByEventCodeAndSessionSlug("BATbern72", "first-session-ever").orElseThrow();
+        assertThat(updatedA.getStartTime())
+                .isEqualTo(baseTime.plus(5, ChronoUnit.MINUTES));
+        assertThat(updatedA.getEndTime())
+                .isEqualTo(baseTime.plus(50, ChronoUnit.MINUTES));
+
+        Session updatedB = sessionRepository
+                .findByEventCodeAndSessionSlug("BATbern72", "second-session").orElseThrow();
+        assertThat(updatedB.getStartTime())
+                .isEqualTo(baseTime.plus(50, ChronoUnit.MINUTES));
+        assertThat(updatedB.getEndTime())
+                .isEqualTo(baseTime.plus(95, ChronoUnit.MINUTES));
     }
 
     @Test

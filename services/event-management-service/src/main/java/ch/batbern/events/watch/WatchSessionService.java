@@ -61,6 +61,23 @@ public class WatchSessionService {
         session.setCompletedByUsername(completedByUsername);
         sessionRepository.save(session);
 
+        // Auto-start next session: set actualStartTime so the Watch can show the "Delayed" button
+        // in the first 10 minutes (shouldShowDelayed requires actualStartTime != null).
+        // W4.3: delayToPreviousSession() clears actualStartTime when re-activating the previous
+        // session, so this is safe to set here — it gets cleared if the organizer goes back.
+        var nextSessions = sessionRepository
+                .findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(
+                        eventCode, session.getStartTime());
+        if (!nextSessions.isEmpty()) {
+            var nextSession = nextSessions.get(0);
+            if (nextSession.getActualStartTime() == null && nextSession.getActualEndTime() == null) {
+                nextSession.setActualStartTime(actualEndTime);
+                sessionRepository.save(nextSession);
+                log.debug("Auto-started next session {} (actualStartTime={})",
+                        nextSession.getSessionSlug(), actualEndTime);
+            }
+        }
+
         watchPresenceService.broadcastSessionEnded(eventCode, sessionSlug, completedByUsername);
         log.debug("Session {} ended by {} (overrun: {} min)",
                 sessionSlug, completedByUsername, overrunMinutes);
@@ -91,17 +108,17 @@ public class WatchSessionService {
             return;
         }
 
-        // Extend current session end time
+        // Extend current session end time — truncate to minute so fractional seconds never accumulate
         Instant oldEnd = session.getEndTime();
-        session.setEndTime(oldEnd.plusSeconds(minutesAdded * 60L));
+        session.setEndTime(oldEnd.truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
         sessionRepository.save(session);
 
         // Cascade: shift all sessions starting after the old end time
         var downstream = sessionRepository
                 .findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(eventCode, oldEnd);
         for (var ds : downstream) {
-            ds.setStartTime(ds.getStartTime().plusSeconds(minutesAdded * 60L));
-            ds.setEndTime(ds.getEndTime().plusSeconds(minutesAdded * 60L));
+            ds.setStartTime(ds.getStartTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
+            ds.setEndTime(ds.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
         }
         if (!downstream.isEmpty()) {
             sessionRepository.saveAll(downstream);
@@ -131,11 +148,28 @@ public class WatchSessionService {
                 .orElseThrow(() -> new SessionNotFoundException(currentSlug, eventCode));
 
         // Find previous session (the one scheduled immediately before current)
-        var previous = sessionRepository
+        var maybePrevious = sessionRepository
                 .findFirstByEventCodeAndScheduledStartTimeBeforeOrderByScheduledStartTimeDesc(
-                        eventCode, current.getStartTime())
-                .orElseThrow(() -> new IllegalStateException(
-                        "No previous session for '" + currentSlug + "' in event '" + eventCode + "'"));
+                        eventCode, current.getStartTime());
+
+        // No previous session — this is the first session. Shift it and all downstream forward.
+        if (maybePrevious.isEmpty()) {
+            var toShift = sessionRepository
+                    .findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
+                            eventCode, current.getStartTime());
+            for (var s : toShift) {
+                s.setStartTime(s.getStartTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
+                s.setEndTime(s.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
+            }
+            sessionRepository.saveAll(toShift);
+            watchPresenceService.buildAndBroadcastState(
+                    eventCode, "SESSION_DELAYED", currentSlug, requestedBy);
+            log.debug("First session {} delayed by {} min — all sessions shifted forward",
+                    currentSlug, minutesAdded);
+            return;
+        }
+
+        var previous = maybePrevious.get();
 
         // Idempotency: if previous already has actualStartTime set and actualEndTime is null → ACTIVE
         if (previous.getActualStartTime() != null && previous.getActualEndTime() == null
@@ -152,7 +186,7 @@ public class WatchSessionService {
         sessionRepository.save(current);
 
         // Extend previous and re-activate (set actualEndTime to null to mark as active)
-        previous.setEndTime(previous.getEndTime().plusSeconds(minutesAdded * 60L));
+        previous.setEndTime(previous.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
         previous.setActualEndTime(null);
         previous.setCompletedByUsername(null);
         previous.setOverrunMinutes(null);
@@ -163,8 +197,8 @@ public class WatchSessionService {
                 .findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
                         eventCode, current.getStartTime());
         for (var s : toShift) {
-            s.setStartTime(s.getStartTime().plusSeconds(minutesAdded * 60L));
-            s.setEndTime(s.getEndTime().plusSeconds(minutesAdded * 60L));
+            s.setStartTime(s.getStartTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
+            s.setEndTime(s.getEndTime().truncatedTo(ChronoUnit.MINUTES).plusSeconds(minutesAdded * 60L));
         }
         sessionRepository.saveAll(toShift);
 

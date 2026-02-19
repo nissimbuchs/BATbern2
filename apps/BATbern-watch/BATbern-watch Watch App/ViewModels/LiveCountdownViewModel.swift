@@ -103,20 +103,20 @@ final class LiveCountdownViewModel {
 
         let discovered = findActiveSession(in: eventState)
 
-        // Reset haptic scheduler when session changes
+        // Reset haptic scheduler only when the active session itself changes.
+        // Engine is always refreshed with the latest session (catches schedule cascade
+        // from delay/extend broadcasts that update CachedSession.endTime in place).
         if discovered?.id != activeSession?.id {
             scheduler.reset()
             shouldAutoAdvance = false
             shouldShowExtend = false
             shouldShowDelayed = false
             sessionActiveSeconds = 0
-            if let session = discovered {
-                engine.setActiveSession(session)
-            } else {
-                engine.clearActiveSession()
-            }
+        }
+        if let session = discovered {
+            engine.setActiveSession(session)
         } else {
-            engine.recalculate()
+            engine.clearActiveSession()
         }
 
         activeSession = discovered
@@ -140,13 +140,12 @@ final class LiveCountdownViewModel {
         // W4.3: Extend (last 10 min) and Delayed (first 10 min) button visibility
         if let active = activeSession, urgencyLevel != .overtime {
             shouldShowExtend = engine.remainingSeconds <= 600
-            if let startTime = active.actualStartTime {
-                sessionActiveSeconds = max(0, Int(clock.now.timeIntervalSince(startTime)))
-                shouldShowDelayed = sessionActiveSeconds < 600
-            } else {
-                sessionActiveSeconds = 0
-                shouldShowDelayed = false
-            }
+            // Use actualStartTime when set; fall back to scheduled startTime so the
+            // first session (which has no previous session to set actualStartTime) also
+            // shows the Delayed button in its first 10 minutes.
+            let effectiveStart = active.actualStartTime ?? active.startTime
+            sessionActiveSeconds = max(0, Int(clock.now.timeIntervalSince(effectiveStart)))
+            shouldShowDelayed = sessionActiveSeconds < 600
         } else {
             shouldShowExtend = false
             shouldShowDelayed = false
@@ -233,7 +232,8 @@ final class LiveCountdownViewModel {
     ) -> WatchSession? {
         guard let event = eventState.currentEvent else { return nil }
         let sessions = event.sessions.compactMap { $0.toWatchSession() }
-        return sessions.first { $0.startTime > activeSession.endTime && !$0.isBreak }
+            .sorted { $0.startTime < $1.startTime }
+        return sessions.first { $0.startTime > activeSession.startTime && !$0.isBreak }
     }
 
     // MARK: - Progress (1.10)

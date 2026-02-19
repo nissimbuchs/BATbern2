@@ -41,7 +41,10 @@ struct LiveCountdownView: View {
         }
         .onDisappear {
             viewModel.stopTimer()
-            webSocketService.disconnect()
+            // Do NOT disconnect here — sheets and fullScreenCover also fire onDisappear,
+            // which would tear down the WebSocket every time Extend/Delayed/Transition opens.
+            // The connection stays alive across sheet presentations; disconnect happens only
+            // when the user leaves the organizer zone entirely (parent view lifecycle).
         }
         // Task 3.11: connect WebSocket when view appears (event code from eventState)
         .task(id: eventState.currentEvent?.eventCode) {
@@ -142,35 +145,37 @@ struct LiveCountdownView: View {
 
     private var countdownContent: some View {
         VStack(spacing: 5) {
-            // Task 4.4: PresenceIndicatorView ADDITIVE alongside ConnectionStatusBar — DO NOT remove ConnectionStatusBar
-            HStack {
-                ConnectionStatusBar(
-                    isOffline: dataController.isOffline,
-                    lastSynced: dataController.lastSynced
-                )
-                Spacer()
-                PresenceIndicatorView(
-                    presenceCount: webSocketService.presenceCount,
-                    isConnected: webSocketService.isConnected
-                )
-            }
-            compactRing
-            speakerCard
-            // W4.3: Extend and Delayed action buttons
-            if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
-                HStack(spacing: 6) {
-                    if viewModel.shouldShowExtend {
-                        Button("Extend") { showExtendPrompt = true }
-                            .buttonStyle(.borderedProminent).tint(.blue)
+            // Ring row: action icons appear to the right when available, keeping ring centered otherwise.
+            HStack(alignment: .center, spacing: 8) {
+                if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
+                    Spacer(minLength: 0)
+                }
+                compactRing
+                if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
+                    VStack(spacing: 10) {
+                        if viewModel.shouldShowExtend {
+                            Button { showExtendPrompt = true } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
                             .disabled(isActionInFlight)
-                    }
-                    if viewModel.shouldShowDelayed {
-                        Button("Delayed") { showDelayedPrompt = true }
-                            .buttonStyle(.bordered).tint(.orange)
+                        }
+                        if viewModel.shouldShowDelayed {
+                            Button { showDelayedPrompt = true } label: {
+                                Image(systemName: "arrow.uturn.backward.circle.fill")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundStyle(.orange)
+                            }
+                            .buttonStyle(.plain)
                             .disabled(isActionInFlight)
+                        }
                     }
+                    Spacer(minLength: 0)
                 }
             }
+            speakerCard
             if let next = viewModel.nextSession {
                 // W4.2 Task 0.5: replaced inline nextSessionCard() with NextSessionPeekView
                 NextSessionPeekView(session: next, style: .compact)

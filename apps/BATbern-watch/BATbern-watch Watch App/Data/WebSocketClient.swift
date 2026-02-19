@@ -74,8 +74,14 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
         currentEventCode = eventCode
         currentAccessToken = accessToken
 
-        let urlString = "\(BATbernAPIConfig.baseURL)/api/v1/watch/ws"
-        guard let url = URL(string: urlString) else {
+        let httpURLString = "\(BATbernAPIConfig.webSocketBaseURL)/api/v1/watch/ws"
+        guard let httpURL = URL(string: httpURLString),
+              var components = URLComponents(url: httpURL, resolvingAgainstBaseURL: false) else {
+            throw WebSocketClientError.invalidURL
+        }
+        // URLSessionWebSocketTask requires ws:// or wss:// — convert from http/https.
+        components.scheme = components.scheme == "https" ? "wss" : "ws"
+        guard let url = components.url else {
             throw WebSocketClientError.invalidURL
         }
 
@@ -425,6 +431,10 @@ private struct WatchStateServerMessage: Decodable {
         let actualEndTime: String?
         let overrunMinutes: Int?
         let completedBy: String?
+        /// W4.3: Updated scheduled times from extend/delay cascade — nil means no change.
+        /// Backend sends current DB values (post-update) in every STATE_UPDATE.
+        let newScheduledStartTime: String?
+        let newScheduledEndTime: String?
     }
 
     struct OrganizerDto: Decodable {
@@ -452,7 +462,9 @@ private struct WatchStateServerMessage: Decodable {
                     actualStartTime: dto.actualStartTime.flatMap { Self.parseTimestamp($0) },
                     actualEndTime: dto.actualEndTime.flatMap { Self.parseTimestamp($0) },
                     overrunMinutes: dto.overrunMinutes,
-                    completedByUsername: dto.completedBy
+                    completedByUsername: dto.completedBy,
+                    newScheduledStartTime: dto.newScheduledStartTime.flatMap { Self.parseTimestamp($0) },
+                    newScheduledEndTime: dto.newScheduledEndTime.flatMap { Self.parseTimestamp($0) }
                 )
             },
             connectedOrganizers: connectedOrganizers.map {

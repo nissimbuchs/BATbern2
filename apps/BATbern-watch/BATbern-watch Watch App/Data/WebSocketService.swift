@@ -78,6 +78,14 @@ final class WebSocketService {
             logger.warning("WebSocketService.connect: no JWT available, skipping")
             return
         }
+        // Skip reconnect if already connected to the same event.
+        // LiveCountdownView.onDisappear no longer calls disconnect(), so .task(id:) re-fires
+        // on every onAppear cycle (sheet open/close). Without this guard each re-appear
+        // would create a second WebSocket connection without closing the first.
+        if webSocketClient.isConnected, currentEventCode == eventCode {
+            logger.debug("WebSocketService.connect: already connected to \(eventCode, privacy: .public), skipping")
+            return
+        }
         currentEventCode = eventCode
 
         // Subscribe to streams BEFORE calling connect so no messages are missed.

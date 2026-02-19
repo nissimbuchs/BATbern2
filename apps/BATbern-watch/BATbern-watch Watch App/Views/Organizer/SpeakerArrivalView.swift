@@ -55,12 +55,15 @@ struct SpeakerArrivalView: View {
                         }
                     }
 
-                    // Event start reminder
+                    // Event start reminder — use first session's real start time if available.
                     if let event = eventState.currentEvent {
+                        let firstStart = event.sessions.compactMap(\.startTime).min()
+                        let startLabel = firstStart.map { SwissDateFormatter.formatEventTime($0) }
+                            ?? SwissDateFormatter.formatTimeString(event.typicalStartTime)
                         Text(
                             NSLocalizedString("arrival.event_starts_at", comment: "")
                                 + " "
-                                + SwissDateFormatter.formatTimeString(event.typicalStartTime)
+                                + startLabel
                         )
                         .font(.caption2)
                         .foregroundStyle(.secondary)

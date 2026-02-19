@@ -9,6 +9,7 @@
 //  Source: docs/watch-app/architecture.md#Navigation-Architecture
 //
 
+import Combine
 import SwiftUI
 import SwiftData
 import os
@@ -19,6 +20,9 @@ struct OrganizerZoneView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(EventStateManager.self) private var eventState
     @Environment(EventDataController.self) private var eventDataController
+
+    /// Incremented every 30s so body re-evaluates isLive/isPreEvent (time-based computed props).
+    @State private var routingTick: Int = 0
 
     var body: some View {
         Group {
@@ -43,6 +47,9 @@ struct OrganizerZoneView: View {
             }
         }
         .onAppear {
+            // Bump tick so routing re-evaluates isLive/isPreEvent immediately on every appear,
+            // even when syncIfNeeded() is skipped by the 5-min cooldown.
+            routingTick += 1
             guard authManager.isPaired else { return }
             if authManager.currentJWT != nil {
                 Task { await eventDataController.syncIfNeeded() }
@@ -63,6 +70,11 @@ struct OrganizerZoneView: View {
             // 401 → refreshJWT → onChange → 401.
             guard newJWT != nil && authManager.isPaired else { return }
             Task { await eventDataController.syncIfNeeded() }
+        }
+        // Re-evaluate isLive/isPreEvent every 30s — they are time-based computed properties
+        // that won't trigger a re-render on their own as time passes the session boundary.
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+            routingTick += 1
         }
     }
 }
