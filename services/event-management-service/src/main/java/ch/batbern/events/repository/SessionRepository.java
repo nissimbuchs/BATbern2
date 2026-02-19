@@ -144,4 +144,34 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
      * Story BAT-11 (5.7): Workflow validation for agenda publishing
      */
     long countByEventIdAndStartTimeNotNull(UUID eventId);
+
+    /**
+     * Find sessions starting after a given time for downstream cascade (extend/delay).
+     * W4.3 Task 10.1 (AC2): Used by extendSession to shift downstream sessions.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime > :after ORDER BY s.startTime")
+    List<Session> findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(
+            @Param("eventCode") String eventCode,
+            @Param("after") java.time.Instant after);
+
+    /**
+     * Find the previous session (the one scheduled immediately before a given time).
+     * W4.3 Task 10.1 (AC4): Used by delayToPreviousSession to find the session to re-activate.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime < :before ORDER BY s.startTime DESC LIMIT 1")
+    Optional<Session> findFirstByEventCodeAndScheduledStartTimeBeforeOrderByScheduledStartTimeDesc(
+            @Param("eventCode") String eventCode,
+            @Param("before") java.time.Instant before);
+
+    /**
+     * Find sessions starting at or after a given time (for shifting current + downstream).
+     * W4.3 Task 10.1 (AC4): Used by delayToPreviousSession to cascade time shifts.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime >= :startTime ORDER BY s.startTime")
+    List<Session> findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
+            @Param("eventCode") String eventCode,
+            @Param("startTime") java.time.Instant startTime);
 }

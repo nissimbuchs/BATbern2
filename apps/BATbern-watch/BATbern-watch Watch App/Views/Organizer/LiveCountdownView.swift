@@ -20,6 +20,12 @@ struct LiveCountdownView: View {
     @State private var isSendingDone: Bool = false
     /// W4.2 Task 3: Controls presentation of O6 SessionTransitionView.
     @State private var showTransition: Bool = false
+    /// W4.3: Extend session sheet.
+    @State private var showExtendPrompt: Bool = false
+    /// W4.3: Delayed (give prev session more time) sheet.
+    @State private var showDelayedPrompt: Bool = false
+    /// W4.3: Prevents double-sends while extend/delay action is in flight.
+    @State private var isActionInFlight: Bool = false
 
     var body: some View {
         Group {
@@ -49,17 +55,35 @@ struct LiveCountdownView: View {
         // W4.2 Task 10: Observe SESSION_ENDED signal — show O6 when next session exists.
         // Review fix item 6: use consumeSessionEndedEvent() instead of direct nil mutation
         // to keep reset logic encapsulated inside WebSocketService. Also advances queued events.
+        // M1 fix: !showTransition guard prevents N O6 flashes when N watches all auto-advance
+        // simultaneously and the server sends N idempotent SESSION_ENDED broadcasts.
         .onChange(of: webSocketService.sessionEndedEvent) { _, event in
             guard event != nil else { return }
-            if viewModel.nextSession != nil {
+            if viewModel.nextSession != nil, !showTransition {
                 showTransition = true
             }
             webSocketService.consumeSessionEndedEvent()
         }
         // W4.2 amendment: Auto-advance when session enters overtime — no button tap required.
         // shouldAutoAdvance transitions false→true exactly once per session, so this fires once.
+        // M1 fix: completedByUsername guard prevents re-sending if another Watch already ended it.
         .onChange(of: viewModel.shouldAutoAdvance) { _, shouldAdvance in
             guard shouldAdvance, !isSendingDone else { return }
+            guard viewModel.activeSession?.completedByUsername == nil else { return }
+            isSendingDone = true
+            Task {
+                if let slug = viewModel.activeSession?.id {
+                    await webSocketService.sendAction(.endSession(sessionSlug: slug))
+                }
+                isSendingDone = false
+            }
+        }
+        // M2 fix: Retry auto-advance after reconnect — if WebSocket was down when overtime hit,
+        // the sendAction call was swallowed. shouldAutoAdvance stays true but .onChange won't
+        // re-fire (value unchanged). Reconnect triggers this handler to retry.
+        .onChange(of: webSocketService.isConnected) { _, isConnected in
+            guard isConnected, viewModel.shouldAutoAdvance, !isSendingDone else { return }
+            guard viewModel.activeSession?.completedByUsername == nil else { return }
             isSendingDone = true
             Task {
                 if let slug = viewModel.activeSession?.id {
@@ -73,6 +97,44 @@ struct LiveCountdownView: View {
             if let next = viewModel.nextSession {
                 SessionTransitionView(nextSession: next, onDismiss: { showTransition = false })
             }
+        }
+        // W4.3: Extend session sheet
+        .sheet(isPresented: $showExtendPrompt) {
+            if let slug = viewModel.activeSession?.id {
+                ExtendSessionView(
+                    sessionSlug: slug,
+                    onExtend: { minutes in
+                        showExtendPrompt = false
+                        isActionInFlight = true
+                        Task {
+                            await webSocketService.sendAction(
+                                .extendSession(sessionSlug: slug, minutes: minutes))
+                        }
+                    },
+                    onDismiss: { showExtendPrompt = false }
+                )
+            }
+        }
+        // W4.3: Delayed session sheet
+        .sheet(isPresented: $showDelayedPrompt) {
+            if let slug = viewModel.activeSession?.id {
+                DelayedSessionView(
+                    currentSlug: slug,
+                    onDelay: { minutes in
+                        showDelayedPrompt = false
+                        isActionInFlight = true
+                        Task {
+                            await webSocketService.sendAction(
+                                .delayToPrevious(currentSlug: slug, minutes: minutes))
+                        }
+                    },
+                    onDismiss: { showDelayedPrompt = false }
+                )
+            }
+        }
+        // W4.3: Reset isActionInFlight when session changes (action was processed)
+        .onChange(of: viewModel.activeSession?.id) { _, _ in
+            isActionInFlight = false
         }
     }
 
@@ -94,6 +156,21 @@ struct LiveCountdownView: View {
             }
             compactRing
             speakerCard
+            // W4.3: Extend and Delayed action buttons
+            if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
+                HStack(spacing: 6) {
+                    if viewModel.shouldShowExtend {
+                        Button("Extend") { showExtendPrompt = true }
+                            .buttonStyle(.borderedProminent).tint(.blue)
+                            .disabled(isActionInFlight)
+                    }
+                    if viewModel.shouldShowDelayed {
+                        Button("Delayed") { showDelayedPrompt = true }
+                            .buttonStyle(.bordered).tint(.orange)
+                            .disabled(isActionInFlight)
+                    }
+                }
+            }
             if let next = viewModel.nextSession {
                 // W4.2 Task 0.5: replaced inline nextSessionCard() with NextSessionPeekView
                 NextSessionPeekView(session: next, style: .compact)

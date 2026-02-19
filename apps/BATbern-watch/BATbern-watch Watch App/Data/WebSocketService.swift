@@ -32,6 +32,8 @@ final class WebSocketService {
     /// Review fix (items 1+6): private(set) prevents direct mutation from views;
     /// sessionEndedQueue buffers back-to-back SESSION_ENDED messages so no signal is dropped.
     private(set) var sessionEndedEvent: SessionEndedEvent?
+    /// W4.3 Task 5.5: Set when SESSION_DELAYED broadcast received.
+    private(set) var sessionDelayedEvent: SessionDelayedEvent?
 
     /// Internal queue for rapid back-to-back SESSION_ENDED messages (review fix item 1).
     private var sessionEndedQueue: [SessionEndedEvent] = []
@@ -124,6 +126,13 @@ final class WebSocketService {
         }
     }
 
+    /// W4.3 Task 5.7: Consumes the current SESSION_DELAYED event and returns it, then nils it out.
+    func consumeSessionDelayedEvent() -> SessionDelayedEvent? {
+        let event = sessionDelayedEvent
+        sessionDelayedEvent = nil
+        return event
+    }
+
     /// W4.2 Task 5.1: Send a WatchAction to the server via the WebSocket client.
     /// Called from LiveCountdownView's Done button tap.
     /// NEVER throws to caller — errors are logged and swallowed (view doesn't need to handle them).
@@ -168,6 +177,15 @@ final class WebSocketService {
                     await eventDataController.applyServerState(stateUpdate)
                     connectedOrganizers = stateUpdate.connectedOrganizers
                     presenceCount = stateUpdate.connectedOrganizers.count
+                }
+                // W4.3 Task 5.6: Detect SESSION_DELAYED — record event for optional future UI feedback.
+                // applyServerState is already called above for ALL message types — time updates handled there.
+                if message.type == .sessionDelayed, let prevSlug = message.previousSessionSlug {
+                    sessionDelayedEvent = SessionDelayedEvent(
+                        previousSessionSlug: prevSlug,
+                        currentSessionSlug: message.sessionSlug ?? "",
+                        timestamp: message.timestamp
+                    )
                 }
                 // W4.2 Task 5.2: Signal LiveCountdownView O6 trigger via SESSION_ENDED.
                 // Review fix item 1: queue rapid back-to-back events so no signal is dropped.

@@ -12,6 +12,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 
+import org.springframework.context.event.EventListener;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+
 import java.security.Principal;
 
 /**
@@ -87,6 +90,7 @@ public class WatchWebSocketController {
     /**
      * Dispatches session control actions from Watch organizers.
      * W4.2 Task 6.1 (AC1, AC2, AC4): Routes END_SESSION to WatchSessionService.
+     * W4.3 Task 7.1 (AC2, AC4): Routes EXTEND_SESSION and DELAY_TO_PREVIOUS.
      *
      * Security (H1 fix, W4.2 code review): only organizers present in the event (i.e., who
      * already sent a JOIN) may execute session-control actions. This prevents a valid
@@ -94,6 +98,7 @@ public class WatchWebSocketController {
      *
      * M5 fix: sessionSlug is validated non-null/non-blank before dispatch to avoid
      * misleading SessionNotFoundException("null") for malformed STOMP frames.
+     * W4.3: minutes is validated non-null and > 0 for EXTEND_SESSION and DELAY_TO_PREVIOUS.
      */
     @MessageMapping("/watch/events/{eventCode}/action")
     public void handleAction(
@@ -116,8 +121,41 @@ public class WatchWebSocketController {
                 }
                 watchSessionService.endSession(eventCode, action.sessionSlug(), username);
             }
+            case "EXTEND_SESSION" -> {
+                if (!isValidSessionAction(action, "EXTEND_SESSION", username, eventCode)) {
+                    return;
+                }
+                watchSessionService.extendSession(
+                        eventCode, action.sessionSlug(), action.minutes(), username);
+            }
+            case "DELAY_TO_PREVIOUS" -> {
+                if (!isValidSessionAction(action, "DELAY_TO_PREVIOUS", username, eventCode)) {
+                    return;
+                }
+                watchSessionService.delayToPreviousSession(
+                        eventCode, action.sessionSlug(), action.minutes(), username);
+            }
             default -> log.warn("Unknown action type: {}", action.type());
         }
+    }
+
+    /**
+     * Validates sessionSlug and minutes for session control actions (EXTEND_SESSION, DELAY_TO_PREVIOUS).
+     * W4.3 Task 7.3: Null guard to prevent misleading exceptions for malformed STOMP frames.
+     */
+    private boolean isValidSessionAction(WatchActionMessage action, String actionType,
+            String username, String eventCode) {
+        if (action.sessionSlug() == null || action.sessionSlug().isBlank()) {
+            log.warn("{} rejected: missing sessionSlug from organizer {} in event {}",
+                    actionType, username, eventCode);
+            return false;
+        }
+        if (action.minutes() == null || action.minutes() <= 0) {
+            log.warn("{} rejected: invalid minutes ({}) from organizer {} in event {}",
+                    actionType, action.minutes(), username, eventCode);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -142,6 +180,22 @@ public class WatchWebSocketController {
             }
         }
         return fallback;
+    }
+
+    /**
+     * Cleans up presence when a Watch WebSocket session disconnects unexpectedly.
+     * H3 review fix (W4.2): leaveAllEvents() was defined but had no caller, leaving
+     * organizers in the presence set indefinitely after unexpected disconnect.
+     *
+     * @param event Spring SessionDisconnectEvent carrying the disconnected principal
+     */
+    @EventListener
+    public void handleDisconnect(SessionDisconnectEvent event) {
+        if (event.getUser() != null && event.getUser().getName() != null) {
+            String username = event.getUser().getName();
+            presenceService.leaveAllEvents(username);
+            log.debug("Cleaned up presence for disconnected organizer {}", username);
+        }
     }
 
     /**

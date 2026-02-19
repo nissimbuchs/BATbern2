@@ -105,6 +105,12 @@ public class WatchPresenceService {
 
     private WatchStateUpdateMessage buildStateUpdate(
             String eventCode, String trigger, String sessionSlug, String initiatedBy) {
+        return buildStateUpdate(eventCode, trigger, sessionSlug, initiatedBy, null);
+    }
+
+    private WatchStateUpdateMessage buildStateUpdate(
+            String eventCode, String trigger, String sessionSlug, String initiatedBy,
+            String previousSessionSlug) {
         List<Session> sessions = sessionRepository.findByEventCode(eventCode);
         List<WatchStateUpdateMessage.SessionStateDto> sessionDtos = sessions.stream()
                 .map(this::toSessionStateDto)
@@ -123,7 +129,8 @@ public class WatchPresenceService {
                 new ArrayList<>(organizers),
                 Instant.now().toString(),
                 sessionSlug,
-                initiatedBy
+                initiatedBy,
+                previousSessionSlug
         );
     }
 
@@ -154,6 +161,42 @@ public class WatchPresenceService {
                 broadcastState(eventCode, "ORGANIZER_LEFT");
             }
         });
+    }
+
+    /**
+     * Builds and broadcasts a state update with session/initiatedBy context.
+     * W4.3 Task 11.2: Used by extendSession and other session control actions.
+     *
+     * @param eventCode   event identifier
+     * @param trigger     trigger string (e.g., "SESSION_EXTENDED")
+     * @param sessionSlug slug of session that triggered the action
+     * @param initiatedBy organizer who triggered the action
+     */
+    public void buildAndBroadcastState(String eventCode, String trigger,
+            String sessionSlug, String initiatedBy) {
+        WatchStateUpdateMessage message = buildStateUpdate(eventCode, trigger, sessionSlug, initiatedBy);
+        messagingTemplate.convertAndSend("/topic/events/" + eventCode + "/state", message);
+        log.debug("Broadcast {} for session {} by {} on event {}",
+                trigger, sessionSlug, initiatedBy, eventCode);
+    }
+
+    /**
+     * Builds and broadcasts a state update with previousSessionSlug (SESSION_DELAYED only).
+     * W4.3 Task 11.2: Used by delayToPreviousSession to include the re-activated session slug.
+     *
+     * @param eventCode          event identifier
+     * @param trigger            trigger string (e.g., "SESSION_DELAYED")
+     * @param sessionSlug        slug of session that triggered the action
+     * @param initiatedBy        organizer who triggered the action
+     * @param previousSessionSlug slug of the re-activated previous session
+     */
+    public void buildAndBroadcastStateWithPreviousSlug(String eventCode, String trigger,
+            String sessionSlug, String initiatedBy, String previousSessionSlug) {
+        WatchStateUpdateMessage message = buildStateUpdate(
+                eventCode, trigger, sessionSlug, initiatedBy, previousSessionSlug);
+        messagingTemplate.convertAndSend("/topic/events/" + eventCode + "/state", message);
+        log.debug("Broadcast {} for session {} (previous: {}) by {} on event {}",
+                trigger, sessionSlug, previousSessionSlug, initiatedBy, eventCode);
     }
 
     private void broadcastState(String eventCode, String trigger) {

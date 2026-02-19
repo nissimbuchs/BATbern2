@@ -28,6 +28,8 @@ enum WatchAction: Sendable, Equatable {
     case endSession(sessionSlug: String)
     case skipSession(sessionSlug: String)
     case extendSession(sessionSlug: String, minutes: Int)
+    /// W4.3: Re-activates the previous session with extra time; resets current to SCHEDULED.
+    case delayToPrevious(currentSlug: String, minutes: Int)
     case speakerArrived(speakerUsername: String)
 }
 
@@ -41,19 +43,23 @@ struct EventStateMessage: Sendable {
     let timestamp: Date
     /// Full server state payload — present on every broadcast from the state topic.
     let stateUpdate: WatchStateUpdate?
+    /// W4.3: Set for SESSION_DELAYED — slug of the session being re-activated (previous session).
+    let previousSessionSlug: String?
 
     init(
         type: EventStateMessageType,
         sessionSlug: String? = nil,
         initiatedBy: String? = nil,
         timestamp: Date,
-        stateUpdate: WatchStateUpdate? = nil
+        stateUpdate: WatchStateUpdate? = nil,
+        previousSessionSlug: String? = nil
     ) {
         self.type = type
         self.sessionSlug = sessionSlug
         self.initiatedBy = initiatedBy
         self.timestamp = timestamp
         self.stateUpdate = stateUpdate
+        self.previousSessionSlug = previousSessionSlug
     }
 }
 
@@ -64,6 +70,8 @@ enum EventStateMessageType: String, Sendable {
     case sessionEnded = "SESSION_ENDED"
     case sessionExtended = "SESSION_EXTENDED"
     case sessionSkipped = "SESSION_SKIPPED"
+    /// W4.3: Previous session re-activated; current session demoted to SCHEDULED.
+    case sessionDelayed = "SESSION_DELAYED"
     case heartbeat = "HEARTBEAT"
 }
 
@@ -99,6 +107,32 @@ struct SessionStateUpdate: Sendable {
     let actualEndTime: Date?
     let overrunMinutes: Int?
     let completedByUsername: String?
+    /// W4.3: Updated scheduled start time — present when server shifts schedule (extend/delay).
+    /// nil means no change. Watch applies to CachedSession.startTime.
+    let newScheduledStartTime: Date?
+    /// W4.3: Updated scheduled end time — present when server shifts schedule (extend/delay).
+    /// nil means no change. Watch applies to CachedSession.endTime.
+    let newScheduledEndTime: Date?
+
+    init(
+        sessionSlug: String,
+        status: String,
+        actualStartTime: Date? = nil,
+        actualEndTime: Date? = nil,
+        overrunMinutes: Int? = nil,
+        completedByUsername: String? = nil,
+        newScheduledStartTime: Date? = nil,
+        newScheduledEndTime: Date? = nil
+    ) {
+        self.sessionSlug = sessionSlug
+        self.status = status
+        self.actualStartTime = actualStartTime
+        self.actualEndTime = actualEndTime
+        self.overrunMinutes = overrunMinutes
+        self.completedByUsername = completedByUsername
+        self.newScheduledStartTime = newScheduledStartTime
+        self.newScheduledEndTime = newScheduledEndTime
+    }
 }
 
 /// Organizer presence entry from the server broadcast.
@@ -112,5 +146,13 @@ struct ConnectedOrganizer: Sendable, Equatable {
 struct SessionEndedEvent: Sendable, Equatable {
     let sessionSlug: String
     let completedBy: String
+    let timestamp: Date
+}
+
+/// W4.3 Task 5.4: SESSION_DELAYED event — signals that the previous session was re-activated.
+/// Consumed via consumeSessionDelayedEvent() (same pattern as SessionEndedEvent).
+struct SessionDelayedEvent: Sendable, Equatable {
+    let previousSessionSlug: String
+    let currentSessionSlug: String
     let timestamp: Date
 }

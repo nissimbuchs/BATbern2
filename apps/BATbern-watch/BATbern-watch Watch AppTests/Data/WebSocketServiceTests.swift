@@ -381,6 +381,98 @@ struct WebSocketServiceTests {
         #expect(service.sessionEndedEvent == nil)
     }
 
+    // MARK: - SESSION_EXTENDED / SESSION_DELAYED (W4.3 Task 5.8)
+
+    @Test("SESSION_EXTENDED: applyServerState called (schedule update via stateUpdate)")
+    func sessionExtended_appliesServerState() async throws {
+        let (container, ctx) = try makeContainer()
+        _ = container
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, dataController) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        let session = CachedSession(sessionSlug: "cloud-talk", title: "Cloud Talk",
+                                     startTime: Date(), endTime: Date().addingTimeInterval(2700))
+        let event = CachedEvent(eventCode: "BATbern56", title: "BATbern 56",
+                                 eventDate: Date(), venueName: "Uni Bern",
+                                 typicalStartTime: "18:00", typicalEndTime: "21:00")
+        event.sessions = [session]
+        ctx.insert(event)
+        try ctx.save()
+        dataController.currentEvent = event
+
+        await service.connect(eventCode: "BATbern56")
+
+        let newEnd = Date().addingTimeInterval(3300) // extended by 10 min
+        let stateUpdate = WatchStateUpdate(
+            sessions: [SessionStateUpdate(sessionSlug: "cloud-talk", status: "ACTIVE",
+                                           newScheduledEndTime: newEnd)],
+            connectedOrganizers: [],
+            serverTimestamp: Date()
+        )
+        wsClient.emit(EventStateMessage(type: .sessionExtended, sessionSlug: "cloud-talk",
+                                         timestamp: Date(), stateUpdate: stateUpdate))
+
+        try await waitFor(
+            { dataController.isOffline == false && dataController.lastSynced != nil },
+            description: "applyServerState called for SESSION_EXTENDED"
+        )
+
+        #expect(service.sessionDelayedEvent == nil, "SESSION_EXTENDED should NOT set sessionDelayedEvent")
+    }
+
+    @Test("SESSION_DELAYED: applyServerState called and sessionDelayedEvent set")
+    func sessionDelayed_setsSessionDelayedEvent() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        let message = EventStateMessage(
+            type: .sessionDelayed,
+            sessionSlug: "microservices-mistakes",
+            timestamp: Date(),
+            previousSessionSlug: "cloud-native-pitfalls"
+        )
+        wsClient.emit(message)
+
+        try await waitFor(
+            { service.sessionDelayedEvent != nil },
+            description: "sessionDelayedEvent set by SESSION_DELAYED"
+        )
+
+        #expect(service.sessionDelayedEvent?.previousSessionSlug == "cloud-native-pitfalls")
+        #expect(service.sessionDelayedEvent?.currentSessionSlug == "microservices-mistakes")
+    }
+
+    @Test("consumeSessionDelayedEvent: returns event and sets to nil")
+    func consumeSessionDelayedEvent_returnsAndNils() async throws {
+        let (_, ctx) = try makeContainer()
+        let wsClient = MockWebSocketClient()
+        let auth = MockAuthManager(currentJWT: "jwt-test")
+        let (service, _) = makeService(wsClient: wsClient, auth: auth, modelContext: ctx)
+
+        await service.connect(eventCode: "BATbern56")
+
+        wsClient.emit(EventStateMessage(
+            type: .sessionDelayed,
+            sessionSlug: "talk-2",
+            timestamp: Date(),
+            previousSessionSlug: "talk-1"
+        ))
+
+        try await waitFor(
+            { service.sessionDelayedEvent != nil },
+            description: "sessionDelayedEvent set"
+        )
+
+        let consumed = service.consumeSessionDelayedEvent()
+        #expect(consumed?.previousSessionSlug == "talk-1")
+        #expect(service.sessionDelayedEvent == nil)
+    }
+
     // MARK: - disconnect() cancels tasks
 
     @Test("disconnect: resets presence state")

@@ -63,20 +63,22 @@ so that transitions are seamless.
 
 ## Acceptance Criteria
 
-1. **AC1 — Done Button at/past 0:00**: Given a session is at or past 0:00 (i.e., `LiveCountdownViewModel.urgencyLevel == .overtime`), When I view O3 (`LiveCountdownView`), Then a "Done" button appears in the action area. The button does NOT appear when time remains.
+> **Note (2026-02-19 amendment):** ACs updated to reflect auto-advance replacing the Done button per approved Sprint Change Proposal `docs/sprint-change-proposal-2026-02-19.md`.
 
-2. **AC2 — Advance + O6 Transition View**: Given I tap "Done" and the session ended on time (no overrun or overrun handled), When the server confirms the action with a `SESSION_ENDED` broadcast and the next session is a talk (not a break), Then all watches advance to the next session and I see the O6 `SessionTransitionView` with:
+1. **AC1 — Auto-advance at/past 0:00**: Given a session is at or past 0:00 (i.e., `LiveCountdownViewModel.urgencyLevel == .overtime`), When `shouldAutoAdvance` transitions false→true, Then `LiveCountdownView` automatically sends `WatchAction.endSession(sessionSlug:)` to the server — no organizer tap required. The auto-advance does NOT fire when time remains.
+
+2. **AC2 — Advance + O6 Transition View**: Given the session enters overtime (auto-advance fires), When the server confirms the action with a `SESSION_ENDED` broadcast and the next session is a talk (not a break), Then all watches advance to the next session and I see the O6 `SessionTransitionView` with:
    - Prominent next speaker portrait (loaded via `PortraitCache.shared`)
    - Full speaker name
    - Talk title
    The O6 view auto-dismisses after 5 seconds, returning to O3 for the new active session.
 
-3. **AC3 — Success Haptic**: Given I tap "Done", When the tap registers (before server confirmation), Then I feel `HapticAlert.actionConfirm` immediately as optimistic feedback.
+3. **AC3 — Overtime Haptic**: Given a session enters overtime (`urgencyLevel` transitions to `.overtime`), When `shouldAutoAdvance` transitions false→true, Then `HapticAlert.actionConfirm` fires exactly once inside `LiveCountdownViewModel.refreshState()` as optimistic feedback — not on server confirmation, not on subsequent overtime ticks.
 
-4. **AC4 — Idempotent "Completed by [name]"**: Given another organizer already tapped "Done" first, When the `SESSION_ENDED` broadcast arrives on my Watch, Then:
-   - The Done button is no longer visible (session has advanced)
+4. **AC4 — Idempotent "Completed by [name]"**: Given another organizer's Watch has already auto-advanced the session first (server already has `completedByUsername` set), When the `SESSION_ENDED` broadcast arrives on my Watch, Then:
+   - `applyServerState()` populates `CachedSession.completedByUsername` → `WatchSession.completedByUsername` is non-nil
+   - The `completedByUsername != nil` guard in `LiveCountdownView.onChange(shouldAutoAdvance)` prevents a duplicate `endSession` action
    - In O7 (`SessionListView`), the completed session shows "Done by [firstName]" using `CachedSession.completedByUsername`
-   - No duplicate action is possible (button gone after first broadcast)
 
 5. **AC5 — Break Routing**: Given a break follows the completed session, When Done is tapped and confirmed, Then the view does NOT show O6 — it transitions naturally to what W4.4 will implement (O5). In this story, the routing condition `nextSession == nil` (because `findNextSession()` excludes breaks) means O6 is skipped and O3 shows idle state.
 
@@ -463,6 +465,13 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - `LiveCountdownViewModelTests`: replaced `canMarkDone` tests with `shouldAutoAdvance` tests; added `shouldAutoAdvance_firesHapticOnOvertimeTransition` (once-only haptic guard)
 - `LiveCountdownViewTests`: suite renamed to "Auto-Advance Behavior"; all `canMarkDone`/button-tap tests replaced with `shouldAutoAdvance` auto-advance tests
 
+**Code Review Session 2 fixes (2026-02-19, 5 issues: 3 HIGH + 2 MEDIUM):**
+- H1: ACs 1-4 rewritten to reflect auto-advance semantics (Done button → shouldAutoAdvance + completedByUsername guard)
+- H2: File List fully updated — all W4.3 pre-implemented files documented with `[W4.3 pre-impl]` markers
+- H3: `handleDisconnect(@EventListener SessionDisconnectEvent)` added to `WatchWebSocketController.java`; calls `presenceService.leaveAllEvents(username)` — `leaveAllEvents()` now has a caller; 2 new tests in `WatchPresenceControllerTest`
+- M1: `completedByUsername: String?` added to `WatchSession` + `toWatchSession()` mapping; `!showTransition` guard added to `.onChange(sessionEndedEvent)` in `LiveCountdownView` to prevent N O6 flashes; `completedByUsername == nil` guard added to `.onChange(shouldAutoAdvance)` to prevent re-send when already completed; 2 new tests in `LiveCountdownViewModelTests`
+- M2: `.onChange(of: webSocketService.isConnected)` reconnect retry added to `LiveCountdownView` — retries auto-advance after reconnect with same `completedByUsername` guard
+
 **In-progress (paused per user request):**
 
 **watchOS — DONE:**
@@ -503,41 +512,50 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 
 ### File List
 
+> **Note:** Files marked `[W4.3 pre-impl]` contain W4.3 scope implemented alongside W4.2. These additions were pre-implemented in the same session and are fully tracked here. W4.3 story (`w4-3-overrun-detection-schedule-cascade.md`) references these files as its starting point.
+
 **watchOS — Modified:**
-- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift`
-- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift` (W4.2 + W4.3 pre-impl: Extend/Delayed buttons, sheets, isActionInFlight)
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift` (W4.2 + W4.3 pre-impl: shouldShowExtend, shouldShowDelayed, sessionActiveSeconds)
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionCardView.swift`
-- `apps/BATbern-watch/BATbern-watch Watch App/Data/WebSocketService.swift`
-- `apps/BATbern-watch/BATbern-watch Watch App/Protocols/WebSocketClientProtocol.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/WebSocketService.swift` (W4.2 + W4.3 pre-impl: sessionDelayedEvent, consumeSessionDelayedEvent)
+- `apps/BATbern-watch/BATbern-watch Watch App/Protocols/WebSocketClientProtocol.swift` (W4.2 + W4.3 pre-impl: extendSession/delayToPrevious actions, SessionDelayedEvent)
 - `apps/BATbern-watch/BATbern-watch Watch App/Data/WebSocketClient.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Models/WatchModels.swift` (M1 fix: completedByUsername added to WatchSession)
+- `apps/BATbern-watch/BATbern-watch Watch App/Models/CachedSession+WatchSession.swift` (M1 fix: completedByUsername mapped in toWatchSession)
 
 **watchOS — New:**
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/NextSessionPeekView.swift`
 - `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/SessionTransitionView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/ExtendSessionView.swift` [W4.3 pre-impl]
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/DelayedSessionView.swift` [W4.3 pre-impl]
 
 **watchOS — Tests (New):**
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/NextSessionPeekViewTests.swift`
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/LiveCountdownViewTests.swift`
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/SessionTransitionViewTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/ExtendSessionViewTests.swift` [W4.3 pre-impl]
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/DelayedSessionViewTests.swift` [W4.3 pre-impl]
 
 **watchOS — Tests (Modified):**
-- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift` (W4.2 + W4.3 pre-impl + M1 fix: completedByUsername guard tests)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/SessionCardViewTests.swift`
-- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/WebSocketServiceTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/WebSocketServiceTests.swift` (W4.2 + W4.3 pre-impl)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/EventDataControllerApplyServerStateTests.swift`
 
 **Backend — New:**
-- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java` (W4.2 endSession + W4.3 pre-impl: extendSession, delayToPreviousSession)
 - `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchSessionServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchExtendSessionTest.java` [W4.3 pre-impl]
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchDelayToPreviousTest.java` [W4.3 pre-impl]
 
 **Backend — Modified:**
-- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchWebSocketController.java`
-- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchPresenceService.java`
-- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java`
-- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/WatchStateUpdateMessage.java`
-- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchWebSocketController.java` (W4.2 + W4.3 pre-impl + H3 fix: handleDisconnect listener)
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchPresenceService.java` (W4.2 + W4.3 pre-impl: buildAndBroadcastState, buildAndBroadcastStateWithPreviousSlug)
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/WatchStateUpdateMessage.java` (W4.2 + W4.3 pre-impl: previousSessionSlug, SessionStateDto newScheduled* fields)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/SessionRepository.java` (W4.2 + W4.3 pre-impl: cascade/delay queries)
 - `services/event-management-service/src/main/java/ch/batbern/events/exception/SessionNotFoundException.java`
-- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchPresenceControllerTest.java`
-- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchPresenceServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchPresenceControllerTest.java` (W4.2 + W4.3 pre-impl + H3 fix: disconnect tests)
 
 ---
 
@@ -548,3 +566,4 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - **2026-02-18** (claude-sonnet-4-6): Session 3 (Code Review) — Applied 6 fixes from adversarial review: H1 event-level auth guard, M1 File List, M2 Done button AC4 gap, M3 task cancellation, M4 test dates, M5 null sessionSlug guard. Added 2 new controller tests.
 - **2026-02-18** (claude-sonnet-4-6): Session 4 (Review follow-ups) — Addressed 6 LOW code-review findings: WebSocketService queue + consumeSessionEndedEvent(); SessionTransitionViewTests fixedNow anchor; SessionNotFoundException eventCode in message; WatchPresenceService empty-map cleanup; SessionRepository query alignment; LiveCountdownView encapsulated nil-reset.
 - **2026-02-19** (claude-sonnet-4-6): Amendment — Applied sprint-change-proposal-2026-02-19: replaced Done button + `canMarkDone` with `shouldAutoAdvance` auto-advance; haptic now fires internally in ViewModel on overtime transition; tests updated to `shouldAutoAdvance` + auto-advance semantics.
+- **2026-02-19** (claude-sonnet-4-6): Code Review Session 2 — Fixed 5 issues (3 HIGH + 2 MEDIUM): ACs rewritten for auto-advance; File List updated with W4.3 pre-impl markers; handleDisconnect listener added (H3); completedByUsername added to WatchSession + guard in LiveCountdownView (M1); reconnect retry added to LiveCountdownView (M2). Status → done.

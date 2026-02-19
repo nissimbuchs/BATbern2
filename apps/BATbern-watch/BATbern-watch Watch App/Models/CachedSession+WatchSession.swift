@@ -24,7 +24,8 @@ extension CachedSession {
             speakers: speakers.map { $0.toWatchSpeaker() },
             state: .active,
             actualStartTime: actualStartTime,
-            overrunMinutes: overrunMinutes
+            overrunMinutes: overrunMinutes,
+            completedByUsername: completedByUsername
         )
     }
 }

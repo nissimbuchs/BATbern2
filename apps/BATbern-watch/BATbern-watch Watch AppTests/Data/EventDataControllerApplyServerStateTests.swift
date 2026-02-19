@@ -183,4 +183,130 @@ struct EventDataControllerApplyServerStateTests {
             serverTimestamp: Date()
         ))
     }
+
+    // MARK: - W4.3 Schedule Cascade (Task 6.4)
+
+    @Test("SESSION_EXTENDED: scheduledEndTime updated on active session + downstream shifted")
+    func applyServerState_sessionExtended_updatesScheduledTimes() throws {
+        let (controller, context) = try makeController()
+        let activeSession = CachedSession(
+            sessionSlug: "cloud-talk", title: "Cloud Talk",
+            startTime: Date(), endTime: Date().addingTimeInterval(2700)
+        )
+        let downstreamSession = CachedSession(
+            sessionSlug: "next-talk", title: "Next Talk",
+            startTime: Date().addingTimeInterval(2700), endTime: Date().addingTimeInterval(5400)
+        )
+        let event = CachedEvent(
+            eventCode: "BAT56", title: "BATbern 56", eventDate: Date(),
+            venueName: "Uni Bern", typicalStartTime: "18:00", typicalEndTime: "21:00"
+        )
+        event.sessions = [activeSession, downstreamSession]
+        context.insert(event)
+        try? context.save()
+        controller.currentEvent = event
+
+        let newEnd = Date().addingTimeInterval(3300)
+        let newDownstreamStart = Date().addingTimeInterval(3300)
+        let newDownstreamEnd = Date().addingTimeInterval(6000)
+        let update = WatchStateUpdate(
+            sessions: [
+                SessionStateUpdate(sessionSlug: "cloud-talk", status: "ACTIVE",
+                                    newScheduledEndTime: newEnd),
+                SessionStateUpdate(sessionSlug: "next-talk", status: "SCHEDULED",
+                                    newScheduledStartTime: newDownstreamStart,
+                                    newScheduledEndTime: newDownstreamEnd)
+            ],
+            connectedOrganizers: [],
+            serverTimestamp: Date()
+        )
+
+        controller.applyServerState(update)
+
+        #expect(activeSession.endTime == newEnd)
+        #expect(downstreamSession.startTime == newDownstreamStart)
+        #expect(downstreamSession.endTime == newDownstreamEnd)
+    }
+
+    @Test("SESSION_DELAYED: previous session extended, current session actualStartTime cleared")
+    func applyServerState_sessionDelayed_resetsCurrentSession() throws {
+        let (controller, context) = try makeController()
+        let previousSession = CachedSession(
+            sessionSlug: "cloud-talk", title: "Cloud Talk",
+            startTime: Date().addingTimeInterval(-2700), endTime: Date(),
+            actualStartTime: Date().addingTimeInterval(-2700)
+        )
+        let currentSession = CachedSession(
+            sessionSlug: "next-talk", title: "Next Talk",
+            startTime: Date(), endTime: Date().addingTimeInterval(2700),
+            actualStartTime: Date()
+        )
+        let event = CachedEvent(
+            eventCode: "BAT56", title: "BATbern 56", eventDate: Date(),
+            venueName: "Uni Bern", typicalStartTime: "18:00", typicalEndTime: "21:00"
+        )
+        event.sessions = [previousSession, currentSession]
+        context.insert(event)
+        try? context.save()
+        controller.currentEvent = event
+
+        let newPrevEnd = Date().addingTimeInterval(300) // extended by 5 min
+        let newCurrentStart = Date().addingTimeInterval(300)
+        let newCurrentEnd = Date().addingTimeInterval(3000)
+        let update = WatchStateUpdate(
+            sessions: [
+                SessionStateUpdate(sessionSlug: "cloud-talk", status: "ACTIVE",
+                                    actualStartTime: previousSession.actualStartTime,
+                                    newScheduledEndTime: newPrevEnd),
+                SessionStateUpdate(sessionSlug: "next-talk", status: "SCHEDULED",
+                                    actualStartTime: nil,
+                                    newScheduledStartTime: newCurrentStart,
+                                    newScheduledEndTime: newCurrentEnd)
+            ],
+            connectedOrganizers: [],
+            serverTimestamp: Date()
+        )
+
+        controller.applyServerState(update)
+
+        #expect(previousSession.endTime == newPrevEnd)
+        #expect(currentSession.actualStartTime == nil)
+        #expect(currentSession.startTime == newCurrentStart)
+        #expect(currentSession.endTime == newCurrentEnd)
+    }
+
+    @Test("Non-cascade: scheduledStartTime/scheduledEndTime unchanged when nil in update")
+    func applyServerState_nilScheduledTimesDoNotOverwrite() throws {
+        let (controller, context) = try makeController()
+        let originalStart = Date()
+        let originalEnd = Date().addingTimeInterval(2700)
+        let session = CachedSession(
+            sessionSlug: "cloud-talk", title: "Cloud Talk",
+            startTime: originalStart, endTime: originalEnd
+        )
+        let event = CachedEvent(
+            eventCode: "BAT56", title: "BATbern 56", eventDate: Date(),
+            venueName: "Uni Bern", typicalStartTime: "18:00", typicalEndTime: "21:00"
+        )
+        event.sessions = [session]
+        context.insert(event)
+        try? context.save()
+        controller.currentEvent = event
+
+        let update = WatchStateUpdate(
+            sessions: [
+                SessionStateUpdate(sessionSlug: "cloud-talk", status: "ACTIVE",
+                                    actualStartTime: Date(),
+                                    newScheduledStartTime: nil,
+                                    newScheduledEndTime: nil)
+            ],
+            connectedOrganizers: [],
+            serverTimestamp: Date()
+        )
+
+        controller.applyServerState(update)
+
+        #expect(session.startTime == originalStart)
+        #expect(session.endTime == originalEnd)
+    }
 }

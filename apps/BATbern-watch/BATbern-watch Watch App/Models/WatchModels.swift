@@ -27,6 +27,7 @@ struct WatchSession: Sendable, Identifiable {
     var state: SessionState
     var actualStartTime: Date?
     var overrunMinutes: Int?
+    var completedByUsername: String?  // M1 review fix: guards auto-advance when already completed
 
     var duration: TimeInterval {
         endTime.timeIntervalSince(startTime)

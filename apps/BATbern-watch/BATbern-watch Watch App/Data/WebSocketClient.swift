@@ -507,6 +507,8 @@ private struct WatchActionDto: Encodable {
             type = "SKIP_SESSION"; sessionSlug = slug; minutes = nil; speakerUsername = nil
         case .extendSession(let slug, let mins):
             type = "EXTEND_SESSION"; sessionSlug = slug; minutes = mins; speakerUsername = nil
+        case .delayToPrevious(let slug, let mins):
+            type = "DELAY_TO_PREVIOUS"; sessionSlug = slug; minutes = mins; speakerUsername = nil
         case .speakerArrived(let username):
             type = "SPEAKER_ARRIVED"; sessionSlug = nil; minutes = nil; speakerUsername = username
         }

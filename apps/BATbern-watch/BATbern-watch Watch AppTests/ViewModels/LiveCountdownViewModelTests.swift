@@ -48,7 +48,9 @@ struct LiveCountdownViewModelTests {
         slug: String = "test-session",
         title: String = "Test Talk",
         start: Date,
-        end: Date
+        end: Date,
+        actualStartTime: Date? = nil,
+        completedByUsername: String? = nil
     ) -> CachedSession {
         let speaker = CachedSpeaker(
             username: "anna.meier",
@@ -62,7 +64,9 @@ struct LiveCountdownViewModelTests {
             sessionType: .presentation,
             startTime: start,
             endTime: end,
-            speakers: [speaker]
+            speakers: [speaker],
+            actualStartTime: actualStartTime,
+            completedByUsername: completedByUsername
         )
     }
 
@@ -401,6 +405,43 @@ struct LiveCountdownViewModelTests {
         #expect(vm.shouldAutoAdvance == false)
     }
 
+    @Test("activeSession.completedByUsername is populated when CachedSession has it set (M1 guard basis)")
+    func activeSession_completedByUsernamePopulatedFromCache() {
+        let (vm, clock, _, state) = makeVM()
+        // Session already completed by another organizer (server state delivered via applyServerState)
+        let session = makeSession(
+            slug: "cloud-native-pitfalls",
+            start: clock.now.addingTimeInterval(-3600),
+            end: clock.now.addingTimeInterval(-30),   // overtime
+            completedByUsername: "marco.organizer"
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        // shouldAutoAdvance is true (overtime), but completedByUsername is set
+        // → LiveCountdownView guard prevents re-sending endSession
+        #expect(vm.shouldAutoAdvance == true)
+        #expect(vm.activeSession?.completedByUsername == "marco.organizer")
+    }
+
+    @Test("activeSession.completedByUsername is nil for in-progress session (auto-advance allowed)")
+    func activeSession_completedByUsernameNilForActiveSession() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            slug: "cloud-native-pitfalls",
+            start: clock.now.addingTimeInterval(-3600),
+            end: clock.now.addingTimeInterval(-30)    // overtime, not yet completed
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.shouldAutoAdvance == true)
+        #expect(vm.activeSession?.completedByUsername == nil)
+        // → LiveCountdownView guard passes → sendAction(.endSession) fires
+    }
+
     @Test("actionConfirm haptic fires exactly once on overtime transition (not on subsequent ticks)")
     func shouldAutoAdvance_firesHapticOnOvertimeTransition() {
         let (vm, clock, haptics, state) = makeVM()
@@ -452,5 +493,138 @@ struct LiveCountdownViewModelTests {
         // Should show 25:00 remaining (not still 40:00 as a decrementing counter would)
         #expect(vm.formattedTime == "25:00")
         #expect(vm.urgencyLevel == .normal)
+    }
+
+    // MARK: - shouldShowExtend (W4.3 AC1)
+
+    @Test("shouldShowExtend is false when remaining > 600s")
+    func shouldShowExtend_falseWhenMoreThan10MinRemain() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(900)  // 15 min remaining
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.shouldShowExtend == false)
+    }
+
+    @Test("shouldShowExtend is true when remaining <= 600s and not overtime")
+    func shouldShowExtend_trueWhenAtOrUnder10Min() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-2100),
+            end: clock.now.addingTimeInterval(600)  // exactly 10 min remaining
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.urgencyLevel != .overtime)
+        #expect(vm.shouldShowExtend == true)
+    }
+
+    @Test("shouldShowExtend is false when urgencyLevel == .overtime")
+    func shouldShowExtend_falseWhenOvertime() {
+        let (vm, clock, _, state) = makeVM()
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-3750),
+            end: clock.now.addingTimeInterval(-150)  // 150s past end
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.urgencyLevel == .overtime)
+        #expect(vm.shouldShowExtend == false)
+    }
+
+    // MARK: - shouldShowDelayed (W4.3 AC3)
+
+    @Test("shouldShowDelayed is true when sessionActiveSeconds < 600")
+    func shouldShowDelayed_trueWhenUnder10MinActive() {
+        let (vm, clock, _, state) = makeVM()
+        // Session started 5 min ago (300s active < 600 threshold)
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(2400),
+            actualStartTime: clock.now.addingTimeInterval(-300)
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.sessionActiveSeconds == 300)
+        #expect(vm.shouldShowDelayed == true)
+    }
+
+    @Test("shouldShowDelayed is false when sessionActiveSeconds >= 600")
+    func shouldShowDelayed_falseWhenOver10MinActive() {
+        let (vm, clock, _, state) = makeVM()
+        // Session started 15 min ago (900s active >= 600 threshold)
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-900),
+            end: clock.now.addingTimeInterval(1800),
+            actualStartTime: clock.now.addingTimeInterval(-900)
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.sessionActiveSeconds == 900)
+        #expect(vm.shouldShowDelayed == false)
+    }
+
+    @Test("shouldShowDelayed is false when actualStartTime is nil")
+    func shouldShowDelayed_falseWhenNoActualStartTime() {
+        let (vm, clock, _, state) = makeVM()
+        // Session started 5 min ago but no actualStartTime set
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(2400)
+            // no actualStartTime
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+
+        vm.refreshState()
+
+        #expect(vm.sessionActiveSeconds == 0)
+        #expect(vm.shouldShowDelayed == false)
+    }
+
+    // MARK: - Extend/Delayed Reset on Session Change (W4.3)
+
+    @Test("shouldShowExtend and shouldShowDelayed reset to false when session changes")
+    func extendAndDelayed_resetOnSessionChange() {
+        let (vm, clock, _, state) = makeVM()
+
+        // Step 1: session with extend + delayed visible
+        let session1 = makeSession(
+            slug: "talk-1",
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(500),  // ~8 min remaining (< 600)
+            actualStartTime: clock.now.addingTimeInterval(-300)  // 300s active (< 600)
+        )
+        state.currentEvent = makeEvent(sessions: [session1])
+        vm.refreshState()
+        #expect(vm.shouldShowExtend == true)
+        #expect(vm.shouldShowDelayed == true)
+
+        // Step 2: new session — properties must reset
+        clock.advance(by: 600)
+        let session2 = makeSession(
+            slug: "talk-2",
+            start: clock.now.addingTimeInterval(-60),
+            end: clock.now.addingTimeInterval(2700)  // 45 min remaining — well above 600
+        )
+        state.currentEvent = makeEvent(sessions: [session2])
+        vm.refreshState()
+
+        #expect(vm.activeSession?.id == "talk-2")
+        #expect(vm.shouldShowExtend == false)
+        #expect(vm.shouldShowDelayed == false)
+        #expect(vm.sessionActiveSeconds == 0)
     }
 }

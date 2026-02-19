@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
 import java.util.List;
@@ -134,5 +135,112 @@ class WatchPresenceControllerTest {
         controller.handleAction("BATbern56", action, principal);
 
         verify(watchSessionService, org.mockito.Mockito.never()).endSession(any(), any(), any());
+    }
+
+    // MARK: - W4.3 Task 7.4: EXTEND_SESSION dispatch
+
+    @Test
+    @DisplayName("should_delegateToExtendSession_when_extendSessionAction")
+    void should_delegateToExtendSession_when_extendSessionAction() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("EXTEND_SESSION", "cloud-native-pitfalls", 10);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService).extendSession("BATbern56", "cloud-native-pitfalls", 10, "marco.organizer");
+    }
+
+    // MARK: - W4.3 Task 7.4: DELAY_TO_PREVIOUS dispatch
+
+    @Test
+    @DisplayName("should_delegateToDelayToPreviousSession_when_delayToPreviousAction")
+    void should_delegateToDelayToPreviousSession_when_delayToPreviousAction() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("DELAY_TO_PREVIOUS", "microservices-mistakes", 5);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService).delayToPreviousSession("BATbern56", "microservices-mistakes", 5, "marco.organizer");
+    }
+
+    // MARK: - W4.3 Task 7.4: Null guard — sessionSlug and minutes validation
+
+    @Test
+    @DisplayName("should_rejectExtendSession_when_sessionSlugIsNull")
+    void should_rejectExtendSession_when_sessionSlugIsNull() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("EXTEND_SESSION", null, 10);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService, org.mockito.Mockito.never()).extendSession(any(), any(), any(Integer.class), any());
+    }
+
+    @Test
+    @DisplayName("should_rejectExtendSession_when_minutesIsNull")
+    void should_rejectExtendSession_when_minutesIsNull() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("EXTEND_SESSION", "cloud-native-pitfalls", null);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService, org.mockito.Mockito.never()).extendSession(any(), any(), any(Integer.class), any());
+    }
+
+    @Test
+    @DisplayName("should_rejectExtendSession_when_minutesIsZero")
+    void should_rejectExtendSession_when_minutesIsZero() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("EXTEND_SESSION", "cloud-native-pitfalls", 0);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService, org.mockito.Mockito.never()).extendSession(any(), any(), any(Integer.class), any());
+    }
+
+    @Test
+    @DisplayName("should_rejectDelayToPrevious_when_sessionSlugIsBlank")
+    void should_rejectDelayToPrevious_when_sessionSlugIsBlank() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("DELAY_TO_PREVIOUS", "  ", 5);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService, org.mockito.Mockito.never()).delayToPreviousSession(any(), any(), any(Integer.class), any());
+    }
+
+    @Test
+    @DisplayName("should_rejectDelayToPrevious_when_minutesIsNull")
+    void should_rejectDelayToPrevious_when_minutesIsNull() {
+        when(presenceService.isOrganizerPresent("BATbern56", "marco.organizer")).thenReturn(true);
+        WatchActionMessage action = new WatchActionMessage("DELAY_TO_PREVIOUS", "microservices-mistakes", null);
+
+        controller.handleAction("BATbern56", action, principal);
+
+        verify(watchSessionService, org.mockito.Mockito.never()).delayToPreviousSession(any(), any(), any(Integer.class), any());
+    }
+
+    // MARK: - H3 fix: handleDisconnect cleans up presence
+
+    @Test
+    @DisplayName("should_leaveAllEvents_when_organizerDisconnects")
+    void should_leaveAllEvents_when_organizerDisconnects() {
+        SessionDisconnectEvent event = org.mockito.Mockito.mock(SessionDisconnectEvent.class);
+        when(event.getUser()).thenReturn(principal);
+
+        controller.handleDisconnect(event);
+
+        verify(presenceService).leaveAllEvents("marco.organizer");
+    }
+
+    @Test
+    @DisplayName("should_notLeaveAllEvents_when_disconnectHasNullUser")
+    void should_notLeaveAllEvents_when_disconnectHasNullUser() {
+        SessionDisconnectEvent event = org.mockito.Mockito.mock(SessionDisconnectEvent.class);
+        when(event.getUser()).thenReturn(null);
+
+        controller.handleDisconnect(event);
+
+        verify(presenceService, org.mockito.Mockito.never()).leaveAllEvents(any());
     }
 }

@@ -129,6 +129,14 @@ final class EventDataController {
             session.actualEndTime = sessionUpdate.actualEndTime
             session.overrunMinutes = sessionUpdate.overrunMinutes
             session.completedByUsername = sessionUpdate.completedByUsername
+            // W4.3 Task 6.2: Apply schedule cascade from extend/delay broadcasts.
+            // Server sends authoritative scheduled times — nil means no change.
+            if let newStart = sessionUpdate.newScheduledStartTime {
+                session.startTime = newStart
+            }
+            if let newEnd = sessionUpdate.newScheduledEndTime {
+                session.endTime = newEnd
+            }
         }
 
         isOffline = false

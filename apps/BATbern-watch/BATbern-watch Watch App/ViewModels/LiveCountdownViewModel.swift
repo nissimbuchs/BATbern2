@@ -36,6 +36,12 @@ final class LiveCountdownViewModel {
     private(set) var sessionTitle: String = ""
     /// W4.2 amendment: true when session is at or past 0:00 — triggers auto-advance in LiveCountdownView.
     private(set) var shouldAutoAdvance: Bool = false
+    /// W4.3: true when remaining ≤ 600s and not yet overtime — shows Extend button.
+    private(set) var shouldShowExtend: Bool = false
+    /// W4.3: true when session active < 600s — shows Delayed button.
+    private(set) var shouldShowDelayed: Bool = false
+    /// W4.3: seconds since activeSession.actualStartTime.
+    private(set) var sessionActiveSeconds: Int = 0
 
     // MARK: - Injected Dependencies (1.3)
 
@@ -101,6 +107,9 @@ final class LiveCountdownViewModel {
         if discovered?.id != activeSession?.id {
             scheduler.reset()
             shouldAutoAdvance = false
+            shouldShowExtend = false
+            shouldShowDelayed = false
+            sessionActiveSeconds = 0
             if let session = discovered {
                 engine.setActiveSession(session)
             } else {
@@ -127,6 +136,23 @@ final class LiveCountdownViewModel {
         // Propagate engine state to published properties (AC1-AC6, W4.2 amendment)
         formattedTime = engine.formattedTime
         urgencyLevel = engine.urgencyLevel
+
+        // W4.3: Extend (last 10 min) and Delayed (first 10 min) button visibility
+        if let active = activeSession, urgencyLevel != .overtime {
+            shouldShowExtend = engine.remainingSeconds <= 600
+            if let startTime = active.actualStartTime {
+                sessionActiveSeconds = max(0, Int(clock.now.timeIntervalSince(startTime)))
+                shouldShowDelayed = sessionActiveSeconds < 600
+            } else {
+                sessionActiveSeconds = 0
+                shouldShowDelayed = false
+            }
+        } else {
+            shouldShowExtend = false
+            shouldShowDelayed = false
+            sessionActiveSeconds = 0
+        }
+
         let newShouldAutoAdvance = (urgencyLevel == .overtime)
         if newShouldAutoAdvance && !shouldAutoAdvance {
             // W4.2 amendment: fire haptic exactly once when session first enters overtime

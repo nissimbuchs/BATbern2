@@ -65,4 +65,112 @@ public class WatchSessionService {
         log.debug("Session {} ended by {} (overrun: {} min)",
                 sessionSlug, completedByUsername, overrunMinutes);
     }
+
+    /**
+     * Extends the active session's scheduled end time by the given minutes.
+     * All downstream sessions are shifted by the same amount (cascade).
+     * Idempotent: if the session is already completed, re-broadcasts without a second write.
+     *
+     * W4.3 Task 8 (AC2, AC7).
+     *
+     * @param eventCode    event the session belongs to
+     * @param sessionSlug  public slug identifying the session
+     * @param minutesAdded number of minutes to add
+     * @param requestedBy  username of the organizer who tapped Extend
+     * @throws SessionNotFoundException if no session with the given slug exists in the event
+     */
+    @Transactional
+    public void extendSession(String eventCode, String sessionSlug, int minutesAdded, String requestedBy) {
+        var session = sessionRepository.findByEventCodeAndSessionSlug(eventCode, sessionSlug)
+                .orElseThrow(() -> new SessionNotFoundException(sessionSlug, eventCode));
+
+        if (session.getCompletedByUsername() != null) {
+            log.info("Session {} already completed — idempotent extend skip, re-broadcasting",
+                    sessionSlug);
+            watchPresenceService.buildAndBroadcastState(eventCode, "SESSION_EXTENDED", sessionSlug, requestedBy);
+            return;
+        }
+
+        // Extend current session end time
+        Instant oldEnd = session.getEndTime();
+        session.setEndTime(oldEnd.plusSeconds(minutesAdded * 60L));
+        sessionRepository.save(session);
+
+        // Cascade: shift all sessions starting after the old end time
+        var downstream = sessionRepository
+                .findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(eventCode, oldEnd);
+        for (var ds : downstream) {
+            ds.setStartTime(ds.getStartTime().plusSeconds(minutesAdded * 60L));
+            ds.setEndTime(ds.getEndTime().plusSeconds(minutesAdded * 60L));
+        }
+        if (!downstream.isEmpty()) {
+            sessionRepository.saveAll(downstream);
+        }
+
+        watchPresenceService.buildAndBroadcastState(eventCode, "SESSION_EXTENDED", sessionSlug, requestedBy);
+        log.debug("Session {} extended by {} min (requested by {})", sessionSlug, minutesAdded, requestedBy);
+    }
+
+    /**
+     * Re-activates the previous session by resetting the current session to SCHEDULED
+     * and extending the previous session's end time.
+     * Idempotent: if the previous session is already ACTIVE, re-broadcasts without a second write.
+     *
+     * W4.3 Task 9 (AC4, AC7).
+     *
+     * @param eventCode    event the session belongs to
+     * @param currentSlug  public slug identifying the current (to-be-reset) session
+     * @param minutesAdded number of minutes to add to the previous session
+     * @param requestedBy  username of the organizer who tapped Delayed
+     * @throws SessionNotFoundException if no session with the given slug exists in the event
+     * @throws IllegalStateException if no previous session exists
+     */
+    @Transactional
+    public void delayToPreviousSession(String eventCode, String currentSlug, int minutesAdded, String requestedBy) {
+        var current = sessionRepository.findByEventCodeAndSessionSlug(eventCode, currentSlug)
+                .orElseThrow(() -> new SessionNotFoundException(currentSlug, eventCode));
+
+        // Find previous session (the one scheduled immediately before current)
+        var previous = sessionRepository
+                .findFirstByEventCodeAndScheduledStartTimeBeforeOrderByScheduledStartTimeDesc(
+                        eventCode, current.getStartTime())
+                .orElseThrow(() -> new IllegalStateException(
+                        "No previous session for '" + currentSlug + "' in event '" + eventCode + "'"));
+
+        // Idempotency: if previous already has actualStartTime set and actualEndTime is null → ACTIVE
+        if (previous.getActualStartTime() != null && previous.getActualEndTime() == null
+                && current.getActualStartTime() == null) {
+            log.info("Previous session {} already active — idempotent delay skip, re-broadcasting",
+                    previous.getSessionSlug());
+            watchPresenceService.buildAndBroadcastStateWithPreviousSlug(
+                    eventCode, "SESSION_DELAYED", currentSlug, requestedBy, previous.getSessionSlug());
+            return;
+        }
+
+        // Reset current to SCHEDULED
+        current.setActualStartTime(null);
+        sessionRepository.save(current);
+
+        // Extend previous and re-activate (set actualEndTime to null to mark as active)
+        previous.setEndTime(previous.getEndTime().plusSeconds(minutesAdded * 60L));
+        previous.setActualEndTime(null);
+        previous.setCompletedByUsername(null);
+        previous.setOverrunMinutes(null);
+        sessionRepository.save(previous);
+
+        // Shift current + all downstream
+        var toShift = sessionRepository
+                .findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
+                        eventCode, current.getStartTime());
+        for (var s : toShift) {
+            s.setStartTime(s.getStartTime().plusSeconds(minutesAdded * 60L));
+            s.setEndTime(s.getEndTime().plusSeconds(minutesAdded * 60L));
+        }
+        sessionRepository.saveAll(toShift);
+
+        watchPresenceService.buildAndBroadcastStateWithPreviousSlug(
+                eventCode, "SESSION_DELAYED", currentSlug, requestedBy, previous.getSessionSlug());
+        log.debug("Delayed to previous session {} (+{} min), current {} reset to SCHEDULED",
+                previous.getSessionSlug(), minutesAdded, currentSlug);
+    }
 }

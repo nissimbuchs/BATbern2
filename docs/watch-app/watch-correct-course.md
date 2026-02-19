@@ -18,3 +18,5 @@ i want to change the behaviour of in-session organizer possibilities. today in e
 - the organizer session view should move directly to the next session, when one session ends.
 - the organizer session view should show an "extend" button as soon as there are only 10' left for the session. pressing the extend button, shows several options to extend the current session (5min, 10min, 15min,20min) abd shifts all remaining sessions.
 - in the first ten minutes of a session, the organizer session view should show a "delayed" button. pressing the delayed button, shows several options to extend the previous session (5min, 10min, 15min,20min), shifts all remaining sessions, and switches back to the previous, now extended session.
+
+one more thing: when we adapt the schedule, then also the public hero frontend and the public watch app view should show the adapted schedule. this means, that probably, we have to adapt the current event api, to also sent the additional times for actual schedule of the sessions, so the public views can show the correct adapted actual schedules if they differ from the planned schedule on the event day.
