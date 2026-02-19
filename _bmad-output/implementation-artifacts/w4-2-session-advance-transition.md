@@ -1,6 +1,22 @@
 # Story W4.2: Session Advance & Transition
 
-Status: review
+Status: done
+
+---
+
+> ## ✅ COURSE CORRECTION AMENDMENT APPLIED (2026-02-19)
+>
+> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> Applied by claude-sonnet-4-6 on 2026-02-19.
+>
+> **Changes applied:**
+> 1. ✅ **REMOVED** `doneButton` view and `canMarkDone` property from `LiveCountdownView.swift` and `LiveCountdownViewModel.swift`
+> 2. ✅ **ADDED** `shouldAutoAdvance: Bool` to `LiveCountdownViewModel` (= `urgencyLevel == .overtime`); haptic fires internally on false→true transition
+> 3. ✅ **ADDED** auto-advance `.onChange(of: viewModel.shouldAutoAdvance)` in `LiveCountdownView` — sends `endSession` action automatically
+> 4. ✅ **UPDATED tests**: `LiveCountdownViewModelTests` and `LiveCountdownViewTests` — Done-button tests replaced with `shouldAutoAdvance` + auto-advance tests; haptic fires-once test added
+> 5. ✅ **RETAINED**: `SessionTransitionView` (O6), `NextSessionPeekView`, `WebSocketService.sendAction`, `sessionEndedEvent`, `WatchSessionService.endSession` — unchanged
+
+---
 
 ---
 
@@ -441,6 +457,12 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - ✅ Resolved review finding [LOW]: SessionRepository.findByEventCode aligned to direct `s.eventCode` column (no JOIN)
 - ✅ Resolved review finding [LOW]: LiveCountdownView calls `consumeSessionEndedEvent()` instead of direct `webSocketService.sessionEndedEvent = nil`
 
+**Amendment (2026-02-19) — Done button → auto-advance replacement:**
+- `LiveCountdownViewModel`: removed `canMarkDone` + `triggerActionConfirm()`; added `shouldAutoAdvance` (= `urgencyLevel == .overtime`); haptic fires internally once on false→true transition
+- `LiveCountdownView`: removed `doneButton` + `if canMarkDone` block + `onChange(canMarkDone)` reset; added `onChange(shouldAutoAdvance)` that sends `endSession` action automatically
+- `LiveCountdownViewModelTests`: replaced `canMarkDone` tests with `shouldAutoAdvance` tests; added `shouldAutoAdvance_firesHapticOnOvertimeTransition` (once-only haptic guard)
+- `LiveCountdownViewTests`: suite renamed to "Auto-Advance Behavior"; all `canMarkDone`/button-tap tests replaced with `shouldAutoAdvance` auto-advance tests
+
 **In-progress (paused per user request):**
 
 **watchOS — DONE:**
@@ -525,3 +547,4 @@ None so far — all SourceKit diagnostics are false positives (files not yet add
 - **2026-02-18** (claude-sonnet-4-6): Session 2 — Completed backend tasks (6, 7.1/7.2, 7.4, 9.2) and Swift Task 10.4: WatchSessionService.endSession() with idempotency; WatchWebSocketController dispatch; WatchSessionServiceTest (5 integration tests); LiveCountdownViewTests transition guard tests. All backend tests passing, Checkstyle clean.
 - **2026-02-18** (claude-sonnet-4-6): Session 3 (Code Review) — Applied 6 fixes from adversarial review: H1 event-level auth guard, M1 File List, M2 Done button AC4 gap, M3 task cancellation, M4 test dates, M5 null sessionSlug guard. Added 2 new controller tests.
 - **2026-02-18** (claude-sonnet-4-6): Session 4 (Review follow-ups) — Addressed 6 LOW code-review findings: WebSocketService queue + consumeSessionEndedEvent(); SessionTransitionViewTests fixedNow anchor; SessionNotFoundException eventCode in message; WatchPresenceService empty-map cleanup; SessionRepository query alignment; LiveCountdownView encapsulated nil-reset.
+- **2026-02-19** (claude-sonnet-4-6): Amendment — Applied sprint-change-proposal-2026-02-19: replaced Done button + `canMarkDone` with `shouldAutoAdvance` auto-advance; haptic now fires internally in ViewModel on overtime transition; tests updated to `shouldAutoAdvance` + auto-advance semantics.

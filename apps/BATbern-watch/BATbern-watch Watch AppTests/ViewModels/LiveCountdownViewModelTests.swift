@@ -341,10 +341,10 @@ struct LiveCountdownViewModelTests {
         #expect(haptics.stopEventSessionCallCount == 1)
     }
 
-    // MARK: - canMarkDone (W4.2 AC1, Task 1.3)
+    // MARK: - shouldAutoAdvance (W4.2 amendment)
 
-    @Test("canMarkDone is false when time remains (not yet overtime)")
-    func canMarkDone_isFalseWhenTimeRemains() {
+    @Test("shouldAutoAdvance is false when time remains (not yet overtime)")
+    func shouldAutoAdvance_isFalseWhenTimeRemains() {
         let (vm, clock, _, state) = makeVM()
         let session = makeSession(
             start: clock.now.addingTimeInterval(-300),
@@ -355,11 +355,11 @@ struct LiveCountdownViewModelTests {
         vm.refreshState()
 
         #expect(vm.urgencyLevel != .overtime)
-        #expect(vm.canMarkDone == false)
+        #expect(vm.shouldAutoAdvance == false)
     }
 
-    @Test("canMarkDone is true when urgencyLevel == .overtime (past end time)")
-    func canMarkDone_isTrueWhenOvertime() {
+    @Test("shouldAutoAdvance is true when urgencyLevel == .overtime (past end time)")
+    func shouldAutoAdvance_isTrueWhenOvertime() {
         let (vm, clock, _, state) = makeVM()
         let session = makeSession(
             start: clock.now.addingTimeInterval(-3750),
@@ -370,14 +370,14 @@ struct LiveCountdownViewModelTests {
         vm.refreshState()
 
         #expect(vm.urgencyLevel == .overtime)
-        #expect(vm.canMarkDone == true)
+        #expect(vm.shouldAutoAdvance == true)
     }
 
-    @Test("canMarkDone resets to false when session advances to a new session")
-    func canMarkDone_resetToFalseOnSessionChange() {
+    @Test("shouldAutoAdvance resets to false when session advances to a new session")
+    func shouldAutoAdvance_resetToFalseOnSessionChange() {
         let (vm, clock, _, state) = makeVM()
 
-        // Step 1: overtime session → canMarkDone becomes true
+        // Step 1: overtime session → shouldAutoAdvance becomes true
         let overtimeSession = makeSession(
             slug: "overtime-talk",
             start: clock.now.addingTimeInterval(-3750),
@@ -385,9 +385,9 @@ struct LiveCountdownViewModelTests {
         )
         state.currentEvent = makeEvent(sessions: [overtimeSession])
         vm.refreshState()
-        #expect(vm.canMarkDone == true)
+        #expect(vm.shouldAutoAdvance == true)
 
-        // Step 2: new session becomes active — canMarkDone must reset to false
+        // Step 2: new session becomes active — shouldAutoAdvance must reset to false
         clock.advance(by: 200)
         let newSession = makeSession(
             slug: "next-talk",
@@ -398,18 +398,34 @@ struct LiveCountdownViewModelTests {
         vm.refreshState()
 
         #expect(vm.activeSession?.id == "next-talk")
-        #expect(vm.canMarkDone == false)
+        #expect(vm.shouldAutoAdvance == false)
     }
 
-    // MARK: - triggerActionConfirm (W4.2 AC3, Task 2)
+    @Test("actionConfirm haptic fires exactly once on overtime transition (not on subsequent ticks)")
+    func shouldAutoAdvance_firesHapticOnOvertimeTransition() {
+        let (vm, clock, haptics, state) = makeVM()
 
-    @Test("triggerActionConfirm fires actionConfirm haptic immediately")
-    func triggerActionConfirm_firesActionConfirmHaptic() {
-        let (vm, _, haptics, _) = makeVM()
+        // In-progress session — no haptic yet
+        let session = makeSession(
+            start: clock.now.addingTimeInterval(-3500),
+            end: clock.now.addingTimeInterval(100)  // 100s remaining
+        )
+        state.currentEvent = makeEvent(sessions: [session])
+        vm.refreshState()
+        #expect(!haptics.playedAlerts.contains(.actionConfirm))
 
-        vm.triggerActionConfirm()
+        // Advance clock past end time — haptic fires on first overtime tick
+        clock.advance(by: 110)
+        vm.refreshState()
+        #expect(vm.shouldAutoAdvance == true)
+        let countAfterFirst = haptics.playedAlerts.filter { $0 == .actionConfirm }.count
+        #expect(countAfterFirst == 1)
 
-        #expect(haptics.playedAlerts.contains(.actionConfirm))
+        // Subsequent overtime tick — haptic must NOT fire again
+        clock.advance(by: 1)
+        vm.refreshState()
+        let countAfterSecond = haptics.playedAlerts.filter { $0 == .actionConfirm }.count
+        #expect(countAfterSecond == 1)
     }
 
     // MARK: - Wall-Clock Accuracy (3.10, AC6)

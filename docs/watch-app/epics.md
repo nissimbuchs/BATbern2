@@ -21,9 +21,9 @@ FR2: Organizer can view the next upcoming session (speaker name and talk title) 
 FR3: Organizer can scroll through the full remaining event schedule using the Digital Crown
 FR4: Organizer can view a speaker's portrait photo alongside their session information
 FR5: Organizer can see the current event state on the always-on display without raising their wrist
-FR6: Organizer can mark the current session as complete to advance the schedule to the next item
+FR6: System auto-advances the current session when time expires; no manual action required
 FR7: System detects when a session runs past its allocated time and displays overrun duration
-FR8: Organizer can initiate a schedule cascade when a session overruns, shifting all remaining items by a chosen increment
+FR8: Organizer can extend the current session's remaining time (Extend button, last 10 min) or restore time to the previous session (Delayed button, first 10 min of next session), both shifting all remaining items by the chosen increment
 FR9: System automatically recalculates all downstream session times and break durations after a cascade
 FR10: Organizer can view whether the event is on time, ahead, or behind schedule
 FR11: Organizer receives a haptic alert when 5 minutes remain in the current session
@@ -224,7 +224,8 @@ As an attendee, I want to see the current BATbern event's theme image, title, da
 
 **AC:**
 - Given a current BATbern event exists When I launch the Watch app Then I see the event hero screen (P1) with theme image background, event title, date/time, and venue name
-- Given no current event exists When I launch the app Then I see "No upcoming BATbern event" with the BATbern logo
+- Given no current event exists When I launch the app Then I see the BATbern animation (logo) with "Bald wieder" / "Coming soon" text *(amended 2026-02-19)*
+- Given a current event exists but its title is null or "TBD" and no sessions are defined When I view the hero screen Then I see date and venue only — no speaker portraits, no session cards, no scroll hint *(added 2026-02-19)*
 - Given the app has been launched before When I launch again Then cached event data displays in <2s while a background refresh occurs
 
 #### W1.2: Session Card Browsing
@@ -344,6 +345,11 @@ As an organizer, I want to see countdown and speaker info on my Watch face witho
 - Given the complication is active When state changes (session advance, countdown) Then the complication updates within 1 second (NFR1)
 - Given the Watch is in always-on display mode When I don't raise my wrist Then the complication shows a dimmed countdown (FR5)
 - Given I tap the complication When an event is active Then the app opens directly to O3 (Live Countdown)
+- Given the current event is more than 1 calendar day away When complications display Then C1/C2/C3 show the event date in dd.MM format — no progress ring *(added 2026-02-19)*
+- Given today is event day and no session has started When complications display Then the center shows hours until first session ("Xh"); the ring shows count-up progress (elapsed since midnight / minutes from midnight to first session start) *(added 2026-02-19)*
+- Given a session is currently active When complications display Then the center shows minutes remaining ("Xm"); the ring shows remaining fraction (remaining_min / total_session_min) *(added 2026-02-19)*
+- Given all sessions are completed When complications display Then only the BATbern logo is shown — no ring, no countdown *(added 2026-02-19)*
+- Given no current event exists When complications display Then only the BATbern logo is shown *(added 2026-02-19)*
 
 #### W3.4: Session Schedule & Next Session Preview
 
@@ -395,14 +401,16 @@ As an organizer, I want my Watch to maintain a real-time connection to the backe
 
 #### W4.2: Session Advance & Transition
 
-As an organizer, I want to tap "Done" to advance the schedule for all organizer watches and see the next speaker info, so that transitions are seamless.
+As an organizer, I want sessions to advance automatically when time expires and see the next speaker info on all watches, so that transitions are seamless without requiring manual action.
 
 **AC:**
-- Given a session is at or past 0:00 When the "Done" button appears and I tap it Then the session is marked complete and all watches advance within 3 seconds (FR18)
-- Given I tap "Done" and the session ended on time When the action succeeds Then I see the transition view (O6) with next speaker portrait, name, and talk title
-- Given I tap "Done" When the action succeeds Then I feel a success haptic confirmation
-- Given another organizer taps "Done" first When I see the result Then I see "Completed by [name]" attribution — no duplicate action needed (idempotent)
-- Given a break follows the completed session When Done is tapped Then the view transitions to O5 (Break + Gong)
+- Given a session timer reaches 0:00 (`urgencyLevel` transitions to `.overtime`) When the transition occurs Then the client automatically sends `WatchAction.endSession(sessionSlug:)` — no user interaction required — and all watches advance within 3 seconds (FR18) *(amended 2026-02-19)*
+- Given the session ends (auto-advance) and the next session is a talk When the SESSION_ENDED broadcast arrives Then I see the transition view (O6) with next speaker portrait, name, and talk title *(amended 2026-02-19)*
+- Given the session auto-advances When `endSession` is sent Then I feel `HapticAlert.actionConfirm` at the moment of auto-send *(amended 2026-02-19)*
+- Given another organizer's auto-advance fires first When I see the result Then I see "Completed by [name]" attribution — no duplicate action needed (idempotent)
+- Given a break follows the completed session When the session auto-advances Then the view transitions to O5 (Break + Gong)
+- Given a session has ≤ 10 minutes remaining and is not yet overtime When I view O3 Then an "Extend" button appears; choosing +5/+10/+15/+20 min extends the current session end time and shifts all downstream sessions; all watches update within 3s *(added 2026-02-19)*
+- Given the current session has been active for < 10 minutes When I view O3 Then a "Delayed" button appears; choosing +5/+10/+15/+20 min re-activates the previous session with extra time; current session resets to scheduled; all watches switch to previous session *(added 2026-02-19)*
 
 **Architectural constraints (reuse-map Area 1, 4):**
 - **O6 data source: `LiveCountdownViewModel.nextSession`** — the next session is already computed by `findNextSession()` in the existing ViewModel. O6 reads from the same `@Observable` instance as `LiveCountdownView`. Do not reimplement next-session discovery.
@@ -413,22 +421,25 @@ As an organizer, I want to tap "Done" to advance the schedule for all organizer 
 - **`HapticAlert.actionConfirm`** — already defined. Use for the Done-tap success haptic.
 - **Server response updates `CachedSession` fields via `EventDataController`:** `completedByUsername`, `actualEndTime`. These columns exist in the schema. No migration needed.
 
-#### W4.3: Overrun Detection & Schedule Cascade
+#### W4.3: Extend & Delayed Session Controls
 
-As an organizer, I want the Watch to detect overruns and let me shift the entire remaining schedule with one tap, so that one speaker running late doesn't cascade into chaos.
+As an organizer, I want to extend the current session's time before it runs out, or restore time to the previous session if we transitioned too early, so that the schedule stays accurate without the stress of reacting to overruns.
+
+> **Rewritten 2026-02-19** per Sprint Change Proposal. Previous story ("Overrun Detection & Schedule Cascade") replaced. Story file: `_bmad-output/implementation-artifacts/w4-3-overrun-detection-schedule-cascade.md`
 
 **AC:**
-- Given a session runs past 0:00 When I tap "Done" while overrun Then I see the cascade prompt (O4): "Session ran +N min over. Shift remaining schedule?"
-- Given I'm on the cascade prompt (O4) When I choose a shift increment (+5 min / +10 min / absorb in break) Then all downstream sessions recalculate times (FR9) and all watches update within 3 seconds (FR19)
-- Given I'm on O3 during a session When the overrun grows Then I see "+N:NN over" in red with a delay impact indicator (FR10)
-- Given two organizers try to cascade simultaneously When the first action is processed Then the second sees the already-shifted schedule (idempotent, first-wins)
+- Given a session has ≤ 10 minutes remaining (not yet overtime) When I view O3 Then an "Extend" button appears; it disappears when > 10 min remain or when the session reaches overtime
+- Given I tap Extend and choose N minutes (+5/+10/+15/+20) When confirmed Then the server extends the current session's `scheduledEndTime` by N minutes (session stays ACTIVE), shifts all downstream sessions, all watches update within 3 seconds (FR9, FR19)
+- Given the current session has been active for < 10 minutes When I view O3 Then a "Delayed" button appears; it disappears after 10 minutes of session activity
+- Given I tap Delayed and choose N minutes When confirmed Then the server re-activates the previous session with N extra minutes, resets the current to SCHEDULED, shifts all downstream sessions, all watches switch to previous session view within 3 seconds
+- Given I tap either button When the tap registers Then I feel `HapticAlert.actionConfirm` immediately (optimistic feedback)
+- Given two organizers tap simultaneously When first action processed Then second Watch reconciles to server-authoritative state (first-wins, idempotent)
 
-**Architectural constraints (reuse-map Area 4):**
-- **Overrun detection: `LiveCountdownViewModel.urgencyLevel == .overtime`** — already computed by `SessionTimerEngine`. O3 already shows red "+MM:SS" in overtime. W4.3 adds the "Done" button and O4 prompt on top of existing state. Do not add a parallel overrun flag.
-- **`WatchAction.extendSession(sessionSlug:minutes:)`** — already defined for the cascade action. Use it.
-- **Cascade result flows through `EventDataController`** — the server recalculates all downstream session times and broadcasts the updated schedule. The WebSocket service calls `EventDataController.applyServerState(_:)` with the new schedule. `LiveCountdownViewModel` recalculates from updated `CachedSession.startTime`/`endTime`. No "cascade state" variable anywhere in the client.
-- **`CachedSession.overrunMinutes`** — already in schema. Populate from server response. No migration needed.
-- **Conflict resolution is server-side (first-wins).** Client reconciles to server-authoritative state after broadcast. No client-side merge logic.
+**Architectural constraints (reuse-map Area 1, 4):**
+- **`WatchAction.extendSession(sessionSlug:minutes:)`** — reused, semantics changed: extends ACTIVE session end time, does NOT end the session
+- **NEW `WatchAction.delayToPrevious(currentSlug:minutes:)`** — new enum case for Delayed action
+- **No cascade state variable** — extend/delay results flow through `EventDataController.applyServerState()` only; `LiveCountdownViewModel.refreshState()` recalculates automatically from updated `CachedSession.scheduledEndTime`
+- **Conflict resolution is server-side (first-wins)** — no client-side merge logic
 
 #### W4.4: Break Management & Event Lifecycle
 

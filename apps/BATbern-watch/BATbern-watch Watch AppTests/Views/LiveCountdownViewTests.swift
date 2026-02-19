@@ -2,14 +2,14 @@
 //  LiveCountdownViewTests.swift
 //  BATbern-watch Watch AppTests
 //
-//  W4.2 Task 2.6: Unit tests for Done button behavior driven by LiveCountdownViewModel.
+//  W4.2 amendment: Unit tests for auto-advance behavior driven by LiveCountdownViewModel.
 //
 //  Since SwiftUI view rendering is not available in watchOS unit tests without
-//  ViewInspector, these tests verify the ViewModel state that controls Done button
-//  visibility (canMarkDone) and the WebSocketService delegation for sendAction.
+//  ViewInspector, these tests verify the ViewModel state that drives auto-advance
+//  (shouldAutoAdvance) and the WebSocketService delegation for sendAction.
 //
-//  - Done button visible ← canMarkDone == true (tested via ViewModel)
-//  - Done button hidden  ← canMarkDone == false (tested via ViewModel)
+//  - Auto-advance does NOT trigger ← shouldAutoAdvance == false (tested via ViewModel)
+//  - Auto-advance triggers      ← shouldAutoAdvance == true (tested via ViewModel)
 //  - sendAction(.endSession) called with correct sessionSlug (tested via MockWebSocketClient)
 //
 
@@ -18,7 +18,7 @@ import Foundation
 import SwiftData
 @testable import BATbern_watch_Watch_App
 
-@Suite("LiveCountdownView — Done Button Behavior")
+@Suite("LiveCountdownView — Auto-Advance Behavior")
 @MainActor
 struct LiveCountdownViewTests {
 
@@ -68,10 +68,10 @@ struct LiveCountdownViewTests {
         )
     }
 
-    // MARK: - Done button visibility (AC1)
+    // MARK: - Auto-advance trigger (W4.2 amendment)
 
-    @Test("Done button hidden (canMarkDone == false) when time remains")
-    func doneButton_hiddenWhenTimeRemains() {
+    @Test("shouldAutoAdvance is false (no auto-advance) when time remains")
+    func autoAdvance_doesNotTriggerWhenTimeRemains() {
         let (vm, clock, _, state) = makeVM()
         let session = makeSession(
             start: clock.now.addingTimeInterval(-300),
@@ -81,12 +81,12 @@ struct LiveCountdownViewTests {
 
         vm.refreshState()
 
-        // LiveCountdownView's `if viewModel.canMarkDone { doneButton }` renders nothing
-        #expect(vm.canMarkDone == false)
+        // LiveCountdownView's .onChange(of: viewModel.shouldAutoAdvance) guard fires nothing
+        #expect(vm.shouldAutoAdvance == false)
     }
 
-    @Test("Done button visible (canMarkDone == true) when session at or past 0:00")
-    func doneButton_visibleWhenOvertime() {
+    @Test("shouldAutoAdvance is true (auto-advance fires) when session at or past 0:00")
+    func autoAdvance_triggersWhenOvertime() {
         let (vm, clock, _, state) = makeVM()
         let session = makeSession(
             start: clock.now.addingTimeInterval(-3600),
@@ -96,13 +96,13 @@ struct LiveCountdownViewTests {
 
         vm.refreshState()
 
-        // LiveCountdownView's `if viewModel.canMarkDone { doneButton }` renders the button
-        #expect(vm.canMarkDone == true)
+        // LiveCountdownView's .onChange fires sendAction(.endSession)
+        #expect(vm.shouldAutoAdvance == true)
         #expect(vm.urgencyLevel == .overtime)
     }
 
-    @Test("Done button does NOT appear during .critical phase (only after 0:00)")
-    func doneButton_notShownDuringCritical() {
+    @Test("shouldAutoAdvance does NOT trigger during .critical phase (only after 0:00)")
+    func autoAdvance_doesNotTriggerDuringCritical() {
         let (vm, clock, _, state) = makeVM()
         let session = makeSession(
             start: clock.now.addingTimeInterval(-2400),
@@ -113,20 +113,20 @@ struct LiveCountdownViewTests {
         vm.refreshState()
 
         #expect(vm.urgencyLevel == .critical)
-        #expect(vm.canMarkDone == false)
+        #expect(vm.shouldAutoAdvance == false)
     }
 
-    // MARK: - sendAction delegation (AC1, AC3)
+    // MARK: - sendAction delegation (W4.2 amendment)
 
-    @Test("sendAction(.endSession) called with activeSession.id as sessionSlug")
-    func sendAction_calledWithCorrectSessionSlug() async throws {
+    @Test("shouldAutoAdvance exposes correct sessionSlug via activeSession.id for sendAction")
+    func autoAdvance_exposesCorrectSessionSlug() async throws {
         let clock = MockClock(fixedDate: referenceDate)
         let haptics = MockHapticService()
         let state = MockEventStateManager()
         let vm = LiveCountdownViewModel(clock: clock, hapticService: haptics)
         vm.eventState = state
 
-        // Put session in overtime so canMarkDone is true
+        // Put session in overtime so shouldAutoAdvance is true
         let session = makeSession(
             slug: "cloud-native-pitfalls",
             start: clock.now.addingTimeInterval(-3600),
@@ -135,33 +135,26 @@ struct LiveCountdownViewTests {
         state.currentEvent = makeEvent(sessions: [session])
         vm.refreshState()
 
-        #expect(vm.canMarkDone == true)
+        #expect(vm.shouldAutoAdvance == true)
         #expect(vm.activeSession?.id == "cloud-native-pitfalls")
 
-        // Simulate the Done button tap sequence:
-        // 1. Haptic fires immediately (optimistic feedback)
-        vm.triggerActionConfirm()
+        // Verify: haptic fires automatically on overtime entry (internal to ViewModel)
         #expect(haptics.playedAlerts.contains(.actionConfirm))
 
-        // 2. sendAction(.endSession) would be called by the button with activeSession.id
-        let expectedAction = WatchAction.endSession(sessionSlug: "cloud-native-pitfalls")
         // WebSocketService.sendAction delegation is verified in WebSocketServiceTests.
-        // Here we confirm the ViewModel has the slug ready to be passed:
-        #expect(vm.activeSession?.id == "cloud-native-pitfalls")
+        // Confirm the slug LiveCountdownView would pass to sendAction:
+        let expectedAction = WatchAction.endSession(sessionSlug: "cloud-native-pitfalls")
         _ = expectedAction  // referenced to confirm enum case is correct
     }
 
-    @Test("sendAction is NOT sent when activeSession has no slug (guard clause)")
-    func sendAction_guardedWhenNoActiveSession() {
-        let (vm, _, haptics, _) = makeVM()
+    @Test("shouldAutoAdvance stays false when no activeSession — no sendAction guard needed")
+    func autoAdvance_staysFalseWhenNoActiveSession() {
+        let (vm, _, _, _) = makeVM()
         // No eventState → no activeSession
         vm.refreshState()
 
         #expect(vm.activeSession == nil)
-        #expect(vm.canMarkDone == false)
-        // triggerActionConfirm is separate — haptic fires independently of activeSession
-        vm.triggerActionConfirm()
-        #expect(haptics.playedAlerts.contains(.actionConfirm))
+        #expect(vm.shouldAutoAdvance == false)
     }
 
     // MARK: - Transition guard conditions (AC2, AC5, Task 10.4)
@@ -173,7 +166,7 @@ struct LiveCountdownViewTests {
         //   showTransition = true
         //
         // This test verifies the ViewModel side of the guard:
-        // viewModel.nextSession != nil AND canMarkDone == true
+        // viewModel.nextSession != nil AND shouldAutoAdvance == true
         // When webSocketService.sessionEndedEvent != nil (verified in WebSocketServiceTests),
         // LiveCountdownView sets showTransition = true.
         let (vm, clock, _, state) = makeVM()
@@ -181,7 +174,7 @@ struct LiveCountdownViewTests {
         let activeSession = makeSession(
             slug: "cloud-native-pitfalls",
             start: clock.now.addingTimeInterval(-3600),
-            end: clock.now.addingTimeInterval(-30)   // overtime → canMarkDone == true
+            end: clock.now.addingTimeInterval(-30)   // overtime → shouldAutoAdvance == true
         )
         let nextSession = makeSession(
             slug: "microservices-mistakes",
@@ -196,8 +189,8 @@ struct LiveCountdownViewTests {
         // Guard condition 2 verified here:
         #expect(vm.nextSession != nil)
         #expect(vm.nextSession?.id == "microservices-mistakes")
-        // canMarkDone confirms the session is in overtime (precondition for Done tap)
-        #expect(vm.canMarkDone == true)
+        // shouldAutoAdvance confirms the session is in overtime (auto-advance has fired)
+        #expect(vm.shouldAutoAdvance == true)
     }
 
     @Test("showTransition skipped (AC5): nextSession nil when only break follows")

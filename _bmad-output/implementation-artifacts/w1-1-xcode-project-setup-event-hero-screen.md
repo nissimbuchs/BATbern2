@@ -2,6 +2,36 @@
 
 Status: done
 
+---
+
+> ## ⚠️ COURSE CORRECTION AMENDMENT REQUIRED (2026-02-19)
+>
+> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> The following changes must be applied to already-implemented code by the Dev agent.
+>
+> **Required changes:**
+> 1. **UPDATE AC2** (empty state): Replace "No upcoming BATbern event" static text with BATbern animation (logo asset) + localized "Bald wieder" / "Coming soon" text centered on screen
+> 2. **ADD TBD event handling** in `EventHeroView.swift`:
+>    - If `event.title == nil || event.title.uppercased() == "TBD"` AND `event.sessions.isEmpty` → show date + venue only
+>    - No speaker portraits, no session cards, no abstract navigation, no scroll hint
+>    - Layout: date (dd MMM) centered + venue name below
+> 3. **ADD** `isTBDEvent: Bool` computed property to `PublicViewModel`:
+>    ```swift
+>    var isTBDEvent: Bool {
+>        guard let event = event else { return false }
+>        let titleIsTBD = event.title == nil || event.title?.uppercased() == "TBD"
+>        return titleIsTBD && (event.sessions?.isEmpty ?? true)
+>    }
+>    ```
+> 4. **UPDATE** `EventHeroView` to branch: `if viewModel.isTBDEvent { TBDEventView() } else { FullEventHeroView() }`
+> 5. **UPDATE tests**: Add TBD event branch test and updated empty-state animation test
+>
+> **Current event definition:** First event where `date >= today` (not archived). This is the semantics expected from `GET /api/v1/events/current` — verify the backend endpoint returns the correct event and the Watch app does not need to filter client-side.
+>
+> **Rationale:** Attendees should see a welcoming "coming soon" animation when there's no event, and a date/venue placeholder when the event title hasn't been announced yet.
+
+---
+
 ## Story
 
 As an attendee,

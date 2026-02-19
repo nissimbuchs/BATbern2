@@ -74,7 +74,7 @@ development_status:
   epic-4: in-progress
   w4-1-websocket-real-time-infrastructure: done
   w4-2-session-advance-transition: done
-  w4-3-overrun-detection-schedule-cascade: ready-for-dev
+  w4-3-overrun-detection-schedule-cascade: ready-for-dev  # story rewritten 2026-02-19 per sprint-change-proposal
   w4-4-break-management-event-lifecycle: ready-for-dev
   epic-4-retrospective: optional
 

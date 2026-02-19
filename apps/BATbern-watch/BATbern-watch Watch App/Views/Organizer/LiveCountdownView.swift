@@ -16,7 +16,7 @@ struct LiveCountdownView: View {
     @Environment(WebSocketService.self) private var webSocketService
     @State private var viewModel = LiveCountdownViewModel()
     @State private var portraitData: Data?
-    /// W4.2 Task 2: Controls Done button sending state.
+    /// W4.2 amendment: Guards against concurrent auto-advance Tasks.
     @State private var isSendingDone: Bool = false
     /// W4.2 Task 3: Controls presentation of O6 SessionTransitionView.
     @State private var showTransition: Bool = false
@@ -56,11 +56,15 @@ struct LiveCountdownView: View {
             }
             webSocketService.consumeSessionEndedEvent()
         }
-        // M2 fix (W4.2 code review): reset isSendingDone only when session has actually
-        // advanced (canMarkDone goes false), not on sendAction return. This prevents the
-        // Done button from briefly re-enabling between sendAction and SESSION_ENDED broadcast.
-        .onChange(of: viewModel.canMarkDone) { _, newValue in
-            if !newValue {
+        // W4.2 amendment: Auto-advance when session enters overtime — no button tap required.
+        // shouldAutoAdvance transitions false→true exactly once per session, so this fires once.
+        .onChange(of: viewModel.shouldAutoAdvance) { _, shouldAdvance in
+            guard shouldAdvance, !isSendingDone else { return }
+            isSendingDone = true
+            Task {
+                if let slug = viewModel.activeSession?.id {
+                    await webSocketService.sendAction(.endSession(sessionSlug: slug))
+                }
                 isSendingDone = false
             }
         }
@@ -93,10 +97,6 @@ struct LiveCountdownView: View {
             if let next = viewModel.nextSession {
                 // W4.2 Task 0.5: replaced inline nextSessionCard() with NextSessionPeekView
                 NextSessionPeekView(session: next, style: .compact)
-            }
-            // W4.2 Task 2.3: Done button — only when session is at or past 0:00
-            if viewModel.canMarkDone {
-                doneButton
             }
         }
         .padding(.horizontal, 10)
@@ -200,28 +200,6 @@ struct LiveCountdownView: View {
                     .foregroundStyle(.white)
             }
         }
-    }
-
-    // MARK: - Done Button (W4.2 Task 2)
-
-    /// "Done" button — appears only when canMarkDone (urgencyLevel == .overtime).
-    /// On tap: fires actionConfirm haptic optimistically, then sends endSession to server.
-    ///
-    /// M2 fix (W4.2 code review): isSendingDone is reset only when canMarkDone goes false
-    /// (i.e., when SESSION_ENDED broadcast arrives and session advances). Resetting on
-    /// sendAction return would re-enable the button before the server confirms, violating AC4.
-    private var doneButton: some View {
-        Button("Done") {
-            viewModel.triggerActionConfirm()
-            guard let slug = viewModel.activeSession?.id, !slug.isEmpty else { return }
-            isSendingDone = true
-            Task {
-                await webSocketService.sendAction(.endSession(sessionSlug: slug))
-            }
-        }
-        .buttonStyle(.borderedProminent)
-        .tint(.teal)
-        .disabled(isSendingDone)
     }
 
     // MARK: - No-Session State

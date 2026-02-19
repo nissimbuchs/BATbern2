@@ -2,6 +2,41 @@
 
 Status: done
 
+---
+
+> ## ⚠️ COURSE CORRECTION AMENDMENT REQUIRED (2026-02-19)
+>
+> Per approved Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`).
+> The following changes must be applied to already-implemented code by the Dev agent.
+>
+> **Required changes:**
+> 1. **ADD** `enum ComplicationContext` (to `ComplicationDataStore.swift` or a new `ComplicationContext.swift`):
+>    ```swift
+>    enum ComplicationContext: Codable {
+>        case noEvent
+>        case eventFar(dateString: String)           // dd.MM format, >1 day away
+>        case eventDayPreSession(hoursUntil: Int, progress: Double)  // event day, no session running
+>        case sessionRunning(minutesLeft: Int, fractionRemaining: Double)
+>        case eventComplete
+>    }
+>    ```
+> 2. **ADD** `complicationContext: ComplicationContext` field to `ComplicationSnapshot`
+> 3. **UPDATE** `LiveCountdownViewModel.refreshState()` to compute and write the correct context to `ComplicationDataStore`
+> 4. **UPDATE** `CircularComplication.swift` (C1), `RectangularComplication.swift` (C2), `CornerComplication.swift` (C3) to switch on `ComplicationContext`:
+>    - `.noEvent`, `.eventComplete` → BATbern logo only, no ring
+>    - `.eventFar(dateString)` → date `dd.MM` in center, NO ring
+>    - `.eventDayPreSession(hoursUntil, progress)` → "Xh" in center; ring = count-UP (progress fraction, represents elapsed toward session start)
+>    - `.sessionRunning(minutesLeft, fractionRemaining)` → "Xm" in center; ring = count-DOWN (fractionRemaining, represents time left in session)
+> 5. **ADD tests** for each `ComplicationContext` case
+>
+> **Ring semantics clarification:**
+> - Pre-session ring: COUNT-UP. Example: session at 16:00, now 08:00 → progress = 8/16 = 0.5 (50% filled)
+> - In-session ring: COUNT-DOWN. Example: 45-min session, 15 min remain → fractionRemaining = 15/45 = 0.33 (33% remaining)
+>
+> **Rationale:** Complications should provide context-appropriate information, not a uniform ring at all times.
+
+---
+
 ## Story
 
 As an organizer,
