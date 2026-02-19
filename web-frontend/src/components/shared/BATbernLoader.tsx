@@ -28,7 +28,7 @@ export function BATbernLoader({
       height={size}
       className={className}
       aria-label="Loading…"
-      role="img"
+      role="progressbar"
       data-testid={testId}
     >
       <style>{`
