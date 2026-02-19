@@ -1,61 +1,74 @@
 package ch.batbern.events.config;
 
+import ch.batbern.events.watch.JwtStompInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 /**
- * WebSocket Configuration for Real-Time Push Notifications
- * Story BAT-7: Notifications API Consolidation
+ * WebSocket Configuration for Real-Time Push Notifications and Watch organizer sync.
  *
- * Enables STOMP over WebSocket for real-time notification delivery.
- * Organizers receive instant updates when domain events occur.
+ * Story BAT-7: Notifications API Consolidation — SockJS endpoint for web frontend
+ * W4.1 Task 6: Raw WebSocket endpoint for Watch clients (no SockJS, raw STOMP)
+ * W4.1 Task 7.4: JWT channel interceptor for Watch STOMP authentication
  *
- * Architecture:
- * - STOMP protocol over WebSocket
- * - Simple in-memory message broker (no external message queue needed)
- * - Per-user notification topics: /topic/notifications/{username}
+ * Endpoints:
+ * - /ws           — SockJS + raw WebSocket (web frontend; existing)
+ * - /api/v1/watch/ws — raw WebSocket only (Watch clients; new in W4.1)
  *
- * Frontend Connection:
- * 1. Connect to /ws endpoint
- * 2. Subscribe to /topic/notifications/{username}
- * 3. Receive NotificationResponse JSON when events occur
- *
- * Security:
- * - CORS configured to allow frontend origin
- * - Authentication via JWT in HTTP headers (future enhancement)
- * - SockJS fallback for browsers without WebSocket support
+ * Authentication:
+ * - /ws: permitAll at HTTP level (SockJS requires open handshake, then STOMP-level auth in future)
+ * - /api/v1/watch/ws: STOMP CONNECT validated by JwtStompInterceptor
  */
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final JwtStompInterceptor jwtStompInterceptor;
 
     /**
      * Configure message broker.
      * - /topic prefix for pub-sub messaging (one-to-many)
-     * - /app prefix for application-bound messages
+     * - /queue prefix for point-to-point (user-specific, e.g. state snapshots)
+     * - /app prefix for application-bound messages (@MessageMapping)
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable simple in-memory broker for /topic destinations
-        config.enableSimpleBroker("/topic");
-
-        // Prefix for application-bound messages (e.g., @MessageMapping)
+        config.enableSimpleBroker("/topic", "/queue");
         config.setApplicationDestinationPrefixes("/app");
+        config.setUserDestinationPrefix("/user");
     }
 
     /**
      * Register STOMP endpoints.
-     * - /ws: Main WebSocket endpoint
-     * - withSockJS(): Fallback for browsers without WebSocket support
-     * - setAllowedOriginPatterns("*"): Allow connections from frontend
+     *
+     * /ws — existing SockJS endpoint for web frontend (unchanged)
+     * /api/v1/watch/ws — new raw WebSocket endpoint for watchOS clients
+     *   Raw WebSocket (no SockJS): watchOS URLSessionWebSocketTask speaks raw WebSocket,
+     *   not SockJS. SockJS adds HTTP polling fallback that Watch clients don't need.
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")  // Allow all origins (dev/prod)
-                .withSockJS();  // Enable SockJS fallback
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+
+        registry.addEndpoint("/api/v1/watch/ws")
+                .setAllowedOriginPatterns("*");
+    }
+
+    /**
+     * Register JwtStompInterceptor on the inbound channel.
+     * Validates JWT on STOMP CONNECT frames from Watch clients.
+     * W4.1 Task 7.4.
+     */
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(jwtStompInterceptor);
     }
 }

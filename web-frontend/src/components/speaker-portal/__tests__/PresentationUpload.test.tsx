@@ -245,7 +245,11 @@ describe('PresentationUpload', () => {
       });
 
       expect(screen.getByText(/50%/)).toBeInTheDocument();
-      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+      // Multiple progressbars may exist (BATbernLoader + upload bar); find the upload one by aria-valuenow
+      const uploadBar = screen
+        .getAllByRole('progressbar')
+        .find((el) => el.hasAttribute('aria-valuenow'));
+      expect(uploadBar).toHaveAttribute('aria-valuenow', '50');
     });
 
     it('should show uploading state', async () => {

@@ -38,7 +38,7 @@ class PublicEventService: APIClientProtocol {
     private let session: URLSession
 
     init(
-        baseURL: String = "https://api.staging.batbern.ch",
+        baseURL: String = BATbernAPIConfig.baseURL,
         session: URLSession = .shared
     ) {
         self.baseURL = baseURL

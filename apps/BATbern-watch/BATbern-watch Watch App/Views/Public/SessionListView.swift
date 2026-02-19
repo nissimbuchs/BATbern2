@@ -10,65 +10,72 @@ import SwiftUI
 import SwiftData
 
 struct SessionListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: PublicViewModel?
+    @Environment(AuthManager.self) private var authManager
+    @Environment(EventStateManager.self) private var eventState
+    @Environment(EventDataController.self) private var eventDataController
     @State private var selectedPageIndex: Int = 0
 
+    // PublicViewModel is a pure presentation pass-through — no async init.
+    // Creating it inline ensures the TabView (and its Crown sequencer) is always
+    // present from the very first render, preventing the "CrownSequencer set up
+    // without a view property" warning that corrupts page indicator state.
+    private var viewModel: PublicViewModel {
+        PublicViewModel(eventDataController: eventDataController)
+    }
+
     var body: some View {
-        Group {
-            if let vm = viewModel {
-                verticalPagingView(vm: vm)
-            } else {
-                ProgressView()
-                    .tint(.white)
-            }
-        }
-        .onAppear {
-            if viewModel == nil {
-                viewModel = PublicViewModel(modelContext: modelContext)
-            }
-        }
+        verticalPagingView(vm: viewModel)
     }
 
     // MARK: - Vertical Paging View (AC#1, AC#4)
 
     @ViewBuilder
     private func verticalPagingView(vm: PublicViewModel) -> some View {
-        ZStack(alignment: .top) {
-            TabView(selection: $selectedPageIndex) {
-                // Page 0: Event Hero (P1)
-                EventHeroView()
-                    .tag(0)
+        TabView(selection: $selectedPageIndex) {
+            // Page 0: Event Hero (P1)
+            EventHeroView()
+                .tag(0)
 
-                // Pages 1..N: Session Cards (P2)
-                ForEach(Array(vm.displayableSessions.enumerated()), id: \.element.sessionSlug) { index, session in
-                    SessionCardView(
-                        session: session,
-                        phase: vm.event?.currentPublishedPhase
-                    )
-                    .tag(index + 1)
-                }
+            // Pages 1..N: Session Cards (P2)
+            ForEach(Array(vm.displayableSessions.enumerated()), id: \.element.sessionSlug) { index, session in
+                SessionCardView(
+                    session: session,
+                    phase: vm.event?.currentPublishedPhase,
+                    showStatusBadge: authManager.isPaired && eventState.isLive
+                )
+                .tag(index + 1)
             }
-            .tabViewStyle(.verticalPage)  // Crown-driven vertical paging
-
-            // Connection status bar overlay (AC#4, AC#7)
-            // Visible on P1 (EventHero) and P2 (session cards) only
-            ConnectionStatusBar(
-                isOffline: vm.isOffline,
-                lastSynced: vm.lastSynced
-            )
         }
+        .tabViewStyle(.verticalPage)  // Crown-driven vertical paging
     }
 }
 
 // MARK: - Previews
 
 #Preview("With Sessions") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self, CachedSession.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     SessionListView()
-        .modelContainer(for: [CachedEvent.self, CachedSession.self], inMemory: true)
+        .modelContainer(container)
+        .environment(auth)
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
 }
 
 #Preview("Empty State") {
+    let auth = AuthManager()
+    let container = try! ModelContainer(for: CachedEvent.self)
+    let controller = EventDataController(
+        authManager: auth,
+        modelContext: container.mainContext
+    )
     SessionListView()
-        .modelContainer(for: [CachedEvent.self], inMemory: true)
+        .modelContainer(container)
+        .environment(auth)
+        .environment(controller)
+        .environment(EventStateManager(eventDataController: controller))
 }

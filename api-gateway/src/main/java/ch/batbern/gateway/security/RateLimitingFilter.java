@@ -189,7 +189,11 @@ public class RateLimitingFilter implements Filter {
 
                 String userId = jwt.getSubject(); // Cognito sub claim
                 String email = jwt.getClaimAsString("email");
+                // Cognito tokens use "custom:role"; Watch JWTs use "role"
                 String rolesString = jwt.getClaimAsString("custom:role");
+                if (rolesString == null || rolesString.isEmpty()) {
+                    rolesString = jwt.getClaimAsString("role");
+                }
 
                 // Extract first role (highest priority)
                 String role = "attendee"; // default

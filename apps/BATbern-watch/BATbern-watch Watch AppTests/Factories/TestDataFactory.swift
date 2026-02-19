@@ -21,7 +21,8 @@ enum TestData {
             date: date,
             themeImageUrl: themeImageUrl,
             venueName: venueName,
-            sessions: sessions ?? defaultSessions()
+            sessions: sessions ?? defaultSessions(),
+            currentPublishedPhase: nil
         )
     }
 
@@ -101,7 +102,7 @@ enum TestData {
         companyLogoUrl: String? = "https://cdn.batbern.ch/logos/acme.png",
         profilePictureUrl: String? = "https://cdn.batbern.ch/speakers/anna-meier.jpg",
         bio: String? = "Cloud architecture expert with 15 years experience.",
-        role: SpeakerRole = .keynoteSpeaker,
+        role: SpeakerRole = .primarySpeaker,
         arrived: Bool = false
     ) -> WatchSpeaker {
         WatchSpeaker(

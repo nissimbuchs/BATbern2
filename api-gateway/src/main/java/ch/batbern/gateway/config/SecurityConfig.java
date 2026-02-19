@@ -1,5 +1,6 @@
 package ch.batbern.gateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -8,7 +9,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 /**
  * Security Configuration
@@ -22,6 +29,62 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    private String jwkSetUri;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri:}")
+    private String issuerUri;
+
+    @Value("${watch.jwt.secret:batbern-watch-dev-secret-key-min-32-chars}")
+    private String watchJwtSecret;
+
+    /**
+     * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
+     *
+     * Routing strategy: peek at the "iss" claim in the (unverified) JWT payload to select the
+     * correct decoder. Signature verification is then performed by the selected decoder, so
+     * a forged issuer claim cannot bypass verification — it would just fail with the wrong decoder.
+     *
+     * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
+     * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
+     */
+    @Bean
+    @Profile("!test")
+    public JwtDecoder compositeJwtDecoder() {
+        JwtDecoder cognitoDecoder = buildCognitoDecoder();
+
+        SecretKeySpec watchKey = new SecretKeySpec(
+                watchJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        NimbusJwtDecoder watchDecoder = NimbusJwtDecoder.withSecretKey(watchKey).build();
+
+        return token -> isWatchJwt(token) ? watchDecoder.decode(token) : cognitoDecoder.decode(token);
+    }
+
+    private JwtDecoder buildCognitoDecoder() {
+        if (jwkSetUri != null && !jwkSetUri.isEmpty()) {
+            return NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        }
+        if (issuerUri != null && !issuerUri.isEmpty()) {
+            return NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
+        }
+        throw new IllegalStateException(
+                "Gateway JWT: configure spring.security.oauth2.resourceserver.jwt.jwk-set-uri or issuer-uri");
+    }
+
+    /** Peeks at the JWT payload (base64url, no signature check) to read the "iss" claim. */
+    private static boolean isWatchJwt(String token) {
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return false;
+            }
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+            return payload.contains("\"iss\":\"batbern-watch\"");
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     /**
      * CORS configuration bean
@@ -178,10 +241,16 @@ public class SecurityConfig {
                         // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
                         .requestMatchers("/api/v1/e2e-test/**").permitAll()
 
-                        // All other requests require authentication
+                        // W2.2: Watch pairing — unauthenticated (Watch has no JWT yet; exchanges pairing code for JWT)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/watch/pair").permitAll()
+                        // W2.2: Watch JWT auth — unauthenticated (exchanges pairing token for JWT; must be permit-all)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
+
+                        // All other requests require authentication (including Watch organizer endpoints,
+                        // which are validated by the composite JwtDecoder below)
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> { }))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(compositeJwtDecoder())))
                 .build();
     }
 }

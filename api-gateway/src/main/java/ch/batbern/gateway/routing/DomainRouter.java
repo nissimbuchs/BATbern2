@@ -59,10 +59,19 @@ public class DomainRouter {
         log.debug("Determining target service for path: {}", cleanPath);
 
         // Route based on path patterns - /api/v1/{domain}
-        // Note: Check speaker-specific endpoints BEFORE general events pattern
+        // Note: Check specific patterns BEFORE general prefix matches
+
+        // W2.2: Watch pairing (unauthenticated) → company-user-management-service
+        // W2.4+: Watch event/arrivals endpoints → event-management-service
+        // Must check /api/v1/watch/pair specifically before /api/v1/watch/events fallthrough
+        if (cleanPath.equals("/api/v1/watch/pair") || cleanPath.equals("/api/v1/watch/authenticate")) {
+            return "company-user-management-service";
+        } else if (cleanPath.startsWith("/api/v1/watch")) {
+            return "event-management-service";
+
         // Story 5.4: Speaker status management endpoints go to event-management-service
         // (moved from speaker-coordination-service for Epic 5 architecture alignment)
-        if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
+        } else if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/events")

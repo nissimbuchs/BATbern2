@@ -11,7 +11,9 @@ struct WatchEvent: Sendable, Identifiable {
     let themeImageUrl: String?
     let venueName: String
     let sessions: [WatchSession]
-    let currentPublishedPhase: String?  // W1.2: Progressive publishing (TOPIC, SPEAKERS, AGENDA)
+    var currentPublishedPhase: String?  // W1.2: Progressive publishing (TOPIC, SPEAKERS, AGENDA)
+    var typicalStartTime: String = "18:00"
+    var typicalEndTime: String = "22:00"
 }
 
 struct WatchSession: Sendable, Identifiable {
@@ -25,6 +27,7 @@ struct WatchSession: Sendable, Identifiable {
     var state: SessionState
     var actualStartTime: Date?
     var overrunMinutes: Int?
+    var completedByUsername: String?  // M1 review fix: guards auto-advance when already completed
 
     var duration: TimeInterval {
         endTime.timeIntervalSince(startTime)
@@ -62,9 +65,10 @@ struct WatchSpeaker: Sendable, Identifiable {
 }
 
 enum SpeakerRole: String, Codable, Sendable {
-    case keynoteSpeaker = "keynote_speaker"
-    case panelist
+    case primarySpeaker = "primary_speaker"
+    case coSpeaker = "co_speaker"
     case moderator
+    case panelist
 }
 
 // MARK: - Urgency Level

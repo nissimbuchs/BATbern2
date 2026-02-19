@@ -12,13 +12,23 @@ import SwiftUI
 struct ConnectionStatusBar: View {
     let isOffline: Bool
     let lastSynced: Date?
+    let presenceCount: Int
+    let isConnected: Bool
     let clock: ClockProtocol
 
     // MARK: - Initialization
 
-    init(isOffline: Bool, lastSynced: Date?, clock: ClockProtocol = SystemClock()) {
+    init(
+        isOffline: Bool,
+        lastSynced: Date?,
+        presenceCount: Int = 0,
+        isConnected: Bool = true,
+        clock: ClockProtocol = SystemClock()
+    ) {
         self.isOffline = isOffline
         self.lastSynced = lastSynced
+        self.presenceCount = presenceCount
+        self.isConnected = isConnected
         self.clock = clock
     }
 
@@ -40,45 +50,34 @@ struct ConnectionStatusBar: View {
     }
 
     var body: some View {
-        if shouldShow {
-            HStack(spacing: 4) {
-                if isOffline {
-                    // Offline indicator with WiFi slash icon
-                    Image(systemName: "wifi.slash")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+        HStack(spacing: 5) {
+            Image(systemName: isOffline ? "wifi.slash" : "wifi")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(isOffline ? Color.orange : Color.teal.opacity(0.8))
 
-                    Text(NSLocalizedString("status.offline", comment: "Offline"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-
-                    if let lastSync = lastSynced {
-                        Text("·")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-
-                        Text(relativeTimeString(from: lastSync))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                } else if isStale {
-                    // Stale data indicator (connected but old cache)
-                    Text(NSLocalizedString("status.updated", comment: "Aktualisiert"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-
-                    if let lastSync = lastSynced {
-                        Text(relativeTimeString(from: lastSync))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+            if shouldShow, let lastSync = lastSynced {
+                Text(relativeTimeString(from: lastSync))
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color(white: 0.18), in: Capsule())
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 8)  // Thin 8pt bar per UX spec
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+
+            if presenceCount > 0 {
+                Text("·")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                Image(systemName: presenceCount > 1 ? "person.2.fill" : "person.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isConnected ? .teal : .orange)
+                Text("\(presenceCount)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isConnected ? .teal : .orange)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 4)
     }
 
     // MARK: - Helpers
@@ -95,30 +94,30 @@ struct ConnectionStatusBar: View {
 
 // MARK: - Previews
 
-#Preview("Fresh - Hidden") {
+#Preview("Online - Fresh") {
     ConnectionStatusBar(
         isOffline: false,
-        lastSynced: Date()  // Just now - fresh
+        lastSynced: Date()  // Just now — teal wifi icon only
     )
 }
 
-#Preview("Stale - Visible") {
+#Preview("Online - Stale") {
     ConnectionStatusBar(
         isOffline: false,
-        lastSynced: Date().addingTimeInterval(-20 * 60)  // 20 minutes ago - stale
+        lastSynced: Date().addingTimeInterval(-20 * 60)  // 20 min ago — teal icon + time capsule
     )
 }
 
-#Preview("Offline - Visible") {
+#Preview("Offline - With Cache") {
     ConnectionStatusBar(
         isOffline: true,
-        lastSynced: Date().addingTimeInterval(-5 * 60)  // 5 minutes ago
+        lastSynced: Date().addingTimeInterval(-5 * 60)  // 5 min ago — orange icon + time capsule
     )
 }
 
-#Preview("Offline No Cache") {
+#Preview("Offline - No Cache") {
     ConnectionStatusBar(
         isOffline: true,
-        lastSynced: nil  // Never synced
+        lastSynced: nil  // Never synced — orange icon only
     )
 }

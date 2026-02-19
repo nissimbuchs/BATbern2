@@ -4,12 +4,12 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   IconButton,
-  CircularProgress,
   Alert,
   Button,
   Paper,
   Typography,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Computer as DesktopIcon,
   PhoneIphone as MobileIcon,
@@ -190,7 +190,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase, mode
               gap: 2,
             }}
           >
-            <CircularProgress data-testid="preview-loading-spinner" />
+            <BATbernLoader size={96} data-testid="preview-loading-spinner" />
             <Typography variant="body2" color="text.secondary">
               Refreshing preview...
             </Typography>

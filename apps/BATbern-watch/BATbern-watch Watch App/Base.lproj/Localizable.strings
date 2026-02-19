@@ -4,7 +4,6 @@
  */
 
 /* Event Hero Screen */
-"event.hero.scroll_hint" = "▼ Für Programm scrollen";
 "event.hero.empty.title" = "BATbern";
 "event.hero.empty.message" = "Kein anstehendes BATbern Event";
 
@@ -19,6 +18,18 @@
 /* Organizer Zone */
 "organizer.title" = "Organisator-Bereich";
 "organizer.coming_soon" = "Verfügbar in Epic 2";
+"organizer.no_event.title" = "Kein aktives Event";
+"organizer.no_event.message" = "Kurz vor dem Event zurückkommen";
+
+/* Pairing Screen (W2.2) */
+"pairing.title" = "Watch koppeln";
+"pairing.instructions" = "Krone drehen für Ziffer\nTippen für nächste Ziffer";
+"pairing.button" = "Koppeln";
+"pairing.error" = "Code ungültig oder abgelaufen. Bitte erneut versuchen.";
+"pairing.success" = "Gekoppelt als %@";
+"error.network" = "Netzwerkfehler. Bitte erneut versuchen.";
+"error.auth_failed" = "Authentifizierung fehlgeschlagen.";
+"error.invalid_response" = "Ungültige Serverantwort.";
 
 /* Connection Status */
 "status.offline" = "Offline";
@@ -27,6 +38,31 @@
 /* Error Messages */
 "error.offline" = "Offline — gecachte Daten werden angezeigt";
 "error.refresh_failed" = "Aktualisierung fehlgeschlagen: %@";
+
+/* Event Sync Loading (W2.3) */
+"sync.connecting_to_event" = "Connecting to event...";
+"sync.error.not_authenticated" = "Nicht authentifiziert";
+"sync.error.auth_required" = "Authentifizierung erforderlich";
+"sync.error.network" = "Netzwerkfehler beim Synchronisieren";
+"sync.error.no_event" = "Kein aktives Event gefunden";
+
+/* Event Preview Screen (W2.3) */
+"preview.no_active_event" = "No active event";
+"preview.check_back_later" = "Check back closer to your event";
+"preview.starts_in" = "Starts in %@";
+
+/* Speaker Arrival Tracking (W2.4) */
+"arrival.tonight_speakers" = "Tonight's Speakers";
+"arrival.counter_format" = "%d of %d arrived";
+"arrival.confirm_question_format" = "Has %@ arrived?";
+"arrival.confirm_arrived" = "Arrived ✓";
+"arrival.not_yet" = "Not yet";
+"arrival.confirmed_by_format" = "Confirmed by %@";
+"arrival.close" = "Close";
+"arrival.event_starts_at" = "Event starts at";
+"arrival.error.not_authenticated" = "Not authenticated. Please pair your Watch.";
+"arrival.error.no_event" = "No active event.";
+"arrival.error.server" = "Server error confirming arrival.";
 
 /* Debug Messages (optional, for consistency) */
 "debug.refresh_start" = "🔄 PublicViewModel: Aktualisierung gestartet...";

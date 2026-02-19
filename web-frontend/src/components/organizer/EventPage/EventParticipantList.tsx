@@ -12,8 +12,9 @@
  */
 
 import React from 'react';
-import { Box, Typography, CircularProgress, Alert, Button } from '@mui/material';
+import { Box, Typography, Alert, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useEventParticipantStore } from '../../../stores/eventParticipantStore';
 import { useEventRegistrations } from '../../../hooks/useEventManagement/useEventRegistrations';
 import EventParticipantFilters from './EventParticipantFilters';
@@ -47,7 +48,7 @@ const EventParticipantList: React.FC<EventParticipantListProps> = ({ eventCode }
         justifyContent="center"
         minHeight="400px"
       >
-        <CircularProgress />
+        <BATbernLoader size={96} />
         <Typography variant="body1" sx={{ mt: 2 }}>
           {t('eventPage.participantList.loading')}
         </Typography>

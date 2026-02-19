@@ -11,6 +11,9 @@
 import Foundation
 import Network
 import Observation
+import OSLog
+
+private let logger = Logger(subsystem: "ch.batbern.watch", category: "Connectivity")
 
 @Observable
 class ConnectivityMonitor {
@@ -23,6 +26,11 @@ class ConnectivityMonitor {
 
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "ch.batbern.connectivity-monitor")
+    private var previousConnectionState: Bool = true
+
+    /// Callback triggered when connectivity state changes (for reactive observation)
+    @ObservationIgnored
+    var onConnectivityChanged: (@MainActor @Sendable (Bool) -> Void)?
 
     // MARK: - Lifecycle
 
@@ -31,10 +39,26 @@ class ConnectivityMonitor {
     func start() {
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
-                self?.isConnected = (path.status == .satisfied)
+                guard let self = self else { return }
+                let newState = (path.status == .satisfied)
+
+                // Only trigger callback if state actually changed
+                if newState != self.previousConnectionState {
+                    self.previousConnectionState = newState
+                    self.isConnected = newState
+                    self.onConnectivityChanged?(newState)
+                    if newState {
+                        logger.info("📶 ONLINE — network path satisfied")
+                    } else {
+                        logger.warning("📵 OFFLINE — network path unsatisfied")
+                    }
+                } else {
+                    self.isConnected = newState
+                }
             }
         }
         monitor.start(queue: queue)
+        logger.info("ConnectivityMonitor started")
     }
 
     /// Stop monitoring and cancel NWPathMonitor

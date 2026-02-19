@@ -12,7 +12,8 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Upload, FileText, X, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { Upload, FileText, X, AlertCircle, ExternalLink } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService } from '@/services/speakerPortalService';
 
 // Constants
@@ -306,7 +307,7 @@ const PresentationUpload = ({
 
         {isUploading ? (
           <>
-            <Loader2 className="h-12 w-12 text-blue-400 animate-spin mb-4" />
+            <BATbernLoader size={96} />
             <p className="text-white font-medium">{selectedFileName}</p>
           </>
         ) : (

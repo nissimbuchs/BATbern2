@@ -52,6 +52,8 @@ tags:
     description: Topic management and backlog operations (Story 5.2)
   - name: Speaker Outreach
     description: Speaker outreach tracking and history (Story 5.3)
+  - name: Watch
+    description: Watch app organizer endpoints (Epic W2)
 
 paths:
   /events:
@@ -3368,8 +3370,426 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/v1/watch/organizers/me/active-events:
+    get:
+      tags:
+        - Watch
+      summary: Get active events for authenticated organizer
+      description: |
+        Returns active events assigned to the authenticated organizer.
+        Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+
+        **Story W2.3**: Event Join & Schedule Sync
+        - AC#1: Full schedule including sessions and speaker metadata
+        - AC#4: Empty list when no active events
+        - AC#5: Event preview data when event is >1h away
+
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: getActiveEventsForOrganizer
+      responses:
+        '200':
+          description: Active events list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEventsResponse'
+              examples:
+                withEvent:
+                  summary: Organizer has an active event
+                  value:
+                    activeEvents:
+                      - eventCode: "BATbern57"
+                        title: "BATbern 57 - Cloud Native Architectures"
+                        eventDate: "2026-03-01"
+                        venueName: "Kultur Casino Bern"
+                        typicalStartTime: "18:00"
+                        typicalEndTime: "22:00"
+                        themeImageUrl: null
+                        currentPublishedPhase: "AGENDA"
+                        eventStatus: "SCHEDULED"
+                        sessions:
+                          - sessionSlug: "cloud-keynote"
+                            title: "Cloud Architecture Keynote"
+                            abstract: "Opening keynote about cloud-native patterns"
+                            sessionType: "talk"
+                            scheduledStartTime: "2026-03-01T17:00:00Z"
+                            scheduledEndTime: "2026-03-01T17:45:00Z"
+                            durationMinutes: 45
+                            speakers:
+                              - username: "john.doe"
+                                firstName: "John"
+                                lastName: "Doe"
+                                company: null
+                                companyLogoUrl: null
+                                profilePictureUrl: "https://cdn.example.com/portrait/john.doe.jpg"
+                                bio: "Cloud architect with 10 years experience"
+                                speakerRole: "panelist"
+                            status: "SCHEDULED"
+                            actualStartTime: null
+                            actualEndTime: null
+                            overrunMinutes: 0
+                            completedBy: null
+                noEvents:
+                  summary: No active events
+                  value:
+                    activeEvents: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /api/v1/watch/events/{eventCode}/arrivals:
+    get:
+      tags:
+        - Watch
+      summary: Get speaker arrival status for an event
+      description: |
+        Returns all confirmed speaker arrivals for the given event.
+        Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+
+        **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: getArrivalStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      responses:
+        '200':
+          description: Arrival status list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrivalStatusList'
+              examples:
+                withArrivals:
+                  value:
+                    arrivals:
+                      - speakerUsername: "anna.meier"
+                        confirmedBy: "marco.muster"
+                        arrivedAt: "2026-02-16T17:15:00Z"
+                empty:
+                  value:
+                    arrivals: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Watch
+      summary: Confirm a speaker's arrival
+      description: |
+        Confirms a speaker's arrival for the given event.
+        Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+        Also triggers real-time WebSocket broadcast to all organizer watches.
+
+        **REST Fallback**: Used when WebSocket is offline/reconnecting.
+        **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: confirmSpeakerArrival
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmArrivalRequest'
+      responses:
+        '201':
+          description: Arrival confirmed — includes broadcast payload with server-authoritative counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerArrivalBroadcast'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+
+    # ── Watch App Schemas (W2.4) ─────────────────────────────────────────────
+
+    ConfirmArrivalRequest:
+      type: object
+      description: Request body to confirm a speaker's arrival.
+      required:
+        - speakerUsername
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+
+    ArrivalStatusList:
+      type: object
+      description: List of confirmed speaker arrivals for an event.
+      required:
+        - arrivals
+      properties:
+        arrivals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrivalStatus'
+
+    ArrivalStatus:
+      type: object
+      description: A single speaker arrival record.
+      required:
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+
+    ArrivalCount:
+      type: object
+      description: Server-authoritative arrived/total counts for real-time counter sync.
+      required:
+        - arrived
+        - total
+      properties:
+        arrived:
+          type: integer
+          example: 2
+        total:
+          type: integer
+          example: 4
+
+    SpeakerArrivalBroadcast:
+      type: object
+      description: |
+        WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+        Also returned as REST response body for the POST endpoint.
+        Carries individual arrival details plus server-authoritative counts (FR39).
+      required:
+        - type
+        - eventCode
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+        - arrivalCount
+      properties:
+        type:
+          type: string
+          enum: ["SPEAKER_ARRIVED"]
+          example: "SPEAKER_ARRIVED"
+        eventCode:
+          type: string
+          example: "BATbern56"
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        speakerFirstName:
+          type: string
+          example: "Anna"
+        speakerLastName:
+          type: string
+          example: "Meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+        arrivalCount:
+          $ref: '#/components/schemas/ArrivalCount'
+
+    # ── Watch App Schemas (W2.3) ─────────────────────────────────────────────
+
+    ActiveEventsResponse:
+      type: object
+      description: Response wrapper for the organizer's active events (W2.3).
+      required:
+        - activeEvents
+      properties:
+        activeEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveEventDetail'
+
+    ActiveEventDetail:
+      type: object
+      description: Full event detail for Watch organizer sync, including sessions and speakers.
+      required:
+        - eventCode
+        - title
+        - eventDate
+        - venueName
+        - eventStatus
+        - sessions
+      properties:
+        eventCode:
+          type: string
+          example: "BATbern57"
+        title:
+          type: string
+          example: "BATbern 57 - Cloud Native Architectures"
+        eventDate:
+          type: string
+          format: date
+          example: "2026-03-01"
+        venueName:
+          type: string
+          example: "Kultur Casino Bern"
+        typicalStartTime:
+          type: string
+          nullable: true
+          description: "HH:mm in Europe/Zurich timezone, derived from first session"
+          example: "18:00"
+        typicalEndTime:
+          type: string
+          nullable: true
+          description: "HH:mm in Europe/Zurich timezone, derived from last session"
+          example: "22:00"
+        themeImageUrl:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/theme/batbern57.jpg"
+        currentPublishedPhase:
+          type: string
+          nullable: true
+          example: "AGENDA"
+        eventStatus:
+          type: string
+          enum: [SCHEDULED, LIVE, COMPLETED]
+          example: "SCHEDULED"
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSessionDetail'
+
+    WatchSessionDetail:
+      type: object
+      description: Session detail for Watch organizer sync.
+      required:
+        - sessionSlug
+        - title
+        - speakers
+      properties:
+        sessionSlug:
+          type: string
+          example: "cloud-keynote"
+        title:
+          type: string
+          example: "Cloud Architecture Keynote"
+        abstract:
+          type: string
+          nullable: true
+        sessionType:
+          type: string
+          nullable: true
+          example: "talk"
+        scheduledStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-03-01T17:00:00Z"
+        scheduledEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-03-01T17:45:00Z"
+        durationMinutes:
+          type: integer
+          nullable: true
+          example: 45
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSpeakerDetail'
+        status:
+          type: string
+          nullable: true
+          enum: [SCHEDULED, ACTIVE, COMPLETED]
+          description: Derived from timing relative to now; W4 adds real-time override.
+          example: "SCHEDULED"
+        actualStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        actualEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        overrunMinutes:
+          type: integer
+          description: Populated in W4. Always 0 in W2.3.
+          example: 0
+        completedBy:
+          type: string
+          nullable: true
+          description: Populated in W4. Always null in W2.3.
+
+    WatchSpeakerDetail:
+      type: object
+      description: Speaker detail for Watch organizer sync.
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          example: "john.doe"
+        firstName:
+          type: string
+          nullable: true
+          example: "John"
+        lastName:
+          type: string
+          nullable: true
+          example: "Doe"
+        company:
+          type: string
+          nullable: true
+          description: Cross-service lookup deferred. Always null in W2.3.
+        companyLogoUrl:
+          type: string
+          nullable: true
+          description: Cross-service lookup deferred. Always null in W2.3.
+        profilePictureUrl:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/portrait/john.doe.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "Cloud architect with 10 years experience"
+        speakerRole:
+          type: string
+          nullable: true
+          example: "panelist"
+
+    # ── Core Schemas ────────────────────────────────────────────────────────
+
     Event:
       type: object
       required:

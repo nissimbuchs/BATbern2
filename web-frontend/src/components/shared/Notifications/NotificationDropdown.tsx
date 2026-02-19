@@ -16,7 +16,6 @@ import {
   Button,
   Typography,
   Box,
-  CircularProgress,
   Alert,
   Divider,
   Dialog,
@@ -31,6 +30,7 @@ import {
   PriorityHigh as PriorityHighIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import i18n from '@/i18n/config';
 import { Notification } from '../../../types/notification';
 import { formatDateTime } from '../../../utils/date';
@@ -235,7 +235,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
           {/* Loading state */}
           {isLoading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress role="progressbar" size={32} />
+              <BATbernLoader size={64} />
             </Box>
           )}
 

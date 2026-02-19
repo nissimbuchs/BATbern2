@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,6 +22,15 @@ import java.util.UUID;
  */
 @Repository
 public interface SpeakerRepository extends JpaRepository<Speaker, UUID>, JpaSpecificationExecutor<Speaker> {
+
+    /**
+     * Batch-load speakers by a set of usernames.
+     * Used by WatchEventController to avoid N+1 queries when mapping session speakers.
+     *
+     * @param usernames Collection of usernames to load
+     * @return List of matching speakers (may be shorter than input if some have no profile)
+     */
+    List<Speaker> findAllByUsernameIn(Collection<String> usernames);
 
     /**
      * Find speaker by username (ADR-003: meaningful identifier).

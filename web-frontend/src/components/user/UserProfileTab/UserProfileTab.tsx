@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Button, TextField, Typography, Paper, Divider } from '@mui/material';
+import { Box, Button, Divider, Paper, TextField, Typography } from '@mui/material';
 import ProfileHeader from '../ProfileHeader/ProfileHeader';
 import { CompanyAutocomplete } from '@/components/organizer/PartnerManagement/CompanyAutocomplete';
+import WatchPairingSection from '@/features/profile/WatchPairingSection';
 import type { User, UserActivity } from '@/types/userAccount.types';
 import type { components } from '@/types/generated/company-api.types';
 import {
@@ -224,6 +225,13 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
           </Box>
         )}
       </Paper>
+
+      {/* Apple Watch Pairing (Organizers only) */}
+      {user.roles.includes('ORGANIZER') && (
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <WatchPairingSection username={user.username} />
+        </Paper>
+      )}
 
       {/* Activity Timeline */}
       <Paper sx={{ p: 3 }}>

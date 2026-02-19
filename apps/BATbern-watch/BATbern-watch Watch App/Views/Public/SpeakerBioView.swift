@@ -11,6 +11,15 @@ import SwiftUI
 
 struct SpeakerBioView: View {
     let speaker: CachedSpeaker
+    let portraitCache: PortraitCache
+
+    @State private var portraitData: Data?
+    @State private var logoData: Data?
+
+    init(speaker: CachedSpeaker, portraitCache: PortraitCache = .shared) {
+        self.speaker = speaker
+        self.portraitCache = portraitCache
+    }
 
     /// Helper to check if bio is empty or whitespace-only
     private var hasValidBio: Bool {
@@ -24,9 +33,11 @@ struct SpeakerBioView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                // Large Portrait (~80pt, circular)
+                // Large Portrait (circular) — PortraitCache backed (AC#4). Size adapts to
+                // device: 60pt (40mm SE) / 70pt (44mm SE, 41mm S9) / 80pt (45mm S9, Ultra).
                 portraitImage
-                    .frame(width: 80, height: 80)
+                    .frame(width: BATbernWatchStyle.Spacing.bioPortraitSize,
+                           height: BATbernWatchStyle.Spacing.bioPortraitSize)
                     .clipShape(Circle())
 
                 // Speaker Name
@@ -35,31 +46,20 @@ struct SpeakerBioView: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
 
-                // Company Name + Logo (inline)
+                // Company: logo if available, else company name as alt
                 if let company = speaker.company {
-                    HStack(spacing: 6) {
+                    if let data = logoData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 20)
+                            .accessibilityLabel(company)
+                    } else {
                         Text(company)
                             .font(.system(size: 13))
-                            .foregroundColor(.primary)
-
-                        // Company logo (~20pt height, inline)
-                        if let logoUrl = speaker.companyLogoUrl, let url = URL(string: logoUrl) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(height: 20)
-                                case .failure, .empty:
-                                    EmptyView()  // No logo, just show company name
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                        }
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
                     }
-                    .lineLimit(1)
                 }
 
                 // Divider
@@ -84,28 +84,48 @@ struct SpeakerBioView: View {
         }
         .navigationTitle("Speaker")  // System back button shows automatically
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadPortrait()
+            if let company = speaker.company {
+                await loadLogo(companyName: company)
+            }
+        }
     }
 
-    // MARK: - Portrait Image
+    // MARK: - Portrait Image (AC#4 — PortraitCache backed, no duplicate network request)
 
     @ViewBuilder
     private var portraitImage: some View {
-        if let profileUrl = speaker.profilePictureUrl, let url = URL(string: profileUrl) {
-            // AsyncImage with CDN URL
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure, .empty:
-                    placeholderPortrait
-                @unknown default:
-                    placeholderPortrait
-                }
-            }
+        if let data = portraitData, let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
         } else {
             placeholderPortrait
+        }
+    }
+
+    private func loadPortrait() async {
+        guard let urlString = speaker.profilePictureUrl, let url = URL(string: urlString) else { return }
+        if let cached = portraitCache.getCachedPortrait(url: url) {
+            portraitData = cached
+            return
+        }
+        if let downloaded = try? await portraitCache.downloadAndCache(url: url) {
+            portraitData = downloaded
+        }
+    }
+
+    private func loadLogo(companyName: String) async {
+        if let cached = portraitCache.getLogoForCompany(companyName) {
+            logoData = cached
+            return
+        }
+        do {
+            try await portraitCache.downloadAndCacheLogo(companyName: companyName)
+            logoData = portraitCache.getLogoForCompany(companyName)
+        } catch {
+            // Silently fail — logo is optional
         }
     }
 

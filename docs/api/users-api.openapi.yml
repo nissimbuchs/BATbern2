@@ -64,6 +64,98 @@ tags:
     description: Domain service integration endpoints
 
 paths:
+  /users/{username}/watch-pairing:
+    post:
+      operationId: generateWatchPairingCode
+      tags:
+        - Watch Pairing
+      summary: Generate pairing code (AC1)
+      description: |
+        Generate a 6-digit numeric pairing code for the organizer's Apple Watch.
+        Code expires after 24 hours (NFR20). Max 2 watches per organizer (NFR19).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Pairing code generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingCodeResponse'
+        '409':
+          description: Maximum 2 watches already paired (AC2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - missing or invalid JWT
+        '403':
+          description: Forbidden - not owner or not ORGANIZER role
+
+    get:
+      operationId: getWatchPairingStatus
+      tags:
+        - Watch Pairing
+      summary: Get pairing status
+      description: Returns list of paired watches and any pending pairing code.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pairing status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairingStatusResponse'
+        '401':
+          description: Unauthorized - missing or invalid JWT
+        '403':
+          description: Forbidden
+
+  /users/{username}/watch-pairing/{watchId}:
+    delete:
+      operationId: unpairWatch
+      tags:
+        - Watch Pairing
+      summary: Unpair a watch (AC4)
+      description: Hard-delete the pairing record by UUID (GDPR compliant). Uses id instead of deviceName because deviceName is nullable (not set during pairing flow).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: watchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Watch unpaired
+        '404':
+          description: Watch not found
+        '401':
+          description: Unauthorized - missing or invalid JWT
+        '403':
+          description: Forbidden
+
   /users/me:
     get:
       tags:
@@ -1287,8 +1379,144 @@ paths:
       security:
         - BearerAuth: []
 
+  # W2.2: Watch Authentication Endpoints (unauthenticated — code/token IS the credential)
+  /watch/pair:
+    post:
+      operationId: pairWatch
+      tags:
+        - Watch Authentication
+      summary: Exchange pairing code for pairing token (W2.2 AC2/AC3)
+      description: |
+        Exchanges a 6-digit pairing code (generated via POST /users/{username}/watch-pairing)
+        for a long-lived pairing token. The code is single-use and cleared after exchange.
+
+        **Unauthenticated** — the pairing code is the credential.
+
+        Returns 400 if code is invalid, not found, or expired.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchPairingRequest'
+            example:
+              pairingCode: "482715"
+      responses:
+        '200':
+          description: Pairing successful — returns pairing token and organizer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchPairingResponse'
+              example:
+                pairingToken: "a1b2c3d4-1234567890-98765"
+                organizerUsername: "marco.organizer"
+                organizerFirstName: "Marco"
+        '400':
+          description: Code invalid, expired, or wrong format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+
+  /watch/authenticate:
+    post:
+      operationId: authenticateWatch
+      tags:
+        - Watch Authentication
+      summary: Exchange pairing token for short-lived JWT (W2.2 AC4/NFR16)
+      description: |
+        Exchanges a pairing token for a short-lived JWT (1-hour lifespan per NFR16).
+        Called on app launch and auto-refreshed 10 minutes before expiry.
+
+        **Unauthenticated** — the pairing token is the credential.
+
+        Returns 401 if pairing token is invalid or pairing is incomplete.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchAuthRequest'
+            example:
+              pairingToken: "a1b2c3d4-1234567890-98765"
+      responses:
+        '200':
+          description: Authentication successful — returns JWT and expiry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchAuthResponse'
+              example:
+                jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expiresAt: "2026-02-17T16:30:00"
+        '401':
+          description: Pairing token invalid or pairing incomplete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+
 components:
   schemas:
+    # W2.2: Watch Authentication Schemas
+    WatchPairingRequest:
+      type: object
+      required:
+        - pairingCode
+      properties:
+        pairingCode:
+          type: string
+          pattern: '^\d{6}$'
+          description: 6-digit numeric pairing code generated by the web frontend
+          example: "482715"
+
+    WatchPairingResponse:
+      type: object
+      required:
+        - pairingToken
+        - organizerUsername
+        - organizerFirstName
+      properties:
+        pairingToken:
+          type: string
+          description: Long-lived token stored in Watch Keychain (NFR15)
+        organizerUsername:
+          type: string
+          description: Organizer's username
+        organizerFirstName:
+          type: string
+          description: Organizer's first name for display
+
+    WatchAuthRequest:
+      type: object
+      required:
+        - pairingToken
+      properties:
+        pairingToken:
+          type: string
+          description: Pairing token obtained from /watch/pair
+
+    WatchAuthResponse:
+      type: object
+      required:
+        - jwt
+        - expiresAt
+      properties:
+        jwt:
+          type: string
+          description: Short-lived JWT for authenticated Watch API calls (1 hour, NFR16)
+        expiresAt:
+          type: string
+          format: date-time
+          description: JWT expiry timestamp (ISO 8601)
+
     UserResponse:
       type: object
       description: |
@@ -1831,6 +2059,60 @@ components:
         details:
           type: object
           description: Additional error details
+
+    PairingCodeResponse:
+      type: object
+      properties:
+        pairingCode:
+          type: string
+          pattern: '^\d{6}$'
+          example: '482910'
+        expiresAt:
+          type: string
+          format: date-time
+        hoursUntilExpiry:
+          type: integer
+          example: 24
+
+    PairingStatusResponse:
+      type: object
+      properties:
+        pairedWatches:
+          type: array
+          items:
+            $ref: '#/components/schemas/PairedWatch'
+        pendingCode:
+          oneOf:
+            - $ref: '#/components/schemas/PendingPairingCode'
+            - type: 'null'
+
+    PairedWatch:
+      type: object
+      required:
+        - id
+        - pairedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Stable UUID identifier used for unpair. Never null.
+        deviceName:
+          type: string
+          nullable: true
+          description: Device name, nullable (not set during pairing flow).
+        pairedAt:
+          type: string
+          format: date-time
+
+    PendingPairingCode:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^\d{6}$'
+        expiresAt:
+          type: string
+          format: date-time
 
   responses:
     BadRequest:

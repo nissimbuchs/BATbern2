@@ -1,6 +1,6 @@
 # Story 1.4: Progressive Publishing & Offline Support
 
-Status: review
+Status: done
 
 ## Story
 
@@ -305,10 +305,15 @@ N/A - No blocking issues encountered
 - All error handling and offline scenarios already implemented from W1.1/W1.2
 - Tests created for ConnectivityMonitor and ConnectionStatusBar
 
-**Code Review Fixes Applied:**
-- Fixed ConnectionStatusBar to use injectable ClockProtocol instead of Date()
-- Created MockConnectivityMonitor for deterministic testing
-- Extended PublicViewModelTests with W1.4 connectivity scenarios
+**Code Review Fixes Applied (2026-02-16):**
+- **Issue #1 (HIGH)**: Fixed ConnectivityMonitorTests with real state transition tests using MockConnectivityMonitor
+- **Issue #2 (HIGH)**: Fixed ConnectionStatusBarTests to verify actual visibility logic with MockClock
+- **Issue #3 (MEDIUM)**: Replaced inefficient polling with callback-based reactive observation in PublicViewModel
+- **Issue #6 (MEDIUM)**: Added integration test for phase change detection (AC#8: TOPIC → SPEAKERS transition)
+- **Issue #7 (MEDIUM)**: Added progressive publishing integration tests (AC#1, AC#2, AC#3: TOPIC/SPEAKERS/AGENDA phases)
+- **Issue #8 (MEDIUM)**: Added portrait offline support test (AC#4: speaker data maintained offline)
+- **Issue #9 (MEDIUM)**: Implemented data comparison before cache writes (Task 4.4: hasEventChanged() method)
+- **Issue #10 (LOW)**: Added onConnectivityChanged callback to ConnectivityMonitor for reactive observation
 
 ### File List
 

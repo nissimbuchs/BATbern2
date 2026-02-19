@@ -17,7 +17,7 @@ class CachedSession {
     var sessionTypeRaw: String?  // Stores SessionType enum raw value
     var startTime: Date?
     var endTime: Date?
-    var speakers: [CachedSpeaker]
+    @Relationship(deleteRule: .cascade) var speakers: [CachedSpeaker]
     var actualStartTime: Date?
     var actualEndTime: Date?
     var overrunMinutes: Int?

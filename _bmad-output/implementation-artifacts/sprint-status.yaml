@@ -44,31 +44,38 @@ development_status:
   w1-1-xcode-project-setup-event-hero-screen: done
   w1-2-session-card-browsing: done
   w1-3-session-abstract-speaker-bio: done
-  w1-4-progressive-publishing-offline-support: review
-  epic-1-retrospective: optional
+  w1-4-progressive-publishing-offline-support: done
+  w1-5-ui-polish-image-caching: done
+  epic-1-retrospective: done
 
   # Epic 2: Watch Pairing & Organizer Access
-  epic-2: backlog
-  w2-1-pairing-code-backend-web-frontend: backlog
-  w2-2-watch-pairing-flow-organizer-zone-navigation: backlog
-  w2-3-event-join-schedule-sync: backlog
-  w2-4-speaker-arrival-tracking: backlog
-  epic-2-retrospective: optional
+  epic-2: in-progress
+  w2-1-pairing-code-backend-web-frontend: done
+  w2-2-watch-pairing-flow-organizer-zone-navigation: done
+  w2-3-event-join-schedule-sync: done
+  w2-4-speaker-arrival-tracking: done
+  epic-2-retrospective: done
 
   # Epic 3: Live Countdown & Haptic Awareness
-  epic-3: backlog
-  w3-1-live-countdown-display: backlog
-  w3-2-haptic-alert-system: backlog
-  w3-3-watch-face-complications: backlog
-  w3-4-session-schedule-next-session-preview: backlog
-  epic-3-retrospective: optional
+  epic-3: in-progress
+  w3-1-live-countdown-display: done
+  w3-2-haptic-alert-system: done
+  w3-3-watch-face-complications: review
+  w3-4-session-schedule-next-session-preview: done
+  epic-3-retrospective: done
 
   # Epic 4: Session Control & Team Sync
-  epic-4: backlog
-  w4-1-websocket-real-time-infrastructure: backlog
-  w4-2-session-advance-transition: backlog
-  w4-3-overrun-detection-schedule-cascade: backlog
-  w4-4-break-management-event-lifecycle: backlog
+  # GATE G1: epic-4-reuse-map.md reviewed by SM (2026-02-18) ✅
+  # Gate checklist — all cleared before W4.1 story creation:
+  #   G1: epic-4-reuse-map.md reviewed by SM          [x] 2026-02-18
+  #   D1: WatchHapticService.schedule() firing logic   [x] commit 5c49e211
+  #   A1: Pre-implementation review in story template  [x] w4-1 story — Pre-Implementation Review section
+  #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
+  epic-4: in-progress
+  w4-1-websocket-real-time-infrastructure: done
+  w4-2-session-advance-transition: done
+  w4-3-overrun-detection-schedule-cascade: review
+  w4-4-break-management-event-lifecycle: ready-for-dev
   epic-4-retrospective: optional
 
   # Epic 5: Offline Resilience

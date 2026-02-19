@@ -3,7 +3,8 @@
 //  BATbern-watch Watch App
 //
 //  Reusable circular portrait thumbnail for speakers.
-//  Source: W1.2 - Session Card Browsing (AC#5)
+//  Uses PortraitCache exclusively — no AsyncImage (AC#4, AC#5).
+//  Source: W1.2 - Session Card Browsing (AC#5); W1.5 - UI Polish (AC#4, AC#5)
 //
 
 import SwiftUI
@@ -11,81 +12,74 @@ import SwiftUI
 struct SpeakerPortraitView: View {
     let speaker: CachedSpeaker
     let size: CGFloat
-    @State private var companyLogoUrl: String?
+    let showCompanyLogo: Bool
+    let portraitCache: PortraitCache
 
-    init(speaker: CachedSpeaker, size: CGFloat = 40) {
+    @State private var portraitData: Data?
+    @State private var logoData: Data?
+
+    init(
+        speaker: CachedSpeaker,
+        size: CGFloat = 40,
+        showCompanyLogo: Bool = true,
+        portraitCache: PortraitCache = .shared
+    ) {
         self.speaker = speaker
         self.size = size
+        self.showCompanyLogo = showCompanyLogo
+        self.portraitCache = portraitCache
     }
 
     var body: some View {
         VStack(spacing: 4) {
             // Portrait + Company Logo Row
             HStack(spacing: 4) {
-                // Circular portrait with AsyncImage from CDN
+                // Circular portrait — PortraitCache backed (AC#4)
                 portraitImage
                     .frame(width: size, height: size)
                     .clipShape(Circle())
 
-                // Company logo (if available)
-                if let logoUrl = companyLogoUrl, let url = URL(string: logoUrl) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: size * 0.7, height: size * 0.7)  // Larger logo (70% of portrait size)
-                        case .failure, .empty:
-                            EmptyView()
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
+                // Company logo — PortraitCache backed (AC#5); hidden in compact contexts
+                if showCompanyLogo, let data = logoData, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: size * 0.7, height: size * 0.7)
                 }
             }
 
             // Speaker name
             Text(speaker.fullName)
-                .font(.system(size: 11))
-                .foregroundStyle(.white)
+                .font(BATbernWatchStyle.Typography.speakerName)
+                .foregroundStyle(BATbernWatchStyle.Colors.textPrimary)
                 .lineLimit(1)
 
-            // Company name
-            if let company = speaker.company {
+            // Company name — only shown when logo is enabled but unavailable (logo takes priority)
+            if showCompanyLogo, logoData == nil, let company = speaker.company {
                 Text(company)
-                    .font(.system(size: 9))
+                    .font(BATbernWatchStyle.Typography.companyName)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
         }
-        .frame(minWidth: size + 40)  // Minimum width, allows expansion for single speaker
+        // minWidth only needed when a logo can appear beside the portrait
+        .frame(minWidth: showCompanyLogo ? size + 40 : 0)
         .task {
-            // Fetch company logo if company name exists
-            if let companyName = speaker.company {
-                await loadCompanyLogo(companyName: companyName)
+            await loadPortrait()
+            if showCompanyLogo, let companyName = speaker.company {
+                await loadLogo(companyName: companyName)
             }
         }
     }
 
-    // MARK: - Portrait Image (AC#5)
+    // MARK: - Portrait Image (AC#4)
 
     @ViewBuilder
     private var portraitImage: some View {
-        if let profileUrl = speaker.profilePictureUrl, let url = URL(string: profileUrl) {
-            // AsyncImage with CDN URL (will use cache in Task 7)
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure, .empty:
-                    placeholderPortrait
-                @unknown default:
-                    placeholderPortrait
-                }
-            }
+        if let data = portraitData, let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
         } else {
             placeholderPortrait
         }
@@ -104,41 +98,41 @@ struct SpeakerPortraitView: View {
             )
     }
 
-    // MARK: - Company Logo Loading
+    // MARK: - Cache-First Portrait Loading (AC#4)
 
-    /// Fetch company logo URL from company-user-management API
-    /// Replicates web frontend pattern: GET /api/v1/companies/{companyName}?expand=logo
-    private func loadCompanyLogo(companyName: String) async {
-        // URL encode company name (may contain spaces or special characters)
-        guard let encodedCompanyName = companyName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
-              let baseUrl = URL(string: "https://api.staging.batbern.ch") else { return }
+    private func loadPortrait() async {
+        guard let urlString = speaker.profilePictureUrl, let url = URL(string: urlString) else { return }
 
-        let endpoint = baseUrl.appendingPathComponent("/api/v1/companies/\(encodedCompanyName)")
-        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.queryItems = [URLQueryItem(name: "expand", value: "logo")]
+        // Cache-first: try local file first
+        if let cached = portraitCache.getCachedPortrait(url: url) {
+            portraitData = cached
+            return
+        }
 
-        guard let url = components?.url else { return }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let company = try JSONDecoder().decode(CompanyResponse.self, from: data)
-            companyLogoUrl = company.logo?.url
-        } catch {
-            // Silently fail - logo is optional
-            print("Failed to load company logo for \(companyName): \(error)")
+        // Fallback: download and cache
+        if let downloaded = try? await portraitCache.downloadAndCache(url: url) {
+            portraitData = downloaded
         }
     }
-}
 
-// MARK: - Company API Response Types
+    // MARK: - Cache-First Logo Loading (AC#5)
 
-/// Minimal company response for logo fetching
-private struct CompanyResponse: Codable {
-    let logo: CompanyLogo?
-}
+    private func loadLogo(companyName: String) async {
+        // Cache-first: serve from local file immediately
+        if let cached = portraitCache.getLogoForCompany(companyName) {
+            logoData = cached
+            return
+        }
 
-private struct CompanyLogo: Codable {
-    let url: String
+        // Fallback: fetch via PortraitCache (single shared implementation, no duplication)
+        do {
+            try await portraitCache.downloadAndCacheLogo(companyName: companyName)
+            logoData = portraitCache.getLogoForCompany(companyName)
+        } catch {
+            // Silently fail — logo is optional
+            print("SpeakerPortraitView: Logo load failed for \(companyName): \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - Previews
@@ -149,7 +143,7 @@ private struct CompanyLogo: Codable {
         firstName: "Anna",
         lastName: "Schmidt",
         company: "ACME Corp",
-        profilePictureUrl: "https://picsum.photos/80/80"  // Sample image
+        profilePictureUrl: "https://picsum.photos/80/80"
     )
 
     SpeakerPortraitView(speaker: speaker, size: 40)

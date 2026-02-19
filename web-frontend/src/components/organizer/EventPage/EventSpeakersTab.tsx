@@ -23,7 +23,6 @@ import {
   Alert,
   IconButton,
   Divider,
-  CircularProgress,
   Drawer,
 } from '@mui/material';
 import {
@@ -35,6 +34,7 @@ import {
   Schedule as SlotAssignmentIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useQuery } from '@tanstack/react-query';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
@@ -223,7 +223,7 @@ export const EventSpeakersTab: React.FC<EventSpeakersTabProps> = ({ eventCode })
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-        <CircularProgress />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

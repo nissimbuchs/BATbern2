@@ -20,13 +20,13 @@ import {
   Box,
   Typography,
   Button,
-  CircularProgress,
   Alert,
   Container,
   ToggleButtonGroup,
   ToggleButton,
   Stack,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import Grid from '@mui/material/Grid';
 import {
   Add as AddIcon,
@@ -96,7 +96,7 @@ const UserList: React.FC = () => {
           justifyContent="center"
           minHeight="400px"
         >
-          <CircularProgress />
+          <BATbernLoader size={96} />
           <Typography variant="body1" sx={{ mt: 2 }}>
             {t('loading.users')}
           </Typography>

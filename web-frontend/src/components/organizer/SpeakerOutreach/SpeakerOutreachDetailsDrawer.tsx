@@ -44,6 +44,7 @@ import {
   AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
 import { useSendInvitation, useSendReminder } from '../../../hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
@@ -734,7 +735,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
           {isLoading && (
             <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
+              <BATbernLoader size={96} />
             </Box>
           )}
 

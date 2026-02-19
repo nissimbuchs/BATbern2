@@ -1,0 +1,70 @@
+BATbern Vortrag
+
+Themen
+- Wie alles begann
+    - hab einen Link von Andreas Grütter erhalten (OK mitglied)
+        Initial pointer in 19.8.2025 from Mobiliar CTO, Andy: https://youtu.be/fHWFF_pnqDk
+    - ich habe an einem wochenende mit claude und BMAD eine ganze applikation grbaut: The Weekend experience with RTFM (regular travel expense form manager)
+- Einsatz von Claude und BMAD. wieso BMAD Method
+- BMAD Phasen 1-3: Brainstorming, PRD, UX, Architektur, Epics
+- BMAD Phase 4: Implementierung
+    - CI/CD mit Github und AWS aufsetzen
+    - Lessons learned: DDD, TDD, OpenAPI, … siehe unten
+- Demo
+    - Tutorial film (docs/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4) in 2h erstellt
+    - Projektdoc portal zur dokumentation (see apps/projectdoc) https://project.batbern.ch
+    - Demo Organisator wie beim film. login, event erstellen, topic, speaker workflow, progressive publication, archiving
+- Aufwand/qualität
+    - Zusammenarbeit mit agenten
+    - Aufwand total von mir (60personentage von mir bis epic 1-5 fertic waren. siehe apps/workhours)
+    - Code, qualität, anzahl loc, tests, sonar, code vs tests (gutes verhältniss 50% code/50% tests, siehe apps/migration-analysis)
+- Lessons learned
+    - Context verwalten
+    - Zu viel zu früh planen, 16step Workflow
+    - Paralleles arbeiten
+    - Aufwand CI/CD, aws cdk, local test
+    - Nachdokumentation wenn nur an stories gearbeitet. Arbeiten mit plänen
+    - Refactorings, open-api types im backend, enums, naming conventions, aws kosten
+    - Testkonzept, bruno, playwright
+    - Strenge typisierung, any-type in JS
+    - md-files, mermaid, project-doc
+- Tips und tricks
+    - Resume
+    - Pläne
+    - BMAD v6
+    - Skills
+    - Party-mode. Bsp. Pulumi für wechsel nach supabasw,…
+    - Arbeiten auf dem handy
+    - 
+SPecial goodie: BATbern Companion watch app on apple watch os in app store available for all
+
+
+Lessons learned:
+
+Enterprise Anpassungen BMAD
+* Reduktion des Kontext als allg. Problem
+* DDD Ansatz
+* es scheint ein schritt zu fehlen. nach pro, werden direkt epics und stories definiert. es fehlen aber pro domain 
+* aufteilung in Domains und weiterarbeiten nur in einer Domain oder sogar subdomain und doch Konsistenz über ganze Applikation behalten.
+* APIs pro domain. api konsolidieren und so definieren, dass grosser reuse durch frontend wireframes
+* Wireframes mit den benötigten APIs für lesen schreiben und actions
+* Wireframes pro screen mit der Navigation zu anderen screens
+* TDD Red-Green-Refactor. No Mocks on src 
+* Infrastruktur Stories am Anfang
+* aws stacks korrekt aufsetzen. Zertifikate, CNAME records, alles jeweils im richtigen account.
+* accounts pro environment
+* DEV Test Prod Automatisierung
+* auch services deployen 
+* Storyboard der screenzusammenhänge
+* Stories mit Screens, APIs, datenmodell wie Detailspec
+* Start with small mvp aller domains (heathcheck)
+* DONT use story numbers with meaning. this creates cofusion when refactoring or reordering stories. use unspecific up counting ID’s like Jira does
+* update template to have clear handling of data entities in DB, JPA and Backend.
+* use opendoc types und lass backend und frontend dagegen entwickeln
+* klare Aufteilung in unit, integration, e2e tests
+
+Zu viele Male läuft es nicht trotz Tests 
+Echte e2e tests und Bruno Tests
+Playwright tests mit mcp durchführen
+
+Alle Services in einem dev dockercontainer

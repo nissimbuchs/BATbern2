@@ -33,8 +33,9 @@ struct MultiSpeakerGridView: View {
                             // Navigate to SpeakerBioView (P6)
                             SpeakerBioView(speaker: speaker)
                         } label: {
-                            // Portrait cell (same size as session card: ~40pt)
-                            SpeakerPortraitView(speaker: speaker, size: 40)
+                            // Portrait cell — adapts to device size (30/36/40pt)
+                            SpeakerPortraitView(speaker: speaker,
+                                                size: BATbernWatchStyle.Spacing.portraitSizeSmall)
                         }
                         .buttonStyle(.plain)  // Remove default button styling
                     }

@@ -20,7 +20,6 @@ import {
   MapPin,
   Clock,
   AlertCircle,
-  Loader2,
   User,
   FileText,
   Mail,
@@ -30,6 +29,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   speakerPortalService,
   DashboardUpcomingEvent,
@@ -346,7 +346,7 @@ const SpeakerDashboardPage = () => {
           {/* Loading state (AC8) */}
           {pageState === 'loading' && (
             <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+              <BATbernLoader size={64} />
               <p className="text-muted-foreground">{t('speakerPortal.dashboard.loading')}</p>
             </div>
           )}

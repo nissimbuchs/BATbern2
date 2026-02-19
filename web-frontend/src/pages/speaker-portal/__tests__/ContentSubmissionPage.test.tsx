@@ -141,7 +141,7 @@ describe('ContentSubmissionPage', () => {
 
       renderWithProviders();
 
-      expect(screen.getByRole('status', { name: /loading/i })).toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
       expect(screen.getByText(/loading content/i)).toBeInTheDocument();
     });
   });

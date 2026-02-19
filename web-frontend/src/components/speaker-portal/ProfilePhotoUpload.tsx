@@ -14,7 +14,8 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Upload, X, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, X, AlertCircle } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { speakerPortalService } from '@/services/speakerPortalService';
 
 // Constants
@@ -298,11 +299,7 @@ const ProfilePhotoUpload = ({
             className="hidden"
             aria-label="Upload profile photo"
           />
-          {isUploading ? (
-            <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
-          ) : (
-            <Upload className="h-8 w-8 text-zinc-400" />
-          )}
+          {isUploading ? <BATbernLoader size={64} /> : <Upload className="h-8 w-8 text-zinc-400" />}
         </div>
       )}
 

@@ -9,9 +9,40 @@
 
 import SwiftUI
 
+// MARK: - Session Status Badge
+
+enum SessionBadgeStatus: Equatable {
+    case completed, active, upcoming
+
+    var label: String {
+        switch self {
+        case .completed: return "Done"
+        case .active:    return "Active"
+        case .upcoming:  return "Upcoming"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .completed: return .gray
+        case .active:    return .teal
+        case .upcoming:  return .secondary
+        }
+    }
+
+    /// Pure function — testable without SwiftUI.
+    static func status(for session: CachedSession, at now: Date) -> SessionBadgeStatus? {
+        guard let start = session.startTime, let end = session.endTime else { return nil }
+        if end < now { return .completed }
+        if start <= now && now <= end { return .active }
+        return .upcoming
+    }
+}
+
 struct SessionCardView: View {
     let session: CachedSession
     let phase: String?  // TOPIC, SPEAKERS, or AGENDA
+    var showStatusBadge: Bool = false   // True when organizer is paired and event is live
 
     // MARK: - Computed Properties
 
@@ -67,12 +98,22 @@ struct SessionCardView: View {
     @ViewBuilder
     private var presentationCardLayout: some View {
         VStack(spacing: 12) {
-            // Time slot (top, secondary color)
-            if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
-                Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+            // Time slot (top, secondary color) + optional organizer status badge (W3.4 AC1)
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
+                HStack {
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
             }
 
             Spacer()
@@ -96,12 +137,22 @@ struct SessionCardView: View {
     @ViewBuilder
     private var breakCardLayout: some View {
         VStack(spacing: 8) {
-            // Time slot
-            if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
-                Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
+            // Time slot + optional organizer status badge (W3.4 AC1)
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
+                HStack {
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
             }
 
             Spacer()
@@ -121,6 +172,26 @@ struct SessionCardView: View {
             Spacer()
         }
         .padding(.horizontal, 12)
+    }
+
+    // MARK: - Status Badge (W3.4 AC1, W4.2 AC4)
+
+    @ViewBuilder
+    private func statusBadgeView(_ status: SessionBadgeStatus) -> some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(status.label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(status.color)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(status.color.opacity(0.15), in: Capsule())
+            // W4.2 AC4: "by [firstName]" shown under "Done" badge when completedByUsername is set
+            if status == .completed, let completedBy = session.completedByUsername, !completedBy.isEmpty {
+                Text("by \(completedBy.components(separatedBy: ".").first ?? completedBy)")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
+            }
+        }
     }
 
     // MARK: - Title Area (AC#2, AC#6, W1.3 AC#1, AC#5, AC#6)
@@ -144,8 +215,8 @@ struct SessionCardView: View {
     @ViewBuilder
     private var titleText: some View {
         Text(session.title)
-            .font(.system(size: 16, weight: .medium, design: .rounded))
-            .foregroundStyle(Color(hex: "#2C5F7C") ?? .blue)  // BATbern Blue tint
+            .font(BATbernWatchStyle.Typography.sessionTitle)
+            .foregroundStyle(BATbernWatchStyle.Colors.batbernBlue)
             .multilineTextAlignment(.center)
             .lineLimit(nil)  // Allow unlimited lines for proper wrapping
             .fixedSize(horizontal: false, vertical: true)  // Enable text wrapping
@@ -232,13 +303,13 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private func singleSpeakerLayout(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: 50)  // Larger size for single speaker
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSize)
             .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
     private func speakerPortrait(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: 40)
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSizeSmall)
     }
 }
 

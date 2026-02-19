@@ -32,6 +32,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
@@ -186,7 +187,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+          <BATbernLoader size={96} />
         </Box>
       ) : content ? (
         <>
