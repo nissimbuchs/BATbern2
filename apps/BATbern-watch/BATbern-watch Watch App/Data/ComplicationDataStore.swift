@@ -17,6 +17,77 @@
 import Foundation
 import WidgetKit
 
+// MARK: - Complication Context
+
+/// Context-aware display state written by `LiveCountdownViewModel` and read by complication views.
+///
+/// Complications switch on this enum to decide which visual variant to render.
+/// Each case encodes exactly the data the view needs — no view logic required to re-derive state.
+///
+/// Ring semantics (per sprint-change-proposal-2026-02-19):
+///   - `.eventDayPreSession` ring: COUNT-UP  — progress = elapsed / totalUntilSessionStart
+///   - `.sessionRunning`    ring: COUNT-DOWN — fractionRemaining = timeLeft / duration
+///
+/// W3.3 Course Correction Amendment (2026-02-19)
+enum ComplicationContext: Codable, Equatable, Sendable {
+    case noEvent
+    case eventFar(dateString: String)                                          // >1 day away: dd.MM format
+    case eventDayPreSession(hoursUntil: Int, progress: Double)                 // today, between sessions
+    case sessionRunning(minutesLeft: Int, fractionRemaining: Double)           // active session
+    case eventComplete
+
+    // MARK: - Manual Codable (required for associated values)
+
+    private enum CodingKeys: String, CodingKey {
+        case type, dateString, hoursUntil, progress, minutesLeft, fractionRemaining
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        switch try c.decode(String.self, forKey: .type) {
+        case "noEvent":
+            self = .noEvent
+        case "eventFar":
+            self = .eventFar(dateString: try c.decode(String.self, forKey: .dateString))
+        case "eventDayPreSession":
+            self = .eventDayPreSession(
+                hoursUntil: try c.decode(Int.self, forKey: .hoursUntil),
+                progress: try c.decode(Double.self, forKey: .progress)
+            )
+        case "sessionRunning":
+            self = .sessionRunning(
+                minutesLeft: try c.decode(Int.self, forKey: .minutesLeft),
+                fractionRemaining: try c.decode(Double.self, forKey: .fractionRemaining)
+            )
+        case "eventComplete":
+            self = .eventComplete
+        default:
+            self = .noEvent
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .noEvent:
+            try c.encode("noEvent", forKey: .type)
+        case .eventFar(let ds):
+            try c.encode("eventFar", forKey: .type)
+            try c.encode(ds, forKey: .dateString)
+        case .eventDayPreSession(let h, let p):
+            try c.encode("eventDayPreSession", forKey: .type)
+            try c.encode(h, forKey: .hoursUntil)
+            try c.encode(p, forKey: .progress)
+        case .sessionRunning(let m, let f):
+            try c.encode("sessionRunning", forKey: .type)
+            try c.encode(m, forKey: .minutesLeft)
+            try c.encode(f, forKey: .fractionRemaining)
+        case .eventComplete:
+            try c.encode("eventComplete", forKey: .type)
+        }
+    }
+}
+
 // MARK: - Snapshot
 
 /// Immutable snapshot of the current session state, written by the main app
@@ -30,6 +101,9 @@ struct ComplicationSnapshot: Codable {
     let isLive: Bool                  // false → show fallback logo
     let urgencyLevel: String          // UrgencyLevel.rawValue: "normal"|"caution"|"warning"|"critical"|"overtime"
     let updatedAt: Date
+    /// Context-aware display hint. Nil in snapshots encoded before this field was introduced
+    /// (backward-compatible: auto-decoded as nil when key is absent).
+    let complicationContext: ComplicationContext?  // W3.3 amendment
 }
 
 // MARK: - Store

@@ -2,13 +2,155 @@
 //  ComplicationDataStoreTests.swift
 //  BATbern-watch Watch AppTests
 //
-//  W3.3 Task 5: Unit tests for ComplicationDataStore and ComplicationEntry.
+//  W3.3 Task 5: Unit tests for ComplicationDataStore, ComplicationEntry, and ComplicationContext.
 //  AC: 1 (correct data), 2 (update round-trip), 5 (nil when no data)
+//  W3.3 Amendment (2026-02-19): added ComplicationContext round-trip tests.
 //
 
 import Testing
 import Foundation
 @testable import BATbern_watch_Watch_App
+
+// MARK: - ComplicationContext Tests (W3.3 amendment)
+
+@Suite("ComplicationContext Tests")
+struct ComplicationContextTests {
+
+    // MARK: - Codable round-trips for each case
+
+    @Test("ComplicationContext.noEvent round-trips via Codable")
+    func noEventRoundTrip() throws {
+        let context = ComplicationContext.noEvent
+        let data = try JSONEncoder().encode(context)
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
+        #expect(decoded == .noEvent)
+    }
+
+    @Test("ComplicationContext.eventComplete round-trips via Codable")
+    func eventCompleteRoundTrip() throws {
+        let context = ComplicationContext.eventComplete
+        let data = try JSONEncoder().encode(context)
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
+        #expect(decoded == .eventComplete)
+    }
+
+    @Test("ComplicationContext.eventFar round-trips via Codable preserving dateString")
+    func eventFarRoundTrip() throws {
+        let context = ComplicationContext.eventFar(dateString: "15.03")
+        let data = try JSONEncoder().encode(context)
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
+        #expect(decoded == .eventFar(dateString: "15.03"))
+    }
+
+    @Test("ComplicationContext.eventDayPreSession round-trips via Codable preserving hoursUntil and progress")
+    func eventDayPreSessionRoundTrip() throws {
+        let context = ComplicationContext.eventDayPreSession(hoursUntil: 3, progress: 0.5)
+        let data = try JSONEncoder().encode(context)
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
+        if case .eventDayPreSession(let h, let p) = decoded {
+            #expect(h == 3)
+            #expect(abs(p - 0.5) < 0.001)
+        } else {
+            Issue.record("Expected .eventDayPreSession, got: \(decoded)")
+        }
+    }
+
+    @Test("ComplicationContext.sessionRunning round-trips via Codable preserving minutesLeft and fractionRemaining")
+    func sessionRunningRoundTrip() throws {
+        let context = ComplicationContext.sessionRunning(minutesLeft: 24, fractionRemaining: 0.4)
+        let data = try JSONEncoder().encode(context)
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
+        if case .sessionRunning(let m, let f) = decoded {
+            #expect(m == 24)
+            #expect(abs(f - 0.4) < 0.001)
+        } else {
+            Issue.record("Expected .sessionRunning, got: \(decoded)")
+        }
+    }
+
+    // MARK: - Unknown type falls back to .noEvent
+
+    @Test("Unknown ComplicationContext type decodes as .noEvent (forward compatibility)")
+    func unknownTypeDecodesAsNoEvent() throws {
+        let json = #"{"type":"futureUnknownCase"}"#
+        let decoded = try JSONDecoder().decode(ComplicationContext.self, from: Data(json.utf8))
+        #expect(decoded == .noEvent)
+    }
+
+    // MARK: - ComplicationSnapshot with complicationContext round-trips
+
+    @Test("ComplicationSnapshot with complicationContext round-trips via ComplicationDataStore injectable API")
+    func snapshotWithContextRoundTrip() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let snapshot = ComplicationSnapshot(
+            sessionTitle: "Cloud Security",
+            speakerNames: "Meier",
+            scheduledEndTime: now.addingTimeInterval(1200),
+            sessionDuration: 2700,
+            scheduledStartTime: now,
+            isLive: true,
+            urgencyLevel: "normal",
+            updatedAt: now,
+            complicationContext: .sessionRunning(minutesLeft: 20, fractionRemaining: 0.44)
+        )
+        // Use isolated suite to avoid cross-test pollution (tests run in parallel)
+        let testDefaults = UserDefaults(suiteName: "test.complicationContext.roundtrip")
+        ComplicationDataStore.write(snapshot, to: testDefaults)
+        let decoded = ComplicationDataStore.read(from: testDefaults)
+
+        if case .sessionRunning(let m, let f) = decoded?.complicationContext {
+            #expect(m == 20)
+            #expect(abs(f - 0.44) < 0.001)
+        } else {
+            Issue.record("Expected .sessionRunning in decoded snapshot, got: \(String(describing: decoded?.complicationContext))")
+        }
+        testDefaults?.removePersistentDomain(forName: "test.complicationContext.roundtrip")
+    }
+
+    // MARK: - ComplicationEntry.context derives from snapshot
+
+    @Test("ComplicationEntry.context returns .noEvent when snapshot is nil")
+    func entryContextNilSnapshot() {
+        let entry = ComplicationEntry(date: Date(), snapshot: nil)
+        #expect(entry.context == .noEvent)
+    }
+
+    @Test("ComplicationEntry.context returns .noEvent when snapshot has no complicationContext (backward compat)")
+    func entryContextBackwardCompat() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let snapshot = ComplicationSnapshot(
+            sessionTitle: nil,
+            speakerNames: nil,
+            scheduledEndTime: nil,
+            sessionDuration: nil,
+            scheduledStartTime: nil,
+            isLive: false,
+            urgencyLevel: "normal",
+            updatedAt: now,
+            complicationContext: nil  // pre-amendment snapshot
+        )
+        let entry = ComplicationEntry(date: now, snapshot: snapshot)
+        #expect(entry.context == .noEvent)
+    }
+
+    @Test("ComplicationEntry.context returns snapshot's complicationContext when set")
+    func entryContextFromSnapshot() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let snapshot = ComplicationSnapshot(
+            sessionTitle: "Talk",
+            speakerNames: "Meier",
+            scheduledEndTime: now.addingTimeInterval(900),
+            sessionDuration: 2700,
+            scheduledStartTime: now,
+            isLive: true,
+            urgencyLevel: "caution",
+            updatedAt: now,
+            complicationContext: .sessionRunning(minutesLeft: 15, fractionRemaining: 0.33)
+        )
+        let entry = ComplicationEntry(date: now, snapshot: snapshot)
+        #expect(entry.context == .sessionRunning(minutesLeft: 15, fractionRemaining: 0.33))
+    }
+}
 
 // MARK: - ComplicationDataStore Tests
 
@@ -28,11 +170,12 @@ struct ComplicationDataStoreTests {
             scheduledStartTime: now,
             isLive: true,
             urgencyLevel: "normal",
-            updatedAt: now
+            updatedAt: now,
+            complicationContext: .sessionRunning(minutesLeft: 25, fractionRemaining: 0.56)
         )
 
-        // Use injectable API: writes to UserDefaults.standard, skips WidgetCenter reload.
-        let testDefaults = UserDefaults.standard
+        // Use isolated suite to avoid cross-test pollution (tests run in parallel)
+        let testDefaults = UserDefaults(suiteName: "test.complicationStore.roundtrip")
         ComplicationDataStore.write(original, to: testDefaults)
         let decoded = ComplicationDataStore.read(from: testDefaults)
 
@@ -41,22 +184,23 @@ struct ComplicationDataStoreTests {
         #expect(decoded?.isLive == true)
         #expect(decoded?.urgencyLevel == "normal")
         #expect(decoded?.sessionDuration == 2700)
+        #expect(decoded?.complicationContext == .sessionRunning(minutesLeft: 25, fractionRemaining: 0.56))
 
-        // Clean up to avoid cross-test pollution
-        testDefaults.removeObject(forKey: ComplicationDataStore.snapshotKey)
+        // Clean up
+        testDefaults?.removePersistentDomain(forName: "test.complicationStore.roundtrip")
     }
 
     // MARK: - 5.3 read() returns nil when no data
 
     @Test("read() returns nil when no snapshot has been stored")
     func readReturnsNilWhenEmpty() {
-        // Other tests (e.g. LiveCountdownViewModelTests) call refreshState() which writes to
-        // the App Group UserDefaults. Clear the key before asserting so this test is order-
-        // independent regardless of whether the App Group suite is available in the simulator.
-        UserDefaults(suiteName: ComplicationDataStore.appGroupID)?
-            .removeObject(forKey: ComplicationDataStore.snapshotKey)
-        let result = ComplicationDataStore.read()
+        // Use isolated defaults suite that no parallel test ever writes to.
+        // (Using the production App Group or UserDefaults.standard is racy because
+        // LiveCountdownViewModelTests.refreshState() writes to the App Group store concurrently.)
+        let isolatedDefaults = UserDefaults(suiteName: "test.empty.\(UUID().uuidString)")
+        let result = ComplicationDataStore.read(from: isolatedDefaults)
         #expect(result == nil)
+        // No cleanup needed — the UUID suite never had data written.
     }
 }
 
@@ -71,7 +215,8 @@ struct ComplicationEntryTests {
         endTime: Date? = nil,
         duration: TimeInterval? = nil,
         urgency: String = "normal",
-        isLive: Bool = true
+        isLive: Bool = true,
+        context: ComplicationContext? = nil
     ) -> ComplicationEntry {
         let snapshot = endTime != nil ? ComplicationSnapshot(
             sessionTitle: "Test Session",
@@ -81,7 +226,8 @@ struct ComplicationEntryTests {
             scheduledStartTime: startTime,
             isLive: isLive,
             urgencyLevel: urgency,
-            updatedAt: date
+            updatedAt: date,
+            complicationContext: context
         ) : nil
         return ComplicationEntry(date: date, snapshot: snapshot)
     }
@@ -189,7 +335,8 @@ struct ComplicationProviderTimelineTests {
             scheduledStartTime: now,
             isLive: true,
             urgencyLevel: "normal",
-            updatedAt: now
+            updatedAt: now,
+            complicationContext: .sessionRunning(minutesLeft: 45, fractionRemaining: 1.0)
         )
 
         // Simulate what getTimeline does (without App Group I/O)
@@ -218,7 +365,8 @@ struct ComplicationProviderTimelineTests {
             scheduledStartTime: nil,
             isLive: false,
             urgencyLevel: "normal",
-            updatedAt: now
+            updatedAt: now,
+            complicationContext: .noEvent
         )
 
         // Simulate the inactive branch of getTimeline
@@ -236,8 +384,9 @@ struct ComplicationProviderTimelineTests {
     /// Regression for bug where complication showed huge overtime numbers (e.g. "+2950…")
     /// when a stale snapshot (isLive:true, endTime days ago) sat in UserDefaults.
     ///
-    /// Fix: resolvedSnapshot() returns nil when endTime <= now AND updatedAt > 5 min ago.
-    @Test("stale isLive:true snapshot (old updatedAt) resolves to nil — shows fallback icon")
+    /// Fix: resolvedSnapshot() applies staleness guard for .sessionRunning context —
+    /// returns nil when endTime <= now AND updatedAt > 5 min ago.
+    @Test("stale .sessionRunning snapshot (old updatedAt) resolves to nil — shows fallback icon")
     func staleSnapshotResolvesToNil() async {
         let pastEnd = Date(timeIntervalSince1970: 1_000_000)    // far in the past
         let now = pastEnd.addingTimeInterval(60 * 60 * 24 * 2)  // 2 days later
@@ -250,11 +399,11 @@ struct ComplicationProviderTimelineTests {
             scheduledStartTime: pastEnd.addingTimeInterval(-2700),
             isLive: true,
             urgencyLevel: "normal",
-            updatedAt: pastEnd  // last written 2 days ago — app is NOT running
+            updatedAt: pastEnd,  // last written 2 days ago — app is NOT running
+            complicationContext: .sessionRunning(minutesLeft: 0, fractionRemaining: 0.0)
         )
 
-        // Reproduce resolvedSnapshot() logic:
-        // - isLive: true ✅
+        // .sessionRunning: staleness guard applies
         // - endTime > now: false (pastEnd < now)
         // - updatedAt within 5 min: false (2 days old)
         // → returns nil
@@ -264,11 +413,12 @@ struct ComplicationProviderTimelineTests {
         let entry = ComplicationEntry(date: now, snapshot: resolved)
         #expect(entry.snapshot == nil)
         #expect(entry.isOvertime == false)
+        #expect(entry.context == .noEvent)
     }
 
     /// Recent overtime: app IS running, endTime just passed, updatedAt is now — should
-    /// preserve the snapshot so the complication shows "+X min" overtime briefly.
-    @Test("recent overtime snapshot (fresh updatedAt) resolves to snapshot — shows overtime")
+    /// preserve the snapshot so the complication shows overtime briefly.
+    @Test("recent overtime .sessionRunning snapshot (fresh updatedAt) resolves to snapshot")
     func recentOvertimeSnapshotPreserved() async {
         let pastEnd = Date(timeIntervalSince1970: 1_000_000)
         let now = pastEnd.addingTimeInterval(60 * 2)  // 2 minutes of overtime
@@ -281,7 +431,8 @@ struct ComplicationProviderTimelineTests {
             scheduledStartTime: pastEnd.addingTimeInterval(-2700),
             isLive: true,
             urgencyLevel: "overtime",
-            updatedAt: now.addingTimeInterval(-10)  // written 10 sec ago — app IS running
+            updatedAt: now.addingTimeInterval(-10),  // written 10 sec ago — app IS running
+            complicationContext: .sessionRunning(minutesLeft: 0, fractionRemaining: 0.0)
         )
 
         let resolved = resolvedSnapshotForTest(recentSnapshot, now: now)
@@ -289,38 +440,63 @@ struct ComplicationProviderTimelineTests {
         #expect(resolved?.urgencyLevel == "overtime")
     }
 
-    // MARK: - ViewModel: upcoming session must not set isLive:true
+    // MARK: - Upcoming session shows eventDayPreSession context (W3.3 amendment)
 
-    /// Regression: findActiveSession() returns an upcoming (not-yet-started) session as
-    /// "first upcoming". Previously isLive: discovered != nil would set isLive:true, causing
-    /// the complication to show a countdown to a future session. isComplicationLive() must
-    /// return false when startTime > now.
-    @Test("upcoming session (startTime > now) produces isLive:false — shows fallback icon")
-    func upcomingSessionIsNotLive() async {
+    /// After the amendment, upcoming sessions produce `.eventDayPreSession` context which
+    /// is passed through by the provider (not discarded). The view shows "Xh" + count-up ring.
+    @Test("upcoming session (startTime > now) produces eventDayPreSession — not nil (amendment)")
+    func upcomingSessionShowsEventDayPreSession() async {
         let now = Date(timeIntervalSince1970: 1_000_000)
         let futureStart = now.addingTimeInterval(30 * 60)  // starts in 30 min
         let futureEnd = futureStart.addingTimeInterval(45 * 60)
 
-        // Simulate isComplicationLive() logic from LiveCountdownViewModel
-        let sessionStarted = futureStart <= now  // false — session hasn't started
-        #expect(sessionStarted == false)
-
-        // Snapshot that would have been written before the fix: isLive: discovered != nil = true
-        // After the fix: isLive: sessionStarted = false
-        let snapshotAfterFix = ComplicationSnapshot(
+        // isLive: false (session hasn't started), but context carries the pre-session info
+        let snapshot = ComplicationSnapshot(
             sessionTitle: "Upcoming Talk",
             speakerNames: "Keller",
             scheduledEndTime: futureEnd,
             sessionDuration: 45 * 60,
             scheduledStartTime: futureStart,
-            isLive: sessionStarted,  // fixed: false
+            isLive: false,
             urgencyLevel: "normal",
-            updatedAt: now
+            updatedAt: now,
+            complicationContext: .eventDayPreSession(hoursUntil: 0, progress: 0.125)
         )
 
-        // Provider resolves to nil because isLive: false
-        let resolved = resolvedSnapshotForTest(snapshotAfterFix, now: now)
-        #expect(resolved == nil)
+        // .eventDayPreSession: default case — always returned (no staleness guard)
+        let resolved = resolvedSnapshotForTest(snapshot, now: now)
+        #expect(resolved != nil)
+
+        let entry = ComplicationEntry(date: now, snapshot: resolved)
+        if case .eventDayPreSession(let h, _) = entry.context {
+            #expect(h == 0)  // < 1 hour until session
+        } else {
+            Issue.record("Expected .eventDayPreSession, got: \(entry.context)")
+        }
+    }
+
+    // MARK: - eventFar context always passes through
+
+    @Test("eventFar snapshot always passes through resolvedSnapshot (no staleness)")
+    func eventFarPassesThrough() async {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let farStart = now.addingTimeInterval(3 * 24 * 3600)  // 3 days away
+
+        let snapshot = ComplicationSnapshot(
+            sessionTitle: nil,
+            speakerNames: nil,
+            scheduledEndTime: farStart.addingTimeInterval(2700),
+            sessionDuration: 2700,
+            scheduledStartTime: farStart,
+            isLive: false,
+            urgencyLevel: "normal",
+            updatedAt: now.addingTimeInterval(-3600),  // written 1h ago — no staleness concern
+            complicationContext: .eventFar(dateString: "28.02")
+        )
+
+        let resolved = resolvedSnapshotForTest(snapshot, now: now)
+        #expect(resolved != nil)
+        #expect(resolved?.complicationContext == .eventFar(dateString: "28.02"))
     }
 }
 
@@ -333,8 +509,20 @@ private func resolvedSnapshotForTest(
     _ snapshot: ComplicationSnapshot?,
     now: Date
 ) -> ComplicationSnapshot? {
-    guard let snapshot, snapshot.isLive else { return nil }
-    if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
-    if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
-    return nil
+    guard let snapshot else { return nil }
+
+    // Infer context for pre-amendment snapshots that lack `complicationContext`
+    let context = snapshot.complicationContext
+        ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
+
+    switch context {
+    case .sessionRunning:
+        // Staleness guard: discard if expired AND app not actively writing
+        if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
+        if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
+        return nil
+    default:
+        // Non-session contexts always pass through
+        return snapshot
+    }
 }

@@ -89,6 +89,14 @@ struct ComplicationEntry: TimelineEntry {
         }
     }
 
+    // MARK: - Complication Context (W3.3 amendment)
+
+    /// Context-aware display state for the complication views.
+    /// Falls back to `.noEvent` when the snapshot carries no context (pre-amendment data).
+    var context: ComplicationContext {
+        snapshot?.complicationContext ?? .noEvent
+    }
+
     // MARK: - Progress Ring
 
     /// Progress fraction [0, 1]: elapsed / duration. Pins at 1.0 when overtime.

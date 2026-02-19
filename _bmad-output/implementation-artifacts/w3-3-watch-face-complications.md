@@ -1,6 +1,6 @@
 # Story W3.3: Watch Face Complications
 
-Status: done
+Status: review
 
 ---
 
@@ -313,6 +313,15 @@ so that the complication is my primary interface during events.
     ```
   - [x] 4.3 In `ContentView.swift`, listen for the notification and set `selectedZone = .organizer`
 
+- [x] **Task 6: Course Correction Amendment (2026-02-19)** — Apply Sprint Change Proposal (`docs/sprint-change-proposal-2026-02-19.md`)
+  - [x] 6.1 Add `enum ComplicationContext: Codable, Equatable, Sendable` with manual Codable (5 cases: noEvent, eventFar, eventDayPreSession, sessionRunning, eventComplete) to `ComplicationDataStore.swift`
+  - [x] 6.2 Add `complicationContext: ComplicationContext?` optional field to `ComplicationSnapshot` (optional for backward-compat with pre-amendment data)
+  - [x] 6.3 Add `var context: ComplicationContext` computed property to `ComplicationEntry` (falls back to `.noEvent` when nil)
+  - [x] 6.4 Add `computeComplicationContext(in:)` to `LiveCountdownViewModel` and pass result to `ComplicationDataStore.write()` in `refreshState()`; ring semantics: eventDayPreSession=count-UP (elapsed/sessionStartFromMidnight), sessionRunning=count-DOWN (remaining/duration)
+  - [x] 6.5 Update C1 `CircularComplication.swift`, C2 `RectangularComplication.swift`, C3 `CornerComplication.swift` to `switch entry.context` (4 cases replacing old `isLive` boolean check)
+  - [x] 6.6 Update `ComplicationProvider.resolvedSnapshot()` for context-aware staleness: staleness guard applies to `.sessionRunning` only; `.eventFar` / `.eventDayPreSession` / `.eventComplete` always pass through
+  - [x] 6.7 Rewrite `ComplicationDataStoreTests.swift` with 8 new `ComplicationContextTests` (Codable round-trips for all 5 cases + snapshot round-trip + `ComplicationEntry.context` derivation); update all existing tests to pass `complicationContext:` to snapshot inits; fix 2 pre-existing W4.3 regressions in `LiveCountdownViewModelTests.swift`
+
 - [x] **Task 5: Tests** (AC: 1, 2, 5)
   - [x] 5.1 Create `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift`
   - [x] 5.2 Test: `write()` then `read()` returns same `ComplicationSnapshot` (round-trip encode/decode)
@@ -480,6 +489,8 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 
 5. **Speaker names**: `formattedSpeakerNames` (last names only, max 2) added to `LiveCountdownViewModel` for the narrow C2 complication. The existing `speakerNames` property (full names, all speakers) is kept for the O3 view.
 
+8. **Course Correction Amendment complete (2026-02-19)**: All 5 amendment changes applied per `docs/sprint-change-proposal-2026-02-19.md`. `ComplicationContext` enum (5 cases, manual Codable/Equatable/Sendable) added to `ComplicationDataStore.swift`. All 3 complication views updated to `switch entry.context`. `ComplicationProvider.resolvedSnapshot()` updated with context-aware staleness (sessionRunning-only guard; non-session contexts always pass through). 8 new `ComplicationContextTests` added. 2 pre-existing W4.3 regressions in `LiveCountdownViewModelTests.swift` fixed. Result: **229 tests pass, 0 warnings, 0 errors**. Ring semantics implemented per proposal: eventDayPreSession=count-UP, sessionRunning=count-DOWN.
+
 ### File List
 
 #### New Files Created
@@ -504,3 +515,14 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 - `apps/BATbern-watch/BATbern-watch Complications/RectangularComplication.swift` — use entry.urgencyColor (review fix M1)
 - `apps/BATbern-watch/BATbern-watch Complications/CornerComplication.swift` — use entry.urgencyColor (review fix M1)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift` — fixed M2/M3 tests
+
+#### Amendment Files Modified (2026-02-19 Course Correction)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationDataStore.swift` — added `ComplicationContext` enum (manual Codable, Equatable, Sendable) + `complicationContext: ComplicationContext?` field to `ComplicationSnapshot`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ComplicationEntry.swift` — added `var context: ComplicationContext` computed property (fallback `.noEvent`)
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift` — added `computeComplicationContext(in:)` method; updated `refreshState()` to include `complicationContext:`
+- `apps/BATbern-watch/BATbern-watch Complications/CircularComplication.swift` — replaced `isLive` check with `switch entry.context` (4-case)
+- `apps/BATbern-watch/BATbern-watch Complications/RectangularComplication.swift` — replaced `isLive` check with `switch entry.context` (4-case)
+- `apps/BATbern-watch/BATbern-watch Complications/CornerComplication.swift` — replaced `isLive` check with `switch entry.context` (4-case)
+- `apps/BATbern-watch/BATbern-watch Complications/ComplicationProvider.swift` — updated `resolvedSnapshot()` for context-aware staleness (guards `.sessionRunning` only; passes through all other contexts)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ComplicationDataStoreTests.swift` — full rewrite with 8 new `ComplicationContextTests`; updated all existing tests; isolated `UserDefaults` suites to prevent cross-test pollution
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/LiveCountdownViewModelTests.swift` — fixed 2 pre-existing W4.3 regressions (`shouldShowDelayed` test cases)

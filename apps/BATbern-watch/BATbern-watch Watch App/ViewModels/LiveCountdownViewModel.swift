@@ -174,8 +174,69 @@ final class LiveCountdownViewModel {
             scheduledStartTime: discovered?.startTime,
             isLive: isComplicationLive(discovered),
             urgencyLevel: engine.urgencyLevel.rawValue,
-            updatedAt: clock.now
+            updatedAt: clock.now,
+            complicationContext: computeComplicationContext(in: eventState)
         ))
+    }
+
+    // MARK: - Complication Context (W3.3 amendment)
+
+    /// Compute the context-aware display state for the complication.
+    ///
+    /// Rules (per sprint-change-proposal-2026-02-19):
+    ///   - `.sessionRunning`      — `activeSession.startTime <= now` (in-progress or overtime)
+    ///   - `.eventDayPreSession`  — event today or within 24h, no session running
+    ///   - `.eventFar`            — next session > 1 day away
+    ///   - `.eventComplete`       — all sessions have ended
+    ///   - `.noEvent`             — no event loaded
+    private func computeComplicationContext(in eventState: any EventStateManagerProtocol) -> ComplicationContext {
+        guard let event = eventState.currentEvent else { return .noEvent }
+        let now = clock.now
+        let sessions = event.sessions.compactMap { $0.toWatchSession() }
+        guard !sessions.isEmpty else { return .noEvent }
+
+        // Active/overtime session: session has started
+        if let session = activeSession, session.startTime <= now {
+            let remaining = session.endTime.timeIntervalSince(now)
+            let minutesLeft = max(0, Int(remaining / 60))
+            let fractionRemaining = session.duration > 0
+                ? max(0.0, min(1.0, remaining / session.duration))
+                : 0.0
+            return .sessionRunning(minutesLeft: minutesLeft, fractionRemaining: fractionRemaining)
+        }
+
+        // All sessions ended
+        let sorted = sessions.sorted { $0.startTime < $1.startTime }
+        if let last = sorted.last, now > last.endTime {
+            return .eventComplete
+        }
+
+        // Next upcoming session
+        guard let next = sorted.first(where: { $0.startTime > now }) else {
+            return .eventComplete
+        }
+
+        let timeUntilNext = next.startTime.timeIntervalSince(now)
+
+        // More than 1 day away
+        if timeUntilNext > 24 * 3600 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "dd.MM"
+            return .eventFar(dateString: formatter.string(from: next.startTime))
+        }
+
+        // Event day / within 24h: pre-session count-up ring
+        // progress = elapsed since midnight / session start since midnight
+        // Example: session at 16:00, now 08:00 → 8/16 = 0.5 (per ring semantics spec)
+        let hoursUntil = max(0, Int(timeUntilNext / 3600))
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: now)
+        let elapsedSinceMidnight = now.timeIntervalSince(startOfDay)
+        let sessionStartSinceMidnight = next.startTime.timeIntervalSince(startOfDay)
+        let progress = sessionStartSinceMidnight > 0
+            ? min(1.0, max(0.0, elapsedSinceMidnight / sessionStartSinceMidnight))
+            : 0.0
+        return .eventDayPreSession(hoursUntil: hoursUntil, progress: progress)
     }
 
     // MARK: - Complication Live State (W3.3)

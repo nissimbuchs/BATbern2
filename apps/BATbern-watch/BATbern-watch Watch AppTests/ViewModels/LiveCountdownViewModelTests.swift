@@ -577,21 +577,24 @@ struct LiveCountdownViewModelTests {
         #expect(vm.shouldShowDelayed == false)
     }
 
-    @Test("shouldShowDelayed is false when actualStartTime is nil")
-    func shouldShowDelayed_falseWhenNoActualStartTime() {
+    @Test("shouldShowDelayed is true when actualStartTime is nil (falls back to scheduledStartTime)")
+    func shouldShowDelayed_trueWhenActualStartTimeNilFallsBackToStartTime() {
         let (vm, clock, _, state) = makeVM()
-        // Session started 5 min ago but no actualStartTime set
+        // Session started 5 min ago, no actualStartTime set.
+        // W4.3: implementation falls back to startTime when actualStartTime is nil,
+        // so the first session (which never gets an actualStartTime from a predecessor)
+        // still shows the Delayed button during its first 10 minutes.
         let session = makeSession(
             start: clock.now.addingTimeInterval(-300),
             end: clock.now.addingTimeInterval(2400)
-            // no actualStartTime
+            // no actualStartTime → falls back to startTime (300s ago)
         )
         state.currentEvent = makeEvent(sessions: [session])
 
         vm.refreshState()
 
-        #expect(vm.sessionActiveSeconds == 0)
-        #expect(vm.shouldShowDelayed == false)
+        #expect(vm.sessionActiveSeconds == 300)  // startTime fallback: 300s elapsed
+        #expect(vm.shouldShowDelayed == true)     // 300 < 600 threshold
     }
 
     // MARK: - Extend/Delayed Reset on Session Change (W4.3)
@@ -612,19 +615,22 @@ struct LiveCountdownViewModelTests {
         #expect(vm.shouldShowExtend == true)
         #expect(vm.shouldShowDelayed == true)
 
-        // Step 2: new session — properties must reset
+        // Step 2: new session that has been active > 600s — verifies reset + recalculate
+        // W4.3: when actualStartTime is set, sessionActiveSeconds = now - actualStartTime.
+        // Using 700s active to place session2 beyond the 600s "delayed" threshold.
         clock.advance(by: 600)
         let session2 = makeSession(
             slug: "talk-2",
-            start: clock.now.addingTimeInterval(-60),
-            end: clock.now.addingTimeInterval(2700)  // 45 min remaining — well above 600
+            start: clock.now.addingTimeInterval(-700),
+            end: clock.now.addingTimeInterval(2000),  // well above 600s remaining
+            actualStartTime: clock.now.addingTimeInterval(-700)  // 700s active > 600 threshold
         )
         state.currentEvent = makeEvent(sessions: [session2])
         vm.refreshState()
 
         #expect(vm.activeSession?.id == "talk-2")
-        #expect(vm.shouldShowExtend == false)
-        #expect(vm.shouldShowDelayed == false)
-        #expect(vm.sessionActiveSeconds == 0)
+        #expect(vm.shouldShowExtend == false)   // 2000s remaining > 600 threshold
+        #expect(vm.shouldShowDelayed == false)  // 700s active >= 600 threshold
+        #expect(vm.sessionActiveSeconds == 700)
     }
 }

@@ -35,15 +35,29 @@ struct CornerView: View {
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
     var body: some View {
-        if entry.snapshot?.isLive == true {
-            // Minutes-only per UX design: "24" normal, "+4" overtime
-            Text(entry.displayMinutes)
-                .font(.system(.title2, design: .monospaced).bold())
-                .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
-        } else {
+        switch entry.context {
+        case .noEvent, .eventComplete:
             // AC5: No active session — minimal icon
             Image(systemName: "calendar")
                 .foregroundStyle(.secondary)
+
+        case .eventFar(let dateString):
+            // Date only, no ring — event is far away
+            Text(dateString)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
+
+        case .eventDayPreSession(let hoursUntil, _):
+            // Hours until next session (corner has limited space — no ring)
+            Text("\(hoursUntil)h")
+                .font(.system(.title2, design: .monospaced).bold())
+                .foregroundStyle(isLuminanceReduced ? .gray : .blue)
+
+        case .sessionRunning(let minutesLeft, _):
+            // Minutes remaining — count-DOWN (corner has no room for a ring)
+            Text("\(minutesLeft)m")
+                .font(.system(.title2, design: .monospaced).bold())
+                .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
         }
     }
 

@@ -35,25 +35,8 @@ struct RectangularView: View {
     @Environment(\.isLuminanceReduced) private var isLuminanceReduced
 
     var body: some View {
-        if entry.snapshot?.isLive == true {
-            VStack(alignment: .leading, spacing: 2) {
-                // Top: speaker name (gray, truncated to 1 line)
-                Text(entry.snapshot?.speakerNames ?? "")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-
-                // Middle: MM:SS bold — "+MM:SS" when overtime (per UX design)
-                Text(entry.formattedCountdown)
-                    .font(.system(.title3, design: .monospaced).bold())
-                    .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
-
-                // Bottom: linear progress bar — full bar at 1.0 (overtime) per UX design
-                ProgressView(value: entry.progress)
-                    .progressViewStyle(.linear)
-                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
-            }
-        } else {
+        switch entry.context {
+        case .noEvent, .eventComplete:
             // AC5: No active session fallback
             HStack(spacing: 6) {
                 Image(systemName: "calendar.badge.clock")
@@ -61,6 +44,61 @@ struct RectangularView: View {
                 Text("BATbern")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
+            }
+
+        case .eventFar(let dateString):
+            // Date only, no ring
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next Event")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text(dateString)
+                    .font(.system(.title3, design: .monospaced).bold())
+                    .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
+            }
+
+        case .eventDayPreSession(let hoursUntil, let progress):
+            // Count-UP ring toward session start
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Next Session")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text("\(hoursUntil)h")
+                    .font(.system(.title3, design: .monospaced).bold())
+                    .foregroundStyle(isLuminanceReduced ? .gray : .blue)
+                ProgressView(value: progress)
+                    .progressViewStyle(.linear)
+                    .tint(isLuminanceReduced ? .gray : .blue)
+            }
+
+        case .sessionRunning(_, let fractionRemaining):
+            // Count-DOWN ring for running session — live MM:SS via Text(timerInterval:)
+            // Layout: 3 rows (same as original) — title · speaker merged on one line
+            let parts = [entry.snapshot?.sessionTitle, entry.snapshot?.speakerNames]
+                .compactMap { s in (s?.isEmpty == false) ? s : nil }
+            let header = parts.joined(separator: " · ")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(header)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                if let endTime = entry.snapshot?.scheduledEndTime, endTime > Date() {
+                    // Live countdown: updates every second automatically (no extra entries needed)
+                    Text(timerInterval: Date()...endTime, countsDown: true)
+                        .font(.system(.body, design: .monospaced).bold())
+                        .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
+                        .lineLimit(1)
+                } else {
+                    // Overtime or no end time: static text refreshed by app via WidgetCenter
+                    Text(entry.formattedCountdown)
+                        .font(.system(.body, design: .monospaced).bold())
+                        .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
+                }
+                ProgressView(value: fractionRemaining)
+                    .progressViewStyle(.linear)
+                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
             }
         }
     }

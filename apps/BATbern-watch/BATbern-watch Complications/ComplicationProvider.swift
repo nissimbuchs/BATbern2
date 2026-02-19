@@ -55,19 +55,34 @@ struct ComplicationProvider: TimelineProvider {
 
     // MARK: - Staleness Guard
 
-    /// Returns the snapshot to display, or nil if stale (should show fallback icon).
+    /// Returns the snapshot to display, applying staleness logic based on `ComplicationContext`.
     ///
-    /// Rules:
-    /// - `isLive: false` or no snapshot → nil
-    /// - `endTime > now` (active session) → return snapshot
-    /// - `endTime <= now` but `updatedAt` within 5 min (app actively writing, recent overtime) → return snapshot
-    /// - Otherwise (stale — app closed, old event) → nil → shows calendar fallback
+    /// Rules (W3.3 amendment):
+    /// - `.sessionRunning` (or pre-amendment `isLive:true`): staleness guard applies —
+    ///   discard if endTime expired AND updatedAt > 5 min ago (app closed / old event)
+    /// - All other contexts (`.eventFar`, `.eventDayPreSession`, `.noEvent`, `.eventComplete`):
+    ///   always pass through — no staleness concern (date/hours info is always valid to show)
+    /// - No snapshot → nil
+    ///
+    /// Backward-compatible: snapshots without `complicationContext` (pre-amendment) fall back
+    /// to `isLive`-based inference.
     private func resolvedSnapshot(_ snapshot: ComplicationSnapshot?) -> ComplicationSnapshot? {
-        guard let snapshot, snapshot.isLive else { return nil }
-        if let endTime = snapshot.scheduledEndTime, endTime > .now { return snapshot }
-        // Recent overtime: the main app is still ticking and writing fresh snapshots.
-        // Allow up to 5 minutes of overtime display before reverting to fallback.
-        if Date.now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
-        return nil
+        guard let snapshot else { return nil }
+
+        // Infer context for pre-amendment snapshots that lack `complicationContext`
+        let context = snapshot.complicationContext
+            ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
+
+        switch context {
+        case .sessionRunning:
+            // Apply staleness guard: discard stale session data
+            if let endTime = snapshot.scheduledEndTime, endTime > .now { return snapshot }
+            // Recent overtime: main app is still writing; allow 5 min of overtime display
+            if Date.now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
+            return nil
+        default:
+            // Non-session contexts: always show (eventFar, eventDayPreSession, etc.)
+            return snapshot
+        }
     }
 }

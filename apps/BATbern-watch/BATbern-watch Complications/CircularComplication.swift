@@ -36,19 +36,35 @@ struct CircularView: View {
 
     var body: some View {
         ZStack {
-            if entry.snapshot?.isLive == true {
-                // Progress ring — fills as session progresses
-                ProgressView(value: entry.progress)
-                    .progressViewStyle(.circular)
-                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
-                // Center: minutes ("24") or overtime ("+4") — per UX design
-                Text(entry.displayMinutes)
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
-            } else {
+            switch entry.context {
+            case .noEvent, .eventComplete:
                 // AC5: No active session — show BATbern icon fallback
                 Image(systemName: "calendar.badge.clock")
                     .foregroundStyle(.secondary)
+
+            case .eventFar(let dateString):
+                // Date in center, no ring (event is >1 day away)
+                Text(dateString)
+                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
+
+            case .eventDayPreSession(let hoursUntil, let progress):
+                // Count-UP ring: elapsed / sessionStartFromMidnight
+                ProgressView(value: progress)
+                    .progressViewStyle(.circular)
+                    .tint(isLuminanceReduced ? .gray : .blue)
+                Text("\(hoursUntil)h")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(isLuminanceReduced ? .gray : .blue)
+
+            case .sessionRunning(let minutesLeft, let fractionRemaining):
+                // Count-DOWN ring: fractionRemaining = timeLeft / duration
+                ProgressView(value: fractionRemaining)
+                    .progressViewStyle(.circular)
+                    .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
+                Text("\(minutesLeft)m")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
             }
         }
     }
