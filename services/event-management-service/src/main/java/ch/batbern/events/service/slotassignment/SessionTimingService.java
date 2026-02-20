@@ -164,9 +164,13 @@ public class SessionTimingService {
     public int clearAllTimings(UUID eventId, String changedBy) {
         log.info("Clearing all timings for event: {}", eventId);
 
-        // Find all sessions with timing assigned
+        // Find all non-structural sessions with timing assigned.
+        // Structural sessions (moderation, break, lunch) keep their pre-computed times — only
+        // speaker session assignments should be cleared by this operation.
         List<Session> assignedSessions = sessionRepository.findByEventId(eventId).stream()
                 .filter(session -> session.getStartTime() != null)
+                .filter(session -> session.getSessionType() == null
+                        || !STRUCTURAL_TYPES.contains(session.getSessionType()))
                 .toList();
 
         log.info("Found {} sessions with timing to clear", assignedSessions.size());
