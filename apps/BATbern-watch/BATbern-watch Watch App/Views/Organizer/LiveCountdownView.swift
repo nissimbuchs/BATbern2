@@ -135,8 +135,12 @@ struct LiveCountdownView: View {
                 )
             }
         }
-        // W4.3: Reset isActionInFlight when session changes (action was processed)
+        // W4.3: Reset isActionInFlight when session changes (Delay: active session ID changes)
         .onChange(of: viewModel.activeSession?.id) { _, _ in
+            isActionInFlight = false
+        }
+        // W4.3: Reset isActionInFlight when endTime changes (Extend: same session ID, new endTime)
+        .onChange(of: viewModel.activeSession?.endTime) { _, _ in
             isActionInFlight = false
         }
     }

@@ -447,6 +447,7 @@ private struct WatchStateServerMessage: Decodable {
         case "SESSION_STARTED":  return .sessionStarted
         case "SESSION_ENDED":    return .sessionEnded
         case "SESSION_EXTENDED": return .sessionExtended
+        case "SESSION_DELAYED":  return .sessionDelayed
         case "SESSION_SKIPPED":  return .sessionSkipped
         default:                 return .heartbeat
         }
