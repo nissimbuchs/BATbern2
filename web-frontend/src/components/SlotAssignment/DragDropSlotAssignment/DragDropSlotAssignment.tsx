@@ -34,7 +34,8 @@ import { useTranslation } from 'react-i18next';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
 import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { useEvent } from '@/hooks/useEvents';
-import { useEventType } from '@/hooks/useEventTypes';
+import { useTimetable } from '@/hooks/useTimetable/useTimetable';
+import type { TimetableSlot } from '@/services/timetableService/timetableService';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
 import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
@@ -74,6 +75,18 @@ const STRUCTURAL_STYLES: Record<
   },
 };
 
+const toTimeStr = (d: Date) =>
+  `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+
+/** Resolve the structural session type from a TimetableSlot.type string. */
+const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType | null => {
+  const lower = type.toLowerCase();
+  if (lower === 'moderation' || lower === 'break' || lower === 'lunch') {
+    return lower as StructuralType;
+  }
+  return null;
+};
+
 export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
@@ -90,13 +103,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     autoAssignTimings,
   } = useSlotAssignment(eventCode);
 
-  // Fetch event to get eventType and all sessions (including assigned)
+  // Fetch event to get all sessions (including assigned speaker sessions for display)
   const { data: event, isLoading: eventLoading } = useEvent(eventCode, ['sessions']);
 
-  // Fetch event type configuration to get slot definitions
-  const { data: eventTypeConfig, isLoading: eventTypeLoading } = useEventType(
-    event?.eventType || 'FULL_DAY'
-  );
+  // Fetch authoritative timetable from backend — drives the slot grid
+  const { data: timetable, isLoading: timetableLoading } = useTimetable(eventCode);
 
   // State must be declared before useMemo that depends on it
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
@@ -111,20 +122,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     'unassigned'
   );
 
-  // Extract all timed sessions from event data
+  // Extract all timed sessions from event data (for speaker session display)
   const allTimedSessions = useMemo(() => {
     if (!event?.sessions) return [];
     return event.sessions.filter((session) => session.startTime && session.endTime);
   }, [event?.sessions]);
 
-  // Structural sessions (moderation, break, lunch) — fixed blocks, non-droppable
-  const structuralSessions = useMemo(
-    () =>
-      allTimedSessions.filter((s) => STRUCTURAL_TYPES.includes(s.sessionType as StructuralType)),
-    [allTimedSessions]
-  );
-
-  // Speaker sessions assigned to a room (non-structural, droppable)
+  // Assigned (non-structural) speaker sessions — for display in timeline cells
   const assignedSessions = useMemo(
     () =>
       allTimedSessions.filter(
@@ -149,124 +153,31 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     }
   }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
 
-  // Generate time slots dynamically.
-  // When structural sessions exist, derive droppable slot times from the GAPS between structural
-  // blocks (moderation end → next structural start), so droppable rows align exactly with the
-  // actual generated schedule rather than a misaligned typicalStartTime-based grid.
+  // TIME_SLOTS and structural slot lookup are now derived from the backend timetable.
+  // This guarantees the grid displays exactly the same positions as the backend algorithm.
   const TIME_SLOTS = useMemo(() => {
-    const slotDurationMinutes = eventTypeConfig?.slotDuration || 45;
-    const slots: string[] = [];
-
-    const toTimeStr = (d: Date) =>
-      `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-
-    // Always include start times from already-assigned speaker sessions
-    assignedSessions.forEach((session) => {
-      if (session.startTime) {
-        const t = toTimeStr(new Date(session.startTime));
-        if (!slots.includes(t)) {
-          slots.push(t);
-        }
-      }
-    });
-
-    if (structuralSessions.length > 0) {
-      // Sort structural sessions chronologically
-      const sorted = [...structuralSessions]
-        .filter((s) => s.startTime && s.endTime)
-        .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
-
-      // Add each structural session's start time (these render as fixed blocks)
-      sorted.forEach((s) => {
-        const t = toTimeStr(new Date(s.startTime!));
-        if (!slots.includes(t)) {
-          slots.push(t);
-        }
-      });
-
-      // Fill droppable speaker-session slots in each gap between consecutive structural blocks
-      for (let i = 0; i < sorted.length - 1; i++) {
-        const gapStart = new Date(sorted[i].endTime!); // end of current structural
-        const gapEnd = new Date(sorted[i + 1].startTime!); // start of next structural
-        const cursor = new Date(gapStart.getTime());
-        while (cursor.getTime() < gapEnd.getTime()) {
-          const t = toTimeStr(cursor);
-          if (!slots.includes(t)) {
-            slots.push(t);
-          }
-          cursor.setTime(cursor.getTime() + slotDurationMinutes * 60 * 1000);
-        }
-      }
-    } else if (eventTypeConfig) {
-      // No structural sessions yet — fall back to a simple grid from typicalStartTime
-      const startTime = eventTypeConfig.typicalStartTime || '09:00';
-      const endTime = eventTypeConfig.typicalEndTime || '17:00';
-      const breakCount = eventTypeConfig.breakSlots || 0;
-      const lunchCount = eventTypeConfig.lunchSlots || 0;
-      const totalSlots = eventTypeConfig.maxSlots || 8;
-
-      const [startHour, startMinute] = startTime.split(':').map(Number);
-      const currentTime = new Date();
-      currentTime.setHours(startHour, startMinute, 0, 0);
-
-      const totalSlotsWithBreaks = totalSlots + breakCount + lunchCount;
-      for (let i = 0; i < totalSlotsWithBreaks; i++) {
-        const timeSlot = toTimeStr(currentTime);
-        const [endHour, endMinute] = endTime.split(':').map(Number);
-        if (
-          (currentTime.getHours() < endHour ||
-            (currentTime.getHours() === endHour && currentTime.getMinutes() < endMinute)) &&
-          !slots.includes(timeSlot)
-        ) {
-          slots.push(timeSlot);
-        }
-        currentTime.setTime(currentTime.getTime() + slotDurationMinutes * 60 * 1000);
-      }
-    } else if (slots.length === 0) {
-      slots.push('09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00');
-    }
-
-    slots.sort((a, b) => {
+    if (!timetable) return [];
+    const times = timetable.slots.map((s) => toTimeStr(new Date(s.startTime)));
+    return [...new Set(times)].sort((a, b) => {
       const [aH, aM] = a.split(':').map(Number);
       const [bH, bM] = b.split(':').map(Number);
       return aH * 60 + aM - (bH * 60 + bM);
     });
+  }, [timetable]);
 
-    return slots;
-  }, [eventTypeConfig, assignedSessions, structuralSessions]);
+  // Structural slots from timetable (non-SPEAKER_SLOT) — indexed by time string for O(1) lookup
+  const structuralSlotsByTime = useMemo(() => {
+    const map = new Map<string, TimetableSlot>();
+    if (!timetable) return map;
+    timetable.slots
+      .filter((s) => s.type !== 'SPEAKER_SLOT')
+      .forEach((s) => {
+        map.set(toTimeStr(new Date(s.startTime)), s);
+      });
+    return map;
+  }, [timetable]);
 
-  // Get session assigned to a specific time slot and room
-  const getSessionForSlot = (time: string, room: string): Session | undefined => {
-    return assignedSessions.find((session) => {
-      if (!session.startTime || session.room !== room) return false;
-
-      // Parse session start time - sessions are stored as ISO strings (UTC)
-      // TIME_SLOTS are in HH:MM format (LOCAL time for display)
-      // Convert session UTC time to local time for comparison
-
-      // Parse the session's ISO timestamp
-      const sessionStart = new Date(session.startTime);
-
-      // Extract LOCAL time portion from the session (for display/comparison)
-      const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
-      const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
-      const sessionTime = `${sessionHours}:${sessionMinutes}`;
-
-      return sessionTime === time;
-    });
-  };
-
-  const getStructuralSessionForTime = (time: string): Session | undefined => {
-    return structuralSessions.find((session) => {
-      if (!session.startTime) return false;
-      const s = new Date(session.startTime);
-      const h = s.getHours().toString().padStart(2, '0');
-      const m = s.getMinutes().toString().padStart(2, '0');
-      return `${h}:${m}` === time;
-    });
-  };
-
-  const isLoading = sessionsLoading || eventLoading || eventTypeLoading;
+  const isLoading = sessionsLoading || eventLoading || timetableLoading;
 
   // Mock speaker data for preferences panel
   const getSpeakerData = (username: string) => {
@@ -297,6 +208,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       setGenerateStructuralOpen(false);
       setStructuralAlreadyExist(false);
       await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
+      await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
       await queryClient.refetchQueries({
         queryKey: ['event', eventCode, ['sessions']],
         exact: true,
@@ -344,8 +256,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       return;
     }
 
-    if (!eventTypeConfig) {
-      console.error('Event type config not loaded - cannot assign timing');
+    if (!timetable) {
+      console.error('Timetable not loaded - cannot assign timing');
       return;
     }
 
@@ -367,32 +279,38 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     const eventDateStr = event.date
       ? event.date.split('T')[0]
       : new Date().toISOString().split('T')[0];
-    const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
 
-    // Parse time (HH:MM) and create proper datetime
-    const [hours, minutes] = time.split(':').map(Number);
+    // Find the matching SPEAKER_SLOT in the timetable to get exact start/end times
+    const matchingSlot = timetable.slots.find(
+      (s) => s.type === 'SPEAKER_SLOT' && toTimeStr(new Date(s.startTime)) === time
+    );
 
-    // Create start time
-    const startDate = new Date(eventDateStr);
-    startDate.setHours(hours, minutes, 0, 0);
-    const startTime = startDate.toISOString();
+    let startTime: string;
+    let endTime: string;
 
-    // Create end time by adding slot duration
-    const endDate = new Date(startDate);
-    endDate.setMinutes(endDate.getMinutes() + slotDurationMinutes);
-    const endTime = endDate.toISOString();
+    if (matchingSlot) {
+      // Use exact backend-computed times for perfect alignment
+      startTime = matchingSlot.startTime;
+      endTime = matchingSlot.endTime;
+    } else {
+      // Fallback: construct from event date + drop time (legacy path)
+      const [hours, minutes] = time.split(':').map(Number);
+      const startDate = new Date(eventDateStr);
+      startDate.setHours(hours, minutes, 0, 0);
+      startTime = startDate.toISOString();
 
-    console.log('Assigning timing:', {
-      eventDateStr,
-      startTime,
-      endTime,
-      room,
-      duration: slotDurationMinutes,
-    });
+      // Use first SPEAKER_SLOT duration as default
+      const firstSpeakerSlot = timetable.slots.find((s) => s.type === 'SPEAKER_SLOT');
+      const slotDurationMs = firstSpeakerSlot
+        ? new Date(firstSpeakerSlot.endTime).getTime() -
+          new Date(firstSpeakerSlot.startTime).getTime()
+        : 45 * 60 * 1000;
+      endTime = new Date(startDate.getTime() + slotDurationMs).toISOString();
+    }
+
+    console.log('Assigning timing:', { startTime, endTime, room });
 
     try {
-      // assignTiming uses optimistic updates - session is removed from unassignedSessions
-      // immediately and only rolled back on error (see useSlotAssignment hook)
       await assignTiming(draggedSession.sessionSlug, {
         startTime,
         endTime,
@@ -401,41 +319,38 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       });
       console.log('✓ Successfully assigned timing');
 
-      // Invalidate event cache to force refetch and show assigned session in timeline
-      // CRITICAL: Must invalidate with exact query key including the 'include' parameter
-      // to ensure the event data with sessions is refetched
-      console.log('[DragDropSlotAssignment] Invalidating event cache to refresh timeline');
       await queryClient.invalidateQueries({
         queryKey: ['event', eventCode, ['sessions']],
       });
+      await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
 
-      // Force immediate refetch to ensure UI updates right away
       await queryClient.refetchQueries({
         queryKey: ['event', eventCode, ['sessions']],
         exact: true,
       });
     } catch (err) {
-      // Error handled by hook (includes rollback of optimistic update)
       console.error('✗ Failed to assign timing:', err);
     }
 
     setDraggedSession(null);
   };
 
+  // Get session assigned to a specific time slot and room
+  const getSessionForSlot = (time: string, room: string): Session | undefined => {
+    return assignedSessions.find((session) => {
+      if (!session.startTime || session.room !== room) return false;
+      const sessionStart = new Date(session.startTime);
+      const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
+      const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
+      return `${sessionHours}:${sessionMinutes}` === time;
+    });
+  };
+
   const getPreferenceMatchClass = (time: string): string => {
     if (!draggedSession || !hoveredSlot) return '';
-
     const hour = parseInt(time.split(':')[0], 10);
-
-    // Morning: 8-12 (80-100% match)
-    if (hour >= 8 && hour < 12) {
-      return 'preference-match-high';
-    }
-    // Early afternoon: 13-15 (50-79% match)
-    if (hour >= 13 && hour < 16) {
-      return 'preference-match-medium';
-    }
-    // Evening: 16+ (<50% match)
+    if (hour >= 8 && hour < 12) return 'preference-match-high';
+    if (hour >= 13 && hour < 16) return 'preference-match-medium';
     return 'preference-match-low';
   };
 
@@ -505,11 +420,14 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                     ))}
                   </Grid>
 
-                  {/* Time Slot Rows */}
+                  {/* Time Slot Rows — driven entirely by backend timetable */}
                   {TIME_SLOTS.map((time) => {
-                    const structuralSession = getStructuralSessionForTime(time);
-                    const structuralStyle = structuralSession
-                      ? STRUCTURAL_STYLES[structuralSession.sessionType as StructuralType]
+                    const structuralSlot = structuralSlotsByTime.get(time);
+                    const structuralType = structuralSlot
+                      ? timetableTypeToStructural(structuralSlot.type)
+                      : null;
+                    const structuralStyle = structuralType
+                      ? STRUCTURAL_STYLES[structuralType]
                       : null;
 
                     return (
@@ -518,7 +436,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                           <Typography variant="body2">{time}</Typography>
                         </Grid>
 
-                        {structuralSession && structuralStyle ? (
+                        {structuralSlot && structuralStyle ? (
                           /* Non-droppable structural block spanning all room columns */
                           <Grid size={10}>
                             <Paper
@@ -538,7 +456,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                             >
                               {structuralStyle.icon}
                               <Typography variant="caption" fontWeight="medium">
-                                {structuralSession.title || t(structuralStyle.labelKey)}
+                                {structuralSlot.title || t(structuralStyle.labelKey)}
                               </Typography>
                             </Paper>
                           </Grid>
@@ -786,10 +704,10 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
             onClick={async () => {
               try {
                 await autoAssignTimings();
-                // Invalidate event cache to refresh assigned sessions in the timeline
                 await queryClient.invalidateQueries({
                   queryKey: ['event', eventCode, ['sessions']],
                 });
+                await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
                 setAutoAssignModalOpen(false);
               } catch (err) {
                 console.error('Failed to auto-assign:', err);
@@ -818,14 +736,13 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
             onClick={async () => {
               try {
                 await clearAllTimings();
-                // Invalidate event cache to refresh timeline (remove all assigned sessions)
                 await queryClient.invalidateQueries({
                   queryKey: ['event', eventCode, ['sessions']],
                 });
+                await queryClient.invalidateQueries({ queryKey: ['timetable', eventCode] });
                 setClearAllModalOpen(false);
               } catch (err) {
                 console.error('Failed to clear all timings:', err);
-                // Modal will stay open to show error, user can try again or cancel
               }
             }}
           >

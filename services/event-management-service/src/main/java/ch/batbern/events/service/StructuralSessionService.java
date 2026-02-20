@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.dto.SessionResponse;
+import ch.batbern.events.dto.TimetableSlot;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.StructuralSessionsAlreadyExistException;
@@ -18,11 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +29,9 @@ import java.util.List;
  * Structural sessions define the schedule skeleton — they are created with computed
  * start/end times derived from the event's EventTypeConfiguration. The organizer is
  * automatically assigned as MODERATOR on both moderation sessions.
+ *
+ * Timeline computation is delegated to {@link TimetableService#computeTimeline} to ensure
+ * the generated structural sessions always align with what the slot-assignment UI displays.
  *
  * Entry point: POST /api/v1/events/{eventCode}/sessions/structural
  */
@@ -47,8 +47,7 @@ public class StructuralSessionService {
     private final SessionRepository sessionRepository;
     private final SessionService sessionService;
     private final SlugGenerationService slugGenerationService;
-
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private final TimetableService timetableService;
 
     /**
      * Generate structural sessions for an event.
@@ -90,91 +89,28 @@ public class StructuralSessionService {
             sessionRepository.flush();
         }
 
-        // 4. Compute timeline anchor from event date + typicalStartTime
+        // 4. Delegate timeline computation to TimetableService
         LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneOffset.UTC);
-        LocalTime startTime = config.getTypicalStartTime() != null
-                ? config.getTypicalStartTime()
-                : LocalTime.of(9, 0);
+        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate);
 
-        // 5. Generate sessions
+        // 5. Persist structural slots (skip SPEAKER_SLOT — those are implicit gaps)
         String organizerUsername = event.getOrganizerUsername();
         List<Session> createdSessions = new ArrayList<>();
-        LocalDateTime cursor = LocalDateTime.of(eventDate, startTime);
 
-        // Moderation Start
-        Session modStart = buildSession(
-                event.getId(), eventCode, "Moderation Start", "moderation",
-                cursor, config.getModerationStartDuration());
-        addModerator(modStart, organizerUsername);
-        createdSessions.add(sessionRepository.save(modStart));
-        cursor = cursor.plusMinutes(config.getModerationStartDuration());
-
-        // AM + PM session blocks with breaks and lunch
-        int maxSlots = config.getMaxSlots() != null ? config.getMaxSlots() : 0;
-        int slotDuration = config.getSlotDuration() != null ? config.getSlotDuration() : 45;
-        int breakSlots = config.getBreakSlots() != null ? config.getBreakSlots() : 0;
-        int lunchSlots = config.getLunchSlots() != null ? config.getLunchSlots() : 0;
-
-        if (config.getTheoreticalSlotsAM() != null && config.getTheoreticalSlotsAM() && lunchSlots > 0) {
-            // AM block: ceil(maxSlots / 2) slots, one break after ceil(amSlots/2) slots
-            int amSlots = (int) Math.ceil(maxSlots / 2.0);
-            int amBreakAfter = (int) Math.ceil(amSlots / 2.0);
-            int amBreaksUsed = 0;
-            for (int i = 0; i < amSlots; i++) {
-                cursor = cursor.plusMinutes(slotDuration);  // advance past the session gap
-                if (i == amBreakAfter - 1 && breakSlots > 0 && amBreaksUsed < breakSlots) {
-                    Session breakSession = buildSession(
-                            event.getId(), eventCode, "Kaffee-Pause", "break",
-                            cursor, config.getBreakDuration());
-                    createdSessions.add(sessionRepository.save(breakSession));
-                    cursor = cursor.plusMinutes(config.getBreakDuration());
-                    amBreaksUsed++;
-                }
+        for (TimetableSlot slot : timeline) {
+            if (slot.getType() == TimetableSlot.Type.SPEAKER_SLOT) {
+                continue; // Speaker slots are not persisted — they are droppable gaps in the grid
             }
-
-            // Lunch
-            Session lunch = buildSession(
-                    event.getId(), eventCode, "Mittagessen", "lunch",
-                    cursor, config.getLunchDuration());
-            createdSessions.add(sessionRepository.save(lunch));
-            cursor = cursor.plusMinutes(config.getLunchDuration());
-
-            // PM block: remaining slots, one break after ceil(pmSlots/2)
-            int pmSlots = maxSlots - amSlots;
-            int pmBreakAfter = (int) Math.ceil(pmSlots / 2.0);
-            int remainingBreakSlots = breakSlots - amBreaksUsed;
-            for (int i = 0; i < pmSlots; i++) {
-                cursor = cursor.plusMinutes(slotDuration);
-                if (i == pmBreakAfter - 1 && remainingBreakSlots > 0) {
-                    Session breakSession = buildSession(
-                            event.getId(), eventCode, "Pause", "break",
-                            cursor, config.getBreakDuration());
-                    createdSessions.add(sessionRepository.save(breakSession));
-                    cursor = cursor.plusMinutes(config.getBreakDuration());
-                    remainingBreakSlots--;
-                }
+            Session session = buildSession(
+                    event.getId(), eventCode,
+                    slot.getTitle(), toSessionType(slot.getType()),
+                    slot.getStartTime(), slot.getEndTime());
+            if (slot.getType() == TimetableSlot.Type.MODERATION) {
+                addModerator(session, organizerUsername);
             }
-        } else {
-            // Simple linear: all slots, one break in the middle
-            int breakAfter = breakSlots > 0 ? (int) Math.ceil(maxSlots / 2.0) : -1;
-            for (int i = 0; i < maxSlots; i++) {
-                cursor = cursor.plusMinutes(slotDuration);
-                if (i == breakAfter - 1 && breakSlots > 0) {
-                    Session breakSession = buildSession(
-                            event.getId(), eventCode, "Pause", "break",
-                            cursor, config.getBreakDuration());
-                    createdSessions.add(sessionRepository.save(breakSession));
-                    cursor = cursor.plusMinutes(config.getBreakDuration());
-                }
-            }
+            sessionRepository.save(session);
+            createdSessions.add(session);
         }
-
-        // Moderation End
-        Session modEnd = buildSession(
-                event.getId(), eventCode, "Moderation End", "moderation",
-                cursor, config.getModerationEndDuration());
-        addModerator(modEnd, organizerUsername);
-        createdSessions.add(sessionRepository.save(modEnd));
 
         log.info("Generated {} structural sessions for event '{}' (organizer={})",
                 createdSessions.size(), eventCode, organizerUsername);
@@ -192,17 +128,12 @@ public class StructuralSessionService {
             String eventCode,
             String title,
             String sessionType,
-            LocalDateTime start,
-            int durationMinutes) {
+            Instant startInstant,
+            Instant endInstant) {
 
         String baseSlug = slugGenerationService.generateSessionSlug(title);
         String slug = slugGenerationService.ensureUniqueSlug(
                 baseSlug, sessionRepository::existsBySessionSlug);
-
-        // Use Europe/Zurich so stored UTC instants match what the frontend displays in local time
-        ZoneId zurich = ZoneId.of("Europe/Zurich");
-        Instant startInstant = start.atZone(zurich).toInstant();
-        Instant endInstant = start.plusMinutes(durationMinutes).atZone(zurich).toInstant();
 
         return Session.builder()
                 .sessionSlug(slug)
@@ -227,5 +158,15 @@ public class StructuralSessionService {
                 .isConfirmed(true)
                 .build();
         session.getSessionUsers().add(moderator);
+    }
+
+    private static String toSessionType(TimetableSlot.Type type) {
+        return switch (type) {
+            case MODERATION -> "moderation";
+            case BREAK -> "break";
+            case LUNCH -> "lunch";
+            case SPEAKER_SLOT -> throw new IllegalArgumentException(
+                    "SPEAKER_SLOT is not a persisted structural session type");
+        };
     }
 }

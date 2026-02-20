@@ -67,10 +67,10 @@ class WatchSessionSchemaValidationTest extends AbstractIntegrationTest {
             byName.put((String) col.get("column_name"), col);
         }
 
-        assertThat(byName.get("actual_start_time").get("data_type")).isEqualTo("timestamp without time zone");
+        assertThat(byName.get("actual_start_time").get("data_type")).isEqualTo("timestamp with time zone");
         assertThat(byName.get("actual_start_time").get("is_nullable")).isEqualTo("YES");
 
-        assertThat(byName.get("actual_end_time").get("data_type")).isEqualTo("timestamp without time zone");
+        assertThat(byName.get("actual_end_time").get("data_type")).isEqualTo("timestamp with time zone");
         assertThat(byName.get("actual_end_time").get("is_nullable")).isEqualTo("YES");
 
         assertThat(byName.get("overrun_minutes").get("data_type")).isEqualTo("integer");

@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.SessionResponse;
+
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -23,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +66,9 @@ class StructuralSessionServiceTest {
 
     @Mock
     private SlugGenerationService slugGenerationService;
+
+    @Mock
+    private TimetableService timetableService;
 
     @InjectMocks
     private StructuralSessionService structuralSessionService;
@@ -107,6 +112,15 @@ class StructuralSessionServiceTest {
         testEvent.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
         testEvent.setCreatedAt(Instant.now());
         testEvent.setUpdatedAt(Instant.now());
+
+        // Delegate computeTimeline to real algorithm so existing assertions remain valid.
+        // lenient() prevents UnnecessaryStubbingException in tests that throw before reaching
+        // generateStructuralSessions (e.g. EventNotFoundException, NotFoundException).
+        TimetableService realTimetableService = new TimetableService(null, null, null, null);
+        org.mockito.Mockito.lenient()
+                .when(timetableService.computeTimeline(any(EventTypeConfiguration.class), any(LocalDate.class)))
+                .thenAnswer(inv -> realTimetableService.computeTimeline(
+                        inv.getArgument(0), inv.getArgument(1)));
 
         fullDayConfig = EventTypeConfiguration.builder()
                 .id(UUID.randomUUID())
@@ -257,15 +271,16 @@ class StructuralSessionServiceTest {
         // When
         structuralSessionService.generateStructuralSessions(EVENT_CODE, false);
 
-        // Then: first saved session (moderation start) has startTime at 09:00 UTC
+        // Then: first saved session (moderation start) has startTime at 09:00 Europe/Zurich
+        // June 15 is CEST (UTC+2), so 09:00 local = 07:00 UTC
         List<Session> savedSessions = sessionCaptor.getAllValues();
         assertThat(savedSessions).isNotEmpty();
         Session modStart = savedSessions.get(0);
         assertThat(modStart.getSessionType()).isEqualTo("moderation");
         assertThat(modStart.getTitle()).isEqualTo("Moderation Start");
-        // startTime should be 09:00 on the event date (2025-06-15)
-        assertThat(modStart.getStartTime().toString()).contains("2025-06-15T09:00:00");
+        // startTime is stored as UTC — 09:00 CEST (Europe/Zurich) = 07:00 UTC
+        assertThat(modStart.getStartTime().toString()).contains("2025-06-15T07:00:00Z");
         // endTime = start + 5 min
-        assertThat(modStart.getEndTime().toString()).contains("2025-06-15T09:05:00");
+        assertThat(modStart.getEndTime().toString()).contains("2025-06-15T07:05:00Z");
     }
 }

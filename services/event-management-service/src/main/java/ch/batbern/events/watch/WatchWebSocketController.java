@@ -23,6 +23,7 @@ import java.security.Principal;
  * W2.4: Speaker arrival via WebSocket (FR38 — sync to all watches within 3 seconds).
  * W4.1: Organizer presence join/leave (AC1, AC2, AC4).
  * W4.2: Session control dispatch — endSession action (AC1, AC2, AC4).
+ * W4.3: Extend session and delay-to-previous routing (AC2, AC4) with null/range guard.
  *
  * Message flows:
  * Watch → /app/watch/events/{eventCode}/speaker-arrived  → arrival broadcast

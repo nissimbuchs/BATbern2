@@ -4,11 +4,12 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionTimingHistory;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.dto.TimetableSlot;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
+import ch.batbern.events.service.TimetableService;
 import ch.batbern.shared.events.SessionTimingAssignedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +33,9 @@ import java.util.UUID;
  * - Unassign timing (set to null)
  * - Retrieve unassigned sessions
  * - Track timing changes in session_timing_history table
+ *
+ * Available slot computation is delegated to {@link TimetableService#getTimetable}
+ * to guarantee the same slot positions the UI displays are used for auto-assign.
  */
 @Service
 @RequiredArgsConstructor
@@ -49,7 +50,7 @@ public class SessionTimingService {
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.service.SpeakerWorkflowService speakerWorkflowService;
     private final EventRepository eventRepository;
-    private final EventTypeRepository eventTypeRepository;
+    private final TimetableService timetableService;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -189,9 +190,8 @@ public class SessionTimingService {
     /**
      * Auto-assign all unassigned sessions to available time slots.
      *
-     * When structural sessions (moderation, break, lunch) exist, fills the time gaps
-     * between them in order. Falls back to sequential assignment from typicalStartTime
-     * when no structural sessions are present.
+     * Slot positions are sourced from {@link TimetableService#getTimetable} to guarantee
+     * that the positions used here match exactly what the drag-and-drop UI shows.
      *
      * @param event     Event entity
      * @param changedBy Username of organizer performing the auto-assignment
@@ -208,21 +208,24 @@ public class SessionTimingService {
 
         log.info("Found {} unassigned sessions to assign", unassignedSessions.size());
 
-        int slotDurationMinutes = resolveSlotDuration(event);
-        List<Instant> availableSlots = computeAvailableSlots(event, slotDurationMinutes, unassignedSessions.size());
+        // Use timetable to get free speaker slots — guarantees UI/backend parity
+        List<TimetableSlot> freeSlots = timetableService.getTimetable(event.getEventCode())
+                .getSlots().stream()
+                .filter(s -> s.getType() == TimetableSlot.Type.SPEAKER_SLOT)
+                .filter(s -> s.getAssignedSessionSlug() == null)
+                .toList();
 
         int assignedCount = 0;
         int slotIndex = 0;
         for (Session session : unassignedSessions) {
-            if (slotIndex >= availableSlots.size()) {
+            if (slotIndex >= freeSlots.size()) {
                 log.warn("No more available slots — {} sessions remain unassigned",
                         unassignedSessions.size() - assignedCount);
                 break;
             }
-            Instant slotStart = availableSlots.get(slotIndex++);
-            Instant slotEnd = slotStart.plus(slotDurationMinutes, ChronoUnit.MINUTES);
+            TimetableSlot slot = freeSlots.get(slotIndex++);
             try {
-                assignTiming(session.getSessionSlug(), slotStart, slotEnd,
+                assignTiming(session.getSessionSlug(), slot.getStartTime(), slot.getEndTime(),
                         "Main Hall", "preference_matching", changedBy);
                 assignedCount++;
             } catch (Exception e) {
@@ -232,95 +235,6 @@ public class SessionTimingService {
 
         log.info("Auto-assigned {} of {} sessions", assignedCount, unassignedSessions.size());
         return assignedCount;
-    }
-
-    /**
-     * Read slot duration from EventTypeConfiguration; default 45 min.
-     */
-    private int resolveSlotDuration(Event event) {
-        if (event.getEventType() == null) {
-            return 45;
-        }
-        return eventTypeRepository.findByType(event.getEventType())
-                .map(c -> c.getSlotDuration() != null ? c.getSlotDuration() : 45)
-                .orElse(45);
-    }
-
-    /**
-     * Build an ordered list of free slot start times.
-     *
-     * When structural sessions exist, the available slots are the gaps between
-     * consecutive structural blocks (using their actual endTime → next startTime).
-     * Otherwise falls back to sequential slots from typicalStartTime.
-     */
-    private List<Instant> computeAvailableSlots(Event event, int slotDurationMinutes, int needed) {
-        // Structural sessions sorted chronologically
-        List<Session> structural = sessionRepository.findByEventIdAndSessionTypeIn(
-                        event.getId(), STRUCTURAL_TYPES).stream()
-                .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
-                .sorted(Comparator.comparing(Session::getStartTime))
-                .toList();
-
-        // Already-assigned non-structural sessions (to exclude occupied slots)
-        List<Session> occupied = sessionRepository.findByEventId(event.getId()).stream()
-                .filter(s -> s.getStartTime() != null && !STRUCTURAL_TYPES.contains(s.getSessionType()))
-                .toList();
-
-        List<Instant> slots = new ArrayList<>();
-
-        if (!structural.isEmpty()) {
-            // Fill each gap between consecutive structural sessions
-            for (int i = 0; i < structural.size() - 1; i++) {
-                Instant gapStart = structural.get(i).getEndTime();
-                Instant gapEnd = structural.get(i + 1).getStartTime();
-                Instant cursor = gapStart;
-                while (cursor.isBefore(gapEnd)) {
-                    if (isSlotFree(cursor, slotDurationMinutes, occupied)) {
-                        slots.add(cursor);
-                    }
-                    cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
-                }
-            }
-        } else {
-            // No structural sessions — sequential from event type start time
-            Instant cursor = resolveEventStartInstant(event);
-            for (int i = 0; i < needed; i++) {
-                while (!isSlotFree(cursor, slotDurationMinutes, occupied)) {
-                    cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
-                }
-                slots.add(cursor);
-                cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
-            }
-        }
-
-        return slots;
-    }
-
-    private boolean isSlotFree(Instant start, int durationMinutes, List<Session> occupied) {
-        Instant end = start.plus(durationMinutes, ChronoUnit.MINUTES);
-        return occupied.stream().noneMatch(s ->
-                s.getStartTime().isBefore(end) && s.getEndTime().isAfter(start));
-    }
-
-    private Instant resolveEventStartInstant(Event event) {
-        String startTimeStr;
-        if (event.getEventType() == null) {
-            startTimeStr = "09:00";
-        } else {
-            startTimeStr = switch (event.getEventType().name()) {
-                case "EVENING" -> "16:00";
-                case "HALF_DAY" -> "13:00";
-                default -> "09:00";
-            };
-        }
-        String[] parts = startTimeStr.split(":");
-        return event.getDate()
-                .atZone(ZoneId.of("Europe/Zurich"))
-                .withHour(Integer.parseInt(parts[0]))
-                .withMinute(Integer.parseInt(parts[1]))
-                .withSecond(0)
-                .withNano(0)
-                .toInstant();
     }
 
     /**
@@ -340,13 +254,7 @@ public class SessionTimingService {
      */
     @Transactional(readOnly = true)
     public List<Session> getUnassignedSessions(String eventCode) {
-        // Note: eventCode is the public identifier, but we need eventId
-        // This method signature matches the test but we'll need to convert
         log.info("Fetching unassigned sessions for event: {}", eventCode);
-
-        // For now, assuming we can query by eventCode through the test mocks
-        // In real implementation, we'd look up the event first
-        // But the unit test mocks this directly
         return sessionRepository.findByEventCodeAndStartTimeIsNull(eventCode);
     }
 
