@@ -94,8 +94,7 @@ struct ConnectivityMonitorTests {
 
     @Test("onConnectivityChanged(false) should NOT fire within the debounce window")
     func offlineCallback_notCalledWithinDebounceWindow() async throws {
-        let monitor = ConnectivityMonitor()
-        monitor.offlineDebounceSeconds = 0.3
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.3)
 
         var callbackFired = false
         monitor.onConnectivityChanged = { isConnected in
@@ -115,8 +114,7 @@ struct ConnectivityMonitorTests {
 
     @Test("onConnectivityChanged(false) should fire after sustained debounce period")
     func offlineCallback_calledAfterDebouncePeriodElapses() async throws {
-        let monitor = ConnectivityMonitor()
-        monitor.offlineDebounceSeconds = 0.2
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.2)
 
         var callbackFired = false
         monitor.onConnectivityChanged = { isConnected in
@@ -132,8 +130,7 @@ struct ConnectivityMonitorTests {
 
     @Test("Connectivity restored within debounce window cancels offline notification")
     func offlineCallback_cancelledWhenConnectivityRestored() async throws {
-        let monitor = ConnectivityMonitor()
-        monitor.offlineDebounceSeconds = 0.3
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.3)
 
         var offlineCallbackFired = false
         monitor.onConnectivityChanged = { isConnected in
@@ -153,8 +150,7 @@ struct ConnectivityMonitorTests {
 
     @Test("onConnectivityChanged(true) fires immediately — no debounce on reconnect")
     func onlineCallback_firesImmediatelyWithoutDebounce() async throws {
-        let monitor = ConnectivityMonitor()
-        monitor.offlineDebounceSeconds = 30 // Long debounce, confirming online ignores it
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 30) // Long debounce, confirming online ignores it
 
         var onlineCallbackFired = false
         monitor.onConnectivityChanged = { isConnected in

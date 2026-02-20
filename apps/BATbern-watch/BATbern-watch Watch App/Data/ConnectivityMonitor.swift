@@ -33,12 +33,18 @@ class ConnectivityMonitor {
 
     /// Duration in seconds before the offline indicator notifies downstream after path loss.
     /// Suppresses transient drops under this threshold (AC3 — 30 s in production).
-    /// Set to a lower value in unit tests to avoid slow test runs.
-    var offlineDebounceSeconds: TimeInterval = 30
+    /// Injected via init so tests can pass a short value without mutating production state.
+    let offlineDebounceSeconds: TimeInterval
 
     /// Callback triggered when connectivity state changes (for reactive observation)
     @ObservationIgnored
     var onConnectivityChanged: (@MainActor @Sendable (Bool) -> Void)?
+
+    // MARK: - Init
+
+    init(offlineDebounceSeconds: TimeInterval = 30) {
+        self.offlineDebounceSeconds = offlineDebounceSeconds
+    }
 
     // MARK: - Lifecycle
 
@@ -65,6 +71,8 @@ class ConnectivityMonitor {
     }
 
     /// Stop monitoring and cancel NWPathMonitor. Also cancels any pending offline debounce.
+    /// Must be called on MainActor — `offlineDebounceTask` is accessed under MainActor isolation.
+    @MainActor
     func stop() {
         offlineDebounceTask?.cancel()
         offlineDebounceTask = nil
@@ -72,7 +80,10 @@ class ConnectivityMonitor {
     }
 
     deinit {
-        stop()
+        // NWPathMonitor.cancel() is thread-safe and must be called to release resources.
+        // offlineDebounceTask exits cleanly via [weak self] guard when self is deallocated —
+        // we cannot access it here without MainActor isolation, and explicit cancel is not needed.
+        monitor.cancel()
     }
 
     // MARK: - Internal (visible to tests)

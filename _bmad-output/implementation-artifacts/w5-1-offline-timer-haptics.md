@@ -1,6 +1,6 @@
 # Story W5.1: Offline Timer & Haptics
 
-Status: review
+Status: done
 
 ---
 
@@ -125,12 +125,20 @@ claude-sonnet-4-6
 - **Task 2 (verified, no change):** `SessionTimerEngine.recalculate()` line 52 uses `session.endTime.timeIntervalSince(clock.now)` — pure wall-clock, no network dependency. Confirmed offline-safe as designed.
 - **Task 3 (verified, no change):** `HapticScheduler.evaluate()` and `evaluateBreakGong()` read only locally cached `WatchSession.endTime` — no network calls, no connectivity checks. Confirmed offline-safe as designed.
 - **Task 4 (tests):** Added 4 new tests to `ConnectivityMonitorTests.swift` using `offlineDebounceSeconds = 0.2–0.3` for speed. All 4 pass. Also fixed 3 pre-existing compilation errors in test files (`BreakGongViewTests`, `EventCompletedViewTests`, `BreakCardLayoutTests`) caused by prior model changes that had not been updated in the tests.
+- **Code Review Fixes (CR W5.1):**
+  - **H1/M1** `EventDataController.handleConnectivityChange(true)` now sets `isOffline = false` immediately before calling `syncIfNeeded()`. Previously `performSync()` short-circuited at `guard !isOffline`, leaving the app permanently stuck in offline state after any WiFi drop+restore cycle.
+  - **H2** `ConnectivityMonitor.stop()` marked `@MainActor` to eliminate data race with `offlineDebounceTask` (also accessed by `@MainActor processConnectivityChange`). `deinit` updated to call `monitor.cancel()` directly; `offlineDebounceTask` exits safely via `[weak self]` guard on dealloc.
+  - **M2** `offlineDebounceSeconds` changed from mutable `var` to `let` init parameter (`init(offlineDebounceSeconds: TimeInterval = 30)`), preventing accidental production mutation. 4 existing tests updated to use init parameter.
+  - **M3** Added 2 integration tests to `EventDataControllerOfflineTests.swift`: `isOffline_becomesTrueWhenConnectivityLost` (AC3 path) and `isOffline_clearsAutomaticallyOnReconnect_noManualReset` (H1 regression guard).
 - **Architecture constraint respected:** WebSocket reconnect path (exponential backoff) is untouched — only `onConnectivityChanged(false)` to `EventDataController.handleConnectivityChange` is debounced.
 
 ### File List
 
-- `apps/BATbern-watch/BATbern-watch Watch App/Data/ConnectivityMonitor.swift` — Added 30s debounce via `processConnectivityChange(isConnected:)`, `offlineDebounceSeconds`, `offlineDebounceTask`
-- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ConnectivityMonitorTests.swift` — Added 4 debounce tests (4.1–4.4)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/ConnectivityMonitor.swift` — Added 30s debounce; `offlineDebounceSeconds` changed to `let` init parameter (M2); `stop()` marked `@MainActor` (H2); `deinit` decoupled from `stop()` (H2)
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift` — Added `isOffline = false` in `handleConnectivityChange(true)` to fix permanent-offline deadlock (H1/M1)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/ConnectivityMonitorTests.swift` — 4 debounce tests (4.1–4.4) updated to use `ConnectivityMonitor(offlineDebounceSeconds:)` init (M2)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Data/EventDataControllerOfflineTests.swift` — Added 2 W5.1 isOffline integration tests: flag lifecycle + H1 regression guard (M3)
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Mocks/MockConnectivityMonitor.swift` — Added `@MainActor` to `override func stop()` (H2)
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/BreakGongViewTests.swift` — Fixed pre-existing: added `typicalStartTime`/`typicalEndTime` to `CachedEvent` init calls
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/EventCompletedViewTests.swift` — Fixed pre-existing: added `eventTitle` arg to `EventCompletedView` init
 - `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/BreakCardLayoutTests.swift` — Fixed pre-existing: added `import Foundation`
@@ -138,3 +146,4 @@ claude-sonnet-4-6
 ## Change Log
 
 - 2026-02-20: W5.1 implemented — 30s offline debounce added to `ConnectivityMonitor`. Timer and haptics verified offline-safe (no changes needed). 4 new tests added. 3 pre-existing test compilation errors fixed.
+- 2026-02-20: W5.1 code review fixes applied — H1 (isOffline deadlock on reconnect), H2 (stop() MainActor isolation), M1 (isOffline semantics), M2 (offlineDebounceSeconds init param), M3 (2 E2E isOffline integration tests). Story marked done.

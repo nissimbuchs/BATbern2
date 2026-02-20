@@ -75,6 +75,39 @@ struct EventDataControllerOfflineTests {
         try await AsyncTestHelpers.waitFor { fixture.controller.isOffline == true }
     }
 
+    // MARK: - isOffline flag lifecycle (W5.1 AC#3)
+
+    @Test("isOffline goes true when connectivity-lost callback fires (W5.1 AC#3)")
+    func isOffline_becomesTrueWhenConnectivityLost() async throws {
+        let fixture = try makeFixture()
+
+        #expect(fixture.controller.isOffline == false)
+
+        // Simulate sustained WiFi drop (MockConnectivityMonitor bypasses the 30s debounce)
+        fixture.monitor.simulateDisconnected()
+
+        try await AsyncTestHelpers.waitFor(timeout: 2.0) { fixture.controller.isOffline == true }
+        #expect(fixture.controller.isOffline == true)
+    }
+
+    @Test("isOffline clears automatically on WiFi restore — H1 regression guard")
+    func isOffline_clearsAutomaticallyOnReconnect_noManualReset() async throws {
+        // Regression guard: before H1 fix, handleConnectivityChange(true) never set isOffline=false,
+        // so performSync() hit `guard !isOffline` and returned early, leaving isOffline=true forever.
+        let fixture = try makeFixture()
+
+        // Go offline (sets wasOffline=true, isOffline=true)
+        try await goOffline(fixture)
+        #expect(fixture.controller.isOffline == true)
+
+        // Reconnect — without ANY manual isOffline=false workaround.
+        // The fix in handleConnectivityChange(true) must clear isOffline itself.
+        fixture.monitor.simulateConnected()
+
+        try await AsyncTestHelpers.waitFor(timeout: 2.0) { fixture.controller.isOffline == false }
+        #expect(fixture.controller.isOffline == false)
+    }
+
     // MARK: - Replay on connectivity restored (AC#3)
 
     @Test("connectivity restored: replays queued actions via WebSocket (W5.2 AC#3)")

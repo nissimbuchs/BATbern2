@@ -304,6 +304,11 @@ final class EventDataController {
         if isConnected && wasOffline {
             logger.info("Connectivity restored — replaying offline queue then syncing")
             wasOffline = false
+            // Clear offline indicator immediately on WiFi restore (AC3 semantics: indicator tracks
+            // WiFi availability, not server reachability). Must happen BEFORE syncIfNeeded() so
+            // performSync() can proceed past its `guard !isOffline` gate. If the subsequent sync
+            // encounters a network error, performSync sets isOffline = true again.
+            isOffline = false
             // W5.2 Task 4.2 (Dev Notes: replay BEFORE sync — replay first, then get fresh state)
             await replayPendingActions()
             await syncIfNeeded()
