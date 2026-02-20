@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "description": "Single source of truth for technology versions in BATbern platform. This file is automatically updated by scripts/update-versions.js when dependencies change.",
-  "lastUpdated": "2026-02-12",
+  "lastUpdated": "2026-02-20",
   "frontend": {
     "typescript": "5.x",
     "react": "19.x",
@@ -12,7 +12,7 @@
     "vitest": "4.x",
     "react-testing-library": "16.x",
     "playwright": "1.x",
-    "eslint": "9.x",
+    "eslint": "10.x",
     "prettier": "3.x",
     "axios": "1.x",
     "react-router-dom": "7.x",
