@@ -234,6 +234,12 @@ final class EventDataController {
     // MARK: - Private: Portrait Prefetch
 
     private func prefetchPortraits(for cachedEvent: CachedEvent) async {
+        // Pre-fetch theme image first (real watch: AsyncImage is unreliable for large CDN images)
+        if let themeUrlString = cachedEvent.themeImageUrl,
+           let themeUrl = URL(string: themeUrlString) {
+            _ = try? await portraitCache.downloadAndCache(url: themeUrl)
+        }
+
         let allSpeakers = cachedEvent.sessions.flatMap { $0.speakers }
         let total = allSpeakers.count
         let progressStart = syncProgress  // capture before loop
