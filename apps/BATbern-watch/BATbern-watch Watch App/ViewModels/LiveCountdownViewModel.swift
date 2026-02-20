@@ -228,7 +228,8 @@ final class LiveCountdownViewModel {
         // Event day / within 24h: pre-session count-up ring
         // progress = elapsed since midnight / session start since midnight
         // Example: session at 16:00, now 08:00 → 8/16 = 0.5 (per ring semantics spec)
-        let hoursUntil = max(0, Int(timeUntilNext / 3600))
+        // minutesUntil = total minutes (not hours) so views can show "5m" instead of "0h"
+        let minutesUntil = max(0, Int(timeUntilNext / 60))
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: now)
         let elapsedSinceMidnight = now.timeIntervalSince(startOfDay)
@@ -236,7 +237,7 @@ final class LiveCountdownViewModel {
         let progress = sessionStartSinceMidnight > 0
             ? min(1.0, max(0.0, elapsedSinceMidnight / sessionStartSinceMidnight))
             : 0.0
-        return .eventDayPreSession(hoursUntil: hoursUntil, progress: progress)
+        return .eventDayPreSession(minutesUntil: minutesUntil, progress: progress)
     }
 
     // MARK: - Complication Live State (W3.3)

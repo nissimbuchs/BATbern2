@@ -47,9 +47,9 @@ struct CornerView: View {
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
 
-        case .eventDayPreSession(let hoursUntil, _):
-            // Hours until next session (corner has limited space — no ring)
-            Text("\(hoursUntil)h")
+        case .eventDayPreSession(let minutesUntil, _):
+            // Minutes/hours until next session (corner has limited space — no ring)
+            Text(minutesUntil < 60 ? "\(minutesUntil)m" : "\(minutesUntil / 60)h")
                 .font(.system(.title2, design: .monospaced).bold())
                 .foregroundStyle(isLuminanceReduced ? .gray : .blue)
 

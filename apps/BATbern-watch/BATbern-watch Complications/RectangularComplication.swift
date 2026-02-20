@@ -58,14 +58,14 @@ struct RectangularView: View {
                     .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
             }
 
-        case .eventDayPreSession(let hoursUntil, let progress):
+        case .eventDayPreSession(let minutesUntil, let progress):
             // Count-UP ring toward session start
             VStack(alignment: .leading, spacing: 2) {
                 Text("Next Session")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text("\(hoursUntil)h")
+                Text(minutesUntil < 60 ? "\(minutesUntil)m" : "\(minutesUntil / 60)h")
                     .font(.system(.title3, design: .monospaced).bold())
                     .foregroundStyle(isLuminanceReduced ? .gray : .blue)
                 ProgressView(value: progress)

@@ -32,14 +32,14 @@ import WidgetKit
 enum ComplicationContext: Codable, Equatable, Sendable {
     case noEvent
     case eventFar(dateString: String)                                          // >1 day away: dd.MM format
-    case eventDayPreSession(hoursUntil: Int, progress: Double)                 // today, between sessions
+    case eventDayPreSession(minutesUntil: Int, progress: Double)               // today, between sessions — total minutes until session start
     case sessionRunning(minutesLeft: Int, fractionRemaining: Double)           // active session
     case eventComplete
 
     // MARK: - Manual Codable (required for associated values)
 
     private enum CodingKeys: String, CodingKey {
-        case type, dateString, hoursUntil, progress, minutesLeft, fractionRemaining
+        case type, dateString, minutesUntil, progress, minutesLeft, fractionRemaining
     }
 
     init(from decoder: Decoder) throws {
@@ -51,7 +51,7 @@ enum ComplicationContext: Codable, Equatable, Sendable {
             self = .eventFar(dateString: try c.decode(String.self, forKey: .dateString))
         case "eventDayPreSession":
             self = .eventDayPreSession(
-                hoursUntil: try c.decode(Int.self, forKey: .hoursUntil),
+                minutesUntil: try c.decode(Int.self, forKey: .minutesUntil),
                 progress: try c.decode(Double.self, forKey: .progress)
             )
         case "sessionRunning":
@@ -74,9 +74,9 @@ enum ComplicationContext: Codable, Equatable, Sendable {
         case .eventFar(let ds):
             try c.encode("eventFar", forKey: .type)
             try c.encode(ds, forKey: .dateString)
-        case .eventDayPreSession(let h, let p):
+        case .eventDayPreSession(let m, let p):
             try c.encode("eventDayPreSession", forKey: .type)
-            try c.encode(h, forKey: .hoursUntil)
+            try c.encode(m, forKey: .minutesUntil)
             try c.encode(p, forKey: .progress)
         case .sessionRunning(let m, let f):
             try c.encode("sessionRunning", forKey: .type)

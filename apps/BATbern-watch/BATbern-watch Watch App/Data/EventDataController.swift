@@ -10,6 +10,7 @@
 
 import Foundation
 import SwiftData
+import WidgetKit
 import os
 
 private let logger = Logger(subsystem: "ch.batbern.watch", category: "EventDataController")
@@ -63,6 +64,7 @@ final class EventDataController {
 
         // Load SwiftData cache immediately so views have data before first network response
         loadCachedData()
+        writeComplicationSnapshot()  // seed complication before LiveCountdownView opens
 
         // Wire connectivity changes
         connectivityMonitor.onConnectivityChanged = { @Sendable [weak self] isConnected in
@@ -169,6 +171,7 @@ final class EventDataController {
             lastSynced = clock.now
             isOffline = false
             syncProgress = 1.0
+            writeComplicationSnapshot()  // update complication with fresh data
         } catch SyncError.notAuthenticated, SyncError.authenticationRequired {
             logger.warning("performSync: auth error — will retry when JWT refreshes")
             // Don't set isOffline; auth errors are not connectivity failures
@@ -275,6 +278,62 @@ final class EventDataController {
             wasOffline = true
             isOffline = true
         }
+    }
+
+    // MARK: - Complication Snapshot (pre-session)
+
+    /// Write a basic complication snapshot from event data, without requiring LiveCountdownView
+    /// to be active. Called at app launch (loadCachedData) and after each successful sync.
+    ///
+    /// Handles the non-session contexts only (noEvent, eventFar, eventDayPreSession,
+    /// eventComplete). If a session is currently running, LiveCountdownViewModel.refreshState()
+    /// will overwrite with richer data (speaker names, urgency, second-level countdown).
+    private func writeComplicationSnapshot() {
+        let now = clock.now
+        let sessions = (currentEvent?.sessions ?? [])
+            .compactMap { $0.toWatchSession() }
+            .sorted { $0.startTime < $1.startTime }
+
+        // If a session is actively running, skip — LiveCountdownViewModel writes richer data.
+        if sessions.contains(where: { $0.startTime <= now && $0.endTime >= now }) { return }
+
+        let context: ComplicationContext
+        if sessions.isEmpty {
+            context = .noEvent
+        } else if let last = sessions.last, now > last.endTime {
+            context = .eventComplete
+        } else if let next = sessions.first(where: { $0.startTime > now }) {
+            let timeUntilNext = next.startTime.timeIntervalSince(now)
+            if timeUntilNext > 24 * 3600 {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "dd.MM"
+                context = .eventFar(dateString: formatter.string(from: next.startTime))
+            } else {
+                let minutesUntil = max(0, Int(timeUntilNext / 60))
+                let calendar = Calendar.current
+                let startOfDay = calendar.startOfDay(for: now)
+                let elapsedSinceMidnight = now.timeIntervalSince(startOfDay)
+                let sessionStartSinceMidnight = next.startTime.timeIntervalSince(startOfDay)
+                let progress = sessionStartSinceMidnight > 0
+                    ? min(1.0, max(0.0, elapsedSinceMidnight / sessionStartSinceMidnight))
+                    : 0.0
+                context = .eventDayPreSession(minutesUntil: minutesUntil, progress: progress)
+            }
+        } else {
+            context = .noEvent
+        }
+
+        ComplicationDataStore.write(ComplicationSnapshot(
+            sessionTitle: nil,
+            speakerNames: nil,
+            scheduledEndTime: nil,   // no entry-level countdown needed for pre-session
+            sessionDuration: nil,
+            scheduledStartTime: nil,
+            isLive: false,
+            urgencyLevel: "normal",
+            updatedAt: now,
+            complicationContext: context
+        ))
     }
 
     // MARK: - Mock Support (TESTING_MODE only)

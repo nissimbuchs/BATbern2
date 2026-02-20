@@ -48,12 +48,13 @@ struct CircularView: View {
                     .font(.system(size: 13, weight: .semibold, design: .monospaced))
                     .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
 
-            case .eventDayPreSession(let hoursUntil, let progress):
+            case .eventDayPreSession(let minutesUntil, let progress):
                 // Count-UP ring: elapsed / sessionStartFromMidnight
                 ProgressView(value: progress)
                     .progressViewStyle(.circular)
                     .tint(isLuminanceReduced ? .gray : .blue)
-                Text("\(hoursUntil)h")
+                // Show "5m" when <60 min, "2h" when ≥60 min — avoids useless "0h" at near-start
+                Text(minutesUntil < 60 ? "\(minutesUntil)m" : "\(minutesUntil / 60)h")
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundStyle(isLuminanceReduced ? .gray : .blue)
 
