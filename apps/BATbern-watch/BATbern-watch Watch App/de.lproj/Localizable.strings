@@ -5,7 +5,7 @@
 
 /* Event Hero Screen */
 "event.hero.empty.title" = "BATbern";
-"event.hero.empty.message" = "Kein anstehendes BATbern Event";
+"event.hero.empty.message" = "Bald wieder";
 
 /* Session Cards */
 "session.speakers.more" = "weitere";

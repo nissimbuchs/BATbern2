@@ -41,7 +41,7 @@ story_location: _bmad-output/implementation-artifacts
 development_status:
   # Epic 1: Public Event Companion
   epic-1: in-progress
-  w1-1-xcode-project-setup-event-hero-screen: done
+  w1-1-xcode-project-setup-event-hero-screen: review
   w1-2-session-card-browsing: done
   w1-3-session-abstract-speaker-bio: done
   w1-4-progressive-publishing-offline-support: done
@@ -79,8 +79,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Offline Resilience
-  epic-5: backlog
-  w5-1-offline-timer-haptics: backlog
-  w5-2-action-queue-sync-recovery: backlog
-  w5-3-connectivity-monitoring-adaptive-behavior: backlog
+  epic-5: in-progress
+  w5-1-offline-timer-haptics: ready-for-dev
+  w5-2-action-queue-sync-recovery: ready-for-dev
+  w5-3-connectivity-monitoring-adaptive-behavior: ready-for-dev
   epic-5-retrospective: optional

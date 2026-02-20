@@ -49,9 +49,22 @@ enum SwissDateFormatter {
         return formatter
     }()
 
+    /// Compact date formatter for TBD placeholder events (e.g., "15. Feb")
+    static let compactDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = swissLocale
+        formatter.dateFormat = "dd. MMM"
+        return formatter
+    }()
+
     /// Format a date for event display
     static func formatEventDate(_ date: Date) -> String {
         eventDateFormatter.string(from: date)
+    }
+
+    /// Format a compact date for TBD placeholder events (e.g., "15. Feb")
+    static func formatCompactDate(_ date: Date) -> String {
+        compactDateFormatter.string(from: date)
     }
 
     /// Format a time for event display

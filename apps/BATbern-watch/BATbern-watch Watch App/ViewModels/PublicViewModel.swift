@@ -53,6 +53,14 @@ final class PublicViewModel {
         return type == .breakTime || type == .lunch || type == .networking
     }
 
+    /// True when the current event is a TBD placeholder: title is "TBD" and no sessions published yet.
+    /// Such events show date + venue only — no speakers, no session cards, no scroll hint.
+    /// Course Correction: docs/sprint-change-proposal-2026-02-19.md
+    var isTBDEvent: Bool {
+        guard let e = event else { return false }
+        return e.title.uppercased() == "TBD" && e.sessions.isEmpty
+    }
+
     // MARK: - Initialization
 
     init(eventDataController: EventDataController) {

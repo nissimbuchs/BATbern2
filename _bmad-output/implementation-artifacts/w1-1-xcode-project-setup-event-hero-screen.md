@@ -1,6 +1,6 @@
 # Story 1.1: Xcode Project Setup & Event Hero Screen
 
-Status: done
+Status: review
 
 ---
 
@@ -125,6 +125,14 @@ so that I immediately know what event is happening tonight.
   - [x] 9.3 `Data/PublicEventServiceTests.swift` — DTO mapping tests
   - [x] 9.4 EventHeroView has Xcode Previews for testing
   - [x] 9.5 Verified existing TF scaffold tests build successfully
+
+### Course Correction (Sprint Change Proposal 2026-02-19)
+
+- [x] **CC1: Add `isTBDEvent` computed property to `PublicViewModel`** — Returns true when `title.uppercased() == "TBD"` AND `sessions.isEmpty`
+- [x] **CC2: Add TBD event branch in `EventHeroView`** — `isTBDEvent(for:)` private helper + `tbdEventContent(event:)` ViewBuilder showing date (dd MMM) + venue only; no speakers, no sessions, no scroll hint
+- [x] **CC3: Add `formatCompactDate` to `SwissDateFormatter`** — `dd. MMM` format (e.g. "15. Feb") for TBD placeholder layout
+- [x] **CC4: Update empty state localization** — `event.hero.empty.message` changed from "Kein anstehendes BATbern Event" → "Bald wieder" in both Base.lproj and de.lproj
+- [x] **CC5: Write tests for `isTBDEvent`** — 5 new test cases in `PublicViewModelTests.swift`: true/case-insensitive/false-with-sessions/false-normal-title/false-no-event
 
 ## Dev Notes
 
@@ -405,6 +413,13 @@ N/A - No blocking issues encountered
 - ✅ **All 8 Acceptance Criteria verified as implemented** despite documentation issues
 - ✅ **Implementation quality confirmed:** Protocol-based DI, cache-first loading, proper MVVM separation, comprehensive tests
 
+**Course Correction (2026-02-20, per sprint-change-proposal-2026-02-19.md):**
+- ✅ CC1: `PublicViewModel.isTBDEvent` — `e.title.uppercased() == "TBD" && e.sessions.isEmpty`; `CachedEvent.title` is non-optional so nil check removed from spec
+- ✅ CC2: `EventHeroView` now branches on `isTBDEvent(for:)`: TBD path shows `tbdEventContent` (date in "dd. MMM" + venue, no speakers/sessions/scroll hint)
+- ✅ CC3: `SwissDateFormatter.formatCompactDate(_:)` added — `dd. MMM` format via `de_CH` locale
+- ✅ CC4: `event.hero.empty.message` updated to "Bald wieder" in Base.lproj + de.lproj
+- ✅ CC5: 5 new unit tests in `PublicViewModelTests.swift` covering all `isTBDEvent` branches
+
 ### File List
 
 **Created:**
@@ -439,3 +454,11 @@ N/A - No blocking issues encountered
 - _bmad-output/implementation-artifacts/sprint-status.yaml (modified - story status set to "review")
 
 **Note:** Untracked file `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/AbstractDetailViewTests.swift` found in git but belongs to Story W1.3, not W1.1.
+
+**Course Correction (2026-02-20) — Modified:**
+- apps/BATbern-watch/BATbern-watch Watch App/ViewModels/PublicViewModel.swift (added `isTBDEvent`)
+- apps/BATbern-watch/BATbern-watch Watch App/Views/Public/EventHeroView.swift (added `isTBDEvent(for:)` helper + `tbdEventContent(event:)` branch)
+- apps/BATbern-watch/BATbern-watch Watch App/Utilities/SwissDateFormatter.swift (added `compactDateFormatter` + `formatCompactDate`)
+- apps/BATbern-watch/BATbern-watch Watch App/Base.lproj/Localizable.strings (updated `event.hero.empty.message`)
+- apps/BATbern-watch/BATbern-watch Watch App/de.lproj/Localizable.strings (updated `event.hero.empty.message`)
+- apps/BATbern-watch/BATbern-watch Watch AppTests/ViewModels/PublicViewModelTests.swift (added 5 `isTBDEvent` tests)
