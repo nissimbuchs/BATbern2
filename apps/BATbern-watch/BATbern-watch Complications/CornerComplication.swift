@@ -37,8 +37,8 @@ struct CornerView: View {
     var body: some View {
         switch entry.context {
         case .noEvent, .eventComplete:
-            // No event / event done — show BATbern logo
-            Image("BATbernLogo")
+            // No event / event done — show BATbern arrows (compact, fits corner slot)
+            Image("BATbernArrows")
                 .resizable()
                 .renderingMode(.template)
                 .aspectRatio(contentMode: .fit)
