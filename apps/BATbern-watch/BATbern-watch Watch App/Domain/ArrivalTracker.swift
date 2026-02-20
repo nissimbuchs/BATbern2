@@ -213,15 +213,16 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
             arrivedAt: message.arrivedAt
         )
 
-        // Use server-authoritative counts (FR39: real-time across all watches)
-        arrivedCount = message.arrivedCount
-        totalCount = message.totalCount
-
         do {
             try modelContext.save()
         } catch {
             logger.warning("Failed to persist arrival update: \(error.localizedDescription)")
         }
+
+        // Recompute counts locally (excludes moderators) rather than using server totals.
+        // The server's totalCount includes moderator-role speakers; the view filters them out.
+        // Individual arrived flags are still server-synced via updateSpeakerArrival above (FR39).
+        recomputeCounter()
     }
 
     // MARK: - Private: REST Fallback
@@ -267,15 +268,14 @@ final class ArrivalTracker: ArrivalTrackerProtocol {
 
     private func recomputeCounter() {
         // CachedSpeaker is stored per-session, so the same speaker can appear multiple times.
-        // Deduplicate by username to get the real count. Server-authoritative counts from
-        // SpeakerArrivalMessage ALWAYS override local counts (see processArrivalMessage).
-        // recomputeCounter() is only used for the optimistic local update.
+        // Deduplicate by username to get the real count.
+        // Excludes moderator-role speakers — they are organisers (not tracked for arrival).
         let descriptor = FetchDescriptor<CachedSpeaker>()
         guard let allSpeakers = try? modelContext.fetch(descriptor) else { return }
 
         var allUsernames = Set<String>()
         var arrivedUsernames = Set<String>()
-        for speaker in allSpeakers {
+        for speaker in allSpeakers where speaker.speakerRole != .moderator {
             allUsernames.insert(speaker.username)
             if speaker.arrived { arrivedUsernames.insert(speaker.username) }
         }
