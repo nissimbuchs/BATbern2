@@ -12,6 +12,7 @@ import SwiftData
 
 struct EventHeroView: View {
     @Environment(EventDataController.self) private var eventDataController
+    @State private var spinnerScale: CGFloat = 1.0
 
     var body: some View {
         Group {
@@ -30,6 +31,23 @@ struct EventHeroView: View {
         .background(Color.black)
     }
 
+    // MARK: - Tap-to-Refresh
+
+    /// Grow → spring-shrink animation, then force a backend sync.
+    /// Ignored if a sync is already in progress.
+    private func triggerRefresh() {
+        guard !eventDataController.isLoading else { return }
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.45)) {
+            spinnerScale = 1.45
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(180))
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+                spinnerScale = 1.0
+            }
+            await eventDataController.forceSync()
+        }
+    }
 
     // MARK: - Event Hero Content
 
@@ -72,8 +90,10 @@ struct EventHeroView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // BATbern animated spinner (larger for hero visibility)
-                BATbernSpinnerView(size: 45, speed: .slow)
+                // BATbern animated spinner — tap to force-refresh, speeds up while loading
+                BATbernSpinnerView(size: 45, speed: eventDataController.isLoading ? .fast : .slow)
+                    .scaleEffect(spinnerScale)
+                    .onTapGesture { triggerRefresh() }
                     .padding(.bottom, 8)
 
                 // Event title (large, centered, white, wrapped) - flexible space
@@ -120,7 +140,9 @@ struct EventHeroView: View {
 
     private var emptyStateContent: some View {
         VStack(spacing: 12) {
-            BATbernSpinnerView(size: 32, speed: .slow)
+            BATbernSpinnerView(size: 32, speed: eventDataController.isLoading ? .fast : .slow)
+                .scaleEffect(spinnerScale)
+                .onTapGesture { triggerRefresh() }
 
             Text(NSLocalizedString("event.hero.empty.title", comment: "App title"))
                 .font(.system(size: 14, design: .rounded))
