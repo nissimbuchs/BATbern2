@@ -200,7 +200,12 @@ public class SessionTimingService {
     public int autoAssignTimings(Event event, String changedBy) {
         log.info("Auto-assigning sessions for event: {}", event.getEventCode());
 
-        List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId());
+        // Exclude structural sessions (moderation, break, lunch) — they are managed by
+        // StructuralSessionService and must not be assigned to SPEAKER_SLOT positions.
+        List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId())
+                .stream()
+                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .toList();
         if (unassignedSessions.isEmpty()) {
             log.info("No unassigned sessions to auto-assign");
             return 0;
