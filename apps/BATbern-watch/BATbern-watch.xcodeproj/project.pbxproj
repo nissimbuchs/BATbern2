@@ -206,6 +206,25 @@
 			productReference = D512F4122F450C4700A7A638 /* BATbern-watch ComplicationsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D5FFD10A2F41E343003334DE /* BATbern-watch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D5FFD1382F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch" */;
+			buildPhases = (
+				D5FFD1092F41E343003334DE /* Resources */,
+				D5FFD1372F41E344003334DE /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D5FFD1142F41E343003334DE /* PBXTargetDependency */,
+			);
+			name = "BATbern-watch";
+			packageProductDependencies = (
+			);
+			productName = "BATbern-watch";
+			productReference = D5FFD10B2F41E343003334DE /* BATbern-watch.app */;
+			productType = "com.apple.product-type.application.watchapp2-container";
+		};
 		D5FFD1102F41E343003334DE /* BATbern-watch Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D5FFD1342F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch Watch App" */;
@@ -252,25 +271,6 @@
 			productName = "BATbern-watch Watch AppTests";
 			productReference = D5FFD1202F41E344003334DE /* BATbern-watch Watch AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		D5FFD10A2F41E343003334DE /* BATbern-watch */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D5FFD1382F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch" */;
-			buildPhases = (
-				D5FFD1092F41E343003334DE /* Resources */,
-				D5FFD1372F41E344003334DE /* Embed Watch Content */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				D5FFD1142F41E343003334DE /* PBXTargetDependency */,
-			);
-			name = "BATbern-watch";
-			packageProductDependencies = (
-			);
-			productName = "BATbern-watch";
-			productReference = D5FFD10B2F41E343003334DE /* BATbern-watch.app */;
-			productType = "com.apple.product-type.application.watchapp2-container";
 		};
 /* End PBXNativeTarget section */
 
@@ -330,6 +330,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D5FFD1092F41E343003334DE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D5FFD10F2F41E343003334DE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -338,13 +345,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D5FFD11E2F41E344003334DE /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D5FFD1092F41E343003334DE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -654,6 +654,41 @@
 			};
 			name = Release;
 		};
+		D5FFD1392F41E344003334DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 8NAQ32M9HE;
+				INFOPLIST_KEY_CFBundleDisplayName = "BATbern-watch";
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "BATbern.BATbern-watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		D5FFD13A2F41E344003334DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = 8NAQ32M9HE;
+				INFOPLIST_KEY_CFBundleDisplayName = "BATbern-watch";
+				MARKETING_VERSION = 2.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "BATbern.BATbern-watch";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		D5FFD13C2F41E344003334DE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -703,41 +738,6 @@
 			};
 			name = Release;
 		};
-		D5FFD1392F41E344003334DE /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = 8NAQ32M9HE;
-				INFOPLIST_KEY_CFBundleDisplayName = "BATbern-watch";
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "BATbern.BATbern-watch";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		D5FFD13A2F41E344003334DE /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = 8NAQ32M9HE;
-				INFOPLIST_KEY_CFBundleDisplayName = "BATbern-watch";
-				MARKETING_VERSION = 2.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "BATbern.BATbern-watch";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -768,20 +768,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D5FFD13B2F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch Watch AppTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D5FFD13C2F41E344003334DE /* Debug */,
-				D5FFD13D2F41E344003334DE /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		D5FFD1382F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D5FFD1392F41E344003334DE /* Debug */,
 				D5FFD13A2F41E344003334DE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D5FFD13B2F41E344003334DE /* Build configuration list for PBXNativeTarget "BATbern-watch Watch AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5FFD13C2F41E344003334DE /* Debug */,
+				D5FFD13D2F41E344003334DE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
