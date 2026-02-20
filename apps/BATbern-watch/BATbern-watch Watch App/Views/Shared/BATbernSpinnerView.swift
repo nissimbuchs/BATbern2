@@ -2,15 +2,44 @@
 //  BATbernSpinnerView.swift
 //  BATbern-watch Watch App
 //
-//  Custom loading spinner using the BATbern logo — two arrows counter-rotating
-//  at different speeds, matching the web-frontend BATbernLoader component.
+//  Custom loading spinner using the BATbern logo — two arrows spinning together
+//  in a rhythmic pause → spin → pause cycle, matching the web-frontend BATbernLoader.
 //
 //  Arrow paths converted from the SVG in web-frontend/src/components/shared/BATbernLoader.tsx.
 //  ViewBox: "0 -1 100 100" — all coordinates are in that 100×100 space.
-//  Animation speeds match the web: arrow1 = 1.0s/rev, arrow2 = 2.4s/rev.
+//
+//  Cycle: pause for dur1 (logo position) → spin for dur2 = 2×dur1 → repeat.
+//  Arrow 1 (light blue): 2 full rotations (720°) per spin phase.
+//  Arrow 2 (dark blue):  1 full rotation  (360°) per spin phase.
+//  Both arrows ease-in-out during the spin and return to logo position on each pause.
 //
 
 import SwiftUI
+
+// MARK: - Speed
+
+extension BATbernSpinnerView {
+    enum Speed {
+        case slow    // pauseDur = 1.6s, spinDur = 3.2s, cycle = 4.8s
+        case normal  // pauseDur = 1.0s, spinDur = 2.0s, cycle = 3.0s
+        case fast    // pauseDur = 0.6s, spinDur = 1.2s, cycle = 1.8s
+
+        /// Length of the still pause (arrows at logo position).
+        var pauseDur: Double {
+            switch self {
+            case .slow:   1.6
+            case .normal: 1.0
+            case .fast:   0.6
+            }
+        }
+
+        /// Length of the spin phase — exactly 2 × pauseDur.
+        var spinDur: Double { pauseDur * 2 }
+
+        /// Full cycle duration: pause + spin = 3 × pauseDur.
+        var cycleDur: Double { pauseDur * 3 }
+    }
+}
 
 // MARK: - Public View
 
@@ -18,18 +47,31 @@ import SwiftUI
 /// Defaults to 44pt — override with `.frame` or the `size` parameter.
 struct BATbernSpinnerView: View {
     let size: CGFloat
+    let speed: Speed
 
-    init(size: CGFloat = 44) {
+    init(size: CGFloat = 44, speed: Speed = .normal) {
         self.size = size
+        self.speed = speed
     }
 
     var body: some View {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
-            // Arrow 1: 1.0s/revolution  (lighter blue #3498DB)
-            let a1 = t.truncatingRemainder(dividingBy: 1.0) / 1.0 * 360
-            // Arrow 2: 2.4s/revolution  (darker blue #1a6fa8)
-            let a2 = t.truncatingRemainder(dividingBy: 2.4) / 2.4 * 360
+
+            // Position within the current cycle (0 …cycleDur).
+            let cyclePos = t.truncatingRemainder(dividingBy: speed.cycleDur)
+
+            // Elapsed time inside the spin phase (0 during the pause, then 0…spinDur).
+            let spinElapsed = max(0.0, cyclePos - speed.pauseDur)
+
+            // Normalised spin progress 0…1 with ease-in-out matching the CSS animation.
+            let raw = min(spinElapsed / speed.spinDur, 1.0)
+            let eased = raw < 0.5 ? 2 * raw * raw : -1 + (4 - 2 * raw) * raw
+
+            // Arrow 1 (light blue #3498DB): 2 full rotations per spin phase.
+            let a1 = eased * 720.0
+            // Arrow 2 (dark blue #1a6fa8): 1 full rotation per spin phase.
+            let a2 = eased * 360.0
 
             ZStack {
                 BATbernArrow1Shape()
@@ -118,9 +160,10 @@ private struct BATbernArrow2Shape: Shape {
 
 #Preview {
     VStack(spacing: 20) {
-        BATbernSpinnerView(size: 60)
-        BATbernSpinnerView(size: 44)
-        BATbernSpinnerView(size: 28)
+        BATbernSpinnerView(size: 60, speed: .slow)
+        BATbernSpinnerView(size: 60, speed: .normal)
+        BATbernSpinnerView(size: 60, speed: .fast)
+        BATbernSpinnerView(size: 28, speed: .normal)
     }
     .padding()
 }
