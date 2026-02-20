@@ -6,6 +6,7 @@ import ch.batbern.events.domain.SessionTimingHistory;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import ch.batbern.shared.events.SessionTimingAssignedEvent;
@@ -18,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,11 +42,14 @@ import java.util.UUID;
 @Transactional
 public class SessionTimingService {
 
+    private static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch");
+
     private final SessionRepository sessionRepository;
     private final SessionTimingHistoryRepository sessionTimingHistoryRepository;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
     private final ch.batbern.events.service.SpeakerWorkflowService speakerWorkflowService;
     private final EventRepository eventRepository;
+    private final EventTypeRepository eventTypeRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
@@ -180,19 +187,20 @@ public class SessionTimingService {
     }
 
     /**
-     * Auto-assign all unassigned sessions to available time slots sequentially
-     * AC: Auto Assign button functionality
+     * Auto-assign all unassigned sessions to available time slots.
      *
-     * @param event Event entity with type and date information
+     * When structural sessions (moderation, break, lunch) exist, fills the time gaps
+     * between them in order. Falls back to sequential assignment from typicalStartTime
+     * when no structural sessions are present.
+     *
+     * @param event     Event entity
      * @param changedBy Username of organizer performing the auto-assignment
      * @return Number of sessions assigned
      */
     public int autoAssignTimings(Event event, String changedBy) {
         log.info("Auto-assigning sessions for event: {}", event.getEventCode());
 
-        // Get all unassigned sessions
         List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId());
-
         if (unassignedSessions.isEmpty()) {
             log.info("No unassigned sessions to auto-assign");
             return 0;
@@ -200,75 +208,25 @@ public class SessionTimingService {
 
         log.info("Found {} unassigned sessions to assign", unassignedSessions.size());
 
-        // Get event type to determine slot configuration
-        String eventTypeStr = event.getEventType() != null ? event.getEventType().name() : "FULL_DAY";
-        int slotDurationMinutes = getSlotDuration(eventTypeStr);
-        String startTimeStr = getStartTime(eventTypeStr);
+        int slotDurationMinutes = resolveSlotDuration(event);
+        List<Instant> availableSlots = computeAvailableSlots(event, slotDurationMinutes, unassignedSessions.size());
 
-        // Parse event date and start time to create first slot
-        Instant eventDate = event.getDate();
-        String[] timeParts = startTimeStr.split(":");
-        int startHour = Integer.parseInt(timeParts[0]);
-        int startMinute = Integer.parseInt(timeParts[1]);
-
-        // Create base time at event date + start hour/minute (local time)
-        Instant eventStartTime = eventDate
-                .atZone(ZoneId.systemDefault())
-                .withHour(startHour)
-                .withMinute(startMinute)
-                .withSecond(0)
-                .withNano(0)
-                .toInstant();
-
-        // Find first available slot by checking existing assigned sessions
-        List<Session> assignedSessions = sessionRepository.findByEventId(event.getId()).stream()
-                .filter(s -> s.getStartTime() != null)
-                .sorted((a, b) -> a.getStartTime().compareTo(b.getStartTime()))
-                .toList();
-
-        // Start from event start time and find first free slot
-        Instant currentSlotStart = eventStartTime;
-
-        // Assign each session sequentially to next available slot
         int assignedCount = 0;
+        int slotIndex = 0;
         for (Session session : unassignedSessions) {
+            if (slotIndex >= availableSlots.size()) {
+                log.warn("No more available slots — {} sessions remain unassigned",
+                        unassignedSessions.size() - assignedCount);
+                break;
+            }
+            Instant slotStart = availableSlots.get(slotIndex++);
+            Instant slotEnd = slotStart.plus(slotDurationMinutes, ChronoUnit.MINUTES);
             try {
-                // Find next available slot that doesn't conflict with assigned sessions
-                Instant slotEnd = currentSlotStart.plus(slotDurationMinutes, java.time.temporal.ChronoUnit.MINUTES);
-
-                // Check if this slot overlaps with any assigned session
-                boolean hasConflict = true;
-                while (hasConflict) {
-                    final Instant checkStart = currentSlotStart;
-                    final Instant checkEnd = slotEnd;
-
-                    hasConflict = assignedSessions.stream()
-                            .anyMatch(s -> s.getStartTime().isBefore(checkEnd) && s.getEndTime().isAfter(checkStart));
-
-                    if (hasConflict) {
-                        // Move to next slot
-                        currentSlotStart = slotEnd;
-                        slotEnd = currentSlotStart.plus(slotDurationMinutes, java.time.temporal.ChronoUnit.MINUTES);
-                    }
-                }
-
-                assignTiming(
-                        session.getSessionSlug(),
-                        currentSlotStart,
-                        slotEnd,
-                        "Main Hall",  // Default room
-                        "preference_matching",  // Algorithm-based auto-assignment
-                        changedBy
-                );
-
+                assignTiming(session.getSessionSlug(), slotStart, slotEnd,
+                        "Main Hall", "preference_matching", changedBy);
                 assignedCount++;
-
-                // Move to next slot
-                currentSlotStart = slotEnd;
-
             } catch (Exception e) {
                 log.error("Failed to auto-assign session: {}", session.getSessionSlug(), e);
-                // Continue with next session even if one fails
             }
         }
 
@@ -277,27 +235,92 @@ public class SessionTimingService {
     }
 
     /**
-     * Get slot duration for event type (in minutes)
+     * Read slot duration from EventTypeConfiguration; default 45 min.
      */
-    private int getSlotDuration(String eventType) {
-        return switch (eventType) {
-            case "EVENING" -> 45;
-            case "HALF_DAY" -> 45;
-            case "FULL_DAY" -> 45;
-            default -> 45;
-        };
+    private int resolveSlotDuration(Event event) {
+        if (event.getEventType() == null) {
+            return 45;
+        }
+        return eventTypeRepository.findByType(event.getEventType())
+                .map(c -> c.getSlotDuration() != null ? c.getSlotDuration() : 45)
+                .orElse(45);
     }
 
     /**
-     * Get start time for event type (HH:MM format)
+     * Build an ordered list of free slot start times.
+     *
+     * When structural sessions exist, the available slots are the gaps between
+     * consecutive structural blocks (using their actual endTime → next startTime).
+     * Otherwise falls back to sequential slots from typicalStartTime.
      */
-    private String getStartTime(String eventType) {
-        return switch (eventType) {
-            case "EVENING" -> "16:00";
-            case "HALF_DAY" -> "13:00";
-            case "FULL_DAY" -> "09:00";
-            default -> "09:00";
-        };
+    private List<Instant> computeAvailableSlots(Event event, int slotDurationMinutes, int needed) {
+        // Structural sessions sorted chronologically
+        List<Session> structural = sessionRepository.findByEventIdAndSessionTypeIn(
+                        event.getId(), STRUCTURAL_TYPES).stream()
+                .filter(s -> s.getStartTime() != null && s.getEndTime() != null)
+                .sorted(Comparator.comparing(Session::getStartTime))
+                .toList();
+
+        // Already-assigned non-structural sessions (to exclude occupied slots)
+        List<Session> occupied = sessionRepository.findByEventId(event.getId()).stream()
+                .filter(s -> s.getStartTime() != null && !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .toList();
+
+        List<Instant> slots = new ArrayList<>();
+
+        if (!structural.isEmpty()) {
+            // Fill each gap between consecutive structural sessions
+            for (int i = 0; i < structural.size() - 1; i++) {
+                Instant gapStart = structural.get(i).getEndTime();
+                Instant gapEnd = structural.get(i + 1).getStartTime();
+                Instant cursor = gapStart;
+                while (cursor.isBefore(gapEnd)) {
+                    if (isSlotFree(cursor, slotDurationMinutes, occupied)) {
+                        slots.add(cursor);
+                    }
+                    cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
+                }
+            }
+        } else {
+            // No structural sessions — sequential from event type start time
+            Instant cursor = resolveEventStartInstant(event);
+            for (int i = 0; i < needed; i++) {
+                while (!isSlotFree(cursor, slotDurationMinutes, occupied)) {
+                    cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
+                }
+                slots.add(cursor);
+                cursor = cursor.plus(slotDurationMinutes, ChronoUnit.MINUTES);
+            }
+        }
+
+        return slots;
+    }
+
+    private boolean isSlotFree(Instant start, int durationMinutes, List<Session> occupied) {
+        Instant end = start.plus(durationMinutes, ChronoUnit.MINUTES);
+        return occupied.stream().noneMatch(s ->
+                s.getStartTime().isBefore(end) && s.getEndTime().isAfter(start));
+    }
+
+    private Instant resolveEventStartInstant(Event event) {
+        String startTimeStr;
+        if (event.getEventType() == null) {
+            startTimeStr = "09:00";
+        } else {
+            startTimeStr = switch (event.getEventType().name()) {
+                case "EVENING" -> "16:00";
+                case "HALF_DAY" -> "13:00";
+                default -> "09:00";
+            };
+        }
+        String[] parts = startTimeStr.split(":");
+        return event.getDate()
+                .atZone(ZoneId.of("Europe/Zurich"))
+                .withHour(Integer.parseInt(parts[0]))
+                .withMinute(Integer.parseInt(parts[1]))
+                .withSecond(0)
+                .withNano(0)
+                .toInstant();
     }
 
     /**

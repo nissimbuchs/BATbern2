@@ -1573,6 +1573,68 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/sessions/structural:
+    post:
+      tags:
+        - Sessions
+        - Organizer
+      summary: Generate structural sessions for an event
+      description: |
+        Generates structural sessions (moderation start, breaks, lunch, moderation end)
+        with computed start/end times based on the event type configuration.
+
+        The organizer is automatically assigned as MODERATOR on both moderation sessions.
+
+        **Requires ORGANIZER role.**
+
+        If `overwrite=false` (default) and structural sessions already exist, returns 409.
+        If `overwrite=true`, deletes existing structural sessions and recreates them.
+      operationId: generateStructuralSessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+      responses:
+        '201':
+          description: Structural sessions created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '409':
+          description: Structural sessions already exist (use overwrite=true to replace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /events/{eventCode}/sessions/batch-import:
     post:
       tags:
@@ -4042,7 +4104,7 @@ components:
           type: string
           nullable: true
           description: Session type - null for placeholder sessions, assigned during agenda planning
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
           example: keynote
         startTime:
           type: string
@@ -4563,7 +4625,7 @@ components:
           type: string
           nullable: true
           description: Session type - omit for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -4604,7 +4666,7 @@ components:
           type: string
           nullable: true
           description: Session type - can be null for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -4956,6 +5018,30 @@ components:
           format: time
           description: Typical end time for this event type
           example: "17:00"
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          default: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          default: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          default: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          default: 60
 
     UpdateEventSlotConfigurationRequest:
       type: object
@@ -5017,6 +5103,41 @@ components:
           description: Typical end time for this event type
           example: "17:00"
           nullable: true
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          nullable: true
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          nullable: true
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          nullable: true
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          nullable: true
+
+    GenerateStructuralSessionsRequest:
+      type: object
+      description: Request to generate structural sessions (moderation, break, lunch) for an event.
+      properties:
+        overwrite:
+          type: boolean
+          default: false
+          description: |
+            If false (default), returns 409 if structural sessions already exist.
+            If true, deletes existing structural sessions and recreates them.
 
     PaginationMetadata:
       type: object

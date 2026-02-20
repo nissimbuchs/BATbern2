@@ -614,6 +614,34 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/sessions/structural': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate structural sessions for an event
+     * @description Generates structural sessions (moderation start, breaks, lunch, moderation end)
+     *     with computed start/end times based on the event type configuration.
+     *
+     *     The organizer is automatically assigned as MODERATOR on both moderation sessions.
+     *
+     *     **Requires ORGANIZER role.**
+     *
+     *     If `overwrite=false` (default) and structural sessions already exist, returns 409.
+     *     If `overwrite=true`, deletes existing structural sessions and recreates them.
+     */
+    post: operations['generateStructuralSessions'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions/batch-import': {
     parameters: {
       query?: never;
@@ -1793,6 +1821,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2182,6 +2211,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2220,6 +2250,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2490,6 +2521,30 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime: string;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationStartDuration: number;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationEndDuration: number;
+      /**
+       * @description Duration of each break session, in minutes
+       * @default 20
+       * @example 20
+       */
+      breakDuration: number;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @default 60
+       * @example 60
+       */
+      lunchDuration: number;
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).
@@ -2543,6 +2598,35 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime?: string | null;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @example 5
+       */
+      moderationStartDuration?: number | null;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @example 5
+       */
+      moderationEndDuration?: number | null;
+      /**
+       * @description Duration of each break session, in minutes
+       * @example 20
+       */
+      breakDuration?: number | null;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @example 60
+       */
+      lunchDuration?: number | null;
+    };
+    /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
+    GenerateStructuralSessionsRequest: {
+      /**
+       * @description If false (default), returns 409 if structural sessions already exist.
+       *     If true, deletes existing structural sessions and recreates them.
+       * @default false
+       */
+      overwrite: boolean;
     };
     /** @description Pagination metadata from shared-kernel */
     PaginationMetadata: Record<string, never>;
@@ -4274,6 +4358,54 @@ export interface operations {
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  generateStructuralSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['GenerateStructuralSessionsRequest'];
+      };
+    };
+    responses: {
+      /** @description Structural sessions created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'][];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Structural sessions already exist (use overwrite=true to replace) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   batchImportSessions: {

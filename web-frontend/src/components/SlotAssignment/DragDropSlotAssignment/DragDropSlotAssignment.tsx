@@ -24,10 +24,15 @@ import {
   Skeleton,
   Link,
 } from '@mui/material';
-import { AutoAwesome, ClearAll } from '@mui/icons-material';
+import { AutoAwesome, ClearAll, CalendarMonth } from '@mui/icons-material';
+import CoffeeIcon from '@mui/icons-material/Coffee';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import MicIcon from '@mui/icons-material/Mic';
+import { AxiosError } from 'axios';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useSlotAssignment } from '@/hooks/useSlotAssignment/useSlotAssignment';
+import { slotAssignmentService } from '@/services/slotAssignmentService/slotAssignmentService';
 import { useEvent } from '@/hooks/useEvents';
 import { useEventType } from '@/hooks/useEventTypes';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
@@ -41,6 +46,33 @@ export interface DragDropSlotAssignmentProps {
 
 // Story 5.7: Single conference room (Main Hall)
 const ROOMS = ['Main Hall'];
+
+const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch'] as const;
+type StructuralType = (typeof STRUCTURAL_TYPES)[number];
+
+const STRUCTURAL_STYLES: Record<
+  StructuralType,
+  { bgcolor: string; borderColor: string; icon: React.ReactNode; labelKey: string }
+> = {
+  moderation: {
+    bgcolor: 'grey.100',
+    borderColor: 'grey.400',
+    icon: <MicIcon fontSize="small" sx={{ color: 'text.secondary' }} />,
+    labelKey: 'slotAssignment.structuralSessions.moderation',
+  },
+  break: {
+    bgcolor: 'warning.50',
+    borderColor: 'warning.main',
+    icon: <CoffeeIcon fontSize="small" sx={{ color: 'warning.main' }} />,
+    labelKey: 'slotAssignment.structuralSessions.break',
+  },
+  lunch: {
+    bgcolor: 'success.50',
+    borderColor: 'success.main',
+    icon: <RestaurantIcon fontSize="small" sx={{ color: 'success.main' }} />,
+    labelKey: 'slotAssignment.structuralSessions.lunch',
+  },
+};
 
 export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
@@ -61,35 +93,45 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
   // Fetch event to get eventType and all sessions (including assigned)
   const { data: event, isLoading: eventLoading } = useEvent(eventCode, ['sessions']);
 
-  console.log('[DragDropSlotAssignment] Event data:', {
-    eventCode,
-    eventType: event?.eventType,
-    sessionsCount: event?.sessions?.length,
-  });
-
   // Fetch event type configuration to get slot definitions
   const { data: eventTypeConfig, isLoading: eventTypeLoading } = useEventType(
     event?.eventType || 'FULL_DAY'
   );
 
-  console.log('[DragDropSlotAssignment] Event type config:', eventTypeConfig);
-
   // State must be declared before useMemo that depends on it
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
   const [autoAssignModalOpen, setAutoAssignModalOpen] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
+  const [generateStructuralOpen, setGenerateStructuralOpen] = useState(false);
+  const [generateStructuralError, setGenerateStructuralError] = useState<string | null>(null);
+  const [structuralAlreadyExist, setStructuralAlreadyExist] = useState(false);
   const [draggedSession, setDraggedSession] = useState<Session | null>(null);
   const [hoveredSlot, setHoveredSlot] = useState<{ time: string; room: string } | null>(null);
   const [speakerFilter, setSpeakerFilter] = useState<'all' | 'assigned' | 'unassigned'>(
     'unassigned'
   );
 
-  // Extract assigned sessions from event data
-  const assignedSessions = useMemo(() => {
+  // Extract all timed sessions from event data
+  const allTimedSessions = useMemo(() => {
     if (!event?.sessions) return [];
-    // Filter sessions that have timing assigned (startTime and endTime are set)
-    return event.sessions.filter((session) => session.startTime && session.endTime && session.room);
+    return event.sessions.filter((session) => session.startTime && session.endTime);
   }, [event?.sessions]);
+
+  // Structural sessions (moderation, break, lunch) — fixed blocks, non-droppable
+  const structuralSessions = useMemo(
+    () =>
+      allTimedSessions.filter((s) => STRUCTURAL_TYPES.includes(s.sessionType as StructuralType)),
+    [allTimedSessions]
+  );
+
+  // Speaker sessions assigned to a room (non-structural, droppable)
+  const assignedSessions = useMemo(
+    () =>
+      allTimedSessions.filter(
+        (s) => s.room && !STRUCTURAL_TYPES.includes(s.sessionType as StructuralType)
+      ),
+    [allTimedSessions]
+  );
 
   // Filter sessions for speaker pool based on active filter
   const filteredSessions = useMemo(() => {
@@ -107,51 +149,69 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
     }
   }, [speakerFilter, event?.sessions, assignedSessions, unassignedSessions]);
 
-  // Generate time slots dynamically from event type configuration PLUS assigned sessions
-  // TIME_SLOTS are in LOCAL time for display to the user
+  // Generate time slots dynamically.
+  // When structural sessions exist, derive droppable slot times from the GAPS between structural
+  // blocks (moderation end → next structural start), so droppable rows align exactly with the
+  // actual generated schedule rather than a misaligned typicalStartTime-based grid.
   const TIME_SLOTS = useMemo(() => {
-    console.log('[TIME_SLOTS] Building slots, eventTypeConfig:', eventTypeConfig);
-
+    const slotDurationMinutes = eventTypeConfig?.slotDuration || 45;
     const slots: string[] = [];
 
-    // First, add times from assigned sessions converted to LOCAL time (so they're visible in the grid)
-    if (assignedSessions.length > 0) {
-      assignedSessions.forEach((session) => {
-        if (session.startTime) {
-          const sessionStart = new Date(session.startTime);
-          // Use getHours/getMinutes (LOCAL time) for display
-          const sessionHours = sessionStart.getHours().toString().padStart(2, '0');
-          const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
-          const timeSlot = `${sessionHours}:${sessionMinutes}`;
-          if (!slots.includes(timeSlot)) {
-            slots.push(timeSlot);
-          }
+    const toTimeStr = (d: Date) =>
+      `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+
+    // Always include start times from already-assigned speaker sessions
+    assignedSessions.forEach((session) => {
+      if (session.startTime) {
+        const t = toTimeStr(new Date(session.startTime));
+        if (!slots.includes(t)) {
+          slots.push(t);
+        }
+      }
+    });
+
+    if (structuralSessions.length > 0) {
+      // Sort structural sessions chronologically
+      const sorted = [...structuralSessions]
+        .filter((s) => s.startTime && s.endTime)
+        .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
+
+      // Add each structural session's start time (these render as fixed blocks)
+      sorted.forEach((s) => {
+        const t = toTimeStr(new Date(s.startTime!));
+        if (!slots.includes(t)) {
+          slots.push(t);
         }
       });
-    }
 
-    // Then, add predefined slots from event type config (also in local time)
-    if (eventTypeConfig) {
+      // Fill droppable speaker-session slots in each gap between consecutive structural blocks
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const gapStart = new Date(sorted[i].endTime!); // end of current structural
+        const gapEnd = new Date(sorted[i + 1].startTime!); // start of next structural
+        const cursor = new Date(gapStart.getTime());
+        while (cursor.getTime() < gapEnd.getTime()) {
+          const t = toTimeStr(cursor);
+          if (!slots.includes(t)) {
+            slots.push(t);
+          }
+          cursor.setTime(cursor.getTime() + slotDurationMinutes * 60 * 1000);
+        }
+      }
+    } else if (eventTypeConfig) {
+      // No structural sessions yet — fall back to a simple grid from typicalStartTime
       const startTime = eventTypeConfig.typicalStartTime || '09:00';
       const endTime = eventTypeConfig.typicalEndTime || '17:00';
-      const slotDurationMinutes = eventTypeConfig.slotDuration || 45;
       const breakCount = eventTypeConfig.breakSlots || 0;
       const lunchCount = eventTypeConfig.lunchSlots || 0;
       const totalSlots = eventTypeConfig.maxSlots || 8;
 
-      // Parse start time and create local date
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const currentTime = new Date();
       currentTime.setHours(startHour, startMinute, 0, 0);
 
-      // Generate slots including session slots + breaks + lunch
       const totalSlotsWithBreaks = totalSlots + breakCount + lunchCount;
       for (let i = 0; i < totalSlotsWithBreaks; i++) {
-        const hours = currentTime.getHours().toString().padStart(2, '0');
-        const minutes = currentTime.getMinutes().toString().padStart(2, '0');
-        const timeSlot = `${hours}:${minutes}`;
-
-        // Only add if before end time and not already added from assigned sessions
+        const timeSlot = toTimeStr(currentTime);
         const [endHour, endMinute] = endTime.split(':').map(Number);
         if (
           (currentTime.getHours() < endHour ||
@@ -160,30 +220,20 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         ) {
           slots.push(timeSlot);
         }
-
-        // Move to next slot
-        currentTime.setMinutes(currentTime.getMinutes() + slotDurationMinutes);
+        currentTime.setTime(currentTime.getTime() + slotDurationMinutes * 60 * 1000);
       }
-    } else {
-      // Fallback to default slots if config not loaded and no assigned sessions
-      if (slots.length === 0) {
-        console.warn(
-          '[TIME_SLOTS] No eventTypeConfig and no assigned sessions, using fallback slots'
-        );
-        slots.push('09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00');
-      }
+    } else if (slots.length === 0) {
+      slots.push('09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00');
     }
 
-    // Sort slots chronologically
     slots.sort((a, b) => {
       const [aH, aM] = a.split(':').map(Number);
       const [bH, bM] = b.split(':').map(Number);
       return aH * 60 + aM - (bH * 60 + bM);
     });
 
-    console.log('[TIME_SLOTS generated (local time)]', slots);
     return slots;
-  }, [eventTypeConfig, assignedSessions]);
+  }, [eventTypeConfig, assignedSessions, structuralSessions]);
 
   // Get session assigned to a specific time slot and room
   const getSessionForSlot = (time: string, room: string): Session | undefined => {
@@ -202,17 +252,17 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
       const sessionMinutes = sessionStart.getMinutes().toString().padStart(2, '0');
       const sessionTime = `${sessionHours}:${sessionMinutes}`;
 
-      console.log('[getSessionForSlot]', {
-        sessionSlug: session.sessionSlug,
-        startTime: session.startTime,
-        parsedTimeLocal: sessionTime,
-        lookingFor: time,
-        match: sessionTime === time,
-        room: session.room,
-        matchingRoom: session.room === room,
-      });
-
       return sessionTime === time;
+    });
+  };
+
+  const getStructuralSessionForTime = (time: string): Session | undefined => {
+    return structuralSessions.find((session) => {
+      if (!session.startTime) return false;
+      const s = new Date(session.startTime);
+      const h = s.getHours().toString().padStart(2, '0');
+      const m = s.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}` === time;
     });
   };
 
@@ -238,6 +288,27 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         roomSetupNotes: 'Prefer standing desk and natural light',
       },
     };
+  };
+
+  const handleGenerateStructural = async (overwrite: boolean) => {
+    setGenerateStructuralError(null);
+    try {
+      await slotAssignmentService.generateStructuralSessions(eventCode, overwrite);
+      setGenerateStructuralOpen(false);
+      setStructuralAlreadyExist(false);
+      await queryClient.invalidateQueries({ queryKey: ['event', eventCode, ['sessions']] });
+      await queryClient.refetchQueries({
+        queryKey: ['event', eventCode, ['sessions']],
+        exact: true,
+      });
+    } catch (err) {
+      if (err instanceof AxiosError && err.response?.status === 409) {
+        setStructuralAlreadyExist(true);
+      } else {
+        const msg = err instanceof Error ? err.message : 'Failed to generate structural sessions';
+        setGenerateStructuralError(msg);
+      }
+    }
   };
 
   const handleDragStart = (session: Session) => (e: React.DragEvent) => {
@@ -422,11 +493,11 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                   <Grid container spacing={1} sx={{ mb: 1 }}>
                     <Grid size={2}>
                       <Typography variant="caption" fontWeight="bold">
-                        Time
+                        {t('slotAssignment.timeline.headerTime')}
                       </Typography>
                     </Grid>
                     {ROOMS.map((room) => (
-                      <Grid size={3.33} key={room}>
+                      <Grid size={10 / ROOMS.length} key={room}>
                         <Typography variant="caption" fontWeight="bold" noWrap>
                           {room}
                         </Typography>
@@ -435,82 +506,118 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
                   </Grid>
 
                   {/* Time Slot Rows */}
-                  {TIME_SLOTS.map((time) => (
-                    <Grid container spacing={1} key={time} sx={{ mb: 1 }}>
-                      <Grid size={2}>
-                        <Typography variant="body2">{time}</Typography>
-                      </Grid>
-                      {ROOMS.map((room) => {
-                        const slotId = `slot-${time}-${room.replace(/\s+/g, '-')}`;
-                        const isHovered = hoveredSlot?.time === time && hoveredSlot?.room === room;
-                        const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
-                        const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
-                        const assignedSession = getSessionForSlot(time, room);
+                  {TIME_SLOTS.map((time) => {
+                    const structuralSession = getStructuralSessionForTime(time);
+                    const structuralStyle = structuralSession
+                      ? STRUCTURAL_STYLES[structuralSession.sessionType as StructuralType]
+                      : null;
 
-                        return (
-                          <Grid size={3.33} key={room}>
+                    return (
+                      <Grid container spacing={1} key={time} sx={{ mb: 1 }}>
+                        <Grid size={2}>
+                          <Typography variant="body2">{time}</Typography>
+                        </Grid>
+
+                        {structuralSession && structuralStyle ? (
+                          /* Non-droppable structural block spanning all room columns */
+                          <Grid size={10}>
                             <Paper
-                              data-testid={slotId}
-                              data-slot-time={time}
-                              data-slot-room={room}
-                              draggable={!!assignedSession}
-                              onDragStart={
-                                assignedSession ? handleDragStart(assignedSession) : undefined
-                              }
-                              className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
-                              onDragOver={handleDragOver(time, room)}
-                              onDragLeave={handleDragLeave}
-                              onDrop={handleDrop(time, room)}
+                              data-testid={`structural-${time}`}
                               sx={{
                                 p: 1,
-                                minHeight: 60,
-                                border: 2,
-                                borderColor: isHovered
-                                  ? 'primary.main'
-                                  : assignedSession
-                                    ? 'success.main'
-                                    : 'divider',
-                                borderStyle: isHovered ? 'dashed' : 'solid',
-                                bgcolor: isHovered
-                                  ? 'action.hover'
-                                  : assignedSession
-                                    ? 'success.light'
-                                    : 'background.default',
-                                cursor: assignedSession ? 'grab' : 'pointer',
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                  bgcolor: assignedSession ? 'success.light' : 'action.hover',
-                                },
-                                '&:active': {
-                                  cursor: assignedSession ? 'grabbing' : 'pointer',
-                                },
+                                minHeight: 44,
+                                border: 1,
+                                borderColor: structuralStyle.borderColor,
+                                bgcolor: structuralStyle.bgcolor,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                cursor: 'default',
+                                userSelect: 'none',
                               }}
                             >
-                              {assignedSession ? (
-                                <Box>
-                                  <Typography variant="caption" fontWeight="bold" noWrap>
-                                    {assignedSession.title}
-                                  </Typography>
-                                  {assignedSession.speakers?.[0] && (
-                                    <Typography variant="caption" display="block" noWrap>
-                                      {assignedSession.speakers[0].firstName}{' '}
-                                      {assignedSession.speakers[0].lastName}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              ) : isHovered && matchPercent > 0 ? (
-                                <Typography variant="caption" color="primary">
-                                  {t('slotAssignment.timeline.matchPercent', {
-                                    percent: matchPercent,
-                                  })}
-                                </Typography>
-                              ) : null}
+                              {structuralStyle.icon}
+                              <Typography variant="caption" fontWeight="medium">
+                                {structuralSession.title || t(structuralStyle.labelKey)}
+                              </Typography>
                             </Paper>
                           </Grid>
-                        );
-                      })}
-                    </Grid>
-                  ))}
+                        ) : (
+                          /* Normal droppable room cells */
+                          ROOMS.map((room) => {
+                            const slotId = `slot-${time}-${room.replace(/\s+/g, '-')}`;
+                            const isHovered =
+                              hoveredSlot?.time === time && hoveredSlot?.room === room;
+                            const matchClass = isHovered ? getPreferenceMatchClass(time) : '';
+                            const matchPercent = isHovered ? getPreferenceMatchPercentage(time) : 0;
+                            const assignedSession = getSessionForSlot(time, room);
+
+                            return (
+                              <Grid size={10 / ROOMS.length} key={room}>
+                                <Paper
+                                  data-testid={slotId}
+                                  data-slot-time={time}
+                                  data-slot-room={room}
+                                  draggable={!!assignedSession}
+                                  onDragStart={
+                                    assignedSession ? handleDragStart(assignedSession) : undefined
+                                  }
+                                  className={`${isHovered ? 'drop-zone-active' : ''} ${matchClass}`}
+                                  onDragOver={handleDragOver(time, room)}
+                                  onDragLeave={handleDragLeave}
+                                  onDrop={handleDrop(time, room)}
+                                  sx={{
+                                    p: 1,
+                                    minHeight: 60,
+                                    border: 2,
+                                    borderColor: isHovered
+                                      ? 'primary.main'
+                                      : assignedSession
+                                        ? 'success.main'
+                                        : 'divider',
+                                    borderStyle: isHovered ? 'dashed' : 'solid',
+                                    bgcolor: isHovered
+                                      ? 'action.hover'
+                                      : assignedSession
+                                        ? 'success.light'
+                                        : 'background.default',
+                                    cursor: assignedSession ? 'grab' : 'pointer',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                      bgcolor: assignedSession ? 'success.light' : 'action.hover',
+                                    },
+                                    '&:active': {
+                                      cursor: assignedSession ? 'grabbing' : 'pointer',
+                                    },
+                                  }}
+                                >
+                                  {assignedSession ? (
+                                    <Box>
+                                      <Typography variant="caption" fontWeight="bold" noWrap>
+                                        {assignedSession.title}
+                                      </Typography>
+                                      {assignedSession.speakers?.[0] && (
+                                        <Typography variant="caption" display="block" noWrap>
+                                          {assignedSession.speakers[0].firstName}{' '}
+                                          {assignedSession.speakers[0].lastName}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  ) : isHovered && matchPercent > 0 ? (
+                                    <Typography variant="caption" color="primary">
+                                      {t('slotAssignment.timeline.matchPercent', {
+                                        percent: matchPercent,
+                                      })}
+                                    </Typography>
+                                  ) : null}
+                                </Paper>
+                              </Grid>
+                            );
+                          })
+                        )}
+                      </Grid>
+                    );
+                  })}
                 </Box>
               </Box>
             </Paper>
@@ -520,23 +627,38 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Grid size={{ xs: 12, md: 3 }}>
             <Paper data-testid="quick-actions-panel" sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>
-                Quick Actions
+                {t('slotAssignment.quickActions.title')}
               </Typography>
 
               {/* Session Summary */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {totalSessions} Total Sessions
+                  {t('slotAssignment.quickActions.total', { count: totalSessions })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {assignedCount} Assigned
+                  {t('slotAssignment.quickActions.assigned', { count: assignedCount })}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {unassignedSessions.length} Pending
+                  {t('slotAssignment.quickActions.pending', { count: unassignedSessions.length })}
                 </Typography>
               </Box>
 
               {/* Action Buttons */}
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<CalendarMonth />}
+                onClick={() => {
+                  setGenerateStructuralError(null);
+                  setStructuralAlreadyExist(false);
+                  setGenerateStructuralOpen(true);
+                }}
+                sx={{ mb: 2 }}
+                data-testid="generate-structural-button"
+              >
+                {t('slotAssignment.actions.generateStructure')}
+              </Button>
+
               <Button
                 fullWidth
                 variant="contained"
@@ -561,10 +683,10 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
               {allSessionsAssigned && (
                 <Alert severity="success" sx={{ mt: 3 }}>
                   <Typography variant="body2" gutterBottom>
-                    All timings assigned!
+                    {t('slotAssignment.quickActions.allAssigned')}
                   </Typography>
                   <Link href="#" underline="hover">
-                    Go to Publishing Tab
+                    {t('slotAssignment.quickActions.goToPublishing')}
                   </Link>
                 </Alert>
               )}
@@ -588,6 +710,62 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         onClose={clearConflict}
         onResolve={clearConflict}
       />
+
+      {/* Generate Structural Sessions Modal */}
+      <Dialog
+        open={generateStructuralOpen}
+        onClose={() => {
+          setGenerateStructuralOpen(false);
+          setStructuralAlreadyExist(false);
+          setGenerateStructuralError(null);
+        }}
+        data-testid="generate-structural-modal"
+      >
+        <DialogTitle>{t('slotAssignment.modals.generateStructure.title')}</DialogTitle>
+        <DialogContent>
+          {structuralAlreadyExist ? (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('slotAssignment.modals.generateStructure.alreadyExist')}
+            </Alert>
+          ) : (
+            <Typography>{t('slotAssignment.modals.generateStructure.message')}</Typography>
+          )}
+          {generateStructuralError && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {generateStructuralError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setGenerateStructuralOpen(false);
+              setStructuralAlreadyExist(false);
+              setGenerateStructuralError(null);
+            }}
+          >
+            {t('slotAssignment.actions.cancel')}
+          </Button>
+          {structuralAlreadyExist ? (
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={() => handleGenerateStructural(true)}
+              data-testid="generate-structural-overwrite-confirm"
+            >
+              {t('slotAssignment.modals.generateStructure.overwrite')}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={() => handleGenerateStructural(false)}
+              data-testid="generate-structural-confirm"
+            >
+              {t('slotAssignment.actions.confirm')}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
       {/* Auto-Assign Modal */}
       <Dialog
@@ -663,7 +841,8 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
         aria-atomic="true"
         sx={{ position: 'absolute', left: -10000, width: 1, height: 1, overflow: 'hidden' }}
       >
-        {assignedCount > 0 && `${assignedCount} sessions assigned successfully`}
+        {assignedCount > 0 &&
+          t('slotAssignment.quickActions.sessionsAssignedAnnouncement', { count: assignedCount })}
       </Box>
     </Box>
   );

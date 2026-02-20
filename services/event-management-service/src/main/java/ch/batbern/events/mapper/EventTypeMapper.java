@@ -42,7 +42,11 @@ public class EventTypeMapper {
                 .lunchSlots(entity.getLunchSlots())
                 .defaultCapacity(entity.getDefaultCapacity())
                 .typicalStartTime(formatTime(entity.getTypicalStartTime()))
-                .typicalEndTime(formatTime(entity.getTypicalEndTime()));
+                .typicalEndTime(formatTime(entity.getTypicalEndTime()))
+                .moderationStartDuration(entity.getModerationStartDuration())
+                .moderationEndDuration(entity.getModerationEndDuration())
+                .breakDuration(entity.getBreakDuration())
+                .lunchDuration(entity.getLunchDuration());
     }
 
     /**
@@ -61,6 +65,18 @@ public class EventTypeMapper {
         entity.setDefaultCapacity(request.getDefaultCapacity());
         entity.setTypicalStartTime(parseTime(request.getTypicalStartTime()));
         entity.setTypicalEndTime(parseTime(request.getTypicalEndTime()));
+        if (request.getModerationStartDuration() != null) {
+            entity.setModerationStartDuration(request.getModerationStartDuration());
+        }
+        if (request.getModerationEndDuration() != null) {
+            entity.setModerationEndDuration(request.getModerationEndDuration());
+        }
+        if (request.getBreakDuration() != null) {
+            entity.setBreakDuration(request.getBreakDuration());
+        }
+        if (request.getLunchDuration() != null) {
+            entity.setLunchDuration(request.getLunchDuration());
+        }
     }
 
     /**
