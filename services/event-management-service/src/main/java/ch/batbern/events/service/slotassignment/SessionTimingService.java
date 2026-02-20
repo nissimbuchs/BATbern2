@@ -200,12 +200,7 @@ public class SessionTimingService {
     public int autoAssignTimings(Event event, String changedBy) {
         log.info("Auto-assigning sessions for event: {}", event.getEventCode());
 
-        // Exclude structural sessions (moderation, break, lunch) — they are managed by
-        // StructuralSessionService and must not be assigned to SPEAKER_SLOT positions.
-        List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId())
-                .stream()
-                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
-                .toList();
+        List<Session> unassignedSessions = getUnassignedSessionsByEventId(event.getId());
         if (unassignedSessions.isEmpty()) {
             log.info("No unassigned sessions to auto-assign");
             return 0;
@@ -260,7 +255,9 @@ public class SessionTimingService {
     @Transactional(readOnly = true)
     public List<Session> getUnassignedSessions(String eventCode) {
         log.info("Fetching unassigned sessions for event: {}", eventCode);
-        return sessionRepository.findByEventCodeAndStartTimeIsNull(eventCode);
+        return sessionRepository.findByEventCodeAndStartTimeIsNull(eventCode).stream()
+                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .toList();
     }
 
     /**
@@ -269,7 +266,9 @@ public class SessionTimingService {
     @Transactional(readOnly = true)
     public List<Session> getUnassignedSessionsByEventId(UUID eventId) {
         log.info("Fetching unassigned sessions for event ID: {}", eventId);
-        return sessionRepository.findByEventIdAndStartTimeIsNull(eventId);
+        return sessionRepository.findByEventIdAndStartTimeIsNull(eventId).stream()
+                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .toList();
     }
 
     /**
