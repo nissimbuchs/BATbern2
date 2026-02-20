@@ -12,6 +12,7 @@ import SwiftData
 
 struct EventHeroView: View {
     @Environment(EventDataController.self) private var eventDataController
+    @State private var spinnerScale: CGFloat = 1.0
 
     var body: some View {
         Group {
@@ -20,8 +21,7 @@ struct EventHeroView: View {
                 eventHeroContent(event: event)
             } else if eventDataController.isLoading {
                 // Loading state
-                ProgressView()
-                    .tint(.white)
+                BATbernSpinnerView(size: 44, speed: .normal)
             } else {
                 // Empty state
                 emptyStateContent
@@ -29,6 +29,27 @@ struct EventHeroView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+    }
+
+    // MARK: - Tap-to-Refresh
+
+    /// Grow → spring-shrink animation, then force a backend sync.
+    /// Ignored if a sync is already in progress.
+    /// In offline mode the spring animation still fires (tap feedback) but forceSync is
+    /// skipped — the connectivity monitor auto-syncs when the connection is restored.
+    private func triggerRefresh() {
+        guard !eventDataController.isLoading else { return }
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.45)) {
+            spinnerScale = 1.45
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(180))
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
+                spinnerScale = 1.0
+            }
+            guard !eventDataController.isOffline else { return }
+            await eventDataController.forceSync()
+        }
     }
 
     // MARK: - Event Hero Content
@@ -72,8 +93,10 @@ struct EventHeroView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // BATbern logo with text (larger for hero visibility)
-                BATbernSymbolView(size: 45, color: BATbernWatchStyle.Colors.batbernBlue)
+                // BATbern animated spinner — tap to force-refresh, speeds up while loading
+                BATbernSpinnerView(size: 45, speed: eventDataController.isLoading ? .fast : .slow)
+                    .scaleEffect(spinnerScale)
+                    .onTapGesture { triggerRefresh() }
                     .padding(.bottom, 8)
 
                 // Event title (large, centered, white, wrapped) - flexible space
@@ -120,7 +143,9 @@ struct EventHeroView: View {
 
     private var emptyStateContent: some View {
         VStack(spacing: 12) {
-            BATbernSymbolView(size: 32, color: BATbernWatchStyle.Colors.batbernBlue)
+            BATbernSpinnerView(size: 32, speed: eventDataController.isLoading ? .fast : .slow)
+                .scaleEffect(spinnerScale)
+                .onTapGesture { triggerRefresh() }
 
             Text(NSLocalizedString("event.hero.empty.title", comment: "App title"))
                 .font(.system(size: 14, design: .rounded))

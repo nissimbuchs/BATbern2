@@ -107,6 +107,38 @@ public class EventTypeConfiguration {
     private Integer defaultCapacity;
 
     /**
+     * Duration of moderation session at the start of the event, in minutes.
+     */
+    @Column(name = "moderation_start_duration", nullable = false)
+    @Min(1)
+    @Builder.Default
+    private Integer moderationStartDuration = 5;
+
+    /**
+     * Duration of moderation session at the end of the event, in minutes.
+     */
+    @Column(name = "moderation_end_duration", nullable = false)
+    @Min(1)
+    @Builder.Default
+    private Integer moderationEndDuration = 5;
+
+    /**
+     * Duration of each break session, in minutes.
+     */
+    @Column(name = "break_duration", nullable = false)
+    @Min(1)
+    @Builder.Default
+    private Integer breakDuration = 20;
+
+    /**
+     * Duration of the lunch session, in minutes.
+     */
+    @Column(name = "lunch_duration", nullable = false)
+    @Min(1)
+    @Builder.Default
+    private Integer lunchDuration = 60;
+
+    /**
      * Typical start time for this event type (e.g., 09:00 for FULL_DAY).
      */
     @Column(name = "typical_start_time")

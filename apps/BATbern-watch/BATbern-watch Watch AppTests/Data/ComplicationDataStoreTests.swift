@@ -42,13 +42,13 @@ struct ComplicationContextTests {
         #expect(decoded == .eventFar(dateString: "15.03"))
     }
 
-    @Test("ComplicationContext.eventDayPreSession round-trips via Codable preserving hoursUntil and progress")
+    @Test("ComplicationContext.eventDayPreSession round-trips via Codable preserving minutesUntil and progress")
     func eventDayPreSessionRoundTrip() throws {
-        let context = ComplicationContext.eventDayPreSession(hoursUntil: 3, progress: 0.5)
+        let context = ComplicationContext.eventDayPreSession(minutesUntil: 180, progress: 0.5)
         let data = try JSONEncoder().encode(context)
         let decoded = try JSONDecoder().decode(ComplicationContext.self, from: data)
-        if case .eventDayPreSession(let h, let p) = decoded {
-            #expect(h == 3)
+        if case .eventDayPreSession(let m, let p) = decoded {
+            #expect(m == 180)
             #expect(abs(p - 0.5) < 0.001)
         } else {
             Issue.record("Expected .eventDayPreSession, got: \(decoded)")
@@ -460,7 +460,7 @@ struct ComplicationProviderTimelineTests {
             isLive: false,
             urgencyLevel: "normal",
             updatedAt: now,
-            complicationContext: .eventDayPreSession(hoursUntil: 0, progress: 0.125)
+            complicationContext: .eventDayPreSession(minutesUntil: 30, progress: 0.125)
         )
 
         // .eventDayPreSession: default case — always returned (no staleness guard)
@@ -468,8 +468,8 @@ struct ComplicationProviderTimelineTests {
         #expect(resolved != nil)
 
         let entry = ComplicationEntry(date: now, snapshot: resolved)
-        if case .eventDayPreSession(let h, _) = entry.context {
-            #expect(h == 0)  // < 1 hour until session
+        if case .eventDayPreSession(let m, _) = entry.context {
+            #expect(m == 30)  // 30 minutes until session
         } else {
             Issue.record("Expected .eventDayPreSession, got: \(entry.context)")
         }
@@ -500,29 +500,13 @@ struct ComplicationProviderTimelineTests {
     }
 }
 
-// MARK: - Test Helper: resolvedSnapshot logic (mirrors ComplicationProvider.resolvedSnapshot)
+// MARK: - Test Helper: resolvedSnapshot (delegates to ComplicationDataStore — single source of truth)
 
-/// Pure-function replica of ComplicationProvider.resolvedSnapshot(_:) for unit testing.
-/// ComplicationProvider is in the Complications extension target and cannot be directly imported
-/// into the Watch App test target, so we duplicate the logic here for correctness assertions.
+/// Thin wrapper preserving existing test call sites.
+/// Staleness logic now lives in ComplicationDataStore.resolvedSnapshot(_:now:).
 private func resolvedSnapshotForTest(
     _ snapshot: ComplicationSnapshot?,
     now: Date
 ) -> ComplicationSnapshot? {
-    guard let snapshot else { return nil }
-
-    // Infer context for pre-amendment snapshots that lack `complicationContext`
-    let context = snapshot.complicationContext
-        ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
-
-    switch context {
-    case .sessionRunning:
-        // Staleness guard: discard if expired AND app not actively writing
-        if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
-        if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
-        return nil
-    default:
-        // Non-session contexts always pass through
-        return snapshot
-    }
+    ComplicationDataStore.resolvedSnapshot(snapshot, now: now)
 }

@@ -7,10 +7,12 @@ interface BATbernLoaderProps {
   'data-testid'?: string;
 }
 
-const SPEED_DURATIONS: Record<Speed, [string, string]> = {
-  slow: ['1.6s', '3.6s'],
-  normal: ['1.0s', '2.4s'],
-  fast: ['0.6s', '1.4s'],
+// dur2 = 2 * dur1; total cycle = dur1 (pause) + dur2 (spin) = 3 * dur1
+// Pause fraction = 1/3 = 33.33% of the total animation duration
+const SPEED_TOTALS: Record<Speed, string> = {
+  slow: '4.8s', // dur1=1.6s pause + dur2=3.2s spin
+  normal: '3.0s', // dur1=1.0s pause + dur2=2.0s spin
+  fast: '1.8s', // dur1=0.6s pause + dur2=1.2s spin
 };
 
 export function BATbernLoader({
@@ -19,7 +21,7 @@ export function BATbernLoader({
   speed = 'normal',
   'data-testid': testId,
 }: BATbernLoaderProps) {
-  const [dur1, dur2] = SPEED_DURATIONS[speed];
+  const total = SPEED_TOTALS[speed];
 
   return (
     <svg
@@ -34,9 +36,18 @@ export function BATbernLoader({
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
           .bat-arrow { transform-box: fill-box; }
-          .bat-arrow-1 { transform-origin: 50% 87%; animation: bat-spin ${dur1} linear infinite; }
-          .bat-arrow-2 { transform-origin: 50% 16%; animation: bat-spin ${dur2} linear infinite; }
-          @keyframes bat-spin { to { transform: rotate(360deg); } }
+          .bat-arrow-1 { transform-origin: 50% 87%; animation: bat-spin-double ${total} linear infinite; }
+          .bat-arrow-2 { transform-origin: 50% 16%; animation: bat-spin-single ${total} linear infinite; }
+          @keyframes bat-spin-double {
+            0%      { transform: rotate(0deg); }
+            33.33%  { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+            100%    { transform: rotate(720deg); }
+          }
+          @keyframes bat-spin-single {
+            0%      { transform: rotate(0deg); }
+            33.33%  { transform: rotate(0deg); animation-timing-function: ease-in-out; }
+            100%    { transform: rotate(360deg); }
+          }
         }
       `}</style>
       <g className="bat-arrow bat-arrow-1" fill="#3498DB">

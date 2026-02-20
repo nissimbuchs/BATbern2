@@ -275,6 +275,43 @@ struct EventDataControllerApplyServerStateTests {
         #expect(currentSession.endTime == newCurrentEnd)
     }
 
+    // MARK: - W4.4: eventCompleted flag
+
+    @Test("applyServerState: sets workflowState to EVENT_COMPLETED when eventCompleted is true")
+    func applyServerState_setsWorkflowStateWhenEventCompleted() throws {
+        let (controller, context) = try makeController()
+        let (event, _) = makeEventWithSession(slug: "last-talk", context: context)
+        controller.currentEvent = event
+        #expect(event.workflowState == nil)
+
+        let update = WatchStateUpdate(
+            sessions: [],
+            connectedOrganizers: [],
+            serverTimestamp: Date(),
+            eventCompleted: true
+        )
+        controller.applyServerState(update)
+
+        #expect(event.workflowState == "EVENT_COMPLETED")
+    }
+
+    @Test("applyServerState: does not set workflowState when eventCompleted is false")
+    func applyServerState_doesNotSetWorkflowStateWhenNotCompleted() throws {
+        let (controller, context) = try makeController()
+        let (event, _) = makeEventWithSession(slug: "active-talk", context: context)
+        controller.currentEvent = event
+
+        let update = WatchStateUpdate(
+            sessions: [],
+            connectedOrganizers: [],
+            serverTimestamp: Date(),
+            eventCompleted: false
+        )
+        controller.applyServerState(update)
+
+        #expect(event.workflowState == nil)
+    }
+
     @Test("Non-cascade: scheduledStartTime/scheduledEndTime unchanged when nil in update")
     func applyServerState_nilScheduledTimesDoNotOverwrite() throws {
         let (controller, context) = try makeController()

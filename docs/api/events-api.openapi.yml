@@ -1573,6 +1573,108 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /events/{eventCode}/timetable:
+    get:
+      tags:
+        - Sessions
+      summary: Get the authoritative timetable for an event
+      description: |
+        Returns the complete chronological slot grid for the event, including both
+        structural slots (MODERATION, BREAK, LUNCH) and droppable speaker slots
+        (SPEAKER_SLOT).  Structural slots are enriched with DB session slugs when
+        structural sessions have been generated.  Speaker slots show which speaker
+        session (if any) has been assigned to each position.
+
+        This endpoint is the single source of truth for the slot-assignment UI —
+        both the grid display and the auto-assign algorithm use these positions.
+
+        **Access**: ORGANIZER role required.
+      operationId: getEventTimetable
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BATbern142
+      responses:
+        '200':
+          description: Timetable successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/structural:
+    post:
+      tags:
+        - Sessions
+        - Organizer
+      summary: Generate structural sessions for an event
+      description: |
+        Generates structural sessions (moderation start, breaks, lunch, moderation end)
+        with computed start/end times based on the event type configuration.
+
+        The organizer is automatically assigned as MODERATOR on both moderation sessions.
+
+        **Requires ORGANIZER role.**
+
+        If `overwrite=false` (default) and structural sessions already exist, returns 409.
+        If `overwrite=true`, deletes existing structural sessions and recreates them.
+      operationId: generateStructuralSessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+      responses:
+        '201':
+          description: Structural sessions created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '409':
+          description: Structural sessions already exist (use overwrite=true to replace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /events/{eventCode}/sessions/batch-import:
     post:
       tags:
@@ -3526,6 +3628,79 @@ paths:
 components:
   schemas:
 
+    # ── Timetable Schemas ────────────────────────────────────────────────────
+
+    TimetableSlot:
+      type: object
+      description: |
+        A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
+        speaker positions (the implicit gaps between structural sessions). All other types
+        map to persisted structural sessions (moderation, break, lunch).
+      required:
+        - type
+        - startTime
+        - endTime
+      properties:
+        type:
+          type: string
+          enum: [MODERATION, BREAK, LUNCH, SPEAKER_SLOT]
+          description: Slot type — determines rendering and whether the slot is droppable
+          example: SPEAKER_SLOT
+        startTime:
+          type: string
+          format: date-time
+          description: Slot start time (UTC ISO-8601)
+          example: "2025-06-15T07:05:00Z"
+        endTime:
+          type: string
+          format: date-time
+          description: Slot end time (UTC ISO-8601)
+          example: "2025-06-15T07:50:00Z"
+        title:
+          type: string
+          nullable: true
+          description: Human-readable label for structural slots; null for SPEAKER_SLOT
+          example: "Kaffee-Pause"
+        slotIndex:
+          type: integer
+          nullable: true
+          description: >
+            1-based global index for SPEAKER_SLOT entries across the full event day
+            (never reset when switching AM → PM block). Null for structural slots.
+          example: 1
+        sessionSlug:
+          type: string
+          nullable: true
+          description: >
+            Session slug of the structural DB session occupying this slot.
+            Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
+          example: "moderation-start-abc"
+        assignedSessionSlug:
+          type: string
+          nullable: true
+          description: >
+            Session slug of the speaker session assigned to this SPEAKER_SLOT.
+            Null if the slot is free, or for structural slots.
+          example: "speaker-xyz"
+
+    TimetableResponse:
+      type: object
+      description: Full timetable for an event including slot grid and unassigned sessions.
+      required:
+        - slots
+        - unassignedSessions
+      properties:
+        slots:
+          type: array
+          description: All slots in chronological order (structural and speaker slots interleaved)
+          items:
+            $ref: '#/components/schemas/TimetableSlot'
+        unassignedSessions:
+          type: array
+          description: Speaker sessions (non-structural) with no startTime assigned yet
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+
     # ── Watch App Schemas (W2.4) ─────────────────────────────────────────────
 
     ConfirmArrivalRequest:
@@ -4042,7 +4217,7 @@ components:
           type: string
           nullable: true
           description: Session type - null for placeholder sessions, assigned during agenda planning
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
           example: keynote
         startTime:
           type: string
@@ -4563,7 +4738,7 @@ components:
           type: string
           nullable: true
           description: Session type - omit for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -4604,7 +4779,7 @@ components:
           type: string
           nullable: true
           description: Session type - can be null for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -4956,6 +5131,30 @@ components:
           format: time
           description: Typical end time for this event type
           example: "17:00"
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          default: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          default: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          default: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          default: 60
 
     UpdateEventSlotConfigurationRequest:
       type: object
@@ -5017,6 +5216,41 @@ components:
           description: Typical end time for this event type
           example: "17:00"
           nullable: true
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          nullable: true
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          nullable: true
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          nullable: true
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          nullable: true
+
+    GenerateStructuralSessionsRequest:
+      type: object
+      description: Request to generate structural sessions (moderation, break, lunch) for an event.
+      properties:
+        overwrite:
+          type: boolean
+          default: false
+          description: |
+            If false (default), returns 409 if structural sessions already exist.
+            If true, deletes existing structural sessions and recreates them.
 
     PaginationMetadata:
       type: object

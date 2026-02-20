@@ -56,6 +56,18 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventIdAndSessionType(UUID eventId, String sessionType);
 
     /**
+     * Find all sessions for a specific event with any of the given session types.
+     * Used for structural session detection (moderation, break, lunch).
+     */
+    List<Session> findByEventIdAndSessionTypeIn(UUID eventId, List<String> sessionTypes);
+
+    /**
+     * Delete all sessions for a specific event with any of the given session types.
+     * Used when overwrite=true for structural session generation.
+     */
+    void deleteByEventIdAndSessionTypeIn(UUID eventId, List<String> sessionTypes);
+
+    /**
      * Delete all sessions for a specific event
      */
     void deleteByEventId(UUID eventId);

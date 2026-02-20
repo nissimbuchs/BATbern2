@@ -72,3 +72,10 @@
 "debug.network_error" = "⚠️ Netzwerkfehler - gecachte Daten anzeigen";
 "debug.other_api_error" = "⚠️ Anderer API-Fehler: %@";
 "debug.unexpected_error" = "❌ PublicViewModel: Unerwarteter Fehler - %@";
+
+/* W4.4: Break Gong Overlay */
+"break.ending.soon" = "Pause endet gleich";
+
+/* W4.4: Event Completed Screen */
+"event.completed.title" = "Event abgeschlossen";
+"event.completed.subtitle" = "Danke für einen tollen Abend!";

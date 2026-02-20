@@ -614,6 +614,63 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/timetable': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the authoritative timetable for an event
+     * @description Returns the complete chronological slot grid for the event, including both
+     *     structural slots (MODERATION, BREAK, LUNCH) and droppable speaker slots
+     *     (SPEAKER_SLOT).  Structural slots are enriched with DB session slugs when
+     *     structural sessions have been generated.  Speaker slots show which speaker
+     *     session (if any) has been assigned to each position.
+     *
+     *     This endpoint is the single source of truth for the slot-assignment UI —
+     *     both the grid display and the auto-assign algorithm use these positions.
+     *
+     *     **Access**: ORGANIZER role required.
+     */
+    get: operations['getEventTimetable'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/structural': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate structural sessions for an event
+     * @description Generates structural sessions (moderation start, breaks, lunch, moderation end)
+     *     with computed start/end times based on the event type configuration.
+     *
+     *     The organizer is automatically assigned as MODERATOR on both moderation sessions.
+     *
+     *     **Requires ORGANIZER role.**
+     *
+     *     If `overwrite=false` (default) and structural sessions already exist, returns 409.
+     *     If `overwrite=true`, deletes existing structural sessions and recreates them.
+     */
+    post: operations['generateStructuralSessions'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/sessions/batch-import': {
     parameters: {
       query?: never;
@@ -1435,6 +1492,58 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * @description A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
+     *     speaker positions (the implicit gaps between structural sessions). All other types
+     *     map to persisted structural sessions (moderation, break, lunch).
+     */
+    TimetableSlot: {
+      /**
+       * @description Slot type — determines rendering and whether the slot is droppable
+       * @example SPEAKER_SLOT
+       * @enum {string}
+       */
+      type: 'MODERATION' | 'BREAK' | 'LUNCH' | 'SPEAKER_SLOT';
+      /**
+       * Format: date-time
+       * @description Slot start time (UTC ISO-8601)
+       * @example 2025-06-15T07:05:00Z
+       */
+      startTime: string;
+      /**
+       * Format: date-time
+       * @description Slot end time (UTC ISO-8601)
+       * @example 2025-06-15T07:50:00Z
+       */
+      endTime: string;
+      /**
+       * @description Human-readable label for structural slots; null for SPEAKER_SLOT
+       * @example Kaffee-Pause
+       */
+      title?: string | null;
+      /**
+       * @description 1-based global index for SPEAKER_SLOT entries across the full event day (never reset when switching AM → PM block). Null for structural slots.
+       * @example 1
+       */
+      slotIndex?: number | null;
+      /**
+       * @description Session slug of the structural DB session occupying this slot. Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
+       * @example moderation-start-abc
+       */
+      sessionSlug?: string | null;
+      /**
+       * @description Session slug of the speaker session assigned to this SPEAKER_SLOT. Null if the slot is free, or for structural slots.
+       * @example speaker-xyz
+       */
+      assignedSessionSlug?: string | null;
+    };
+    /** @description Full timetable for an event including slot grid and unassigned sessions. */
+    TimetableResponse: {
+      /** @description All slots in chronological order (structural and speaker slots interleaved) */
+      slots: components['schemas']['TimetableSlot'][];
+      /** @description Speaker sessions (non-structural) with no startTime assigned yet */
+      unassignedSessions: components['schemas']['SessionResponse'][];
+    };
     /** @description Request body to confirm a speaker's arrival. */
     ConfirmArrivalRequest: {
       /** @example anna.meier */
@@ -1793,6 +1902,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2182,6 +2292,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2220,6 +2331,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2490,6 +2602,30 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime: string;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationStartDuration: number;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationEndDuration: number;
+      /**
+       * @description Duration of each break session, in minutes
+       * @default 20
+       * @example 20
+       */
+      breakDuration: number;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @default 60
+       * @example 60
+       */
+      lunchDuration: number;
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).
@@ -2543,6 +2679,35 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime?: string | null;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @example 5
+       */
+      moderationStartDuration?: number | null;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @example 5
+       */
+      moderationEndDuration?: number | null;
+      /**
+       * @description Duration of each break session, in minutes
+       * @example 20
+       */
+      breakDuration?: number | null;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @example 60
+       */
+      lunchDuration?: number | null;
+    };
+    /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
+    GenerateStructuralSessionsRequest: {
+      /**
+       * @description If false (default), returns 409 if structural sessions already exist.
+       *     If true, deletes existing structural sessions and recreates them.
+       * @default false
+       */
+      overwrite: boolean;
     };
     /** @description Pagination metadata from shared-kernel */
     PaginationMetadata: Record<string, never>;
@@ -4274,6 +4439,80 @@ export interface operations {
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getEventTimetable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Timetable successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimetableResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  generateStructuralSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['GenerateStructuralSessionsRequest'];
+      };
+    };
+    responses: {
+      /** @description Structural sessions created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'][];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Structural sessions already exist (use overwrite=true to replace) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   batchImportSessions: {

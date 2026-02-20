@@ -42,6 +42,14 @@ final class LiveCountdownViewModel {
     private(set) var shouldShowDelayed: Bool = false
     /// W4.3: seconds since activeSession.actualStartTime.
     private(set) var sessionActiveSeconds: Int = 0
+    /// W4.4 AC2: true when ≤60s remain in the active break — triggers "break ending" overlay.
+    private(set) var gongOverlayVisible: Bool = false
+
+    // MARK: - Internal Break Gong State
+
+    /// Prevents re-showing the gong overlay on every tick once it has been shown.
+    /// Reset on session change (same lifecycle as scheduler.reset()).
+    private var gongFiredInCurrentBreak: Bool = false
 
     // MARK: - Injected Dependencies (1.3)
 
@@ -55,6 +63,17 @@ final class LiveCountdownViewModel {
 
     private let engine: SessionTimerEngine
     private let scheduler: HapticScheduler
+
+    // MARK: - Notification Service
+
+    private let notificationService = WatchNotificationService()
+
+    // MARK: - Complication Change Tracking (M1: reload only on meaningful state changes)
+
+    /// Last context written to the complication store.
+    /// Exposed (internal access) for unit testing via @testable import.
+    @ObservationIgnored private(set) var complicationContext: ComplicationContext = .noEvent
+    @ObservationIgnored private var lastUrgencyLevel: UrgencyLevel = .normal
 
     // MARK: - Timer Task
 
@@ -80,6 +99,7 @@ final class LiveCountdownViewModel {
     func startTimer() {
         timerTask?.cancel()
         hapticService.startEventSession()
+        notificationService.requestAuthorization()
         timerTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -93,6 +113,7 @@ final class LiveCountdownViewModel {
         timerTask?.cancel()
         timerTask = nil
         hapticService.stopEventSession()
+        notificationService.cancelAll()
     }
 
     // MARK: - State Refresh
@@ -112,6 +133,8 @@ final class LiveCountdownViewModel {
             shouldShowExtend = false
             shouldShowDelayed = false
             sessionActiveSeconds = 0
+            gongFiredInCurrentBreak = false
+            gongOverlayVisible = false
         }
         if let session = discovered {
             engine.setActiveSession(session)
@@ -124,9 +147,16 @@ final class LiveCountdownViewModel {
         if let session = discovered {
             // AC5: break sessions get gong reminder; talk sessions get threshold alerts (W3.2)
             if session.isBreak {
-                scheduler.evaluateBreakGong(breakSession: session)
+                let gonged = scheduler.evaluateBreakGong(breakSession: session)
+                // W4.4 AC2: show overlay banner on the first tick where gong fires.
+                // gongFiredInCurrentBreak prevents re-triggering on subsequent ticks.
+                if !gongFiredInCurrentBreak && gonged.contains(.gongReminder) {
+                    gongFiredInCurrentBreak = true
+                    gongOverlayVisible = true
+                }
             } else {
-                scheduler.evaluate(session: session)
+                let fired = scheduler.evaluate(session: session)
+                postNotifications(for: fired, session: session)
             }
             nextSession = findNextSession(after: session, in: eventState)
         } else {
@@ -166,6 +196,8 @@ final class LiveCountdownViewModel {
         // isLive is only true when the session has actually started (startTime <= now).
         // Upcoming sessions (startTime > now) must not set isLive:true — the complication
         // would otherwise show a countdown to a future session as if it were active.
+        let newContext = computeComplicationContext(in: eventState)
+        let newUrgencyLevel = engine.urgencyLevel
         ComplicationDataStore.write(ComplicationSnapshot(
             sessionTitle: discovered?.title,
             speakerNames: formattedSpeakerNames,
@@ -173,10 +205,48 @@ final class LiveCountdownViewModel {
             sessionDuration: discovered?.duration,
             scheduledStartTime: discovered?.startTime,
             isLive: isComplicationLive(discovered),
-            urgencyLevel: engine.urgencyLevel.rawValue,
+            urgencyLevel: newUrgencyLevel.rawValue,
             updatedAt: clock.now,
-            complicationContext: computeComplicationContext(in: eventState)
+            complicationContext: newContext
         ))
+        // Reload timeline only on meaningful state changes (context or urgency transitions).
+        // Avoids calling reloadAllTimelines() 3600×/hour during a live event (NFR21/22).
+        if newContext != complicationContext || newUrgencyLevel != lastUrgencyLevel {
+            ComplicationDataStore.reloadTimeline()
+        }
+        complicationContext = newContext
+        lastUrgencyLevel = newUrgencyLevel
+    }
+
+    // MARK: - Haptic Notifications
+
+    /// Post a local notification for each newly fired threshold alert.
+    /// Shown on wrist raise so organizers know why the watch buzzed.
+    private func postNotifications(for alerts: [HapticAlert], session: WatchSession) {
+        for alert in alerts {
+            switch alert {
+            case .fiveMinuteWarning:
+                notificationService.post(
+                    title: "5 minutes remaining",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-5min"
+                )
+            case .twoMinuteWarning:
+                notificationService.post(
+                    title: "2 minutes remaining",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-2min"
+                )
+            case .timesUp:
+                notificationService.post(
+                    title: "Time's up!",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-timesup"
+                )
+            default:
+                break
+            }
+        }
     }
 
     // MARK: - Complication Context (W3.3 amendment)
@@ -228,7 +298,8 @@ final class LiveCountdownViewModel {
         // Event day / within 24h: pre-session count-up ring
         // progress = elapsed since midnight / session start since midnight
         // Example: session at 16:00, now 08:00 → 8/16 = 0.5 (per ring semantics spec)
-        let hoursUntil = max(0, Int(timeUntilNext / 3600))
+        // minutesUntil = total minutes (not hours) so views can show "5m" instead of "0h"
+        let minutesUntil = max(0, Int(timeUntilNext / 60))
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: now)
         let elapsedSinceMidnight = now.timeIntervalSince(startOfDay)
@@ -236,7 +307,7 @@ final class LiveCountdownViewModel {
         let progress = sessionStartSinceMidnight > 0
             ? min(1.0, max(0.0, elapsedSinceMidnight / sessionStartSinceMidnight))
             : 0.0
-        return .eventDayPreSession(hoursUntil: hoursUntil, progress: progress)
+        return .eventDayPreSession(minutesUntil: minutesUntil, progress: progress)
     }
 
     // MARK: - Complication Live State (W3.3)

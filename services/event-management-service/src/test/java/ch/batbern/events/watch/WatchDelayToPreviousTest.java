@@ -158,8 +158,15 @@ class WatchDelayToPreviousTest extends AbstractIntegrationTest {
 
         Session updatedA = sessionRepository
                 .findByEventCodeAndSessionSlug("BATbern71", "already-active-talk").orElseThrow();
-        // End time NOT extended again (idempotent skip)
+        Session updatedB = sessionRepository
+                .findByEventCodeAndSessionSlug("BATbern71", "already-reset-talk").orElseThrow();
+
+        // End time NOT extended again (idempotent skip — previous side)
         assertThat(updatedA.getEndTime()).isEqualTo(baseTime.plus(50, ChronoUnit.MINUTES));
+
+        // Current session NOT cascaded again (idempotent skip — downstream side)
+        assertThat(updatedB.getStartTime()).isEqualTo(baseTime.plus(54, ChronoUnit.MINUTES));
+        assertThat(updatedB.getEndTime()).isEqualTo(baseTime.plus(99, ChronoUnit.MINUTES));
     }
 
     @Test

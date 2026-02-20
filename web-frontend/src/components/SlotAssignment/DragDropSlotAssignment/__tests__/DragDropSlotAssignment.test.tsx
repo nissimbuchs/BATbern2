@@ -32,9 +32,31 @@ vi.mock('@/hooks/useEvents', () => ({
   useEvent: vi.fn(),
 }));
 
-// Mock useEventType hook
-vi.mock('@/hooks/useEventTypes', () => ({
-  useEventType: vi.fn(),
+/**
+ * Generates a mock TimetableResponse with hourly SPEAKER_SLOTs from 09:00 to 19:00
+ * on the given date string (YYYY-MM-DD). Strings are without 'Z' so Date treats them
+ * as local time and toTimeStr produces the expected "09:00"..."19:00" labels.
+ */
+const buildMockTimetable = (dateStr: string = '2025-12-15') => ({
+  slots: Array.from({ length: 11 }, (_, i) => {
+    const h = 9 + i;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return {
+      type: 'SPEAKER_SLOT' as const,
+      startTime: `${dateStr}T${pad(h)}:00:00`,
+      endTime: `${dateStr}T${pad(h + 1)}:00:00`,
+      title: null,
+      slotIndex: i + 1,
+      sessionSlug: null,
+      assignedSessionSlug: null,
+    };
+  }),
+  unassignedSessions: [],
+});
+
+// Mock useTimetable hook (replaces useEventType — slot grid is now backend-driven)
+vi.mock('@/hooks/useTimetable/useTimetable', () => ({
+  useTimetable: vi.fn(),
 }));
 
 // Mock DnD library
@@ -131,19 +153,10 @@ describe('DragDropSlotAssignment Component (Story 5.7 - Task 4a RED Phase)', () 
       refetch: vi.fn(),
     } as any);
 
-    // Mock useEventType to return event type configuration
-    // Configure to generate hourly slots (09:00, 10:00, ... 19:00) to match test expectations
-    const { useEventType } = await import('@/hooks/useEventTypes');
-    vi.mocked(useEventType).mockReturnValue({
-      data: {
-        name: 'FULL_DAY',
-        maxSlots: 11,
-        slotDuration: 60, // 60-minute slots for hourly schedule
-        typicalStartTime: '09:00',
-        typicalEndTime: '20:00',
-        breakSlots: 0,
-        lunchSlots: 0,
-      },
+    // Mock useTimetable — backend-driven slot grid (11 hourly SPEAKER_SLOTs 09:00-19:00)
+    const { useTimetable } = await import('@/hooks/useTimetable/useTimetable');
+    vi.mocked(useTimetable).mockReturnValue({
+      data: buildMockTimetable('2025-12-15'),
       isLoading: false,
       isError: false,
       error: null,

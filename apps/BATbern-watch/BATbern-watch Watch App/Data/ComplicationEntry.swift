@@ -82,10 +82,9 @@ struct ComplicationEntry: TimelineEntry {
     /// Single source of truth — used by CircularView, RectangularView, and CornerView.
     var urgencyColor: Color {
         switch snapshot?.urgencyLevel {
-        case "caution":             return .yellow   // 2-5 min — Warning
-        case "warning", "critical": return .orange   // <2 min  — Urgent
-        case "overtime":            return .red      // Overrun
-        default:                    return .green    // >5 min  — On Track (#22c55e)
+        case "warning", "critical": return .orange                                          // <2 min  — Urgent
+        case "overtime":            return .red                                             // Overrun
+        default:                    return Color(red: 0.204, green: 0.596, blue: 0.859)    // BATbern blue #3498DB
         }
     }
 

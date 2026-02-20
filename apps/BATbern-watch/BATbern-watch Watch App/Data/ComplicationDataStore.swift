@@ -32,14 +32,14 @@ import WidgetKit
 enum ComplicationContext: Codable, Equatable, Sendable {
     case noEvent
     case eventFar(dateString: String)                                          // >1 day away: dd.MM format
-    case eventDayPreSession(hoursUntil: Int, progress: Double)                 // today, between sessions
+    case eventDayPreSession(minutesUntil: Int, progress: Double)               // today, between sessions — total minutes until session start
     case sessionRunning(minutesLeft: Int, fractionRemaining: Double)           // active session
     case eventComplete
 
     // MARK: - Manual Codable (required for associated values)
 
     private enum CodingKeys: String, CodingKey {
-        case type, dateString, hoursUntil, progress, minutesLeft, fractionRemaining
+        case type, dateString, minutesUntil, progress, minutesLeft, fractionRemaining
     }
 
     init(from decoder: Decoder) throws {
@@ -51,7 +51,7 @@ enum ComplicationContext: Codable, Equatable, Sendable {
             self = .eventFar(dateString: try c.decode(String.self, forKey: .dateString))
         case "eventDayPreSession":
             self = .eventDayPreSession(
-                hoursUntil: try c.decode(Int.self, forKey: .hoursUntil),
+                minutesUntil: try c.decode(Int.self, forKey: .minutesUntil),
                 progress: try c.decode(Double.self, forKey: .progress)
             )
         case "sessionRunning":
@@ -74,9 +74,9 @@ enum ComplicationContext: Codable, Equatable, Sendable {
         case .eventFar(let ds):
             try c.encode("eventFar", forKey: .type)
             try c.encode(ds, forKey: .dateString)
-        case .eventDayPreSession(let h, let p):
+        case .eventDayPreSession(let m, let p):
             try c.encode("eventDayPreSession", forKey: .type)
-            try c.encode(h, forKey: .hoursUntil)
+            try c.encode(m, forKey: .minutesUntil)
             try c.encode(p, forKey: .progress)
         case .sessionRunning(let m, let f):
             try c.encode("sessionRunning", forKey: .type)
@@ -123,12 +123,18 @@ enum ComplicationDataStore {
 
     // MARK: - Production API
 
-    /// Persist a snapshot to the App Group store and ask WidgetKit to refresh.
-    /// Must be called from the main app process only.
+    /// Persist a snapshot to the App Group store.
+    /// Callers must call `reloadTimeline()` separately when meaningful state changes —
+    /// do NOT reload on every write (called each second; battery NFR21/22).
     static func write(_ snapshot: ComplicationSnapshot) {
         guard let defaults = UserDefaults(suiteName: appGroupID),
               let data = try? encoder.encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
+    }
+
+    /// Ask WidgetKit to regenerate all timelines.
+    /// Call sparingly — only on context or urgency transitions, not every tick.
+    static func reloadTimeline() {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -156,5 +162,36 @@ enum ComplicationDataStore {
               let snapshot = try? decoder.decode(ComplicationSnapshot.self, from: data)
         else { return nil }
         return snapshot
+    }
+
+    // MARK: - Staleness Logic (shared with ComplicationProvider and tests)
+
+    /// Returns the snapshot to display, applying staleness logic based on `ComplicationContext`.
+    ///
+    /// Rules (W3.3 amendment):
+    /// - `.sessionRunning` (or pre-amendment `isLive:true`): staleness guard applies —
+    ///   discard if endTime expired AND updatedAt > 5 min ago (app closed / old event)
+    /// - All other contexts: always pass through (date/hours info always valid to show)
+    /// - No snapshot → nil
+    ///
+    /// Extracted here so `ComplicationProvider` and test code share the same implementation.
+    static func resolvedSnapshot(_ snapshot: ComplicationSnapshot?, now: Date = .now) -> ComplicationSnapshot? {
+        guard let snapshot else { return nil }
+
+        // Infer context for pre-amendment snapshots that lack `complicationContext`
+        let context = snapshot.complicationContext
+            ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
+
+        switch context {
+        case .sessionRunning:
+            // Apply staleness guard: discard stale session data
+            if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
+            // Recent overtime: main app is still writing; allow 5 min of overtime display
+            if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
+            return nil
+        default:
+            // Non-session contexts: always show (eventFar, eventDayPreSession, etc.)
+            return snapshot
+        }
     }
 }

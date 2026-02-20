@@ -16,6 +16,7 @@ private func mapSessionType(_ generated: Session.SessionType) -> SessionType {
     case .networking: return .networking
     case ._break: return .breakTime
     case .lunch: return .lunch
+    case .moderation: return .moderation
     }
 }
 

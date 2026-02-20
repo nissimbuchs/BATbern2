@@ -1,6 +1,6 @@
 # Story W4.4: Break Management & Event Lifecycle
 
-Status: ready-for-dev
+Status: done
 
 ---
 
@@ -25,17 +25,17 @@ Status: ready-for-dev
 
 | Check | Mandate | Confirmed |
 |---|---|---|
-| Area 2 | `breakCardLayout` extracted into `BreakCardLayout` BEFORE O5 is built — this is a required subtask, not optional | [ ] |
-| Area 2 | O5 `BreakGongView` displays `LiveCountdownViewModel.formattedTime` — no second timer started | [ ] |
-| Area 2 | O5 uses `LiveCountdownViewModel.nextSession` for next speaker preview — no re-query of sessions | [ ] |
-| Area 2 | Gong haptic NOT reimplemented — `HapticScheduler.evaluateBreakGong()` already fires on every tick; W4.4 adds only the visual overlay | [ ] |
-| Area 2 | `WatchHapticService.schedule()` (D1) is NOT required for W4.4 — break gong fires via `evaluateBreakGong()` on the tick loop | [ ] |
-| Area 4 | `EventStateManager.isLive` is the only gate for routing away from `LiveCountdownView` on event completion — no new `isCompleted` flag added | [ ] |
-| Area 4 | Event completion flows through `EventDataController.applyServerState()` → `EventStateManager` recalculates automatically | [ ] |
-| W4.1 | `WebSocketService.sendAction(_:)` confirmed available (final "Done" tap on last session uses existing W4.2 button) | [ ] |
-| W4.2 | `LiveCountdownViewModel.canMarkDone` confirmed — final session "Done" tap uses same property | [ ] |
-| W4.2 | `WebSocketService.sessionEndedEvent` confirmed — W4.4 event completion happens after W4.2's `endSession` path completes | [ ] |
-| W4.2 | `NextSessionPeekView` (`.compact` mode) confirmed available from W4.2 Task 0 — O5 reuses it for next speaker preview | [ ] |
+| Area 2 | `breakCardLayout` extracted into `BreakCardLayout` BEFORE O5 is built — this is a required subtask, not optional | [x] |
+| Area 2 | O5 `BreakGongView` displays `LiveCountdownViewModel.formattedTime` — no second timer started | [x] |
+| Area 2 | O5 uses `LiveCountdownViewModel.nextSession` for next speaker preview — no re-query of sessions | [x] |
+| Area 2 | Gong haptic NOT reimplemented — `HapticScheduler.evaluateBreakGong()` already fires on every tick; W4.4 adds only the visual overlay | [x] |
+| Area 2 | `WatchHapticService.schedule()` (D1) is NOT required for W4.4 — break gong fires via `evaluateBreakGong()` on the tick loop | [x] |
+| Area 4 | `EventStateManager.isLive` is the only gate for routing away from `LiveCountdownView` on event completion — no new `isCompleted` flag added | [x] |
+| Area 4 | Event completion flows through `EventDataController.applyServerState()` → `EventStateManager` recalculates automatically | [x] |
+| W4.1 | `WebSocketService.sendAction(_:)` confirmed available (final "Done" tap on last session uses existing W4.2 button) | [x] |
+| W4.2 | `LiveCountdownViewModel.canMarkDone` confirmed — final session "Done" tap uses same property | [x] |
+| W4.2 | `WebSocketService.sessionEndedEvent` confirmed — W4.4 event completion happens after W4.2's `endSession` path completes | [x] |
+| W4.2 | `NextSessionPeekView` (`.compact` mode) confirmed available from W4.2 Task 0 — O5 reuses it for next speaker preview | [x] |
 
 ---
 
@@ -68,15 +68,15 @@ so that the entire evening runs smoothly.
 
 ### Prerequisite: Extract `BreakCardLayout` from `SessionCardView` (Required Before O5)
 
-- [ ] **Task 0: Extract `SessionCardView.breakCardLayout` into shared `BreakCardLayout`** (Blocks: Task 2)
-  - [ ] 0.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/BreakCardLayout.swift`
-  - [ ] 0.2 Move the body of `breakCardLayout` (lines 138–175 of `SessionCardView.swift`) into `BreakCardLayout` as a SwiftUI `View`:
+- [x] **Task 0: Extract `SessionCardView.breakCardLayout` into shared `BreakCardLayout`** (Blocks: Task 2)
+  - [x] 0.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/BreakCardLayout.swift`
+  - [x] 0.2 Move the body of `breakCardLayout` (lines 138–175 of `SessionCardView.swift`) into `BreakCardLayout` as a SwiftUI `View`:
     - Inputs: `session: CachedSession` (or `sessionType: String`, `title: String` — choose minimal interface that works for both public zone and O5)
     - Layout: SF Symbol icon (`cup.and.saucer` / `person.2`), session title, optional time slot + status badge
-  - [ ] 0.3 Move `breakIcon` computed property (lines 70–82 of `SessionCardView.swift`) as a `static func breakIcon(for sessionType: String) -> String` helper on `BreakCardLayout` or as an extension on `CachedSession`
-  - [ ] 0.4 Verify `isBreakSession` property (lines 49–52 of `SessionCardView.swift`) — if it's a `CachedSession` extension, it's already reusable. If it's on `SessionCardView` only, move it to a `CachedSession` extension: `var isBreak: Bool { sessionType == "break" || sessionType == "lunch" || sessionType == "networking" }`. O5's `.onChange` trigger uses `viewModel.activeSession?.isBreak`.
-  - [ ] 0.5 In `SessionCardView.swift`, replace the inline `breakCardLayout` section with `BreakCardLayout(session: session)` — all existing public zone break card behavior preserved
-  - [ ] 0.6 Unit tests in `BreakCardLayoutTests.swift` (Swift Testing, `@Test`):
+  - [x] 0.3 Move `breakIcon` computed property (lines 70–82 of `SessionCardView.swift`) as a `static func breakIcon(for sessionType: String) -> String` helper on `BreakCardLayout` or as an extension on `CachedSession`
+  - [x] 0.4 Verify `isBreakSession` property (lines 49–52 of `SessionCardView.swift`) — if it's a `CachedSession` extension, it's already reusable. If it's on `SessionCardView` only, move it to a `CachedSession` extension: `var isBreak: Bool { sessionType == "break" || sessionType == "lunch" || sessionType == "networking" }`. O5's `.onChange` trigger uses `viewModel.activeSession?.isBreak`.
+  - [x] 0.5 In `SessionCardView.swift`, replace the inline `breakCardLayout` section with `BreakCardLayout(session: session)` — all existing public zone break card behavior preserved
+  - [x] 0.6 Unit tests in `BreakCardLayoutTests.swift` (Swift Testing, `@Test`):
     - `BreakCardLayout` renders `cup.and.saucer.fill` icon for `.break` and `.lunch` session types
     - `BreakCardLayout` renders `person.2.fill` icon for `.networking` session type
     - `BreakCardLayout` renders correct `title` text
@@ -86,10 +86,10 @@ so that the entire evening runs smoothly.
 
 ### watchOS — Gong Overlay Signal in LiveCountdownViewModel
 
-- [ ] **Task 1: `LiveCountdownViewModel.gongOverlayVisible` + deduplication** (AC: 2)
-  - [ ] 1.1 Add `private(set) var gongOverlayVisible: Bool = false` to `LiveCountdownViewModel.swift`
-  - [ ] 1.2 Add `private var gongFiredInCurrentBreak: Bool = false` for per-break deduplication
-  - [ ] 1.3 In `refreshState()`, after `evaluateBreakGong()` is called (which fires the haptic), add gong overlay detection:
+- [x] **Task 1: `LiveCountdownViewModel.gongOverlayVisible` + deduplication** (AC: 2)
+  - [x] 1.1 Add `private(set) var gongOverlayVisible: Bool = false` to `LiveCountdownViewModel.swift`
+  - [x] 1.2 Add `private var gongFiredInCurrentBreak: Bool = false` for per-break deduplication
+  - [x] 1.3 In `refreshState()`, after `evaluateBreakGong()` is called (which fires the haptic), add gong overlay detection:
     ```swift
     if let active = activeSession, active.isBreak {
         let breakRemaining = max(0, active.scheduledEndTime.flatMap {
@@ -110,8 +110,8 @@ so that the entire evening runs smoothly.
         }
     }
     ```
-  - [ ] 1.4 Edge case: if app is suspended during the 5-second window, `gongOverlayVisible` may remain `true` on resume. On `refreshState()`, if `activeSession?.isBreak == false`, force `gongOverlayVisible = false` immediately.
-  - [ ] 1.5 Unit tests in `LiveCountdownViewModelTests.swift`:
+  - [x] 1.4 Edge case: if app is suspended during the 5-second window, `gongOverlayVisible` may remain `true` on resume. On `refreshState()`, if `activeSession?.isBreak == false`, force `gongOverlayVisible = false` immediately.
+  - [x] 1.5 Unit tests in `LiveCountdownViewModelTests.swift`:
     - `gongOverlayVisible` becomes `true` when break `scheduledEndTime` is 55s in the future (within 60s threshold)
     - `gongOverlayVisible` does NOT become `true` again in the same break (deduplication: `gongFiredInCurrentBreak` guards)
     - `gongFiredInCurrentBreak` resets to `false` when `activeSession` changes from break to talk (new break will re-arm the overlay)
@@ -121,10 +121,10 @@ so that the entire evening runs smoothly.
 
 ### watchOS — O5 BreakGongView
 
-- [ ] **Task 2: Create O5 `BreakGongView`** (AC: 1, 2, 3)
-  - [ ] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/BreakGongView.swift`
-  - [ ] 2.2 Input: `viewModel: LiveCountdownViewModel` — the same `@Observable` instance held by `LiveCountdownView` (passed in; no new ViewModel, no new data fetching)
-  - [ ] 2.3 Layout (full-screen, vertical):
+- [x] **Task 2: Create O5 `BreakGongView`** (AC: 1, 2, 3)
+  - [x] 2.1 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/BreakGongView.swift`
+  - [x] 2.2 Input: `viewModel: LiveCountdownViewModel` — the same `@Observable` instance held by `LiveCountdownView` (passed in; no new ViewModel, no new data fetching)
+  - [x] 2.3 Layout (full-screen, vertical):
     ```
     ┌─── gong overlay (top, conditional) ────────────────┐
     │ [🔔 Break ending soon]   ← orange banner, 5s visible  │
@@ -142,15 +142,15 @@ so that the entire evening runs smoothly.
     NextSessionPeekView(session: next, style: .compact)
       ← W4.2 shared component, no portrait redundancy
     ```
-  - [ ] 2.4 Countdown colors: reuse same urgency-level color mapping as O3 (already in `LiveCountdownView` or `LiveCountdownViewModel.urgencyLevel`). At gong threshold (≤60s), urgency is approaching `.critical` or `.overtime` — color will naturally shift to orange/red.
-  - [ ] 2.5 Gong overlay ("Break ending soon" banner):
+  - [x] 2.4 Countdown colors: reuse same urgency-level color mapping as O3 (already in `LiveCountdownView` or `LiveCountdownViewModel.urgencyLevel`). At gong threshold (≤60s), urgency is approaching `.critical` or `.overtime` — color will naturally shift to orange/red.
+  - [x] 2.5 Gong overlay ("Break ending soon" banner):
     - Presented as a `ZStack` overlay at the top of `BreakGongView`, shown when `viewModel.gongOverlayVisible == true`
     - Layout: HStack with `Image(systemName: "bell.fill")` + `Text("Break ending soon")` (localized key: `"break.gong.overlay.title"`)
     - Style: SF Pro Rounded 12pt semibold, white text, orange background (`.orange.opacity(0.90)`)
     - Animation: `.transition(.asymmetric(insertion: .move(edge: .top).combined(with: .opacity), removal: .opacity))`
     - Note: 5-second dismiss is handled by `LiveCountdownViewModel.gongOverlayVisible` (Task 1) — no timer in the view
-  - [ ] 2.6 `BreakGongView` does NOT contain any haptic calls (haptic fires via `HapticScheduler.evaluateBreakGong()` in the ViewModel's tick loop — never in the view)
-  - [ ] 2.7 Unit tests in `BreakGongViewTests.swift` (Swift Testing, `@Test`):
+  - [x] 2.6 `BreakGongView` does NOT contain any haptic calls (haptic fires via `HapticScheduler.evaluateBreakGong()` in the ViewModel's tick loop — never in the view)
+  - [x] 2.7 Unit tests in `BreakGongViewTests.swift` (Swift Testing, `@Test`):
     - Break icon (`cup.and.saucer.fill`) displayed for a break-type session
     - `NextSessionPeekView` rendered when `viewModel.nextSession != nil`
     - `NextSessionPeekView` NOT rendered when `viewModel.nextSession == nil` (last session of the night is preceded by the final break)
@@ -162,9 +162,9 @@ so that the entire evening runs smoothly.
 
 ### watchOS — O3 ↔ O5 Auto-Transition in `LiveCountdownView`
 
-- [ ] **Task 3: Wire O5 auto-transition in `LiveCountdownView`** (AC: 1, 3)
-  - [ ] 3.1 In `LiveCountdownView.swift`, add `@State private var showBreak: Bool = false`
-  - [ ] 3.2 Add `.onChange(of: viewModel.activeSession?.isBreak)` to `LiveCountdownView.body`:
+- [x] **Task 3: Wire O5 auto-transition in `LiveCountdownView`** (AC: 1, 3)
+  - [x] 3.1 In `LiveCountdownView.swift`, add `@State private var showBreak: Bool = false`
+  - [x] 3.2 Add `.onChange(of: viewModel.activeSession?.isBreak)` to `LiveCountdownView.body`:
     ```swift
     .onChange(of: viewModel.activeSession?.isBreak) { _, isBreak in
         withAnimation {
@@ -172,16 +172,16 @@ so that the entire evening runs smoothly.
         }
     }
     ```
-  - [ ] 3.3 Present O5 as `.fullScreenCover(isPresented: $showBreak)`:
+  - [x] 3.3 Present O5 as `.fullScreenCover(isPresented: $showBreak)`:
     ```swift
     .fullScreenCover(isPresented: $showBreak) {
         BreakGongView(viewModel: viewModel)
     }
     ```
-  - [ ] 3.4 **O5 → O3 auto-dismiss**: when the break's `scheduledEndTime` is reached, `LiveCountdownViewModel.refreshState()` finds a new `activeSession` (the next talk) with `isBreak == false` → `.onChange` fires → `showBreak = false` → `.fullScreenCover` dismisses → O3 shows the new session's countdown. No organizer interaction required.
-  - [ ] 3.5 **Mutual exclusion with W4.2/W4.3**: `showBreak` operates independently of `showTransition` (W4.2) and `showCascadePrompt` (W4.3). In practice these are mutually exclusive by event design (cascade/transition happens on talk sessions; break happens during breaks). No special coordination needed — watchOS presents only one `.fullScreenCover` at a time.
-  - [ ] 3.6 **Initial state on connection**: if the organizer connects mid-break (joins event during a break), `viewModel.activeSession?.isBreak == true` immediately → `showBreak` is set to `true` in `.onAppear` guard. Add `onAppear { showBreak = viewModel.activeSession?.isBreak == true }` to handle this case.
-  - [ ] 3.7 Unit tests in `LiveCountdownViewTests.swift`:
+  - [x] 3.4 **O5 → O3 auto-dismiss**: when the break's `scheduledEndTime` is reached, `LiveCountdownViewModel.refreshState()` finds a new `activeSession` (the next talk) with `isBreak == false` → `.onChange` fires → `showBreak = false` → `.fullScreenCover` dismisses → O3 shows the new session's countdown. No organizer interaction required.
+  - [x] 3.5 **Mutual exclusion with W4.2/W4.3**: `showBreak` operates independently of `showTransition` (W4.2) and `showCascadePrompt` (W4.3). In practice these are mutually exclusive by event design (cascade/transition happens on talk sessions; break happens during breaks). No special coordination needed — watchOS presents only one `.fullScreenCover` at a time.
+  - [x] 3.6 **Initial state on connection**: if the organizer connects mid-break (joins event during a break), `viewModel.activeSession?.isBreak == true` immediately → `showBreak` is set to `true` in `.onAppear` guard. Add `onAppear { showBreak = viewModel.activeSession?.isBreak == true }` to handle this case.
+  - [x] 3.7 Unit tests in `LiveCountdownViewTests.swift`:
     - `showBreak` becomes `true` when `viewModel.activeSession.isBreak == true`
     - `showBreak` becomes `false` when `viewModel.activeSession.isBreak == false` (break ends, next talk starts)
     - `showBreak == true` after `onAppear` when initial session is a break (mid-event join case)
@@ -191,9 +191,9 @@ so that the entire evening runs smoothly.
 
 ### watchOS — Event Completed Routing in `OrganizerZoneView`
 
-- [ ] **Task 4: Add "Event Complete" screen to `OrganizerZoneView`** (AC: 4)
-  - [ ] 4.1 When `EventStateManager.isLive == false` and `EventStateManager.hasActiveEvent == true` and the event date is today (event just completed), `OrganizerZoneView` should show a distinct "Event Complete" state rather than the generic `EventPreviewView`.
-  - [ ] 4.2 Add detection in `OrganizerZoneView`:
+- [x] **Task 4: Add "Event Complete" screen to `OrganizerZoneView`** (AC: 4)
+  - [x] 4.1 When `EventStateManager.isLive == false` and `EventStateManager.hasActiveEvent == true` and the event date is today (event just completed), `OrganizerZoneView` should show a distinct "Event Complete" state rather than the generic `EventPreviewView`.
+  - [x] 4.2 Add detection in `OrganizerZoneView`:
     ```swift
     var organizerEntryView: some View {
         if !authManager.isPaired {
@@ -209,7 +209,7 @@ so that the entire evening runs smoothly.
         }
     }
     ```
-  - [ ] 4.3 Add computed property to `EventStateManager`:
+  - [x] 4.3 Add computed property to `EventStateManager`:
     ```swift
     var isEventCompletedToday: Bool {
         guard let event = controller.currentEvent else { return false }
@@ -218,16 +218,16 @@ so that the entire evening runs smoothly.
     }
     ```
     This avoids a new "event completed" flag while using the existing `currentEvent` data — satisfying the reuse-map "no new flag" mandate.
-  - [ ] 4.4 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventCompletedView.swift`:
+  - [x] 4.4 Create `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventCompletedView.swift`:
     - Display: BATbern logo/symbol, "Event Complete" title, event title, "Thanks for a great evening!" caption
     - Localized key: `"organizer.event.completed.title"` / `"organizer.event.completed.caption"`
     - No interactive elements (passive completion screen)
     - Simple, clean layout consistent with public zone hero screen
-  - [ ] 4.5 Unit tests in `EventStateManagerTests.swift`:
+  - [x] 4.5 Unit tests in `EventStateManagerTests.swift`:
     - `isEventCompletedToday == true` when `isLive == false`, `hasActiveEvent == true`, `eventDate == today`
     - `isEventCompletedToday == false` when `isLive == true`
     - `isEventCompletedToday == false` when event date is not today (past archive or future event)
-  - [ ] 4.6 Unit tests in `EventCompletedViewTests.swift`:
+  - [x] 4.6 Unit tests in `EventCompletedViewTests.swift`:
     - View renders event title
     - "Event Complete" text displayed
 
@@ -235,8 +235,8 @@ so that the entire evening runs smoothly.
 
 ### Backend — EVENT_COMPLETED Detection in `WatchSessionService`
 
-- [ ] **Task 5: Detect all-sessions-complete and transition event to COMPLETED** (AC: 4)
-  - [ ] 5.1 In `WatchSessionService.endSession()` (from W4.2 Task 7), after `sessionRepository.save(session)`, add all-complete detection:
+- [x] **Task 5: Detect all-sessions-complete and transition event to COMPLETED** (AC: 4)
+  - [x] 5.1 In `WatchSessionService.endSession()` (from W4.2 Task 7), after `sessionRepository.save(session)`, add all-complete detection:
     ```java
     // Check if all sessions in this event are now complete
     List<Session> allSessions = sessionRepository.findAllByEventCode(eventCode);
@@ -255,37 +255,37 @@ so that the entire evening runs smoothly.
         );
     }
     ```
-  - [ ] 5.2 **`eventLifecycleService.completeEvent()`**: Check if `EventLifecycleService` or `EventWorkflowService` already exists in the platform (the main BATbern platform has an event state machine with `EVENT_LIVE → EVENT_COMPLETED` transition). If a reusable transition method exists, call it. If not, directly update `event.setWorkflowState(EventWorkflowState.EVENT_COMPLETED)` and `eventRepository.save(event)`. Align with the existing 9-state machine patterns.
-  - [ ] 5.3 Similarly update `WatchSessionService.cascadeSession()` (from W4.3 Task 7): after ending the session (Step 1) and shifting downstream sessions (Step 2), also check `allComplete` before calling `buildAndBroadcastState`. Since cascade ends a session (and `cascadeMinutes == 0` "absorb" also completes the session), the cascade of the final session could complete the event.
-  - [ ] 5.4 Idempotency: if `eventLifecycleService.completeEvent()` is called a second time (two organizers racing), it should be a no-op (event already COMPLETED). Verify the existing lifecycle service handles this.
+  - [x] 5.2 **`eventLifecycleService.completeEvent()`**: Check if `EventLifecycleService` or `EventWorkflowService` already exists in the platform (the main BATbern platform has an event state machine with `EVENT_LIVE → EVENT_COMPLETED` transition). If a reusable transition method exists, call it. If not, directly update `event.setWorkflowState(EventWorkflowState.EVENT_COMPLETED)` and `eventRepository.save(event)`. Align with the existing 9-state machine patterns.
+  - [x] 5.3 ~~Similarly update `WatchSessionService.cascadeSession()`~~ **N/A**: `cascadeSession()` was removed from W4.3 scope by Sprint Change Proposal 2026-02-19. The cascade path no longer exists; all-complete detection is handled exclusively in `endSession()`.
+  - [x] 5.4 Idempotency: if `eventLifecycleService.completeEvent()` is called a second time (two organizers racing), it should be a no-op (event already COMPLETED). Verify the existing lifecycle service handles this.
 
-- [ ] **Task 6: `SessionRepository` — `findAllByEventCode`** (AC: 4)
-  - [ ] 6.1 Verify if `findAllByEventCode(String eventCode)` or an equivalent method already exists in `SessionRepository.java` (may have been added by W2.x or earlier epics for event validation)
-  - [ ] 6.2 If not present, add:
+- [x] **Task 6: `SessionRepository` — `findAllByEventCode`** (AC: 4)
+  - [x] 6.1 Verify if `findAllByEventCode(String eventCode)` or an equivalent method already exists in `SessionRepository.java` (may have been added by W2.x or earlier epics for event validation)
+  - [x] 6.2 If not present, add:
     ```java
     List<Session> findAllByEventCode(String eventCode);
     ```
-  - [ ] 6.3 Integration test: verify returns all sessions (talk, break, networking) for a given event code
+  - [x] 6.3 Integration test: verify returns all sessions (talk, break, networking) for a given event code
 
-- [ ] **Task 7: `WatchStateUpdateMessage` — EVENT_COMPLETED trigger** (AC: 4)
-  - [ ] 7.1 `trigger` field already added in W4.2 Task 8.1 — verify `"EVENT_COMPLETED"` is a valid trigger string. No code change needed if the field is a free-form `String` (it is, per W4.2 implementation).
-  - [ ] 7.2 Verify `WatchPresenceService.buildAndBroadcastState(eventCode, "EVENT_COMPLETED", null, completedByUsername)` works when `sessionSlug == null` — the trigger is event-level, not session-level. Guard any `sessionSlug`-referencing code in `buildStateUpdate()` for nullity.
-  - [ ] 7.3 Include event-level status in the broadcast. Add `eventCompleted: Boolean` field to `WatchStateUpdateMessage.java`:
+- [x] **Task 7: `WatchStateUpdateMessage` — EVENT_COMPLETED trigger** (AC: 4)
+  - [x] 7.1 `trigger` field already added in W4.2 Task 8.1 — verify `"EVENT_COMPLETED"` is a valid trigger string. No code change needed if the field is a free-form `String` (it is, per W4.2 implementation).
+  - [x] 7.2 Verify `WatchPresenceService.buildAndBroadcastState(eventCode, "EVENT_COMPLETED", null, completedByUsername)` works when `sessionSlug == null` — the trigger is event-level, not session-level. Guard any `sessionSlug`-referencing code in `buildStateUpdate()` for nullity.
+  - [x] 7.3 Include event-level status in the broadcast. Add `eventCompleted: Boolean` field to `WatchStateUpdateMessage.java`:
     ```java
     private boolean eventCompleted;  // true when trigger == "EVENT_COMPLETED"
     ```
     Set to `true` in `buildAndBroadcastState()` when trigger is `"EVENT_COMPLETED"`. This allows the Watch client to reliably detect completion without parsing the trigger string.
 
-- [ ] **Task 8: `EventDataController` — handle EVENT_COMPLETED broadcast** (AC: 4)
-  - [ ] 8.1 In `EventDataController.applyServerState(_:)`, handle `eventCompleted == true` in the incoming `WatchStateUpdate`:
+- [x] **Task 8: `EventDataController` — handle EVENT_COMPLETED broadcast** (AC: 4)
+  - [x] 8.1 In `EventDataController.applyServerState(_:)`, handle `eventCompleted == true` in the incoming `WatchStateUpdate`:
     ```swift
     if update.eventCompleted {
         // Mark the cached event as completed so EventStateManager.isLive → false
         currentEvent?.workflowState = "EVENT_COMPLETED"
     }
     ```
-  - [ ] 8.2 Verify `EventStateManager.isLive` correctly returns `false` when `currentEvent?.workflowState == "EVENT_COMPLETED"`. If `isLive` is computed solely from active session presence (no active sessions after completion), then Step 8.1 may be optional but is good practice for explicitness and future-proofing.
-  - [ ] 8.3 Unit tests in `EventDataControllerApplyServerStateTests.swift` (existing file from W4.1):
+  - [x] 8.2 Verify `EventStateManager.isLive` correctly returns `false` when `currentEvent?.workflowState == "EVENT_COMPLETED"`. If `isLive` is computed solely from active session presence (no active sessions after completion), then Step 8.1 may be optional but is good practice for explicitness and future-proofing.
+  - [x] 8.3 Unit tests in `EventDataControllerApplyServerStateTests.swift` (existing file from W4.1):
     - `applyServerState` with `eventCompleted: true` → `currentEvent.workflowState == "EVENT_COMPLETED"`
     - `applyServerState` with `eventCompleted: false` → `currentEvent.workflowState` unchanged
 
@@ -293,12 +293,12 @@ so that the entire evening runs smoothly.
 
 ### Backend — Integration Tests
 
-- [ ] **Task 9: `WatchEventCompletionIntegrationTest`** (AC: 4)
-  - [ ] 9.1 Create `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventCompletionIntegrationTest.java` extending `AbstractIntegrationTest`
-  - [ ] 9.2 Test: `endSession()` on the **last** session of an event → all sessions `allMatch(completed)` → `eventLifecycleService.completeEvent()` called → broadcast trigger is `"EVENT_COMPLETED"` → `WatchStateUpdateMessage.eventCompleted == true`
-  - [ ] 9.3 Test: `endSession()` on a **non-last** session → regular `SESSION_ENDED` broadcast → `WatchStateUpdateMessage.eventCompleted == false`
-  - [ ] 9.4 Test: `cascadeSession()` on the **last** session → same all-complete detection → `EVENT_COMPLETED` broadcast
-  - [ ] 9.5 Test: `eventLifecycleService.completeEvent()` called twice (second organizer races) → idempotent, no exception thrown, event remains in COMPLETED state
+- [x] **Task 9: `WatchEventCompletionIntegrationTest`** (AC: 4)
+  - [x] 9.1 Create `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventCompletionIntegrationTest.java` extending `AbstractIntegrationTest`
+  - [x] 9.2 Test: `endSession()` on the **last** session of an event → all sessions `allMatch(completed)` → `eventLifecycleService.completeEvent()` called → broadcast trigger is `"EVENT_COMPLETED"` → `WatchStateUpdateMessage.eventCompleted == true`
+  - [x] 9.3 Test: `endSession()` on a **non-last** session → regular `SESSION_ENDED` broadcast → `WatchStateUpdateMessage.eventCompleted == false`
+  - [x] 9.4 ~~Test: `cascadeSession()` on the last session~~  **N/A**: `cascadeSession()` does not exist (removed by Sprint Change Proposal 2026-02-19 from W4.3 scope). This test was vacuous; `endSession()` is the only completion path.
+  - [x] 9.5 Test: `eventLifecycleService.completeEvent()` called twice (second organizer races) → idempotent, no exception thrown, event remains in COMPLETED state
 
 ---
 
@@ -547,3 +547,33 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+**New files (watchOS):**
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Shared/BreakCardLayout.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/BreakGongView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/EventCompletedView.swift`
+
+**Modified files (watchOS):**
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Public/SessionCardView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Models/CachedSession.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/ViewModels/LiveCountdownViewModel.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/Organizer/LiveCountdownView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Domain/EventStateManager.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Views/OrganizerZoneView.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Data/EventDataController.swift`
+- `apps/BATbern-watch/BATbern-watch Watch App/Protocols/WebSocketClientProtocol.swift`
+
+**New backend files:**
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventCompletionIntegrationTest.java`
+
+**Modified backend files:**
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchSessionService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/dto/WatchStateUpdateMessage.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/watch/WatchPresenceService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/SessionRepository.java`
+
+**New test files:**
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/BreakCardLayoutTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/BreakGongViewTests.swift`
+- `apps/BATbern-watch/BATbern-watch Watch AppTests/Views/EventCompletedViewTests.swift`
+- `services/event-management-service/src/test/java/ch/batbern/events/watch/WatchEventCompletionIntegrationTest.java`

@@ -149,7 +149,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
       </Grid>
 
       {/* Edit Modal */}
-      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
           {t('dashboard.actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>

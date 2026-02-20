@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/public/ui/button';
 import { useTranslation } from 'react-i18next';
 import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
+import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { CheckCircle2, Mail } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -159,6 +160,8 @@ export const HeroSection = ({
         <div className={`relative z-10 w-full flex items-end pb-16 md:pb-20 lg:pb-24 min-h-screen`}>
           <div className="container mx-auto px-4">
             <div className="max-w-4xl">
+              <BATbernLoader size={288} speed="slow" className="mb-6" />
+
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6">
                 {title}
               </h1>

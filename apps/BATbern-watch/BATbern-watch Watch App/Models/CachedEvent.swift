@@ -19,6 +19,9 @@ class CachedEvent {
     var typicalStartTime: String
     var typicalEndTime: String
     var currentPublishedPhase: String?  // TOPIC, SPEAKERS, AGENDA
+    /// W4.4: Server-driven event lifecycle state (e.g. "EVENT_COMPLETED").
+    /// Nil until the server broadcasts EVENT_COMPLETED. Optional preserves backward compat.
+    var workflowState: String?
     @Relationship(deleteRule: .cascade) var sessions: [CachedSession]
     var lastSyncTimestamp: Date
 
@@ -31,6 +34,7 @@ class CachedEvent {
         typicalStartTime: String,
         typicalEndTime: String,
         currentPublishedPhase: String? = nil,
+        workflowState: String? = nil,
         sessions: [CachedSession] = [],
         lastSyncTimestamp: Date = Date()
     ) {
@@ -42,6 +46,7 @@ class CachedEvent {
         self.typicalStartTime = typicalStartTime
         self.typicalEndTime = typicalEndTime
         self.currentPublishedPhase = currentPublishedPhase
+        self.workflowState = workflowState
         self.sessions = sessions
         self.lastSyncTimestamp = lastSyncTimestamp
     }

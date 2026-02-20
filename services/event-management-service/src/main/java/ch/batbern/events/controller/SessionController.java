@@ -13,6 +13,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionBatchImportService;
 import ch.batbern.events.service.SessionService;
+import ch.batbern.events.service.StructuralSessionService;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.api.FilterParser;
@@ -40,6 +41,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -79,6 +82,9 @@ public class SessionController {
 
     @Autowired
     private SessionBatchImportService sessionBatchImportService;
+
+    @Autowired
+    private StructuralSessionService structuralSessionService;
 
     /**
      * AC9: List sessions for an event with optional filtering
@@ -243,11 +249,24 @@ public class SessionController {
         session.setTitle(request.getTitle());
         session.setDescription(request.getDescription());
         session.setSessionType(request.getSessionType());
-        session.setStartTime(parseInstant(request.getStartTime()));
-        session.setEndTime(parseInstant(request.getEndTime()));
+        Instant newStartTime = parseInstant(request.getStartTime());
+        Instant newEndTime = parseInstant(request.getEndTime());
+        boolean timingChanged = !newStartTime.equals(session.getStartTime())
+                || !newEndTime.equals(session.getEndTime());
+        session.setStartTime(newStartTime);
+        session.setEndTime(newEndTime);
         session.setRoom(request.getRoom());
         session.setCapacity(request.getCapacity());
         session.setLanguage(request.getLanguage());
+
+        // Clear actual execution data when scheduled times change (W4.x: stale values
+        // corrupt Watch countdown and Delayed-button logic after a reschedule).
+        if (timingChanged) {
+            session.setActualStartTime(null);
+            session.setActualEndTime(null);
+            session.setOverrunMinutes(null);
+            session.setCompletedByUsername(null);
+        }
 
         Session updatedSession = sessionRepository.save(session);
 
@@ -313,7 +332,14 @@ public class SessionController {
                 Instant startTime = session.getStartTime();
                 if (startTime != null) {
                     Instant newEndTime = startTime.plusSeconds(durationMinutes * 60L);
-                    session.setEndTime(newEndTime);
+                    if (!newEndTime.equals(session.getEndTime())) {
+                        session.setEndTime(newEndTime);
+                        // Clear actual execution data when scheduled end time changes (W4.x).
+                        session.setActualStartTime(null);
+                        session.setActualEndTime(null);
+                        session.setOverrunMinutes(null);
+                        session.setCompletedByUsername(null);
+                    }
                 }
             }
         }
@@ -424,6 +450,28 @@ public class SessionController {
                     throw new ValidationException("Unsupported filter operator: " + operator);
             }
         };
+    }
+
+    /**
+     * Generate structural sessions (moderation, break, lunch) for an event.
+     * ORGANIZER role required.
+     * POST /api/v1/events/{eventCode}/sessions/structural
+     *
+     * @param eventCode Public event code
+     * @param overwrite If true, delete existing structural sessions before generating
+     * @return 201 with list of created sessions, or 409 if sessions exist and overwrite=false
+     */
+    @PostMapping("/structural")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    public ResponseEntity<List<SessionResponse>> generateStructuralSessions(
+            @PathVariable String eventCode,
+            @RequestParam(required = false, defaultValue = "false") boolean overwrite) {
+
+        List<SessionResponse> sessions = structuralSessionService.generateStructuralSessions(
+                eventCode, overwrite);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(sessions);
     }
 
     /**

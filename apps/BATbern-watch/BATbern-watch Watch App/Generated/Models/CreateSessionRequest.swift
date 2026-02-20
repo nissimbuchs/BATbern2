@@ -21,6 +21,7 @@ public struct CreateSessionRequest: Codable, JSONEncodable, Hashable {
         case networking = "networking"
         case _break = "break"
         case lunch = "lunch"
+        case moderation = "moderation"
     }
     public static let titleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
     public static let roomRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)

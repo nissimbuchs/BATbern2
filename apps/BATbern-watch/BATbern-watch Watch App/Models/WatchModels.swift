@@ -34,7 +34,7 @@ struct WatchSession: Sendable, Identifiable {
     }
 
     var isBreak: Bool {
-        sessionType == .breakTime || sessionType == .lunch
+        sessionType == .breakTime || sessionType == .lunch || sessionType == .networking
     }
 }
 
@@ -46,6 +46,7 @@ enum SessionType: String, Codable, Sendable {
     case networking
     case breakTime = "break"
     case lunch
+    case moderation
 }
 
 struct WatchSpeaker: Sendable, Identifiable {

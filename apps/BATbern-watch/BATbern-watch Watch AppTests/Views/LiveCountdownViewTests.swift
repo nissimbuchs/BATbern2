@@ -193,6 +193,92 @@ struct LiveCountdownViewTests {
         #expect(vm.shouldAutoAdvance == true)
     }
 
+    // MARK: - O3→O5 Break Routing (W4.4 AC1)
+
+    @Test("activeSession.isBreak is true for break session — triggers showBreak in view")
+    func breakRouting_isBreakTrueForBreakSession() {
+        let (vm, clock, _, state) = makeVM()
+        let breakSession = CachedSession(
+            sessionSlug: "coffee-break",
+            title: "Coffee Break",
+            sessionType: .breakTime,
+            startTime: clock.now.addingTimeInterval(-300),
+            endTime: clock.now.addingTimeInterval(900),
+            speakers: []
+        )
+        state.currentEvent = makeEvent(sessions: [breakSession])
+
+        vm.refreshState()
+
+        // LiveCountdownView's .onChange(of: viewModel.activeSession?.isBreak) sets showBreak = true
+        #expect(vm.activeSession?.isBreak == true)
+        #expect(vm.activeSession?.id == "coffee-break")
+    }
+
+    @Test("activeSession.isBreak is false for talk session — showBreak stays false")
+    func breakRouting_isBreakFalseForTalkSession() {
+        let (vm, clock, _, state) = makeVM()
+        let talkSession = makeSession(
+            slug: "cloud-native",
+            start: clock.now.addingTimeInterval(-300),
+            end: clock.now.addingTimeInterval(2400)
+        )
+        state.currentEvent = makeEvent(sessions: [talkSession])
+
+        vm.refreshState()
+
+        #expect(vm.activeSession?.isBreak == false)
+    }
+
+    @Test("activeSession.isBreak transitions false when session advances from break to talk")
+    func breakRouting_isBreakTransitionsFalseOnAdvance() {
+        let (vm, clock, _, state) = makeVM()
+
+        // Step 1: break active → isBreak = true → view shows O5
+        let breakSession = CachedSession(
+            sessionSlug: "coffee-break",
+            title: "Coffee Break",
+            sessionType: .breakTime,
+            startTime: clock.now.addingTimeInterval(-300),
+            endTime: clock.now.addingTimeInterval(60),
+            speakers: []
+        )
+        state.currentEvent = makeEvent(sessions: [breakSession])
+        vm.refreshState()
+        #expect(vm.activeSession?.isBreak == true)
+
+        // Step 2: break ends, talk starts → isBreak = false → view dismisses O5
+        clock.advance(by: 70)
+        let nextTalk = makeSession(
+            slug: "next-talk",
+            start: clock.now,
+            end: clock.now.addingTimeInterval(2700)
+        )
+        state.currentEvent = makeEvent(sessions: [nextTalk])
+        vm.refreshState()
+
+        #expect(vm.activeSession?.id == "next-talk")
+        #expect(vm.activeSession?.isBreak == false)
+    }
+
+    @Test("networking session isBreak is true — W4.4 fix includes networking in break routing")
+    func breakRouting_networkingSessionIsBreak() {
+        let (vm, clock, _, state) = makeVM()
+        let networking = CachedSession(
+            sessionSlug: "networking",
+            title: "Apéro & Networking",
+            sessionType: .networking,
+            startTime: clock.now.addingTimeInterval(-300),
+            endTime: clock.now.addingTimeInterval(3300),
+            speakers: []
+        )
+        state.currentEvent = makeEvent(sessions: [networking])
+
+        vm.refreshState()
+
+        #expect(vm.activeSession?.isBreak == true)
+    }
+
     @Test("showTransition skipped (AC5): nextSession nil when only break follows")
     func transition_skippedWhenBreakFollows() {
         // AC5: findNextSession() excludes breaks — returns nil when break is next.

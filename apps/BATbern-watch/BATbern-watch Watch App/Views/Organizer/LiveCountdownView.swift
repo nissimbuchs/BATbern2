@@ -26,6 +26,8 @@ struct LiveCountdownView: View {
     @State private var showDelayedPrompt: Bool = false
     /// W4.3: Prevents double-sends while extend/delay action is in flight.
     @State private var isActionInFlight: Bool = false
+    /// W4.4 AC1: Controls presentation of O5 BreakGongView.
+    @State private var showBreak: Bool = false
 
     var body: some View {
         Group {
@@ -38,6 +40,8 @@ struct LiveCountdownView: View {
         .onAppear {
             viewModel.eventState = eventState
             viewModel.startTimer()
+            // W4.4 AC1: sync showBreak with current session on appear (e.g. mid-break app launch)
+            showBreak = viewModel.activeSession?.isBreak == true
         }
         .onDisappear {
             viewModel.stopTimer()
@@ -135,9 +139,23 @@ struct LiveCountdownView: View {
                 )
             }
         }
-        // W4.3: Reset isActionInFlight when session changes (action was processed)
+        // W4.3: Reset isActionInFlight when session changes (Delay: active session ID changes)
         .onChange(of: viewModel.activeSession?.id) { _, _ in
             isActionInFlight = false
+        }
+        // W4.3: Reset isActionInFlight when endTime changes (Extend: same session ID, new endTime)
+        .onChange(of: viewModel.activeSession?.endTime) { _, _ in
+            isActionInFlight = false
+        }
+        // W4.4 AC1: Auto-transition O3→O5 when the active session becomes a break.
+        // Dismisses O5 automatically when break ends (isBreak becomes false).
+        .onChange(of: viewModel.activeSession?.isBreak) { _, isBreak in
+            showBreak = isBreak == true
+        }
+        // W4.4 AC1/AC3: O5 BreakGongView — full-screen break screen.
+        // Shares the same ViewModel instance — no new timer, no new WebSocket.
+        .fullScreenCover(isPresented: $showBreak) {
+            BreakGongView(viewModel: viewModel)
         }
     }
 
@@ -316,8 +334,7 @@ struct LiveCountdownView: View {
     /// Countdown color mapping per AC2-AC5.
     private var countdownColor: Color {
         switch viewModel.urgencyLevel {
-        case .normal:               return .teal
-        case .caution:              return .yellow
+        case .normal, .caution:     return BATbernWatchStyle.Colors.batbernBlue
         case .warning, .critical:   return .orange
         case .overtime:             return .red
         }

@@ -414,6 +414,7 @@ enum WebSocketClientError: Error, LocalizedError {
 /// JSON shape of the server's WatchStateUpdateMessage broadcast.
 /// Source: story W4.1 Dev Notes — WatchStateUpdateMessage JSON Shape.
 /// W4.2 Task 8.2: Added sessionSlug and initiatedBy top-level fields.
+/// W4.4: Added eventCompleted (optional for backward compat with pre-W4.4 server versions).
 private struct WatchStateServerMessage: Decodable {
     let type: String
     let trigger: String?
@@ -423,6 +424,7 @@ private struct WatchStateServerMessage: Decodable {
     let sessions: [SessionDto]
     let connectedOrganizers: [OrganizerDto]
     let serverTimestamp: String
+    let eventCompleted: Bool?    // W4.4: true when all completeable sessions done (nil on old servers)
 
     struct SessionDto: Decodable {
         let sessionSlug: String
@@ -447,6 +449,7 @@ private struct WatchStateServerMessage: Decodable {
         case "SESSION_STARTED":  return .sessionStarted
         case "SESSION_ENDED":    return .sessionEnded
         case "SESSION_EXTENDED": return .sessionExtended
+        case "SESSION_DELAYED":  return .sessionDelayed
         case "SESSION_SKIPPED":  return .sessionSkipped
         default:                 return .heartbeat
         }
@@ -470,7 +473,8 @@ private struct WatchStateServerMessage: Decodable {
             connectedOrganizers: connectedOrganizers.map {
                 ConnectedOrganizer(username: $0.username, firstName: $0.firstName)
             },
-            serverTimestamp: ts
+            serverTimestamp: ts,
+            eventCompleted: eventCompleted ?? false
         )
     }
 

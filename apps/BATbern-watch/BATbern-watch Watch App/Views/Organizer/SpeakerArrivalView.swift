@@ -17,9 +17,10 @@ struct SpeakerArrivalView: View {
 
     /// Deduplicates by username — same speaker appears once per session in SwiftData.
     /// Prefers the copy with `arrived = true` so the badge renders immediately after confirmation.
+    /// Excludes moderator-role speakers (organisers themselves) — they are not tracked for arrival.
     private var uniqueSpeakers: [CachedSpeaker] {
         var bestByUsername: [String: CachedSpeaker] = [:]
-        for speaker in speakers {
+        for speaker in speakers where speaker.speakerRole != .moderator {
             if let existing = bestByUsername[speaker.username] {
                 if speaker.arrived && !existing.arrived {
                     bestByUsername[speaker.username] = speaker

@@ -21,6 +21,7 @@ public struct SessionResponse: Codable, JSONEncodable, Hashable {
         case networking = "networking"
         case _break = "break"
         case lunch = "lunch"
+        case moderation = "moderation"
     }
     public enum MaterialsStatus: String, Codable, CaseIterable {
         case _none = "NONE"

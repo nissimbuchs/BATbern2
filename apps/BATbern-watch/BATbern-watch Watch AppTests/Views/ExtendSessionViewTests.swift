@@ -61,7 +61,9 @@ struct ExtendSessionViewTests {
                 onDismiss: { }
             )
             _ = view
-            // Simulate what button action does:
+            // Invoke stored closure directly to verify wiring contract.
+            // Note: haptic + isSending changes are NOT exercised here (no SwiftUI render);
+            // those are covered by ViewModel-level tests in LiveCountdownViewModelTests.
             view.onExtend(option)
             #expect(received == option, "Expected onExtend(\(option)) to pass \(option)")
         }

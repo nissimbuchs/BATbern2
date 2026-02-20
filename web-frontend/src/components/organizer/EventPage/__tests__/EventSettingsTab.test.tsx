@@ -88,16 +88,11 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
     it('renders all sections with expected content', () => {
       renderWithProviders(<EventSettingsTab event={mockEvent} eventCode="BAT54" />);
 
-      // Event Information Section
-      expect(screen.getByText(/Event Information/i)).toBeInTheDocument();
-      expect(screen.getByText(/Event Number/i)).toBeInTheDocument();
-      expect(screen.getByText('54')).toBeInTheDocument();
-      expect(screen.getByText(/Event Code/i)).toBeInTheDocument();
-      expect(screen.getByText('BAT54')).toBeInTheDocument();
-      expect(screen.getByText(/Created By/i)).toBeInTheDocument();
-      expect(screen.getByText('john.doe')).toBeInTheDocument();
-      expect(screen.getByText(/Last Modified/i)).toBeInTheDocument();
-      expect(screen.getByText(/January 15, 2025|15 January 2025/i)).toBeInTheDocument();
+      // Event Moderator Section (replaced "Event Information" in Story 5.7)
+      expect(screen.getByText(/Event Moderator/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/The organizer responsible for moderating this event/i)
+      ).toBeInTheDocument();
 
       // Notifications Section
       expect(screen.getByText(/^Notifications$/i)).toBeInTheDocument();
@@ -247,17 +242,21 @@ describe('EventSettingsTab Component (Story 5.6)', () => {
 
   describe('Edge Cases', () => {
     it('should_handleMissingCreatedAt_gracefully', () => {
+      // "Event Information" section (which displayed dates) was replaced by
+      // "Event Moderator" in Story 5.7 — component renders regardless of date presence.
       const eventWithoutDates = { ...mockEvent, createdAt: undefined };
       renderWithProviders(<EventSettingsTab event={eventWithoutDates} eventCode="BAT54" />);
 
-      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+      expect(screen.getByText(/Event Moderator/i)).toBeInTheDocument();
     });
 
     it('should_handleMissingUpdatedAt_gracefully', () => {
+      // "Event Information" section (which displayed dates) was replaced by
+      // "Event Moderator" in Story 5.7 — component renders regardless of date presence.
       const eventWithoutDates = { ...mockEvent, updatedAt: undefined };
       renderWithProviders(<EventSettingsTab event={eventWithoutDates} eventCode="BAT54" />);
 
-      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+      expect(screen.getByText(/Event Moderator/i)).toBeInTheDocument();
     });
   });
 });

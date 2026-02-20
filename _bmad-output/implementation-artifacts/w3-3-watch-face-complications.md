@@ -1,6 +1,6 @@
 # Story W3.3: Watch Face Complications
 
-Status: review
+Status: done
 
 ---
 
@@ -485,11 +485,19 @@ N/A — no integration tests (WidgetKit extension requires Xcode target setup, T
 
 7. **Review Follow-ups (2026-02-18)**: Addressed 5 findings — (M1) extracted `urgencyColor` from 3 duplicated view private vars into `ComplicationEntry.urgencyColor` (single source of truth); (M2) fixed `readReturnsNilWhenEmpty` test to `#expect(result == nil)` instead of `_ = result`; (M3) added injectable `write(_:to:)` + `read(from:)` overloads to `ComplicationDataStore` and rewrote `writeReadRoundTrip` to use them; (L1) removed deprecated `defaults.synchronize()`; (L4) added static `encoder`/`decoder` to avoid per-call allocations.
 
-4. **`ComplicationDataStore.write()` call site**: Added to `LiveCountdownViewModel.refreshState()` — called every second during a live session. `WidgetCenter.reloadAllTimelines()` is called inside `write()`, which is safe from `@MainActor` per Apple docs.
+4. **`ComplicationDataStore.write()` call site**: Added to `LiveCountdownViewModel.refreshState()` — called every second during a live session. `WidgetCenter.reloadAllTimelines()` is called via `ComplicationDataStore.reloadTimeline()` only on context or urgency transitions (~4-5× per session), not on every tick — preserving battery NFR21/22.
 
 5. **Speaker names**: `formattedSpeakerNames` (last names only, max 2) added to `LiveCountdownViewModel` for the narrow C2 complication. The existing `speakerNames` property (full names, all speakers) is kept for the O3 view.
 
 8. **Course Correction Amendment complete (2026-02-19)**: All 5 amendment changes applied per `docs/sprint-change-proposal-2026-02-19.md`. `ComplicationContext` enum (5 cases, manual Codable/Equatable/Sendable) added to `ComplicationDataStore.swift`. All 3 complication views updated to `switch entry.context`. `ComplicationProvider.resolvedSnapshot()` updated with context-aware staleness (sessionRunning-only guard; non-session contexts always pass through). 8 new `ComplicationContextTests` added. 2 pre-existing W4.3 regressions in `LiveCountdownViewModelTests.swift` fixed. Result: **229 tests pass, 0 warnings, 0 errors**. Ring semantics implemented per proposal: eventDayPreSession=count-UP, sessionRunning=count-DOWN.
+
+9. **Code Review fixes (2026-02-20)**: Addressed 2 HIGH (AC1 violations) + 4 MEDIUM findings:
+   - **(H2) C1 ring shows full (1.0) during overtime** — `CircularComplication.swift`: `ProgressView(value: entry.isOvertime ? 1.0 : fractionRemaining)`. H1 ("+N" text) was already fixed by `entry.displayMinutes` in a prior commit.
+   - **(H2) C2 bar shows full (1.0) during overtime** — `RectangularComplication.swift`: same `entry.isOvertime ? 1.0 : fractionRemaining` guard.
+   - **(M1) `reloadAllTimelines()` called every second** — Moved `WidgetCenter.reloadAllTimelines()` out of `ComplicationDataStore.write()` into separate `reloadTimeline()`. `LiveCountdownViewModel` now tracks `complicationContext` + `lastUrgencyLevel` and only calls `reloadTimeline()` on state transitions (~4-5 per session vs 3600/hour).
+   - **(M2) `computeComplicationContext` tests added** — 7 new test cases in `LiveCountdownViewModelTests.swift` covering all 5 context paths plus reload-on-change verification.
+   - **(M3) `displayMinutes` no longer dead code** — `CircularComplication` and `CornerComplication` use `entry.displayMinutes` for sessionRunning minutes display (verified alive).
+   - **(M4) `resolvedSnapshotForTest` no longer duplicates logic** — moved staleness function to `ComplicationDataStore.resolvedSnapshot(_:now:)` (static, internal); `ComplicationProvider` and test helper both delegate to it.
 
 ### File List
 

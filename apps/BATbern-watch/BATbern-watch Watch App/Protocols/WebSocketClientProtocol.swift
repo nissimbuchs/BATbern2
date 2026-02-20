@@ -97,6 +97,21 @@ struct WatchStateUpdate: Sendable {
     let sessions: [SessionStateUpdate]
     let connectedOrganizers: [ConnectedOrganizer]
     let serverTimestamp: Date
+    /// W4.4: True when the server has transitioned the event to EVENT_COMPLETED.
+    /// Default false preserves backward compatibility with pre-W4.4 broadcasts.
+    let eventCompleted: Bool
+
+    init(
+        sessions: [SessionStateUpdate],
+        connectedOrganizers: [ConnectedOrganizer],
+        serverTimestamp: Date,
+        eventCompleted: Bool = false
+    ) {
+        self.sessions = sessions
+        self.connectedOrganizers = connectedOrganizers
+        self.serverTimestamp = serverTimestamp
+        self.eventCompleted = eventCompleted
+    }
 }
 
 /// Per-session state from the server broadcast.

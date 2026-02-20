@@ -95,7 +95,7 @@ struct ArrivalTrackerTests {
 
     // MARK: - Test 11.3: processArrivalMessage updates counter from WebSocket
 
-    @Test("WebSocket arrival message: updates arrivedCount and totalCount")
+    @Test("WebSocket arrival message: updates arrivedCount and totalCount from local state")
     func processArrivalMessage_updatesCounter() async throws {
         let wsClient = MockWebSocketClient()
         wsClient._isConnected = true
@@ -108,14 +108,16 @@ struct ArrivalTrackerTests {
         let tracker = makeTracker(wsClient: wsClient)
         await tracker.startListening(eventCode: "BATbern56")
 
-        // Emit a WebSocket arrival message with server-authoritative counts
+        // Emit a WebSocket arrival message for anna.meier.
+        // Counts are recomputed from local SwiftData (not server totals) so that
+        // moderator-role speakers (organisers) are excluded from the header counter.
         let message = SpeakerArrivalMessage(
             speakerUsername: "anna.meier",
             speakerFirstName: "Anna",
             speakerLastName: "Meier",
             confirmedBy: "marco",
             arrivedAt: Date(),
-            arrivedCount: 2,
+            arrivedCount: 2,   // server value — ignored; local recomputation used instead
             totalCount: 3
         )
         wsClient.emitArrival(message)
@@ -123,8 +125,50 @@ struct ArrivalTrackerTests {
         // Yield to allow the listening task to process the message
         try await Task.sleep(nanoseconds: 100_000_000)
 
-        #expect(tracker.arrivedCount == 2)
+        // Local recomputation: anna.meier arrived (1), 3 non-moderator speakers total.
+        #expect(tracker.arrivedCount == 1)
         #expect(tracker.totalCount == 3)
+    }
+
+    // MARK: - Test 11.3b: moderator-role speakers excluded from counter
+
+    @Test("recomputeCounter: excludes moderator-role speakers from arrivedCount and totalCount")
+    func recomputeCounter_excludesModerators() async throws {
+        let wsClient = MockWebSocketClient()
+        wsClient._isConnected = true
+
+        // 2 non-moderator speakers + 1 moderator (organiser)
+        _ = makeSpeaker(username: "anna.meier", arrived: false)
+        _ = makeSpeaker(username: "tom.mueller", arrived: false)
+        let moderator = CachedSpeaker(
+            username: "nissim.buchs",
+            firstName: "Nissim",
+            lastName: "Buchs",
+            speakerRole: .moderator,
+            arrived: false
+        )
+        modelContext.insert(moderator)
+        try? modelContext.save()
+
+        let tracker = makeTracker(wsClient: wsClient)
+        await tracker.startListening(eventCode: "BATbern56")
+
+        // Emit arrival for anna.meier — recompute should count 2 non-moderators total
+        wsClient.emitArrival(SpeakerArrivalMessage(
+            speakerUsername: "anna.meier",
+            speakerFirstName: "Anna",
+            speakerLastName: "Meier",
+            confirmedBy: "marco",
+            arrivedAt: Date(),
+            arrivedCount: 99,  // server value — ignored
+            totalCount: 99
+        ))
+
+        try await Task.sleep(nanoseconds: 100_000_000)
+
+        // Only non-moderator speakers count: 2 total, 1 arrived
+        #expect(tracker.arrivedCount == 1)
+        #expect(tracker.totalCount == 2)
     }
 
     // MARK: - Test 11.4: confirmArrival is idempotent

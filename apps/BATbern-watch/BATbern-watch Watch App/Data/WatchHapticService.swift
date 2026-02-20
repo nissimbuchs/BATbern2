@@ -16,11 +16,17 @@ import OSLog
 ///
 /// Each alert type maps to a distinct tactile pattern so organizers can
 /// read time state without looking at the screen:
-/// - 5-min warning: single buzz (.notification × 1)
-/// - 2-min warning: double buzz (.notification × 2, 200ms gap)
-/// - Time's up / gong: triple buzz (.notification × 3, 150ms gaps)
-/// - Overrun pulse: rhythmic pulse (.retry)
-/// - Action confirm / connection lost: semantic (.success / .failure)
+/// - 5-min warning: .notification — medium buzz, "take notice"
+/// - 2-min warning: .failure — heavy single bump, unmistakably more urgent than 5-min
+/// - Time's up:     .failure + .stop (300ms) — heavy-thud combo, physically unmistakable
+/// - Overrun pulse: .failure every 30s — persistent urgency
+/// - Gong reminder: .notification × 3 (150/300ms) — "last call" texture distinct from failure
+/// - Action confirm / connection lost: .success / .failure
+///
+/// Design rationale (Option B): type-based distinction rather than count-based.
+/// Organizers feel the urgency level from the haptic texture alone (.notification vs .failure vs
+/// .failure+.stop) — no counting of taps required. This is more reliable during live events
+/// where the watch may receive only a glancing contact.
 ///
 /// Extended Runtime session keeps the app alive in background so haptics
 /// fire even when the screen is off (AC6 / NFR9).
@@ -41,12 +47,12 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     // multi-tap feel. Centralised here so on-device tuning changes one place only.
 
     private enum HapticTiming {
-        /// Gap between the two taps of the double-tap pattern (2-min warning). AC2.
-        static let doubleTapGap: TimeInterval = 0.2
-        /// Gap between tap 1 and tap 2 of the triple-tap pattern (time's up / gong). AC3, AC5.
-        static let tripleTapFirstGap: TimeInterval = 0.15
-        /// Gap between tap 1 and tap 3 of the triple-tap pattern. AC3, AC5.
-        static let tripleTapSecondGap: TimeInterval = 0.30
+        /// Gap between .failure and .stop in the time's-up pattern. AC3.
+        static let timesUpStopGap: TimeInterval = 0.3
+        /// Gap between tap 1 and tap 2 of the gong triple-tap pattern. AC5.
+        static let gongFirstGap: TimeInterval = 0.15
+        /// Gap between tap 1 and tap 3 of the gong triple-tap pattern. AC5.
+        static let gongSecondGap: TimeInterval = 0.30
     }
 
     // MARK: - State
@@ -64,45 +70,48 @@ final class WatchHapticService: NSObject, HapticServiceProtocol, WKExtendedRunti
     func play(_ alert: HapticAlert) {
         switch alert {
         case .fiveMinuteWarning:
-            // Single firm tap — "heads up"
+            // Medium single buzz — "take notice" (AC1)
             WKInterfaceDevice.current().play(.notification)
 
         case .twoMinuteWarning:
-            // Double tap — distinctly different from single (AC2).
-            // Uses a cancellable Task so stopEventSession() can suppress the delayed tap
-            // if the session ends or the view is dismissed within the 200ms window.
-            WKInterfaceDevice.current().play(.notification)
-            let doubleTap = Task { @MainActor in
-                do {
-                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.doubleTapGap * 1_000_000_000))
-                    WKInterfaceDevice.current().play(.notification)
-                } catch {
-                    // Cancelled by stopEventSession() — second tap suppressed intentionally.
-                }
-            }
-            pendingHapticTasks.append(doubleTap)
+            // Heavy single bump — physically distinct from .notification (AC2).
+            // No multi-tap needed: .failure texture is unmistakably different from .notification.
+            WKInterfaceDevice.current().play(.failure)
 
-        case .timesUp, .gongReminder:
-            // Triple tap — "last call" feel, distinct from 2-min pattern (AC3, AC5).
-            // Both delayed taps are cancellable (see doubleTap comment above).
-            WKInterfaceDevice.current().play(.notification)
-            let tripleTap2 = Task { @MainActor in
+        case .timesUp:
+            // Heavy + thud combo — unmistakable "it's done" feel (AC3).
+            // Sequence: .failure (heavy) → 300ms → .stop (sharp thud).
+            WKInterfaceDevice.current().play(.failure)
+            let stopTap = Task { @MainActor in
                 do {
-                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.tripleTapFirstGap * 1_000_000_000))
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.timesUpStopGap * 1_000_000_000))
+                    WKInterfaceDevice.current().play(.stop)
+                } catch { /* Cancelled by stopEventSession() — stop suppressed intentionally. */ }
+            }
+            pendingHapticTasks.append(stopTap)
+
+        case .gongReminder:
+            // Triple .notification — "last call" texture for break end (AC5).
+            // Distinct from timesUp: .notification feel vs .failure/.stop.
+            WKInterfaceDevice.current().play(.notification)
+            let gongTap2 = Task { @MainActor in
+                do {
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.gongFirstGap * 1_000_000_000))
                     WKInterfaceDevice.current().play(.notification)
                 } catch { /* Cancelled — tap 2 suppressed. */ }
             }
-            let tripleTap3 = Task { @MainActor in
+            let gongTap3 = Task { @MainActor in
                 do {
-                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.tripleTapSecondGap * 1_000_000_000))
+                    try await Task.sleep(nanoseconds: UInt64(HapticTiming.gongSecondGap * 1_000_000_000))
                     WKInterfaceDevice.current().play(.notification)
                 } catch { /* Cancelled — tap 3 suppressed. */ }
             }
-            pendingHapticTasks.append(contentsOf: [tripleTap2, tripleTap3])
+            pendingHapticTasks.append(contentsOf: [gongTap2, gongTap3])
 
         case .overtimePulse:
-            // Rhythmic pulse — "keep going" feel (AC4)
-            WKInterfaceDevice.current().play(.retry)
+            // Heavy single — persistent urgency every 30s in overrun (AC4).
+            // .failure is more urgent than .retry and matches the elevated urgency state.
+            WKInterfaceDevice.current().play(.failure)
 
         case .actionConfirm:
             WKInterfaceDevice.current().play(.success)

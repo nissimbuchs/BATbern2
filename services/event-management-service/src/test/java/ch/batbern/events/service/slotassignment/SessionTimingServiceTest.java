@@ -6,6 +6,7 @@ import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
+import ch.batbern.events.service.TimetableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,9 @@ class SessionTimingServiceTest {
     private EventRepository eventRepository;
 
     @Mock
+    private TimetableService timetableService;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private Session placeholderSession;
@@ -75,6 +79,7 @@ class SessionTimingServiceTest {
                 speakerPoolRepository,
                 speakerWorkflowService,
                 eventRepository,
+                timetableService,
                 eventPublisher
         );
 

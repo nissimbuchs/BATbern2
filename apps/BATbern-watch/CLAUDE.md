@@ -49,12 +49,9 @@ xcodebuild -scheme "BATbern-watch Watch App" \
 # Regenerate types from OpenAPI spec (after API changes)
 ./scripts/generate-types.sh
 
-# Then manually add new files to Xcode project:
-# 1. Open Xcode: open BATbern-watch.xcodeproj
-# 2. Right-click "BATbern-watch Watch App" → Add Files...
-# 3. Select Generated/Models/ folder
-# 4. Ensure target membership is checked
 ```
+
+**Note:** Xcode automatically includes all `.swift` files placed in the project directory tree — no manual "Add Files" step needed. New Swift files are picked up on the next build.
 
 ### Xcode Development
 
@@ -417,11 +414,8 @@ Types are automatically generated from the BATbern OpenAPI specification:
 ```
 
 **After regeneration:**
-1. Open Xcode: `open BATbern-watch.xcodeproj`
-2. Right-click "BATbern-watch Watch App" → **Add Files to...**
-3. Select `Generated/Models/` folder
-4. Ensure target membership is **BATbern-watch Watch App**
-5. Build to verify: `Cmd+B`
+1. Run `./scripts/generate-types.sh`
+2. Build to verify: `Cmd+B` (Xcode picks up new `.swift` files automatically — no manual "Add Files" step needed)
 
 ### Generated vs Manual Models
 
@@ -452,7 +446,6 @@ See `OPENAPI_GENERATOR_GUIDE.md` for detailed migration guide.
 - **Single responsibility:** Views display only, ViewModels contain logic
 - **Environment objects:** Share `WebSocketService`, `BATbernAPIClient` via `.environmentObject()`
 - **Combine:** Use `@Published` in ViewModels, `onReceive()` in Views
-- **Previews:** Every View must have `#Preview` with mock data
 
 ### Dependency Injection Pattern
 

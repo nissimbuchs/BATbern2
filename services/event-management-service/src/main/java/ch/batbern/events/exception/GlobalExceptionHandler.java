@@ -716,6 +716,29 @@ public class GlobalExceptionHandler {
      * Handle generic exceptions
      * Returns HTTP 500 Internal Server Error
      */
+    /**
+     * Handle StructuralSessionsAlreadyExistException (structural sessions already generated)
+     * Returns HTTP 409 Conflict
+     */
+    @ExceptionHandler(StructuralSessionsAlreadyExistException.class)
+    public ResponseEntity<ErrorResponse> handleStructuralSessionsAlreadyExistException(
+            StructuralSessionsAlreadyExistException ex,
+            HttpServletRequest request) {
+        log.warn("Structural sessions already exist: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,
