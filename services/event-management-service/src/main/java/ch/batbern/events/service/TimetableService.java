@@ -24,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -48,7 +49,11 @@ public class TimetableService {
 
     private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
 
-    private static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch");
+    private static final Set<String> STRUCTURAL_TYPES = Set.of("moderation", "break", "lunch");
+
+    private static boolean isStructural(String sessionType) {
+        return sessionType != null && STRUCTURAL_TYPES.contains(sessionType);
+    }
 
     private final EventRepository eventRepository;
     private final EventTypeRepository eventTypeRepository;
@@ -250,13 +255,13 @@ public class TimetableService {
 
         // Index: startTime → structural DB session (for slug matching)
         Map<Instant, Session> structuralByStart = allSessions.stream()
-                .filter(s -> STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .filter(s -> isStructural(s.getSessionType()))
                 .filter(s -> s.getStartTime() != null)
                 .collect(Collectors.toMap(Session::getStartTime, s -> s, (a, b) -> a));
 
         // Index: startTime → assigned speaker session (non-structural, has startTime)
         Map<Instant, Session> speakerByStart = allSessions.stream()
-                .filter(s -> !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .filter(s -> !isStructural(s.getSessionType()))
                 .filter(s -> s.getStartTime() != null)
                 .collect(Collectors.toMap(Session::getStartTime, s -> s, (a, b) -> a));
 
@@ -294,7 +299,7 @@ public class TimetableService {
 
         // Collect unassigned speaker sessions
         List<SessionResponse> unassigned = allSessions.stream()
-                .filter(s -> !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .filter(s -> !isStructural(s.getSessionType()))
                 .filter(s -> s.getStartTime() == null)
                 .map(s -> sessionService.toSessionResponse(s, eventCode))
                 .toList();
