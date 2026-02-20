@@ -8,7 +8,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
-
 
 import java.time.Instant;
 import java.time.LocalTime;
