@@ -42,6 +42,14 @@ final class LiveCountdownViewModel {
     private(set) var shouldShowDelayed: Bool = false
     /// W4.3: seconds since activeSession.actualStartTime.
     private(set) var sessionActiveSeconds: Int = 0
+    /// W4.4 AC2: true when ≤60s remain in the active break — triggers "break ending" overlay.
+    private(set) var gongOverlayVisible: Bool = false
+
+    // MARK: - Internal Break Gong State
+
+    /// Prevents re-showing the gong overlay on every tick once it has been shown.
+    /// Reset on session change (same lifecycle as scheduler.reset()).
+    private var gongFiredInCurrentBreak: Bool = false
 
     // MARK: - Injected Dependencies (1.3)
 
@@ -59,6 +67,13 @@ final class LiveCountdownViewModel {
     // MARK: - Notification Service
 
     private let notificationService = WatchNotificationService()
+
+    // MARK: - Complication Change Tracking (M1: reload only on meaningful state changes)
+
+    /// Last context written to the complication store.
+    /// Exposed (internal access) for unit testing via @testable import.
+    @ObservationIgnored private(set) var complicationContext: ComplicationContext = .noEvent
+    @ObservationIgnored private var lastUrgencyLevel: UrgencyLevel = .normal
 
     // MARK: - Timer Task
 
@@ -118,6 +133,8 @@ final class LiveCountdownViewModel {
             shouldShowExtend = false
             shouldShowDelayed = false
             sessionActiveSeconds = 0
+            gongFiredInCurrentBreak = false
+            gongOverlayVisible = false
         }
         if let session = discovered {
             engine.setActiveSession(session)
@@ -130,7 +147,13 @@ final class LiveCountdownViewModel {
         if let session = discovered {
             // AC5: break sessions get gong reminder; talk sessions get threshold alerts (W3.2)
             if session.isBreak {
-                scheduler.evaluateBreakGong(breakSession: session)
+                let gonged = scheduler.evaluateBreakGong(breakSession: session)
+                // W4.4 AC2: show overlay banner on the first tick where gong fires.
+                // gongFiredInCurrentBreak prevents re-triggering on subsequent ticks.
+                if !gongFiredInCurrentBreak && gonged.contains(.gongReminder) {
+                    gongFiredInCurrentBreak = true
+                    gongOverlayVisible = true
+                }
             } else {
                 let fired = scheduler.evaluate(session: session)
                 postNotifications(for: fired, session: session)
@@ -173,6 +196,8 @@ final class LiveCountdownViewModel {
         // isLive is only true when the session has actually started (startTime <= now).
         // Upcoming sessions (startTime > now) must not set isLive:true — the complication
         // would otherwise show a countdown to a future session as if it were active.
+        let newContext = computeComplicationContext(in: eventState)
+        let newUrgencyLevel = engine.urgencyLevel
         ComplicationDataStore.write(ComplicationSnapshot(
             sessionTitle: discovered?.title,
             speakerNames: formattedSpeakerNames,
@@ -180,10 +205,17 @@ final class LiveCountdownViewModel {
             sessionDuration: discovered?.duration,
             scheduledStartTime: discovered?.startTime,
             isLive: isComplicationLive(discovered),
-            urgencyLevel: engine.urgencyLevel.rawValue,
+            urgencyLevel: newUrgencyLevel.rawValue,
             updatedAt: clock.now,
-            complicationContext: computeComplicationContext(in: eventState)
+            complicationContext: newContext
         ))
+        // Reload timeline only on meaningful state changes (context or urgency transitions).
+        // Avoids calling reloadAllTimelines() 3600×/hour during a live event (NFR21/22).
+        if newContext != complicationContext || newUrgencyLevel != lastUrgencyLevel {
+            ComplicationDataStore.reloadTimeline()
+        }
+        complicationContext = newContext
+        lastUrgencyLevel = newUrgencyLevel
     }
 
     // MARK: - Haptic Notifications

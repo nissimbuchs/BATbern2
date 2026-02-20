@@ -452,7 +452,6 @@ See `OPENAPI_GENERATOR_GUIDE.md` for detailed migration guide.
 - **Single responsibility:** Views display only, ViewModels contain logic
 - **Environment objects:** Share `WebSocketService`, `BATbernAPIClient` via `.environmentObject()`
 - **Combine:** Use `@Published` in ViewModels, `onReceive()` in Views
-- **Previews:** Every View must have `#Preview` with mock data
 
 ### Dependency Injection Pattern
 

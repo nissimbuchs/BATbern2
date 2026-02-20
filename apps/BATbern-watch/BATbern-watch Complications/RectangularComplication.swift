@@ -96,7 +96,8 @@ struct RectangularView: View {
                         .font(.system(.body, design: .monospaced).bold())
                         .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
                 }
-                ProgressView(value: fractionRemaining)
+                // Overtime: pin bar to 1.0 (full red bar per AC1)
+                ProgressView(value: entry.isOvertime ? 1.0 : fractionRemaining)
                     .progressViewStyle(.linear)
                     .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
             }

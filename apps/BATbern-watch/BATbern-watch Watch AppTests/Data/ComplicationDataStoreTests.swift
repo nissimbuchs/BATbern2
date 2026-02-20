@@ -500,29 +500,13 @@ struct ComplicationProviderTimelineTests {
     }
 }
 
-// MARK: - Test Helper: resolvedSnapshot logic (mirrors ComplicationProvider.resolvedSnapshot)
+// MARK: - Test Helper: resolvedSnapshot (delegates to ComplicationDataStore — single source of truth)
 
-/// Pure-function replica of ComplicationProvider.resolvedSnapshot(_:) for unit testing.
-/// ComplicationProvider is in the Complications extension target and cannot be directly imported
-/// into the Watch App test target, so we duplicate the logic here for correctness assertions.
+/// Thin wrapper preserving existing test call sites.
+/// Staleness logic now lives in ComplicationDataStore.resolvedSnapshot(_:now:).
 private func resolvedSnapshotForTest(
     _ snapshot: ComplicationSnapshot?,
     now: Date
 ) -> ComplicationSnapshot? {
-    guard let snapshot else { return nil }
-
-    // Infer context for pre-amendment snapshots that lack `complicationContext`
-    let context = snapshot.complicationContext
-        ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
-
-    switch context {
-    case .sessionRunning:
-        // Staleness guard: discard if expired AND app not actively writing
-        if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
-        if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
-        return nil
-    default:
-        // Non-session contexts always pass through
-        return snapshot
-    }
+    ComplicationDataStore.resolvedSnapshot(snapshot, now: now)
 }

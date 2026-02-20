@@ -58,12 +58,14 @@ struct CircularView: View {
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundStyle(isLuminanceReduced ? .gray : .blue)
 
-            case .sessionRunning(let minutesLeft, let fractionRemaining):
-                // Count-DOWN ring: fractionRemaining = timeLeft / duration
-                ProgressView(value: fractionRemaining)
+            case .sessionRunning(_, let fractionRemaining):
+                // Count-DOWN ring: fractionRemaining = timeLeft / duration.
+                // Overtime: pin ring to 1.0 (full red ring per AC1) and show "+N" overrun.
+                ProgressView(value: entry.isOvertime ? 1.0 : fractionRemaining)
                     .progressViewStyle(.circular)
                     .tint(isLuminanceReduced ? .gray : entry.urgencyColor)
-                Text("\(minutesLeft)m")
+                // entry.displayMinutes: "24" normally, "+4" when overtime
+                Text(entry.displayMinutes)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
             }

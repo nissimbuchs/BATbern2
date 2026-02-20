@@ -123,12 +123,18 @@ enum ComplicationDataStore {
 
     // MARK: - Production API
 
-    /// Persist a snapshot to the App Group store and ask WidgetKit to refresh.
-    /// Must be called from the main app process only.
+    /// Persist a snapshot to the App Group store.
+    /// Callers must call `reloadTimeline()` separately when meaningful state changes —
+    /// do NOT reload on every write (called each second; battery NFR21/22).
     static func write(_ snapshot: ComplicationSnapshot) {
         guard let defaults = UserDefaults(suiteName: appGroupID),
               let data = try? encoder.encode(snapshot) else { return }
         defaults.set(data, forKey: snapshotKey)
+    }
+
+    /// Ask WidgetKit to regenerate all timelines.
+    /// Call sparingly — only on context or urgency transitions, not every tick.
+    static func reloadTimeline() {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -156,5 +162,36 @@ enum ComplicationDataStore {
               let snapshot = try? decoder.decode(ComplicationSnapshot.self, from: data)
         else { return nil }
         return snapshot
+    }
+
+    // MARK: - Staleness Logic (shared with ComplicationProvider and tests)
+
+    /// Returns the snapshot to display, applying staleness logic based on `ComplicationContext`.
+    ///
+    /// Rules (W3.3 amendment):
+    /// - `.sessionRunning` (or pre-amendment `isLive:true`): staleness guard applies —
+    ///   discard if endTime expired AND updatedAt > 5 min ago (app closed / old event)
+    /// - All other contexts: always pass through (date/hours info always valid to show)
+    /// - No snapshot → nil
+    ///
+    /// Extracted here so `ComplicationProvider` and test code share the same implementation.
+    static func resolvedSnapshot(_ snapshot: ComplicationSnapshot?, now: Date = .now) -> ComplicationSnapshot? {
+        guard let snapshot else { return nil }
+
+        // Infer context for pre-amendment snapshots that lack `complicationContext`
+        let context = snapshot.complicationContext
+            ?? (snapshot.isLive ? .sessionRunning(minutesLeft: 0, fractionRemaining: 0) : .noEvent)
+
+        switch context {
+        case .sessionRunning:
+            // Apply staleness guard: discard stale session data
+            if let endTime = snapshot.scheduledEndTime, endTime > now { return snapshot }
+            // Recent overtime: main app is still writing; allow 5 min of overtime display
+            if now.timeIntervalSince(snapshot.updatedAt) < 5 * 60 { return snapshot }
+            return nil
+        default:
+            // Non-session contexts: always show (eventFar, eventDayPreSession, etc.)
+            return snapshot
+        }
     }
 }

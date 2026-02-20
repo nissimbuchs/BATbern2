@@ -53,9 +53,10 @@ struct CornerView: View {
                 .font(.system(.title2, design: .monospaced).bold())
                 .foregroundStyle(isLuminanceReduced ? .gray : .blue)
 
-        case .sessionRunning(let minutesLeft, _):
+        case .sessionRunning:
             // Minutes remaining — count-DOWN (corner has no room for a ring)
-            Text("\(minutesLeft)m")
+            // entry.displayMinutes: "24" normally, "+4" when overtime (no "m" suffix per UX spec)
+            Text(entry.displayMinutes)
                 .font(.system(.title2, design: .monospaced).bold())
                 .foregroundStyle(isLuminanceReduced ? .gray : entry.urgencyColor)
         }
