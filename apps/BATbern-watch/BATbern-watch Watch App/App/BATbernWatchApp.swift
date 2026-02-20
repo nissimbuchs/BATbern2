@@ -30,11 +30,13 @@ struct BATbernWatchApp: App {
     init() {
         do {
             // Configure schema with all SwiftData models
+            // W5.2 Task 1.3: OfflineAction added for persistent offline queue (NFR11)
             let schema = Schema([
                 CachedEvent.self,
                 CachedSession.self,
                 CachedSpeaker.self,
-                PairingInfo.self
+                PairingInfo.self,
+                OfflineAction.self
             ])
 
             let modelConfiguration = ModelConfiguration(
@@ -52,14 +54,22 @@ struct BATbernWatchApp: App {
             // Do NOT initialize in body via lazy/optional — mutating @State in body causes
             // infinite re-render.
             let auth = AuthManager()
-            let controller = EventDataController(
-                authManager: auth,
-                modelContext: container.mainContext
-            )
+
+            // W5.2 Task 1.3/2: OfflineActionQueue created first — injected into both
+            // WebSocketClient (enqueue on send) and EventDataController (replay on reconnect).
+            let offlineQueue = OfflineActionQueue(modelContext: container.mainContext)
 
             // W4.1 Task 11.1-11.3: ONE concrete WebSocketClient shared by WebSocketService
             // and ArrivalTracker. State stream → WebSocketService; arrival stream → ArrivalTracker.
-            let webSocketClient = WebSocketClient()
+            // W5.2 Task 3.1: inject OfflineActionQueue so sendAction() enqueues when offline.
+            let webSocketClient = WebSocketClient(offlineActionQueue: offlineQueue)
+
+            let controller = EventDataController(
+                authManager: auth,
+                modelContext: container.mainContext,
+                offlineActionQueue: offlineQueue,
+                webSocketClient: webSocketClient
+            )
 
             _authManager = State(wrappedValue: auth)
             _eventDataController = State(wrappedValue: controller)

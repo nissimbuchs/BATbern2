@@ -28,30 +28,33 @@ class ConnectivityMonitor {
     private let queue = DispatchQueue(label: "ch.batbern.connectivity-monitor")
     private var previousConnectionState: Bool = true
 
+    @ObservationIgnored
+    private var offlineDebounceTask: Task<Void, Never>?
+
+    /// Duration in seconds before the offline indicator notifies downstream after path loss.
+    /// Suppresses transient drops under this threshold (AC3 — 30 s in production).
+    /// Set to a lower value in unit tests to avoid slow test runs.
+    var offlineDebounceSeconds: TimeInterval = 30
+
     /// Callback triggered when connectivity state changes (for reactive observation)
     @ObservationIgnored
     var onConnectivityChanged: (@MainActor @Sendable (Bool) -> Void)?
 
     // MARK: - Lifecycle
 
-    /// Start monitoring network path changes
-    /// Updates isConnected on main actor when status changes
+    /// Start monitoring network path changes.
+    /// Updates isConnected on main actor when status changes.
     func start() {
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in
                 guard let self = self else { return }
                 let newState = (path.status == .satisfied)
 
-                // Only trigger callback if state actually changed
+                // Only react when state actually changes
                 if newState != self.previousConnectionState {
                     self.previousConnectionState = newState
                     self.isConnected = newState
-                    self.onConnectivityChanged?(newState)
-                    if newState {
-                        logger.info("📶 ONLINE — network path satisfied")
-                    } else {
-                        logger.warning("📵 OFFLINE — network path unsatisfied")
-                    }
+                    self.processConnectivityChange(isConnected: newState)
                 } else {
                     self.isConnected = newState
                 }
@@ -61,12 +64,44 @@ class ConnectivityMonitor {
         logger.info("ConnectivityMonitor started")
     }
 
-    /// Stop monitoring and cancel NWPathMonitor
+    /// Stop monitoring and cancel NWPathMonitor. Also cancels any pending offline debounce.
     func stop() {
+        offlineDebounceTask?.cancel()
+        offlineDebounceTask = nil
         monitor.cancel()
     }
 
     deinit {
         stop()
+    }
+
+    // MARK: - Internal (visible to tests)
+
+    /// Process a connectivity state change, applying a debounce to offline transitions only.
+    ///
+    /// - Online → immediate: cancels any pending debounce and notifies downstream right away.
+    /// - Offline → debounced: waits `offlineDebounceSeconds` before notifying downstream,
+    ///   suppressing transient drops that recover within that window.
+    ///
+    /// Marked `internal` (not `private`) so unit tests can exercise this logic directly
+    /// without depending on `NWPathMonitor`.
+    @MainActor
+    func processConnectivityChange(isConnected: Bool) {
+        if isConnected {
+            offlineDebounceTask?.cancel()
+            offlineDebounceTask = nil
+            logger.info("📶 ONLINE — network path satisfied")
+            onConnectivityChanged?(true)
+        } else {
+            logger.info("📵 Path lost — debounce started (\(self.offlineDebounceSeconds)s)")
+            offlineDebounceTask?.cancel()
+            offlineDebounceTask = Task { [weak self] in
+                guard let self else { return }
+                try? await Task.sleep(for: .seconds(self.offlineDebounceSeconds))
+                guard !Task.isCancelled else { return }
+                logger.warning("📵 OFFLINE — debounce expired, notifying downstream")
+                onConnectivityChanged?(false)
+            }
+        }
     }
 }

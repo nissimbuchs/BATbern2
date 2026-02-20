@@ -136,7 +136,7 @@ struct WebSocketClientTests {
         #expect(client.isConnected == true)
     }
 
-    // MARK: - sendAction()
+    // MARK: - sendAction() — MockWebSocketClient contract
 
     @Test("sendAction: records sent action")
     func sendAction_recordsAction() async throws {
@@ -145,5 +145,42 @@ struct WebSocketClientTests {
 
         try await client.sendAction(.startSession(sessionSlug: "cloud-talk"))
         #expect(client.sentActions == [.startSession(sessionSlug: "cloud-talk")])
+    }
+
+    // MARK: - sendAction() — real WebSocketClient offline queue (W5.2 Task 6.2)
+
+    @Test("sendAction offline: enqueues action and does not throw (W5.2 AC#1)")
+    func sendAction_offline_enqueuedNotThrown() async throws {
+        let mockQueue = MockOfflineActionQueue()
+        // WebSocketClient starts disconnected (isConnected == false)
+        let client = WebSocketClient(offlineActionQueue: mockQueue)
+
+        // Must not throw — must enqueue instead
+        try await client.sendAction(.endSession(sessionSlug: "cloud-talk"))
+
+        #expect(mockQueue.enqueuedActions == [.endSession(sessionSlug: "cloud-talk")])
+    }
+
+    @Test("sendAction offline: enqueues multiple actions in call order (W5.2 AC#1)")
+    func sendAction_offline_multipleActionsEnqueuedInOrder() async throws {
+        let mockQueue = MockOfflineActionQueue()
+        let client = WebSocketClient(offlineActionQueue: mockQueue)
+
+        try await client.sendAction(.endSession(sessionSlug: "talk-1"))
+        try await client.sendAction(.extendSession(sessionSlug: "talk-2", minutes: 5))
+        try await client.sendAction(.speakerArrived(speakerUsername: "anna.meier"))
+
+        #expect(mockQueue.enqueuedActions.count == 3)
+        #expect(mockQueue.enqueuedActions[0] == .endSession(sessionSlug: "talk-1"))
+        #expect(mockQueue.enqueuedActions[1] == .extendSession(sessionSlug: "talk-2", minutes: 5))
+        #expect(mockQueue.enqueuedActions[2] == .speakerArrived(speakerUsername: "anna.meier"))
+    }
+
+    @Test("sendAction offline: works when no queue injected (no crash, action dropped)")
+    func sendAction_offline_noQueueNoCrash() async throws {
+        // No offlineActionQueue — action is silently dropped, no throw
+        let client = WebSocketClient(offlineActionQueue: nil)
+        // Must not throw or crash
+        try await client.sendAction(.endSession(sessionSlug: "cloud-talk"))
     }
 }

@@ -33,6 +33,8 @@ struct BreakGongViewTests {
                 title: "BATbern Spring 2026",
                 eventDate: referenceDate,
                 venueName: "Kornhausforum Bern",
+                typicalStartTime: "18:00",
+                typicalEndTime: "22:00",
                 sessions: [session]
             )
         }
@@ -134,6 +136,8 @@ struct BreakGongViewTests {
             title: "BATbern Spring 2026",
             eventDate: referenceDate,
             venueName: "Kornhausforum Bern",
+            typicalStartTime: "18:00",
+            typicalEndTime: "22:00",
             sessions: [breakSession, talkSession]
         )
         vm.eventState = state

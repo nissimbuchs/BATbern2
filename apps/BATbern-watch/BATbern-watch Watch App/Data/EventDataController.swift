@@ -38,6 +38,10 @@ final class EventDataController {
     private let modelContext: ModelContext
     private let connectivityMonitor: ConnectivityMonitor
     private let clock: ClockProtocol
+    /// W5.2 Task 4.1: Persistent queue for actions queued while offline.
+    private let offlineActionQueue: (any OfflineActionQueueProtocol)?
+    /// W5.2 Task 4.1: WebSocket client used to replay queued actions on reconnect.
+    private let webSocketClient: (any WebSocketClientProtocol)?
 
     // MARK: - Sync Guard
 
@@ -53,6 +57,8 @@ final class EventDataController {
         modelContext: ModelContext,
         connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor(),
         clock: ClockProtocol = SystemClock(),
+        offlineActionQueue: (any OfflineActionQueueProtocol)? = nil,
+        webSocketClient: (any WebSocketClientProtocol)? = nil,
         skipAutoSync: Bool = false
     ) {
         self.publicClient = publicClient
@@ -61,6 +67,8 @@ final class EventDataController {
         self.modelContext = modelContext
         self.connectivityMonitor = connectivityMonitor
         self.clock = clock
+        self.offlineActionQueue = offlineActionQueue
+        self.webSocketClient = webSocketClient
 
         // Load SwiftData cache immediately so views have data before first network response
         loadCachedData()
@@ -283,14 +291,69 @@ final class EventDataController {
 
     private func handleConnectivityChange(isConnected: Bool) async {
         if isConnected && wasOffline {
-            logger.info("Connectivity restored — syncing")
+            logger.info("Connectivity restored — replaying offline queue then syncing")
             wasOffline = false
+            // W5.2 Task 4.2 (Dev Notes: replay BEFORE sync — replay first, then get fresh state)
+            await replayPendingActions()
             await syncIfNeeded()
         } else if !isConnected && !wasOffline {
             logger.warning("Connectivity lost")
             wasOffline = true
             isOffline = true
         }
+    }
+
+    // MARK: - Private: Offline Action Replay (W5.2 Task 4.3)
+
+    /// Replay queued offline actions through the WebSocket in chronological order.
+    /// Requires WebSocket to be connected — skips silently if not yet reconnected.
+    /// On success per action: removes from queue.
+    /// On failure: increments attemptCount; drops action after 3 failures.
+    /// Calls syncIfNeeded() after drain to reconcile Watch state with server.
+    private func replayPendingActions() async {
+        guard let queue = offlineActionQueue,
+              let webSocket = webSocketClient else { return }
+
+        let pending = queue.pendingActions()
+        guard !pending.isEmpty else { return }
+
+        // Skip if WebSocket not yet reconnected — queue persists for next connectivity event.
+        guard webSocket.isConnected else {
+            logger.info("replayPendingActions: WebSocket not connected yet, deferring \(pending.count) actions")
+            return
+        }
+
+        logger.info("replayPendingActions: replaying \(pending.count) queued offline actions")
+
+        for action in pending {
+            guard let watchAction = decodeOfflineAction(action) else {
+                logger.warning("replayPendingActions: dropping undecodable action \(action.actionType, privacy: .public)")
+                queue.remove(action)
+                continue
+            }
+            do {
+                try await webSocket.sendAction(watchAction)
+                queue.remove(action)
+                logger.info("replayPendingActions: replayed \(action.actionType, privacy: .public)")
+            } catch {
+                logger.warning("replayPendingActions: send failed for \(action.actionType, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                if queue.markFailed(action) {
+                    logger.warning("replayPendingActions: dropping stale action \(action.actionType, privacy: .public) after 3 attempts")
+                    queue.remove(action)
+                }
+            }
+        }
+
+        // W5.2 Task 4.3: sync after drain to reconcile Watch with authoritative server state.
+        await syncIfNeeded()
+    }
+
+    /// Decode an OfflineAction payload to a WatchAction for replay.
+    private func decodeOfflineAction(_ offlineAction: OfflineAction) -> WatchAction? {
+        guard let dto = try? JSONDecoder().decode(WatchActionDto.self, from: offlineAction.payload) else {
+            return nil
+        }
+        return dto.toWatchAction()
     }
 
     // MARK: - Complication Snapshot (pre-session)
