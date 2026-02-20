@@ -334,8 +334,7 @@ struct LiveCountdownView: View {
     /// Countdown color mapping per AC2-AC5.
     private var countdownColor: Color {
         switch viewModel.urgencyLevel {
-        case .normal:               return .teal
-        case .caution:              return .yellow
+        case .normal, .caution:     return BATbernWatchStyle.Colors.batbernBlue
         case .warning, .critical:   return .orange
         case .overtime:             return .red
         }
