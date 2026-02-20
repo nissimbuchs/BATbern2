@@ -243,11 +243,24 @@ public class SessionController {
         session.setTitle(request.getTitle());
         session.setDescription(request.getDescription());
         session.setSessionType(request.getSessionType());
-        session.setStartTime(parseInstant(request.getStartTime()));
-        session.setEndTime(parseInstant(request.getEndTime()));
+        Instant newStartTime = parseInstant(request.getStartTime());
+        Instant newEndTime = parseInstant(request.getEndTime());
+        boolean timingChanged = !newStartTime.equals(session.getStartTime())
+                || !newEndTime.equals(session.getEndTime());
+        session.setStartTime(newStartTime);
+        session.setEndTime(newEndTime);
         session.setRoom(request.getRoom());
         session.setCapacity(request.getCapacity());
         session.setLanguage(request.getLanguage());
+
+        // Clear actual execution data when scheduled times change (W4.x: stale values
+        // corrupt Watch countdown and Delayed-button logic after a reschedule).
+        if (timingChanged) {
+            session.setActualStartTime(null);
+            session.setActualEndTime(null);
+            session.setOverrunMinutes(null);
+            session.setCompletedByUsername(null);
+        }
 
         Session updatedSession = sessionRepository.save(session);
 
@@ -313,7 +326,14 @@ public class SessionController {
                 Instant startTime = session.getStartTime();
                 if (startTime != null) {
                     Instant newEndTime = startTime.plusSeconds(durationMinutes * 60L);
-                    session.setEndTime(newEndTime);
+                    if (!newEndTime.equals(session.getEndTime())) {
+                        session.setEndTime(newEndTime);
+                        // Clear actual execution data when scheduled end time changes (W4.x).
+                        session.setActualStartTime(null);
+                        session.setActualEndTime(null);
+                        session.setOverrunMinutes(null);
+                        session.setCompletedByUsername(null);
+                    }
                 }
             }
         }

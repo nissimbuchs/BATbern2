@@ -60,10 +60,23 @@ public class SessionTimingService {
         Instant previousEndTime = session.getEndTime();
         String previousRoom = session.getRoom();
 
+        // Detect whether scheduled times are actually changing
+        boolean timingChanged = !startTime.equals(previousStartTime) || !endTime.equals(previousEndTime);
+
         // Update session with new timing
         session.setStartTime(startTime);
         session.setEndTime(endTime);
         session.setRoom(room);
+
+        // Clear actual execution data whenever scheduled times change — the Watch app
+        // derives session state from actualStartTime / completedByUsername; stale values
+        // after a reschedule would corrupt the W4.x countdown and Delayed-button logic.
+        if (timingChanged) {
+            session.setActualStartTime(null);
+            session.setActualEndTime(null);
+            session.setOverrunMinutes(null);
+            session.setCompletedByUsername(null);
+        }
 
         Session savedSession = sessionRepository.save(session);
 
