@@ -1,7 +1,9 @@
 package ch.batbern.events.watch;
 
 import ch.batbern.events.exception.SessionNotFoundException;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 
 /**
  * Session lifecycle control via Watch organizer actions.
@@ -24,7 +27,13 @@ import java.time.temporal.ChronoUnit;
 @RequiredArgsConstructor
 public class WatchSessionService {
 
+    /** Session types that require an explicit organizer "Done" tap to complete. */
+    private static final Set<String> COMPLETEABLE_SESSION_TYPES = Set.of(
+            "keynote", "presentation", "workshop", "panel_discussion"
+    );
+
     private final SessionRepository sessionRepository;
+    private final EventRepository eventRepository;
     private final WatchPresenceService watchPresenceService;
 
     /**
@@ -78,9 +87,29 @@ public class WatchSessionService {
             }
         }
 
-        watchPresenceService.broadcastSessionEnded(eventCode, sessionSlug, completedByUsername);
-        log.debug("Session {} ended by {} (overrun: {} min)",
-                sessionSlug, completedByUsername, overrunMinutes);
+        // W4.4 AC4: Check if all completeable sessions are now done.
+        // Breaks, lunch, and networking do not require organizer completion — skip them.
+        var allSessions = sessionRepository.findByEventCode(eventCode);
+        var completeableSessions = allSessions.stream()
+                .filter(s -> COMPLETEABLE_SESSION_TYPES.contains(s.getSessionType()))
+                .toList();
+        boolean allComplete = !completeableSessions.isEmpty()
+                && completeableSessions.stream().allMatch(s -> s.getCompletedByUsername() != null);
+
+        if (allComplete) {
+            eventRepository.findByEventCode(eventCode).ifPresent(event -> {
+                if (event.getWorkflowState() != EventWorkflowState.EVENT_COMPLETED) {
+                    event.setWorkflowState(EventWorkflowState.EVENT_COMPLETED);
+                    eventRepository.save(event);
+                    log.info("Event {} transitioned to EVENT_COMPLETED — all {} completeable sessions done",
+                            eventCode, completeableSessions.size());
+                }
+            });
+        }
+
+        watchPresenceService.broadcastSessionEnded(eventCode, sessionSlug, completedByUsername, allComplete);
+        log.debug("Session {} ended by {} (overrun: {} min, allComplete: {})",
+                sessionSlug, completedByUsername, overrunMinutes, allComplete);
     }
 
     /**

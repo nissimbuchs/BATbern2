@@ -47,8 +47,7 @@ struct SessionCardView: View {
     // MARK: - Computed Properties
 
     private var isBreakSession: Bool {
-        guard let type = session.sessionType else { return false }
-        return type == .breakTime || type == .lunch || type == .networking
+        session.isBreak
     }
 
     private var isModerationSession: Bool {
@@ -69,18 +68,6 @@ struct SessionCardView: View {
 
     private var speakerTapsEnabled: Bool {
         phase == "SPEAKERS" || phase == "AGENDA"
-    }
-
-    private var breakIcon: String {
-        guard let type = session.sessionType else { return "questionmark.circle" }
-        switch type {
-        case .breakTime, .lunch:
-            return "cup.and.saucer.fill"
-        case .networking:
-            return "person.2.fill"
-        default:
-            return "questionmark.circle"
-        }
     }
 
     // MARK: - Body
@@ -161,17 +148,8 @@ struct SessionCardView: View {
 
             Spacer()
 
-            // SF Symbol icon (AC#3, AC#4)
-            Image(systemName: breakIcon)
-                .font(.system(size: 36))
-                .foregroundStyle(.secondary)
-
-            // Session title
-            Text(session.title)
-                .font(.system(size: 14, design: .rounded))
-                .foregroundStyle(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
+            // SF Symbol icon + title — delegated to shared BreakCardLayout (W4.4 Task 0)
+            BreakCardLayout(sessionType: session.sessionType, title: session.title)
 
             Spacer()
         }

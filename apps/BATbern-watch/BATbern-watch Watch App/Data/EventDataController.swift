@@ -141,6 +141,11 @@ final class EventDataController {
             }
         }
 
+        // W4.4: Persist server-driven event completion — triggers OrganizerZoneView routing.
+        if update.eventCompleted {
+            currentEvent?.workflowState = "EVENT_COMPLETED"
+        }
+
         isOffline = false
         lastSynced = clock.now
         try? modelContext.save()

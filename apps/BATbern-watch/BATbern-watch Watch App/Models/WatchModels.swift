@@ -34,7 +34,7 @@ struct WatchSession: Sendable, Identifiable {
     }
 
     var isBreak: Bool {
-        sessionType == .breakTime || sessionType == .lunch
+        sessionType == .breakTime || sessionType == .lunch || sessionType == .networking
     }
 }
 

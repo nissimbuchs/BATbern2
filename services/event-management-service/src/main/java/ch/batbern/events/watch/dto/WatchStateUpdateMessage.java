@@ -18,6 +18,7 @@ import java.util.List;
  *   "initiatedBy": "marco.organizer"
  * }
  * W4.2 Task 8.1: sessionSlug and initiatedBy added; null for non-session-control triggers.
+ * W4.4: eventCompleted added — true when all completeable sessions have been ended.
  */
 public record WatchStateUpdateMessage(
         String type,
@@ -28,18 +29,32 @@ public record WatchStateUpdateMessage(
         String serverTimestamp,
         String sessionSlug,           // W4.2: slug of session that triggered (null for presence events)
         String initiatedBy,           // W4.2: organizer who triggered the action (null for presence events)
-        String previousSessionSlug    // W4.3: slug of previous session (only for SESSION_DELAYED, else null)
+        String previousSessionSlug,   // W4.3: slug of previous session (only for SESSION_DELAYED, else null)
+        boolean eventCompleted        // W4.4: true when all completeable sessions are done
 ) {
 
     /**
-     * Backward-compatible constructor without previousSessionSlug (W4.2 callers).
+     * Backward-compatible constructor without eventCompleted (W4.3 callers).
+     * Defaults eventCompleted to false to preserve existing broadcast semantics.
+     */
+    public WatchStateUpdateMessage(
+            String type, String trigger, String eventCode,
+            List<SessionStateDto> sessions, List<ConnectedOrganizerDto> connectedOrganizers,
+            String serverTimestamp, String sessionSlug, String initiatedBy,
+            String previousSessionSlug) {
+        this(type, trigger, eventCode, sessions, connectedOrganizers,
+                serverTimestamp, sessionSlug, initiatedBy, previousSessionSlug, false);
+    }
+
+    /**
+     * Backward-compatible constructor without previousSessionSlug or eventCompleted (W4.2 callers).
      */
     public WatchStateUpdateMessage(
             String type, String trigger, String eventCode,
             List<SessionStateDto> sessions, List<ConnectedOrganizerDto> connectedOrganizers,
             String serverTimestamp, String sessionSlug, String initiatedBy) {
         this(type, trigger, eventCode, sessions, connectedOrganizers,
-                serverTimestamp, sessionSlug, initiatedBy, null);
+                serverTimestamp, sessionSlug, initiatedBy, null, false);
     }
 
     /**

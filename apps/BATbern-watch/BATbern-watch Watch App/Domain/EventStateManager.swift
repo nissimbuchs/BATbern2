@@ -17,6 +17,8 @@ protocol EventStateManagerProtocol: AnyObject {
     var isPreEvent: Bool { get }
     var isLive: Bool { get }
     var timeUntilEventStart: TimeInterval? { get }
+    /// W4.4: True when the server has broadcast EVENT_COMPLETED for today's event.
+    var isEventCompletedToday: Bool { get }
 }
 
 /// Tracks event timing state to determine which organizer screen to show.
@@ -79,14 +81,24 @@ final class EventStateManager: EventStateManagerProtocol {
     }
 
     /// True when current time is between event start and end times (O3: LiveCountdownView).
+    /// W4.4: Returns false when server has broadcast EVENT_COMPLETED — even within the time window.
     var isLive: Bool {
         guard let event = currentEvent else { return false }
+        if event.workflowState == "EVENT_COMPLETED" { return false }
 
         let now = clock.now
         let eventStart = effectiveStartDate(for: event)
         let eventEnd = effectiveEndDate(for: event)
 
         return now >= eventStart && now <= eventEnd
+    }
+
+    /// W4.4: True when server has broadcast EVENT_COMPLETED for today's event.
+    /// Only true on the event day — shows "Event Complete" screen instead of EventPreview.
+    var isEventCompletedToday: Bool {
+        guard let event = currentEvent,
+              event.workflowState == "EVENT_COMPLETED" else { return false }
+        return Calendar.current.isDateInToday(event.eventDate)
     }
 
     // MARK: - Private helpers

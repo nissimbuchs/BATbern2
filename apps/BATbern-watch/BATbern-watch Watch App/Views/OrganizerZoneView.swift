@@ -38,6 +38,9 @@ struct OrganizerZoneView: View {
             } else if eventState.isLive {
                 // O3: Event active — live countdown (W3.1 placeholder)
                 LiveCountdownView()
+            } else if eventState.isEventCompletedToday {
+                // W4.4 AC4: All sessions complete — show event completion screen
+                EventCompletedView(eventTitle: eventState.currentEvent?.title ?? "")
             } else if eventState.isPreEvent {
                 // O2: <1h before event — speaker arrival (W2.4 placeholder)
                 SpeakerArrivalView()

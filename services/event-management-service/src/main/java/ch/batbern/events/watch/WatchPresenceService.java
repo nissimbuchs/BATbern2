@@ -92,25 +92,40 @@ public class WatchPresenceService {
      * which session was completed and who triggered it.
      */
     public void broadcastSessionEnded(String eventCode, String sessionSlug, String completedByUsername) {
+        broadcastSessionEnded(eventCode, sessionSlug, completedByUsername, false);
+    }
+
+    /**
+     * Broadcasts SESSION_ENDED state update, optionally indicating all sessions are complete.
+     * W4.4: eventCompleted=true signals the Watch to transition to EVENT_COMPLETED state.
+     */
+    public void broadcastSessionEnded(String eventCode, String sessionSlug,
+            String completedByUsername, boolean eventCompleted) {
         WatchStateUpdateMessage message = buildStateUpdate(
-                eventCode, "SESSION_ENDED", sessionSlug, completedByUsername);
+                eventCode, "SESSION_ENDED", sessionSlug, completedByUsername, null, eventCompleted);
         messagingTemplate.convertAndSend("/topic/events/" + eventCode + "/state", message);
-        log.debug("Broadcast SESSION_ENDED for session {} by {} on event {}",
-                sessionSlug, completedByUsername, eventCode);
+        log.debug("Broadcast SESSION_ENDED for session {} by {} on event {} (eventCompleted={})",
+                sessionSlug, completedByUsername, eventCode, eventCompleted);
     }
 
     private WatchStateUpdateMessage buildStateUpdate(String eventCode, String trigger) {
-        return buildStateUpdate(eventCode, trigger, null, null);
+        return buildStateUpdate(eventCode, trigger, null, null, null, false);
     }
 
     private WatchStateUpdateMessage buildStateUpdate(
             String eventCode, String trigger, String sessionSlug, String initiatedBy) {
-        return buildStateUpdate(eventCode, trigger, sessionSlug, initiatedBy, null);
+        return buildStateUpdate(eventCode, trigger, sessionSlug, initiatedBy, null, false);
     }
 
     private WatchStateUpdateMessage buildStateUpdate(
             String eventCode, String trigger, String sessionSlug, String initiatedBy,
             String previousSessionSlug) {
+        return buildStateUpdate(eventCode, trigger, sessionSlug, initiatedBy, previousSessionSlug, false);
+    }
+
+    private WatchStateUpdateMessage buildStateUpdate(
+            String eventCode, String trigger, String sessionSlug, String initiatedBy,
+            String previousSessionSlug, boolean eventCompleted) {
         List<Session> sessions = sessionRepository.findByEventCode(eventCode);
         List<WatchStateUpdateMessage.SessionStateDto> sessionDtos = sessions.stream()
                 .map(this::toSessionStateDto)
@@ -130,7 +145,8 @@ public class WatchPresenceService {
                 Instant.now().toString(),
                 sessionSlug,
                 initiatedBy,
-                previousSessionSlug
+                previousSessionSlug,
+                eventCompleted
         );
     }
 

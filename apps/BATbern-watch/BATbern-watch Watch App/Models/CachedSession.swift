@@ -23,6 +23,12 @@ class CachedSession {
     var overrunMinutes: Int?
     var completedByUsername: String?
 
+    /// True for break-type sessions (no speaker area, break icon shown).
+    /// W4.4: includes .networking so BreakGongView triggers for networking slots too.
+    var isBreak: Bool {
+        sessionType == .breakTime || sessionType == .lunch || sessionType == .networking
+    }
+
     /// Computed property for SessionType enum
     var sessionType: SessionType? {
         get {
