@@ -34,6 +34,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -527,7 +529,8 @@ public class EventController {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
         // Find the next event with active workflow states (V17: changed from status to workflowState)
-        // Returns the event nearest to current date
+        // Returns the event nearest to current date, but only if it occurs today or in the future.
+        // Events whose date was yesterday or earlier are no longer shown on the homepage.
         // 9-State Model: NEWSLETTER_SENT and EVENT_READY consolidated into AGENDA_FINALIZED
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
@@ -537,8 +540,10 @@ public class EventController {
                 EventWorkflowState.EVENT_LIVE,
                 EventWorkflowState.EVENT_COMPLETED
         );
+        ZoneId bernZone = ZoneId.of("Europe/Zurich");
+        Instant startOfToday = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant();
         Event currentEvent = eventRepository
-                .findFirstByWorkflowStateInOrderByDateAsc(activeWorkflowStates)
+                .findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(activeWorkflowStates, startOfToday)
                 .orElse(null);
 
         if (currentEvent == null) {
