@@ -160,7 +160,7 @@ export const HeroSection = ({
         <div className={`relative z-10 w-full flex items-end pb-16 md:pb-20 lg:pb-24 min-h-screen`}>
           <div className="container mx-auto px-4">
             <div className="max-w-4xl">
-              <BATbernLoader size={72} speed="slow" className="mb-6" />
+              <BATbernLoader size={288} speed="slow" className="mb-6" />
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-foreground leading-tight mb-6">
                 {title}
