@@ -30,6 +30,7 @@ struct EventHeroView: View {
         .background(Color.black)
     }
 
+
     // MARK: - Event Hero Content
 
     @ViewBuilder

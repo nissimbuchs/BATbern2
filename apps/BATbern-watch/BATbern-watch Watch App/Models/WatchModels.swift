@@ -46,6 +46,7 @@ enum SessionType: String, Codable, Sendable {
     case networking
     case breakTime = "break"
     case lunch
+    case moderation
 }
 
 struct WatchSpeaker: Sendable, Identifiable {
