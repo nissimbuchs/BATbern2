@@ -56,6 +56,10 @@ final class LiveCountdownViewModel {
     private let engine: SessionTimerEngine
     private let scheduler: HapticScheduler
 
+    // MARK: - Notification Service
+
+    private let notificationService = WatchNotificationService()
+
     // MARK: - Timer Task
 
     private var timerTask: Task<Void, Never>?
@@ -80,6 +84,7 @@ final class LiveCountdownViewModel {
     func startTimer() {
         timerTask?.cancel()
         hapticService.startEventSession()
+        notificationService.requestAuthorization()
         timerTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -93,6 +98,7 @@ final class LiveCountdownViewModel {
         timerTask?.cancel()
         timerTask = nil
         hapticService.stopEventSession()
+        notificationService.cancelAll()
     }
 
     // MARK: - State Refresh
@@ -126,7 +132,8 @@ final class LiveCountdownViewModel {
             if session.isBreak {
                 scheduler.evaluateBreakGong(breakSession: session)
             } else {
-                scheduler.evaluate(session: session)
+                let fired = scheduler.evaluate(session: session)
+                postNotifications(for: fired, session: session)
             }
             nextSession = findNextSession(after: session, in: eventState)
         } else {
@@ -177,6 +184,37 @@ final class LiveCountdownViewModel {
             updatedAt: clock.now,
             complicationContext: computeComplicationContext(in: eventState)
         ))
+    }
+
+    // MARK: - Haptic Notifications
+
+    /// Post a local notification for each newly fired threshold alert.
+    /// Shown on wrist raise so organizers know why the watch buzzed.
+    private func postNotifications(for alerts: [HapticAlert], session: WatchSession) {
+        for alert in alerts {
+            switch alert {
+            case .fiveMinuteWarning:
+                notificationService.post(
+                    title: "5 minutes remaining",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-5min"
+                )
+            case .twoMinuteWarning:
+                notificationService.post(
+                    title: "2 minutes remaining",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-2min"
+                )
+            case .timesUp:
+                notificationService.post(
+                    title: "Time's up!",
+                    subtitle: session.title,
+                    identifier: "batbern-haptic-timesup"
+                )
+            default:
+                break
+            }
+        }
     }
 
     // MARK: - Complication Context (W3.3 amendment)
