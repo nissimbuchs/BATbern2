@@ -331,7 +331,8 @@ final class EventDataController {
     /// Requires WebSocket to be connected — skips silently if not yet reconnected.
     /// On success per action: removes from queue.
     /// On failure: increments attemptCount; drops action after 3 failures.
-    /// Calls syncIfNeeded() after drain to reconcile Watch state with server.
+    /// NOTE: caller (handleConnectivityChange) is responsible for calling syncIfNeeded() after
+    /// this method returns — do not call it here to avoid a double-sync on every reconnect.
     private func replayPendingActions() async {
         guard let queue = offlineActionQueue,
               let webSocket = webSocketClient else { return }
@@ -348,6 +349,15 @@ final class EventDataController {
         logger.info("replayPendingActions: replaying \(pending.count) queued offline actions")
 
         for action in pending {
+            // Re-check per iteration: WebSocket may drop mid-replay. If it goes offline,
+            // sendAction() would silently re-enqueue the action (producing a duplicate entry
+            // with a reset attemptCount). Bail early instead — remaining actions stay in the
+            // queue and will be replayed on the next connectivity-restore event.
+            guard webSocket.isConnected else {
+                logger.warning("replayPendingActions: WebSocket dropped mid-replay — deferring remaining actions")
+                return
+            }
+
             guard let watchAction = decodeOfflineAction(action) else {
                 logger.warning("replayPendingActions: dropping undecodable action \(action.actionType, privacy: .public)")
                 queue.remove(action)
@@ -365,9 +375,6 @@ final class EventDataController {
                 }
             }
         }
-
-        // W5.2 Task 4.3: sync after drain to reconcile Watch with authoritative server state.
-        await syncIfNeeded()
     }
 
     /// Decode an OfflineAction payload to a WatchAction for replay.

@@ -229,6 +229,30 @@ struct EventDataControllerOfflineTests {
         #expect(fixture.wsClient.sentActions.isEmpty)
     }
 
+    // MARK: - AC3: replay completes within 5 seconds of reconnect
+
+    @Test("replay drains within 5 seconds of connectivity restore (W5.2 AC#3 timing guarantee)")
+    func connectivityRestored_replayCompletesWithin5Seconds() async throws {
+        let fixture = try makeFixture()
+
+        fixture.queue.enqueue(.endSession(sessionSlug: "timed-talk"))
+        fixture.queue.enqueue(.extendSession(sessionSlug: "timed-talk-2", minutes: 3))
+
+        try await goOffline(fixture)
+        fixture.wsClient._isConnected = true
+        fixture.controller.isOffline = false
+
+        let startTime = Date()
+        fixture.monitor.simulateConnected()
+
+        try await AsyncTestHelpers.waitFor(timeout: 5.0) {
+            fixture.queue.pendingActions().isEmpty
+        }
+
+        let elapsed = Date().timeIntervalSince(startTime)
+        #expect(elapsed < 5.0, "Replay must complete within 5 seconds of connectivity restore (took \(String(format: "%.2f", elapsed))s)")
+    }
+
     // MARK: - syncIfNeeded called after replay drain (AC#4 reconcile)
 
     @Test("replayPendingActions calls syncIfNeeded after drain for server reconciliation (W5.2 AC#4)")

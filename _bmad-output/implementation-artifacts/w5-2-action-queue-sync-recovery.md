@@ -1,6 +1,6 @@
 # Story W5.2: Action Queue & Sync Recovery
 
-Status: review
+Status: done
 
 ---
 
@@ -70,6 +70,13 @@ so that no actions are lost even during WiFi outages.
   - [x] 6.2 `WebSocketClientTests.swift` (extended) — 3 offline sendAction tests: enqueues, preserves order, no crash without queue
   - [x] 6.3 `EventDataControllerOfflineTests.swift` — 6 tests: replays queued actions, queue cleared after replay, action dropped at 3 attempts, skipped when WS not connected, empty queue no-op, syncIfNeeded called after drain
 
+### Review Follow-ups (AI) — v1.1
+
+- [x] [AI-Review][HIGH] H2: `clearAll()` was dead production code despite Task 2.6 saying "used after full successful replay". Updated docstrings on `OfflineActionQueueProtocol.clearAll()` and `OfflineActionQueue.clearAll()` to clarify it is an admin/reset utility — the replay path intentionally uses per-action `remove()` for safer partial drain handling [OfflineActionQueueProtocol.swift:24, OfflineActionQueue.swift:80]
+- [x] [AI-Review][MEDIUM] M1: `replayPendingActions()` called `syncIfNeeded()` internally AND `handleConnectivityChange()` called it again immediately after — double-sync silently no-op'd by 60s cooldown for non-empty queue case. Removed internal `syncIfNeeded()` call from `replayPendingActions()`; caller (`handleConnectivityChange`) is now the single sync trigger for both empty and non-empty queue paths [EventDataController.swift:335-385]
+- [x] [AI-Review][MEDIUM] M2: AC3 "within 5 seconds" timing guarantee had no test. Added `connectivityRestored_replayCompletesWithin5Seconds` test with elapsed-time assertion [EventDataControllerOfflineTests.swift]
+- [x] [AI-Review][MEDIUM] M3: If WebSocket disconnects mid-replay, `sendAction()` silently re-enqueues the action to the same queue (offline path), then `queue.remove(action)` on the original fires — producing a duplicate with reset `attemptCount`. Added per-iteration `guard webSocket.isConnected else { return }` inside the replay loop; bail out early, leaving unprocessed actions for next connectivity-restore event [EventDataController.swift:352-356]
+
 ## Dev Notes
 
 ### What Already Exists — Do NOT Reimplement
@@ -136,6 +143,7 @@ claude-sonnet-4-6
 6. **Task 5 verified, no changes needed** — `loadCachedData()` already called at init time before first network call; `LocalCache` already uses file-backed SwiftData.
 7. **SwiftData test crash fix** — `EventDataControllerOfflineTests` used two separate in-memory `ModelContainer`s (one for EDC, one for queue). This caused `EXC_BREAKPOINT (SIGTRAP)` in `modelContext.insert()`. Fix: single combined container with all model types + `ModelContext(container)` (not `mainContext`), matching the pattern used by other passing test suites.
 8. **`failedReplay_actionDroppedAt3Attempts` test redesigned** — original 3-cycle connect/disconnect simulation caused race conditions. Replaced with pre-populating `attemptCount = 2` via two direct `markFailed()` calls before a single reconnect cycle (tests same AC#4 invariant, deterministically).
+9. **Code review v1.1 fixes** — (a) removed double `syncIfNeeded()` from `replayPendingActions()` (caller owns sync); (b) added per-iteration `guard webSocket.isConnected` inside replay loop to prevent mid-replay double-enqueue; (c) added AC3 timing test (`< 5s`); (d) updated `clearAll()` docstrings to clarify it is an admin utility, not the replay drain mechanism.
 
 ### File List
 
@@ -158,3 +166,4 @@ claude-sonnet-4-6
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2026-02-20 | 1.0 | Initial implementation — all tasks complete, 312/312 tests pass | claude-sonnet-4-6 |
+| 2026-02-20 | 1.1 | Code review fixes: double-sync removed, mid-replay disconnect guard, AC3 timing test, clearAll docs | claude-sonnet-4-6 |

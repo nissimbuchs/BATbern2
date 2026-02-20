@@ -76,7 +76,9 @@ final class OfflineActionQueue: OfflineActionQueueProtocol {
         }
     }
 
-    /// Delete all queued actions (post-drain cleanup).
+    /// Delete all queued actions.
+    /// NOTE: The replay path uses per-action remove() to handle partial drain on failure.
+    /// clearAll() is for admin/reset use cases, not the production replay drain.
     func clearAll() {
         for action in pendingActions() {
             modelContext.delete(action)

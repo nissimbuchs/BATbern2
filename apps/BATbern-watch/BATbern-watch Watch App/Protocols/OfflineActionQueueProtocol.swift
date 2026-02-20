@@ -20,7 +20,9 @@ protocol OfflineActionQueueProtocol: AnyObject {
     /// Delete a single action after successful replay.
     func remove(_ action: OfflineAction)
 
-    /// Delete all queued actions (used after full successful replay drain).
+    /// Delete all queued actions.
+    /// NOTE: The replay path uses per-action remove() (safer for partial drains). This method
+    /// is for admin/reset use cases (e.g., tests, user-initiated "clear pending" feature).
     func clearAll()
 
     /// Increment the attempt counter and persist. Returns true if the action

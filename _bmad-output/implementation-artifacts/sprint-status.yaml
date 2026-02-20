@@ -81,6 +81,6 @@ development_status:
   # Epic 5: Offline Resilience
   epic-5: in-progress
   w5-1-offline-timer-haptics: done
-  w5-2-action-queue-sync-recovery: review
+  w5-2-action-queue-sync-recovery: done
   w5-3-connectivity-monitoring-adaptive-behavior: ready-for-dev
   epic-5-retrospective: optional
