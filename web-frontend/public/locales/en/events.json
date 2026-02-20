@@ -732,6 +732,9 @@
       "shareEmail": "Share via Email",
       "shareText": "Join me at {{title}}!"
     },
+    "upcomingEvents": {
+      "title": "More Upcoming Events"
+    },
     "sessionTypes": {
       "keynote": "keynote",
       "presentation": "presentation",

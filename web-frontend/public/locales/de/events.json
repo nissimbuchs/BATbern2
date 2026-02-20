@@ -722,6 +722,9 @@
       "shareEmail": "Per E-Mail teilen",
       "shareText": "Ich nehme an {{title}} teil!"
     },
+    "upcomingEvents": {
+      "title": "Weitere kommende Veranstaltungen"
+    },
     "sessionTypes": {
       "keynote": "Hauptvortrag",
       "presentation": "Präsentation",
