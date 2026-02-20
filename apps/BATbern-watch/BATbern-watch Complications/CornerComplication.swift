@@ -37,9 +37,12 @@ struct CornerView: View {
     var body: some View {
         switch entry.context {
         case .noEvent, .eventComplete:
-            // AC5: No active session — minimal icon
-            Image(systemName: "calendar")
-                .foregroundStyle(.secondary)
+            // No event / event done — show BATbern logo
+            Image("BATbernLogo")
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
 
         case .eventFar(let dateString):
             // Date only, no ring — event is far away

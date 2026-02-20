@@ -38,9 +38,12 @@ struct CircularView: View {
         ZStack {
             switch entry.context {
             case .noEvent, .eventComplete:
-                // AC5: No active session — show BATbern icon fallback
-                Image(systemName: "calendar.badge.clock")
-                    .foregroundStyle(.secondary)
+                // No event / event done — show BATbern arrows (compact, fits circular slot)
+                Image("BATbernArrows")
+                    .resizable()
+                    .renderingMode(.template)
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
 
             case .eventFar(let dateString):
                 // Date in center, no ring (event is >1 day away)

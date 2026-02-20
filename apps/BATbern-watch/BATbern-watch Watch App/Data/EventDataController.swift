@@ -73,6 +73,7 @@ final class EventDataController {
         // Load SwiftData cache immediately so views have data before first network response
         loadCachedData()
         writeComplicationSnapshot()  // seed complication before LiveCountdownView opens
+        ComplicationDataStore.reloadTimeline()  // force WidgetKit to call getTimeline on every launch
 
         // Wire connectivity changes
         connectivityMonitor.onConnectivityChanged = { @Sendable [weak self] isConnected in
@@ -192,7 +193,8 @@ final class EventDataController {
             lastSynced = clock.now
             isOffline = false
             syncProgress = 1.0
-            writeComplicationSnapshot()  // update complication with fresh data
+            writeComplicationSnapshot()
+            ComplicationDataStore.reloadTimeline()  // push fresh data to complication immediately
         } catch SyncError.notAuthenticated, SyncError.authenticationRequired {
             logger.warning("performSync: auth error — will retry when JWT refreshes")
             // Don't set isOffline; auth errors are not connectivity failures
@@ -280,11 +282,20 @@ final class EventDataController {
     private func startPeriodicRefresh() async {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(300))
-            if connectivityMonitor.isConnected {
-                logger.debug("Periodic 5-min refresh triggered")
+            // Only refresh on event day — battery conservation (no polling between events)
+            if connectivityMonitor.isConnected && isEventDay() {
+                logger.debug("Periodic 5-min refresh triggered (event day)")
                 await syncIfNeeded()
             }
         }
+    }
+
+    /// True when the cached event date is today (Europe/Zurich calendar).
+    private func isEventDay() -> Bool {
+        guard let event = currentEvent else { return false }
+        var zurichCalendar = Calendar(identifier: .gregorian)
+        zurichCalendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        return zurichCalendar.isDateInToday(event.eventDate)
     }
 
     // MARK: - Private: Connectivity

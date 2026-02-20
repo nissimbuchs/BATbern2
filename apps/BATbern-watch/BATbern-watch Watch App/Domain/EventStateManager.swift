@@ -93,6 +93,15 @@ final class EventStateManager: EventStateManagerProtocol {
         return now >= eventStart && now <= eventEnd
     }
 
+    /// True when the cached event date is today (Europe/Zurich calendar).
+    /// Used to gate organizer sync and timer — no background activity before event day.
+    var isEventDay: Bool {
+        guard let event = currentEvent else { return false }
+        var zurichCalendar = Calendar(identifier: .gregorian)
+        zurichCalendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        return zurichCalendar.isDateInToday(event.eventDate)
+    }
+
     /// W4.4: True when server has broadcast EVENT_COMPLETED for today's event.
     /// Only true on the event day — shows "Event Complete" screen instead of EventPreview.
     var isEventCompletedToday: Bool {
