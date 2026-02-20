@@ -158,6 +158,14 @@ final class EventDataController {
             logger.debug("performSync: already loading, skip")
             return
         }
+        // Guard: never attempt a sync when offline. In the simulator, WiFi can be
+        // disabled while localhost remains reachable — so the request succeeds but the
+        // local backend may return noCurrentEvent, which clears the cached event and
+        // wipes it from the UI. The connectivity monitor auto-syncs when online again.
+        guard !isOffline else {
+            logger.debug("performSync: offline — preserving cached event")
+            return
+        }
 
         // TESTING_MODE: return mock data without hitting the network
         if ProcessInfo.processInfo.environment["TESTING_MODE"] == "1",

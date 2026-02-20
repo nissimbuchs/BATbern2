@@ -35,6 +35,8 @@ struct EventHeroView: View {
 
     /// Grow → spring-shrink animation, then force a backend sync.
     /// Ignored if a sync is already in progress.
+    /// In offline mode the spring animation still fires (tap feedback) but forceSync is
+    /// skipped — the connectivity monitor auto-syncs when the connection is restored.
     private func triggerRefresh() {
         guard !eventDataController.isLoading else { return }
         withAnimation(.spring(response: 0.2, dampingFraction: 0.45)) {
@@ -45,6 +47,7 @@ struct EventHeroView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
                 spinnerScale = 1.0
             }
+            guard !eventDataController.isOffline else { return }
             await eventDataController.forceSync()
         }
     }
