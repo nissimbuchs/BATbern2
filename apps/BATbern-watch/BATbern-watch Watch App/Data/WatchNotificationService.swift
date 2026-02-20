@@ -21,7 +21,33 @@ private let logger = Logger(subsystem: "ch.batbern.watch", category: "WatchNotif
 /// re-entrances (e.g. timer firing twice before the notification clears) replace rather
 /// than stack. `cancelAll()` clears pending and delivered notifications when the
 /// timer stops so stale alerts do not linger after the session ends.
-final class WatchNotificationService: @unchecked Sendable {
+///
+/// Implements `UNUserNotificationCenterDelegate` to opt in to foreground banner delivery.
+/// Without this delegate, watchOS (and iOS) silently drop `trigger: nil` notifications
+/// while the app is in the foreground — the permission dialog appears but no banners show.
+final class WatchNotificationService: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
+
+    // MARK: - Init
+
+    override init() {
+        super.init()
+        // Register as delegate before any notification is posted.
+        // UNUserNotificationCenter holds a weak reference — this instance is kept alive
+        // as a stored property on LiveCountdownViewModel for the duration of the session.
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    // MARK: - UNUserNotificationCenterDelegate
+
+    /// Allow banner presentation while the app is in the foreground.
+    /// Without this, watchOS drops all `trigger: nil` notifications when the app is active.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner])
+    }
 
     // MARK: - Public API
 
