@@ -20,8 +20,7 @@ struct EventHeroView: View {
                 eventHeroContent(event: event)
             } else if eventDataController.isLoading {
                 // Loading state
-                ProgressView()
-                    .tint(.white)
+                BATbernSpinnerView(size: 44, speed: .normal)
             } else {
                 // Empty state
                 emptyStateContent
@@ -72,8 +71,8 @@ struct EventHeroView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // BATbern logo with text (larger for hero visibility)
-                BATbernSymbolView(size: 45, color: BATbernWatchStyle.Colors.batbernBlue)
+                // BATbern animated spinner (larger for hero visibility)
+                BATbernSpinnerView(size: 45, speed: .slow)
                     .padding(.bottom, 8)
 
                 // Event title (large, centered, white, wrapped) - flexible space
@@ -120,7 +119,7 @@ struct EventHeroView: View {
 
     private var emptyStateContent: some View {
         VStack(spacing: 12) {
-            BATbernSymbolView(size: 32, color: BATbernWatchStyle.Colors.batbernBlue)
+            BATbernSpinnerView(size: 32, speed: .slow)
 
             Text(NSLocalizedString("event.hero.empty.title", comment: "App title"))
                 .font(.system(size: 14, design: .rounded))
