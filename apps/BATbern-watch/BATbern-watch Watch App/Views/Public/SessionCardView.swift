@@ -51,6 +51,10 @@ struct SessionCardView: View {
         return type == .breakTime || type == .lunch || type == .networking
     }
 
+    private var isModerationSession: Bool {
+        session.sessionType == .moderation
+    }
+
     private var showSpeakers: Bool {
         phase == "SPEAKERS" || phase == "AGENDA"
     }
@@ -228,6 +232,7 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private var speakerArea: some View {
+        let showLogo = !isModerationSession
         if speakerTapsEnabled {
             // SPEAKERS/AGENDA phase: Speaker area is tappable
             if session.speakers.count == 1 {
@@ -235,7 +240,7 @@ struct SessionCardView: View {
                 NavigationLink {
                     SpeakerBioView(speaker: session.speakers[0])
                 } label: {
-                    singleSpeakerLayout(session.speakers[0])
+                    singleSpeakerLayout(session.speakers[0], showCompanyLogo: showLogo)
                 }
                 .buttonStyle(.plain)
             } else if session.speakers.count >= 2 {
@@ -250,7 +255,7 @@ struct SessionCardView: View {
         } else {
             // TOPIC phase: Speaker area not tappable
             if session.speakers.count == 1 {
-                singleSpeakerLayout(session.speakers[0])
+                singleSpeakerLayout(session.speakers[0], showCompanyLogo: showLogo)
             } else if session.speakers.count >= 2 {
                 multiSpeakerLayout
             }
@@ -261,11 +266,12 @@ struct SessionCardView: View {
 
     @ViewBuilder
     private var multiSpeakerLayout: some View {
+        let showLogo = !isModerationSession
         if session.speakers.count == 2 {
             // Two speakers: side by side
             HStack(spacing: 12) {
                 ForEach(Array(session.speakers.prefix(2)), id: \.username) { speaker in
-                    speakerPortrait(speaker)
+                    speakerPortrait(speaker, showCompanyLogo: showLogo)
                 }
             }
         } else if session.speakers.count >= 3 {
@@ -273,16 +279,16 @@ struct SessionCardView: View {
             VStack(spacing: 8) {
                 HStack(spacing: 12) {
                     ForEach(Array(session.speakers.prefix(2)), id: \.username) { speaker in
-                        speakerPortrait(speaker)
+                        speakerPortrait(speaker, showCompanyLogo: showLogo)
                     }
                 }
 
                 if session.speakers.count == 3 {
-                    speakerPortrait(session.speakers[2])
+                    speakerPortrait(session.speakers[2], showCompanyLogo: showLogo)
                 } else {
                     // 4+ speakers: show third + badge
                     HStack(spacing: 12) {
-                        speakerPortrait(session.speakers[2])
+                        speakerPortrait(session.speakers[2], showCompanyLogo: showLogo)
 
                         VStack(spacing: 4) {
                             Text("+\(session.speakers.count - 3)")
@@ -302,14 +308,14 @@ struct SessionCardView: View {
     // MARK: - Speaker Portrait Layout
 
     @ViewBuilder
-    private func singleSpeakerLayout(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSize)
+    private func singleSpeakerLayout(_ speaker: CachedSpeaker, showCompanyLogo: Bool = true) -> some View {
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSize, showCompanyLogo: showCompanyLogo)
             .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
-    private func speakerPortrait(_ speaker: CachedSpeaker) -> some View {
-        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSizeSmall)
+    private func speakerPortrait(_ speaker: CachedSpeaker, showCompanyLogo: Bool = true) -> some View {
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSizeSmall, showCompanyLogo: showCompanyLogo)
     }
 }
 
@@ -417,6 +423,26 @@ struct SessionCardView: View {
         sessionType: .networking,
         startTime: Date(),
         endTime: Date().addingTimeInterval(30 * 60)
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Moderation - No Company Logo") {
+    let moderator = CachedSpeaker(
+        username: "moderator-test",
+        firstName: "Lukas",
+        lastName: "Meier",
+        company: "Berner Architekten"
+    )
+
+    let session = CachedSession(
+        sessionSlug: "moderation-1",
+        title: "Moderation",
+        sessionType: .moderation,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(4 * 60 * 60),
+        speakers: [moderator]
     )
 
     SessionCardView(session: session, phase: "AGENDA")
