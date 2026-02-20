@@ -48,10 +48,18 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
     private var reconnectTask: Task<Void, Never>?
     private var receiveTask: Task<Void, Never>?
 
+    // MARK: - Dependencies: Offline Queue
+
+    private let offlineActionQueue: (any OfflineActionQueueProtocol)?
+
     // MARK: - Init
 
-    init(urlSession: URLSession = .shared) {
+    /// - Parameters:
+    ///   - urlSession: URLSession used for WebSocket tasks (default `.shared`).
+    ///   - offlineActionQueue: Persistent queue for actions sent while offline (W5.2 Task 3.1).
+    init(urlSession: URLSession = .shared, offlineActionQueue: (any OfflineActionQueueProtocol)? = nil) {
         self.urlSession = urlSession
+        self.offlineActionQueue = offlineActionQueue
     }
 
     // MARK: - WebSocketClientProtocol
@@ -184,10 +192,19 @@ final class WebSocketClient: WebSocketClientProtocol, @unchecked Sendable {
     }
 
     /// STOMP SEND to action destination with JSON-encoded WatchAction.
-    /// Task 1.6.
+    /// Task 1.6 (W4.1); W5.2 Task 3.2-3.4: enqueue to OfflineActionQueue when offline.
+    ///
+    /// Offline path: if WebSocket is not connected, the action is enqueued in
+    /// `offlineActionQueue` and the call returns normally (no error thrown).
+    /// The UI has already updated optimistically — no caller change required.
+    ///
+    /// Online path: unchanged — action is sent via STOMP SEND frame.
     func sendAction(_ action: WatchAction) async throws {
         guard let task = webSocketTask, isConnected else {
-            throw WebSocketClientError.notConnected
+            // W5.2 Task 3.2: enqueue instead of throwing when offline
+            offlineActionQueue?.enqueue(action)
+            logger.info("WebSocketClient offline — action enqueued")
+            return
         }
         let eventCode = currentEventCode ?? ""
         let dto = WatchActionDto(from: action)
@@ -505,9 +522,10 @@ private struct SpeakerArrivalServerMessage: Decodable {
     }
 }
 
-/// JSON encoding of WatchAction for STOMP SEND to action endpoint.
-/// Task 1.6.
-private struct WatchActionDto: Encodable {
+/// JSON encoding/decoding of WatchAction for STOMP SEND to action endpoint.
+/// Task 1.6 (W4.1). Made Codable (W5.2 Task 2.3/4.3) so OfflineActionQueue can encode
+/// for persistence and EventDataController can decode for replay.
+struct WatchActionDto: Codable {
     let type: String
     let sessionSlug: String?
     let minutes: Int?
@@ -527,6 +545,32 @@ private struct WatchActionDto: Encodable {
             type = "DELAY_TO_PREVIOUS"; sessionSlug = slug; minutes = mins; speakerUsername = nil
         case .speakerArrived(let username):
             type = "SPEAKER_ARRIVED"; sessionSlug = nil; minutes = nil; speakerUsername = username
+        }
+    }
+
+    /// Reconstruct the WatchAction from a decoded DTO — used by replayPendingActions (W5.2 Task 4.3).
+    func toWatchAction() -> WatchAction? {
+        switch type {
+        case "START_SESSION":
+            guard let slug = sessionSlug else { return nil }
+            return .startSession(sessionSlug: slug)
+        case "END_SESSION":
+            guard let slug = sessionSlug else { return nil }
+            return .endSession(sessionSlug: slug)
+        case "SKIP_SESSION":
+            guard let slug = sessionSlug else { return nil }
+            return .skipSession(sessionSlug: slug)
+        case "EXTEND_SESSION":
+            guard let slug = sessionSlug, let mins = minutes else { return nil }
+            return .extendSession(sessionSlug: slug, minutes: mins)
+        case "DELAY_TO_PREVIOUS":
+            guard let slug = sessionSlug, let mins = minutes else { return nil }
+            return .delayToPrevious(currentSlug: slug, minutes: mins)
+        case "SPEAKER_ARRIVED":
+            guard let username = speakerUsername else { return nil }
+            return .speakerArrived(speakerUsername: username)
+        default:
+            return nil
         }
     }
 }

@@ -29,6 +29,7 @@ class MockConnectivityMonitor: ConnectivityMonitor {
         // Don't actually start NWPathMonitor in tests
     }
 
+    @MainActor
     override func stop() {
         stopCallCount += 1
         // Don't actually stop NWPathMonitor in tests

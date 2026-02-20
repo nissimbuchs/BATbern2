@@ -89,4 +89,77 @@ struct ConnectivityMonitorTests {
         monitor.start()
         monitor.stop()
     }
+
+    // MARK: - Test: 30s Offline Debounce (AC3 — W5.1)
+
+    @Test("onConnectivityChanged(false) should NOT fire within the debounce window")
+    func offlineCallback_notCalledWithinDebounceWindow() async throws {
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.3)
+
+        var callbackFired = false
+        monitor.onConnectivityChanged = { isConnected in
+            if !isConnected { callbackFired = true }
+        }
+
+        // Trigger path loss
+        monitor.processConnectivityChange(isConnected: false)
+
+        // Immediately after: must NOT have fired yet
+        #expect(callbackFired == false)
+
+        // Still within debounce window (100 ms < 300 ms)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(callbackFired == false)
+    }
+
+    @Test("onConnectivityChanged(false) should fire after sustained debounce period")
+    func offlineCallback_calledAfterDebouncePeriodElapses() async throws {
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.2)
+
+        var callbackFired = false
+        monitor.onConnectivityChanged = { isConnected in
+            if !isConnected { callbackFired = true }
+        }
+
+        monitor.processConnectivityChange(isConnected: false)
+
+        // Poll until the callback fires (or timeout after 1 s)
+        try await AsyncTestHelpers.waitFor(timeout: 1.0) { callbackFired }
+        #expect(callbackFired == true)
+    }
+
+    @Test("Connectivity restored within debounce window cancels offline notification")
+    func offlineCallback_cancelledWhenConnectivityRestored() async throws {
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 0.3)
+
+        var offlineCallbackFired = false
+        monitor.onConnectivityChanged = { isConnected in
+            if !isConnected { offlineCallbackFired = true }
+        }
+
+        // Simulate path loss, then immediate recovery within debounce window
+        monitor.processConnectivityChange(isConnected: false)
+        monitor.processConnectivityChange(isConnected: true)
+
+        // Wait beyond what the debounce period would have been
+        try await Task.sleep(for: .milliseconds(400))
+
+        // Offline callback must never have fired
+        #expect(offlineCallbackFired == false)
+    }
+
+    @Test("onConnectivityChanged(true) fires immediately — no debounce on reconnect")
+    func onlineCallback_firesImmediatelyWithoutDebounce() async throws {
+        let monitor = ConnectivityMonitor(offlineDebounceSeconds: 30) // Long debounce, confirming online ignores it
+
+        var onlineCallbackFired = false
+        monitor.onConnectivityChanged = { isConnected in
+            if isConnected { onlineCallbackFired = true }
+        }
+
+        monitor.processConnectivityChange(isConnected: true)
+
+        // Must fire synchronously — no await needed
+        #expect(onlineCallbackFired == true)
+    }
 }

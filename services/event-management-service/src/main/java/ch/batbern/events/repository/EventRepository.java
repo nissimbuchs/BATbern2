@@ -64,6 +64,19 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
             List<ch.batbern.shared.types.EventWorkflowState> workflowStates);
 
     /**
+     * Find the first event matching any of the given workflow states, with date on or after
+     * fromDate, ordered by date ascending.
+     * Used for the public homepage: only shows events happening today or in the future,
+     * so a completed event is no longer shown the day after it occurred.
+     *
+     * @param workflowStates List of workflow states to match
+     * @param fromDate Only include events whose date is >= this instant (start of today)
+     * @return Optional containing the next qualifying event if found
+     */
+    Optional<Event> findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(
+            List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
+
+    /**
      * Find an event by its event number
      *
      * @param eventNumber The event number to search for

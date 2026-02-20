@@ -37,14 +37,12 @@ struct RectangularView: View {
     var body: some View {
         switch entry.context {
         case .noEvent, .eventComplete:
-            // AC5: No active session fallback
-            HStack(spacing: 6) {
-                Image(systemName: "calendar.badge.clock")
-                    .foregroundStyle(.secondary)
-                Text("BATbern")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-            }
+            // No event / event done — show BATbern logo
+            Image("BATbernLogo")
+                .resizable()
+                .renderingMode(.template)
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(isLuminanceReduced ? .gray : .secondary)
 
         case .eventFar(let dateString):
             // Date only, no ring

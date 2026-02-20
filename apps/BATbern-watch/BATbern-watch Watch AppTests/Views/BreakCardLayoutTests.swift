@@ -9,6 +9,7 @@
 //  Source: docs/watch-app/ux-design-specification.md#Session-Card-Pages
 //
 
+import Foundation
 import Testing
 @testable import BATbern_watch_Watch_App
 

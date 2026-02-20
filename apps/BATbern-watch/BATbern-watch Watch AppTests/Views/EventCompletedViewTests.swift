@@ -14,7 +14,7 @@ struct EventCompletedViewTests {
 
     @Test("EventCompletedView can be instantiated")
     func viewInstantiates() {
-        let view = EventCompletedView()
+        let view = EventCompletedView(eventTitle: "BATbern Spring 2026")
         // Must not crash — view is a valid SwiftUI View
         _ = view
     }

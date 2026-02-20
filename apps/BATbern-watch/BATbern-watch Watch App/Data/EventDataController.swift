@@ -38,6 +38,10 @@ final class EventDataController {
     private let modelContext: ModelContext
     private let connectivityMonitor: ConnectivityMonitor
     private let clock: ClockProtocol
+    /// W5.2 Task 4.1: Persistent queue for actions queued while offline.
+    private let offlineActionQueue: (any OfflineActionQueueProtocol)?
+    /// W5.2 Task 4.1: WebSocket client used to replay queued actions on reconnect.
+    private let webSocketClient: (any WebSocketClientProtocol)?
 
     // MARK: - Sync Guard
 
@@ -53,6 +57,8 @@ final class EventDataController {
         modelContext: ModelContext,
         connectivityMonitor: ConnectivityMonitor = ConnectivityMonitor(),
         clock: ClockProtocol = SystemClock(),
+        offlineActionQueue: (any OfflineActionQueueProtocol)? = nil,
+        webSocketClient: (any WebSocketClientProtocol)? = nil,
         skipAutoSync: Bool = false
     ) {
         self.publicClient = publicClient
@@ -61,10 +67,13 @@ final class EventDataController {
         self.modelContext = modelContext
         self.connectivityMonitor = connectivityMonitor
         self.clock = clock
+        self.offlineActionQueue = offlineActionQueue
+        self.webSocketClient = webSocketClient
 
         // Load SwiftData cache immediately so views have data before first network response
         loadCachedData()
         writeComplicationSnapshot()  // seed complication before LiveCountdownView opens
+        ComplicationDataStore.reloadTimeline()  // force WidgetKit to call getTimeline on every launch
 
         // Wire connectivity changes
         connectivityMonitor.onConnectivityChanged = { @Sendable [weak self] isConnected in
@@ -184,7 +193,8 @@ final class EventDataController {
             lastSynced = clock.now
             isOffline = false
             syncProgress = 1.0
-            writeComplicationSnapshot()  // update complication with fresh data
+            writeComplicationSnapshot()
+            ComplicationDataStore.reloadTimeline()  // push fresh data to complication immediately
         } catch SyncError.notAuthenticated, SyncError.authenticationRequired {
             logger.warning("performSync: auth error — will retry when JWT refreshes")
             // Don't set isOffline; auth errors are not connectivity failures
@@ -224,6 +234,12 @@ final class EventDataController {
     // MARK: - Private: Portrait Prefetch
 
     private func prefetchPortraits(for cachedEvent: CachedEvent) async {
+        // Pre-fetch theme image first (real watch: AsyncImage is unreliable for large CDN images)
+        if let themeUrlString = cachedEvent.themeImageUrl,
+           let themeUrl = URL(string: themeUrlString) {
+            _ = try? await portraitCache.downloadAndCache(url: themeUrl)
+        }
+
         let allSpeakers = cachedEvent.sessions.flatMap { $0.speakers }
         let total = allSpeakers.count
         let progressStart = syncProgress  // capture before loop
@@ -272,25 +288,101 @@ final class EventDataController {
     private func startPeriodicRefresh() async {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(300))
-            if connectivityMonitor.isConnected {
-                logger.debug("Periodic 5-min refresh triggered")
+            // Only refresh on event day — battery conservation (no polling between events)
+            if connectivityMonitor.isConnected && isEventDay() {
+                logger.debug("Periodic 5-min refresh triggered (event day)")
                 await syncIfNeeded()
             }
         }
+    }
+
+    /// True when the cached event date is today (Europe/Zurich calendar).
+    private func isEventDay() -> Bool {
+        guard let event = currentEvent else { return false }
+        var zurichCalendar = Calendar(identifier: .gregorian)
+        zurichCalendar.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        return zurichCalendar.isDateInToday(event.eventDate)
     }
 
     // MARK: - Private: Connectivity
 
     private func handleConnectivityChange(isConnected: Bool) async {
         if isConnected && wasOffline {
-            logger.info("Connectivity restored — syncing")
+            logger.info("Connectivity restored — replaying offline queue then syncing")
             wasOffline = false
+            // Clear offline indicator immediately on WiFi restore (AC3 semantics: indicator tracks
+            // WiFi availability, not server reachability). Must happen BEFORE syncIfNeeded() so
+            // performSync() can proceed past its `guard !isOffline` gate. If the subsequent sync
+            // encounters a network error, performSync sets isOffline = true again.
+            isOffline = false
+            // W5.2 Task 4.2 (Dev Notes: replay BEFORE sync — replay first, then get fresh state)
+            await replayPendingActions()
             await syncIfNeeded()
         } else if !isConnected && !wasOffline {
             logger.warning("Connectivity lost")
             wasOffline = true
             isOffline = true
         }
+    }
+
+    // MARK: - Private: Offline Action Replay (W5.2 Task 4.3)
+
+    /// Replay queued offline actions through the WebSocket in chronological order.
+    /// Requires WebSocket to be connected — skips silently if not yet reconnected.
+    /// On success per action: removes from queue.
+    /// On failure: increments attemptCount; drops action after 3 failures.
+    /// NOTE: caller (handleConnectivityChange) is responsible for calling syncIfNeeded() after
+    /// this method returns — do not call it here to avoid a double-sync on every reconnect.
+    private func replayPendingActions() async {
+        guard let queue = offlineActionQueue,
+              let webSocket = webSocketClient else { return }
+
+        let pending = queue.pendingActions()
+        guard !pending.isEmpty else { return }
+
+        // Skip if WebSocket not yet reconnected — queue persists for next connectivity event.
+        guard webSocket.isConnected else {
+            logger.info("replayPendingActions: WebSocket not connected yet, deferring \(pending.count) actions")
+            return
+        }
+
+        logger.info("replayPendingActions: replaying \(pending.count) queued offline actions")
+
+        for action in pending {
+            // Re-check per iteration: WebSocket may drop mid-replay. If it goes offline,
+            // sendAction() would silently re-enqueue the action (producing a duplicate entry
+            // with a reset attemptCount). Bail early instead — remaining actions stay in the
+            // queue and will be replayed on the next connectivity-restore event.
+            guard webSocket.isConnected else {
+                logger.warning("replayPendingActions: WebSocket dropped mid-replay — deferring remaining actions")
+                return
+            }
+
+            guard let watchAction = decodeOfflineAction(action) else {
+                logger.warning("replayPendingActions: dropping undecodable action \(action.actionType, privacy: .public)")
+                queue.remove(action)
+                continue
+            }
+            do {
+                try await webSocket.sendAction(watchAction)
+                queue.remove(action)
+                logger.info("replayPendingActions: replayed \(action.actionType, privacy: .public)")
+            } catch {
+                logger.warning("replayPendingActions: send failed for \(action.actionType, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                if queue.markFailed(action) {
+                    logger.warning("replayPendingActions: dropping stale action \(action.actionType, privacy: .public) after 3 attempts")
+                    queue.remove(action)
+                }
+            }
+        }
+    }
+
+    /// Decode an OfflineAction payload to a WatchAction for replay.
+    private func decodeOfflineAction(_ offlineAction: OfflineAction) -> WatchAction? {
+        guard let dto = try? JSONDecoder().decode(WatchActionDto.self, from: offlineAction.payload) else {
+            return nil
+        }
+        return dto.toWatchAction()
     }
 
     // MARK: - Complication Snapshot (pre-session)

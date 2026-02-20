@@ -13,12 +13,18 @@ import SwiftData
 struct EventHeroView: View {
     @Environment(EventDataController.self) private var eventDataController
     @State private var spinnerScale: CGFloat = 1.0
+    @State private var themeImageData: Data?
 
     var body: some View {
         Group {
             if let event = eventDataController.currentEvent {
-                // Event Hero (P1)
-                eventHeroContent(event: event)
+                if isTBDEvent(for: event) {
+                    // TBD placeholder: date + venue only (Course Correction 2026-02-19)
+                    tbdEventContent(event: event)
+                } else {
+                    // Event Hero (P1)
+                    eventHeroContent(event: event)
+                }
             } else if eventDataController.isLoading {
                 // Loading state
                 BATbernSpinnerView(size: 44, speed: .normal)
@@ -29,6 +35,28 @@ struct EventHeroView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
+        .task(id: eventDataController.currentEvent?.themeImageUrl) {
+            await loadThemeImage()
+        }
+    }
+
+    // MARK: - TBD Event helpers
+
+    private func isTBDEvent(for event: CachedEvent) -> Bool {
+        event.title.uppercased() == "TBD" && event.sessions.isEmpty
+    }
+
+    // MARK: - Theme Image (cache-backed)
+
+    private func loadThemeImage() async {
+        guard let urlString = eventDataController.currentEvent?.themeImageUrl,
+              let url = URL(string: urlString) else { return }
+        // Cache-first: pre-fetched during sync; fallback download if missing
+        if let cached = PortraitCache.shared.getCachedPortrait(url: url) {
+            themeImageData = cached
+        } else if let downloaded = try? await PortraitCache.shared.downloadAndCache(url: url) {
+            themeImageData = downloaded
+        }
     }
 
     // MARK: - Tap-to-Refresh
@@ -52,38 +80,50 @@ struct EventHeroView: View {
         }
     }
 
+    // MARK: - TBD Event Content
+
+    /// Minimal layout for a placeholder event: date (dd MMM) + venue.
+    /// No speakers, no session cards, no abstract navigation, no scroll hint.
+    @ViewBuilder
+    private func tbdEventContent(event: CachedEvent) -> some View {
+        VStack(spacing: 8) {
+            Spacer()
+            Text(SwissDateFormatter.formatCompactDate(event.eventDate))
+                .font(.title3)
+                .foregroundStyle(BATbernWatchStyle.Colors.textPrimary)
+                .multilineTextAlignment(.center)
+            Text(event.venueName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Spacer()
+        }
+        .padding()
+    }
+
     // MARK: - Event Hero Content
 
     @ViewBuilder
     private func eventHeroContent(event: CachedEvent) -> some View {
         ZStack {
-            // Theme image background (dimmed for readability)
-            if let themeUrl = event.themeImageUrl, let url = URL(string: themeUrl) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            // AC#7: Bottom-heavy gradient — image visible at top, text readable at bottom
-                            .overlay(
-                                LinearGradient(
-                                    stops: [
-                                        .init(color: .black.opacity(0.3), location: 0.0),
-                                        .init(color: .black.opacity(0.5), location: 0.4),
-                                        .init(color: .black.opacity(0.85), location: 1.0)
-                                    ],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    case .failure, .empty:
-                        Color.black
-                    @unknown default:
-                        Color.black
-                    }
-                }
-                .ignoresSafeArea()
+            // Theme image background — cache-backed (AsyncImage unreliable on real watch for CDN images)
+            if let data = themeImageData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    // AC#7: Bottom-heavy gradient — image visible at top, text readable at bottom
+                    .overlay(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0.3), location: 0.0),
+                                .init(color: .black.opacity(0.5), location: 0.4),
+                                .init(color: .black.opacity(0.85), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .ignoresSafeArea()
             } else {
                 Color.black
                     .ignoresSafeArea()

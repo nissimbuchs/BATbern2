@@ -92,6 +92,21 @@ describe('EventProgram', () => {
       language: 'de',
       speakers: [],
     },
+    {
+      // Non-structural session with no speakers — used to validate "Speaker TBA" rendering.
+      // lunch/break/moderation render as compact icon strips (no speaker section shown).
+      sessionSlug: 'talk-no-speaker',
+      eventCode: 'BATbern142',
+      title: 'Open Discussion',
+      description: 'Community open discussion.',
+      sessionType: 'talk',
+      startTime: '2025-05-15T09:00:00Z', // same time group as keynote/workshop — keeps 2 time slots
+      endTime: '2025-05-15T10:00:00Z',
+      room: 'Room B',
+      capacity: 80,
+      language: 'de',
+      speakers: [],
+    },
   ];
 
   it('should_displayEventProgram_when_sessionsProvided', () => {
@@ -118,10 +133,11 @@ describe('EventProgram', () => {
     expect(screen.getByText(/Welcome and introduction to the conference/i)).toBeInTheDocument();
     expect(screen.getByText(/Interactive workshop session/i)).toBeInTheDocument();
 
-    // Check rooms
+    // Check rooms — structural sessions (lunch/break/moderation) render as compact icon strips
+    // without showing room; only non-structural sessions show room.
     expect(screen.getByText('Main Hall')).toBeInTheDocument();
     expect(screen.getByText('Workshop Room A')).toBeInTheDocument();
-    expect(screen.getByText('Dining Hall')).toBeInTheDocument();
+    expect(screen.getByText('Room B')).toBeInTheDocument();
   });
 
   it('should_displaySpeakerNames_when_speakersAssigned', () => {
@@ -140,9 +156,11 @@ describe('EventProgram', () => {
   it('should_displaySessionTypes_when_rendered', () => {
     renderWithProviders(<EventProgram sessions={mockSessions} />);
 
+    // Structural sessions (lunch/break/moderation) render as compact icon strips — no type badge.
+    // Only non-structural sessions show the type badge.
     expect(screen.getByText('keynote')).toBeInTheDocument();
     expect(screen.getByText('workshop')).toBeInTheDocument();
-    expect(screen.getByText('lunch')).toBeInTheDocument();
+    expect(screen.getByText('talk')).toBeInTheDocument();
   });
 
   it('should_sortTimeSlots_when_rendered', () => {

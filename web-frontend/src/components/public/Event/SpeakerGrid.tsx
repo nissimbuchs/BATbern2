@@ -29,11 +29,14 @@ interface SpeakerGridProps {
 export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
   const { t } = useTranslation('events');
 
-  // Aggregate speakers from all sessions with their session information
+  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+
+  // Aggregate speakers from non-structural sessions only
   const speakersWithSessions = useMemo(() => {
     const speakerMap = new Map<string, SpeakerWithSession>();
 
     sessions.forEach((session) => {
+      if (STRUCTURAL_TYPES.has(session.sessionType ?? '')) return;
       if (session.speakers && session.speakers.length > 0) {
         session.speakers.forEach((speaker) => {
           // Use primary speaker only (or first speaker if no primary)

@@ -27,6 +27,7 @@ import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 // import { TopicBadges } from '@/components/public/Event/TopicBadges'; // TODO: Uncomment when topics are added
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
+import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
@@ -225,6 +226,9 @@ const HomePage = () => {
 
         {/* Social Sharing */}
         <SocialSharing eventTitle={eventTitle} eventUrl={eventUrl} />
+
+        {/* Upcoming Events Section — hidden in archive mode */}
+        {!isArchiveMode && <UpcomingEventsSection currentEventCode={event.eventCode} />}
 
         {/* Testimonials Section */}
         <div className="mt-16 pb-12">

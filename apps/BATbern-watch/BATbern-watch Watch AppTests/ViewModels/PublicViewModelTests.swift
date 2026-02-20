@@ -224,4 +224,72 @@ struct PublicViewModelTests {
         #expect(viewModel.isBreakSession(keynote) == false)
         #expect(viewModel.isBreakSession(presentation) == false)
     }
+
+    // MARK: - isTBDEvent (Course Correction 2026-02-19)
+
+    @Test("isTBDEvent is true when title is TBD and sessions are empty")
+    func test_isTBDEvent_trueWhenTitleIsTBDAndNoSessions() throws {
+        let container = try makeContainer()
+        let event = CachedEvent(
+            eventCode: "bat99", title: "TBD", eventDate: Date(), venueName: "Bern",
+            typicalStartTime: "18:00", typicalEndTime: "21:00", sessions: []
+        )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
+
+        #expect(viewModel.isTBDEvent == true)
+    }
+
+    @Test("isTBDEvent is case-insensitive (lowercase tbd matches)")
+    func test_isTBDEvent_caseInsensitive() throws {
+        let container = try makeContainer()
+        let event = CachedEvent(
+            eventCode: "bat99", title: "tbd", eventDate: Date(), venueName: "Bern",
+            typicalStartTime: "18:00", typicalEndTime: "21:00", sessions: []
+        )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
+
+        #expect(viewModel.isTBDEvent == true)
+    }
+
+    @Test("isTBDEvent is false when title is TBD but event has sessions")
+    func test_isTBDEvent_falseWhenTitleIsTBDButHasSessions() throws {
+        let container = try makeContainer()
+        let session = CachedSession(
+            sessionSlug: "s1", title: "Talk",
+            sessionType: .presentation,
+            startTime: Date(), endTime: Date().addingTimeInterval(3600)
+        )
+        let event = CachedEvent(
+            eventCode: "bat99", title: "TBD", eventDate: Date(), venueName: "Bern",
+            typicalStartTime: "18:00", typicalEndTime: "21:00", sessions: [session]
+        )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
+
+        #expect(viewModel.isTBDEvent == false)
+    }
+
+    @Test("isTBDEvent is false when title is a normal event name")
+    func test_isTBDEvent_falseWhenTitleIsNormal() throws {
+        let container = try makeContainer()
+        let event = CachedEvent(
+            eventCode: "bat57", title: "Cloud Native Evening", eventDate: Date(), venueName: "Bern",
+            typicalStartTime: "18:00", typicalEndTime: "21:00", sessions: []
+        )
+        let controller = makeController(event: event, modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
+
+        #expect(viewModel.isTBDEvent == false)
+    }
+
+    @Test("isTBDEvent is false when no event is loaded")
+    func test_isTBDEvent_falseWhenNoEvent() throws {
+        let container = try makeContainer()
+        let controller = makeController(modelContext: container.mainContext)
+        let viewModel = PublicViewModel(eventDataController: controller)
+
+        #expect(viewModel.isTBDEvent == false)
+    }
 }

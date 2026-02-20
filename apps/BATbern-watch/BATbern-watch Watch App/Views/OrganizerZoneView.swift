@@ -50,10 +50,10 @@ struct OrganizerZoneView: View {
             }
         }
         .onAppear {
-            // Bump tick so routing re-evaluates isLive/isPreEvent immediately on every appear,
-            // even when syncIfNeeded() is skipped by the 5-min cooldown.
+            // Bump tick so routing re-evaluates isLive/isPreEvent immediately on every appear.
             routingTick += 1
-            guard authManager.isPaired else { return }
+            // Only sync on event day — battery conservation (no network before event day).
+            guard authManager.isPaired && eventState.isEventDay else { return }
             if authManager.currentJWT != nil {
                 Task { await eventDataController.syncIfNeeded() }
             } else {
@@ -69,14 +69,15 @@ struct OrganizerZoneView: View {
         }
         .onChange(of: authManager.currentJWT) { _, newJWT in
             // JWT became available or was refreshed — sync if data is stale.
-            // EventDataController's 60s cooldown prevents retry loops from
-            // 401 → refreshJWT → onChange → 401.
-            guard newJWT != nil && authManager.isPaired else { return }
+            // Only sync on event day — battery conservation.
+            guard newJWT != nil && authManager.isPaired && eventState.isEventDay else { return }
             Task { await eventDataController.syncIfNeeded() }
         }
         // Re-evaluate isLive/isPreEvent every 30s — they are time-based computed properties
         // that won't trigger a re-render on their own as time passes the session boundary.
+        // Only active on event day — no timer overhead between events.
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+            guard eventState.isEventDay else { return }
             routingTick += 1
         }
     }
