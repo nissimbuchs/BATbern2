@@ -216,6 +216,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
+    const isStructural = ['moderation', 'break', 'lunch'].includes(session?.sessionType ?? '');
+    const minDuration = isStructural ? 1 : MIN_SESSION_DURATION;
+
     if (!title.trim()) {
       newErrors.title = t('sessionEdit.errors.titleRequired', 'Title is required');
     }
@@ -227,11 +230,11 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       });
     }
 
-    if (duration < MIN_SESSION_DURATION || duration > MAX_SESSION_DURATION) {
+    if (duration < minDuration || duration > MAX_SESSION_DURATION) {
       newErrors.duration = t('sessionEdit.errors.invalidDuration', {
-        min: MIN_SESSION_DURATION,
+        min: minDuration,
         max: MAX_SESSION_DURATION,
-        defaultValue: `Duration must be between ${MIN_SESSION_DURATION} and ${MAX_SESSION_DURATION} minutes`,
+        defaultValue: `Duration must be between ${minDuration} and ${MAX_SESSION_DURATION} minutes`,
       });
     }
 
@@ -249,10 +252,10 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
       }
 
       const calculatedDuration = endTotalMinutes - startTotalMinutes;
-      if (calculatedDuration < MIN_SESSION_DURATION) {
+      if (calculatedDuration < minDuration) {
         newErrors.duration = t('sessionEdit.errors.durationTooShort', {
-          min: MIN_SESSION_DURATION,
-          defaultValue: `Session duration must be at least ${MIN_SESSION_DURATION} minutes`,
+          min: minDuration,
+          defaultValue: `Session duration must be at least ${minDuration} minutes`,
         });
       }
 

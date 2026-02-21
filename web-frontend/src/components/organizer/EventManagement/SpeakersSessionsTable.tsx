@@ -299,12 +299,12 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
               key={session.sessionSlug}
               sx={{
                 mb: 2,
-                cursor: structural ? 'default' : 'pointer',
+                cursor: 'pointer',
                 bgcolor: structural ? 'action.hover' : undefined,
-                '&:hover': { bgcolor: structural ? 'action.hover' : 'action.hover' },
+                '&:hover': { bgcolor: 'action.hover' },
               }}
               data-testid={`session-card-${session.sessionSlug}`}
-              onClick={structural ? undefined : () => handleRowClick(session)}
+              onClick={() => handleRowClick(session)}
             >
               <CardContent>
                 <Stack spacing={1}>
@@ -373,35 +373,33 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                 </Stack>
               </CardContent>
 
-              {!structural && (
-                <CardActions>
-                  {session.speaker && (
-                    <Button
-                      size="small"
-                      startIcon={<FolderIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMaterialsClick(session); // Story 5.9 - AC2
-                      }}
-                    >
-                      {t('speakers.materials')}
-                    </Button>
-                  )}
-                  {onSessionDelete && (
-                    <IconButton
-                      size="small"
-                      color="error"
-                      aria-label={t('speakers.deleteSession')}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(session);
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </CardActions>
-              )}
+              <CardActions>
+                {session.speaker && !structural && (
+                  <Button
+                    size="small"
+                    startIcon={<FolderIcon />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMaterialsClick(session); // Story 5.9 - AC2
+                    }}
+                  >
+                    {t('speakers.materials')}
+                  </Button>
+                )}
+                {onSessionDelete && (
+                  <IconButton
+                    size="small"
+                    color="error"
+                    aria-label={t('speakers.deleteSession')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(session);
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </CardActions>
             </Card>
           );
         })}
@@ -437,10 +435,10 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                 <TableRow
                   key={session.sessionSlug}
                   data-testid={`session-row-${session.sessionSlug}`}
-                  hover={!structural}
-                  onClick={structural ? undefined : () => handleRowClick(session)}
+                  hover
+                  onClick={() => handleRowClick(session)}
                   sx={{
-                    cursor: structural ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     bgcolor: structural ? 'action.hover' : undefined,
                     opacity: structural ? 0.85 : 1,
                   }}
@@ -513,35 +511,33 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
                   </TableCell>
 
                   <TableCell align="right">
-                    {!structural && (
-                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                        {session.speaker && (
-                          <Button
-                            size="small"
-                            startIcon={<FolderIcon />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMaterialsClick(session); // Story 5.9 - AC2
-                            }}
-                          >
-                            {t('speakers.materials')}
-                          </Button>
-                        )}
-                        {onSessionDelete && (
-                          <IconButton
-                            size="small"
-                            color="error"
-                            aria-label={t('speakers.deleteSession')}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(session);
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                      </Stack>
-                    )}
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      {session.speaker && !structural && (
+                        <Button
+                          size="small"
+                          startIcon={<FolderIcon />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMaterialsClick(session); // Story 5.9 - AC2
+                          }}
+                        >
+                          {t('speakers.materials')}
+                        </Button>
+                      )}
+                      {onSessionDelete && (
+                        <IconButton
+                          size="small"
+                          color="error"
+                          aria-label={t('speakers.deleteSession')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(session);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Stack>
                   </TableCell>
                 </TableRow>
               );
