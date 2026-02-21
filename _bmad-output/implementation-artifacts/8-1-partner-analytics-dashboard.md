@@ -1,285 +1,228 @@
-# Story 8.1: Partner Analytics Dashboard
+# Story 8.1: Partner Attendance Dashboard
 
 Status: ready-for-dev
 
 ## Story
 
 As a **partner**,
-I want to view comprehensive analytics about employee attendance and engagement,
-so that I can demonstrate sponsorship ROI internally.
+I want to see how many of my company's employees attended each BATbern event,
+so that I can justify our sponsorship internally.
 
 ## Acceptance Criteria
 
-1. **AC1 - Attendance Metrics**: Dashboard displays employee attendance by event (count, percentage) with real-time accuracy
-2. **AC2 - Trend Analysis**: Historical attendance patterns displayed over 12/24 month periods with interactive charts
-3. **AC3 - Department Breakdown**: Attendance segmented by department with visual breakdown charts
-4. **AC4 - Engagement Score**: Content interaction metrics (downloads, feedback) calculated and displayed
-5. **AC5 - Comparative Analysis**: Anonymized benchmark comparison vs other partners (percentile ranking)
-6. **AC6 - Export Capability**: Download reports as PDF and Excel formats
-7. **AC7 - Individual Tracking**: Employee-level participation tracking visible to partner admins
-8. **AC8 - Content Interaction**: Topics/sessions employee engagement data displayed
-9. **AC9 - ROI Calculation**: Cost per attendee and engagement value metrics computed and shown
-10. **AC10 - Real-time Updates**: Data refreshes daily (overnight batch job at 2 AM)
-11. **AC11 - Role-Based Access**: Partners see ONLY their own company data (enforced at API and QuickSight level)
-12. **AC12 - Performance**: Dashboard loads in <3 seconds (P95)
-13. **AC13 - Mobile Responsive**: Analytics accessible and usable on mobile devices
-14. **AC14 - i18n Support**: All UI text translated (German primary, English secondary)
+1. **AC1 - Attendance Table**: Dashboard displays a table with one row per event — columns: event name, date, company attendees, total attendees, percentage. Sorted by date descending.
+
+2. **AC2 - Time Range**: Default view shows the last 5 years (~15 events). A toggle allows extending to full history (up to 20 years / ~60 events).
+
+3. **AC3 - Cost Per Attendee**: Displays a single computed value: total partnership cost ÷ total company attendees over the selected period.
+
+4. **AC4 - Export**: Download the attendance table as Excel (XLSX).
+
+5. **AC5 - Data Freshness**: Data reflects current DB state. Results cached 15 minutes — no real-time requirement, no nightly job needed.
+
+6. **AC6 - Role-Based Access**: Partners see only their own company's data. Enforced at API level.
+
+7. **AC7 - Performance**: Page loads in <5 seconds (P95).
+
+8. **AC8 - i18n**: All UI text in German (primary) and English (secondary).
+
+## Architecture Decision
+
+**No materialized views. No nightly batch job. No local analytics storage.**
+
+`partner-coordination-service` calls a new lightweight endpoint on `event-management-service` on demand. Results are Caffeine-cached for 15 minutes. That's the entire data pipeline.
+
+```
+Partner opens dashboard
+       │
+       ▼
+partner-coordination-service
+  PartnerAnalyticsController
+       │
+       ├─ HTTP GET event-management-service:
+       │    /api/v1/events/attendance-summary
+       │      ?companyName={name}&fromYear={year}
+       │
+       │  (event-management-service queries its own
+       │   registrations table — no cross-DB access)
+       │
+       ▼
+  Returns: [{eventCode, eventDate, totalAttendees, companyAttendees}]
+  + cost-per-attendee computed from partners.partnership_cost
+       │
+       ▼
+  Cached 15 min (Caffeine), returned to frontend
+```
+
+`attendee-experience-service` shell remains untouched — preserved for Epic 7.
 
 ## Tasks / Subtasks
 
-### Backend Tasks
+### Task 1: New endpoint on event-management-service (AC: 1, 2, 5)
 
-- [ ] **Task 1: Create OpenAPI Specification** (AC: ALL - contract-first per ADR-006)
-  - [ ] Create `docs/api/partner-analytics-api.openapi.yml`
-  - [ ] Define `/api/v1/partners/{companyName}/analytics/attendance` endpoint
-  - [ ] Define `/api/v1/partners/{companyName}/analytics/engagement` endpoint
-  - [ ] Define `/api/v1/partners/{companyName}/analytics/trends` endpoint
-  - [ ] Define `/api/v1/partners/{companyName}/analytics/export` endpoint
-  - [ ] Generate TypeScript types: `npm run generate:api-types:partners`
+- [ ] Add `GET /api/v1/events/attendance-summary` to `EventController.java`
+  - Query params: `companyName` (String, required), `fromYear` (int, default = current year - 5)
+  - Queries `registrations` table: `WHERE attendee_company_name = :companyName AND event_date >= :fromDate AND status = 'confirmed'`
+  - Groups by event, returns list of `{eventCode, eventDate, totalAttendees, companyAttendees}`
+  - Add to OpenAPI spec: `docs/api/event-management-api.openapi.yml`
+  - Note: `registrations.attendee_company_name` — verify this field exists or use `attendee_company_id` with a join to resolve company_name via `companyName` parameter lookup
 
-- [ ] **Task 2: Database Materialized Views** (AC: 1, 2, 3, 10)
-  - [ ] Create Flyway migration for `mv_partner_attendance` materialized view
-  - [ ] Create Flyway migration for `mv_partner_engagement` materialized view
-  - [ ] Create Flyway migration for `mv_partner_trends` materialized view
-  - [ ] Create EventBridge rule for nightly refresh at 2 AM
+- [ ] Create `AttendanceSummaryDTO.java` (eventCode, eventDate, totalAttendees, companyAttendees)
 
-- [ ] **Task 3: Partner Analytics Service** (AC: 1, 2, 3, 4, 5, 7, 8, 9)
-  - [ ] Create `PartnerAnalyticsService.java` in partner-coordination-service
-  - [ ] Implement `getAttendanceMetrics(String companyName)` method
-  - [ ] Implement `getEngagementScore(String companyName)` method
-  - [ ] Implement `getTrendAnalysis(String companyName, int months)` method
-  - [ ] Implement `getComparativeAnalysis(String companyName)` method (anonymized)
-  - [ ] Add Caffeine caching (15-minute TTL) for analytics queries
+- [ ] Add security: endpoint accessible to PARTNER and ORGANIZER roles
 
-- [ ] **Task 4: HTTP Enrichment for User Data** (AC: 7, 8 - ADR-004)
-  - [ ] Create `UserServiceClient.java` for cross-service user data access
-  - [ ] Implement employee username lookup by companyName
-  - [ ] Add caching layer for user enrichment (80-90% hit rate expected)
+- [ ] Write integration test: `EventAttendanceSummaryIntegrationTest.java`
+  - Test with `fromYear` filtering
+  - Test returns only confirmed registrations
+  - Test `companyName` isolation (company A cannot see company B data via this endpoint — wait, actually this endpoint is called server-to-server, so isolation is enforced at partner-coordination-service level)
 
-- [ ] **Task 5: REST Controller** (AC: 11, 12)
-  - [ ] Create `PartnerAnalyticsController.java`
-  - [ ] Implement all endpoints from OpenAPI spec
-  - [ ] Add `@PreAuthorize("hasRole('PARTNER') and #companyName == authentication.principal.companyName")` for row-level security
-  - [ ] Add request timing metrics with Micrometer
+### Task 2: EventManagementClient in partner-coordination-service (AC: 1, 2, 5)
 
-- [ ] **Task 6: Export Service** (AC: 6)
-  - [ ] Create `PartnerReportExportService.java`
-  - [ ] Implement PDF generation using Apache PDFBox
-  - [ ] Implement Excel generation using Apache POI
-  - [ ] Return presigned S3 URL for download
+- [ ] Create `EventManagementClient.java` (or extend if it exists)
+  - Method: `getAttendanceSummary(String companyName, int fromYear): List<AttendanceSummaryDTO>`
+  - Uses existing JWT propagation pattern (same as `UserServiceClient`, `CompanyServiceClient`)
+  - Add Caffeine cache: `@Cacheable(value = "partner-attendance", key = "#companyName + '-' + #fromYear")`  — 15-min TTL
 
-- [ ] **Task 7: SecurityConfig Update** (AC: 11 - ADR-008)
-  - [ ] Add `/api/v1/partners/*/analytics/**` to SecurityConfig
-  - [ ] Require PARTNER or ORGANIZER role for analytics endpoints
+### Task 3: PartnerAnalyticsService (AC: 1, 2, 3)
 
-### Frontend Tasks
+- [ ] Create `PartnerAnalyticsService.java`
+  - `getAttendanceDashboard(String companyName, int fromYear)`:
+    - Calls `EventManagementClient.getAttendanceSummary()`
+    - Fetches `partners.partnership_cost` from local partners table
+    - Computes `costPerAttendee = partnershipCost / sum(companyAttendees)`
+    - Returns `PartnerDashboardDTO` containing the list + costPerAttendee
+  - Handle edge case: zero attendees → costPerAttendee = null (display as N/A)
 
-- [ ] **Task 8: i18n Translation Keys** (AC: 14)
-  - [ ] Add ~50 translation keys to `public/locales/de/partner.json`
-  - [ ] Add ~50 translation keys to `public/locales/en/partner.json`
-  - [ ] Keys include: `partner.analytics.dashboard.*`, `partner.analytics.attendance.*`, etc.
+- [ ] Create `PartnerDashboardDTO.java` (attendanceSummary: List, costPerAttendee: BigDecimal)
 
-- [ ] **Task 9: Analytics Dashboard Component** (AC: 1, 2, 3, 4, 12, 13)
-  - [ ] Create `src/components/partner/PartnerAnalyticsDashboard.tsx`
-  - [ ] Use Recharts for trend visualization (LineChart, BarChart)
-  - [ ] Implement responsive grid layout with Material-UI
-  - [ ] Add loading states with Skeleton components
+### Task 4: PartnerAnalyticsController (AC: 1–7)
 
-- [ ] **Task 10: Attendance Metrics Card** (AC: 1, 3)
-  - [ ] Create `src/components/partner/AttendanceMetricsCard.tsx`
-  - [ ] Display employee count, percentage, department breakdown
-  - [ ] Use Recharts PieChart for department visualization
+- [ ] Create `PartnerAnalyticsController.java`
+  - `GET /api/v1/partners/{companyName}/analytics/dashboard?fromYear={year}`
+  - `GET /api/v1/partners/{companyName}/analytics/export` → returns XLSX file
+  - `@PreAuthorize("hasRole('PARTNER') and #companyName == authentication.principal.companyName")`
+  - Add to OpenAPI spec: `docs/api/partner-analytics-api.openapi.yml`
 
-- [ ] **Task 11: Engagement Score Card** (AC: 4, 8)
-  - [ ] Create `src/components/partner/EngagementScoreCard.tsx`
-  - [ ] Display engagement score with gauge chart
-  - [ ] Show content interaction breakdown
+- [ ] Update `SecurityConfig.java`: add `/api/v1/partners/*/analytics/**` → PARTNER or ORGANIZER
 
-- [ ] **Task 12: Trend Analysis Chart** (AC: 2)
-  - [ ] Create `src/components/partner/TrendAnalysisChart.tsx`
-  - [ ] Interactive LineChart with 12/24 month toggle
-  - [ ] Tooltips showing event details
+### Task 5: Excel Export Service (AC: 4)
 
-- [ ] **Task 13: Comparative Analysis Card** (AC: 5)
-  - [ ] Create `src/components/partner/ComparativeAnalysisCard.tsx`
-  - [ ] Display percentile ranking vs anonymized partners
-  - [ ] Use BarChart for visual comparison
+- [ ] Create `PartnerAttendanceExportService.java`
+  - Uses Apache POI `SXSSFWorkbook`
+  - Sheet columns: Event, Date, Your Attendees, Total Attendees, Percentage
+  - Footer row: Totals + Cost Per Attendee
+  - Returns as `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 
-- [ ] **Task 14: Export Controls** (AC: 6)
-  - [ ] Create `src/components/partner/AnalyticsExportMenu.tsx`
-  - [ ] PDF export button with loading state
-  - [ ] Excel export button with loading state
-  - [ ] Download via presigned S3 URL
+### Task 6: i18n Keys (AC: 8)
 
-- [ ] **Task 15: API Client Integration** (AC: ALL)
-  - [ ] Create `src/services/api/partnerAnalyticsApi.ts`
-  - [ ] Implement `getAttendanceMetrics(companyName)`
-  - [ ] Implement `getEngagementScore(companyName)`
-  - [ ] Implement `getTrendAnalysis(companyName, months)`
-  - [ ] Implement `exportReport(companyName, format)`
-  - [ ] Use React Query for caching and background refresh
+- [ ] Add keys to `public/locales/de/partner.json` and `en/partner.json`
+  - `partner.analytics.title`, `partner.analytics.table.*` (6 column headers)
+  - `partner.analytics.kpi.costPerAttendee`, `partner.analytics.kpi.attendanceRate`
+  - `partner.analytics.range.last5years`, `partner.analytics.range.allHistory`
+  - `partner.analytics.export.button`, `partner.analytics.noData`
 
-### Testing Tasks
+### Task 7: Frontend — Dashboard Page (AC: 1, 2, 3, 7, 8)
 
-- [ ] **Task 16: Backend Integration Tests** (AC: ALL)
-  - [ ] Create `PartnerAnalyticsControllerIntegrationTest.java`
-  - [ ] Test role-based access (partner sees own data only)
-  - [ ] Test performance (<200ms API response)
-  - [ ] Use PostgreSQL via Testcontainers
+- [ ] Create `src/components/partner/PartnerAttendanceDashboard.tsx`
+  - Two KPI cards at top: **Overall Attendance Rate** (avg % across events) | **Cost Per Attendee** (CHF)
+  - Toggle below: `[ Last 5 years ] [ All history ]` — switches `fromYear` query param
+  - MUI `Table` with columns: Event, Date, Your Attendees, Total, %
+  - Loading skeleton (MUI `Skeleton`) while fetching
+  - Empty state: "No attendance data found for the selected period"
+  - Desktop layout only — no mobile breakpoints
 
-- [ ] **Task 17: Frontend Component Tests** (AC: 12, 13, 14)
-  - [ ] Create `PartnerAnalyticsDashboard.test.tsx`
-  - [ ] Test loading states and error handling
-  - [ ] Test responsive behavior
-  - [ ] Test i18n language switching
+### Task 8: Frontend — Export Button (AC: 4)
 
-- [ ] **Task 18: E2E Tests** (AC: 1, 6, 11)
-  - [ ] Create `e2e/partner/analytics-dashboard.spec.ts`
-  - [ ] Test partner login → dashboard → view metrics
-  - [ ] Test export PDF/Excel functionality
-  - [ ] Test role-based access (partner cannot see other partner data)
+- [ ] Create `src/components/partner/AttendanceExportButton.tsx`
+  - Single button: "Export Excel"
+  - On click: triggers `GET /analytics/export`, browser downloads the XLSX
+  - Loading spinner while download prepares
+
+### Task 9: Frontend — API Client (AC: ALL)
+
+- [ ] Create `src/services/api/partnerAnalyticsApi.ts`
+  - `getAttendanceDashboard(companyName, fromYear?)` — React Query, staleTime 15 min
+  - `exportAttendanceReport(companyName)` — triggers file download
+
+### Task 10: Backend Integration Tests (AC: 1, 2, 3, 6)
+
+- [ ] `PartnerAnalyticsControllerIntegrationTest.java` (extends `AbstractIntegrationTest`)
+  - PARTNER role sees own company data, gets 403 for another company's endpoint
+  - ORGANIZER role can access any company's analytics
+  - `fromYear=5` returns only last 5 years of events
+  - `fromYear=20` returns full history
+  - Cost per attendee computed correctly
+  - Zero attendees → costPerAttendee is null
+
+### Task 11: Frontend Tests (AC: 7, 8)
+
+- [ ] `PartnerAttendanceDashboard.test.tsx`
+  - Renders table with mocked data
+  - 5yr/all-history toggle fires correct API call
+  - Loading and empty states render correctly
+  - i18n: both DE and EN strings render
+
+### Task 12: E2E Test (AC: 1, 4, 6)
+
+- [ ] `e2e/partner/analytics-dashboard.spec.ts`
+  - Partner logs in → dashboard loads → table has correct row count
+  - Export button → XLSX file downloads
+  - Partner cannot access another partner's analytics URL (403)
 
 ## Dev Notes
 
-### Architecture Compliance
+### What was deliberately cut (SM decision 2026-02-21)
 
-**ADR-003 (Meaningful Identifiers):**
-- All API endpoints use `companyName` (e.g., `/api/v1/partners/{companyName}/analytics`)
-- Database stores `company_name VARCHAR(12)`, NOT UUID foreign keys
-- Cross-service references use `username`, NOT `userId`
+| Removed | Reason |
+|---|---|
+| Materialized views | Not needed — query on demand with 15-min cache |
+| Nightly batch job | Not needed for this data volume (max ~60 events ever) |
+| QuickSight / AWS analytics | Massively over-engineered for 3 events/year |
+| Charts (Recharts) | A table is sufficient — partners need a number, not a viz |
+| Comparative analysis vs other partners | Out of scope for now |
+| Department breakdown | No department data tracked |
+| Engagement / content interaction | Not relevant to partner value prop |
+| Individual attendee tracking | Not allowed |
+| Mobile responsive layout | Desktop only |
 
-**ADR-004 (HTTP Enrichment):**
-```java
-// ✅ CORRECT: HTTP client for user data
-@Service
-public class PartnerAnalyticsService {
-    private final UserServiceClient userServiceClient;
+### Registrations companyName field
 
-    @Cacheable(value = "partner-employees", key = "#companyName")
-    public List<EmployeeEngagementDTO> getEmployeeEngagement(String companyName) {
-        List<String> usernames = registrationRepository.findUsernamesByCompanyName(companyName);
-        return usernames.stream()
-            .map(username -> userServiceClient.getUser(username))
-            .map(this::buildEngagementDTO)
-            .collect(toList());
-    }
-}
+Verify the exact field name in `registrations` table (event-management-service):
+- If `attendee_company_name` exists as a denormalized column → use directly in query
+- If only `attendee_company_id` (UUID) exists → event-management-service needs to resolve `companyName → companyId` by calling company-user-management-service once at request time (cache result)
+
+Check: `/services/event-management-service/src/main/resources/db/migration/V2__Create_events_schema.sql`
+
+### Cost per attendee data source
+
+`partner_coordination_service.partners.partnership_cost` — this field must exist (or be added via migration) to support AC3. If not yet present, add:
+```sql
+-- V8.1.1__add_partnership_cost.sql
+ALTER TABLE partners ADD COLUMN partnership_cost NUMERIC(10,2);
 ```
 
-**ADR-006 (OpenAPI Contract-First):**
-- Create `docs/api/partner-analytics-api.openapi.yml` BEFORE implementation
-- Generate TypeScript types: `npm run generate:api-types:partners`
-- Generate Java DTOs via OpenAPI Generator Gradle task
+### ADR Compliance
 
-**ADR-008 (Backend Controls Routing):**
-```java
-// SecurityConfig.java
-.requestMatchers("/api/v1/partners/*/analytics/**")
-    .hasAnyRole("PARTNER", "ORGANIZER")
-```
+- **ADR-003**: endpoint uses `companyName` as path param (not UUID)
+- **ADR-006**: OpenAPI spec created before implementation for both new endpoints
+- **ADR-008**: SecurityConfig updated — backend controls access
 
-### Project Structure Notes
+### Performance
 
-**Backend Files:**
-```
-services/partner-coordination-service/src/main/java/ch/batbern/partners/
-├── controller/
-│   └── PartnerAnalyticsController.java
-├── service/
-│   ├── PartnerAnalyticsService.java
-│   └── PartnerReportExportService.java
-├── client/
-│   └── UserServiceClient.java
-├── dto/
-│   ├── AttendanceMetricsDTO.java
-│   ├── EngagementScoreDTO.java
-│   ├── TrendAnalysisDTO.java
-│   └── ComparativeAnalysisDTO.java
-└── repository/
-    └── PartnerAnalyticsRepository.java
-```
-
-**Frontend Files:**
-```
-web-frontend/src/
-├── components/partner/
-│   ├── PartnerAnalyticsDashboard.tsx
-│   ├── AttendanceMetricsCard.tsx
-│   ├── EngagementScoreCard.tsx
-│   ├── TrendAnalysisChart.tsx
-│   ├── ComparativeAnalysisCard.tsx
-│   └── AnalyticsExportMenu.tsx
-├── services/api/
-│   └── partnerAnalyticsApi.ts
-└── types/generated/
-    └── partner-analytics-api.types.ts
-```
-
-**Database Migrations:**
-```
-services/partner-coordination-service/src/main/resources/db/migration/
-├── V8.1.1__create_partner_analytics_views.sql
-├── V8.1.2__create_partner_engagement_views.sql
-└── V8.1.3__create_partner_trends_views.sql
-```
-
-### Technical Requirements
-
-**Recharts for Data Visualization:**
-```typescript
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
-
-// Use ResponsiveContainer for mobile-responsive charts
-<ResponsiveContainer width="100%" height={400}>
-  <LineChart data={trendData}>
-    <Line type="monotone" dataKey="attendance" stroke="#8884d8" />
-    <Tooltip content={<CustomTooltip />} />
-  </LineChart>
-</ResponsiveContainer>
-```
-
-**Caffeine Caching Configuration:**
-```java
-@Configuration
-public class CacheConfig {
-    @Bean
-    public CacheManager cacheManager() {
-        CaffeineCacheManager manager = new CaffeineCacheManager();
-        manager.setCaffeine(Caffeine.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(15, TimeUnit.MINUTES));
-        return manager;
-    }
-}
-```
-
-**i18n Translation Pattern:**
-```typescript
-const { t } = useTranslation('partner');
-
-// Usage
-<Typography>{t('analytics.dashboard.title')}</Typography>
-<Typography>{t('analytics.attendance.count', { count: 42 })}</Typography>
-```
-
-### Performance Requirements
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| API Response (P95) | <200ms | Micrometer timer |
-| Dashboard Load (P95) | <3s | Web Vitals LCP |
-| Database Query | <50ms | PostgreSQL EXPLAIN |
-| Cache Hit Rate | >80% | Caffeine stats |
+| Metric | Target |
+|---|---|
+| Dashboard load (P95) | <5s |
+| API response (cached) | <50ms |
+| API response (cold) | <500ms |
+| Excel export | <5s |
 
 ### References
 
 - [Source: docs/prd/epic-8-partner-coordination.md#Story-8.1]
-- [Source: docs/architecture/05-frontend-architecture.md#i18n]
 - [Source: docs/architecture/ADR-003-meaningful-identifiers.md]
-- [Source: docs/architecture/ADR-004-factor-user-fields.md]
 - [Source: docs/architecture/ADR-006-openapi-contract-first.md]
-- [Source: docs/architecture/coding-standards.md#TDD-Workflow]
-- [Source: docs/architecture/tech-stack.md#Recharts]
+- [Source: services/event-management-service — registrations table schema]
+- [Source: services/partner-coordination-service — existing HTTP client patterns]
 
 ## Dev Agent Record
 
@@ -292,4 +235,3 @@ const { t } = useTranslation('partner');
 ### Completion Notes List
 
 ### File List
-

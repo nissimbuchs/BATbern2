@@ -1,528 +1,336 @@
-# Story 8.3: Automated Meeting Coordination
+# Story 8.3: Partner Meeting Coordination
 
 Status: ready-for-dev
 
 ## Story
 
 As an **organizer**,
-I want automated partner meeting scheduling with calendar integration,
-so that seasonal meetings are coordinated efficiently without manual back-and-forth.
+I want to manage the Spring and Autumn partner meetings,
+so that I can send calendar invites with the agenda and keep notes from each meeting.
+
+## Context
+
+Partner meetings always happen on the same day as the BATbern event itself, at lunch:
+**Lunch (partner meeting) → Partner Meeting → BATbern Event**
+
+The meeting date is therefore derived from the linked BATbern event — no scheduling logic needed.
 
 ## Acceptance Criteria
 
-### Automated Scheduling
-1. **AC1 - Auto-Schedule**: Automatically schedule Spring (March) and Autumn (September) meetings 2+ months ahead
-2. **AC2 - Calendar Integration**: Create calendar invites in organizer Outlook calendars via Microsoft Graph API
-3. **AC3 - Availability Check**: Check organizer availability before scheduling
-4. **AC4 - Conflict Resolution**: Detect and suggest alternatives for scheduling conflicts
+1. **AC1 - Meeting Record**: Organizer creates a partner meeting record linked to a BATbern event (by event code). Fields: date (auto-filled from event), start/end time, location, meeting type (Spring/Autumn).
 
-### RSVP Management
-5. **AC5 - RSVP Tracking**: Track partner RSVPs (ATTENDING, NOT_ATTENDING, TENTATIVE)
-6. **AC6 - Reminder Emails**: Automated reminders at 2 weeks, 1 week, 3 days before meeting
-7. **AC7 - Attendance Prediction**: Predict attendance based on past RSVP patterns
-8. **AC8 - Last-Minute Changes**: Handle cancellations and rescheduling gracefully
+2. **AC2 - Agenda**: Organizer writes the agenda as free text. The agenda is included in the calendar invite description.
 
-### Meeting Materials
-9. **AC9 - Automated Agenda**: Generate agenda from Story 8.1 analytics data
-10. **AC10 - Pre-Meeting Pack**: Compile attendance stats, budget overview, voting results
-11. **AC11 - Material Distribution**: Send materials to attendees 1 week before meeting
-12. **AC12 - Post-Meeting Follow-Up**: Automated thank you and action item summary
+3. **AC3 - Calendar Invite (ICS)**: Organizer clicks "Send Calendar Invite" — the system generates a standard `.ics` file (RFC 5545) containing **two VEVENTs**:
+   - The partner lunch meeting (with agenda in description)
+   - The BATbern event itself (as a reminder, read from event-management-service)
 
-### Integration with Epic 5
-13. **AC13 - Hybrid Operation**: Epic 5 manual scheduling still works if Epic 8 automation unavailable
-14. **AC14 - Meeting Notes Sync**: Automated meeting notes sync with Epic 5 Story 5.15 notes field
-15. **AC15 - Topic Capture**: Topics from meeting auto-added to Epic 5 topic backlog
+   The `.ics` is sent via email (AWS SES) to all partner contacts on record. No Outlook/Microsoft Graph integration — standard iCalendar format that any calendar app can import.
 
-### Technical
-16. **AC16 - ADR-003 Compliance**: Database uses meaningful IDs (companyName, username)
-17. **AC17 - i18n Support**: All UI text translated (German/English)
-18. **AC18 - Email Templates**: Separate de/en templates for all automated emails
-19. **AC19 - Performance**: Meeting scheduling completes in <5 seconds
+4. **AC4 - Meeting Notes**: After the meeting, organizer writes free-text notes in the meeting record. Notes are saved and visible to all organizers.
+
+5. **AC5 - Meeting List**: Organizer sees a list of all partner meetings (past and upcoming) with their linked event, agenda preview, notes preview, and whether the invite was sent.
+
+6. **AC6 - Role-Based Access**: Only organizers can create/edit meetings and send invites. Partners do not interact with this screen.
+
+7. **AC7 - i18n**: All UI text in German (primary) and English (secondary).
+
+8. **AC8 - Performance**: Page loads in <3 seconds. Invite email sent asynchronously (user sees confirmation immediately, email dispatched in background).
+
+## What was deliberately cut
+
+| Removed | Reason |
+|---|---|
+| Automated Spring/Autumn scheduling | Date comes from the BATbern event — no scheduling needed |
+| Microsoft Graph / Outlook integration | Standard ICS works with any calendar app |
+| RSVP tracking (attending/not attending) | Not needed |
+| Automated reminder emails | Not needed |
+| Attendance prediction | Not needed |
+| Cancellation and rescheduling handling | Not needed |
+| Pre-meeting pack compilation | Not needed |
+| Material distribution | Not needed |
+| Post-meeting follow-up email | Not needed |
+| EventBridge scheduled rules | Not needed |
+| meeting_rsvps table | Not needed |
+| meeting_materials table | Not needed |
+| Epic 5 topic capture integration | Not needed |
 
 ## Tasks / Subtasks
 
-### Backend Tasks
+### Task 1: Check existing schema + DB migration (AC: 1, 2, 4)
 
-- [ ] **Task 1: Update OpenAPI Specification** (AC: ALL - contract-first per ADR-006)
-  - [ ] Update `docs/api/partners-api.openapi.yml` with meeting endpoints
-  - [ ] Define `GET /api/v1/partner-meetings` endpoint
-  - [ ] Define `POST /api/v1/partner-meetings` endpoint (auto-schedule)
-  - [ ] Define `GET /api/v1/partner-meetings/{meetingId}` endpoint
-  - [ ] Define `POST /api/v1/partner-meetings/{meetingId}/rsvp` endpoint
-  - [ ] Define `POST /api/v1/partner-meetings/{meetingId}/materials` endpoint
-  - [ ] Generate TypeScript types: `npm run generate:api-types:partners`
+- [ ] Check if `partner_meetings` table already exists from Story 2.7 migration
+- [ ] If missing or schema differs, create `V8.3.1__create_partner_meetings_table.sql`:
 
-- [ ] **Task 2: Database Migrations** (AC: 16)
-  - [ ] Create Flyway migration `V8.3.1__create_partner_meetings_table.sql`
-    ```sql
-    CREATE TABLE partner_meetings (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_name VARCHAR(12) NOT NULL,
-        meeting_type VARCHAR(50) NOT NULL,  -- SPRING, AUTUMN
-        scheduled_at TIMESTAMP WITH TIME ZONE,
-        organizer_username VARCHAR(100) NOT NULL,
-        status VARCHAR(50) DEFAULT 'SCHEDULED',
-        calendar_event_id VARCHAR(255),
-        agenda_generated_at TIMESTAMP WITH TIME ZONE,
-        materials_sent_at TIMESTAMP WITH TIME ZONE,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-    CREATE INDEX idx_meetings_company ON partner_meetings(company_name);
-    CREATE INDEX idx_meetings_type ON partner_meetings(meeting_type);
-    CREATE INDEX idx_meetings_scheduled ON partner_meetings(scheduled_at);
-    ```
-  - [ ] Create Flyway migration `V8.3.2__create_meeting_rsvps_table.sql`
-    ```sql
-    CREATE TABLE meeting_rsvps (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        meeting_id UUID NOT NULL REFERENCES partner_meetings(id) ON DELETE CASCADE,
-        attendee_username VARCHAR(100) NOT NULL,
-        rsvp_status VARCHAR(50) NOT NULL,  -- ATTENDING, NOT_ATTENDING, TENTATIVE
-        responded_at TIMESTAMP WITH TIME ZONE,
-        reminder_sent_at TIMESTAMP WITH TIME ZONE,
-        UNIQUE(meeting_id, attendee_username)
-    );
-    CREATE INDEX idx_rsvps_meeting ON meeting_rsvps(meeting_id);
-    CREATE INDEX idx_rsvps_status ON meeting_rsvps(rsvp_status);
-    ```
-  - [ ] Create Flyway migration `V8.3.3__create_meeting_materials_table.sql`
-    ```sql
-    CREATE TABLE meeting_materials (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        meeting_id UUID NOT NULL REFERENCES partner_meetings(id) ON DELETE CASCADE,
-        material_type VARCHAR(50) NOT NULL,  -- AGENDA, ATTENDANCE_REPORT, VOTING_SUMMARY
-        s3_key VARCHAR(500) NOT NULL,
-        generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-    ```
+```sql
+CREATE TABLE IF NOT EXISTS partner_meetings (
+    id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_code      VARCHAR(100) NOT NULL,       -- ADR-003: links to BATbern event by code
+    meeting_type    VARCHAR(50)  NOT NULL,        -- SPRING | AUTUMN
+    meeting_date    DATE         NOT NULL,        -- same day as the BATbern event
+    start_time      TIME         NOT NULL,        -- e.g. 12:00 (lunch start)
+    end_time        TIME         NOT NULL,        -- e.g. 14:00 (before BATbern event)
+    location        VARCHAR(500),                 -- venue (usually same as BATbern event)
+    agenda          TEXT,                         -- free text, organizer writes this
+    notes           TEXT,                         -- post-meeting notes, filled in after
+    invite_sent_at  TIMESTAMP WITH TIME ZONE,     -- null until first invite sent
+    created_by      VARCHAR(100) NOT NULL,        -- organizer username (ADR-003)
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-- [ ] **Task 3: Microsoft Graph Integration** (AC: 2, 3, 4)
-  - [ ] Create `MicrosoftGraphClient.java` for calendar API
-  - [ ] Implement `createCalendarEvent(MeetingRequest request)`
-  - [ ] Implement `checkAvailability(String username, LocalDateTime start, LocalDateTime end)`
-  - [ ] Implement `updateCalendarEvent(String eventId, MeetingUpdate update)`
-  - [ ] Implement `deleteCalendarEvent(String eventId)`
-  - [ ] Configure Azure AD app registration for Graph API access
+CREATE INDEX IF NOT EXISTS idx_partner_meetings_event ON partner_meetings(event_code);
+CREATE INDEX IF NOT EXISTS idx_partner_meetings_type  ON partner_meetings(meeting_type);
+```
 
-- [ ] **Task 4: Meeting Scheduling Service** (AC: 1, 3, 4, 8)
-  - [ ] Create `PartnerMeetingSchedulingService.java`
-  - [ ] Implement `scheduleSeasonalMeetings(MeetingType type)` - bulk scheduling
-  - [ ] Implement `scheduleMeeting(String companyName, MeetingType type, LocalDateTime proposedTime)`
-  - [ ] Implement `findAvailableSlots(String organizerUsername, LocalDate startDate, int daysToCheck)`
-  - [ ] Implement `rescheduleMeeting(UUID meetingId, LocalDateTime newTime)`
-  - [ ] Add EventBridge scheduled rule for auto-scheduling (January for Spring, July for Autumn)
+### Task 2: OpenAPI Specification (AC: ALL — ADR-006)
 
-- [ ] **Task 5: RSVP Service** (AC: 5, 6, 7)
-  - [ ] Create `MeetingRsvpService.java`
-  - [ ] Implement `recordRsvp(UUID meetingId, String username, RsvpStatus status)`
-  - [ ] Implement `getRsvpSummary(UUID meetingId)` - counts by status
-  - [ ] Implement `predictAttendance(UUID meetingId)` - based on historical patterns
-  - [ ] Create EventBridge rule for reminder emails (2w, 1w, 3d triggers)
+- [ ] Add partner meeting endpoints to `docs/api/partner-analytics-api.openapi.yml` (or create `partner-meetings-api.openapi.yml`)
+- [ ] Endpoints:
+  - `GET  /api/v1/partner-meetings` — list all meetings (ORGANIZER)
+  - `POST /api/v1/partner-meetings` — create meeting (ORGANIZER)
+  - `GET  /api/v1/partner-meetings/{meetingId}` — get single meeting (ORGANIZER)
+  - `PATCH /api/v1/partner-meetings/{meetingId}` — update agenda or notes (ORGANIZER)
+  - `POST /api/v1/partner-meetings/{meetingId}/send-invite` — generate ICS and email it (ORGANIZER)
+- [ ] DTOs: `PartnerMeetingDTO`, `CreateMeetingRequest`, `UpdateMeetingRequest`
+- [ ] Generate TypeScript types: `npm run generate:api-types:partners`
 
-- [ ] **Task 6: Meeting Materials Service** (AC: 9, 10, 11, 12)
-  - [ ] Create `MeetingMaterialsService.java`
-  - [ ] Implement `generateAgenda(UUID meetingId)` - pulls from Story 8.1 analytics
-  - [ ] Implement `compilePreMeetingPack(UUID meetingId)` - attendance, budget, voting
-  - [ ] Implement `distributeMaterials(UUID meetingId)` - emails + S3 links
-  - [ ] Implement `sendPostMeetingFollowUp(UUID meetingId, MeetingNotes notes)`
+### Task 3: ICS Generator (AC: 3)
 
-- [ ] **Task 7: Email Service with SES** (AC: 6, 11, 12, 18)
-  - [ ] Create `MeetingEmailService.java`
-  - [ ] Implement `sendMeetingInvitation(Meeting meeting, String language)`
-  - [ ] Implement `sendRsvpReminder(Meeting meeting, List<String> recipients, String language)`
-  - [ ] Implement `sendPreMeetingMaterials(Meeting meeting, String language)`
-  - [ ] Implement `sendPostMeetingFollowUp(Meeting meeting, String language)`
-  - [ ] Create SES email templates (see Task 12)
+- [ ] Create `IcsGeneratorService.java` — pure utility, no external dependencies needed (RFC 5545 is plain text)
+- [ ] `generateMeetingInvite(PartnerMeeting meeting, EventSummaryDTO batbernEvent): byte[]`
+- [ ] Output: `.ics` file with two VEVENTs:
 
-- [ ] **Task 8: REST Controller** (AC: 16, 19)
-  - [ ] Create `PartnerMeetingController.java`
-  - [ ] Implement all endpoints from OpenAPI spec
-  - [ ] Add `@PreAuthorize` for role-based access
-  - [ ] Add request timing metrics
+```
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//BATbern//Partner Meeting//EN
+METHOD:REQUEST
 
-- [ ] **Task 9: Epic 5 Integration** (AC: 13, 14, 15)
-  - [ ] Create `Epic5IntegrationService.java`
-  - [ ] Implement `syncMeetingNotesToEpic5(UUID meetingId, String notes)`
-  - [ ] Implement `addTopicsToBacklog(UUID meetingId, List<String> topics)`
-  - [ ] Publish events via EventBridge for Epic 5 consumption
+BEGIN:VEVENT
+UID:{meeting.id}@batbern.ch
+DTSTART:{meeting.date}T{meeting.startTime}:00
+DTEND:{meeting.date}T{meeting.endTime}:00
+SUMMARY:BATbern Partner Meeting ({meeting.meetingType})
+DESCRIPTION:{meeting.agenda}
+LOCATION:{meeting.location}
+END:VEVENT
 
-- [ ] **Task 10: SecurityConfig Update** (AC: 16)
-  - [ ] Add meeting endpoints to SecurityConfig
-  - [ ] `GET /api/v1/partner-meetings` → PARTNER, ORGANIZER roles
-  - [ ] `POST /api/v1/partner-meetings` → ORGANIZER role only
-  - [ ] `POST /api/v1/partner-meetings/*/rsvp` → PARTNER role
+BEGIN:VEVENT
+UID:{batbernEvent.eventCode}-main@batbern.ch
+DTSTART:{batbernEvent.eventDate}T{batbernEvent.startTime}:00
+DTEND:{batbernEvent.eventDate}T{batbernEvent.endTime}:00
+SUMMARY:{batbernEvent.title}
+DESCRIPTION:BATbern Event - you are registered as a partner
+LOCATION:{batbernEvent.venue}
+END:VEVENT
 
-### Frontend Tasks
+END:VCALENDAR
+```
 
-- [ ] **Task 11: i18n Translation Keys** (AC: 17)
-  - [ ] Add ~40 translation keys to `public/locales/de/partner.json`
-  - [ ] Add ~40 translation keys to `public/locales/en/partner.json`
+- [ ] Encode timestamps in UTC (convert from Europe/Zurich)
+- [ ] Unit test: `IcsGeneratorServiceTest.java` — verify output parses as valid iCalendar
 
-- [ ] **Task 12: Email Templates** (AC: 18)
-  - [ ] Create `partner-meeting-invitation-de.html`
-  - [ ] Create `partner-meeting-invitation-en.html`
-  - [ ] Create `partner-meeting-reminder-de.html` (2w, 1w, 3d variants)
-  - [ ] Create `partner-meeting-reminder-en.html`
-  - [ ] Create `partner-meeting-materials-de.html`
-  - [ ] Create `partner-meeting-materials-en.html`
-  - [ ] Create `partner-meeting-followup-de.html`
-  - [ ] Create `partner-meeting-followup-en.html`
-  - [ ] Upload templates to AWS SES
+### Task 4: EventManagementClient (for event details) (AC: 3)
 
-- [ ] **Task 13: Meeting Dashboard Component** (AC: 1, 5)
-  - [ ] Create `src/components/partner/PartnerMeetingsDashboard.tsx`
-  - [ ] Display upcoming meetings with status
-  - [ ] Show RSVP status and actions
-  - [ ] Calendar view integration
+- [ ] Reuse or extend existing `EventManagementClient.java` (introduced in Story 8.1)
+- [ ] Add method: `getEventSummary(String eventCode): EventSummaryDTO`
+  - Returns: title, eventDate, startTime, endTime, venue
+- [ ] Cache result (Caffeine, 1 hour TTL) — event details don't change often
 
-- [ ] **Task 14: RSVP Component** (AC: 5, 8)
-  - [ ] Create `src/components/partner/MeetingRsvpCard.tsx`
-  - [ ] RSVP buttons (Attending, Not Attending, Tentative)
-  - [ ] Show current RSVP status
-  - [ ] Handle status changes with confirmation
+### Task 5: PartnerMeetingService (AC: 1–5)
 
-- [ ] **Task 15: Meeting Materials Component** (AC: 9, 10)
-  - [ ] Create `src/components/partner/MeetingMaterialsPanel.tsx`
-  - [ ] Display agenda preview
-  - [ ] Download links for pre-meeting pack
-  - [ ] Show material distribution status
+- [ ] Create `PartnerMeetingService.java`
+- [ ] `createMeeting(CreateMeetingRequest req, String organizerUsername)`
+- [ ] `updateMeeting(UUID meetingId, UpdateMeetingRequest req)` — update agenda or notes
+- [ ] `getMeetings(): List<PartnerMeetingDTO>` — all meetings, sorted by date descending
+- [ ] `getMeeting(UUID meetingId): PartnerMeetingDTO`
+- [ ] `sendInvite(UUID meetingId)`:
+  - Load meeting + fetch BATbern event details via EventManagementClient
+  - Generate ICS via IcsGeneratorService
+  - Load all partner contact emails from `partner_contacts` table (already exists)
+  - Send email via SES (async) with ICS attachment
+  - Update `invite_sent_at` timestamp
 
-- [ ] **Task 16: Organizer Scheduling Component** (AC: 1, 3, 4)
-  - [ ] Create `src/components/organizer/MeetingSchedulerPanel.tsx`
-  - [ ] Bulk scheduling for seasonal meetings
-  - [ ] Availability calendar view
-  - [ ] Conflict resolution UI
+### Task 6: Email sending (AC: 3, 8)
 
-- [ ] **Task 17: API Client Integration** (AC: ALL)
-  - [ ] Create `src/services/api/partnerMeetingsApi.ts`
-  - [ ] Implement `getMeetings(companyName)`
-  - [ ] Implement `scheduleMeeting(request)`
-  - [ ] Implement `submitRsvp(meetingId, status)`
-  - [ ] Implement `getMeetingMaterials(meetingId)`
-  - [ ] Use React Query with optimistic updates
+- [ ] Reuse existing `SesEmailService` or create `PartnerInviteEmailService.java`
+- [ ] `sendCalendarInvite(List<String> recipientEmails, String subject, String body, byte[] icsContent)`
+  - Subject (DE): `"Einladung: BATbern Partner-Meeting + {eventTitle}"`
+  - Body: short text with meeting details (plain text, no complex template)
+  - Attachment: `partner-meeting.ics` with `Content-Type: text/calendar`
+- [ ] Send asynchronously: `@Async` on the method, return immediately to controller
+- [ ] SES configuration already exists in the project (used in Story 6.5)
 
-### Testing Tasks
+### Task 7: PartnerMeetingController + SecurityConfig (AC: 6, 8)
 
-- [ ] **Task 18: Backend Integration Tests** (AC: 2, 5, 16)
-  - [ ] Create `PartnerMeetingControllerIntegrationTest.java`
-  - [ ] Test meeting creation and calendar sync (mock Graph API)
-  - [ ] Test RSVP workflow
-  - [ ] Test role-based access
-  - [ ] Use PostgreSQL via Testcontainers
+- [ ] Create `PartnerMeetingController.java`
+- [ ] All endpoints: `@PreAuthorize("hasRole('ORGANIZER')")`
+- [ ] `POST /send-invite` returns `202 Accepted` immediately (async send)
+- [ ] Add to `SecurityConfig.java`: `/api/v1/partner-meetings/**` → ORGANIZER
 
-- [ ] **Task 19: Frontend Component Tests** (AC: 17)
-  - [ ] Create `PartnerMeetingsDashboard.test.tsx`
-  - [ ] Test RSVP submission
-  - [ ] Test materials display
-  - [ ] Test i18n language switching
+### Task 8: i18n Keys (AC: 7)
 
-- [ ] **Task 20: E2E Tests** (AC: 1, 5, 11)
-  - [ ] Create `e2e/partner/meeting-coordination.spec.ts`
-  - [ ] Test organizer schedules meeting → partner receives invite
-  - [ ] Test partner RSVP → status updates
-  - [ ] Test materials distribution workflow
+- [ ] Add keys to `public/locales/de/partner.json` and `en/partner.json`:
+  - `partner.meetings.title`, `.create`, `.edit`
+  - `partner.meetings.fields.agenda`, `.notes`, `.location`, `.type.spring`, `.type.autumn`
+  - `partner.meetings.sendInvite`, `.inviteSent`, `.inviteNotSent`
+  - `partner.meetings.inviteSentOn`, `partner.meetings.noMeetings`
+
+### Task 9: Meeting List + Form (Organizer UI) (AC: 1, 2, 4, 5, 7, 8)
+
+- [ ] Create `src/components/organizer/PartnerMeetingsPage.tsx`
+- [ ] Meeting list: MUI Table — columns: Event, Type, Date, Location, Invite Sent, Actions
+- [ ] "Create Meeting" button → opens `CreateMeetingDialog.tsx`
+  - Fields: event code (linked BATbern event, dropdown or text), type (Spring/Autumn), start time, end time, location
+  - Date auto-populated from selected event's date
+- [ ] Click meeting row → expands inline or opens `MeetingDetailPanel.tsx`:
+  - Agenda textarea (editable, auto-save on blur)
+  - Notes textarea (editable, auto-save on blur)
+  - "Send Calendar Invite" button with confirmation dialog
+  - If `invite_sent_at` set: show "Invite sent on {date}" chip
+
+### Task 10: API Client (AC: ALL)
+
+- [ ] Create `src/services/api/partnerMeetingsApi.ts`
+- [ ] `getMeetings()` — React Query, staleTime 5 minutes
+- [ ] `createMeeting(req)` — mutation, invalidates list
+- [ ] `updateMeeting(meetingId, req)` — mutation (agenda/notes), optimistic update
+- [ ] `sendInvite(meetingId)` — mutation, shows success toast on 202
+
+### Task 11: Backend Integration Tests (AC: 1–6)
+
+- [ ] `PartnerMeetingControllerIntegrationTest.java` (extends `AbstractIntegrationTest`)
+- [ ] Create meeting → verify persisted correctly
+- [ ] Update agenda → verify saved
+- [ ] Update notes → verify saved
+- [ ] `POST /send-invite` → returns 202, verify `invite_sent_at` updated (mock SES)
+- [ ] ICS content verified: contains both VEVENTs with correct times
+- [ ] Non-organizer → 403 on all endpoints
+
+### Task 12: Frontend Tests (AC: 7, 8)
+
+- [ ] `PartnerMeetingsPage.test.tsx`
+- [ ] Renders meeting list with mocked data
+- [ ] Create meeting form validation
+- [ ] "Send invite" button shows correct state (sent/not sent)
+- [ ] i18n DE/EN
+
+### Task 13: E2E Test (AC: 1, 2, 3, 4)
+
+- [ ] `e2e/organizer/partner-meetings.spec.ts`
+- [ ] Organizer creates meeting linked to event → appears in list
+- [ ] Organizer writes agenda → saved on reload
+- [ ] Organizer sends invite → success toast, "Invite sent on..." chip appears
+- [ ] Organizer writes post-meeting notes → saved on reload
 
 ## Dev Notes
 
-### Architecture Compliance
+### ICS format — no library needed
 
-**ADR-003 (Meaningful Identifiers):**
-```sql
--- ✅ CORRECT: Meaningful IDs, no cross-service foreign keys
-CREATE TABLE partner_meetings (
-    company_name VARCHAR(12) NOT NULL,        -- Not partner_id UUID
-    organizer_username VARCHAR(100) NOT NULL  -- Not user_id UUID
-);
-
-CREATE TABLE meeting_rsvps (
-    attendee_username VARCHAR(100) NOT NULL   -- Not user_id UUID
-);
-```
-
-**ADR-004 (HTTP Enrichment):**
-```java
-// Get partner contact info via HTTP for email distribution
-@Cacheable("partner-contacts")
-public List<PartnerContactDTO> getPartnerContacts(String companyName) {
-    return partnerServiceClient.getPartnerContacts(companyName);
-}
-```
-
-**ADR-006 (OpenAPI Contract-First):**
-- Update `docs/api/partners-api.openapi.yml` BEFORE implementation
-- Generate types: `npm run generate:api-types:partners`
-
-### Microsoft Graph API Integration
+RFC 5545 (iCalendar) is plain text. A simple `StringBuilder` in `IcsGeneratorService` is sufficient:
 
 ```java
-@Service
-public class MicrosoftGraphClient {
-    private final GraphServiceClient graphClient;
+public byte[] generate(PartnerMeeting meeting, EventSummaryDTO event) {
+    ZoneId zurich = ZoneId.of("Europe/Zurich");
+    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
 
-    public Event createCalendarEvent(MeetingRequest request) {
-        Event event = new Event();
-        event.subject = String.format("Partner Meeting: %s - %s",
-            request.getCompanyName(),
-            request.getMeetingType().getDisplayName());
-        event.start = new DateTimeTimeZone();
-        event.start.dateTime = request.getScheduledAt().toString();
-        event.start.timeZone = "Europe/Zurich";
-        event.end = new DateTimeTimeZone();
-        event.end.dateTime = request.getScheduledAt().plusHours(1).toString();
-        event.end.timeZone = "Europe/Zurich";
+    String ics = "BEGIN:VCALENDAR\r\n" +
+        "VERSION:2.0\r\n" +
+        "PRODID:-//BATbern//Partner Meeting//EN\r\n" +
+        "METHOD:REQUEST\r\n" +
+        buildVEvent(
+            meeting.getId() + "@batbern.ch",
+            toUtc(meeting.getMeetingDate(), meeting.getStartTime(), zurich),
+            toUtc(meeting.getMeetingDate(), meeting.getEndTime(), zurich),
+            "BATbern Partner Meeting (" + meeting.getMeetingType() + ")",
+            meeting.getAgenda(),
+            meeting.getLocation(),
+            fmt
+        ) +
+        buildVEvent(
+            event.getEventCode() + "-main@batbern.ch",
+            toUtc(event.getEventDate(), event.getStartTime(), zurich),
+            toUtc(event.getEventDate(), event.getEndTime(), zurich),
+            event.getTitle(),
+            "BATbern Event",
+            event.getVenue(),
+            fmt
+        ) +
+        "END:VCALENDAR\r\n";
 
-        // Add attendees
-        List<Attendee> attendees = request.getAttendeeEmails().stream()
-            .map(email -> {
-                Attendee attendee = new Attendee();
-                attendee.emailAddress = new EmailAddress();
-                attendee.emailAddress.address = email;
-                attendee.type = AttendeeType.REQUIRED;
-                return attendee;
-            })
-            .collect(toList());
-        event.attendees = attendees;
-
-        return graphClient.users(request.getOrganizerEmail())
-            .calendar()
-            .events()
-            .buildRequest()
-            .post(event);
-    }
+    return ics.getBytes(StandardCharsets.UTF_8);
 }
 ```
 
-**Required Azure AD Configuration:**
-- App Registration with `Calendars.ReadWrite` permission
-- Client credentials flow for daemon/service access
-- Store credentials in AWS Secrets Manager
+### Email attachment (SES)
 
-### EventBridge Scheduled Rules
-
-```java
-// Scheduled rule triggers (defined in CDK)
-// January 15th at 9 AM - Schedule Spring meetings
-// July 15th at 9 AM - Schedule Autumn meetings
-
-@EventListener(condition = "#event.source == 'aws.scheduler' && #event.detail.ruleArn contains 'schedule-spring-meetings'")
-public void handleSpringMeetingScheduling(ScheduledEvent event) {
-    meetingSchedulingService.scheduleSeasonalMeetings(MeetingType.SPRING);
-}
-
-@EventListener(condition = "#event.source == 'aws.scheduler' && #event.detail.ruleArn contains 'schedule-autumn-meetings'")
-public void handleAutumnMeetingScheduling(ScheduledEvent event) {
-    meetingSchedulingService.scheduleSeasonalMeetings(MeetingType.AUTUMN);
-}
+SES supports raw email with attachments via `SendRawEmailRequest`. The ICS file is attached with:
+```
+Content-Type: text/calendar; charset=utf-8; method=REQUEST
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="partner-meeting.ics"
 ```
 
-### Reminder Email Schedule
+SES raw email sending is already used in the project (Story 6.5 reminder emails) — reuse the same pattern.
 
-```java
-@Component
-public class MeetingReminderScheduler {
-    // EventBridge rules trigger at these intervals before meeting
-    private static final List<Duration> REMINDER_INTERVALS = List.of(
-        Duration.ofDays(14),  // 2 weeks
-        Duration.ofDays(7),   // 1 week
-        Duration.ofDays(3)    // 3 days
-    );
+### Partner contact emails
 
-    public void scheduleReminders(Meeting meeting) {
-        for (Duration interval : REMINDER_INTERVALS) {
-            LocalDateTime reminderTime = meeting.getScheduledAt()
-                .minus(interval)
-                .withHour(9)
-                .withMinute(0);
+Partner contacts are stored in `partner_contacts.username` (ADR-003 meaningful ID). To get emails, call `UserServiceClient.getUser(username).email()` — already implemented and cached from Story 2.7.
 
-            // Create EventBridge scheduled rule
-            eventBridgeClient.putRule(PutRuleRequest.builder()
-                .name(String.format("meeting-%s-reminder-%dd",
-                    meeting.getId(), interval.toDays()))
-                .scheduleExpression(String.format("at(%s)",
-                    reminderTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
-                .state(RuleState.ENABLED)
-                .build());
-        }
-    }
-}
+Or query directly: if `partner_contacts` stores email as a denormalized field, use that to avoid the HTTP call. Check existing schema.
+
+### ADR Compliance
+
+- **ADR-003**: `partner_meetings.event_code` (String), `created_by` (username) — no UUIDs across service boundaries
+- **ADR-006**: OpenAPI spec created before implementation
+
+### Project Structure
+
 ```
-
-### Project Structure Notes
-
-**Backend Files:**
-```
-services/partner-coordination-service/src/main/java/ch/batbern/partners/
+services/partner-coordination-service/
 ├── controller/
 │   └── PartnerMeetingController.java
 ├── service/
-│   ├── PartnerMeetingSchedulingService.java
-│   ├── MeetingRsvpService.java
-│   ├── MeetingMaterialsService.java
-│   ├── MeetingEmailService.java
-│   └── Epic5IntegrationService.java
-├── client/
-│   └── MicrosoftGraphClient.java
+│   ├── PartnerMeetingService.java
+│   ├── IcsGeneratorService.java
+│   └── PartnerInviteEmailService.java
 ├── domain/
 │   ├── PartnerMeeting.java
-│   ├── MeetingRsvp.java
-│   ├── MeetingMaterial.java
-│   ├── MeetingType.java (enum: SPRING, AUTUMN)
-│   └── RsvpStatus.java (enum: ATTENDING, NOT_ATTENDING, TENTATIVE)
+│   └── MeetingType.java  (enum: SPRING, AUTUMN)
 ├── dto/
-│   ├── MeetingRequest.java
-│   ├── MeetingResponse.java
-│   ├── RsvpRequest.java
-│   └── MaterialsResponse.java
+│   ├── PartnerMeetingDTO.java
+│   ├── CreateMeetingRequest.java
+│   └── UpdateMeetingRequest.java
 └── repository/
-    ├── PartnerMeetingRepository.java
-    ├── MeetingRsvpRepository.java
-    └── MeetingMaterialRepository.java
+    └── PartnerMeetingRepository.java
+
+web-frontend/src/components/organizer/
+├── PartnerMeetingsPage.tsx
+├── CreateMeetingDialog.tsx
+└── MeetingDetailPanel.tsx
+
+web-frontend/src/services/api/
+└── partnerMeetingsApi.ts
 ```
 
-**Frontend Files:**
-```
-web-frontend/src/
-├── components/partner/
-│   ├── PartnerMeetingsDashboard.tsx
-│   ├── MeetingRsvpCard.tsx
-│   └── MeetingMaterialsPanel.tsx
-├── components/organizer/
-│   └── MeetingSchedulerPanel.tsx
-├── services/api/
-│   └── partnerMeetingsApi.ts
-└── hooks/
-    └── usePartnerMeetings.ts
-```
+### Performance
 
-**Email Templates (AWS SES):**
-```
-infrastructure/email-templates/
-├── partner-meeting-invitation-de.html
-├── partner-meeting-invitation-en.html
-├── partner-meeting-reminder-de.html
-├── partner-meeting-reminder-en.html
-├── partner-meeting-materials-de.html
-├── partner-meeting-materials-en.html
-├── partner-meeting-followup-de.html
-└── partner-meeting-followup-en.html
-```
-
-**Database Migrations:**
-```
-services/partner-coordination-service/src/main/resources/db/migration/
-├── V8.3.1__create_partner_meetings_table.sql
-├── V8.3.2__create_meeting_rsvps_table.sql
-└── V8.3.3__create_meeting_materials_table.sql
-```
-
-### i18n Translation Keys
-
-```json
-{
-  "meetings": {
-    "dashboard": {
-      "title": "Partner Meetings",
-      "upcoming": "Upcoming Meetings",
-      "past": "Past Meetings"
-    },
-    "schedule": "Schedule Meeting",
-    "spring": "Spring Meeting",
-    "autumn": "Autumn Meeting",
-    "status": {
-      "SCHEDULED": "Scheduled",
-      "CONFIRMED": "Confirmed",
-      "CANCELLED": "Cancelled",
-      "COMPLETED": "Completed"
-    },
-    "rsvp": {
-      "title": "RSVP",
-      "attending": "I will attend",
-      "notAttending": "I cannot attend",
-      "tentative": "Tentative",
-      "currentStatus": "Your RSVP: {{status}}",
-      "deadline": "Please respond by {{date}}"
-    },
-    "agenda": {
-      "title": "Meeting Agenda",
-      "attendanceReview": "Attendance Review",
-      "budgetDiscussion": "Budget Discussion",
-      "topicVoting": "Topic Voting Results",
-      "openDiscussion": "Open Discussion"
-    },
-    "materials": {
-      "title": "Meeting Materials",
-      "preMeeting": "Pre-Meeting Pack",
-      "download": "Download Materials",
-      "sentOn": "Sent on {{date}}"
-    },
-    "reminder": {
-      "twoWeeks": "Meeting in 2 weeks",
-      "oneWeek": "Meeting in 1 week",
-      "threeDays": "Meeting in 3 days"
-    },
-    "followup": {
-      "title": "Meeting Follow-up",
-      "thankYou": "Thank you for attending",
-      "actionItems": "Action Items",
-      "nextMeeting": "Next Meeting"
-    },
-    "error": {
-      "scheduleFailed": "Failed to schedule meeting",
-      "rsvpFailed": "Failed to submit RSVP"
-    }
-  }
-}
-```
-
-### Email Template Example (German)
-
-```html
-<!-- partner-meeting-invitation-de.html -->
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Einladung zum Partner-Meeting</title>
-</head>
-<body>
-    <h1>Einladung: {{meetingType}} Partner-Meeting</h1>
-    <p>Sehr geehrte/r {{recipientName}},</p>
-    <p>Wir laden Sie herzlich zum {{meetingType}} Partner-Meeting ein.</p>
-
-    <table>
-        <tr><td><strong>Datum:</strong></td><td>{{meetingDate}}</td></tr>
-        <tr><td><strong>Zeit:</strong></td><td>{{meetingTime}} Uhr</td></tr>
-        <tr><td><strong>Ort:</strong></td><td>{{location}}</td></tr>
-    </table>
-
-    <p>Bitte bestätigen Sie Ihre Teilnahme:</p>
-    <a href="{{rsvpUrl}}?status=ATTENDING">Ich nehme teil</a> |
-    <a href="{{rsvpUrl}}?status=NOT_ATTENDING">Ich kann nicht teilnehmen</a> |
-    <a href="{{rsvpUrl}}?status=TENTATIVE">Unter Vorbehalt</a>
-
-    <p>Mit freundlichen Grüssen,<br>Das BATbern Team</p>
-</body>
-</html>
-```
-
-### Performance Requirements
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Meeting Scheduling | <5s | Micrometer timer |
-| RSVP Submission | <1s | API response |
-| Materials Generation | <30s (async) | Background job |
-| Email Delivery | <1min | SES metrics |
+| Metric | Target |
+|--------|--------|
+| Meeting list load (P95) | <3s |
+| Create/update meeting | <500ms |
+| Send invite (202 response) | <200ms (async) |
+| ICS generation | <50ms |
 
 ### References
 
 - [Source: docs/prd/epic-8-partner-coordination.md#Story-8.3]
 - [Source: docs/architecture/ADR-003-meaningful-identifiers.md]
-- [Source: docs/architecture/05-frontend-architecture.md#i18n]
-- [Source: docs/architecture/coding-standards.md#TDD-Workflow]
-- [Microsoft Graph Calendar API](https://docs.microsoft.com/en-us/graph/api/resources/calendar)
-- [AWS SES Templates](https://docs.aws.amazon.com/ses/latest/dg/send-personalized-email-api.html)
+- [Source: docs/architecture/ADR-006-openapi-contract-first.md]
+- [RFC 5545 — iCalendar format](https://datatracker.ietf.org/doc/html/rfc5545)
+- [Source: services/partner-coordination-service — partner_contacts schema]
+- [Source: Story 6.5 — existing SES email pattern]
 
 ## Dev Agent Record
 
@@ -535,4 +343,3 @@ services/partner-coordination-service/src/main/resources/db/migration/
 ### Completion Notes List
 
 ### File List
-

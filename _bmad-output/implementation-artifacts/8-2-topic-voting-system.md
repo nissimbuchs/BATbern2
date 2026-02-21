@@ -1,420 +1,258 @@
-# Story 8.2: Sophisticated Topic Voting System
+# Story 8.2: Topic Suggestions & Voting
 
 Status: ready-for-dev
 
 ## Story
 
 As a **partner**,
-I want to vote on future event topics with weighted influence based on partnership tier,
-so that events align with our strategic interests.
+I want to suggest topics for future BATbern events and vote on other partners' suggestions,
+so that events cover subjects my company cares about.
 
 ## Acceptance Criteria
 
-### Voting Interface
-1. **AC1 - Topic List**: View all proposed topics with descriptions, categories, and voting status
-2. **AC2 - Vote Allocation**: Allocate votes across topics (weighted by partnership tier)
-3. **AC3 - Priority Ranking**: Drag-and-drop to rank topic priorities
-4. **AC4 - Vote Submission**: Submit votes with confirmation and validation
-5. **AC5 - Voting Deadline**: Clear deadline display with countdown timer
+1. **AC1 - Topic List**: Partners see all proposed topics with title, description, suggesting company, and current vote count. Sorted by vote count descending.
 
-### Weighted Voting
-6. **AC6 - Tier-Based Weighting**: Premium partners get more voting weight (configurable multiplier)
-7. **AC7 - Weight Transparency**: Show voting weight to partner before submission
-8. **AC8 - Fair Distribution**: Algorithm ensures no single partner dominates (max 30% influence cap)
-9. **AC9 - Consensus Building**: Show partner consensus level (percentage agreement)
+2. **AC2 - Simple Vote**: Partner gives one vote per topic (toggle on/off). No weighting, no allocation, no tiers. One partner = one vote per topic.
 
-### Topic Suggestions
-10. **AC10 - Suggestion Form**: Partners can submit new topic ideas with title, description, category
-11. **AC11 - Justification Required**: Business case and strategic alignment fields mandatory
-12. **AC12 - Review Workflow**: Organizer reviews and approves/declines suggestions
-13. **AC13 - Suggestion Tracking**: Track suggestion status (SUBMITTED → UNDER_REVIEW → APPROVED/DECLINED)
+3. **AC3 - Suggest Topic**: Partner submits a new topic with title and short description. No mandatory business justification.
 
-### Voting Results
-14. **AC14 - Live Results**: See current voting standings (real-time updates)
-15. **AC15 - Historical Trends**: View past voting cycles and outcomes
-16. **AC16 - Impact Metrics**: See attendance/engagement for previously voted topics
-17. **AC17 - Adoption Status**: Track which topics were selected for events
+4. **AC4 - Organizer Review**: Organizer sees all topics ranked by vote count and can set status to **Selected** or **Declined** per topic.
 
-### Integration
-18. **AC18 - Topic Backlog Integration**: Voted topics appear in Epic 5 Story 5.2 topic backlog
-19. **AC19 - Heat Map Integration**: Voting results influence topic selection heat map
-20. **AC20 - Backward Compatible**: Organizer can still add topics manually (Epic 5 workflow)
+5. **AC5 - Status Visibility**: All partners can see topic status: **Proposed** / **Selected** / **Declined**. Selected topics show which event they are planned for (free text field, organizer fills in).
 
-### Technical
-21. **AC21 - ADR-003 Compliance**: Database uses meaningful IDs (companyName, topicCode, username)
-22. **AC22 - i18n Support**: All UI text translated (German primary, English secondary)
-23. **AC23 - Performance**: Vote submission <2 seconds, results load <1 second
+6. **AC6 - Role-Based Access**: Partners submit suggestions and vote. Organizers review and update status. Partners cannot change status.
+
+7. **AC7 - i18n**: All UI text in German (primary) and English (secondary).
+
+8. **AC8 - Performance**: Page loads in <3 seconds (P95).
+
+## What was deliberately cut
+
+| Removed | Reason |
+|---|---|
+| Tier-based vote weighting | 5–10 partners, simple count is fair enough |
+| 30% influence cap algorithm | Not needed without weighting |
+| Drag-and-drop priority ranking | Overkill — sort by vote count is enough |
+| Voting deadline + countdown timer | No formal voting period needed |
+| Live results / real-time polling | Page load is sufficient |
+| Historical voting trends | Not needed |
+| Impact metrics (engagement for past topics) | Not needed |
+| EventBridge integration | Organizer reads the list directly, no event needed |
+| Business justification + strategic alignment fields | Title + description is enough |
+| Suggestion review workflow states (UNDER_REVIEW) | Proposed → Selected/Declined is enough |
+| Consensus building percentage | Not needed |
+| react-beautiful-dnd dependency | Removed with drag-and-drop |
 
 ## Tasks / Subtasks
 
-### Backend Tasks
+### Task 1: Check existing DB schema (AC: ALL)
 
-- [ ] **Task 1: Update OpenAPI Specification** (AC: ALL - contract-first per ADR-006)
-  - [ ] Update `docs/api/partners-api.openapi.yml` with voting endpoints
-  - [ ] Define `POST /api/v1/topics/{topicCode}/votes` endpoint
-  - [ ] Define `GET /api/v1/topics/votes/results` endpoint
-  - [ ] Define `POST /api/v1/topic-suggestions` endpoint
-  - [ ] Define `GET /api/v1/topic-suggestions` endpoint (with status filter)
-  - [ ] Define `PUT /api/v1/topic-suggestions/{id}/review` endpoint
-  - [ ] Generate TypeScript types: `npm run generate:api-types:partners`
+- [ ] Review `partner-coordination-service` Flyway migrations for existing `topic_votes` and `topic_suggestions` tables (created in Story 2.7)
+- [ ] If tables already exist and match the schema below — no migration needed
+- [ ] If tables are missing or schema differs, create migration `V8.2.1__update_topic_tables.sql`:
 
-- [ ] **Task 2: Database Migrations** (AC: 21)
-  - [ ] Create Flyway migration `V8.2.1__create_topic_votes_table.sql`
-    ```sql
-    CREATE TABLE topic_votes (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_name VARCHAR(12) NOT NULL,
-        topic_code VARCHAR(100) NOT NULL,
-        vote_value INTEGER NOT NULL,
-        voted_by_username VARCHAR(100) NOT NULL,
-        voted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        UNIQUE(company_name, topic_code)
-    );
-    CREATE INDEX idx_topic_votes_company ON topic_votes(company_name);
-    CREATE INDEX idx_topic_votes_topic ON topic_votes(topic_code);
-    ```
-  - [ ] Create Flyway migration `V8.2.2__create_topic_suggestions_table.sql`
-    ```sql
-    CREATE TABLE topic_suggestions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        company_name VARCHAR(12) NOT NULL,
-        suggested_by_username VARCHAR(100) NOT NULL,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        category VARCHAR(100),
-        business_justification TEXT NOT NULL,
-        strategic_alignment TEXT,
-        status VARCHAR(50) DEFAULT 'SUBMITTED',
-        reviewed_by_username VARCHAR(100),
-        review_notes TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        reviewed_at TIMESTAMP WITH TIME ZONE
-    );
-    CREATE INDEX idx_suggestions_company ON topic_suggestions(company_name);
-    CREATE INDEX idx_suggestions_status ON topic_suggestions(status);
-    ```
+```sql
+-- topic_suggestions: one row per suggested topic
+CREATE TABLE IF NOT EXISTS topic_suggestions (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_name  VARCHAR(255) NOT NULL,       -- ADR-003: meaningful ID
+    suggested_by  VARCHAR(100) NOT NULL,        -- username
+    title         VARCHAR(255) NOT NULL,
+    description   TEXT,
+    status        VARCHAR(50)  NOT NULL DEFAULT 'PROPOSED', -- PROPOSED | SELECTED | DECLINED
+    planned_event VARCHAR(100),                -- e.g. "BATbern58" (organizer fills in when selecting)
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-- [ ] **Task 3: Topic Voting Service** (AC: 1-9, 14-17)
-  - [ ] Create `TopicVotingService.java` in partner-coordination-service
-  - [ ] Implement `submitVote(String companyName, String topicCode, int voteValue, String username)`
-  - [ ] Implement `getVotingResults()` - aggregated results with weighting
-  - [ ] Implement `getPartnerVotes(String companyName)` - partner's own votes
-  - [ ] Implement `calculateTierWeight(String companyName)` - lookup partner tier
-  - [ ] Implement `getConsensusLevel()` - percentage of partners agreeing on top topics
-  - [ ] Add fair distribution cap (max 30% influence per partner)
+-- topic_votes: one row per partner per topic (toggle on = row exists, toggle off = row deleted)
+CREATE TABLE IF NOT EXISTS topic_votes (
+    topic_id      UUID         NOT NULL REFERENCES topic_suggestions(id) ON DELETE CASCADE,
+    company_name  VARCHAR(255) NOT NULL,       -- ADR-003: meaningful ID
+    voted_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    PRIMARY KEY (topic_id, company_name)       -- one vote per partner per topic
+);
 
-- [ ] **Task 4: Topic Suggestion Service** (AC: 10-13)
-  - [ ] Create `TopicSuggestionService.java`
-  - [ ] Implement `submitSuggestion(TopicSuggestionRequest request)`
-  - [ ] Implement `getSuggestions(String status)` - filter by status
-  - [ ] Implement `reviewSuggestion(UUID id, String decision, String notes, String reviewerUsername)`
-  - [ ] Emit `TopicSuggestionApprovedEvent` via EventBridge when approved
+CREATE INDEX IF NOT EXISTS idx_topic_suggestions_status ON topic_suggestions(status);
+CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
+```
 
-- [ ] **Task 5: REST Controllers** (AC: 21, 23)
-  - [ ] Create `TopicVotingController.java`
-  - [ ] Create `TopicSuggestionController.java`
-  - [ ] Add `@PreAuthorize` for role-based access
-  - [ ] Add request timing metrics with Micrometer
+### Task 2: OpenAPI Specification (AC: ALL — ADR-006)
 
-- [ ] **Task 6: EventBridge Integration** (AC: 18, 19)
-  - [ ] Create `VotingEventPublisher.java`
-  - [ ] Publish `TopicVotedEvent` when voting cycle closes
-  - [ ] Event Management Service subscribes and updates topic backlog
-  - [ ] Include vote counts and weighted scores in event payload
+- [ ] Update `docs/api/partner-analytics-api.openapi.yml` (or create `partner-topics-api.openapi.yml`)
+- [ ] Define endpoints:
+  - `GET  /api/v1/partners/topics` — list all topics with vote counts (PARTNER + ORGANIZER)
+  - `POST /api/v1/partners/topics` — suggest a new topic (PARTNER)
+  - `POST /api/v1/partners/topics/{topicId}/vote` — toggle vote on (PARTNER)
+  - `DELETE /api/v1/partners/topics/{topicId}/vote` — toggle vote off (PARTNER)
+  - `PATCH /api/v1/partners/topics/{topicId}/status` — update status (ORGANIZER only)
+- [ ] Define DTOs: `TopicDTO`, `TopicSuggestionRequest`, `TopicStatusUpdateRequest`
+- [ ] Generate TypeScript types: `npm run generate:api-types:partners`
 
-- [ ] **Task 7: SecurityConfig Update** (AC: 21)
-  - [ ] Add voting endpoints to SecurityConfig
-  - [ ] `POST /api/v1/topics/*/votes` → PARTNER role
-  - [ ] `GET /api/v1/topics/votes/results` → PARTNER, ORGANIZER roles
-  - [ ] `PUT /api/v1/topic-suggestions/*/review` → ORGANIZER role only
+### Task 3: TopicService (AC: 1–6)
 
-### Frontend Tasks
+- [ ] Create `TopicService.java` in partner-coordination-service
+- [ ] `getAllTopics(String currentCompanyName): List<TopicDTO>` — query topics + vote counts, mark which ones current partner has voted for
+- [ ] `suggestTopic(String companyName, String username, TopicSuggestionRequest req)` — insert into topic_suggestions
+- [ ] `castVote(UUID topicId, String companyName)` — insert into topic_votes (ignore if already voted)
+- [ ] `removeVote(UUID topicId, String companyName)` — delete from topic_votes (ignore if not voted)
+- [ ] `updateStatus(UUID topicId, String status, String plannedEvent)` — ORGANIZER only; validate status is SELECTED or DECLINED
 
-- [ ] **Task 8: i18n Translation Keys** (AC: 22)
-  - [ ] Add ~60 translation keys to `public/locales/de/partner.json`
-  - [ ] Add ~60 translation keys to `public/locales/en/partner.json`
-  - [ ] Include pluralization: `partner.voting.votes_one`, `partner.voting.votes_other`
+### Task 4: TopicController (AC: 6, 8)
 
-- [ ] **Task 9: Topic Voting Dashboard** (AC: 1, 5, 14)
-  - [ ] Create `src/components/partner/TopicVotingDashboard.tsx`
-  - [ ] Display voting deadline with countdown timer
-  - [ ] Show current voting status (open/closed)
-  - [ ] Real-time results updates via polling (30s interval)
+- [ ] Create `TopicController.java`
+- [ ] Implement all 5 endpoints from OpenAPI spec
+- [ ] `@PreAuthorize` on status update: `hasRole('ORGANIZER')`
+- [ ] `@PreAuthorize` on vote/suggest: `hasRole('PARTNER')`
+- [ ] Add Micrometer timing
 
-- [ ] **Task 10: Topic List Component** (AC: 1, 2, 3)
-  - [ ] Create `src/components/partner/VotableTopicList.tsx`
-  - [ ] Display topics with description, category, current votes
-  - [ ] Implement vote allocation slider/input per topic
-  - [ ] Drag-and-drop priority ranking with react-beautiful-dnd
+### Task 5: SecurityConfig Update (AC: 6)
 
-- [ ] **Task 11: Vote Submission Component** (AC: 4, 7)
-  - [ ] Create `src/components/partner/VoteSubmissionPanel.tsx`
-  - [ ] Show voting weight based on partner tier
-  - [ ] Display total votes allocated vs available
-  - [ ] Confirmation dialog before submission
+- [ ] Add topic endpoints to `SecurityConfig.java`
+  - `GET  /api/v1/partners/topics` → PARTNER, ORGANIZER
+  - `POST /api/v1/partners/topics` → PARTNER
+  - `POST/DELETE /api/v1/partners/topics/*/vote` → PARTNER
+  - `PATCH /api/v1/partners/topics/*/status` → ORGANIZER
 
-- [ ] **Task 12: Voting Results Component** (AC: 14, 15, 16, 17)
-  - [ ] Create `src/components/partner/VotingResultsPanel.tsx`
-  - [ ] Use Recharts BarChart for vote distribution
-  - [ ] Historical trends with LineChart
-  - [ ] Topic adoption status badges
+### Task 6: i18n Keys (AC: 7)
 
-- [ ] **Task 13: Topic Suggestion Form** (AC: 10, 11, 13)
-  - [ ] Create `src/components/partner/TopicSuggestionForm.tsx`
-  - [ ] Form fields: title, description, category, business justification
-  - [ ] Validation: justification required (min 50 chars)
-  - [ ] Status tracking display
+- [ ] Add keys to `public/locales/de/partner.json` and `en/partner.json`
+  - `partner.topics.title`, `partner.topics.suggest`, `partner.topics.vote`, `partner.topics.unvote`
+  - `partner.topics.status.proposed`, `.selected`, `.declined`
+  - `partner.topics.plannedFor`, `partner.topics.empty`
+  - `partner.topics.form.title`, `.description`, `.submit`
 
-- [ ] **Task 14: Suggestion Review Component** (AC: 12) - Organizer only
-  - [ ] Create `src/components/organizer/SuggestionReviewPanel.tsx`
-  - [ ] List pending suggestions with partner info
-  - [ ] Approve/Decline buttons with notes field
-  - [ ] Bulk actions for efficiency
+### Task 7: Topic List Page (AC: 1, 2, 5, 7, 8)
 
-- [ ] **Task 15: API Client Integration** (AC: ALL)
-  - [ ] Create `src/services/api/topicVotingApi.ts`
-  - [ ] Implement `submitVote(topicCode, voteValue)`
-  - [ ] Implement `getVotingResults()`
-  - [ ] Implement `getPartnerVotes()`
-  - [ ] Implement `submitSuggestion(suggestion)`
-  - [ ] Implement `reviewSuggestion(id, decision, notes)`
-  - [ ] Use React Query with optimistic updates
+- [ ] Create `src/components/partner/TopicListPage.tsx`
+- [ ] MUI `List` or `Table` — one row per topic: title, description, company, votes, status badge, vote button
+- [ ] Vote button: filled heart / thumbs-up when voted, outlined when not. Calls POST or DELETE on click.
+- [ ] Status badge: chip with colour — grey (Proposed), green (Selected), red (Declined)
+- [ ] Selected topics show `plannedEvent` field if set (e.g. "BATbern58")
+- [ ] "Suggest a Topic" button opens the suggestion form (modal or inline)
+- [ ] Loading skeleton, empty state
 
-### Testing Tasks
+### Task 8: Topic Suggestion Form (AC: 3, 7)
 
-- [ ] **Task 16: Backend Integration Tests** (AC: 6, 8, 21)
-  - [ ] Create `TopicVotingControllerIntegrationTest.java`
-  - [ ] Test tier-based weighting calculation
-  - [ ] Test fair distribution cap (max 30% influence)
-  - [ ] Test role-based access (partner vs organizer)
-  - [ ] Use PostgreSQL via Testcontainers
+- [ ] Create `src/components/partner/TopicSuggestionForm.tsx` — MUI Dialog
+- [ ] Fields: Title (required), Description (optional, max 500 chars)
+- [ ] Submit → `POST /api/v1/partners/topics` → invalidate topic list query
+- [ ] Validation: title required, min 5 chars
 
-- [ ] **Task 17: Frontend Component Tests** (AC: 22, 23)
-  - [ ] Create `TopicVotingDashboard.test.tsx`
-  - [ ] Test vote allocation validation
-  - [ ] Test countdown timer behavior
-  - [ ] Test i18n language switching
+### Task 9: Organizer Status Panel (AC: 4, 5, 7)
 
-- [ ] **Task 18: E2E Tests** (AC: 4, 12, 18)
-  - [ ] Create `e2e/partner/topic-voting.spec.ts`
-  - [ ] Test partner login → vote on topics → confirm submission
-  - [ ] Test organizer review workflow
-  - [ ] Test Epic 5 topic backlog integration
+- [ ] Create `src/components/organizer/TopicStatusPanel.tsx`
+- [ ] Same topic list but with additional organizer controls per row:
+  - Status dropdown: Proposed / Selected / Declined
+  - "Planned for event" text input (shown when status = Selected)
+  - Save button per row
+- [ ] Only rendered when user has ORGANIZER role
+
+### Task 10: API Client (AC: ALL)
+
+- [ ] Create `src/services/api/partnerTopicsApi.ts`
+- [ ] `getTopics()` — React Query, staleTime 2 minutes
+- [ ] `suggestTopic(req)` — mutation, invalidates topic list
+- [ ] `castVote(topicId)` — mutation with optimistic update (increment vote count)
+- [ ] `removeVote(topicId)` — mutation with optimistic update (decrement vote count)
+- [ ] `updateTopicStatus(topicId, status, plannedEvent)` — mutation (organizer only)
+
+### Task 11: Backend Integration Tests (AC: 1–6)
+
+- [ ] `TopicControllerIntegrationTest.java` (extends `AbstractIntegrationTest`)
+- [ ] Partner can suggest a topic
+- [ ] Partner can vote and unvote (toggle)
+- [ ] Duplicate vote is idempotent (no error on double-vote)
+- [ ] Partner cannot update status → 403
+- [ ] Organizer can update status
+- [ ] Vote count accurate after multiple partners vote
+- [ ] Topics sorted by vote count descending
+
+### Task 12: Frontend Component Tests (AC: 7, 8)
+
+- [ ] `TopicListPage.test.tsx`
+- [ ] Renders topic list with mocked data
+- [ ] Vote toggle fires correct API call
+- [ ] Status badges render with correct colour
+- [ ] i18n DE/EN
+- [ ] Suggestion form validation (title required)
+
+### Task 13: E2E Test (AC: 2, 3, 4)
+
+- [ ] `e2e/partner/topic-voting.spec.ts`
+- [ ] Partner submits topic → appears in list
+- [ ] Partner votes → vote count increments
+- [ ] Partner unvotes → vote count decrements
+- [ ] Organizer marks topic as Selected with planned event → partner sees "Selected for BATbern58"
 
 ## Dev Notes
 
-### Architecture Compliance
+### Data flow
 
-**ADR-003 (Meaningful Identifiers):**
-```sql
--- ✅ CORRECT: Meaningful IDs, no foreign keys across services
-CREATE TABLE topic_votes (
-    company_name VARCHAR(12) NOT NULL,  -- Not partner_id UUID
-    topic_code VARCHAR(100) NOT NULL,   -- Not topic_id UUID
-    voted_by_username VARCHAR(100) NOT NULL  -- Not user_id UUID
-);
+All data lives in `partner-coordination-service` DB. No cross-service calls needed for this story — partner identity comes from the JWT principal.
+
+```
+Partner JWT → companyName claim
+     │
+     ▼
+TopicController → TopicService → topic_suggestions / topic_votes tables
+     │
+     └── No HTTP calls to other services needed
 ```
 
-**ADR-004 (HTTP Enrichment):**
+### TopicDTO structure
+
 ```java
-// Get partner tier via HTTP, not database join
-@Cacheable("partner-tiers")
-public PartnerTier getPartnerTier(String companyName) {
-    return partnerServiceClient.getPartner(companyName).getTier();
-}
+public record TopicDTO(
+    UUID id,
+    String title,
+    String description,
+    String suggestedByCompany,
+    int voteCount,
+    boolean currentPartnerHasVoted,  // derived from companyName in request
+    String status,                    // PROPOSED | SELECTED | DECLINED
+    String plannedEvent               // nullable, e.g. "BATbern58"
+) {}
 ```
 
-**ADR-006 (OpenAPI Contract-First):**
-- Update `docs/api/partners-api.openapi.yml` BEFORE implementation
-- Generate types: `npm run generate:api-types:partners`
+### Vote toggle pattern (optimistic UI)
 
-### Voting Weight Algorithm
-
-```java
-public class VotingWeightCalculator {
-    private static final Map<PartnerTier, Double> TIER_WEIGHTS = Map.of(
-        PartnerTier.PLATINUM, 3.0,
-        PartnerTier.GOLD, 2.0,
-        PartnerTier.SILVER, 1.5,
-        PartnerTier.BRONZE, 1.0
+```typescript
+// castVote and removeVote use optimistic updates
+const voteMutation = useMutation({
+  mutationFn: (topicId: string) => castVote(topicId),
+  onMutate: async (topicId) => {
+    await queryClient.cancelQueries(['topics']);
+    const prev = queryClient.getQueryData(['topics']);
+    queryClient.setQueryData(['topics'], (old: Topic[]) =>
+      old.map(t => t.id === topicId
+        ? { ...t, voteCount: t.voteCount + 1, currentPartnerHasVoted: true }
+        : t)
     );
-
-    private static final double MAX_INFLUENCE_CAP = 0.30; // 30% max per partner
-
-    public double calculateWeightedVote(String companyName, int rawVotes) {
-        PartnerTier tier = getPartnerTier(companyName);
-        double weight = TIER_WEIGHTS.getOrDefault(tier, 1.0);
-        double weightedVote = rawVotes * weight;
-
-        // Apply influence cap
-        double totalVotes = getTotalVotesInCycle();
-        double maxAllowed = totalVotes * MAX_INFLUENCE_CAP;
-        return Math.min(weightedVote, maxAllowed);
-    }
-}
+    return { prev };
+  },
+  onError: (_, __, ctx) => queryClient.setQueryData(['topics'], ctx?.prev),
+});
 ```
 
-### Project Structure Notes
+### ADR Compliance
 
-**Backend Files:**
-```
-services/partner-coordination-service/src/main/java/ch/batbern/partners/
-├── controller/
-│   ├── TopicVotingController.java
-│   └── TopicSuggestionController.java
-├── service/
-│   ├── TopicVotingService.java
-│   ├── TopicSuggestionService.java
-│   └── VotingWeightCalculator.java
-├── domain/
-│   ├── TopicVote.java
-│   ├── TopicSuggestion.java
-│   └── SuggestionStatus.java (enum)
-├── dto/
-│   ├── VoteRequest.java
-│   ├── VoteResultDTO.java
-│   ├── TopicSuggestionRequest.java
-│   └── SuggestionReviewRequest.java
-├── repository/
-│   ├── TopicVoteRepository.java
-│   └── TopicSuggestionRepository.java
-└── event/
-    ├── TopicVotedEvent.java
-    └── VotingEventPublisher.java
-```
+- **ADR-003**: `topic_suggestions.company_name` and `topic_votes.company_name` store meaningful string IDs, not UUIDs
+- **ADR-006**: OpenAPI spec updated before implementation
 
-**Frontend Files:**
-```
-web-frontend/src/
-├── components/partner/
-│   ├── TopicVotingDashboard.tsx
-│   ├── VotableTopicList.tsx
-│   ├── VoteSubmissionPanel.tsx
-│   ├── VotingResultsPanel.tsx
-│   └── TopicSuggestionForm.tsx
-├── components/organizer/
-│   └── SuggestionReviewPanel.tsx
-├── services/api/
-│   └── topicVotingApi.ts
-└── hooks/
-    └── useTopicVoting.ts
-```
+### Performance
 
-**Database Migrations:**
-```
-services/partner-coordination-service/src/main/resources/db/migration/
-├── V8.2.1__create_topic_votes_table.sql
-└── V8.2.2__create_topic_suggestions_table.sql
-```
-
-### i18n Translation Keys
-
-```json
-{
-  "voting": {
-    "title": "Topic Voting",
-    "deadline": "Voting closes: {{date}}",
-    "countdown": "{{days}} days, {{hours}} hours remaining",
-    "status": {
-      "open": "Voting Open",
-      "closed": "Voting Closed"
-    },
-    "topics": {
-      "list": "Available Topics",
-      "category": "Category",
-      "description": "Description"
-    },
-    "allocate": {
-      "votes": "Allocate Your Votes",
-      "weight": "Your voting weight: {{weight}}x",
-      "remaining": "{{count}} votes remaining"
-    },
-    "submit": "Submit Votes",
-    "confirm": {
-      "title": "Confirm Vote Submission",
-      "message": "Are you sure you want to submit your votes? This cannot be undone."
-    },
-    "results": {
-      "live": "Live Results",
-      "historical": "Past Voting Cycles",
-      "consensus": "Partner Consensus: {{percentage}}%"
-    },
-    "votes_one": "{{count}} vote",
-    "votes_other": "{{count}} votes",
-    "suggestion": {
-      "submit": "Suggest a Topic",
-      "title": "Topic Title",
-      "justification": "Business Justification",
-      "status": {
-        "SUBMITTED": "Submitted",
-        "UNDER_REVIEW": "Under Review",
-        "APPROVED": "Approved",
-        "DECLINED": "Declined"
-      }
-    },
-    "success": {
-      "voted": "Your votes have been recorded!",
-      "suggested": "Topic suggestion submitted for review"
-    },
-    "error": {
-      "submitFailed": "Failed to submit votes",
-      "loadFailed": "Failed to load voting data"
-    }
-  }
-}
-```
-
-### EventBridge Integration
-
-```java
-@Component
-public class VotingEventPublisher {
-    private final EventBridgeClient eventBridge;
-
-    public void publishVotingCycleClosed(List<VoteResultDTO> results) {
-        PutEventsRequestEntry entry = PutEventsRequestEntry.builder()
-            .source("partner-coordination-service")
-            .detailType("TopicVotingCycleClosed")
-            .detail(objectMapper.writeValueAsString(results))
-            .eventBusName("batbern-events")
-            .build();
-
-        eventBridge.putEvents(PutEventsRequest.builder()
-            .entries(entry)
-            .build());
-    }
-}
-```
-
-**Event Management Service Subscription:**
-```java
-@EventListener(condition = "#event.detailType == 'TopicVotingCycleClosed'")
-public void handleVotingResults(TopicVotingEvent event) {
-    // Update topic backlog with voting scores
-    event.getResults().forEach(result -> {
-        topicBacklogService.updateVotingScore(
-            result.getTopicCode(),
-            result.getWeightedScore()
-        );
-    });
-}
-```
-
-### Performance Requirements
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Vote Submission | <2s | Micrometer timer |
-| Results Load | <1s | React Query timing |
-| Real-time Update | 30s polling | Frontend interval |
-| Database Query | <50ms | PostgreSQL EXPLAIN |
+| Metric | Target |
+|--------|--------|
+| Topic list load (P95) | <3s |
+| Vote toggle response | <500ms |
+| DB query (topics + counts) | <100ms |
 
 ### References
 
 - [Source: docs/prd/epic-8-partner-coordination.md#Story-8.2]
 - [Source: docs/architecture/ADR-003-meaningful-identifiers.md]
-- [Source: docs/architecture/05-frontend-architecture.md#i18n]
-- [Source: docs/architecture/coding-standards.md#TDD-Workflow]
+- [Source: docs/architecture/ADR-006-openapi-contract-first.md]
+- [Source: services/partner-coordination-service — existing topic_votes schema]
 
 ## Dev Agent Record
 
@@ -427,4 +265,3 @@ public void handleVotingResults(TopicVotingEvent event) {
 ### Completion Notes List
 
 ### File List
-

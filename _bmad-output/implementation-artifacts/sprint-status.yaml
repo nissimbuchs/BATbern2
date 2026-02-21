@@ -1,8 +1,8 @@
-# generated: 2026-02-15
-# project: BATbern Watch
+# generated: 2026-02-21
+# project: BATbern
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
-# epics_source: docs/watch-app/epics.md
+# epics_source: docs/prd/epic-*.md + docs/watch-app/epics.md
 
 # STATUS DEFINITIONS:
 # ==================
@@ -33,54 +33,151 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-15
-project: BATbern Watch
+generated: 2026-02-21
+project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  # Epic 1: Public Event Companion
+
+  # ============================================================
+  # MAIN BATBERN APPLICATION EPICS
+  # ============================================================
+
+  # Epic 1: Foundation & Core Infrastructure - COMPLETE (2025-10-25)
   epic-1: done
+  1-1-shared-kernel-infrastructure-setup: done
+  1-2-api-gateway-authentication-service: done
+  1-2-1-login-screen-i18n-foundation: done
+  1-2-2-forgot-password-flow: done
+  1-2-2a-reset-password-confirmation: done
+  1-2-3-account-creation-flow: done
+  1-2-4-email-verification-flow: done
+  1-2-5-user-sync-reconciliation: done
+  1-2-6-database-only-roles-migration: done
+  1-3-multi-environment-cdk-infrastructure-setup: done
+  1-4-cicd-pipeline-implementation: done
+  1-4a-docker-compose-local-development: done
+  1-5-environment-promotion-automation: done
+  1-6-infrastructure-monitoring-alerting: done
+  1-7-basic-developer-workflow-setup: done
+  1-9-error-handling-essentials: done
+  1-11-security-compliance-essentials: done
+  1-14-company-management-service-foundation: done
+  1-14-2-user-management-service-foundation: done
+  1-15a-api-consolidation-foundation: done
+  1-15a-1-events-api-consolidation: done
+  1-17-react-frontend-foundation: done
+  epic-1-retrospective: done
+
+  # Epic 2: Entity CRUD & Domain Services - COMPLETE
+  epic-2: done
+  2-1-company-management-service-foundation: done
+  2-1b-user-management-service-foundation: done
+  2-2-event-management-service-core: done
+  2-4-user-role-management: done
+  2-5-react-frontend-crud-foundation: done
+  2-5-1-company-management-frontend: done
+  2-5-2-user-management-frontend: done
+  2-5-3-event-management-frontend: done
+  2-6-user-account-management-frontend: done
+  2-7-partner-coordination-service-foundation: done
+  2-8-1-partner-directory: done
+  2-8-2-partner-detail-view: done
+  2-8-3-partner-create-edit-modal: done
+  2-8-4-partner-contact-management: done
+  epic-2-retrospective: done
+
+  # Epic 3: Historical Data Migration - COMPLETE (tooling ready, production import pending)
+  epic-3: done
+  3-1-historical-data-migration: done
+  epic-3-retrospective: done
+
+  # Epic 4: Public Website & Content Discovery - COMPLETE
+  epic-4: done
+  4-1-public-event-listing: done
+  4-2-historical-archive-browsing: done
+  4-3-event-registration-wizard: done
+  4-4-content-search: done
+  epic-4-retrospective: optional
+
+  # Epic 5: Enhanced Organizer Workflows - COMPLETE (BAT-16 delivered auto-publishing & lifecycle)
+  epic-5: done
+  5-1-event-workflow-automation: done
+  5-2-topic-selection-workflow: done
+  5-3-speaker-coordination-workflow: done
+  5-4-agenda-management: done
+  5-5-auto-publishing-cdn-integration: done
+  5-6-event-lifecycle-automation: done
+  5-15-partner-meeting-coordination: done
+  epic-5-retrospective: optional
+
+  # Epic 6: Speaker Self-Service Portal - IN PROGRESS (all stories deployed to staging, friend working)
+  epic-6: in-progress
+  6-0-speaker-coordination-service-foundation: done
+  6-1-automated-speaker-invitation-system: done
+  6-2-speaker-self-service-response-portal: done
+  6-3-speaker-material-self-submission-portal: done
+  6-4-speaker-dashboard: done
+  6-5-automated-deadline-reminders: done
+  epic-6-retrospective: optional
+
+  # Epic 7: Attendee Experience Enhancements - BACKLOG
+  epic-7: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Advanced Partner Analytics & Voting - IN PROGRESS (Nissim)
+  epic-8: in-progress
+  8-1-partner-analytics-dashboard: ready-for-dev
+  8-2-topic-voting-system: ready-for-dev
+  8-3-automated-meeting-coordination: ready-for-dev
+  epic-8-retrospective: optional
+
+  # Epic 9: Speaker Authentication - BACKLOG
+  epic-9: backlog
+  epic-9-retrospective: optional
+
+  # ============================================================
+  # BATBERN WATCH APP EPICS (Separate track)
+  # ============================================================
+
+  # Epic 1: Public Event Companion - COMPLETE
+  watch-epic-1: done
   w1-1-xcode-project-setup-event-hero-screen: done
   w1-2-session-card-browsing: done
   w1-3-session-abstract-speaker-bio: done
   w1-4-progressive-publishing-offline-support: done
   w1-5-ui-polish-image-caching: done
-  epic-1-retrospective: done
+  watch-epic-1-retrospective: done
 
-  # Epic 2: Watch Pairing & Organizer Access
-  epic-2: done
+  # Epic 2: Watch Pairing & Organizer Access - COMPLETE
+  watch-epic-2: done
   w2-1-pairing-code-backend-web-frontend: done
   w2-2-watch-pairing-flow-organizer-zone-navigation: done
   w2-3-event-join-schedule-sync: done
   w2-4-speaker-arrival-tracking: done
-  epic-2-retrospective: done
+  watch-epic-2-retrospective: done
 
-  # Epic 3: Live Countdown & Haptic Awareness
-  epic-3: done
+  # Epic 3: Live Countdown & Haptic Awareness - COMPLETE
+  watch-epic-3: done
   w3-1-live-countdown-display: done
   w3-2-haptic-alert-system: done
   w3-3-watch-face-complications: done
   w3-4-session-schedule-next-session-preview: done
-  epic-3-retrospective: done
+  watch-epic-3-retrospective: done
 
-  # Epic 4: Session Control & Team Sync
+  # Epic 4: Session Control & Team Sync - COMPLETE
   # GATE G1: epic-4-reuse-map.md reviewed by SM (2026-02-18) ✅
-  # Gate checklist — all cleared before W4.1 story creation:
-  #   G1: epic-4-reuse-map.md reviewed by SM          [x] 2026-02-18
-  #   D1: WatchHapticService.schedule() firing logic   [x] commit 5c49e211
-  #   A1: Pre-implementation review in story template  [x] w4-1 story — Pre-Implementation Review section
-  #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
-  epic-4: done
+  watch-epic-4: done
   w4-1-websocket-real-time-infrastructure: done
   w4-2-session-advance-transition: done
   w4-3-overrun-detection-schedule-cascade: done
   w4-4-break-management-event-lifecycle: done
-  epic-4-retrospective: optional
+  watch-epic-4-retrospective: optional
 
-  # Epic 5: Offline Resilience
-  epic-5: in-progress
+  # Epic 5: Offline Resilience - COMPLETE
+  watch-epic-5: done
   w5-1-offline-timer-haptics: done
   w5-2-action-queue-sync-recovery: done
   w5-3-connectivity-monitoring-adaptive-behavior: done
-  epic-5-retrospective: optional
+  watch-epic-5-retrospective: optional
