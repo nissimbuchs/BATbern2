@@ -27,6 +27,7 @@ final class MockBatteryMonitor: BatteryMonitorProtocol, @unchecked Sendable {
     ///     using the same threshold logic as `BatteryMonitor.isLowBattery`.
     init(batteryLevel: Float = 1.0, isLowBattery: Bool? = nil) {
         self.batteryLevel = batteryLevel
-        self.isLowBattery = isLowBattery ?? (batteryLevel >= 0 && batteryLevel < 0.20)
+        // Delegate to the production threshold function — single source of truth.
+        self.isLowBattery = isLowBattery ?? BatteryMonitor.isLowBatteryLevel(batteryLevel)
     }
 }

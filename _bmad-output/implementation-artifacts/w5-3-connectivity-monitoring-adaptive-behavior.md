@@ -115,10 +115,12 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 - Task 1 & 2: Verified only — no code changes. `ConnectivityMonitor` (NWPathMonitor), `WebSocketClient.scheduleReconnect()` (exponential backoff), and `EventDataController.handleConnectivityChange()` (replay + sync) all confirmed correct. W5.2 is already merged.
-- Task 3: Used 60s polling timer over `NotificationCenter` — simpler, avoids excessive callbacks on WKApplicationDidBecomeActive which fires on every wake.
+- Task 3: Dropped 60s polling timer (code review finding M1: timer body was dead weight — only logged, no functional purpose). `BatteryMonitor` now enables monitoring in `init()` and exposes computed properties; `startPeriodicRefresh()` reads `isLowBattery` on each tick.
+- Task 3: Extracted `BatteryMonitor.isLowBatteryLevel(_ level: Float) -> Bool` as a shared static — both `BatteryMonitor.isLowBattery` and `MockBatteryMonitor.init` delegate to it, eliminating duplicated threshold logic (code review finding H1).
 - Task 4: `refreshInterval` marked `internal` (not `private`) to allow direct assertion in tests — same pattern as `ConnectivityMonitor.processConnectivityChange` being internal for testability.
-- Task 5: Created `EventDataControllerBatteryTests.swift` (new file) rather than extending non-existent `EventDataControllerTests.swift`. Added 6 `BatteryMonitorTests` cases (including boundary at 0.20 and minimum 0.01).
-- Task 6: `MockBatteryMonitor.init` computes `isLowBattery` from `batteryLevel` when override not provided — ensures `BatteryMonitorTests` validate real threshold logic.
+- Task 5: `BatteryMonitorTests` now tests `BatteryMonitor.isLowBatteryLevel(_:)` directly (production static function) + adds mock-consistency test and `batteryLevel=0.0` edge case (code review findings H1, M3). 8 cases total.
+- Task 6: `MockBatteryMonitor.init` delegates to `BatteryMonitor.isLowBatteryLevel` (single source of truth, not duplicated logic).
+- AC4 (NFR21/NFR22 — battery > 30% after 3 hours): Not verifiable by unit tests. Requires manual validation via Xcode Energy Log / Instruments over a full 3-hour simulated event session. Marked as QA sign-off item; no automated coverage possible for this NFR.
 - Zero regressions: 326 tests, 41 suites, all passing.
 
 ### File List
