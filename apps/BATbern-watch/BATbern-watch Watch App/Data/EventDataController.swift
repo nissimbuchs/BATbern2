@@ -3,7 +3,7 @@
 //  BATbern-watch Watch App
 //
 //  Unified event data source for both public and organizer zones.
-//  Single 5-min refresh timer, single SwiftData write path, single portrait cache.
+//  Adaptive refresh timer (5 min normal, 15 min when battery < 20%), single SwiftData write path, single portrait cache.
 //  Always uses GET /api/v1/events/current — same endpoint for both zones.
 //  The organizer zone adds behavior (arrival tracking, countdown) on top of this shared data.
 //
