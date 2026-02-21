@@ -42,6 +42,8 @@ final class EventDataController {
     private let offlineActionQueue: (any OfflineActionQueueProtocol)?
     /// W5.2 Task 4.1: WebSocket client used to replay queued actions on reconnect.
     private let webSocketClient: (any WebSocketClientProtocol)?
+    /// W5.3 Task 4.1: Battery monitor for adaptive polling interval.
+    private let batteryMonitor: any BatteryMonitorProtocol
 
     // MARK: - Sync Guard
 
@@ -59,6 +61,7 @@ final class EventDataController {
         clock: ClockProtocol = SystemClock(),
         offlineActionQueue: (any OfflineActionQueueProtocol)? = nil,
         webSocketClient: (any WebSocketClientProtocol)? = nil,
+        batteryMonitor: any BatteryMonitorProtocol = BatteryMonitor(),
         skipAutoSync: Bool = false
     ) {
         self.publicClient = publicClient
@@ -69,6 +72,7 @@ final class EventDataController {
         self.clock = clock
         self.offlineActionQueue = offlineActionQueue
         self.webSocketClient = webSocketClient
+        self.batteryMonitor = batteryMonitor
 
         // Load SwiftData cache immediately so views have data before first network response
         loadCachedData()
@@ -285,12 +289,28 @@ final class EventDataController {
 
     // MARK: - Private: Periodic Refresh
 
+    /// Battery-adaptive polling interval: 15 minutes when battery is below 20%, 5 minutes otherwise.
+    /// Marked internal for testability — tests assert on this property directly without
+    /// needing to run the full periodic timer. Mirrors the pattern used by
+    /// `ConnectivityMonitor.processConnectivityChange` (internal for test access).
+    var refreshInterval: Duration {
+        batteryMonitor.isLowBattery ? .seconds(15 * 60) : .seconds(5 * 60)
+    }
+
     private func startPeriodicRefresh() async {
+        var previousIsLowBattery: Bool? = nil
         while !Task.isCancelled {
-            try? await Task.sleep(for: .seconds(300))
+            // Re-evaluate interval on each tick so battery state is always current (W5.3 Task 4.3)
+            let currentIsLowBattery = batteryMonitor.isLowBattery
+            if previousIsLowBattery != currentIsLowBattery {
+                // Log interval change in debug builds only (W5.3 Task 4.4)
+                logger.debug("Refresh interval: \(currentIsLowBattery ? "15 min (low battery)" : "5 min")")
+                previousIsLowBattery = currentIsLowBattery
+            }
+            try? await Task.sleep(for: refreshInterval)
             // Only refresh on event day — battery conservation (no polling between events)
             if connectivityMonitor.isConnected && isEventDay() {
-                logger.debug("Periodic 5-min refresh triggered (event day)")
+                logger.debug("Periodic refresh triggered (event day)")
                 await syncIfNeeded()
             }
         }
