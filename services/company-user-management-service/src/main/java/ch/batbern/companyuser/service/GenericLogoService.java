@@ -7,6 +7,7 @@ import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.LogoNotFoundException;
 import ch.batbern.companyuser.repository.LogoRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -204,7 +205,7 @@ public class GenericLogoService {
         deleteS3Object(logo.getS3Key());
 
         // Build CloudFront URL
-        String cloudFrontUrl = buildCloudFrontUrl(finalS3Key);
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
 
         // Use domain method to transition state
         logo.associateWith(entityType, entityId, finalS3Key, cloudFrontUrl);
@@ -292,21 +293,6 @@ public class GenericLogoService {
      */
     private String generateTempS3Key(String uploadId, String fileId, String extension) {
         return String.format("logos/temp/%s/logo-%s.%s", uploadId, fileId, extension);
-    }
-
-    /**
-     * Build CloudFront CDN URL from S3 key
-     *
-     * For MinIO (local development): http://localhost:8450/{bucket-name}/{s3Key}
-     * For CloudFront (staging/prod): https://cdn.batbern.ch/{s3Key}
-     */
-    private String buildCloudFrontUrl(String s3Key) {
-        // For local MinIO, include bucket name in URL
-        if (cloudFrontDomain.contains("localhost")) {
-            return cloudFrontDomain + "/" + bucketName + "/" + s3Key;
-        }
-        // For CloudFront, bucket name is configured in CloudFront origin
-        return cloudFrontDomain + "/" + s3Key;
     }
 
     /**

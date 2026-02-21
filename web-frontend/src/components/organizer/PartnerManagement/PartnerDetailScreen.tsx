@@ -1,15 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  Box,
-  Container,
-  CircularProgress,
-  Alert,
-  AlertTitle,
-  Skeleton,
-  Stack,
-} from '@mui/material';
+import { Box, Container, Alert, AlertTitle, Skeleton, Stack } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -24,6 +16,7 @@ import { PartnerSettingsTab } from './PartnerSettingsTab';
 import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 
 /**
  * PartnerDetailScreen Component
@@ -80,7 +73,7 @@ export const PartnerDetailScreen: React.FC = () => {
     return (
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress role="progressbar" />
+          <BATbernLoader size={96} />
         </Box>
         <Stack spacing={2} sx={{ mt: 4 }}>
           <Skeleton variant="rectangular" height={200} />

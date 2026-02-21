@@ -21,11 +21,11 @@ export const testConfig = {
     title: 'Demo BATbern Event',
     eventType: 'EVENING', // Abend = Evening event (3-4 slots, 45 min each)
     date: '2042-02-04', // Format: YYYY-MM-DD
-    registrationDeadline: '2024-01-02',
+    registrationDeadline: '2042-02-01',
     venue: {
       name: 'Zentrum Paul Klee',
       address: 'Monument im Fruchtland, 3000 Bern',
-      capacity: 150,
+      capacity: 250,
     },
     description: 'Demo Event for the Userguide',
     venueImagePath: 'ChatGPT Image 4. Jan. 2026, 21_01_32.png', // Will need to be adjusted to test fixture

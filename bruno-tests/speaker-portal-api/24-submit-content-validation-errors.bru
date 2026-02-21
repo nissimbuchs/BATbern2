@@ -1,0 +1,34 @@
+meta {
+  name: Submit Content Validation Errors (Story 6.3)
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/content/submit
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{speakerViewToken}}",
+    "title": "",
+    "contentAbstract": ""
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 when title is empty - Story 6.3 AC5", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should include validation error message - Story 6.3 AC5", function() {
+    const body = res.getBody();
+    expect(body.message || body.error).to.be.a('string');
+  });
+}

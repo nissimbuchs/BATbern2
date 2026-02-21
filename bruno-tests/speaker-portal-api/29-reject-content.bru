@@ -1,0 +1,38 @@
+meta {
+  name: Reject Content With Feedback (Story 5.5)
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{baseUrl}}/events/{{testEventCode}}/speakers/{{rejectionSpeakerPoolId}}/review
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "action": "REJECT",
+    "feedback": "Please add more details about lessons learned and remove product promotion language."
+  }
+}
+
+assert {
+  res.status: eq 204
+}
+
+tests {
+  test("should return 204 No Content on successful rejection - Story 5.5 AC14", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+
+  test("should successfully reject speaker content with feedback - Story 5.5 AC14", function() {
+    // 204 indicates the content was rejected and speaker notified via email
+    // Status remains CONTENT_SUBMITTED, contentStatus set to REVISION_NEEDED
+    expect(res.getStatus()).to.equal(204);
+  });
+}

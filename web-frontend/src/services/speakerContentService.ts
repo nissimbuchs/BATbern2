@@ -29,12 +29,16 @@ export interface SubmitContentRequest {
  */
 export interface SpeakerContentResponse {
   poolId: string;
-  sessionId: string;
+  sessionId?: string;
   status: string;
-  presentationTitle: string;
-  presentationAbstract: string;
-  username: string;
+  presentationTitle?: string;
+  presentationAbstract?: string;
+  username?: string;
   warning?: string;
+  // Material fields (AC7)
+  hasMaterial?: boolean;
+  materialUrl?: string;
+  materialFileName?: string;
 }
 
 /**

@@ -6,6 +6,7 @@ import ch.batbern.companyuser.exception.FileSizeExceededException;
 import ch.batbern.companyuser.exception.InvalidFileTypeException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -145,7 +146,7 @@ public class ProfilePictureService {
 
         // Build CloudFront URL and S3 key
         String s3Key = findS3KeyByFileId(username, fileId, fileExtension);
-        String cloudFrontUrl = buildCloudFrontUrl(s3Key);
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key);
 
         // Update user with profile picture references
         user.setProfilePictureUrl(cloudFrontUrl);
@@ -169,22 +170,6 @@ public class ProfilePictureService {
                 username,
                 fileId,
                 extension);
-    }
-
-    /**
-     * Build CloudFront CDN URL from S3 key
-     * AC10.4: Serve profile pictures through CloudFront
-     * Note: In local development (MinIO), we need to include bucket name in path
-     * In production (CloudFront), the bucket is behind the CDN
-     */
-    private String buildCloudFrontUrl(String s3Key) {
-        // Check if we're in local development (MinIO) by checking if domain contains localhost
-        if (cloudFrontDomain.contains("localhost")) {
-            // Local MinIO: include bucket name in path
-            return cloudFrontDomain + "/" + bucketName + "/" + s3Key;
-        }
-        // Production CloudFront: bucket is behind CDN
-        return cloudFrontDomain + "/" + s3Key;
     }
 
     /**
@@ -279,7 +264,7 @@ public class ProfilePictureService {
         }
 
         // Build CloudFront URL and update user
-        String cloudFrontUrl = buildCloudFrontUrl(s3Key);
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, s3Key);
         user.setProfilePictureUrl(cloudFrontUrl);
         user.setProfilePictureS3Key(s3Key);
         userRepository.save(user);

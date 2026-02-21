@@ -20,8 +20,9 @@ import {
   TimelineDot,
   TimelineOppositeContent,
 } from '@mui/lab';
-import { Box, Typography, Paper, Chip, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Paper, Chip, Alert } from '@mui/material';
 import { Email as EmailIcon, Phone as PhoneIcon, Person as PersonIcon } from '@mui/icons-material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { useSpeakerOutreachHistory } from '../../../hooks/useSpeakerOutreach';
@@ -86,7 +87,7 @@ const OutreachHistoryTimeline: React.FC<OutreachHistoryTimelineProps> = ({
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" p={3}>
-        <CircularProgress size={24} />
+        <BATbernLoader size={64} />
       </Box>
     );
   }

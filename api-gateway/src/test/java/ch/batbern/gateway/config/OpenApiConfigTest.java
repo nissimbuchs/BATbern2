@@ -6,9 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,12 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Custom API information is present
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "aws.cognito.userPoolId=test-pool-id",
-    "aws.cognito.region=us-east-1",
-    "aws.cognito.userPoolClientId=test-client-id",
-    "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://test.example.com"
-})
+@ActiveProfiles("test")
+@Import(TestSecurityConfig.class)
 class OpenApiConfigTest {
 
     @LocalServerPort

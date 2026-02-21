@@ -1,0 +1,5476 @@
+openapi: 3.0.3
+info:
+  title: BATbern Events API
+  version: 1.0.0
+  description: |
+    Consolidated Events API for BATbern Event Management Platform.
+
+    This API consolidates 130 fragmented endpoints into 25 efficient endpoints using:
+    - **Resource Expansion**: `?include=` parameter for sub-resources
+    - **Rich Filtering**: JSON filter syntax for complex queries
+    - **Pagination**: Standard page/limit parameters
+    - **Caching**: Caffeine in-memory cache (15min TTL)
+
+    **Story**: 1.15a.1 - Events API Consolidation
+
+    **Performance Targets**:
+    - Event list (no includes): <100ms (P95)
+    - Event detail (basic): <150ms (P95)
+    - Event detail (all includes): <500ms (P95)
+    - Cached response: <50ms (P95)
+
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.batbern.ch/api/v1
+    description: Production
+  - url: https://api.staging.batbern.ch/api/v1
+    description: Staging
+  - url: http://localhost:8080/api/v1
+    description: Development
+
+tags:
+  - name: Events
+    description: Event CRUD and listing operations
+  - name: Event Types
+    description: Event type configuration management (Story 5.1)
+  - name: Event Actions
+    description: Event publishing and workflow operations
+  - name: Sessions
+    description: Event session management
+  - name: Registrations
+    description: Event registration management
+  - name: Analytics
+    description: Event analytics and metrics
+  - name: Bulk Operations
+    description: Batch operations on multiple events
+  - name: Topics
+    description: Topic management and backlog operations (Story 5.2)
+  - name: Speaker Outreach
+    description: Speaker outreach tracking and history (Story 5.3)
+
+paths:
+  /events:
+    get:
+      tags:
+        - Events
+      summary: List and search events
+      description: |
+        Retrieve a paginated list of events with optional filtering and sorting.
+
+        **Acceptance Criteria**: AC1
+
+        **Filter Syntax Examples**:
+        - Single filter: `{"workflowState":"PUBLISHED"}`
+        - Year filter: `{"year":2025}`
+        - Text search: `{"title":{"$contains":"Cloud"}}`
+        - Date range: `{"date":{"$gte":"2025-01-01T00:00:00Z","$lt":"2026-01-01T00:00:00Z"}}`
+        - Multiple filters: `{"workflowState":"PUBLISHED","year":2025}`
+        - Search with filter: `{"workflowState":"PUBLISHED","title":{"$contains":"Cloud"}}`
+        - Logical operators: `{"$or":[{"workflowState":"PUBLISHED"},{"workflowState":"ARCHIVED"}]}`
+        - In operator: `{"workflowState":{"$in":["PUBLISHED","ARCHIVED"]}}`
+
+        **Supported Filter Fields**:
+        - `year`: Integer (convenience filter, matches events from Jan 1 - Dec 31 of given year)
+        - `date`: ISO 8601 timestamp (supports $gte, $lte, $gt, $lt operators for date ranges)
+        - `workflowState`: String (single workflow state) or use `$in` operator for multiple states
+        - `eventNumber`: Integer (event number)
+        - `title`: String (supports $contains, $startsWith, $endsWith operators for text search)
+
+        **Sort Syntax**:
+        - Ascending: `date`
+        - Descending: `-date`
+
+        **Performance**: <100ms (P95)
+
+      operationId: listEvents
+      parameters:
+        - name: filter
+          in: query
+          description: JSON filter criteria
+          required: false
+          schema:
+            type: string
+            example: '{"workflowState":"PUBLISHED","year":2025}'
+        - name: sort
+          in: query
+          description: Sort field (prefix with - for descending)
+          required: false
+          schema:
+            type: string
+            example: '-date'
+        - name: page
+          in: query
+          description: Page number (0-indexed)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          description: Items per page (max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'venue,sessions'
+      responses:
+        '200':
+          description: Successful response with paginated events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+              examples:
+                basicList:
+                  summary: Basic event list
+                  value:
+                    data:
+                      - eventCode: BATbern142
+                        title: Spring Conference 2025
+                        eventNumber: 142
+                        date: 2025-05-15T09:00:00Z
+                        registrationDeadline: 2025-05-01T23:59:59Z
+                        venueName: Kursaal Bern
+                        venueAddress: Kornhausstrasse 3, 3013 Bern
+                        venueCapacity: 200
+                        workflowState: PUBLISHED
+                        organizerUsername: john.doe
+                        currentAttendeeCount: 187
+                        description: Cloud Native Architecture
+                    pagination:
+                      page: 0
+                      limit: 20
+                      totalItems: 1
+                      totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Events
+      summary: Create a new event
+      description: |
+        Create a new event with complete event data.
+
+        **Acceptance Criteria**: AC3
+
+        **Performance**: <200ms (P95)
+
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            examples:
+              basicEvent:
+                summary: Basic event creation
+                value:
+                  title: Summer Workshop 2025
+                  eventNumber: 143
+                  date: 2025-07-20T09:00:00Z
+                  registrationDeadline: 2025-07-10T23:59:59Z
+                  venueName: Kursaal Bern
+                  venueAddress: Kornhausstrasse 3, 3013 Bern
+                  venueCapacity: 150
+                  workflowState: CREATED
+                  organizerUsername: john.doe
+                  currentAttendeeCount: 0
+                  description: AI/ML in Production
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Bulk Operations
+      summary: Batch update multiple events
+      description: |
+        Update multiple events in a single request.
+
+        **Acceptance Criteria**: AC14
+
+        **Performance**: <1000ms for 50 events (P95)
+
+      operationId: batchUpdateEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchUpdateRequest'
+      responses:
+        '200':
+          description: Batch update completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUpdateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/current:
+    get:
+      tags:
+        - Events
+      summary: Get current published event
+      description: |
+        Retrieve the next upcoming published event for the public website.
+
+        **Story**: 4.1.3 - Public event landing page hero section
+        **Public Access**: No authentication required
+
+        Returns the earliest published event by date (next upcoming event).
+        If no published events exist, returns 404.
+
+        **Performance**: <150ms (P95)
+
+      operationId: getCurrentEvent
+      parameters:
+        - name: include
+          in: query
+          description: Comma-separated list of resources to expand (topics,venue,sessions)
+          required: false
+          schema:
+            type: string
+            example: 'topics,venue,sessions'
+      responses:
+        '200':
+          description: Current event retrieved successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit/miss indicator
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+              example:
+                eventCode: BATbern57
+                title: Cloud-Native Architecture in Practice
+                eventNumber: 57
+                workflowState: PUBLISHED
+                description: Join us for an evening exploring modern cloud-native architecture patterns and best practices.
+                date: '2025-03-15T18:00:00Z'
+                registrationDeadline: '2025-03-10T23:59:59Z'
+                venueName: Bern TechHub
+                venueAddress: Waisenhausplatz 30, 3014 Bern
+                venueCapacity: 120
+                organizerUsername: john.doe
+                currentAttendeeCount: 87
+                publishedAt: '2025-02-01T10:00:00Z'
+                venue:
+                  id: venue-001
+                  name: Bern TechHub
+                  capacity: 120
+                  address: Waisenhausplatz 30, 3014 Bern
+                topics:
+                  - id: topic-1
+                    name: Microservices
+                    color: blue
+                  - id: topic-2
+                    name: Kubernetes
+                    color: cyan
+        '404':
+          description: No current published event found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+              example:
+                error: Not Found
+                message: No current published event available
+                timestamp: '2025-03-15T12:00:00Z'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}:
+    get:
+      tags:
+        - Events
+      summary: Get event details
+      description: |
+        Retrieve detailed information about a specific event with optional resource expansion.
+
+        **Acceptance Criteria**: AC2
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Include Options**:
+        - `venue`: Venue details with address and capacity
+        - `sessions`: Event sessions with schedule (speakers included in sessions)
+        - `topics`: Event topics and categories
+        - `workflow`: Workflow state and history
+        - `registrations`: Registration counts and status
+        - `catering`: Catering arrangements
+        - `team`: Team assignments
+        - `publishing`: Publishing details
+        - `notifications`: Notification settings
+        - `analytics`: Event analytics and metrics
+
+        **Performance**:
+        - Basic (no includes): <150ms (P95)
+        - All includes: <500ms (P95)
+        - Cached: <50ms (P95)
+
+        **Caching**: 15-minute TTL with automatic invalidation on updates
+
+      operationId: getEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: include
+          in: query
+          description: Comma-separated list of resources to include
+          required: false
+          schema:
+            type: string
+            example: 'venue,sessions,workflow'
+      responses:
+        '200':
+          description: Event details retrieved successfully
+          headers:
+            X-Cache-Status:
+              description: Cache hit status (HIT or MISS)
+              schema:
+                type: string
+                enum: [HIT, MISS]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+              examples:
+                basicEvent:
+                  summary: Basic event (no includes)
+                  value:
+                    eventCode: BATbern142
+                    title: Spring Conference 2025
+                    eventNumber: 142
+                    date: 2025-05-15T09:00:00Z
+                    registrationDeadline: 2025-05-01T23:59:59Z
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
+                    workflowState: PUBLISHED
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
+                    description: Cloud Native Architecture
+                expandedEvent:
+                  summary: Event with venue
+                  value:
+                    eventCode: BATbern142
+                    title: Spring Conference 2025
+                    eventNumber: 142
+                    date: 2025-05-15T09:00:00Z
+                    registrationDeadline: 2025-05-01T23:59:59Z
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    venueCapacity: 500
+                    workflowState: PUBLISHED
+                    organizerUsername: john.doe
+                    currentAttendeeCount: 187
+                    description: Cloud Native Architecture
+                    venue:
+                      id: ven-001
+                      name: Kursaal Bern
+                      address: Kornhausstrasse 3, 3013 Bern
+                      capacity: 500
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Events
+      summary: Update event (full replacement)
+      description: |
+        Replace all event data with new data.
+
+        **Acceptance Criteria**: AC4
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Cache Invalidation**: All event caches cleared on update
+
+      operationId: updateEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Events
+      summary: Partially update event
+      description: |
+        Update specific fields of an event without replacing all data.
+
+        **Acceptance Criteria**: AC5
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Cache Invalidation**: All event caches cleared on update
+
+      operationId: patchEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequest'
+            examples:
+              updateTitle:
+                summary: Update only title
+                value:
+                  title: Spring Conference 2025 - Updated
+      responses:
+        '200':
+          description: Event patched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Events
+      summary: Delete event
+      description: |
+        Delete an event and all associated data.
+
+        **Acceptance Criteria**: AC6
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Cascade Deletion**: Deletes all sessions, registrations, and related data
+        **Cache Invalidation**: All event caches cleared on deletion
+
+      operationId: deleteEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '204':
+          description: Event deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/publish:
+    post:
+      tags:
+        - Event Actions
+      summary: Publish event
+      description: |
+        Publish an event after validation checks.
+
+        **Acceptance Criteria**: AC7
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Validation Rules**:
+        - Event must have a date
+        - Event must have a title
+        - Event must be in draft status
+
+        **Cache Invalidation**: All event caches cleared on publish
+
+      operationId: publishEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '200':
+          description: Event published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/workflow/advance:
+    post:
+      tags:
+        - Event Actions
+      summary: Advance workflow to next state
+      description: |
+        Advance event workflow to the next state in the state machine.
+
+        **Acceptance Criteria**: AC8
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Workflow States**:
+        1. draft → planning
+        2. planning → ready
+        3. ready → published
+        4. published → completed
+
+        **Invalid Transitions**: archived events cannot advance workflow
+
+        **Cache Invalidation**: All event caches cleared on workflow advance
+
+      operationId: advanceWorkflow
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '200':
+          description: Workflow advanced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/workflow/transition:
+    put:
+      tags:
+        - Event Actions
+      summary: Transition event to target workflow state
+      description: |
+        Transition an event to a specific target workflow state.
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+        **Acceptance Criteria**: AC12
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: 10 transitions per minute per user (API Gateway)
+        **Performance**: <200ms (P95)
+
+        **16-Step Workflow**:
+        1. CREATED - Initial state
+        2. TOPIC_SELECTION - Topics being selected
+        3. SPEAKER_BRAINSTORMING - Identifying potential speakers
+        4. SPEAKER_OUTREACH - Contacting speakers
+        5. SPEAKER_CONFIRMATION - Confirming speaker participation
+        6. CONTENT_COLLECTION - Collecting presentations and materials
+        7. QUALITY_REVIEW - Reviewing content quality
+        8. THRESHOLD_CHECK - Checking minimum speaker threshold
+        9. OVERFLOW_MANAGEMENT - Managing speaker overflow
+        10. SLOT_ASSIGNMENT - Assigning speakers to time slots
+        11. AGENDA_PUBLISHED - Publishing agenda
+        12. AGENDA_FINALIZED - Finalizing agenda
+        13. NEWSLETTER_SENT - Newsletter sent to attendees
+        14. EVENT_READY - Event ready to start
+        15. PARTNER_MEETING_COMPLETE - Partner meetings completed
+        16. ARCHIVED - Event archived
+
+        **Validation**:
+        - Some transitions require business rule validation (e.g., minimum speakers for SPEAKER_OUTREACH)
+        - Invalid transitions return 400 Bad Request
+        - Validation failures return 422 Unprocessable Entity
+
+        **Cache Invalidation**: All event caches cleared on state transition
+
+      operationId: transitionEventWorkflowState
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionStateRequest'
+            examples:
+              validTransition:
+                summary: Valid transition from CREATED to TOPIC_SELECTION
+                value:
+                  targetState: TOPIC_SELECTION
+      responses:
+        '200':
+          description: Workflow transition successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern142
+                  workflowState:
+                    type: string
+                    example: TOPIC_SELECTION
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidTransition:
+                  summary: Invalid transition (e.g., CREATED → ARCHIVED)
+                  value:
+                    timestamp: "2025-12-11T10:00:00Z"
+                    path: "/api/v1/events/BATbern142/workflow/transition"
+                    status: 400
+                    error: "Bad Request"
+                    message: "Invalid transition from CREATED to ARCHIVED"
+                    correlationId: "abc-123-def"
+                    severity: "MEDIUM"
+                    details:
+                      fromState: CREATED
+                      toState: ARCHIVED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failure (business rules not met)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientSpeakers:
+                  summary: Insufficient speakers for transition
+                  value:
+                    timestamp: "2025-12-11T10:00:00Z"
+                    path: "/api/v1/events/BATbern142/workflow/transition"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Insufficient speakers identified"
+                    correlationId: "abc-123-def"
+                    severity: "HIGH"
+                    details:
+                      required: 6
+                      identified: 3
+                      placeholder: true
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/workflow/status:
+    get:
+      tags:
+        - Event Actions
+      summary: Get current workflow status
+      description: |
+        Retrieve the current workflow status including current state, next available states,
+        and validation messages.
+
+        **Story**: 5.1a - Workflow State Machine Foundation
+        **Acceptance Criteria**: AC13
+        **Authorization**: Requires authentication (any authenticated user)
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Response includes**:
+        - Current workflow state
+        - Next available states (states that can be transitioned to)
+        - Blocked transitions (states that cannot be transitioned to due to business rules)
+        - Validation messages (reasons why certain transitions are blocked)
+
+        **Performance**: <100ms (P95)
+
+      operationId: getWorkflowStatus
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      responses:
+        '200':
+          description: Workflow status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowStatusDto'
+              examples:
+                createdState:
+                  summary: Event in CREATED state
+                  value:
+                    currentState: CREATED
+                    nextAvailableStates:
+                      - TOPIC_SELECTION
+                    blockedTransitions: []
+                    validationMessages: []
+                speakerBrainstormingState:
+                  summary: Event in SPEAKER_BRAINSTORMING state with validation blocker
+                  value:
+                    currentState: SPEAKER_BRAINSTORMING
+                    nextAvailableStates:
+                      - SPEAKER_OUTREACH
+                    blockedTransitions:
+                      - SPEAKER_OUTREACH
+                    validationMessages:
+                      - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/topics:
+    post:
+      tags:
+        - Event Actions
+      summary: Select topic for event
+      description: |
+        Assign a topic to an event and transition workflow state to TOPIC_SELECTION.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC14
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Workflow State Transition**:
+        - Valid source states: CREATED, TOPIC_SELECTION
+        - Target state: TOPIC_SELECTION
+        - Publishes EventWorkflowTransitionEvent domain event
+
+        **Business Rules**:
+        - Event must exist
+        - Topic must exist in topic backlog
+        - Event must be in CREATED or TOPIC_SELECTION state
+        - Organizer can change topic while in TOPIC_SELECTION state
+
+        **Performance**: <200ms (P95)
+
+      operationId: selectTopicForEvent
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - topicId
+              properties:
+                topicId:
+                  type: string
+                  format: uuid
+                  description: UUID of the topic to assign
+                  example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        '200':
+          description: Topic selected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventCode:
+                    type: string
+                    example: BATbern56
+                  topicId:
+                    type: string
+                    format: uuid
+                    example: 123e4567-e89b-12d3-a456-426614174000
+                  workflowState:
+                    type: string
+                    enum: [TOPIC_SELECTION]
+                    example: TOPIC_SELECTION
+                  message:
+                    type: string
+                    example: Topic selected successfully
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid state transition"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event or topic not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/topics"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/pool:
+    post:
+      tags:
+        - Event Actions
+      summary: Add speaker to event speaker pool
+      description: |
+        Add a potential speaker to the event speaker pool during brainstorming phase.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC9-13
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker name is required
+        - Company, expertise, and notes are optional
+        - Organizer assignment is optional (can be assigned later)
+        - Initial status is automatically set to 'identified'
+
+        **Performance**: <150ms (P95)
+
+      operationId: addSpeakerToPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSpeakerToPoolRequest'
+      responses:
+        '201':
+          description: Speaker added to pool successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerPoolResponse'
+        '400':
+          description: Validation error (e.g., speaker name missing)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker name is required"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Event not found: BATbern56"
+                timestamp: "2025-12-13T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/pool"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    get:
+      tags:
+        - Event Actions
+      summary: Get speaker pool for event
+      description: |
+        Retrieve all speakers in the event's speaker pool.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Performance**: <150ms (P95)
+
+      operationId: getSpeakerPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+      responses:
+        '200':
+          description: Speaker pool retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SpeakerPoolResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/pool/{speakerId}:
+    delete:
+      tags:
+        - Event Actions
+      summary: Delete speaker from event pool
+      description: |
+        Remove a speaker from the event's speaker pool.
+
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Event must exist
+        - Speaker must exist in the pool
+        - Can only delete speakers in IDENTIFIED or CONTACTED status
+
+        **Performance**: <150ms (P95)
+
+      operationId: deleteSpeakerFromPool
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '204':
+          description: Speaker deleted successfully
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/invite:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Invite a speaker to an event
+      description: |
+        Create a SpeakerPool entry for a speaker and optionally auto-create
+        a User account if one doesn't exist.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+        - Auto-creates a User via UserApiClient if no user exists for the email
+        - Speaker starts in IDENTIFIED status
+        - Cognito account is NOT created for speakers initially
+
+        **Performance**: <300ms (P95)
+
+      operationId: inviteSpeaker
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteSpeakerRequest'
+      responses:
+        '201':
+          description: Speaker invited successfully (new entry created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '200':
+          description: Speaker already exists in pool (idempotent return)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/invite-batch:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Batch invite speakers to an event
+      description: |
+        Invite multiple speakers in a single request with partial failure support.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC5 (batch)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Maximum 50 speakers per batch
+        - Processing continues even if individual invitations fail
+        - Returns 207 Multi-Status when some succeed and some fail
+
+        **Performance**: <2000ms (P95) for 50 speakers
+
+      operationId: inviteSpeakerBatch
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchInviteRequest'
+      responses:
+        '200':
+          description: All invitations processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '207':
+          description: Partial success - some invitations failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '400':
+          description: Validation error (e.g., empty speakers list)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{username}/send-invitation:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Send invitation email to a speaker
+      description: |
+        Send or resend a personalized invitation email with magic links for
+        accept/decline and a dashboard access link.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Speaker must exist in the pool for this event
+        - Transitions speaker status to INVITED
+        - Generates two magic link tokens:
+          - RESPOND token (single-use) for accept/decline
+          - VIEW token (reusable, 30-day expiry) for dashboard access
+        - Publishes SpeakerInvitationSentEvent domain event
+        - Records outreach history and status transition history
+        - Email sent asynchronously; failure does not block the response
+
+        **Performance**: <300ms (P95)
+
+      operationId: sendSpeakerInvitation
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+        - name: username
+          in: path
+          description: Speaker's username or UUID (for brainstormed speakers)
+          required: true
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvitationRequest'
+      responses:
+        '200':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendInvitationResponse'
+        '400':
+          description: Validation error (e.g., missing email, invalid deadlines)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{speakerId}/outreach:
+    post:
+      tags:
+        - Speaker Outreach
+      summary: Record speaker outreach attempt
+      description: |
+        Record a contact attempt with a potential speaker during outreach phase.
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+        **Acceptance Criteria**: AC1-4
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Business Rules**:
+        - Speaker must exist in speaker pool
+        - Speaker must be in IDENTIFIED, CONTACTED, or READY state
+        - Contact method must be email, phone, or in_person
+        - Automatically transitions speaker from IDENTIFIED → CONTACTED on first outreach
+        - Subsequent outreach attempts are logged without status change
+        - Organizer username is captured from authentication context
+
+        **State Transitions**:
+        - IDENTIFIED → CONTACTED (first outreach)
+        - CONTACTED → CONTACTED (additional outreach)
+        - READY → READY (follow-up outreach)
+
+        **Performance**: <200ms (P95)
+
+      operationId: recordSpeakerOutreach
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordOutreachRequest'
+      responses:
+        '201':
+          description: Outreach attempt recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutreachHistoryResponse'
+        '400':
+          description: Validation error (e.g., invalid contact method)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Invalid contact method: sms. Must be one of: email, phone, in_person"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 400
+                error: "Bad Request"
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker not found: 550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 404
+                error: "Not Found"
+        '409':
+          description: Invalid state transition (speaker not in valid state for outreach)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Cannot record outreach for speaker 550e8400-e29b-41d4-a716-446655440000 in state DECLINED. Speaker must be in IDENTIFIED, CONTACTED, or READY state."
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 409
+                error: "Conflict"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    get:
+      tags:
+        - Speaker Outreach
+      summary: Get speaker outreach history
+      description: |
+        Retrieve all outreach attempts for a speaker, ordered by most recent first.
+
+        **Story**: 5.3 - Speaker Outreach Tracking
+        **Acceptance Criteria**: AC6
+        **Authorization**: Requires ORGANIZER role
+        **Rate Limiting**: Applied at API Gateway level
+
+        **Response**:
+        - Returns chronological history of all contact attempts
+        - Includes contact method, date, notes, and organizer
+        - Ordered by contact date descending (most recent first)
+
+        **Performance**: <150ms (P95)
+
+      operationId: getSpeakerOutreachHistory
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern56
+        - name: speakerId
+          in: path
+          description: UUID of the speaker in the speaker pool
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Outreach history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutreachHistoryResponse'
+        '404':
+          description: Speaker or event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Speaker not found: 550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2025-12-14T10:00:00Z"
+                path: "/api/v1/events/BATbern56/speakers/550e8400-e29b-41d4-a716-446655440000/outreach"
+                status: 404
+                error: "Not Found"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/sessions:
+    get:
+      tags:
+        - Sessions
+      summary: List event sessions
+      description: |
+        Retrieve all sessions for a specific event with optional filtering.
+
+        **Acceptance Criteria**: AC9
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Filter Examples**:
+        - By type: `{"type":"keynote"}`
+        - By time range: `{"startTime":{"$gte":"2025-05-15T09:00:00Z"}}`
+
+      operationId: listSessions
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: filter
+          in: query
+          description: JSON filter criteria
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Sessions
+      summary: Create session
+      description: |
+        Create a new session for the event.
+
+        **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+      operationId: createSession
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/sessions/batch-import:
+    post:
+      tags:
+        - Sessions
+        - Bulk Operations
+      summary: Batch import sessions from legacy JSON
+      description: |
+        Import multiple sessions from sessions.json with speaker assignments.
+
+        **Features**:
+        - Duplicate detection by (event_id, title)
+        - Automatic speaker assignment via speakerId → username matching
+        - Sequential 45-minute time slot calculation
+        - Graceful error handling for missing speakers
+
+        **Note**: This endpoint is designed for historical data migration from
+        the legacy BATspa application. For normal session creation, use the
+        POST /events/{eventCode}/sessions endpoint.
+
+      operationId: batchImportSessions
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/BatchImportSessionRequest'
+            example:
+              - bat: 142
+                title: "User Interface Design"
+                abstract: "Discussion on modern UI patterns"
+                pdf: "BAT142_UI_Design.pdf"
+                referenten:
+                  - name: "Thomas Goetz, Die Mobiliar"
+                    bio: "Expert in UI design"
+                    company: "mobiliar"
+                    portrait: "thomas.goetz.jpg"
+                    speakerId: "thomas.goetz"
+      responses:
+        '200':
+          description: Import completed (may include skipped/failed sessions)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchImportSessionResult'
+              example:
+                totalProcessed: 3
+                successfullyCreated: 2
+                skipped: 1
+                failed: 0
+                details:
+                  - title: "User Interface Design"
+                    status: "success"
+                    message: "Session created successfully"
+                    sessionSlug: "user-interface-design-abc123"
+                  - title: "Backend Architecture"
+                    status: "skipped"
+                    message: "Session already exists with title 'Backend Architecture'"
+                  - title: "Database Design"
+                    status: "success"
+                    message: "Session created successfully"
+                    sessionSlug: "database-design-def456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/sessions/{sessionSlug}:
+    get:
+      tags:
+        - Sessions
+      summary: Get session details
+      description: |
+        Retrieve detailed information about a specific session including speakers.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+        **Story**: 4.1.3 - Public event discovery endpoints
+
+        Returns session information including:
+        - Session details (title, description, time, room)
+        - Speaker list with enriched User data
+        - Confirmation status for each speaker
+
+        **Public Endpoint**: No authentication required for GET requests
+      operationId: getSession
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: sessionSlug
+          in: path
+          description: URL-friendly slug generated from session title
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: opening-keynote
+        - name: expand
+          in: query
+          description: Optional expand parameter (currently speakers are always included)
+          required: false
+          schema:
+            type: string
+            example: 'speakers'
+      responses:
+        '200':
+          description: Session details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Sessions
+      summary: Update session
+      description: |
+        Update an existing session.
+
+        **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
+
+      operationId: updateSession
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: sessionSlug
+          in: path
+          description: URL-friendly slug generated from session title
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: keynote-opening-session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Sessions
+      summary: Delete session
+      description: |
+        Delete a session from the event.
+
+        **Acceptance Criteria**: AC10
+        **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
+
+      operationId: deleteSession
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: sessionSlug
+          in: path
+          description: URL-friendly slug generated from session title
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: keynote-opening-session
+      responses:
+        '204':
+          description: Session deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/sessions/{sessionSlug}/speakers:
+    get:
+      tags:
+        - Sessions
+      summary: List session speakers
+      description: |
+        Retrieve all speakers assigned to a specific session with enriched User data.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+
+        Returns speaker information including:
+        - User profile data (name, company, photo)
+        - Speaker role (primary, co-speaker, moderator, panelist)
+        - Confirmation status
+      operationId: listSessionSpeakers
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+            example: blockchain-security
+      responses:
+        '200':
+          description: List of session speakers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Sessions
+      summary: Assign speaker to session
+      description: |
+        Assign a user as a speaker to a session with a specific role.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+        **Authorization**: Requires ORGANIZER role
+
+        **Speaker Roles**:
+        - PRIMARY_SPEAKER: Main presenter
+        - CO_SPEAKER: Co-presenter
+        - MODERATOR: Panel moderator
+        - PANELIST: Panel participant
+      operationId: assignSpeakerToSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - speakerRole
+              properties:
+                username:
+                  type: string
+                  pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+                  example: john.doe
+                speakerRole:
+                  type: string
+                  enum: [PRIMARY_SPEAKER, CO_SPEAKER, MODERATOR, PANELIST]
+                  example: PRIMARY_SPEAKER
+                presentationTitle:
+                  type: string
+                  maxLength: 255
+                  example: Security Auditing Tools Deep Dive
+      responses:
+        '201':
+          description: Speaker assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Speaker already assigned to session
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}:
+    delete:
+      tags:
+        - Sessions
+      summary: Remove speaker from session
+      description: |
+        Remove a speaker assignment from a session.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+        **Authorization**: Requires ORGANIZER role
+      operationId: removeSpeakerFromSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+            example: john.doe
+      responses:
+        '204':
+          description: Speaker removed successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm:
+    post:
+      tags:
+        - Sessions
+      summary: Confirm speaker participation
+      description: |
+        Mark a speaker as confirmed for the session.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+        **Authorization**: Requires ORGANIZER role
+      operationId: confirmSpeaker
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Speaker confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline:
+    post:
+      tags:
+        - Sessions
+      summary: Decline speaker participation
+      description: |
+        Mark a speaker as declined for the session with an optional reason.
+
+        **Story**: 1.15a.1b - Session-User Many-to-Many Relationship
+        **Authorization**: Requires ORGANIZER role
+      operationId: declineSpeaker
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: sessionSlug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                declineReason:
+                  type: string
+                  example: Schedule conflict
+      responses:
+        '200':
+          description: Speaker declined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionSpeaker'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: List event registrations
+      description: |
+        Retrieve all registrations for a specific event with optional filtering.
+
+        **Acceptance Criteria**: AC11
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Filter Examples**:
+        - By status: `{"status":"confirmed"}`
+        - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+
+      operationId: listRegistrations
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: filter
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Registration'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationMetadata'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Registrations
+      summary: Create event registration (anonymous or authenticated)
+      description: |
+        Create a new registration for the event. Supports both anonymous and authenticated registration.
+
+        **Story**: 4.1.5a - Anonymous registration with email-based account linking (ADR-006)
+        **Security**: Public endpoint - no authentication required
+
+        **Anonymous Registration**:
+        - No authentication required
+        - Email serves as identifier
+        - Registration code generated (BAT-YYYY-NNNNNN)
+        - Confirmation email sent automatically
+
+        **Authenticated Registration**:
+        - If user is authenticated, linked to user account immediately
+        - Can view in dashboard
+
+        **Account Linking (ADR-006)**:
+        - When anonymous user creates account with same email, user_profile updated with cognito_user_id
+        - All past registrations automatically linked (via attendeeId FK to user_profiles)
+        - See ADR-006 for details
+
+      operationId: createRegistration
+      security: []  # Public endpoint
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationRequest'
+      responses:
+        '201':
+          description: Registration created successfully - confirmation email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - email
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful. Please check your email to confirm.
+                  email:
+                    type: string
+                    format: email
+                    example: john.doe@example.com
+                description: |
+                  **Story 4.1.5c**: Minimal response with no sensitive data.
+                  Confirmation token sent via email (not in response).
+                  User must click email link to confirm registration.
+        '400':
+          description: Invalid request (validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  summary: Duplicate registration
+                  value:
+                    error: Already registered
+                    message: This email is already registered for this event
+                    code: DUPLICATE_REGISTRATION
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          description: Rate limit exceeded (public endpoint protection)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/registrations/{registrationCode}:
+    get:
+      tags:
+        - Registrations
+      summary: Get registration by confirmation code
+      description: |
+        Retrieve registration details by confirmation code.
+
+        **Story**: 4.1.6 - Registration Confirmation
+        **Security**: Public endpoint - confirmation code acts as access token
+
+      operationId: getRegistration
+      security: []  # Public endpoint
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code in format BAT-YYYY-NNNNNN
+          required: true
+          schema:
+            type: string
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
+      responses:
+        '200':
+          description: Registration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '404':
+          description: Registration not found (invalid confirmation code)
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Registrations
+      summary: Update registration
+      description: |
+        Partially update a registration.
+
+        **Story**: 4.1.6 - Uses registrationCode
+
+      operationId: updateRegistration
+      security: []  # Public endpoint - confirmation code acts as access token
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code in format BAT-YYYY-NNNNNN
+          required: true
+          schema:
+            type: string
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRegistrationRequest'
+      responses:
+        '200':
+          description: Registration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Registration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Registrations
+      summary: Cancel registration
+      description: |
+        Cancel a registration from the event.
+
+        **Story**: 4.1.6 - Public cancellation with confirmation code
+
+      operationId: deleteRegistration
+      security: []  # Public endpoint - confirmation code acts as access token
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern25
+        - name: registrationCode
+          in: path
+          description: Registration code in format BAT-YYYY-NNNNNN
+          required: true
+          schema:
+            type: string
+            pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+            example: BAT-2025-000123
+      responses:
+        '204':
+          description: Registration deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/registrations/confirm:
+    post:
+      tags:
+        - Registrations
+      summary: Confirm registration via email token
+      description: |
+        Confirm a registration using the JWT token sent via email.
+
+        **Story**: 4.1.5c - Secure Email-Based Registration Confirmation
+        **Security**: Public endpoint - JWT token provides authentication and authorization
+
+        **Token Validation**:
+        - JWT signature verified (HMAC-SHA256)
+        - Token expiry checked (48 hours from registration)
+        - Token type must be "email-confirmation"
+        - Registration ID extracted from token claims
+        - Event code in URL must match event code in token
+
+        **Idempotency**: Can be called multiple times safely. Already confirmed registrations return 200 OK.
+
+      operationId: confirmRegistration
+      security: []  # Public endpoint - JWT token in query param provides security
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbernXXX
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern57
+        - name: token
+          in: query
+          description: JWT confirmation token from email link
+          required: true
+          schema:
+            type: string
+            example: eyJhbGciOiJIUzI1NiJ9.eyJyZWdpc3RyYXRpb25JZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsImV2ZW50Q29kZSI6IkJBVGJlcm41NyIsInR5cGUiOiJlbWFpbC1jb25maXJtYXRpb24iLCJpYXQiOjE3MDUwMDAwMDAsImV4cCI6MTcwNTE3MjgwMH0.signature
+      responses:
+        '200':
+          description: Registration confirmed successfully (or already confirmed)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - status
+                properties:
+                  message:
+                    type: string
+                    example: Registration confirmed successfully
+                  status:
+                    type: string
+                    enum: [CONFIRMED]
+                    example: CONFIRMED
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    error: Invalid token
+                    message: Token has expired (48 hour validity)
+                    code: TOKEN_EXPIRED
+                invalidToken:
+                  summary: Invalid token signature
+                  value:
+                    error: Invalid token
+                    message: Token signature validation failed
+                    code: INVALID_TOKEN
+        '404':
+          description: Registration not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Registration not found
+                code: REGISTRATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /registrations/cancel:
+    post:
+      tags:
+        - Registrations
+      summary: Cancel registration via email token
+      description: |
+        Cancel a registration using the JWT token sent via email.
+        Permanently deletes the registration from the database.
+
+        **Story**: Anonymous Cancellation Flow
+        **Security**: Public endpoint - JWT token provides authentication and authorization
+
+        **Token Validation**:
+        - JWT signature verified (HMAC-SHA256)
+        - Token expiry checked (48 hours from registration)
+        - Token type must be "registration-cancellation"
+        - Registration ID extracted from token claims
+
+        **Deletion**: Permanently removes registration from database. Cannot be undone.
+
+      operationId: cancelRegistration
+      security: []  # Public endpoint - JWT token in query param provides security
+      parameters:
+        - name: token
+          in: query
+          description: JWT cancellation token from email link
+          required: true
+          schema:
+            type: string
+            example: eyJhbGciOiJIUzI1NiJ9.eyJyZWdpc3RyYXRpb25JZCI6IjEyMzQ1Njc4LTkwYWItY2RlZi0xMjM0LTU2Nzg5MGFiY2RlZiIsImV2ZW50Q29kZSI6IkJBVGJlcm41NyIsInR5cGUiOiJyZWdpc3RyYXRpb24tY2FuY2VsbGF0aW9uIiwiaWF0IjoxNzA1MDAwMDAwLCJleHAiOjE3MDUxNzI4MDB9.signature
+      responses:
+        '200':
+          description: Registration cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - status
+                properties:
+                  message:
+                    type: string
+                    example: Registration cancelled successfully
+                  status:
+                    type: string
+                    enum: [CANCELLED]
+                    example: CANCELLED
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    error: Invalid token
+                    message: Token has expired (48 hour validity)
+                    code: TOKEN_EXPIRED
+                invalidToken:
+                  summary: Invalid token signature
+                  value:
+                    error: Invalid token
+                    message: Token signature validation failed
+                    code: INVALID_TOKEN
+        '404':
+          description: Registration not found or already cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Not found
+                message: Registration not found or already cancelled
+                code: REGISTRATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/batch_registrations:
+    post:
+      tags:
+        - Registrations
+      summary: Create batch event registrations for a participant
+      description: |
+        Creates multiple event registrations for a single participant in one transaction.
+        Used for bulk importing historical attendance data.
+
+        **Story**: BAT-12 - API Contract - Participant Batch Registration
+
+        **Behavior**:
+        - Creates user if doesn't exist (get-or-create by email)
+        - Skips duplicate registrations (idempotent)
+        - Returns partial success if some registrations fail
+
+        **Use Case**: Historical data migration for 2,307 participants
+
+        **Performance**: <500ms (P95) for 100 registrations
+      operationId: createBatchRegistrations
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRegistrationRequest'
+            examples:
+              historicalAttendee:
+                summary: Historical participant with multiple events
+                value:
+                  participantEmail: "adrian.buerki@centrisag.ch"
+                  firstName: "Adrian"
+                  lastName: "Bürki"
+                  registrations:
+                    - eventCode: "BATbern17"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern25"
+                      status: "ATTENDED"
+                    - eventCode: "BATbern31"
+                      status: "ATTENDED"
+              syntheticEmail:
+                summary: Participant with synthetic email
+                value:
+                  participantEmail: "max.muster@batbern.ch"
+                  firstName: "Max"
+                  lastName: "Muster"
+                  registrations:
+                    - eventCode: "BATbern1"
+                      status: "ATTENDED"
+      responses:
+        '200':
+          description: Batch registrations processed (full or partial success)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchRegistrationResponse'
+              examples:
+                fullSuccess:
+                  summary: All registrations successful
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 3
+                    failedRegistrations: []
+                    errors: []
+                partialSuccess:
+                  summary: Some registrations failed
+                  value:
+                    username: "adrian.buerki"
+                    totalRegistrations: 3
+                    successfulRegistrations: 2
+                    failedRegistrations:
+                      - eventCode: "BATbern99"
+                        reason: "Event not found"
+                    errors: ["Event BATbern99 not found"]
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    error: "Validation failed"
+                    message: "Invalid email format"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "participantEmail"
+                        message: "must be a well-formed email address"
+                emptyRegistrations:
+                  summary: Empty registrations array
+                  value:
+                    error: "Validation failed"
+                    message: "Registrations array cannot be empty"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at least 1 item"
+                tooManyRegistrations:
+                  summary: Too many registrations
+                  value:
+                    error: "Validation failed"
+                    message: "Too many registrations in batch"
+                    code: "VALIDATION_ERROR"
+                    details:
+                      - field: "registrations"
+                        message: "must contain at most 100 items"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Forbidden"
+                message: "This operation requires ORGANIZER role"
+                code: "INSUFFICIENT_PERMISSIONS"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/registrations:
+    get:
+      tags:
+        - Registrations
+      summary: List user registrations across all events
+      description: |
+        Retrieve all event registrations for a specific user.
+        Used by user detail page to show participation history.
+
+        **Story**: BAT-15 - Integration - Participant Batch Import
+        **Security**: Requires authentication
+      operationId: listUserRegistrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: attendeeUsername
+          in: query
+          description: Username to filter registrations
+          required: true
+          schema:
+            type: string
+            example: "a.roethlisberger"
+      responses:
+        '200':
+          description: User registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Registration'
+              example:
+                - registrationCode: "BATbern34-reg-A3X9K2"
+                  eventCode: "BATbern34"
+                  eventTitle: "Cloud Native Architecture"
+                  eventDate: "2023-03-15T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-02-01T10:30:00Z"
+                - registrationCode: "BATbern36-reg-B7Y1M4"
+                  eventCode: "BATbern36"
+                  eventTitle: "Microservices Patterns"
+                  eventDate: "2023-05-20T18:00:00Z"
+                  status: "attended"
+                  registrationDate: "2023-04-10T14:20:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get event analytics
+      description: |
+        Retrieve analytics data for a specific event.
+
+        **Acceptance Criteria**: AC13
+        **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+
+        **Metrics Available**:
+        - attendance: Attendance counts and trends
+        - registrations: Registration statistics
+        - engagement: User engagement metrics
+        - revenue: Revenue and ticket sales
+
+        **Timeframe Options**: day, week, month, all
+
+      operationId: getEventAnalytics
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+        - name: metrics
+          in: query
+          description: Comma-separated list of metrics
+          required: false
+          schema:
+            type: string
+            example: 'attendance,registrations,engagement'
+        - name: timeframe
+          in: query
+          description: Time period for analytics
+          required: false
+          schema:
+            type: string
+            enum: [day, week, month, all]
+            default: all
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventAnalytics'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /events/types:
+    get:
+      tags:
+        - Event Types
+      summary: List all event type configurations
+      description: |
+        Retrieve all event type configurations (FULL_DAY, AFTERNOON, EVENING).
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC1
+
+        Event types define slot requirements and templates for different event formats.
+        This endpoint returns cached configurations (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: listEventTypes
+      responses:
+        '200':
+          description: Event types retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              example:
+                - type: FULL_DAY
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 45
+                  theoreticalSlotsAM: true
+                  breakSlots: 2
+                  lunchSlots: 1
+                  defaultCapacity: 300
+                  typicalStartTime: "09:00"
+                  typicalEndTime: "16:00"
+                - type: AFTERNOON
+                  minSlots: 6
+                  maxSlots: 8
+                  slotDuration: 45
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 200
+                  typicalStartTime: "13:00"
+                  typicalEndTime: "19:00"
+                - type: EVENING
+                  minSlots: 3
+                  maxSlots: 4
+                  slotDuration: 45
+                  theoreticalSlotsAM: false
+                  breakSlots: 1
+                  lunchSlots: 0
+                  defaultCapacity: 200
+                  typicalStartTime: "16:00"
+                  typicalEndTime: "19:00"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /events/types/{type}:
+    get:
+      tags:
+        - Event Types
+      summary: Get specific event type configuration
+      description: |
+        Retrieve configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC2
+
+        Returns slot configuration details for the specified event type.
+        Cached response (Caffeine cache, 1 hour TTL).
+
+        **Performance**: <50ms (P95) - cached response
+      operationId: getEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      responses:
+        '200':
+          description: Event type configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Event Types
+      summary: Update event type configuration (ORGANIZER only)
+      description: |
+        Update configuration for a specific event type.
+
+        **Story**: 5.1 - Event Type Definition
+        **Acceptance Criteria**: AC3, AC8
+
+        **Authorization**: Requires ORGANIZER role
+
+        Updates slot configuration for the event type template.
+        Cache is automatically invalidated after successful update.
+
+        **Validation**:
+        - minSlots must be > 0
+        - maxSlots must be >= minSlots
+        - slotDuration must be >= 15 minutes
+        - defaultCapacity must be > 0
+      operationId: updateEventType
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Event type identifier
+          schema:
+            $ref: '#/components/schemas/EventType'
+          example: FULL_DAY
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventSlotConfigurationRequest'
+            example:
+              minSlots: 6
+              maxSlots: 8
+              slotDuration: 45
+              theoreticalSlotsAM: true
+              breakSlots: 2
+              lunchSlots: 1
+              defaultCapacity: 200
+              typicalStartTime: "09:00"
+              typicalEndTime: "17:00"
+      responses:
+        '200':
+          description: Event type configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSlotConfigurationResponse'
+        '400':
+          description: Validation error (e.g., minSlots > maxSlots)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - requires ORGANIZER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics:
+    get:
+      tags:
+        - Topics
+      summary: List all topics with filters and pagination
+      description: |
+        Retrieve topic backlog with optional category and status filters.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC1, AC2, AC6
+        **Authorization**: Requires ORGANIZER role
+        **Performance**: <150ms (P95) with database-level pagination
+
+        **Filtering**:
+        - Category filter: `?filter={"category":"technical"}`
+        - Status filter: `?filter={"status":"active"}` or `"inactive"`
+        - Combined: `?filter={"category":"technical","status":"active"}`
+
+        **Sorting**:
+        - Default: staleness score descending (safest topics first)
+        - Custom: `?sort=-stalenessScore` or `?sort=stalenessScore,desc`
+        - Supports: title, category, stalenessScore, usageCount, createdDate
+
+        **Pagination**:
+        - Default: page=1, limit=50
+        - Database-level pagination for performance
+
+        **Staleness Zones**:
+        - Green (83-100): Safe to use, recommended
+        - Yellow (50-82): Use with caution
+        - Red (0-49): Too recent, avoid reuse
+      operationId: listTopics
+      parameters:
+        - name: filter
+          in: query
+          description: JSON filter object
+          required: false
+          schema:
+            type: string
+            example: '{"category":"technical","status":"active"}'
+        - name: page
+          in: query
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 50
+        - name: sort
+          in: query
+          description: Sort parameter (e.g., "-stalenessScore" or "stalenessScore,desc")
+          schema:
+            type: string
+            example: "-stalenessScore"
+        - name: include
+          in: query
+          description: |
+            Comma-separated list of resources to include.
+            **GitHub Issue #379**: Added for heatmap visualization support.
+
+            **Supported values**:
+            - `history`: Embeds usage history with event details for each topic
+            - `similarity`: Recalculates similarity scores on-demand
+
+            **Performance impact**:
+            - Without includes: <150ms (P95)
+            - With `include=history`: <300ms (P95) - Single JOIN query
+            - With `include=similarity`: <500ms (P95) - TF-IDF recalculation
+          schema:
+            type: string
+            example: "history"
+          required: false
+      responses:
+        '200':
+          description: Topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicListResponse'
+              example:
+                data:
+                  - id: "123e4567-e89b-12d3-a456-426614174000"
+                    title: "Cloud Native Architecture Patterns"
+                    description: "Modern cloud-native design patterns and best practices"
+                    category: "technical"
+                    createdDate: "2023-01-15T10:00:00Z"
+                    lastUsedDate: "2024-03-20T14:30:00Z"
+                    usageCount: 3
+                    stalenessScore: 92
+                    colorZone: "green"
+                    status: "available"
+                    similarityScores: []
+                    active: true
+                    createdAt: "2023-01-15T10:00:00Z"
+                    updatedAt: "2024-03-20T14:30:00Z"
+                pagination:
+                  page: 1
+                  limit: 50
+                  total: 150
+        '400':
+          description: Invalid filter JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Topics
+      summary: Create new topic
+      description: |
+        Add new topic to backlog. Automatically calculates similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC8
+        **Authorization**: Requires ORGANIZER role
+
+        **Automatic Processing**:
+        - Staleness score initialized to 100 (safe to use immediately)
+        - Similarity scores calculated against all existing topics using TF-IDF
+        - Only similarity scores >30% are stored
+
+        **Duplicate Detection**:
+        - If similarity >70% to existing topic, warning is flagged
+        - Organizer can still create but should review similar topics first
+      operationId: createTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicRequest'
+            example:
+              title: "Kubernetes Security Best Practices"
+              description: "Deep dive into securing K8s clusters in production"
+              category: "technical"
+      responses:
+        '201':
+          description: Topic created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+              example:
+                id: "456e7890-e89b-12d3-a456-426614174001"
+                title: "Kubernetes Security Best Practices"
+                description: "Deep dive into securing K8s clusters in production"
+                category: "technical"
+                createdDate: "2025-12-13T10:00:00Z"
+                lastUsedDate: null
+                usageCount: 0
+                stalenessScore: 100
+                colorZone: "green"
+                status: "available"
+                similarityScores:
+                  - topicId: "123e4567-e89b-12d3-a456-426614174000"
+                    score: 0.65
+                active: true
+                createdAt: "2025-12-13T10:00:00Z"
+                updatedAt: "2025-12-13T10:00:00Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}:
+    get:
+      tags:
+        - Topics
+      summary: Get topic by ID
+      description: |
+        Retrieve topic details including similarity scores.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2, AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Optional Includes**:
+        - `?include=similarity` - Recalculates similarity scores on-demand
+      operationId: getTopicById
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+        - name: include
+          in: query
+          description: Comma-separated list of fields to include
+          schema:
+            type: string
+            example: "similarity"
+      responses:
+        '200':
+          description: Topic retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/override-staleness:
+    put:
+      tags:
+        - Topics
+      summary: Override staleness score with justification
+      description: |
+        Manually override staleness score for exceptional cases.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC7
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Evergreen content that's always relevant (set to 100)
+        - Time-sensitive topics that shouldn't be reused (set to 0)
+        - Special exceptions requiring organizer judgment
+
+        **Audit Trail**:
+        - Justification is required for compliance
+        - Override should be logged in audit system (future enhancement)
+
+        **Validation**:
+        - Score must be 0-100
+        - Justification must be non-empty
+      operationId: overrideTopicStaleness
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideStalenesRequest'
+            example:
+              stalenessScore: 100
+              justification: "Evergreen content - fundamentals of software architecture never go out of date"
+      responses:
+        '200':
+          description: Staleness score overridden successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/similar:
+    get:
+      tags:
+        - Topics
+      summary: Get similar topics (duplicate detection)
+      description: |
+        Retrieve topics with >70% similarity for duplicate detection.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC5
+        **Authorization**: Requires ORGANIZER role
+
+        **Similarity Algorithm**:
+        - TF-IDF vectorization of title + description
+        - Cosine similarity calculation
+        - >70% threshold indicates potential duplicate
+
+        **Frontend Integration**:
+        - Display warning when creating/selecting topics with high similarity
+        - Helps organizers avoid redundant content across events
+      operationId: getSimilarTopics
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Similar topics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicResponse'
+              example:
+                - id: "789e0123-e89b-12d3-a456-426614174002"
+                  title: "Cloud Architecture Best Practices"
+                  description: "Cloud-native architectural patterns for modern applications"
+                  category: "technical"
+                  stalenessScore: 78
+                  colorZone: "yellow"
+                  status: "caution"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/{id}/usage-history:
+    get:
+      tags:
+        - Topics
+      summary: Get topic usage history
+      description: |
+        Retrieve the usage history for a specific topic over the last 24 months.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC2
+        **Authorization**: Requires ORGANIZER role
+
+        **Usage**:
+        - Returns historical usage data for heat map visualization
+        - Grouped by event with attendance and engagement metrics
+        - Used to identify usage patterns and staleness trends
+
+        **Frontend Integration**:
+        - Powers the TopicHeatMap component
+        - Displays quarterly aggregated usage patterns
+        - Helps organizers make informed topic selection decisions
+      operationId: getTopicUsageHistory
+      parameters:
+        - name: id
+          in: path
+          description: Topic UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Usage history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicUsageHistory'
+              example:
+                - eventId: "event-abc-123"
+                  usedDate: "2024-01-15T10:00:00Z"
+                  attendance: 150
+                  engagementScore: 0.85
+                - eventId: "event-def-456"
+                  usedDate: "2024-04-20T10:00:00Z"
+                  attendance: 200
+                  engagementScore: 0.92
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/recalculate-staleness:
+    post:
+      tags:
+        - Topics
+      summary: Recalculate staleness scores for all topics
+      description: |
+        Maintenance endpoint to recalculate staleness for all topics.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC3
+        **Authorization**: Requires ORGANIZER role
+
+        **Scheduling**:
+        - Should be run periodically (e.g., monthly batch job)
+        - Updates staleness based on time since last use
+        - Does NOT override manual staleness adjustments
+
+        **Performance**:
+        - Runs asynchronously for large backlogs
+        - Returns immediately with count of topics queued
+      operationId: recalculateTopicStaleness
+      responses:
+        '200':
+          description: Staleness recalculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Staleness scores recalculated for 150 topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /topics/calculate-similarities:
+    post:
+      tags:
+        - Topics
+      summary: Calculate similarity scores for all topics
+      description: |
+        Maintenance endpoint to recalculate TF-IDF similarity matrix.
+
+        **Story**: 5.2 - Topic Selection & Speaker Brainstorming
+        **Acceptance Criteria**: AC4
+        **Authorization**: Requires ORGANIZER role
+
+        **Use Cases**:
+        - Initial data migration
+        - After bulk topic imports
+        - Periodic refresh of similarity scores
+
+        **Algorithm**:
+        - TF-IDF vectorization across all active topics
+        - Pairwise cosine similarity calculation
+        - Only stores scores >30% to save space
+
+        **Performance**:
+        - O(n²) complexity - expensive for large backlogs
+        - Should be run during off-peak hours
+      operationId: calculateTopicSimilarities
+      responses:
+        '200':
+          description: Similarity calculation started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Similarity scores calculated for all topics"
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+components:
+  schemas:
+    Event:
+      type: object
+      required:
+        - eventCode
+        - title
+        - eventNumber
+        - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
+        - organizerUsername
+      properties:
+        eventCode:
+          type: string
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+          description: |
+            Human-readable event identifier in format "BATbern{number}".
+            Story 1.16.2: Public API uses meaningful IDs, not UUIDs.
+        title:
+          type: string
+          maxLength: 255
+          example: Spring Conference 2025
+        eventNumber:
+          type: integer
+          example: 142
+          description: Sequential event number (e.g., BATbern #142)
+        date:
+          type: string
+          format: date-time
+          example: 2025-05-15T09:00:00Z
+          description: Event date
+        registrationDeadline:
+          type: string
+          format: date-time
+          example: 2025-05-01T23:59:59Z
+        venueName:
+          type: string
+          maxLength: 255
+          example: Kursaal Bern
+        venueAddress:
+          type: string
+          example: Kornhausstrasse 3, 3013 Bern
+        venueCapacity:
+          type: integer
+          example: 500
+        organizerUsername:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+        currentAttendeeCount:
+          type: integer
+          example: 0
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: string
+          description: JSONB metadata
+          example: '{"theme":"cloud-native","category":"technology"}'
+        description:
+          type: string
+          example: Cloud Native Architecture and Best Practices
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        themeImageUrl:
+          type: string
+          nullable: true
+          format: uri
+          maxLength: 1000
+          example: "https://d123456.cloudfront.net/logos/2025/events/BATbern57/theme-abc123.png"
+          description: |
+            CloudFront URL for event theme image.
+            Story 2.5.3a: Event Theme Image Upload
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: "abc123-def456"
+          description: |
+            Upload ID from three-phase upload pattern (internal reference).
+            Story 2.5.3a: Event Theme Image Upload
+            This is returned so the frontend can track what was uploaded.
+        topicCode:
+          type: string
+          nullable: true
+          pattern: '^[a-z0-9-]+$'
+          description: |
+            Topic code (slug-format identifier) of the selected topic.
+            Story 5.2: Topic Selection & Speaker Brainstorming
+            ADR-003: Meaningful Identifiers - use topicCode instead of UUID
+          example: 'cloud-native-security-2024'
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: |
+            Event type (FULL_DAY, AFTERNOON, EVENING).
+            Story 5.1: Event Type Definition
+        typicalStartTime:
+          type: string
+          format: time
+          description: |
+            Typical start time for this event type (from event_types table).
+            Combined with event date for display purposes.
+          example: "09:00"
+        typicalEndTime:
+          type: string
+          format: time
+          description: |
+            Typical end time for this event type (from event_types table).
+            Combined with event date for display purposes.
+          example: "16:00"
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+          description: |
+            Current workflow state (16-step workflow).
+            Story 5.1a: Event Workflow State Machine
+        # Optional resource expansion fields (Story BAT-109: Archive Browsing)
+        # These fields are populated only when requested via ?include parameter
+        topic:
+          type: object
+          nullable: true
+          description: |
+            Expanded topic details (only included when ?include=topics).
+            Story BAT-109: Archive browsing with topic expansion
+          properties:
+            code:
+              type: string
+              example: "cloud-native-security-2024"
+            name:
+              type: string
+              example: "Cloud Native Security"
+            description:
+              type: string
+              example: "Security patterns for cloud-native applications"
+            category:
+              type: string
+              enum: [technical, management, soft_skills, industry_trends, tools_platforms]
+              example: "technical"
+        venue:
+          $ref: '#/components/schemas/Venue'
+          nullable: true
+          description: |
+            Expanded venue details (only included when ?include=venue).
+            Story BAT-109: Archive browsing with venue expansion
+        sessions:
+          type: array
+          nullable: true
+          description: |
+            Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+            Story BAT-109: Archive browsing with session expansion
+          items:
+            $ref: '#/components/schemas/Session'
+
+    EventDetail:
+      allOf:
+        - $ref: '#/components/schemas/Event'
+        - type: object
+          properties:
+            venue:
+              $ref: '#/components/schemas/Venue'
+            sessions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Session'
+
+    Venue:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        capacity:
+          type: integer
+
+    Speaker:
+      type: object
+      description: |
+        Speaker information (speakers are users per Story 1.16.2)
+      properties:
+        username:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: Speaker username in firstname.lastname format (Story 1.16.2)
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+        title:
+          type: string
+        profilePhoto:
+          type: string
+          format: uri
+
+    Session:
+      type: object
+      description: |
+        Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
+
+        **Placeholder Session Pattern (V21):**
+        Sessions can be created as placeholders when speakers accept invitations.
+        Placeholder sessions have title but null sessionType/startTime/endTime.
+        Timing is assigned later during slot assignment workflow (Story 5.7).
+      required:
+        - sessionSlug
+        - eventCode
+        - title
+      properties:
+        sessionSlug:
+          type: string
+          description: URL-friendly slug generated from session title
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          example: keynote-opening-session
+          maxLength: 200
+        eventCode:
+          type: string
+          description: Event code this session belongs to
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sessionType:
+          type: string
+          nullable: true
+          description: Session type - null for placeholder sessions, assigned during agenda planning
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          example: keynote
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start time - null for placeholder sessions, assigned during slot assignment
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end time - null for placeholder sessions, assigned during slot assignment
+        room:
+          type: string
+          maxLength: 100
+          example: Main Hall
+        capacity:
+          type: integer
+          example: 200
+        language:
+          type: string
+          maxLength: 10
+          example: de
+          default: de
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        speakers:
+          type: array
+          description: |
+            Story 1.15a.1b: Session speakers with enriched User data
+            List of speakers assigned to this session with their roles
+          items:
+            $ref: '#/components/schemas/SessionSpeaker'
+        materialsStatus:
+          type: string
+          description: |
+            Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
+            Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
+          enum: [pending, in_review, approved, requires_changes, rejected, revision_submitted]
+          example: pending
+
+    SessionSpeaker:
+      type: object
+      description: |
+        Story 1.15a.1b: Session speaker with enriched User data
+        Combines SessionUser entity (role, confirmation) with User entity (name, company, photo)
+      required:
+        - username
+        - firstName
+        - lastName
+        - speakerRole
+        - isConfirmed
+      properties:
+        username:
+          type: string
+          description: User's username (public identifier from User entity)
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          maxLength: 100
+        firstName:
+          type: string
+          description: Speaker's first name (from User entity)
+          example: John
+          maxLength: 100
+        lastName:
+          type: string
+          description: Speaker's last name (from User entity)
+          example: Doe
+          maxLength: 100
+        company:
+          type: string
+          description: Speaker's company name (from User.companyId)
+          example: GoogleZH
+          maxLength: 12
+        profilePictureUrl:
+          type: string
+          format: uri
+          description: Speaker's profile picture URL (from User entity)
+          example: https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
+        bio:
+          type: string
+          description: Speaker's biography (from User entity)
+          maxLength: 2000
+          example: Software engineer passionate about cloud architecture and security
+        speakerRole:
+          type: string
+          enum: [PRIMARY_SPEAKER, CO_SPEAKER, MODERATOR, PANELIST]
+          description: |
+            Speaker's role in the session:
+            - PRIMARY_SPEAKER: Main presenter
+            - CO_SPEAKER: Co-presenter
+            - MODERATOR: Panel moderator
+            - PANELIST: Panel participant
+          example: PRIMARY_SPEAKER
+        presentationTitle:
+          type: string
+          description: Optional speaker-specific presentation title (if different from session title)
+          maxLength: 255
+          example: Security Auditing Tools Deep Dive
+        isConfirmed:
+          type: boolean
+          description: Whether speaker has confirmed participation
+          example: true
+
+    SessionResponse:
+      description: |
+        Story 1.15a.1b: Session response with embedded speakers
+        Same as Session schema but used specifically for API responses
+      allOf:
+        - $ref: '#/components/schemas/Session'
+
+    BatchImportSessionRequest:
+      type: object
+      description: |
+        Request payload for batch import from legacy sessions.json.
+        Designed for historical data migration from BATspa application.
+      required:
+        - bat
+        - title
+      properties:
+        bat:
+          type: integer
+          description: Event number (links to BATbern{bat})
+          example: 142
+        title:
+          type: string
+          description: Session title
+          maxLength: 255
+          example: "User Interface Design"
+        abstract:
+          type: string
+          description: Session abstract/description
+          example: "Discussion on modern UI patterns"
+        pdf:
+          type: string
+          description: PDF filename for reference (appended to description)
+          example: "BAT142_UI_Design.pdf"
+        authoren:
+          type: string
+          description: Moderator name (for Moderation sessions)
+          example: "Thomas Goetz"
+        referenten:
+          type: array
+          description: List of speakers for this session
+          items:
+            $ref: '#/components/schemas/LegacySpeaker'
+
+    LegacySpeaker:
+      type: object
+      description: |
+        Speaker data from legacy sessions.json.
+        speakerId is mapped to username for user lookup.
+      properties:
+        name:
+          type: string
+          description: Speaker full name
+          example: "Thomas Goetz, Die Mobiliar"
+        bio:
+          type: string
+          description: Speaker biography
+        company:
+          type: string
+          description: Company identifier
+          example: "mobiliar"
+        portrait:
+          type: string
+          description: Portrait filename
+          example: "thomas.goetz.jpg"
+        speakerId:
+          type: string
+          description: Speaker ID (maps to username in user_profiles)
+          example: "thomas.goetz"
+
+    BatchImportSessionResult:
+      type: object
+      description: |
+        Result of batch import operation with success/skip/fail counts.
+      required:
+        - totalProcessed
+        - successfullyCreated
+        - skipped
+        - failed
+        - details
+      properties:
+        totalProcessed:
+          type: integer
+          description: Total sessions processed
+          example: 3
+        successfullyCreated:
+          type: integer
+          description: Successfully created sessions
+          example: 2
+        skipped:
+          type: integer
+          description: Skipped sessions (duplicates)
+          example: 1
+        failed:
+          type: integer
+          description: Failed imports
+          example: 0
+        details:
+          type: array
+          description: Detailed results per session
+          items:
+            $ref: '#/components/schemas/SessionImportDetail'
+
+    SessionImportDetail:
+      type: object
+      description: |
+        Detail for a single session import result.
+      required:
+        - title
+        - status
+        - message
+      properties:
+        title:
+          type: string
+          description: Session title
+          example: "User Interface Design"
+        status:
+          type: string
+          enum: [success, skipped, failed]
+          description: Import status
+          example: "success"
+        message:
+          type: string
+          description: Status message
+          example: "Session created successfully"
+        sessionSlug:
+          type: string
+          description: Generated session slug (null if failed)
+          nullable: true
+          example: "user-interface-design-abc123"
+
+    Registration:
+      type: object
+      description: |
+        Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+        All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+      required:
+        - registrationCode
+        - eventCode
+        - status
+        - attendeeUsername
+      properties:
+        registrationCode:
+          type: string
+          description: Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
+          pattern: '^BAT-[0-9]{4}-[0-9]{6}$'
+          example: BAT-2025-000123
+        eventCode:
+          type: string
+          description: Event code this registration belongs to
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern25
+        eventTitle:
+          type: string
+          description: Event title (included for convenience)
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (included for convenience)
+
+        # User profile reference (unified approach - ADR-006, ADR-003)
+        attendeeUsername:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          description: |
+            Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
+            Format: firstname.lastname or firstname.lastname.2 for duplicates.
+            Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
+            ADR-006: Unified table eliminates need for separate anonymous_* fields.
+          example: john.doe
+
+        # Computed fields from user_profiles
+        firstName:
+          type: string
+          description: First name from user_profiles
+        lastName:
+          type: string
+          description: Last name from user_profiles
+        email:
+          type: string
+          format: email
+          description: Email from user_profiles
+        company:
+          type: string
+          description: Company name from user_profiles.company_id (FK to companies table)
+
+        # Registration metadata
+        status:
+          type: string
+          enum: [REGISTERED, WAITLISTED, CONFIRMED, CANCELLED, ATTENDED]
+        registrationDate:
+          type: string
+          format: date-time
+        sessionPreferences:
+          type: array
+          items:
+            type: string
+          description: Event-level registration - sessions are preferences only, not commitments
+        specialRequests:
+          type: string
+          nullable: true
+          description: Dietary preferences, accessibility needs, etc.
+        communicationPreferences:
+          type: object
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+            eventReminders:
+              type: boolean
+              default: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateEventRequest:
+      type: object
+      required:
+        - title
+        - eventNumber
+        - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
+        - organizerUsername
+        - eventType
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+          minimum: 1
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+        currentAttendeeCount:
+          type: integer
+          default: 0
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          example: "abc123-def456"
+          description: |
+            Upload ID from /logos/presigned-url for event theme image.
+            Story 2.5.3a: Event Theme Image Upload
+
+    UpdateEventRequest:
+      type: object
+      required:
+        - title
+        - eventNumber
+        - date
+        - registrationDeadline
+        - venueName
+        - venueAddress
+        - venueCapacity
+        - organizerUsername
+        - eventType
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        eventType:
+          $ref: '#/components/schemas/EventType'
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
+
+    PatchEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        eventNumber:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        registrationDeadline:
+          type: string
+          format: date-time
+        venueName:
+          type: string
+          maxLength: 255
+        venueAddress:
+          type: string
+        venueCapacity:
+          type: integer
+        workflowState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        organizerUsername:
+          type: string
+          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          example: john.doe
+          description: |
+            Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+            Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
+        currentAttendeeCount:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+        metadata:
+          type: string
+        description:
+          type: string
+          maxLength: 5000
+        themeImageUploadId:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Upload ID from /logos/presigned-url for event theme image
+
+    CreateSessionRequest:
+      type: object
+      description: |
+        Create session request - supports creating placeholder sessions.
+
+        **Placeholder Sessions**: Omit sessionType/startTime/endTime to create a placeholder.
+        Timing will be assigned later during slot assignment workflow (Story 5.7).
+
+        **Full Sessions**: Provide all fields to create a fully-defined session.
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sessionType:
+          type: string
+          nullable: true
+          description: Session type - omit for placeholder sessions
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start time - omit for placeholder sessions
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end time - omit for placeholder sessions
+        room:
+          type: string
+          maxLength: 100
+        capacity:
+          type: integer
+        language:
+          type: string
+          maxLength: 10
+          default: de
+
+    UpdateSessionRequest:
+      type: object
+      description: |
+        Update session request - supports partial updates and slot assignment.
+
+        **Slot Assignment**: Update only startTime/endTime/room to assign timing to placeholder session.
+        **Full Update**: Update any combination of fields.
+        **Clear Timing**: Set startTime/endTime/room to null to revert to placeholder.
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        sessionType:
+          type: string
+          nullable: true
+          description: Session type - can be null for placeholder sessions
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session start time - use for slot assignment, set to null to clear
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Session end time - use for slot assignment, set to null to clear
+        room:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Session room - assigned during slot assignment
+        capacity:
+          type: integer
+        language:
+          type: string
+          maxLength: 10
+
+    CreateRegistrationRequest:
+      type: object
+      description: |
+        Story 4.1.5a: Event registration request (ADR-006)
+        Public endpoint - no authentication required.
+        Creates user_profile with cognito_user_id = NULL for anonymous users.
+      required:
+        - email
+        - firstName
+        - lastName
+        - termsAccepted
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Email address for registration and confirmation
+          example: john.doe@example.com
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: First name
+          example: John
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Last name
+          example: Doe
+        company:
+          type: string
+          maxLength: 255
+          description: Company name (optional)
+          example: Acme Corp
+        role:
+          type: string
+          maxLength: 255
+          description: Job title/role (optional)
+          example: Software Architect
+        termsAccepted:
+          type: boolean
+          description: User must accept terms and conditions
+          example: true
+        communicationPreferences:
+          type: object
+          description: Email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              default: false
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              default: true
+              description: Receive event reminders
+        specialRequests:
+          type: string
+          description: Dietary preferences, accessibility needs, etc.
+          example: Vegetarian meal preference
+
+    PatchRegistrationRequest:
+      type: object
+      description: |
+        Story 4.1.5a/4.1.6: Update registration details
+        Public endpoint - uses confirmation code for access
+      properties:
+        specialRequests:
+          type: string
+          description: Update dietary preferences, accessibility needs, etc.
+          example: Vegan meal preference, wheelchair accessible seating
+        communicationPreferences:
+          type: object
+          description: Update email communication preferences
+          properties:
+            newsletterSubscribed:
+              type: boolean
+              description: Subscribe to newsletter
+            eventReminders:
+              type: boolean
+              description: Receive event reminders
+
+    BatchRegistrationRequest:
+      type: object
+      description: |
+        Story BAT-12: Batch registration request for historical data import.
+        Creates multiple event registrations for a single participant.
+      required:
+        - participantEmail
+        - firstName
+        - lastName
+        - registrations
+      properties:
+        participantEmail:
+          type: string
+          format: email
+          maxLength: 255
+          description: Participant email (used for user lookup/creation)
+          example: "adrian.buerki@centrisag.ch"
+        firstName:
+          type: string
+          maxLength: 100
+          description: Participant first name
+          example: "Adrian"
+        lastName:
+          type: string
+          maxLength: 100
+          description: Participant last name
+          example: "Bürki"
+        companyId:
+          type: string
+          maxLength: 100
+          description: |
+            Company identifier (company name).
+            Optional for participants without company affiliation.
+            Story 3.2: Batch import includes company information from CSV.
+          example: "Centris AG"
+        registrations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: Array of event registrations (max 100 per batch)
+          items:
+            $ref: '#/components/schemas/BatchRegistrationItem'
+
+    BatchRegistrationItem:
+      type: object
+      description: Single event registration within a batch
+      required:
+        - eventCode
+        - status
+      properties:
+        eventCode:
+          type: string
+          pattern: '^BATbern\d+$'
+          description: Event code in format BATbernN where N is event number
+          example: "BATbern25"
+        status:
+          type: string
+          enum: [REGISTERED, ATTENDED, CANCELLED]
+          description: Registration status (use 'ATTENDED' for historical data)
+          example: "ATTENDED"
+
+    BatchRegistrationResponse:
+      type: object
+      description: |
+        Response for batch registration operation.
+        Returns partial success - some registrations may fail while others succeed.
+      required:
+        - username
+        - totalRegistrations
+        - successfulRegistrations
+        - failedRegistrations
+        - errors
+      properties:
+        username:
+          type: string
+          description: Username of created/found participant
+          example: "adrian.buerki"
+        totalRegistrations:
+          type: integer
+          description: Total number of registrations attempted
+          example: 3
+        successfulRegistrations:
+          type: integer
+          description: Number of registrations successfully created
+          example: 3
+        failedRegistrations:
+          type: array
+          description: List of registrations that failed
+          items:
+            $ref: '#/components/schemas/FailedRegistration'
+        errors:
+          type: array
+          description: List of error messages
+          items:
+            type: string
+          example: ["Event BATbern99 not found"]
+
+    FailedRegistration:
+      type: object
+      description: Details of a failed registration within a batch
+      required:
+        - eventCode
+        - reason
+      properties:
+        eventCode:
+          type: string
+          description: Event code that failed
+          example: "BATbern99"
+        reason:
+          type: string
+          description: Reason for failure
+          example: "Event not found"
+
+    BatchUpdateRequest:
+      type: object
+      required:
+        - updates
+      properties:
+        updates:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              fields:
+                type: object
+
+    BatchUpdateResponse:
+      type: object
+      properties:
+        successful:
+          type: integer
+          example: 45
+        failed:
+          type: integer
+          example: 5
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              error:
+                type: string
+
+    EventAnalytics:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          pattern: '^BATbern[0-9]+$'
+          example: BATbern142
+          description: Event code in format BATbern{number} (Story 1.16.2)
+        totalRegistrations:
+          type: integer
+        confirmedAttendees:
+          type: integer
+        cancellations:
+          type: integer
+        waitlist:
+          type: integer
+        registrationTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              count:
+                type: integer
+
+    EventType:
+      type: string
+      description: |
+        Event type identifier (Story 5.1 - Event Type Definition).
+        Matches EventType enum from architecture (03-data-architecture.md:547-551).
+      enum:
+        - FULL_DAY
+        - AFTERNOON
+        - EVENING
+      example: FULL_DAY
+
+    EventSlotConfigurationResponse:
+      type: object
+      description: |
+        Event slot configuration for an event type (Story 5.1).
+        Defines slot requirements and scheduling parameters.
+      required:
+        - type
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+        - typicalStartTime
+        - typicalEndTime
+      properties:
+        type:
+          $ref: '#/components/schemas/EventType'
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+
+    UpdateEventSlotConfigurationRequest:
+      type: object
+      description: |
+        Request to update event slot configuration (Story 5.1).
+        All fields are required for update operation.
+      required:
+        - minSlots
+        - maxSlots
+        - slotDuration
+        - theoreticalSlotsAM
+        - breakSlots
+        - lunchSlots
+        - defaultCapacity
+      properties:
+        minSlots:
+          type: integer
+          minimum: 1
+          description: Minimum number of session slots
+          example: 6
+        maxSlots:
+          type: integer
+          minimum: 1
+          description: Maximum number of session slots (must be >= minSlots)
+          example: 8
+        slotDuration:
+          type: integer
+          minimum: 15
+          description: Duration of each slot in minutes
+          example: 45
+        theoreticalSlotsAM:
+          type: boolean
+          description: Whether theoretical presentations are scheduled in morning slots
+          example: true
+        breakSlots:
+          type: integer
+          minimum: 0
+          description: Number of break slots included in event
+          example: 2
+        lunchSlots:
+          type: integer
+          minimum: 0
+          description: Number of lunch slots included in event
+          example: 1
+        defaultCapacity:
+          type: integer
+          minimum: 1
+          description: Default attendee capacity for this event type
+          example: 200
+        typicalStartTime:
+          type: string
+          format: time
+          description: Typical start time for this event type
+          example: "09:00"
+          nullable: true
+        typicalEndTime:
+          type: string
+          format: time
+          description: Typical end time for this event type
+          example: "17:00"
+          nullable: true
+
+    PaginationMetadata:
+      type: object
+      description: Pagination metadata from shared-kernel
+      x-java-type: ch.batbern.shared.api.PaginationMetadata
+      x-java-type-import: ch.batbern.shared.api.PaginationMetadata
+
+    ErrorResponse:
+      type: object
+      description: Standard error response from shared-kernel
+      x-java-type: ch.batbern.shared.dto.ErrorResponse
+      x-java-type-import: ch.batbern.shared.dto.ErrorResponse
+
+    EventWorkflowState:
+      type: string
+      description: |
+        Event workflow state for 9-step consolidated workflow (reconciliation plan 2025-12-30).
+        Defines the current state of an event in the organizer workflow.
+        Previous 16-state workflow was consolidated to improve clarity and automation.
+      enum:
+        - CREATED
+        - TOPIC_SELECTION
+        - SPEAKER_IDENTIFICATION
+        - SLOT_ASSIGNMENT
+        - AGENDA_PUBLISHED
+        - AGENDA_FINALIZED
+        - EVENT_LIVE
+        - EVENT_COMPLETED
+        - ARCHIVED
+      example: SPEAKER_IDENTIFICATION
+
+    TransitionStateRequest:
+      type: object
+      description: |
+        Request to transition event to target workflow state (Story 5.1a - AC12).
+        The target state must be a valid transition from the current state.
+      required:
+        - targetState
+      properties:
+        targetState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        overrideValidation:
+          type: boolean
+          nullable: true
+          description: |
+            Override workflow validation flag.
+            When true, allows any state transition bypassing validation rules.
+            Defaults to false if not provided.
+          default: false
+        overrideReason:
+          type: string
+          maxLength: 500
+          description: |
+            Optional reason for overriding workflow validation.
+            Used for audit trail when overrideValidation is true.
+
+    WorkflowStatusDto:
+      type: object
+      description: |
+        Current workflow status including available and blocked transitions (Story 5.1a - AC13).
+        Provides organizers with visibility into what transitions are possible and why.
+      required:
+        - currentState
+        - nextAvailableStates
+        - blockedTransitions
+        - validationMessages
+      properties:
+        currentState:
+          $ref: '#/components/schemas/EventWorkflowState'
+        nextAvailableStates:
+          type: array
+          description: List of states that can be transitioned to from current state
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+            - SPEAKER_OUTREACH
+        blockedTransitions:
+          type: array
+          description: List of states that are blocked due to validation failures
+          items:
+            $ref: '#/components/schemas/EventWorkflowState'
+          example:
+            - SPEAKER_OUTREACH
+        validationMessages:
+          type: array
+          description: Validation messages explaining why certain transitions are blocked
+          items:
+            type: string
+          example:
+            - "Cannot transition to SPEAKER_OUTREACH: Insufficient speakers identified (need 6, have 3)"
+
+    AddSpeakerToPoolRequest:
+      type: object
+      description: |
+        Request to add a potential speaker to the event speaker pool during brainstorming phase.
+        Story 5.2 - AC9-12: Speaker Pool Management
+      required:
+        - speakerName
+      properties:
+        speakerName:
+          type: string
+          maxLength: 255
+          description: Name of the potential speaker (required)
+          example: Jane Smith
+        company:
+          type: string
+          maxLength: 255
+          description: Company or organization of the speaker (optional)
+          example: Tech Corp AG
+        expertise:
+          type: string
+          description: Areas of expertise (optional)
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          maxLength: 255
+          description: Username of organizer assigned for outreach (optional)
+          example: alice.mueller
+        notes:
+          type: string
+          description: Free-text notes about the speaker (optional)
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern. Follow up next week.
+
+    SpeakerPoolResponse:
+      type: object
+      description: |
+        Response representing a speaker pool entry.
+        Story 5.2 - AC9-13: Speaker Pool Management
+      required:
+        - id
+        - eventId
+        - speakerName
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the speaker pool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        eventId:
+          type: string
+          format: uuid
+          description: UUID of the event this speaker is associated with
+          example: 789e4567-e89b-12d3-a456-426614174111
+        speakerName:
+          type: string
+          description: Name of the potential speaker
+          example: Jane Smith
+        company:
+          type: string
+          nullable: true
+          description: Company or organization of the speaker
+          example: Tech Corp AG
+        expertise:
+          type: string
+          nullable: true
+          description: Areas of expertise
+          example: Cloud Architecture, Kubernetes, DevOps
+        assignedOrganizerId:
+          type: string
+          nullable: true
+          description: Username of organizer assigned for outreach
+          example: alice.mueller
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: |
+            Current status of the speaker in the pool workflow.
+            Story 5.2 - AC13: Initial status = 'identified'
+          example: identified
+        notes:
+          type: string
+          nullable: true
+          description: Free-text notes about the speaker
+          example: Met at KubeCon 2024. Very enthusiastic about BATbern.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when speaker was added to pool
+          example: 2025-12-13T10:00:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-13T10:15:00Z
+
+    RecordOutreachRequest:
+      type: object
+      description: |
+        Request to record a speaker outreach attempt.
+        Story 5.3 - AC1-4: Speaker Outreach Tracking
+      required:
+        - contactDate
+        - contactMethod
+      properties:
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14T14:30:00Z
+        contactMethod:
+          type: string
+          enum:
+            - email
+            - phone
+            - in_person
+          description: |
+            Method of contact used to reach the speaker.
+            Valid values: email, phone, in_person
+          example: email
+        notes:
+          type: string
+          maxLength: 5000
+          description: |
+            Free-text notes about the conversation.
+            Organizers record speaker response, next steps, availability, etc.
+          example: |
+            Spoke with Jane about presenting on Kubernetes security.
+            She's interested but needs to check her calendar.
+            Follow up next Tuesday.
+
+    OutreachHistoryResponse:
+      type: object
+      description: |
+        Response representing a speaker outreach attempt.
+        Story 5.3 - AC5-6: Speaker Outreach History
+      required:
+        - id
+        - speakerPoolId
+        - contactDate
+        - contactMethod
+        - organizerUsername
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for this outreach record
+          example: 550e8400-e29b-41d4-a716-446655440000
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the speaker in the speaker pool
+          example: 123e4567-e89b-12d3-a456-426614174000
+        contactDate:
+          type: string
+          format: date-time
+          description: Date and time when contact was made
+          example: 2025-12-14T14:30:00Z
+        contactMethod:
+          type: string
+          enum:
+            - email
+            - phone
+            - in_person
+          description: Method of contact used
+          example: email
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the conversation
+          example: |
+            Spoke with Jane about presenting on Kubernetes security.
+            She's interested but needs to check her calendar.
+            Follow up next Tuesday.
+        organizerUsername:
+          type: string
+          description: Username of the organizer who made the contact
+          example: alice.mueller
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when outreach record was created
+          example: 2025-12-14T14:35:00Z
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of last update
+          example: 2025-12-14T14:35:00Z
+
+    InviteSpeakerRequest:
+      type: object
+      description: |
+        Request to invite a speaker to an event.
+        Story 6.1b - AC1: Speaker Invitation
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          nullable: true
+          description: Speaker's first name (used for user creation if not found)
+          example: Jane
+        lastName:
+          type: string
+          nullable: true
+          description: Speaker's last name (used for user creation if not found)
+          example: Smith
+        company:
+          type: string
+          nullable: true
+          description: Speaker's company name
+          example: Tech Corp AG
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session to assign speaker to (optional)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the speaker
+          example: Expert in cloud architecture
+
+    InviteSpeakerResponse:
+      type: object
+      description: |
+        Response for a speaker invitation.
+        Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+      required:
+        - speakerPoolId
+        - email
+        - speakerName
+        - status
+        - created
+        - createdAt
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        speakerName:
+          type: string
+          description: Display name of the speaker
+          example: Jane Smith
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: Current workflow status
+          example: identified
+        created:
+          type: boolean
+          description: True if newly created, false if existing (idempotent return)
+          example: true
+        userCreated:
+          type: boolean
+          description: True if a new User account was created
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: When the SpeakerPool entry was created
+          example: 2026-01-15T10:00:00Z
+
+    BatchInviteRequest:
+      type: object
+      description: |
+        Request to invite multiple speakers in a batch.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - speakers
+      properties:
+        speakers:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: List of speakers to invite (1-50 per batch)
+          items:
+            $ref: '#/components/schemas/InviteSpeakerRequest'
+
+    BatchInviteResponse:
+      type: object
+      description: |
+        Response for a batch speaker invitation with partial failure support.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - totalRequested
+        - successCount
+        - failedCount
+        - results
+        - errors
+      properties:
+        totalRequested:
+          type: integer
+          description: Total number of speakers requested
+          example: 5
+        successCount:
+          type: integer
+          description: Number of speakers successfully invited
+          example: 4
+        failedCount:
+          type: integer
+          description: Number of failed invitations
+          example: 1
+        results:
+          type: array
+          description: Individual results for successful invitations
+          items:
+            $ref: '#/components/schemas/InviteSpeakerResponse'
+        errors:
+          type: array
+          description: Details of failed invitations
+          items:
+            type: object
+            required:
+              - email
+              - errorCode
+              - errorMessage
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email of the speaker that failed
+                example: invalid@broken.test
+              errorCode:
+                type: string
+                description: Error classification code
+                enum:
+                  - INVALID_REQUEST
+                  - EVENT_NOT_FOUND
+                  - USER_SERVICE_ERROR
+                  - INTERNAL_ERROR
+                example: USER_SERVICE_ERROR
+              errorMessage:
+                type: string
+                description: Human-readable error message
+                example: Failed to create user account
+
+    SendInvitationRequest:
+      type: object
+      description: |
+        Request to send/resend an invitation email to a speaker.
+        Story 6.1b - AC3: Invitation Email
+
+        The email includes:
+        - Accept/decline magic links (single-use RESPOND token)
+        - Dashboard access link (reusable VIEW token)
+        - Event details, deadlines, and session info
+      required:
+        - responseDeadline
+      properties:
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond (must be in the future)
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for speaker to submit content (must be after responseDeadline)
+          example: '2026-03-10'
+        locale:
+          type: string
+          nullable: true
+          description: Preferred language for the email (defaults to 'de')
+          enum:
+            - de
+            - en
+          example: de
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Override email address (for speakers without email in database)
+          example: jane.smith@example.com
+
+    SendInvitationResponse:
+      type: object
+      description: |
+        Response after sending an invitation email.
+        Story 6.1b - AC3: Invitation Email
+      required:
+        - speakerPoolId
+        - status
+        - invitedAt
+        - responseDeadline
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        status:
+          type: string
+          enum:
+            - invited
+          description: Updated status (always INVITED after sending)
+          example: invited
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the invitation was sent
+          example: 2026-01-15T10:00:00Z
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for content submission
+          example: '2026-03-10'
+
+    TopicResponse:
+      type: object
+      description: Topic response with staleness score and similarity information
+      required:
+        - id
+        - title
+        - category
+        - stalenessScore
+        - colorZone
+        - status
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Topic unique identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          maxLength: 500
+          description: Topic title
+          example: "Cloud Native Architecture Patterns"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Modern cloud-native design patterns and best practices"
+        category:
+          type: string
+          description: Topic category (e.g., technical, business, soft-skills)
+          example: "technical"
+        createdDate:
+          type: string
+          format: date-time
+          description: When the topic was created
+          example: "2023-01-15T10:00:00Z"
+        lastUsedDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the topic was last used in an event
+          example: "2024-03-20T14:30:00Z"
+        usageCount:
+          type: integer
+          minimum: 0
+          description: Number of times topic has been used
+          example: 3
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: |
+            Staleness score (0-100) based on time since last use.
+            Higher = safer to reuse.
+            Green zone (83-100): Safe to use
+            Yellow zone (50-82): Use with caution
+            Red zone (0-49): Too recent, avoid
+          example: 92
+        colorZone:
+          type: string
+          enum: [green, yellow, red, gray]
+          description: Visual indicator based on staleness score
+          example: "green"
+        status:
+          type: string
+          enum: [available, caution, unavailable]
+          description: Usability status derived from staleness score
+          example: "available"
+        similarityScores:
+          type: array
+          description: List of similar topics with similarity scores >30%
+          items:
+            $ref: '#/components/schemas/SimilarityScore'
+          example:
+            - topicId: "789e0123-e89b-12d3-a456-426614174002"
+              score: 0.65
+        active:
+          type: boolean
+          description: Whether the topic is active in the backlog
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was created
+          example: "2023-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Audit timestamp - when record was last updated
+          example: "2024-03-20T14:30:00Z"
+        usageHistory:
+          type: array
+          description: |
+            **GitHub Issue #379**: Usage history for this topic (only populated when `include=history`)
+            Contains historical usage data with event details for heatmap visualization
+          nullable: true
+          items:
+            $ref: '#/components/schemas/TopicUsageHistory'
+          example:
+            - eventId: "456e7890-e89b-12d3-a456-426614174001"
+              eventCode: "BATbern56"
+              eventDate: "2024-01-15T18:00:00Z"
+              usedDate: "2024-01-15T10:00:00Z"
+              attendance: 150
+              engagementScore: 0.85
+
+    SimilarityScore:
+      type: object
+      description: Similarity score between two topics (TF-IDF + cosine similarity)
+      required:
+        - topicId
+        - score
+      properties:
+        topicId:
+          type: string
+          format: uuid
+          description: UUID of the similar topic
+          example: "789e0123-e89b-12d3-a456-426614174002"
+        score:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Cosine similarity score (0.0-1.0). >0.7 indicates potential duplicate.
+          example: 0.65
+
+    TopicUsageHistory:
+      type: object
+      description: |
+        Historical usage record of a topic in a specific event.
+        **GitHub Issue #379**: Enhanced with eventCode and eventDate for heatmap visualization.
+        Returns eventNumber instead of UUID per architectural requirement (no UUIDs in API).
+      required:
+        - eventNumber
+        - eventCode
+        - eventDate
+        - usedDate
+        - attendance
+        - engagementScore
+      properties:
+        eventNumber:
+          type: integer
+          description: Event number (e.g., 56 for BATbern56) - no UUIDs in API
+          example: 56
+        eventCode:
+          type: string
+          description: |
+            **GitHub Issue #379**: Human-readable event code (e.g., "BATbern56").
+            Provides meaningful event identification instead of UUID.
+          example: "BATbern56"
+        eventDate:
+          type: string
+          format: date-time
+          description: |
+            **GitHub Issue #379**: Actual date of the event.
+            Used for heatmap visualization and chronological sorting.
+          example: "2024-01-15T18:00:00Z"
+        usedDate:
+          type: string
+          format: date-time
+          description: When the topic was used in the event (typically same as eventDate)
+          example: "2024-01-15T10:00:00Z"
+        attendance:
+          type: integer
+          minimum: 0
+          description: Number of attendees at the event
+          example: 150
+        engagementScore:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: Engagement score for the topic (0.0-1.0). Higher indicates better audience engagement.
+          example: 0.85
+
+    TopicRequest:
+      type: object
+      description: Request to create a new topic
+      required:
+        - title
+        - category
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Topic title
+          example: "Kubernetes Security Best Practices"
+        description:
+          type: string
+          nullable: true
+          maxLength: 5000
+          description: Detailed topic description
+          example: "Deep dive into securing K8s clusters in production"
+        category:
+          type: string
+          minLength: 1
+          description: Topic category
+          example: "technical"
+
+    TopicListResponse:
+      type: object
+      description: Paginated list of topics with metadata
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          description: List of topics for current page
+          items:
+            $ref: '#/components/schemas/TopicResponse'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+
+    OverrideStalenesRequest:
+      type: object
+      description: Request to manually override staleness score
+      required:
+        - stalenessScore
+        - justification
+      properties:
+        stalenessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: New staleness score (0-100)
+          example: 100
+        justification:
+          type: string
+          minLength: 1
+          description: Required justification for override (for audit trail)
+          example: "Evergreen content - fundamentals of software architecture never go out of date"
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: BAD_REQUEST
+                message: Invalid filter syntax
+                timestamp: 2025-01-15T10:30:00Z
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            eventNotFound:
+              value:
+                error: RESOURCE_NOT_FOUND
+                errorCode: NOT_FOUND
+                message: Event not found with id evt-999
+                timestamp: 2025-01-15T10:30:00Z
+
+    UnprocessableEntity:
+      description: Request cannot be processed due to business logic
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            workflowError:
+              value:
+                error: WORKFLOW_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Cannot advance workflow for archived event
+                timestamp: 2025-01-15T10:30:00Z
+            validationError:
+              value:
+                error: VALIDATION_ERROR
+                errorCode: UNPROCESSABLE_ENTITY
+                message: Event must have a date before publishing
+                timestamp: 2025-01-15T10:30:00Z
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              value:
+                error: INTERNAL_SERVER_ERROR
+                errorCode: INTERNAL_ERROR
+                message: An unexpected error occurred
+                timestamp: 2025-01-15T10:30:00Z
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbiddenError:
+              value:
+                error: FORBIDDEN
+                errorCode: FORBIDDEN
+                message: "Insufficient permissions to perform this action"
+                timestamp: "2025-01-15T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingToken:
+              value:
+                error: UNAUTHORIZED
+                errorCode: UNAUTHORIZED
+                message: "Authentication token is missing or invalid"
+                timestamp: "2025-01-15T10:30:00Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token
+
+security:
+  - BearerAuth: []

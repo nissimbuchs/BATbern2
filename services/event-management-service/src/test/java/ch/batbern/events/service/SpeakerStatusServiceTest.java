@@ -9,9 +9,11 @@ import ch.batbern.events.dto.UpdateStatusRequest;
 import ch.batbern.events.dto.generated.EventSlotConfigurationResponse;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.events.validator.StatusTransitionValidator;
+import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,16 +62,22 @@ public class SpeakerStatusServiceTest {
     private EventRepository eventRepository;
 
     @Mock
+    private SessionRepository sessionRepository;
+
+    @Mock
     private EventTypeService eventTypeService;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+
     private SpeakerStatusService service;
 
     @BeforeEach
     void setUp() {
-        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, eventTypeService, eventPublisher);
+        service = new SpeakerStatusService(repository, validator, speakerPoolRepository, eventRepository, sessionRepository, eventTypeService, eventPublisher, domainEventPublisher);
     }
 
     /**
@@ -251,5 +260,89 @@ public class SpeakerStatusServiceTest {
             service.getStatusHistory(eventCode, speakerId)
         ).isInstanceOf(NotFoundException.class)
          .hasMessageContaining("No status history found");
+    }
+
+    /**
+     * Session cleanup: should delete session when speaker with session is declined
+     */
+    @Test
+    @DisplayName("Should delete associated session when speaker with session is declined")
+    void should_deleteSession_when_speakerDeclinedWithSession() {
+        // Given
+        String eventCode = "BATbern998";
+        UUID eventId = UUID.randomUUID();
+        UUID speakerId = UUID.randomUUID();
+        UUID sessionId = UUID.randomUUID();
+        String organizerUsername = "organizer@example.com";
+
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setNewStatus(SpeakerWorkflowState.DECLINED);
+        request.setReason("Speaker unavailable");
+
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerId);
+        speaker.setSessionId(sessionId);
+        speaker.setEventId(eventId);
+        speaker.setStatus(SpeakerWorkflowState.CONTENT_SUBMITTED);
+
+        when(speakerPoolRepository.findById(speakerId))
+            .thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(eventId))
+            .thenReturn(Optional.of(event));
+        when(repository.save(any(SpeakerStatusHistory.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        SpeakerStatusResponse response = service.updateStatus(eventCode, speakerId, organizerUsername, request);
+
+        // Then
+        assertThat(response.getCurrentStatus()).isEqualTo(SpeakerWorkflowState.DECLINED);
+        assertThat(speaker.getSessionId()).isNull();
+        verify(sessionRepository).deleteById(sessionId);
+    }
+
+    /**
+     * Session cleanup: should NOT attempt session deletion when declining speaker without session
+     */
+    @Test
+    @DisplayName("Should not delete session when speaker without session is declined")
+    void should_notDeleteSession_when_speakerDeclinedWithoutSession() {
+        // Given
+        String eventCode = "BATbern998";
+        UUID eventId = UUID.randomUUID();
+        UUID speakerId = UUID.randomUUID();
+        String organizerUsername = "organizer@example.com";
+
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setNewStatus(SpeakerWorkflowState.DECLINED);
+        request.setReason("Not interested");
+
+        Event event = new Event();
+        event.setId(eventId);
+        event.setEventCode(eventCode);
+
+        SpeakerPool speaker = new SpeakerPool();
+        speaker.setId(speakerId);
+        speaker.setSessionId(null);
+        speaker.setEventId(eventId);
+        speaker.setStatus(SpeakerWorkflowState.CONTACTED);
+
+        when(speakerPoolRepository.findById(speakerId))
+            .thenReturn(Optional.of(speaker));
+        when(eventRepository.findById(eventId))
+            .thenReturn(Optional.of(event));
+        when(repository.save(any(SpeakerStatusHistory.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        SpeakerStatusResponse response = service.updateStatus(eventCode, speakerId, organizerUsername, request);
+
+        // Then
+        assertThat(response.getCurrentStatus()).isEqualTo(SpeakerWorkflowState.DECLINED);
+        verify(sessionRepository, never()).deleteById(any());
     }
 }

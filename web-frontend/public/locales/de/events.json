@@ -87,6 +87,13 @@
       "actions": {
         "retry": "Erneut versuchen"
       }
+    },
+    "settings": {
+      "moderator": "Veranstaltungsmoderation",
+      "moderatorDesc": "Der für die Moderation dieser Veranstaltung verantwortliche Organisator.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator erfolgreich aktualisiert",
+      "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
     }
   },
   "dashboard": {
@@ -205,6 +212,12 @@
       "breakSlots": "Pausen-Slots",
       "lunchSlots": "Mittagspausen-Slots",
       "defaultCapacity": "Standard-Kapazität",
+      "structuralDurations": "Strukturelle Dauern (Minuten)",
+      "moderationStartDuration": "Moderation Start (min)",
+      "moderationEndDuration": "Moderation Ende (min)",
+      "breakDuration": "Pausendauer (min)",
+      "lunchDuration": "Mittagspausendauer (min)",
+      "saveFailed": "Konfiguration konnte nicht gespeichert werden",
       "accessDenied": "Zugriff verweigert",
       "organizerOnly": "Nur Organisatoren können auf diese Seite zugreifen"
     },
@@ -394,7 +407,10 @@
     "autoAssignConfirmMessage": "Dies wird automatisch Referenten basierend auf Themenexpertise und Verfügbarkeit optimalen Zeitfenstern zuweisen. Bestehende Zuweisungen werden überschrieben. Fortfahren?",
     "noSpeakers": "Keine Referenten zugewiesen",
     "noSessionsScheduled": "Noch keine Sessions geplant. Verwenden Sie 'Referenten-Zuweisungen verwalten', um Referenten hinzuzufügen.",
-    "loadError": "Fehler beim Laden der Sessions. Bitte versuchen Sie es erneut."
+    "loadError": "Fehler beim Laden der Sessions. Bitte versuchen Sie es erneut.",
+    "deleteSession": "Löschen",
+    "deleteSessionTitle": "Session löschen?",
+    "deleteSessionMessage": "Möchten Sie die Session '{{title}}' wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
   },
   "team": {
     "title": "Team-Zuweisungen",
@@ -706,6 +722,9 @@
       "shareEmail": "Per E-Mail teilen",
       "shareText": "Ich nehme an {{title}} teil!"
     },
+    "upcomingEvents": {
+      "title": "Weitere kommende Veranstaltungen"
+    },
     "sessionTypes": {
       "keynote": "Hauptvortrag",
       "presentation": "Präsentation",
@@ -752,7 +771,13 @@
     "timeline": {
       "title": "Sitzungs-Zeitplan",
       "room": "{{room}}",
-      "matchPercent": "{{percent}}% Übereinstimmung"
+      "matchPercent": "{{percent}}% Übereinstimmung",
+      "headerTime": "Zeit"
+    },
+    "structuralSessions": {
+      "moderation": "Moderation",
+      "break": "Pause",
+      "lunch": "Mittagessen"
     },
     "speakerPool": {
       "title": "Referenten-Pool",
@@ -769,13 +794,29 @@
       },
       "viewPreferences": "Präferenzen"
     },
+    "quickActions": {
+      "title": "Schnellzugriff",
+      "total": "{{count}} Sessions gesamt",
+      "assigned": "{{count}} zugewiesen",
+      "pending": "{{count}} ausstehend",
+      "allAssigned": "Alle Zeitslots vergeben!",
+      "goToPublishing": "Zum Veröffentlichungs-Tab",
+      "sessionsAssignedAnnouncement": "{{count}} Sessions erfolgreich zugewiesen"
+    },
     "actions": {
       "autoAssign": "Auto-Zuweisung",
       "clearAll": "Alle löschen",
       "cancel": "Abbrechen",
-      "confirm": "Bestätigen"
+      "confirm": "Bestätigen",
+      "generateStructure": "Zeitplan generieren"
     },
     "modals": {
+      "generateStructure": {
+        "title": "Zeitplan-Struktur generieren",
+        "message": "Erstellt Moderationsblöcke, Pausen und Mittagessen basierend auf der Event-Typ-Konfiguration.",
+        "alreadyExist": "Es existieren bereits Moderations-, Pausen- und Mittagessen-Blöcke. Möchtest du sie überschreiben?",
+        "overwrite": "Überschreiben"
+      },
       "autoAssign": {
         "title": "Auto-Zuweisung von Sitzungen",
         "message": "Algorithmus für Auto-Zuweisung auswählen:",

@@ -16,13 +16,18 @@ import type { EventDetailUI, SessionUI } from '@/types/event.types';
 interface EventCardProps {
   event: EventDetailUI;
   viewMode: 'grid' | 'list';
+  linkPrefix?: string;
 }
 
-export function EventCard({ event, viewMode }: EventCardProps) {
+export function EventCard({ event, viewMode, linkPrefix = '/archive/' }: EventCardProps) {
   const { t } = useTranslation();
 
-  // Get all sessions with speakers
-  const sessions = (event.sessions || []) as SessionUI[];
+  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+
+  // Get non-structural sessions only (moderation/break/lunch don't belong on a card)
+  const sessions = (event.sessions || []).filter(
+    (s) => !STRUCTURAL_TYPES.has(s.sessionType ?? '')
+  ) as SessionUI[];
 
   // Show all sessions (no limit)
   const displayedSessions = sessions;
@@ -36,7 +41,7 @@ export function EventCard({ event, viewMode }: EventCardProps) {
 
   return (
     <Link
-      to={`/archive/${event.eventCode}`}
+      to={`${linkPrefix}${event.eventCode}`}
       className={`block ${viewMode === 'list' ? 'w-full' : ''}`}
     >
       <div

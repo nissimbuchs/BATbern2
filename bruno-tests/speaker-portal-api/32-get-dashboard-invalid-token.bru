@@ -1,0 +1,26 @@
+meta {
+  name: Get Dashboard Invalid Token (Story 6.4)
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard?token=invalid-token-that-does-not-exist
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 for invalid token - Story 6.4 AC1", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("should include error message - Story 6.4 AC1", function() {
+    const body = res.getBody();
+    expect(body.message || body.error).to.be.a('string');
+  });
+}

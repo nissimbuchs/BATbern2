@@ -233,7 +233,9 @@ public class SlugGenerationService {
         slug = WHITESPACE.matcher(slug).replaceAll(".");
 
         // Remove any remaining special characters except dots
-        slug = slug.replaceAll("[^a-z0-9.]", "");
+        // Note: digits are NOT allowed in username parts per DB constraint chk_username_format
+        // Only the collision suffix (e.g., john.doe.2) can contain digits
+        slug = slug.replaceAll("[^a-z.]", "");
 
         return slug;
     }

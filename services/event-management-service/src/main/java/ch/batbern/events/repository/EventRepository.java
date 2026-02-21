@@ -3,6 +3,8 @@ package ch.batbern.events.repository;
 import ch.batbern.events.domain.Event;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -62,6 +64,19 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
             List<ch.batbern.shared.types.EventWorkflowState> workflowStates);
 
     /**
+     * Find the first event matching any of the given workflow states, with date on or after
+     * fromDate, ordered by date ascending.
+     * Used for the public homepage: only shows events happening today or in the future,
+     * so a completed event is no longer shown the day after it occurred.
+     *
+     * @param workflowStates List of workflow states to match
+     * @param fromDate Only include events whose date is >= this instant (start of today)
+     * @return Optional containing the next qualifying event if found
+     */
+    Optional<Event> findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(
+            List<ch.batbern.shared.types.EventWorkflowState> workflowStates, Instant fromDate);
+
+    /**
      * Find an event by its event number
      *
      * @param eventNumber The event number to search for
@@ -100,6 +115,15 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     );
 
     /**
+     * Find events with a date after the given timestamp.
+     * Used for deadline reminder processing (Story 6.5) - finds active/future events.
+     *
+     * @param after Find events after this date
+     * @return List of future events
+     */
+    List<Event> findByDateAfter(Instant after);
+
+    /**
      * Find events published after a given timestamp
      * Used for in-app notifications (Story BAT-7)
      *
@@ -124,6 +148,26 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     // NOTE: The Event entity does not have @OneToMany relationships with Topics or Sessions.
     // Resource expansion is handled at the service layer by calling TopicService and SessionRepository.
     // These methods delegate to findAll() as Entity doesn't have the relationships.
+
+    /**
+     * Find active events within a date range accessible to any organizer.
+     * W2.3: Watch Event Join & Schedule Sync — active events endpoint.
+     * All authenticated organizers can see and manage any event in an active state.
+     *
+     * @param startDate Start of the date range (inclusive)
+     * @param endDate End of the date range (inclusive)
+     * @param states Allowed workflow states (e.g., AGENDA_PUBLISHED, AGENDA_FINALIZED, EVENT_LIVE)
+     * @return List of active events ordered by date ascending
+     */
+    @Query("SELECT e FROM Event e "
+           + "WHERE e.date BETWEEN :startDate AND :endDate "
+           + "AND e.workflowState IN :states "
+           + "ORDER BY e.date ASC")
+    List<Event> findActiveEvents(
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate,
+            @Param("states") List<ch.batbern.shared.types.EventWorkflowState> states
+    );
 
     /**
      * Find all events (delegated - resource expansion happens at service layer)

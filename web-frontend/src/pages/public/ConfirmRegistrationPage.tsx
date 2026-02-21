@@ -10,7 +10,8 @@ import { useSearchParams, useParams, Link, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { Button } from '@/components/public/ui/button';
 import { Card } from '@/components/public/ui/card';
-import { CheckCircle2, XCircle, Loader2, ArrowLeft, Calendar } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft, Calendar } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { eventApiClient } from '@/services/eventApiClient';
 
 type ConfirmationState = 'loading' | 'success' | 'error' | 'already_confirmed';
@@ -78,7 +79,7 @@ const ConfirmRegistrationPage = () => {
         {/* Loading State */}
         {state === 'loading' && (
           <div className="text-center py-24">
-            <Loader2 className="h-16 w-16 text-blue-400 mx-auto mb-4 animate-spin" />
+            <BATbernLoader size={128} />
             <h2 className="text-2xl font-light mb-2">Confirming Your Registration...</h2>
             <p className="text-zinc-400">Please wait while we process your confirmation.</p>
           </div>

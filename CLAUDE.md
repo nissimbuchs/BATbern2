@@ -4,15 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-02-03
 
-**Status:** ✅ **MVP COMPLETE & PRODUCTION READY**
+**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epic 6 DEPLOYED TO STAGING**
 
-The core platform is functional and ready for production launch. Epics 1-4 are 100% complete, Epic 5 is 87.5% complete, with only newsletter integration pending:
-- **Missing**: Newsletter integration only (Epic 5 - BAT-16)
-- **Ready**: All entity CRUD, authentication, workflow management, event registration (full flow with performance optimization), speaker coordination, task system, public website with archive browsing and content search
-- **Production Data**: Historical data migration tooling complete, production import pending user trigger
-- **Recent**: Epic 4 completed 100% - Public website with registration, archive browsing (BAT-109), and content search
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epic 6 (Speaker Self-Service Portal) Phase 1 & 2 deployed to staging.
+
+**Epic Status:**
+- ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
+- ✅ **Epic 2**: Entity CRUD & Domain Services - 100% COMPLETE
+- ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import scheduled)
+- ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
+- ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
+- ✅ **Epic 6**: Speaker Self-Service Portal - DEPLOYED TO STAGING (Phase 1 & 2 complete)
+
+**Delivered Capabilities:**
+- ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
+- ✅ Authentication & authorization (AWS Cognito, role-based access)
+- ✅ Complete event workflow (9-state machine + speaker coordination + task system)
+- ✅ Auto-publishing & CDN integration (speakers @ 30 days, agenda @ 14 days)
+- ✅ Event lifecycle automation (EVENT_LIVE, EVENT_COMPLETED transitions)
+- ✅ Public website with event registration (3-step wizard + QR codes)
+- ✅ Historical archive browsing with content search
+- ✅ Historical data migration tooling (production import pending user trigger)
+
+**Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
+
+**Current Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal ✅ **DEPLOYED TO STAGING** (2026-02-06)
+- Stories 6.0-6.3: Complete (invitation, response, content submission)
+- Story 6.4: Partial (dashboard views available)
+- Story 6.5: Complete (automated reminders deployed 2026-02-06)
 
 ## Project Overview
 
@@ -27,22 +48,27 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** MVP Feature Completion & Production Preparation
+**Phase:** ✅ **MVP COMPLETE** + **Epic 6 on Staging**
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
 - ✅ **Epic 2**: Entity CRUD & Domain Services - **100% COMPLETE**
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
-- ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE** (All stories: 4.1 Registration + Testing + Performance, 4.2 Archive Browsing, 4.3 Content Search)
-- ✅ **Epic 5**: Enhanced Organizer Workflows - **87.5% COMPLETE** (7/8 stories done, BAT-16 pending)
+- ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
+- ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
+- ✅ **Epic 6**: Speaker Self-Service Portal - **DEPLOYED TO STAGING** (Stories 6.0-6.3, 6.5 complete; Story 6.4 partial)
 
-**Remaining MVP Work (~1 week):**
-1. BAT-16: Overflow management, auto-publishing, event lifecycle finalization (~1 week)
+**MVP Completion:**
+- ✅ All 5 MVP epics (Epics 1-5) are 100% complete
+- ✅ All core functionality delivered and tested
+- ✅ Platform ready for production launch
+- ✅ Epic 6 Speaker Portal deployed to staging (2026-02-03)
 
 **When Adding New Features:**
-- Platform is feature-complete for MVP - focus on completing BAT-16 (newsletter integration)
-- New features should be deferred to Epic 6+ unless critical for launch
-- Prioritize bug fixes, performance optimization, and production readiness
+- ✅ MVP platform is 100% feature-complete
+- Epic 6 Phase 1 & 2 deployed with automated reminders - remaining: Story 6.4 (full dashboard)
+- Current focus: Epic 6 testing on staging, bug fixes, production readiness
+- Prioritize Epic 6 completion and production deployment
 
 ## Build System
 

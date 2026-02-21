@@ -1,0 +1,45 @@
+meta {
+  name: Get Content Info (Story 6.3)
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/content?token={{speakerViewToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.speakerName: isDefined
+  res.body.eventCode: isDefined
+  res.body.hasSessionAssigned: isDefined
+}
+
+tests {
+  test("should return content info successfully - Story 6.3 AC1", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.speakerName).to.be.a('string');
+  });
+
+  test("should show session assignment status - Story 6.3 AC1", function() {
+    const body = res.getBody();
+    expect(body.hasSessionAssigned).to.be.a('boolean');
+    // After session assignment, should be true
+    expect(body.hasSessionAssigned).to.be.true;
+    expect(body.sessionTitle).to.equal('Cloud Architecture Best Practices');
+  });
+
+  test("should allow content submission when session assigned - Story 6.3 AC1", function() {
+    const body = res.getBody();
+    expect(body.canSubmitContent).to.be.true;
+    expect(body.contentStatus).to.be.a('string');
+  });
+
+  test("should not have draft initially - Story 6.3 AC4", function() {
+    const body = res.getBody();
+    expect(body.hasDraft).to.be.false;
+  });
+}

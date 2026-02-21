@@ -12,13 +12,15 @@
 
 import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/speakers-api.types';
+import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
 
 // Type aliases for generated types
-type UpdateStatusRequest = components['schemas']['UpdateStatusRequest'];
+type UpdateStatusRequest = Omit<components['schemas']['UpdateStatusRequest'], 'newStatus'> & {
+  newStatus: SpeakerWorkflowState;
+};
 type SpeakerStatusResponse = components['schemas']['SpeakerStatusResponse'];
 type StatusHistoryItem = components['schemas']['StatusHistoryItem'];
 type StatusSummaryResponse = components['schemas']['StatusSummaryResponse'];
-type SpeakerWorkflowState = components['schemas']['SpeakerWorkflowState'];
 
 // API base path
 const EVENTS_API_PATH = '/events';

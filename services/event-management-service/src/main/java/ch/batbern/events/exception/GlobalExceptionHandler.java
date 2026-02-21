@@ -2,6 +2,7 @@ package ch.batbern.events.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
+import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +56,65 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle InvalidTokenException (magic link token invalid/expired/used)
+     * Returns HTTP 401 Unauthorized
+     * Story 6.2a: Invitation Response Portal
+     */
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTokenException(
+            InvalidTokenException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid token: {} - {}", ex.getErrorCode(), ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorCode", ex.getErrorCode());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Handle AlreadyRespondedException (speaker already responded to invitation)
+     * Returns HTTP 409 Conflict
+     * Story 6.2a: Invitation Response Portal - AC7
+     */
+    @ExceptionHandler(AlreadyRespondedException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyRespondedException(
+            AlreadyRespondedException ex,
+            HttpServletRequest request) {
+        log.warn("Already responded: {}", ex.getMessage());
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("previousResponse", ex.getPreviousResponse().toString());
+        if (ex.getRespondedAt() != null) {
+            details.put("respondedAt", ex.getRespondedAt().toString());
+        }
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .details(details)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     /**
@@ -328,6 +388,31 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(java.util.NoSuchElementException.class)
     public ResponseEntity<ErrorResponse> handleNoSuchElementException(
             java.util.NoSuchElementException ex,
+            HttpServletRequest request) {
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle NotFoundException (generic not found from shared-kernel)
+     * Returns HTTP 404 Not Found
+     * Story 5.4: Speaker Status Management
+     * Story 6.0a: Speaker Workflow State Machine Foundation
+     */
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFoundException(
+            NotFoundException ex,
             HttpServletRequest request) {
         log.warn("Resource not found: {}", ex.getMessage());
 
@@ -631,6 +716,29 @@ public class GlobalExceptionHandler {
      * Handle generic exceptions
      * Returns HTTP 500 Internal Server Error
      */
+    /**
+     * Handle StructuralSessionsAlreadyExistException (structural sessions already generated)
+     * Returns HTTP 409 Conflict
+     */
+    @ExceptionHandler(StructuralSessionsAlreadyExistException.class)
+    public ResponseEntity<ErrorResponse> handleStructuralSessionsAlreadyExistException(
+            StructuralSessionsAlreadyExistException ex,
+            HttpServletRequest request) {
+        log.warn("Structural sessions already exist: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("MEDIUM")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

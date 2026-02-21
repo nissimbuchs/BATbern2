@@ -18,7 +18,7 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 | **Epic 2: Entity CRUD**         | ✅ Complete    | 100%     | Company, User, Event, Partner Management                               |
 | **Epic 3: Data Migration**      | ✅ Complete    | 100%     | Historical data import (tooling ready, production import pending)      |
 | **Epic 4: Public Website**      | ✅ Complete    | 100%     | Landing pages, Registration flow, Testing, SEO, Performance, Archive Browsing, Content Search |
-| **Epic 5: Organizer Workflows** | ✅ Core Complete | 87.5% | Event workflow, Speaker workflow, Task system (Phases A-E implemented, Newsletter pending) |
+| **Epic 5: Organizer Workflows** | ✅ Complete    | 100%     | Event workflow, Speaker workflow, Task system, Auto-publishing, Event lifecycle automation |
 
 ## Quick Navigation
 
@@ -26,7 +26,9 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 New to BATbern? Start here:
 
-- 🎥 **[Video Tutorial (12 min, Deutsch)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)** - Complete workflow demonstration from event creation to archival
+- 🎥 **Video Tutorials** - Complete workflow demonstration from event creation to archival
+  - **[German Version (12 min)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-de.mp4)** - Full workflow with German narration
+  - **[English Version (12 min)](/assets/user-guide/assets/videos/workflow/event-workflow-schulung-en.mp4)** - Full workflow with English narration
 - [Platform Overview](getting-started/README.md) - Understand the BATbern platform
 - [Login & Authentication](getting-started/login.md) - Access your organizer account
 - [Dashboard Navigation](getting-started/dashboard.md) - Navigate the organizer interface
@@ -79,9 +81,9 @@ Three independent workflow systems for event management:
 - [Event Archival](workflow/phase-e-publishing.md) - Archive completed events, preserve historical data
 - Event state: Any state → ARCHIVED
 
-**Phase F: Tasks** <span class="feature-status planned">Planned</span>
+**Phase F: Communication** <span class="feature-status implemented">Implemented</span>
 
-- [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions)
+- [Task Management](workflow/phase-f-communication.md) - Newsletters, moderation, catering (auto-created by event state transitions), auto-publishing, event lifecycle
 
 ### ✨ Advanced Features
 

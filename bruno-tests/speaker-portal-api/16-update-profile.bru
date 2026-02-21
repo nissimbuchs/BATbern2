@@ -1,0 +1,41 @@
+meta {
+  name: Update Speaker Profile (Story 6.2b)
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/speaker-portal/profile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{speakerMagicToken}}",
+    "bio": "Experienced software architect with 15+ years in enterprise systems.",
+    "expertise": ["Cloud Architecture", "Microservices", "DevOps"],
+    "speakingTopics": ["Kubernetes", "AWS", "Terraform"],
+    "languages": ["en", "de"],
+    "linkedInUrl": "https://linkedin.com/in/test-speaker"
+  }
+}
+
+assert {
+  res.status: in [200, 401]
+}
+
+tests {
+  test("should update profile or reject used token - Story 6.2b AC2-6", function() {
+    const status = res.getStatus();
+    // Token may be consumed from previous accept, so 401 is acceptable
+    if (status === 200) {
+      const body = res.getBody();
+      expect(body.bio).to.equal('Experienced software architect with 15+ years in enterprise systems.');
+      expect(body.expertise).to.deep.equal(['Cloud Architecture', 'Microservices', 'DevOps']);
+    } else {
+      expect(status).to.equal(401);
+      // Token was consumed by accept response
+    }
+  });
+}

@@ -56,6 +56,18 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventIdAndSessionType(UUID eventId, String sessionType);
 
     /**
+     * Find all sessions for a specific event with any of the given session types.
+     * Used for structural session detection (moderation, break, lunch).
+     */
+    List<Session> findByEventIdAndSessionTypeIn(UUID eventId, List<String> sessionTypes);
+
+    /**
+     * Delete all sessions for a specific event with any of the given session types.
+     * Used when overwrite=true for structural session generation.
+     */
+    void deleteByEventIdAndSessionTypeIn(UUID eventId, List<String> sessionTypes);
+
+    /**
      * Delete all sessions for a specific event
      */
     void deleteByEventId(UUID eventId);
@@ -103,12 +115,24 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventCodeAndStartTimeIsNull(@Param("eventCode") String eventCode);
 
     /**
-     * Find all sessions by event code (joins with events table)
-     * Story BAT-11 (5.7): Slot Assignment - for conflict detection
+     * Find all sessions by event code.
+     * Story BAT-11 (5.7): Slot Assignment - for conflict detection.
+     * Review fix item 5: aligned to use s.eventCode directly (same strategy as findByEventCodeAndSessionSlug)
+     * instead of a JOIN through Event, since Session.eventCode is a persistent denormalized column.
      */
-    @Query("SELECT s FROM Session s JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
-           + "WHERE e.eventCode = :eventCode")
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode")
     List<Session> findByEventCode(@Param("eventCode") String eventCode);
+
+    /**
+     * Find a session by event code and session slug.
+     * W4.2 Task 9.1: Used by WatchSessionService.endSession() to look up the session
+     * being advanced by an organizer action without joining via eventId.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode AND s.sessionSlug = :sessionSlug")
+    Optional<Session> findByEventCodeAndSessionSlug(
+            @Param("eventCode") String eventCode,
+            @Param("sessionSlug") String sessionSlug
+    );
 
     /**
      * Count all sessions for a specific event
@@ -117,8 +141,49 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     long countByEventId(UUID eventId);
 
     /**
+     * Count distinct speaker usernames across all sessions for a given event.
+     * W2.4: Used by WatchSpeakerArrivalService to compute totalCount for STOMP broadcasts.
+     * Single query replaces N+1 pattern of fetching sessions then streaming sessionUsers.
+     */
+    @Query("SELECT COUNT(DISTINCT su.username) FROM Session s "
+           + "JOIN ch.batbern.events.domain.Event e ON s.eventId = e.id "
+           + "JOIN s.sessionUsers su "
+           + "WHERE e.eventCode = :eventCode AND su.username IS NOT NULL")
+    long countDistinctSpeakersByEventCode(@Param("eventCode") String eventCode);
+
+    /**
      * Count sessions with timing assigned for an event
      * Story BAT-11 (5.7): Workflow validation for agenda publishing
      */
     long countByEventIdAndStartTimeNotNull(UUID eventId);
+
+    /**
+     * Find sessions starting after a given time for downstream cascade (extend/delay).
+     * W4.3 Task 10.1 (AC2): Used by extendSession to shift downstream sessions.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime > :after ORDER BY s.startTime")
+    List<Session> findByEventCodeAndScheduledStartTimeAfterOrderByScheduledStartTime(
+            @Param("eventCode") String eventCode,
+            @Param("after") java.time.Instant after);
+
+    /**
+     * Find the previous session (the one scheduled immediately before a given time).
+     * W4.3 Task 10.1 (AC4): Used by delayToPreviousSession to find the session to re-activate.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime < :before ORDER BY s.startTime DESC LIMIT 1")
+    Optional<Session> findFirstByEventCodeAndScheduledStartTimeBeforeOrderByScheduledStartTimeDesc(
+            @Param("eventCode") String eventCode,
+            @Param("before") java.time.Instant before);
+
+    /**
+     * Find sessions starting at or after a given time (for shifting current + downstream).
+     * W4.3 Task 10.1 (AC4): Used by delayToPreviousSession to cascade time shifts.
+     */
+    @Query("SELECT s FROM Session s WHERE s.eventCode = :eventCode "
+           + "AND s.startTime >= :startTime ORDER BY s.startTime")
+    List<Session> findByEventCodeAndScheduledStartTimeGreaterThanEqualOrderByScheduledStartTime(
+            @Param("eventCode") String eventCode,
+            @Param("startTime") java.time.Instant startTime);
 }

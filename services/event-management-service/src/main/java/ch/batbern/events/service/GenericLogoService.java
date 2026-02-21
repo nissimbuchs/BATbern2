@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Logo;
 import ch.batbern.events.domain.LogoStatus;
 import ch.batbern.events.repository.LogoRepository;
+import ch.batbern.shared.utils.CloudFrontUrlBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -75,7 +76,7 @@ public class GenericLogoService {
             deleteS3Object(logo.getS3Key());
 
             // Build CloudFront URL
-            String cloudFrontUrl = buildCloudFrontUrl(finalS3Key);
+            String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, finalS3Key);
 
             // Use domain method to transition state
             logo.associateWith(entityType, entityId, finalS3Key, cloudFrontUrl);
@@ -133,19 +134,4 @@ public class GenericLogoService {
         }
     }
 
-    /**
-     * Build CloudFront CDN URL from S3 key
-     * Story 2.5.3a: Event Theme Image Upload
-     *
-     * For MinIO (local dev): http://localhost:8450/{bucketName}/{s3Key}
-     * For CloudFront (staging/prod): https://cdn.batbern.ch/{s3Key}
-     */
-    private String buildCloudFrontUrl(String s3Key) {
-        // For MinIO (local dev), include bucket name in URL path
-        if (cloudFrontDomain.contains("localhost")) {
-            return cloudFrontDomain + "/" + bucketName + "/" + s3Key;
-        }
-        // For CloudFront, bucket name is configured in CloudFront origin
-        return cloudFrontDomain + "/" + s3Key;
-    }
 }

@@ -33,15 +33,26 @@ import {
   TableRow,
   Paper,
   Stack,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import {
   Folder as FolderIcon,
+  Delete as DeleteIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
+  Coffee as CoffeeIcon,
+  Restaurant as RestaurantIcon,
+  Mic as MicIcon,
 } from '@mui/icons-material';
+import Chip from '@mui/material/Chip';
 import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { SessionEditModal, type SessionUpdateData } from './SessionEditModal';
@@ -53,6 +64,7 @@ interface SpeakersSessionsTableProps {
   eventDate: string; // ISO 8601 date for time conversion
   onViewMaterials: (sessionId: string) => void; // Kept for backwards compatibility
   onSessionUpdate: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
+  onSessionDelete?: (sessionSlug: string) => Promise<void>;
   isLoading?: boolean;
   error?: string;
 }
@@ -63,6 +75,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   eventDate,
   onViewMaterials: _onViewMaterials, // eslint-disable-line @typescript-eslint/no-unused-vars
   onSessionUpdate,
+  onSessionDelete,
   isLoading = false,
   error,
 }) => {
@@ -72,6 +85,36 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<SessionUI | null>(null);
   const [modalInitialTab, setModalInitialTab] = useState<number>(0); // Story 5.9 - AC2
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<SessionUI | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch'] as const;
+  type StructuralType = (typeof STRUCTURAL_TYPES)[number];
+
+  const STRUCTURAL_CHIP: Record<
+    StructuralType,
+    { label: string; icon: React.ReactElement; color: 'default' | 'warning' | 'success' }
+  > = {
+    moderation: {
+      label: t('slotAssignment.structuralSessions.moderation'),
+      icon: <MicIcon fontSize="small" />,
+      color: 'default',
+    },
+    break: {
+      label: t('slotAssignment.structuralSessions.break'),
+      icon: <CoffeeIcon fontSize="small" />,
+      color: 'warning',
+    },
+    lunch: {
+      label: t('slotAssignment.structuralSessions.lunch'),
+      icon: <RestaurantIcon fontSize="small" />,
+      color: 'success',
+    },
+  };
+
+  const isStructural = (session: SessionUI) =>
+    STRUCTURAL_TYPES.includes(session.sessionType as StructuralType);
 
   // Sort sessions by start time (unassigned sessions go to the end)
   const sortedSessions = React.useMemo(() => {
@@ -171,6 +214,28 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     setModalInitialTab(0); // Reset to Details tab
   };
 
+  const handleDeleteClick = (session: SessionUI) => {
+    setSessionToDelete(session);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!sessionToDelete || !onSessionDelete) return;
+    try {
+      setDeleteLoading(true);
+      await onSessionDelete(sessionToDelete.sessionSlug);
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSessionToDelete(null);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -224,81 +289,122 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
           {t('speakers.sectionTitle', { count: sortedSessions.length })}
         </Typography>
 
-        {sortedSessions.map((session) => (
-          <Card
-            key={session.sessionSlug}
-            sx={{ mb: 2, cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
-            data-testid={`session-card-${session.sessionSlug}`}
-            onClick={() => handleRowClick(session)}
-          >
-            <CardContent>
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  {formatTime(session.startTime)}-{formatTime(session.endTime)}
-                </Typography>
-
-                {session.speakers && session.speakers.length > 0 ? (
-                  <>
-                    <Stack direction="column" spacing={1}>
-                      {session.speakers.map((spk) => (
-                        <UserAvatar
-                          key={spk.username}
-                          firstName={spk.firstName}
-                          lastName={spk.lastName}
-                          company={spk.company}
-                          profilePictureUrl={spk.profilePictureUrl}
-                          size={48}
-                          showCompany={true}
-                          horizontal={true}
-                        />
-                      ))}
-                    </Stack>
-                    <Typography variant="body2">{session.title}</Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {getMaterialsStatusIcon(session)}
-                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
-                    </Stack>
-                  </>
-                ) : session.speaker ? (
-                  <>
-                    <UserAvatar
-                      name={session.speaker.name}
-                      company={session.speaker.company}
-                      profilePictureUrl={session.speaker.profilePictureUrl}
-                      size={48}
-                      showCompany={true}
-                      horizontal={true}
-                    />
-                    <Typography variant="body2">{session.title}</Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      {getMaterialsStatusIcon(session)}
-                      <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
-                    </Stack>
-                  </>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    {t('speakers.notAssigned')}
+        {sortedSessions.map((session) => {
+          const structural = isStructural(session);
+          const chipInfo = structural
+            ? STRUCTURAL_CHIP[session.sessionType as StructuralType]
+            : null;
+          return (
+            <Card
+              key={session.sessionSlug}
+              sx={{
+                mb: 2,
+                cursor: structural ? 'default' : 'pointer',
+                bgcolor: structural ? 'action.hover' : undefined,
+                '&:hover': { bgcolor: structural ? 'action.hover' : 'action.hover' },
+              }}
+              data-testid={`session-card-${session.sessionSlug}`}
+              onClick={structural ? undefined : () => handleRowClick(session)}
+            >
+              <CardContent>
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    {formatTime(session.startTime)}-{formatTime(session.endTime)}
                   </Typography>
-                )}
-              </Stack>
-            </CardContent>
 
-            <CardActions>
-              {session.speaker && (
-                <Button
-                  size="small"
-                  startIcon={<FolderIcon />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMaterialsClick(session); // Story 5.9 - AC2
-                  }}
-                >
-                  {t('speakers.materials')}
-                </Button>
+                  {structural && chipInfo ? (
+                    <>
+                      <Chip
+                        size="small"
+                        icon={chipInfo.icon}
+                        label={chipInfo.label}
+                        color={chipInfo.color}
+                        variant="outlined"
+                      />
+                      <Typography variant="body2">{session.title}</Typography>
+                    </>
+                  ) : session.speakers && session.speakers.length > 0 ? (
+                    <>
+                      <Stack direction="column" spacing={1}>
+                        {session.speakers.map((spk) => (
+                          <UserAvatar
+                            key={spk.username}
+                            firstName={spk.firstName}
+                            lastName={spk.lastName}
+                            company={spk.company}
+                            profilePictureUrl={spk.profilePictureUrl}
+                            size={48}
+                            showCompany={true}
+                            horizontal={true}
+                          />
+                        ))}
+                      </Stack>
+                      <Typography variant="body2">{session.title}</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {getMaterialsStatusIcon(session)}
+                        <Typography variant="caption">
+                          {getMaterialsStatusLabel(session)}
+                        </Typography>
+                      </Stack>
+                    </>
+                  ) : session.speaker ? (
+                    <>
+                      <UserAvatar
+                        name={session.speaker.name}
+                        company={session.speaker.company}
+                        profilePictureUrl={session.speaker.profilePictureUrl}
+                        size={48}
+                        showCompany={true}
+                        horizontal={true}
+                      />
+                      <Typography variant="body2">{session.title}</Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {getMaterialsStatusIcon(session)}
+                        <Typography variant="caption">
+                          {getMaterialsStatusLabel(session)}
+                        </Typography>
+                      </Stack>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      {t('speakers.notAssigned')}
+                    </Typography>
+                  )}
+                </Stack>
+              </CardContent>
+
+              {!structural && (
+                <CardActions>
+                  {session.speaker && (
+                    <Button
+                      size="small"
+                      startIcon={<FolderIcon />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMaterialsClick(session); // Story 5.9 - AC2
+                      }}
+                    >
+                      {t('speakers.materials')}
+                    </Button>
+                  )}
+                  {onSessionDelete && (
+                    <IconButton
+                      size="small"
+                      color="error"
+                      aria-label={t('speakers.deleteSession')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(session);
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </CardActions>
               )}
-            </CardActions>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </Box>
     );
   }
@@ -322,87 +428,124 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedSessions.map((session) => (
-              <TableRow
-                key={session.sessionSlug}
-                data-testid={`session-row-${session.sessionSlug}`}
-                hover
-                onClick={() => handleRowClick(session)}
-                sx={{ cursor: 'pointer' }}
-              >
-                <TableCell>
-                  <Typography variant="body2">
-                    {formatTime(session.startTime)}-{formatTime(session.endTime)}
-                  </Typography>
-                </TableCell>
-
-                <TableCell>
-                  {session.speakers && session.speakers.length > 0 ? (
-                    <Stack direction="column" spacing={1}>
-                      {session.speakers.map((spk) => (
-                        <UserAvatar
-                          key={spk.username}
-                          firstName={spk.firstName}
-                          lastName={spk.lastName}
-                          company={spk.company}
-                          profilePictureUrl={spk.profilePictureUrl}
-                          size={40}
-                          showCompany={true}
-                          horizontal={true}
-                        />
-                      ))}
-                    </Stack>
-                  ) : session.speaker ? (
-                    <UserAvatar
-                      name={session.speaker.name}
-                      company={session.speaker.company}
-                      profilePictureUrl={session.speaker.profilePictureUrl}
-                      size={40}
-                      showCompany={true}
-                      horizontal={true}
-                    />
-                  ) : (
-                    <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                      {t('speakers.notAssigned')}
+            {sortedSessions.map((session) => {
+              const structural = isStructural(session);
+              const chipInfo = structural
+                ? STRUCTURAL_CHIP[session.sessionType as StructuralType]
+                : null;
+              return (
+                <TableRow
+                  key={session.sessionSlug}
+                  data-testid={`session-row-${session.sessionSlug}`}
+                  hover={!structural}
+                  onClick={structural ? undefined : () => handleRowClick(session)}
+                  sx={{
+                    cursor: structural ? 'default' : 'pointer',
+                    bgcolor: structural ? 'action.hover' : undefined,
+                    opacity: structural ? 0.85 : 1,
+                  }}
+                >
+                  <TableCell>
+                    <Typography variant="body2">
+                      {formatTime(session.startTime)}-{formatTime(session.endTime)}
                     </Typography>
-                  )}
-                </TableCell>
+                  </TableCell>
 
-                <TableCell>
-                  {session.title ? (
-                    <Typography variant="body2">{session.title}</Typography>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      -
-                    </Typography>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    {getMaterialsStatusIcon(session)}
-                    <Typography variant="caption">{getMaterialsStatusLabel(session)}</Typography>
-                  </Stack>
-                </TableCell>
-
-                <TableCell align="right">
-                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                    {session.speaker && (
-                      <Button
+                  <TableCell>
+                    {structural && chipInfo ? (
+                      <Chip
                         size="small"
-                        startIcon={<FolderIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMaterialsClick(session); // Story 5.9 - AC2
-                        }}
-                      >
-                        {t('speakers.materials')}
-                      </Button>
+                        icon={chipInfo.icon}
+                        label={chipInfo.label}
+                        color={chipInfo.color}
+                        variant="outlined"
+                      />
+                    ) : session.speakers && session.speakers.length > 0 ? (
+                      <Stack direction="column" spacing={1}>
+                        {session.speakers.map((spk) => (
+                          <UserAvatar
+                            key={spk.username}
+                            firstName={spk.firstName}
+                            lastName={spk.lastName}
+                            company={spk.company}
+                            profilePictureUrl={spk.profilePictureUrl}
+                            size={40}
+                            showCompany={true}
+                            horizontal={true}
+                          />
+                        ))}
+                      </Stack>
+                    ) : session.speaker ? (
+                      <UserAvatar
+                        name={session.speaker.name}
+                        company={session.speaker.company}
+                        profilePictureUrl={session.speaker.profilePictureUrl}
+                        size={40}
+                        showCompany={true}
+                        horizontal={true}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                        {t('speakers.notAssigned')}
+                      </Typography>
                     )}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+
+                  <TableCell>
+                    {session.title ? (
+                      <Typography variant="body2">{session.title}</Typography>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        -
+                      </Typography>
+                    )}
+                  </TableCell>
+
+                  <TableCell>
+                    {!structural && (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        {getMaterialsStatusIcon(session)}
+                        <Typography variant="caption">
+                          {getMaterialsStatusLabel(session)}
+                        </Typography>
+                      </Stack>
+                    )}
+                  </TableCell>
+
+                  <TableCell align="right">
+                    {!structural && (
+                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                        {session.speaker && (
+                          <Button
+                            size="small"
+                            startIcon={<FolderIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMaterialsClick(session); // Story 5.9 - AC2
+                            }}
+                          >
+                            {t('speakers.materials')}
+                          </Button>
+                        )}
+                        {onSessionDelete && (
+                          <IconButton
+                            size="small"
+                            color="error"
+                            aria-label={t('speakers.deleteSession')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(session);
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Stack>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -416,6 +559,26 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
         onSave={onSessionUpdate}
         initialTab={modalInitialTab} // Story 5.9 - AC2: Materials button opens Materials tab
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
+        <DialogTitle>{t('speakers.deleteSessionTitle')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('speakers.deleteSessionMessage', {
+              title: sessionToDelete?.title || sessionToDelete?.sessionSlug,
+            })}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={deleteLoading}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" disabled={deleteLoading}>
+            {t('speakers.deleteSession')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

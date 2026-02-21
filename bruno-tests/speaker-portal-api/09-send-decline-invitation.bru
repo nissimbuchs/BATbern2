@@ -1,0 +1,32 @@
+meta {
+  name: Send Invitation for Decline Test
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{declineSpeakerUsername}}/send-invitation
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("declineSpeakerToken", res.getBody().token);
+  }
+}
+
+tests {
+  test("should send invitation for decline test", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().token).to.be.a('string');
+  });
+}

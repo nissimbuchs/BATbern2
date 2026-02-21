@@ -1,0 +1,447 @@
+//
+//  SessionCardView.swift
+//  BATbern-watch Watch App
+//
+//  Session card (P2) showing session details with progressive publishing support.
+//  Source: docs/watch-app/ux-design-specification.md#Session-Card-Pages
+//  Story: W1.2 - Session Card Browsing (AC#2, AC#3, AC#6)
+//
+
+import SwiftUI
+
+// MARK: - Session Status Badge
+
+enum SessionBadgeStatus: Equatable {
+    case completed, active, upcoming
+
+    var label: String {
+        switch self {
+        case .completed: return "Done"
+        case .active:    return "Active"
+        case .upcoming:  return "Upcoming"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .completed: return .gray
+        case .active:    return .teal
+        case .upcoming:  return .secondary
+        }
+    }
+
+    /// Pure function — testable without SwiftUI.
+    static func status(for session: CachedSession, at now: Date) -> SessionBadgeStatus? {
+        guard let start = session.startTime, let end = session.endTime else { return nil }
+        if end < now { return .completed }
+        if start <= now && now <= end { return .active }
+        return .upcoming
+    }
+}
+
+struct SessionCardView: View {
+    let session: CachedSession
+    let phase: String?  // TOPIC, SPEAKERS, or AGENDA
+    var showStatusBadge: Bool = false   // True when organizer is paired and event is live
+
+    // MARK: - Computed Properties
+
+    private var isBreakSession: Bool {
+        session.isBreak
+    }
+
+    private var isModerationSession: Bool {
+        session.sessionType == .moderation
+    }
+
+    private var showSpeakers: Bool {
+        phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
+    private var showTimeSlots: Bool {
+        phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
+    private var titleTapsEnabled: Bool {
+        phase == "AGENDA"
+    }
+
+    private var speakerTapsEnabled: Bool {
+        phase == "SPEAKERS" || phase == "AGENDA"
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if isBreakSession {
+                breakCardLayout
+            } else {
+                presentationCardLayout
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+
+    // MARK: - Presentation Card Layout (AC#2)
+
+    @ViewBuilder
+    private var presentationCardLayout: some View {
+        VStack(spacing: 12) {
+            // Time slot (top, secondary color) + optional organizer status badge (W3.4 AC1)
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
+                HStack {
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
+            }
+
+            Spacer()
+
+            // Title (blue-tinted, tappable area for W1.3)
+            titleArea
+
+            Spacer()
+
+            // Speaker area (bottom)
+            if showSpeakers && !session.speakers.isEmpty {
+                speakerArea
+                    .padding(.bottom, 8)
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
+    // MARK: - Break Card Layout (AC#3)
+
+    @ViewBuilder
+    private var breakCardLayout: some View {
+        VStack(spacing: 8) {
+            // Time slot + optional organizer status badge (W3.4 AC1)
+            // Badge rendered independently of showTimeSlots so organizers see it in all phases.
+            if showTimeSlots || showStatusBadge {
+                HStack {
+                    if showTimeSlots, let startTime = session.startTime, let endTime = session.endTime {
+                        Text("\(SwissDateFormatter.formatEventTime(startTime)) – \(SwissDateFormatter.formatEventTime(endTime))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    if showStatusBadge,
+                       let status = SessionBadgeStatus.status(for: session, at: Date()) {
+                        statusBadgeView(status)
+                    }
+                }
+                .padding(.top, BATbernWatchStyle.Spacing.cardTopPadding)
+            }
+
+            Spacer()
+
+            // SF Symbol icon + title — delegated to shared BreakCardLayout (W4.4 Task 0)
+            BreakCardLayout(sessionType: session.sessionType, title: session.title)
+
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+    }
+
+    // MARK: - Status Badge (W3.4 AC1, W4.2 AC4)
+
+    @ViewBuilder
+    private func statusBadgeView(_ status: SessionBadgeStatus) -> some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(status.label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(status.color)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(status.color.opacity(0.15), in: Capsule())
+            // W4.2 AC4: "by [firstName]" shown under "Done" badge when completedByUsername is set
+            if status == .completed, let completedBy = session.completedByUsername, !completedBy.isEmpty {
+                Text("by \(completedBy.components(separatedBy: ".").first ?? completedBy)")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+    }
+
+    // MARK: - Title Area (AC#2, AC#6, W1.3 AC#1, AC#5, AC#6)
+
+    @ViewBuilder
+    private var titleArea: some View {
+        if titleTapsEnabled {
+            // AGENDA phase: Title is NavigationLink to AbstractDetailView (P3)
+            NavigationLink {
+                AbstractDetailView(session: session)
+            } label: {
+                titleText
+            }
+            .buttonStyle(.plain)  // Remove default button styling
+        } else {
+            // TOPIC/SPEAKERS phase: Title is not tappable
+            titleText
+        }
+    }
+
+    @ViewBuilder
+    private var titleText: some View {
+        Text(session.title)
+            .font(BATbernWatchStyle.Typography.sessionTitle)
+            .foregroundStyle(BATbernWatchStyle.Colors.batbernBlue)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)  // Allow unlimited lines for proper wrapping
+            .fixedSize(horizontal: false, vertical: true)  // Enable text wrapping
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())  // Make entire area tappable
+    }
+
+    // MARK: - Speaker Area (AC#2, AC#5, W1.3 AC#2, AC#3, AC#5, AC#6)
+
+    @ViewBuilder
+    private var speakerArea: some View {
+        let showLogo = !isModerationSession
+        if speakerTapsEnabled {
+            // SPEAKERS/AGENDA phase: Speaker area is tappable
+            if session.speakers.count == 1 {
+                // Single speaker: NavigationLink to SpeakerBioView (P4)
+                NavigationLink {
+                    SpeakerBioView(speaker: session.speakers[0])
+                } label: {
+                    singleSpeakerLayout(session.speakers[0], showCompanyLogo: showLogo)
+                }
+                .buttonStyle(.plain)
+            } else if session.speakers.count >= 2 {
+                // 2+ speakers: NavigationLink to MultiSpeakerGridView (P5)
+                NavigationLink {
+                    MultiSpeakerGridView(speakers: session.speakers)
+                } label: {
+                    multiSpeakerLayout
+                }
+                .buttonStyle(.plain)
+            }
+        } else {
+            // TOPIC phase: Speaker area not tappable
+            if session.speakers.count == 1 {
+                singleSpeakerLayout(session.speakers[0], showCompanyLogo: showLogo)
+            } else if session.speakers.count >= 2 {
+                multiSpeakerLayout
+            }
+        }
+    }
+
+    // MARK: - Multi-Speaker Layout (reusable for tappable and non-tappable states)
+
+    @ViewBuilder
+    private var multiSpeakerLayout: some View {
+        let showLogo = !isModerationSession
+        if session.speakers.count == 2 {
+            // Two speakers: side by side
+            HStack(spacing: 12) {
+                ForEach(Array(session.speakers.prefix(2)), id: \.username) { speaker in
+                    speakerPortrait(speaker, showCompanyLogo: showLogo)
+                }
+            }
+        } else if session.speakers.count >= 3 {
+            // 3+ speakers: 2-column grid, max 3 shown + badge
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    ForEach(Array(session.speakers.prefix(2)), id: \.username) { speaker in
+                        speakerPortrait(speaker, showCompanyLogo: showLogo)
+                    }
+                }
+
+                if session.speakers.count == 3 {
+                    speakerPortrait(session.speakers[2], showCompanyLogo: showLogo)
+                } else {
+                    // 4+ speakers: show third + badge
+                    HStack(spacing: 12) {
+                        speakerPortrait(session.speakers[2], showCompanyLogo: showLogo)
+
+                        VStack(spacing: 4) {
+                            Text("+\(session.speakers.count - 3)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(NSLocalizedString("session.speakers.more", comment: "+N more speakers"))
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        .frame(width: 40)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Speaker Portrait Layout
+
+    @ViewBuilder
+    private func singleSpeakerLayout(_ speaker: CachedSpeaker, showCompanyLogo: Bool = true) -> some View {
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSize, showCompanyLogo: showCompanyLogo)
+            .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func speakerPortrait(_ speaker: CachedSpeaker, showCompanyLogo: Bool = true) -> some View {
+        SpeakerPortraitView(speaker: speaker, size: BATbernWatchStyle.Spacing.portraitSizeSmall, showCompanyLogo: showCompanyLogo)
+    }
+}
+
+// MARK: - Previews
+
+#Preview("Presentation - 1 Speaker") {
+    let speaker = CachedSpeaker(
+        username: "anna-test",
+        firstName: "Anna",
+        lastName: "Schmidt",
+        company: "ACME Corp"
+    )
+
+    let session = CachedSession(
+        sessionSlug: "cloud-security",
+        title: "Cloud Native Security in 2026",
+        abstract: "Test abstract",
+        sessionType: .presentation,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(45 * 60),
+        speakers: [speaker]
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Presentation - 2 Speakers") {
+    let speakers = [
+        CachedSpeaker(
+            username: "anna-test",
+            firstName: "Anna",
+            lastName: "Schmidt",
+            company: "ACME Corp"
+        ),
+        CachedSpeaker(
+            username: "tom-test",
+            firstName: "Tom",
+            lastName: "Müller",
+            company: "Tech GmbH"
+        )
+    ]
+
+    let session = CachedSession(
+        sessionSlug: "cloud-security",
+        title: "Cloud Native Security",
+        abstract: "Test abstract",
+        sessionType: .keynote,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(45 * 60),
+        speakers: speakers
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Presentation - 4+ Speakers") {
+    let speakers = [
+        CachedSpeaker(username: "s1", firstName: "Anna", lastName: "Schmidt", company: "ACME"),
+        CachedSpeaker(username: "s2", firstName: "Tom", lastName: "Müller", company: "Tech GmbH"),
+        CachedSpeaker(username: "s3", firstName: "Sara", lastName: "Weber", company: "Startup AG"),
+        CachedSpeaker(username: "s4", firstName: "Max", lastName: "Fischer", company: "Corp"),
+        CachedSpeaker(username: "s5", firstName: "Lisa", lastName: "Klein", company: "Company")
+    ]
+
+    let session = CachedSession(
+        sessionSlug: "panel",
+        title: "Panel Discussion",
+        sessionType: .panelDiscussion,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(60 * 60),
+        speakers: speakers
+    )
+
+    SessionCardView(session: session, phase: "SPEAKERS")
+}
+
+#Preview("Break - Coffee") {
+    let session = CachedSession(
+        sessionSlug: "break-1",
+        title: "Coffee Break",
+        sessionType: .breakTime,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(20 * 60)
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Break - Lunch") {
+    let session = CachedSession(
+        sessionSlug: "lunch-1",
+        title: "Lunch",
+        sessionType: .lunch,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(60 * 60)
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Break - Networking") {
+    let session = CachedSession(
+        sessionSlug: "networking-1",
+        title: "Networking Session",
+        sessionType: .networking,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(30 * 60)
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Moderation - No Company Logo") {
+    let moderator = CachedSpeaker(
+        username: "moderator-test",
+        firstName: "Lukas",
+        lastName: "Meier",
+        company: "Berner Architekten"
+    )
+
+    let session = CachedSession(
+        sessionSlug: "moderation-1",
+        title: "Moderation",
+        sessionType: .moderation,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(4 * 60 * 60),
+        speakers: [moderator]
+    )
+
+    SessionCardView(session: session, phase: "AGENDA")
+}
+
+#Preview("Progressive - TOPIC Phase") {
+    let speaker = CachedSpeaker(
+        username: "anna-test",
+        firstName: "Anna",
+        lastName: "Schmidt",
+        company: "ACME Corp"
+    )
+
+    let session = CachedSession(
+        sessionSlug: "test",
+        title: "Cloud Security",
+        sessionType: .presentation,
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(45 * 60),
+        speakers: [speaker]
+    )
+
+    SessionCardView(session: session, phase: "TOPIC")
+}

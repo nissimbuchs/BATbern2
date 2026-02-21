@@ -276,7 +276,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(400);
 
       await page.getByRole('option', { name: /Alle Aufgaben|All Tasks/i }).click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(5000);
 
       await page.goto(eventUrl);
       await page.waitForLoadState('networkidle');
@@ -405,7 +405,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         const speakerCard = page.getByRole('button', { name: speaker.name });
 
         await expect(speakerCard).toBeVisible({ timeout: 5000 });
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(200);
 
         const cardBox = await speakerCard.boundingBox();
         const columnBox = await readyColumn.boundingBox();
@@ -426,12 +426,12 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         await page.waitForTimeout(100);
 
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(200);
 
         const confirmButton = page.getByTestId('status-change-confirm');
         if (await confirmButton.isVisible({ timeout: 2000 }).catch(() => false)) {
           await confirmButton.click();
-          await page.waitForTimeout(800);
+          await page.waitForTimeout(200);
         }
       }
 
@@ -443,7 +443,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
        * NARRATION_24: [confident] Im nächsten Schritt verschieben wir Referenten von "READY" zu "ACCEPTED". [satisfied] Alle vier READY-Referenten werden zu ACCEPTED verschoben. [excited] Das läuft wie geschmiert!
        */
       logNarration('NARRATION_24', 'Referenten zu ACCEPTED verschieben');
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(200);
 
       const acceptedColumn = page.getByTestId('status-lane-ACCEPTED');
       await expect(acceptedColumn).toBeVisible({ timeout: 5000 });
@@ -484,7 +484,7 @@ test.describe('Event Workflow Screencast for Training Video', () => {
         }
       }
 
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(200);
       console.log('    ✓ All speakers moved to ACCEPTED');
       console.log('\n✅ Phase B Complete\n');
       await waitForNarration('NARRATION_24', page);
@@ -503,12 +503,13 @@ test.describe('Event Workflow Screencast for Training Video', () => {
       await page.waitForTimeout(500);
 
       await page.getByTestId('publish-topic-button').click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000);
       console.log('    ✓ Topic published');
+
+      await waitForNarration('NARRATION_25', page);
 
       await page.getByTestId('event-tab-speakers').click();
       await page.waitForTimeout(1000);
-      await waitForNarration('NARRATION_25', page);
 
       /*
        * NARRATION_26: [professional] Zurück im Referenten-Tab reichen wir nun für jeden Referenten die Präsentations-Inhalte ein. [casual] Titel, Abstract, die üblichen Verdächtigen. [methodical] Wir wiederholen diesen Prozess für alle drei Referenten mit zugesagten Präsentationen. [playful] Copy, paste, repeat. [chuckling] Nein, Spaß, jeder Referent hat natürlich einzigartige Inhalte!

@@ -1,0 +1,32 @@
+meta {
+  name: Send Reminder For Non-Existent Speaker Returns 400 (Story 6.5 AC8)
+  type: http
+  seq: 66
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/00000000-0000-0000-0000-000000000000/send-reminder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "reminderType": "RESPONSE",
+    "tier": "TIER_1"
+  }
+}
+
+assert {
+  res.status: eq 400
+}
+
+tests {
+  test("should return 400 for non-existent speaker pool entry - Story 6.5 AC8", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

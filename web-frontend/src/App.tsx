@@ -6,10 +6,12 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import { Box, CircularProgress } from '@mui/material';
+import { Box } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuth } from '@hooks/useAuth';
+import HomePage from '@pages/public/HomePage';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
 import {
@@ -75,7 +77,7 @@ const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'))
 const SlotAssignmentPage = React.lazy(() => import('@pages/organizer/SlotAssignmentPage'));
 
 // Public Pages - Story 4.1.2, 4.1.3, 4.1.5, 4.1.6, 4.2
-const HomePage = React.lazy(() => import('@pages/public/HomePage'));
+// HomePage is eagerly imported (top of file) to avoid double-spinner on first load.
 const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
@@ -87,6 +89,31 @@ const RegistrationConfirmationPage = React.lazy(
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
+// Legal pages
+const PrivacyPage = React.lazy(() => import('@pages/public/PrivacyPage'));
+const SupportPage = React.lazy(() => import('@pages/public/SupportPage'));
+
+// Story 6.2a: Speaker Portal - Invitation Response
+const InvitationResponsePage = React.lazy(
+  () => import('@pages/speaker-portal/InvitationResponsePage')
+);
+
+// Story 6.2b: Speaker Portal - Profile Update
+const ProfileUpdatePage = React.lazy(() => import('@pages/speaker-portal/ProfileUpdatePage'));
+
+// Story 6.3: Speaker Portal - Content Submission
+const ContentSubmissionPage = React.lazy(
+  () => import('@pages/speaker-portal/ContentSubmissionPage')
+);
+
+// Story 6.4: Speaker Portal - Dashboard
+const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/SpeakerDashboardPage'));
+
+// Story 9.1: Speaker Portal - JWT Magic Login
+const SpeakerMagicLoginPage = React.lazy(
+  () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
+);
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -97,7 +124,7 @@ const PageLoader = () => (
       minHeight: '50vh',
     }}
   >
-    <CircularProgress />
+    <BATbernLoader size={96} />
   </Box>
 );
 
@@ -214,6 +241,22 @@ function App() {
                     <Route path="/archive" element={<ArchivePage />} />
                     {/* Archive detail reuses HomePage with archive mode (Story 4.2) */}
                     <Route path="/archive/:eventCode" element={<HomePage />} />
+
+                    {/* Story 6.2a: Speaker Portal - Invitation Response */}
+                    <Route path="/speaker-portal/respond" element={<InvitationResponsePage />} />
+
+                    {/* Story 6.2b: Speaker Portal - Profile Update */}
+                    <Route path="/speaker-portal/profile" element={<ProfileUpdatePage />} />
+
+                    {/* Story 6.3: Speaker Portal - Content Submission */}
+                    <Route path="/speaker-portal/content" element={<ContentSubmissionPage />} />
+
+                    {/* Story 6.4: Speaker Portal - Dashboard */}
+                    <Route path="/speaker-portal/dashboard" element={<SpeakerDashboardPage />} />
+
+                    {/* Story 9.1: Speaker Portal - JWT Magic Login */}
+                    <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
+
                     <Route
                       path="/search"
                       element={
@@ -223,22 +266,8 @@ function App() {
                       }
                     />
                     <Route path="/about" element={<AboutPage />} />
-                    <Route
-                      path="/privacy"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Privacy Policy (Coming later)
-                        </div>
-                      }
-                    />
-                    <Route
-                      path="/terms"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Terms of Service (Coming later)
-                        </div>
-                      }
-                    />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/support" element={<SupportPage />} />
 
                     {/* Authentication routes */}
                     <Route

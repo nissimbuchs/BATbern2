@@ -1,0 +1,86 @@
+# generated: 2026-02-15
+# project: BATbern Watch
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+# epics_source: docs/watch-app/epics.md
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-15
+project: BATbern Watch
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Public Event Companion
+  epic-1: done
+  w1-1-xcode-project-setup-event-hero-screen: done
+  w1-2-session-card-browsing: done
+  w1-3-session-abstract-speaker-bio: done
+  w1-4-progressive-publishing-offline-support: done
+  w1-5-ui-polish-image-caching: done
+  epic-1-retrospective: done
+
+  # Epic 2: Watch Pairing & Organizer Access
+  epic-2: done
+  w2-1-pairing-code-backend-web-frontend: done
+  w2-2-watch-pairing-flow-organizer-zone-navigation: done
+  w2-3-event-join-schedule-sync: done
+  w2-4-speaker-arrival-tracking: done
+  epic-2-retrospective: done
+
+  # Epic 3: Live Countdown & Haptic Awareness
+  epic-3: done
+  w3-1-live-countdown-display: done
+  w3-2-haptic-alert-system: done
+  w3-3-watch-face-complications: done
+  w3-4-session-schedule-next-session-preview: done
+  epic-3-retrospective: done
+
+  # Epic 4: Session Control & Team Sync
+  # GATE G1: epic-4-reuse-map.md reviewed by SM (2026-02-18) ✅
+  # Gate checklist — all cleared before W4.1 story creation:
+  #   G1: epic-4-reuse-map.md reviewed by SM          [x] 2026-02-18
+  #   D1: WatchHapticService.schedule() firing logic   [x] commit 5c49e211
+  #   A1: Pre-implementation review in story template  [x] w4-1 story — Pre-Implementation Review section
+  #   A2: Design direction block in story template     [x] w4-1 story — Design Direction section
+  epic-4: done
+  w4-1-websocket-real-time-infrastructure: done
+  w4-2-session-advance-transition: done
+  w4-3-overrun-detection-schedule-cascade: done
+  w4-4-break-management-event-lifecycle: done
+  epic-4-retrospective: optional
+
+  # Epic 5: Offline Resilience
+  epic-5: in-progress
+  w5-1-offline-timer-haptics: done
+  w5-2-action-queue-sync-recovery: done
+  w5-3-connectivity-monitoring-adaptive-behavior: ready-for-dev
+  epic-5-retrospective: optional

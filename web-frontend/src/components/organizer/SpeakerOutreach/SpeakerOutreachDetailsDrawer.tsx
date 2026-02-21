@@ -32,10 +32,21 @@ import {
   InputLabel,
   Button,
   Stack,
+  Snackbar,
 } from '@mui/material';
-import { Close as CloseIcon, Email, Phone, Person } from '@mui/icons-material';
+import {
+  Close as CloseIcon,
+  Email,
+  Phone,
+  Person,
+  Send as SendIcon,
+  NotificationsActive,
+  AttachFile as AttachFileIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useSpeakerOutreachHistory, useRecordOutreach } from '../../../hooks/useSpeakerOutreach';
+import { useSendInvitation, useSendReminder } from '../../../hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '../../../types/speakerPool.types';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
 
@@ -45,6 +56,8 @@ interface SpeakerOutreachDetailsDrawerProps {
   speaker: SpeakerPoolEntry | null;
   eventCode: string;
   showMarkContactedForm?: boolean; // Show form for IDENTIFIED/CONTACTED speakers
+  onOpenContentSubmission?: (speaker: SpeakerPoolEntry) => void; // Callback for ACCEPTED speakers
+  onOpenQualityReview?: (speaker: SpeakerPoolEntry) => void; // Callback for CONTENT_SUBMITTED speakers
 }
 
 interface FormData {
@@ -64,6 +77,8 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   speaker,
   eventCode,
   showMarkContactedForm = false,
+  onOpenContentSubmission,
+  onOpenQualityReview,
 }) => {
   const { t } = useTranslation('organizer');
 
@@ -74,6 +89,116 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
   } = useSpeakerOutreachHistory(eventCode, speaker?.id || '');
 
   const recordOutreachMutation = useRecordOutreach();
+  const sendInvitationMutation = useSendInvitation(eventCode);
+  const sendReminderMutation = useSendReminder(eventCode);
+
+  // Snackbar state for invitation feedback
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  // Handle sending invitation
+  const handleSendInvitation = async () => {
+    if (!speaker) return;
+
+    // Use locally saved email if speaker doesn't have one in the database
+    const effectiveEmail = speaker.email || (emailSaved ? emailInput : undefined);
+
+    // Default response deadline: 30 days from now
+    const defaultDeadline = new Date();
+    defaultDeadline.setDate(defaultDeadline.getDate() + 30);
+    const responseDeadline = defaultDeadline.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+    try {
+      const result = await sendInvitationMutation.mutateAsync({
+        username: speaker.id,
+        options: {
+          responseDeadline,
+          ...(effectiveEmail && !speaker.email ? { email: effectiveEmail } : {}),
+        },
+      });
+      setSnackbarMessage(t('speakers.invitationSent', { email: result.email || effectiveEmail }));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('speakers.invitationFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbarOpen(false);
+  };
+
+  // Show Send Invitation button only for IDENTIFIED speakers
+  const canSendInvitation = speaker?.status === 'IDENTIFIED';
+  const hasEmail = !!speaker?.email;
+
+  // Show Send Reminder button for INVITED or ACCEPTED speakers (Story 6.5)
+  const canSendReminder = speaker?.status === 'INVITED' || speaker?.status === 'ACCEPTED';
+
+  const handleSendReminder = async () => {
+    if (!speaker) return;
+
+    const reminderType = speaker.status === 'INVITED' ? 'RESPONSE' : 'CONTENT';
+
+    try {
+      const result = await sendReminderMutation.mutateAsync({
+        speakerPoolId: speaker.id,
+        request: { reminderType },
+      });
+      setSnackbarMessage(t('speakers.reminderSent', { email: result.emailAddress }));
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
+    } catch {
+      setSnackbarMessage(t('speakers.reminderFailed'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    }
+  };
+
+  // Email input state (AC4: for speakers without email)
+  const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false); // Track when email has been locally saved
+
+  // Email validation
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmailInput(value);
+    if (emailTouched && value && !validateEmail(value)) {
+      setEmailError(t('speakers.invalidEmail'));
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handleEmailBlur = () => {
+    setEmailTouched(true);
+    if (emailInput && !validateEmail(emailInput)) {
+      setEmailError(t('speakers.invalidEmail'));
+    }
+  };
+
+  // Reset email input when drawer opens/closes or speaker changes
+  useEffect(() => {
+    if (open && speaker) {
+      setEmailInput('');
+      setEmailError('');
+      setEmailTouched(false);
+      setEmailSaved(false);
+    }
+  }, [open, speaker?.id]);
+
+  // Show email input only for IDENTIFIED speakers without email
+  const showEmailInput = canSendInvitation && !hasEmail;
+  const isEmailValid = emailInput && validateEmail(emailInput);
 
   // Form state for marking contacted
   const initialFormData: FormData = {
@@ -224,13 +349,291 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
                 {t('speakerBrainstorm.form.expertise')}: {speaker.expertise}
               </Typography>
             )}
+            {speaker.email && (
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {speaker.email}
+              </Typography>
+            )}
             <Box mt={1}>
               <Chip
                 label={speaker.status}
                 size="small"
-                color={speaker.status === 'CONTACTED' ? 'success' : 'default'}
+                color={
+                  speaker.status === 'ACCEPTED'
+                    ? 'success'
+                    : speaker.status === 'DECLINED'
+                      ? 'error'
+                      : speaker.status === 'INVITED'
+                        ? 'info'
+                        : speaker.status === 'CONTACTED'
+                          ? 'warning'
+                          : 'default'
+                }
               />
+              {speaker.isTentative && (
+                <Chip label={t('speakers.tentative')} size="small" color="warning" sx={{ ml: 1 }} />
+              )}
             </Box>
+
+            {/* Response Details - Story 6.2a */}
+            {/* Show for any speaker who has accepted (acceptedAt is set), not just current ACCEPTED status */}
+            {speaker.acceptedAt && (
+              <Box mt={2} sx={{ bgcolor: '#e8f5e9', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#1b5e20' }} gutterBottom>
+                  {t('speakers.responseDetails')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#212121' }}>
+                  {t('speakers.acceptedAt')}: {formatDate(speaker.acceptedAt)}
+                </Typography>
+                {speaker.preferredTimeSlot && (
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
+                    {t('speakers.preferredTimeSlot')}: {speaker.preferredTimeSlot}
+                  </Typography>
+                )}
+                {speaker.travelRequirements && (
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
+                    {t('speakers.travelRequirements')}: {speaker.travelRequirements}
+                  </Typography>
+                )}
+                {speaker.technicalRequirements && (
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
+                    {t('speakers.technicalRequirements')}: {speaker.technicalRequirements}
+                  </Typography>
+                )}
+                {speaker.initialPresentationTitle && (
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
+                    {t('speakers.initialTitle')}: {speaker.initialPresentationTitle}
+                  </Typography>
+                )}
+                {speaker.preferenceComments && (
+                  <Typography variant="body2" sx={{ color: '#212121', mt: 1, fontStyle: 'italic' }}>
+                    {t('speakers.comments')}: {speaker.preferenceComments}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {speaker.status === 'DECLINED' && speaker.declineReason && (
+              <Box mt={2} sx={{ bgcolor: '#ffebee', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#b71c1c' }} gutterBottom>
+                  {t('speakers.declineDetails')}
+                </Typography>
+                {speaker.declinedAt && (
+                  <Typography variant="body2" sx={{ color: '#212121' }}>
+                    {t('speakers.declinedAt')}: {formatDate(speaker.declinedAt)}
+                  </Typography>
+                )}
+                <Typography variant="body2" sx={{ color: '#212121' }}>
+                  {t('speakers.declineReason')}: {speaker.declineReason}
+                </Typography>
+              </Box>
+            )}
+
+            {speaker.isTentative && speaker.tentativeReason && (
+              <Box mt={2} sx={{ bgcolor: '#fff8e1', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#e65100' }} gutterBottom>
+                  {t('speakers.tentativeDetails')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#212121' }}>
+                  {t('speakers.tentativeReason')}: {speaker.tentativeReason}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Revision Needed Feedback (when content was rejected) */}
+            {speaker.contentStatus === 'REVISION_NEEDED' && speaker.notes && (
+              <Box mt={2} sx={{ bgcolor: '#ffebee', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#b71c1c' }} gutterBottom>
+                  {t('speakers.revisionRequested', 'Revision Requested')}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#212121', whiteSpace: 'pre-wrap' }}>
+                  {speaker.notes}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Story 6.3: Submitted Content Display */}
+            {speaker.submittedTitle && (
+              <Box mt={2} sx={{ bgcolor: '#e8f5e9', p: 1.5, borderRadius: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#1b5e20' }} gutterBottom>
+                  {t('speakers.submittedContent', 'Submitted Content')}
+                  {speaker.contentStatus && (
+                    <Chip
+                      label={speaker.contentStatus}
+                      size="small"
+                      color={
+                        speaker.contentStatus === 'APPROVED'
+                          ? 'success'
+                          : speaker.contentStatus === 'SUBMITTED'
+                            ? 'info'
+                            : 'warning'
+                      }
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#212121' }}
+                  fontWeight="medium"
+                  gutterBottom
+                >
+                  {speaker.submittedTitle}
+                </Typography>
+                {speaker.submittedAbstract && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: '#212121',
+                      mt: 1,
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: 150,
+                      overflow: 'auto',
+                    }}
+                  >
+                    {speaker.submittedAbstract}
+                  </Typography>
+                )}
+                {speaker.materialFileName && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1 }}>
+                    <AttachFileIcon sx={{ fontSize: 16, color: '#1b5e20' }} />
+                    {speaker.materialCloudFrontUrl ? (
+                      <Button
+                        variant="text"
+                        href={speaker.materialCloudFrontUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="small"
+                        sx={{ textTransform: 'none', color: '#1b5e20', p: 0, minWidth: 0 }}
+                      >
+                        {speaker.materialFileName}
+                      </Button>
+                    ) : (
+                      <Typography variant="body2" sx={{ color: '#212121' }}>
+                        {speaker.materialFileName}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+                {speaker.contentSubmittedAt && (
+                  <Typography variant="caption" sx={{ color: '#424242', mt: 1, display: 'block' }}>
+                    {t('speakers.submittedAt', 'Submitted')}:{' '}
+                    {formatDate(speaker.contentSubmittedAt)}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {/* Email Input for Speakers without Email (AC4) */}
+            {showEmailInput && (
+              <Box mt={2}>
+                <Stack spacing={1}>
+                  <TextField
+                    label={t('speakers.email')}
+                    value={emailInput}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    error={!!emailError}
+                    helperText={emailError || t('speakers.emailRequired')}
+                    fullWidth
+                    size="small"
+                    type="email"
+                    placeholder="speaker@example.com"
+                  />
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={!isEmailValid}
+                    onClick={() => {
+                      // Mark email as saved locally - enables Send Invitation button
+                      // Note: Full backend support for updating speaker email is pending
+                      setEmailSaved(true);
+                      setSnackbarMessage(t('speakers.emailSaved'));
+                      setSnackbarSeverity('success');
+                      setSnackbarOpen(true);
+                    }}
+                  >
+                    {t('speakers.saveEmail')}
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+
+            {/* Send Invitation Button (Story 6.1c) */}
+            {canSendInvitation && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={
+                    sendInvitationMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SendIcon />
+                    )
+                  }
+                  onClick={handleSendInvitation}
+                  disabled={sendInvitationMutation.isPending || (!hasEmail && !emailSaved)}
+                  fullWidth
+                >
+                  {sendInvitationMutation.isPending
+                    ? t('speakers.sending')
+                    : t('speakers.sendInvitation')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Send Reminder Button (Story 6.5) */}
+            {canSendReminder && (
+              <Box mt={2}>
+                <Button
+                  variant="outlined"
+                  color="info"
+                  startIcon={
+                    sendReminderMutation.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <NotificationsActive />
+                    )
+                  }
+                  onClick={handleSendReminder}
+                  disabled={sendReminderMutation.isPending}
+                  fullWidth
+                >
+                  {sendReminderMutation.isPending
+                    ? t('speakers.sendingReminder')
+                    : t('speakers.sendReminder')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Content Submission Button for ACCEPTED speakers */}
+            {speaker.status === 'ACCEPTED' && onOpenContentSubmission && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="success"
+                  onClick={() => onOpenContentSubmission(speaker)}
+                  fullWidth
+                >
+                  {t('speakers.submitContent', 'Submit Content')}
+                </Button>
+              </Box>
+            )}
+
+            {/* Quality Review Button for CONTENT_SUBMITTED speakers */}
+            {speaker.status === 'CONTENT_SUBMITTED' && onOpenQualityReview && (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={() => onOpenQualityReview(speaker)}
+                  fullWidth
+                >
+                  {t('speakers.reviewContent', 'Review Content')}
+                </Button>
+              </Box>
+            )}
           </Paper>
         )}
 
@@ -332,7 +735,7 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
 
           {isLoading && (
             <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
+              <BATbernLoader size={96} />
             </Box>
           )}
 
@@ -401,6 +804,18 @@ const SpeakerOutreachDetailsDrawer: React.FC<SpeakerOutreachDetailsDrawerProps> 
           )}
         </Box>
       </Box>
+
+      {/* Invitation Feedback Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Drawer>
   );
 };

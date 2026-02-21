@@ -1,0 +1,45 @@
+meta {
+  name: Speaker Workflow - Invalid Transition
+  type: http
+  seq: 51
+}
+
+put {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/{{createdSpeakerPoolId}}/status
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "newStatus": "CONFIRMED",
+    "reason": "Attempting invalid transition - should fail"
+  }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("should return 422 Unprocessable Entity for invalid transition (Story 6.0a AC2)", function() {
+    expect(res.getStatus()).to.equal(422);
+  });
+
+  test("should include error message about invalid transition", function() {
+    const response = res.getBody();
+    // Response should indicate the transition is invalid
+    expect(response).to.have.property('message');
+  });
+
+  test("should not allow skipping workflow steps", function() {
+    // IDENTIFIED/CONTACTED -> CONFIRMED skips multiple steps
+    // Workflow requires: IDENTIFIED -> CONTACTED -> READY -> ACCEPTED ->
+    //                    CONTENT_SUBMITTED -> QUALITY_REVIEWED -> CONFIRMED
+    expect(res.getStatus()).to.not.equal(200);
+  });
+}

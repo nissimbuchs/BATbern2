@@ -14,9 +14,11 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -28,6 +30,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "speaker_pool")
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,6 +39,7 @@ public class SpeakerPool {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(columnDefinition = "UUID")
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Column(name = "event_id", nullable = false, columnDefinition = "UUID")
@@ -88,109 +92,66 @@ public class SpeakerPool {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    // Story 6.1b: Speaker Invitation System fields
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(name = "invited_at")
+    private Instant invitedAt;
+
+    @Column(name = "response_deadline")
+    private LocalDate responseDeadline;
+
+    @Column(name = "content_deadline")
+    private LocalDate contentDeadline;
+
+    // Story 6.2a: Speaker Response Portal fields
+    @Column(name = "accepted_at")
+    private Instant acceptedAt;
+
+    @Column(name = "declined_at")
+    private Instant declinedAt;
+
+    @Column(name = "decline_reason", columnDefinition = "TEXT")
+    private String declineReason;
+
+    @Column(name = "is_tentative")
+    private Boolean isTentative = false;
+
+    @Column(name = "tentative_reason", columnDefinition = "TEXT")
+    private String tentativeReason;
+
+    @Column(name = "preferred_time_slot", length = 100)
+    private String preferredTimeSlot;
+
+    @Column(name = "travel_requirements", columnDefinition = "TEXT")
+    private String travelRequirements;
+
+    @Column(name = "technical_requirements", columnDefinition = "TEXT")
+    private String technicalRequirements;
+
+    @Column(name = "initial_presentation_title", length = 500)
+    private String initialPresentationTitle;
+
+    @Column(name = "preference_comments", columnDefinition = "TEXT")
+    private String preferenceComments;
+
+    // Story 6.5: Automated Deadline Reminders
+    @Column(name = "reminders_disabled")
+    private Boolean remindersDisabled = false;
+
+    // Story 6.3: Speaker Content Submission Portal fields
+    @Column(name = "content_status", length = 50)
+    private String contentStatus = "PENDING"; // PENDING, SUBMITTED, APPROVED, REVISION_NEEDED
+
+    @Column(name = "content_submitted_at")
+    private Instant contentSubmittedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    // Getters and Setters
-
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public UUID getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(UUID eventId) {
-        this.eventId = eventId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getSpeakerName() {
-        return speakerName;
-    }
-
-    public void setSpeakerName(String speakerName) {
-        this.speakerName = speakerName;
-    }
-
-    public String getCompany() {
-        return company;
-    }
-
-    public void setCompany(String company) {
-        this.company = company;
-    }
-
-    public String getExpertise() {
-        return expertise;
-    }
-
-    public void setExpertise(String expertise) {
-        this.expertise = expertise;
-    }
-
-    public String getAssignedOrganizerId() {
-        return assignedOrganizerId;
-    }
-
-    public void setAssignedOrganizerId(String assignedOrganizerId) {
-        this.assignedOrganizerId = assignedOrganizerId;
-    }
-
-    public SpeakerWorkflowState getStatus() {
-        return status;
-    }
-
-    public void setStatus(SpeakerWorkflowState status) {
-        this.status = status;
-    }
-
-    public UUID getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(UUID sessionId) {
-        this.sessionId = sessionId;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Instant updatedAt) {
-        this.updatedAt = updatedAt;
-    }
 
     @PrePersist
     protected void onCreate() {

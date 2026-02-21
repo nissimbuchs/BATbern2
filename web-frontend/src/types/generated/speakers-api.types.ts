@@ -177,6 +177,87 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/speakers/{speakerId}/content': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker content
+     * @description Retrieve existing presentation content for a speaker.
+     *     Story 5.5: Speaker Content Submission (AC34)
+     *
+     *     Handles orphaned session references by resetting speaker state.
+     *     Returns material information if uploaded.
+     */
+    get: operations['getSpeakerContent'];
+    put?: never;
+    /**
+     * Submit speaker content
+     * @description Submit speaker content (presentation title and abstract).
+     *     Story 5.5: Speaker Content Submission (AC6-10, AC33-34, AC37)
+     *
+     *     Creates a session with the presentation details and links the speaker.
+     *     Updates speaker status to CONTENT_SUBMITTED.
+     */
+    post: operations['submitSpeakerContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/review-queue': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get quality review queue
+     * @description Get review queue showing all speakers with CONTENT_SUBMITTED status.
+     *     Story 5.5: Speaker Content Submission (AC11)
+     *
+     *     Returns speakers pending quality review, ordered by submission date (oldest first).
+     */
+    get: operations['getReviewQueue'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{speakerId}/review': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve or reject speaker content
+     * @description Approve or reject speaker content quality review.
+     *     Story 5.5: Speaker Content Submission (AC13-14, AC17)
+     *
+     *     - APPROVE: Updates speaker status to QUALITY_REVIEWED
+     *     - REJECT: Requires feedback, sends notification to speaker with magic link
+     *
+     *     Auto-updates to CONFIRMED when both QUALITY_REVIEWED AND slot is assigned.
+     */
+    post: operations['reviewSpeakerContent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/{speakerId}/outreach': {
     parameters: {
       query?: never;
@@ -698,6 +779,174 @@ export interface components {
       /** @description Optional notes about the outreach */
       notes?: string;
     };
+    /**
+     * @description Request to submit speaker content (Story 5.5 AC6-10).
+     *     Creates a session with the presentation details and links the speaker.
+     */
+    SubmitContentRequest: {
+      /**
+       * @description Presentation title (becomes session.title)
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      presentationTitle: string;
+      /**
+       * @description Presentation abstract (becomes session.description). Max 1000 characters.
+       * @example This talk explores the implementation of Zero Trust security principles in large enterprise environments, covering identity verification, micro-segmentation, and continuous monitoring strategies.
+       */
+      presentationAbstract: string;
+      /**
+       * @description Speaker username (if existing user selected, ADR-003)
+       * @example john.doe
+       */
+      username?: string;
+      /**
+       * @description Speaker name (if creating new user)
+       * @example John Doe
+       */
+      speakerName?: string;
+      /**
+       * Format: email
+       * @description Speaker email (if creating new user)
+       * @example john.doe@example.com
+       */
+      email?: string;
+      /**
+       * @description Speaker company (optional)
+       * @example Google Switzerland
+       */
+      company?: string;
+      /**
+       * @description Speaker bio (optional)
+       * @example Experienced security architect with 15 years in the industry.
+       */
+      bio?: string;
+    };
+    /**
+     * @description Response for speaker content operations (Story 5.5 AC6-10).
+     *     Returns session details and speaker status after content submission or retrieval.
+     */
+    SpeakerContentResponse: {
+      /**
+       * Format: uuid
+       * @description Speaker pool entry ID
+       */
+      speakerPoolId?: string;
+      /**
+       * Format: uuid
+       * @description Event ID
+       */
+      eventId?: string;
+      /**
+       * Format: uuid
+       * @description Created session ID (AC7)
+       */
+      sessionId?: string;
+      /**
+       * @description Presentation title (from session.title)
+       * @example Zero Trust Security in Enterprise Environments
+       */
+      presentationTitle?: string;
+      /**
+       * @description Presentation abstract (from session.description)
+       * @example This talk explores...
+       */
+      presentationAbstract?: string;
+      /**
+       * @description Speaker username (ADR-003)
+       * @example john.doe
+       */
+      username?: string;
+      /**
+       * @description Speaker full name
+       * @example John Doe
+       */
+      speakerName?: string;
+      /**
+       * @description Speaker company
+       * @example Google Switzerland
+       */
+      company?: string;
+      status?: components['schemas']['SpeakerWorkflowState'];
+      /** @description Whether content exists for this speaker. False if session was deleted (AC34). */
+      hasContent?: boolean;
+      /** @description Warning message if issues detected (AC34 - "Content was lost. Please resubmit.") */
+      warning?: string;
+      /**
+       * Format: date-time
+       * @description When content was submitted
+       */
+      submittedAt?: string;
+      /** @description Whether presentation material has been uploaded */
+      hasMaterial?: boolean;
+      /**
+       * Format: uri
+       * @description Material download URL (CloudFront CDN URL)
+       * @example https://cdn.batbern.ch/materials/presentation.pdf
+       */
+      materialUrl?: string;
+      /**
+       * @description Material filename for display
+       * @example zero-trust-presentation.pdf
+       */
+      materialFileName?: string;
+    };
+    /** @description Request for quality review action (Story 5.5 AC13-14) */
+    ReviewRequest: {
+      action: components['schemas']['ReviewAction'];
+      /**
+       * @description Feedback for rejection (required when action is REJECT)
+       * @example Please provide more technical details about the implementation approach.
+       */
+      feedback?: string;
+    };
+    /**
+     * @description Quality review action:
+     *     - APPROVE: Accept the content, update status to QUALITY_REVIEWED
+     *     - REJECT: Reject the content, requires feedback, sends notification with magic link
+     * @enum {string}
+     */
+    ReviewAction: 'APPROVE' | 'REJECT';
+    /** @description Speaker pool entry for review queue */
+    SpeakerPoolEntry: {
+      /**
+       * Format: uuid
+       * @description Speaker pool entry ID
+       */
+      id?: string;
+      /**
+       * Format: uuid
+       * @description Event ID
+       */
+      eventId?: string;
+      /**
+       * @description Speaker name
+       * @example John Doe
+       */
+      speakerName?: string;
+      /**
+       * @description Speaker company
+       * @example Google Switzerland
+       */
+      company?: string;
+      status?: components['schemas']['SpeakerWorkflowState'];
+      /**
+       * @description Content submission status
+       * @enum {string}
+       */
+      contentStatus?: 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'REVISION_NEEDED';
+      /**
+       * Format: uuid
+       * @description Associated session ID (if content submitted)
+       */
+      sessionId?: string;
+      /**
+       * Format: date-time
+       * @description When content was submitted
+       */
+      submittedAt?: string;
+      /** @description Notes (e.g., rejection feedback) */
+      notes?: string;
+    };
   };
   responses: never;
   parameters: never;
@@ -1189,6 +1438,238 @@ export interface operations {
       };
       /** @description Event not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code (ADR-003) */
+        eventCode: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Speaker content retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerContentResponse'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  submitSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code (ADR-003) */
+        eventCode: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubmitContentRequest'];
+      };
+    };
+    responses: {
+      /** @description Content submitted successfully */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerContentResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state - speaker must be in ACCEPTED state */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getReviewQueue: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code (ADR-003) */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Review queue retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerPoolEntry'][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  reviewSpeakerContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code (ADR-003) */
+        eventCode: string;
+        /** @description Speaker pool ID (UUID) */
+        speakerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReviewRequest'];
+      };
+    };
+    responses: {
+      /** @description Review action completed successfully */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error (e.g., feedback required for rejection) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden - requires ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Invalid state - speaker must be in CONTENT_SUBMITTED state */
+      422: {
         headers: {
           [name: string]: unknown;
         };

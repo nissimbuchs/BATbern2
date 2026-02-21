@@ -22,6 +22,8 @@ spring:
     clean-disabled: true
     locations: classpath:db/migration
     table: flyway_schema_history_event_management
+    # Allow missing migrations (migrations removed from codebase after being applied)
+    ignore-migration-patterns: "*:missing"
 
 management:
   endpoints:
@@ -91,6 +93,20 @@ workflow:
       # Transitions EVENT_LIVE → EVENT_COMPLETED when event date has passed
       cron: "0 59 23 * * *"
 
+# Speaker Deadline Reminders Configuration (Story 6.5)
+batbern:
+  reminders:
+    enabled: true
+    cron: "0 0 8 * * *"  # Daily at 8 AM (before 9 AM registration reminder)
+    tiers:
+      - tier: TIER_1
+        days-before-deadline: 14
+      - tier: TIER_2
+        days-before-deadline: 7
+      - tier: TIER_3
+        days-before-deadline: 3
+    escalate-after-tier3: true
+
 # Application Info (exposed via /actuator/info)
 info:
   app:
@@ -121,7 +137,8 @@ user-service:
 
 aws:
   s3:
-    bucket-name: ${AWS_S3_BUCKET_NAME:batbern-development-company-logos}
+    # For local dev, use 'materials' bucket (matches the CloudFront URL path prefix)
+    bucket-name: ${AWS_S3_BUCKET_NAME:materials}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN:http://localhost:8450}
 

@@ -1,8 +1,9 @@
 # Epic 5: Complete Event Management Workflow
 
-**Status:** 🔄 **IN PROGRESS** - Phase D Final (7/8 stories, 87.5%)
+**Status:** ✅ **COMPLETE** - MVP Ready (8/8 stories, 100%)
 
-**Last Updated:** 2026-01-02
+**Last Updated:** 2026-01-24
+**Completed:** 2026-01-24
 
 **Workflow Redesign (2025-12-19):** Epic 5 has been redesigned from a linear 16-step workflow to a parallel workflow architecture with 9 event states, per-speaker workflows, and configurable task management. This reflects the actual implementation reality discovered during Stories 5.1-5.4.
 
@@ -11,6 +12,8 @@
 - **Speaker Workflow:** Per-speaker state machine with parallel quality review and slot assignment
 - **Task System:** Configurable tasks (newsletters, catering, partner meetings) separate from workflow states
 - **Organizer-Driven:** Manual speaker coordination without requiring speaker self-service portal
+
+**Scope Change (2026-01-24):** Overflow Management (Story 5.6) **REMOVED FROM MVP SCOPE** - moved to Phase 2+ backlog. Manual speaker selection by organizers is sufficient for MVP launch. Democratic voting on overflow speakers deferred to future enhancement.
 
 **Progress Summary:**
 - ✅ Phase A: Event Setup - COMPLETE (4 stories)
@@ -23,9 +26,9 @@
   - ✅ 5.4 - Speaker Status Management (COMPLETE - QA PASS 95/100)
 - ✅ Phase C: Content & Slot Management - COMPLETE (1 story)
   - ✅ 5.5 - Speaker Content, Quality Review & Task System (COMPLETE - All 6 phases done, 100% implemented)
-- 🔄 Phase D: Publishing & Finalization - PARTIAL (1/2 stories)
-  - ✅ 5.7 - Slot Assignment & Progressive Publishing (90% COMPLETE - Core functionality done, auto-scheduling pending)
-  - ⏳ BAT-16 - Epic 5 Completion: Overflow, Auto-Publishing & Lifecycle (PENDING - Completes 5.6, 5.7, 5.8)
+- ✅ Phase D: Publishing & Finalization - COMPLETE (2 stories)
+  - ✅ 5.7 - Slot Assignment & Progressive Publishing (COMPLETE - Core functionality + auto-scheduling)
+  - ✅ BAT-16 - Epic 5 Completion: Auto-Publishing & Lifecycle (COMPLETE - Stories 5.7 & 5.8 finalized)
 
 ---
 

@@ -1,0 +1,35 @@
+meta {
+  name: Dashboard Token is Reusable (Story 6.4)
+  type: http
+  seq: 34
+}
+
+get {
+  url: {{baseUrl}}/speaker-portal/dashboard?token={{speakerViewToken}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.speakerName: isDefined
+}
+
+tests {
+  test("should return dashboard on second call (VIEW token is reusable) - Story 6.4 AC6", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.speakerName).to.be.a('string');
+    expect(body.upcomingEvents).to.be.an('array');
+    expect(body.pastEvents).to.be.an('array');
+  });
+
+  test("should return consistent data on repeated calls - Story 6.4 AC6", function() {
+    const body = res.getBody();
+    // Profile completeness should be stable across calls
+    expect(body.profileCompleteness).to.be.a('number');
+    // Speaker name should not change between calls
+    expect(body.speakerName).to.be.a('string');
+    expect(body.speakerName.length).to.be.greaterThan(0);
+  });
+}

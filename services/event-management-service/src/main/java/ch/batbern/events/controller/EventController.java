@@ -16,6 +16,7 @@ import ch.batbern.events.dto.EventResponse;
 import ch.batbern.events.dto.PatchEventRequest;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.dto.UpdateEventRequest;
+import ch.batbern.events.mapper.EventMapper;
 import ch.batbern.events.event.EventCreatedEvent;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.event.EventUpdatedEvent;
@@ -33,6 +34,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -83,6 +86,7 @@ public class EventController {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
+    private final EventMapper eventMapper;
     private final LogoRepository logoRepository;
     private final EventWorkflowStateMachine eventWorkflowStateMachine;
     private final ch.batbern.events.repository.SessionRepository sessionRepository;
@@ -158,9 +162,9 @@ public class EventController {
                     // Handle registration count expansion
                     if (include != null && include.contains("registrations")) {
                         long regCount = registrationRepository.countByEventId(event.getId());
-                        response = EventResponse.fromEntity(event, regCount);
+                        response = eventMapper.toDto(event, regCount);
                     } else {
-                        response = EventResponse.fromEntity(event);
+                        response = eventMapper.toDto(event);
                     }
 
                     // Apply additional resource expansions if requested
@@ -203,7 +207,7 @@ public class EventController {
             description = "Retrieve a single event by event code with optional resource expansion "
                 + "using ?include parameter. Cached for 15 minutes."
     )
-    public ResponseEntity<Map<String, Object>> getEvent(
+    public ResponseEntity<EventResponse> getEvent(
             @PathVariable String eventCode,
             @Parameter(description = "Comma-separated list of resources to include (e.g., venue,speakers,sessions)")
             @RequestParam(required = false) String include
@@ -216,12 +220,12 @@ public class EventController {
         // Check cache first
         Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
         String cacheStatus = "MISS";
-        Map<String, Object> response = null;
+        EventResponse response = null;
 
         if (cache != null) {
             Cache.ValueWrapper cachedValue = cache.get(cacheKey);
             if (cachedValue != null) {
-                response = (Map<String, Object>) cachedValue.get();
+                response = (EventResponse) cachedValue.get();
                 cacheStatus = "HIT";
                 log.debug("Cache HIT for event: {}", eventCode);
             }
@@ -235,12 +239,12 @@ public class EventController {
             Event event = eventRepository.findByEventCode(eventCode)
                     .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
 
-            // Build response with basic event data
-            response = buildBasicEventResponse(event);
+            // Build response using EventMapper (BAT-91 Phase 3)
+            response = eventMapper.toDto(event);
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
-                applyResourceExpansions(event, include, response);
+                applyResourceExpansionsToDTO(event, include, response);
             }
 
             // Store in cache
@@ -254,112 +258,6 @@ public class EventController {
         headers.add("X-Cache-Status", cacheStatus);
 
         return ResponseEntity.ok().headers(headers).body(response);
-    }
-
-    /**
-     * Build basic event response without expanded resources
-     * Story 1.16.2: Uses eventCode and organizerUsername instead of UUIDs
-     */
-    private Map<String, Object> buildBasicEventResponse(Event event) {
-        Map<String, Object> response = new java.util.HashMap<>();
-        response.put("eventCode", event.getEventCode());
-        response.put("title", event.getTitle());
-        response.put("eventNumber", event.getEventNumber());
-        response.put("workflowState", event.getWorkflowState() != null ? event.getWorkflowState().name() : null);
-        response.put("description", event.getDescription());
-        response.put("date", event.getDate());
-        response.put("registrationDeadline", event.getRegistrationDeadline());
-        response.put("venueName", event.getVenueName());
-        response.put("venueAddress", event.getVenueAddress());
-        response.put("venueCapacity", event.getVenueCapacity());
-        response.put("organizerUsername", event.getOrganizerUsername());
-        response.put("currentAttendeeCount", event.getCurrentAttendeeCount());
-        response.put("publishedAt", event.getPublishedAt());
-        response.put("metadata", event.getMetadata());
-        // Story 5.1: Include eventType if present
-        if (event.getEventType() != null) {
-            response.put("eventType", event.getEventType().getValue());
-
-            // Include typical start/end times from event type configuration
-            eventTypeRepository.findByType(event.getEventType()).ifPresent(eventTypeConfig -> {
-                if (eventTypeConfig.getTypicalStartTime() != null) {
-                    response.put("typicalStartTime", eventTypeConfig.getTypicalStartTime().toString());
-                }
-                if (eventTypeConfig.getTypicalEndTime() != null) {
-                    response.put("typicalEndTime", eventTypeConfig.getTypicalEndTime().toString());
-                }
-            });
-        }
-        // Story 2.5.3a: Include theme image fields if present
-        if (event.getThemeImageUrl() != null) {
-            response.put("themeImageUrl", event.getThemeImageUrl());
-        }
-        if (event.getThemeImageUploadId() != null) {
-            response.put("themeImageUploadId", event.getThemeImageUploadId());
-        }
-        // Story 5.2: Include topic (ADR-003: use topicCode, not UUID)
-        if (event.getTopicCode() != null) {
-            response.put("topicCode", event.getTopicCode());
-        }
-        if (event.getWorkflowState() != null) {
-            response.put("workflowState", event.getWorkflowState().name());
-        }
-        // Story 5.7 (BAT-11): Include currentPublishedPhase (uppercase per coding standards)
-        if (event.getCurrentPublishedPhase() != null) {
-            response.put("currentPublishedPhase", event.getCurrentPublishedPhase().toUpperCase());
-        }
-        // Include audit fields
-        response.put("createdAt", event.getCreatedAt());
-        response.put("updatedAt", event.getUpdatedAt());
-        response.put("createdBy", event.getCreatedBy());
-        response.put("updatedBy", event.getUpdatedBy());
-        return response;
-    }
-
-    /**
-     * Apply requested resource expansions to the response
-     *
-     * @param event The event entity
-     * @param include Comma-separated list of resources to include
-     * @param response The response map to populate
-     */
-    private void applyResourceExpansions(Event event, String include, Map<String, Object> response) {
-        String[] includes = include.split(",");
-        for (String resource : includes) {
-            String trimmed = resource.trim();
-            switch (trimmed) {
-                case "topics":
-                    // Expand topic details (Story BAT-109: Archive browsing)
-                    Map<String, Object> topic = expandTopic(event);
-                    if (topic != null) {
-                        response.put("topic", topic);
-                    }
-                    break;
-                case "venue":
-                    response.put("venue", expandVenue(event));
-                    break;
-                case "sessions":
-                    response.put("sessions", expandSessions(event));
-                    break;
-                case "speakers":
-                    // Speakers are already included in sessions expansion
-                    // This case is kept for explicit speaker expansion requests
-                    response.put("sessions", expandSessions(event));
-                    break;
-                case "registrations":
-                    // Override currentAttendeeCount with actual count from registrations table
-                    long registrationCount = registrationRepository.countByEventId(event.getId());
-                    response.put("currentAttendeeCount", (int) registrationCount);
-                    break;
-                case "metrics":
-                    // Add speaker metrics (confirmed count, materials status)
-                    expandMetrics(event, response);
-                    break;
-                // Additional resources can be added here as needed
-                default:
-                    log.warn("Unknown include resource requested: {}", trimmed);
-            }
-        }
     }
 
     /**
@@ -383,65 +281,27 @@ public class EventController {
                     // Sessions include speakers automatically
                     response.setSessions(expandSessions(event));
                     break;
-                default:
-                    // Ignore unknown expand parameters
+                case "metrics":
+                    // Add speaker metrics (BAT-91 Phase 3)
+                    expandMetricsToDTO(event, response);
                     break;
-                // "registrations" is handled separately in listEvents()
+                case "registrations":
+                    // Override currentAttendeeCount with actual count from registrations table
+                    long registrationCount = registrationRepository.countByEventId(event.getId());
+                    response.setCurrentAttendeeCount((int) registrationCount);
+                    break;
+                default:
+                    log.warn("Unknown include resource requested: {}", trimmed);
+                    break;
             }
         }
     }
 
     /**
-     * Expand topic data for an event
-     * Story BAT-109: Archive browsing with topic expansion
+     * Expand metrics to EventResponse DTO
+     * Story BAT-91 Phase 3: Typed DTO migration
      */
-    private Map<String, Object> expandTopic(Event event) {
-        if (event.getTopicCode() == null) {
-            return null;
-        }
-
-        // Fetch topic from repository
-        return topicService.getTopicByCode(event.getTopicCode())
-                .map(topic -> {
-                    Map<String, Object> topicMap = new HashMap<>();
-                    topicMap.put("code", topic.getTopicCode());
-                    topicMap.put("name", topic.getTitle());
-                    topicMap.put("description", topic.getDescription());
-                    topicMap.put("category", topic.getCategory());
-                    return topicMap;
-                })
-                .orElse(null);
-    }
-
-    /**
-     * Expand venue data for an event
-     * TODO: Replace with actual service call when Company Management Service is available
-     */
-    private Map<String, Object> expandVenue(Event event) {
-        // Use venue data stored directly on the Event entity
-        // In the future, this could be enhanced to fetch from a separate Venue service
-        Map<String, Object> venue = new java.util.HashMap<>();
-        venue.put("id", event.getEventCode()); // Use eventCode as venue identifier
-        venue.put("name", event.getVenueName());
-        venue.put("capacity", event.getVenueCapacity());
-        venue.put("address", event.getVenueAddress());
-        return venue;
-    }
-
-    /**
-     * Expand metrics data for an event (speaker KPIs)
-     *
-     * Calculates and adds speaker-related metrics to the response:
-     * - confirmedSpeakersCount: Number of speakers who accepted invitation (ACCEPTED or higher)
-     * - speakersWithCompleteInfoCount: Speakers who submitted materials
-     *   (CONTENT_SUBMITTED, QUALITY_REVIEWED, or CONFIRMED)
-     * - pendingMaterialsCount: Speakers who accepted but haven't submitted materials yet
-     * - maxSpeakerSlots: Max speaker slots based on event type configuration
-     *
-     * @param event The event entity
-     * @param response The response map to populate with metrics
-     */
-    private void expandMetrics(Event event, Map<String, Object> response) {
+    private void expandMetricsToDTO(Event event, EventResponse response) {
         UUID eventId = event.getId();
 
         // Count speakers who accepted invitation (ACCEPTED or higher in workflow)
@@ -488,21 +348,55 @@ public class EventController {
                 })
                 .count();
 
-        // Add metrics to response
-        response.put("confirmedSpeakersCount", (int) totalConfirmedSpeakers);
-        response.put("speakersWithCompleteInfoCount", (int) speakersWithCompleteInfo);
-        response.put("pendingMaterialsCount", (int) pendingMaterials);
-        if (maxSpeakerSlots != null) {
-            response.put("maxSpeakerSlots", maxSpeakerSlots);
-        }
-        // Story 5.9: Add session materials count
-        response.put("sessionsWithMaterialsCount", (int) sessionsWithMaterials);
-        response.put("totalSessionsCount", (int) totalSessions);
+        // Set metrics on EventResponse
+        response.setConfirmedSpeakersCount((int) totalConfirmedSpeakers);
+        response.setSpeakersWithCompleteInfoCount((int) speakersWithCompleteInfo);
+        response.setPendingMaterialsCount((int) pendingMaterials);
+        response.setMaxSpeakerSlots(maxSpeakerSlots);
+        response.setSessionsWithMaterialsCount((int) sessionsWithMaterials);
+        response.setTotalSessionsCount((int) totalSessions);
 
         log.debug("Event {} metrics - confirmed: {}, complete info: {}, "
                         + "pending materials: {}, max slots: {}, sessions with materials: {}/{}",
                 event.getEventCode(), totalConfirmedSpeakers, speakersWithCompleteInfo,
                 pendingMaterials, maxSpeakerSlots, sessionsWithMaterials, totalSessions);
+    }
+
+    /**
+     * Expand topic data for an event
+     * Story BAT-109: Archive browsing with topic expansion
+     */
+    private Map<String, Object> expandTopic(Event event) {
+        if (event.getTopicCode() == null) {
+            return null;
+        }
+
+        // Fetch topic from repository
+        return topicService.getTopicByCode(event.getTopicCode())
+                .map(topic -> {
+                    Map<String, Object> topicMap = new HashMap<>();
+                    topicMap.put("code", topic.getTopicCode());
+                    topicMap.put("name", topic.getTitle());
+                    topicMap.put("description", topic.getDescription());
+                    topicMap.put("category", topic.getCategory());
+                    return topicMap;
+                })
+                .orElse(null);
+    }
+
+    /**
+     * Expand venue data for an event
+     * TODO: Replace with actual service call when Company Management Service is available
+     */
+    private Map<String, Object> expandVenue(Event event) {
+        // Use venue data stored directly on the Event entity
+        // In the future, this could be enhanced to fetch from a separate Venue service
+        Map<String, Object> venue = new java.util.HashMap<>();
+        venue.put("id", event.getEventCode()); // Use eventCode as venue identifier
+        venue.put("name", event.getVenueName());
+        venue.put("capacity", event.getVenueCapacity());
+        venue.put("address", event.getVenueAddress());
+        return venue;
     }
 
     /**
@@ -627,7 +521,7 @@ public class EventController {
             description = "Retrieve the next upcoming event (published, registration_open, or "
                 + "registration_closed) for the public website. No authentication required."
     )
-    public ResponseEntity<Map<String, Object>> getCurrentEvent(
+    public ResponseEntity<EventResponse> getCurrentEvent(
             @Parameter(description = "Comma-separated list of resources to include "
                 + "(e.g., topics,venue,speakers,sessions)")
             @RequestParam(required = false) String include
@@ -635,7 +529,8 @@ public class EventController {
         log.debug("GET /api/v1/events/current - include: {}", include);
 
         // Find the next event with active workflow states (V17: changed from status to workflowState)
-        // Returns the event nearest to current date
+        // Returns the event nearest to current date, but only if it occurs today or in the future.
+        // Events whose date was yesterday or earlier are no longer shown on the homepage.
         // 9-State Model: NEWSLETTER_SENT and EVENT_READY consolidated into AGENDA_FINALIZED
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
@@ -645,8 +540,10 @@ public class EventController {
                 EventWorkflowState.EVENT_LIVE,
                 EventWorkflowState.EVENT_COMPLETED
         );
+        ZoneId bernZone = ZoneId.of("Europe/Zurich");
+        Instant startOfToday = LocalDate.now(bernZone).atStartOfDay(bernZone).toInstant();
         Event currentEvent = eventRepository
-                .findFirstByWorkflowStateInOrderByDateAsc(activeWorkflowStates)
+                .findFirstByWorkflowStateInAndDateGreaterThanEqualOrderByDateAsc(activeWorkflowStates, startOfToday)
                 .orElse(null);
 
         if (currentEvent == null) {
@@ -657,12 +554,12 @@ public class EventController {
         log.debug("Found current event: {} with workflowState: {}",
                 currentEvent.getEventCode(), currentEvent.getWorkflowState());
 
-        // Build response with basic event data
-        Map<String, Object> response = buildBasicEventResponse(currentEvent);
+        // Build response using EventMapper (BAT-91 Phase 3)
+        EventResponse response = eventMapper.toDto(currentEvent);
 
         // Apply resource expansions if requested
         if (include != null && !include.trim().isEmpty()) {
-            applyResourceExpansions(currentEvent, include, response);
+            applyResourceExpansionsToDTO(currentEvent, include, response);
         }
 
         return ResponseEntity.ok(response);
@@ -680,7 +577,7 @@ public class EventController {
      */
     @PostMapping
     @Operation(summary = "Create Event", description = "Create a new event")
-    public ResponseEntity<Map<String, Object>> createEvent(@Valid @RequestBody CreateEventRequest request) {
+    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
         log.debug("POST /api/v1/events - title: {}", request.getTitle());
 
         // Generate eventCode from event number (format: "BATbern{number}")
@@ -751,8 +648,8 @@ public class EventController {
             // Continue - event creation succeeded, publishing failure is non-critical
         }
 
-        // Build response
-        Map<String, Object> response = buildBasicEventResponse(savedEvent);
+        // Build response using EventMapper (Phase 3: BAT-91)
+        EventResponse response = eventMapper.toDto(savedEvent);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -787,7 +684,7 @@ public class EventController {
         @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
         @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true)
     })
-    public ResponseEntity<Map<String, Object>> updateEvent(
+    public ResponseEntity<EventResponse> updateEvent(
             @PathVariable String eventCode,
             @Valid @RequestBody UpdateEventRequest request) {
         log.debug("PUT /api/v1/events/{} - title: {}", eventCode, request.getTitle());
@@ -898,8 +795,8 @@ public class EventController {
             // Continue - event update succeeded, publishing failure is non-critical
         }
 
-        // Build response
-        Map<String, Object> response = buildBasicEventResponse(updatedEvent);
+        // Build response using EventMapper (BAT-91 Phase 3)
+        EventResponse response = eventMapper.toDto(updatedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -918,7 +815,7 @@ public class EventController {
     @PatchMapping("/{eventCode}")
     @Operation(summary = "Patch Event", description = "Partially update an existing event")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> patchEvent(
+    public ResponseEntity<EventResponse> patchEvent(
             @PathVariable String eventCode,
             @Valid @RequestBody PatchEventRequest request) {
         log.debug("PATCH /api/v1/events/{}", eventCode);
@@ -999,8 +896,8 @@ public class EventController {
             // Continue - event patch succeeded, publishing failure is non-critical
         }
 
-        // Build response
-        Map<String, Object> response = buildBasicEventResponse(patchedEvent);
+        // Build response using EventMapper (BAT-91 Phase 3)
+        EventResponse response = eventMapper.toDto(patchedEvent);
 
         return ResponseEntity.ok(response);
     }
@@ -1118,7 +1015,7 @@ public class EventController {
     @PostMapping("/{eventCode}/publish")
     @Operation(summary = "Publish Event", description = "Publish an event after validation (Story 1.16.2)")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
-    public ResponseEntity<Map<String, Object>> publishEvent(@PathVariable String eventCode) {
+    public ResponseEntity<EventResponse> publishEvent(@PathVariable String eventCode) {
         log.debug("POST /api/v1/events/{}/publish", eventCode);
 
         // Find event by eventCode
@@ -1163,8 +1060,8 @@ public class EventController {
             // Continue - event publishing succeeded, domain event publishing failure is non-critical
         }
 
-        // Build response
-        Map<String, Object> response = buildBasicEventResponse(publishedEvent);
+        // Build response using EventMapper (BAT-91 Phase 3)
+        EventResponse response = eventMapper.toDto(publishedEvent);
 
         return ResponseEntity.ok(response);
     }

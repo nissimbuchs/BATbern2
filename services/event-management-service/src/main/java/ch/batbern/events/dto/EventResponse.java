@@ -1,6 +1,5 @@
 package ch.batbern.events.dto;
 
-import ch.batbern.events.domain.Event;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,70 +52,14 @@ public class EventResponse {
     private Map<String, Object> venue;        // Populated with include=venue
     private List<Map<String, Object>> sessions; // Populated with include=sessions (includes speakers)
 
-    /**
-     * Convert Event entity to EventResponse DTO
-     */
-    public static EventResponse fromEntity(Event event) {
-        return EventResponse.builder()
-                .eventCode(event.getEventCode())
-                .title(event.getTitle())
-                .eventNumber(event.getEventNumber())
-                .date(event.getDate())
-                .registrationDeadline(event.getRegistrationDeadline())
-                .venueName(event.getVenueName())
-                .venueAddress(event.getVenueAddress())
-                .venueCapacity(event.getVenueCapacity())
-                .organizerUsername(event.getOrganizerUsername())
-                .currentAttendeeCount(event.getCurrentAttendeeCount())
-                .publishedAt(event.getPublishedAt())
-                .metadata(event.getMetadata())
-                .description(event.getDescription())
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .createdBy(event.getCreatedBy())
-                .updatedBy(event.getUpdatedBy())
-                .themeImageUrl(event.getThemeImageUrl())
-                .themeImageUploadId(event.getThemeImageUploadId())
-                .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
-                .topicCode(event.getTopicCode())
-                .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
-                .currentPublishedPhase(event.getCurrentPublishedPhase() != null
-                        ? event.getCurrentPublishedPhase().toUpperCase() : null)
-                .build();
-    }
+    // Optional metrics fields (populated with include=metrics)
+    private Integer confirmedSpeakersCount;
+    private Integer speakersWithCompleteInfoCount;
+    private Integer pendingMaterialsCount;
+    private Integer maxSpeakerSlots;
+    private Integer sessionsWithMaterialsCount;
+    private Integer totalSessionsCount;
 
-    /**
-     * Convert Event entity to EventResponse DTO with actual registration count
-     * Used when displaying event lists and details to show accurate registration numbers
-     *
-     * @param event The event entity
-     * @param actualRegistrationCount The actual count from registrations table
-     * @return EventResponse with accurate registration count
-     */
-    public static EventResponse fromEntity(Event event, long actualRegistrationCount) {
-        return EventResponse.builder()
-                .eventCode(event.getEventCode())
-                .title(event.getTitle())
-                .eventNumber(event.getEventNumber())
-                .date(event.getDate())
-                .registrationDeadline(event.getRegistrationDeadline())
-                .venueName(event.getVenueName())
-                .venueAddress(event.getVenueAddress())
-                .venueCapacity(event.getVenueCapacity())
-                .organizerUsername(event.getOrganizerUsername())
-                .currentAttendeeCount((int) actualRegistrationCount)
-                .publishedAt(event.getPublishedAt())
-                .metadata(event.getMetadata())
-                .description(event.getDescription())
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .createdBy(event.getCreatedBy())
-                .updatedBy(event.getUpdatedBy())
-                .themeImageUrl(event.getThemeImageUrl())
-                .themeImageUploadId(event.getThemeImageUploadId())
-                .eventType(event.getEventType() != null ? event.getEventType().getValue() : null)
-                .topicCode(event.getTopicCode())
-                .workflowState(event.getWorkflowState() != null ? event.getWorkflowState().name() : null)
-                .build();
-    }
+    // Note: Static fromEntity() methods removed in Phase 3 (BAT-91).
+    // Use EventMapper.toDto() instead.
 }

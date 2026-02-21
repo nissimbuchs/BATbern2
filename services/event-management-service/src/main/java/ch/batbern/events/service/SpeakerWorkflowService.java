@@ -1,14 +1,19 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -44,13 +49,19 @@ public class SpeakerWorkflowService {
 
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
+    private final EventRepository eventRepository;
+    private final DomainEventPublisher eventPublisher;
 
     public SpeakerWorkflowService(
             SpeakerPoolRepository speakerPoolRepository,
-            SessionRepository sessionRepository
+            SessionRepository sessionRepository,
+            EventRepository eventRepository,
+            DomainEventPublisher eventPublisher
     ) {
         this.speakerPoolRepository = speakerPoolRepository;
         this.sessionRepository = sessionRepository;
+        this.eventRepository = eventRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -94,8 +105,42 @@ public class SpeakerWorkflowService {
             checkAndUpdateToConfirmed(speaker, organizerUsername);
         }
 
-        // TODO: Publish SpeakerWorkflowStateChangeEvent to EventBridge
-        // Will be implemented when domain event publishing is added
+        // Publish SpeakerWorkflowStateChangeEvent to EventBridge (Story 6.0a CODE-001)
+        publishStateChangeEvent(speaker, currentState, newState, organizerUsername);
+    }
+
+    /**
+     * Publish a speaker workflow state change event.
+     * Story 6.0a CODE-001: Domain event publishing
+     *
+     * @param speaker The speaker pool entry
+     * @param fromState Previous workflow state
+     * @param toState New workflow state
+     * @param organizerUsername Username of the organizer making the change
+     */
+    private void publishStateChangeEvent(
+            SpeakerPool speaker,
+            SpeakerWorkflowState fromState,
+            SpeakerWorkflowState toState,
+            String organizerUsername
+    ) {
+        try {
+            SpeakerWorkflowStateChangeEvent event = new SpeakerWorkflowStateChangeEvent(
+                    speaker.getId(),
+                    speaker.getEventId(),
+                    fromState,
+                    toState,
+                    speaker.getUsername() != null ? speaker.getUsername() : organizerUsername
+            );
+
+            eventPublisher.publish(event);
+            LOG.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
+                    fromState, toState, speaker.getId());
+        } catch (Exception e) {
+            // Log but don't fail the transaction if event publishing fails
+            LOG.warn("Failed to publish SpeakerWorkflowStateChangeEvent for speaker {}: {}",
+                    speaker.getId(), e.getMessage());
+        }
     }
 
     /**
@@ -224,5 +269,76 @@ public class SpeakerWorkflowService {
         return sessionRepository.findById(speaker.getSessionId())
                 .map(session -> session.getStartTime() != null)
                 .orElse(false);
+    }
+
+    /**
+     * Check if an event has speaker overflow (more accepted speakers than max slots).
+     * Story 6.0a CODE-002: Overflow detection
+     *
+     * Counts speakers in ACCEPTED or higher states (CONTENT_SUBMITTED, QUALITY_REVIEWED, CONFIRMED)
+     * and compares against the event's venue capacity.
+     *
+     * Note: Currently using venueCapacity as a proxy for max speaker slots.
+     * In a future iteration, Event entity should have a dedicated maxSpeakerSlots field.
+     *
+     * @param eventId UUID of the event to check
+     * @return true if accepted speaker count exceeds the event's max slots
+     * @throws IllegalArgumentException if event not found
+     */
+    public boolean checkForOverflow(UUID eventId) {
+        // Get event to determine max speaker slots
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found: " + eventId));
+
+        // Count speakers in ACCEPTED or higher workflow states
+        // These are speakers who have committed to speaking
+        List<SpeakerWorkflowState> acceptedStates = List.of(
+                SpeakerWorkflowState.ACCEPTED,
+                SpeakerWorkflowState.CONTENT_SUBMITTED,
+                SpeakerWorkflowState.QUALITY_REVIEWED,
+                SpeakerWorkflowState.CONFIRMED
+        );
+
+        long acceptedCount = 0;
+        for (SpeakerWorkflowState state : acceptedStates) {
+            acceptedCount += speakerPoolRepository.countByEventIdAndStatus(eventId, state);
+        }
+
+        // Use venue capacity as a reasonable default for max speaker slots
+        // A typical BATbern event has 6-8 speaker slots for ~200 attendees
+        // Using venueCapacity / 25 as a heuristic (1 speaker per 25 attendees)
+        int maxSpeakerSlots = Math.max(6, event.getVenueCapacity() / 25);
+
+        boolean isOverflow = acceptedCount > maxSpeakerSlots;
+
+        LOG.debug("Overflow check for event {}: accepted={}, maxSlots={}, overflow={}",
+                eventId, acceptedCount, maxSpeakerSlots, isOverflow);
+
+        return isOverflow;
+    }
+
+    /**
+     * Get the current workflow state for a speaker.
+     *
+     * @param speakerId UUID of the speaker in the pool
+     * @return Current workflow state
+     * @throws IllegalArgumentException if speaker not found
+     */
+    public SpeakerWorkflowState getSpeakerWorkflowState(UUID speakerId) {
+        return speakerPoolRepository.findById(speakerId)
+                .map(SpeakerPool::getStatus)
+                .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + speakerId));
+    }
+
+    /**
+     * Get a speaker pool entry by ID.
+     *
+     * @param speakerId UUID of the speaker in the pool
+     * @return SpeakerPool entry
+     * @throws IllegalArgumentException if speaker not found
+     */
+    public SpeakerPool getSpeakerById(UUID speakerId) {
+        return speakerPoolRepository.findById(speakerId)
+                .orElseThrow(() -> new IllegalArgumentException("Speaker not found: " + speakerId));
     }
 }

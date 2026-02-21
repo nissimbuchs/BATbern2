@@ -175,6 +175,36 @@ class SlotAssignmentService {
   }
 
   /**
+   * Generate structural sessions (moderation, break, lunch) from event type config
+   *
+   * POST /api/v1/events/{eventCode}/sessions/structural
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param overwrite - Whether to overwrite existing structural sessions (default false)
+   * @returns Array of created structural sessions
+   */
+  async generateStructuralSessions(eventCode: string, overwrite = false): Promise<Session[]> {
+    try {
+      const response = await apiClient.post<Session[]>(
+        `${SLOT_ASSIGNMENT_API_PATH}/${eventCode}/sessions/structural`,
+        null,
+        { params: { overwrite } }
+      );
+      return response.data;
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 ||
+          error.response?.status === 403 ||
+          error.response?.status === 409)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
    * Auto-assign all unassigned sessions to available time slots
    *
    * POST /api/v1/events/{eventCode}/sessions/auto-assign

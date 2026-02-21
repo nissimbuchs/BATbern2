@@ -39,8 +39,9 @@ class SessionTest {
         // Given: Session with no speakers
         assertThat(session.getSessionUsers()).isEmpty();
 
-        // And: SessionUser to add
+        // And: SessionUser to add (with ID for ID-based equals/hashCode)
         SessionUser sessionUser = SessionUser.builder()
+                .id(UUID.randomUUID())
                 .username("test-user")
                 .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
@@ -197,9 +198,10 @@ class SessionTest {
         assertThat(speaker3.getSession()).isEqualTo(session);
     }
 
-    // Helper method
+    // Helper method - assigns UUID for ID-based equals/hashCode compatibility
     private SessionUser createSessionUser(SpeakerRole role) {
         return SessionUser.builder()
+                .id(UUID.randomUUID())
                 .username("test-user")
                 .speakerRole(role)
                 .isConfirmed(false)

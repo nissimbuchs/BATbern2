@@ -25,6 +25,7 @@ import {
   DialogContentText,
   DialogActions,
   IconButton,
+  Snackbar,
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -32,12 +33,14 @@ import {
   Warning as WarningIcon,
   Delete as DeleteIcon,
   Cancel as CancelIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useDeleteEvent } from '@/hooks/useEvents';
+import { useDeleteEvent, useUpdateEvent } from '@/hooks/useEvents';
 import type { Event, EventDetailUI } from '@/types/event.types';
+import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
 
 interface EventSettingsTabProps {
   event: Event | EventDetailUI;
@@ -56,6 +59,11 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const { t } = useTranslation('events');
   const navigate = useNavigate();
   const deleteEventMutation = useDeleteEvent();
+
+  const updateEventMutation = useUpdateEvent();
+  const [selectedOrganizer, setSelectedOrganizer] = useState(event.organizerUsername);
+  const [moderatorUpdateError, setModeratorUpdateError] = useState<string | null>(null);
+  const [moderatorUpdateSuccess, setModeratorUpdateSuccess] = useState(false);
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -91,6 +99,26 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
     },
   ]);
 
+  const handleOrganizerChange = async (newOrganizer: string) => {
+    const previous = selectedOrganizer;
+    setSelectedOrganizer(newOrganizer);
+    setModeratorUpdateError(null);
+    try {
+      await updateEventMutation.mutateAsync({
+        eventCode,
+        data: { organizerUsername: newOrganizer },
+      });
+      setModeratorUpdateSuccess(true);
+    } catch (error) {
+      setSelectedOrganizer(previous);
+      setModeratorUpdateError(
+        error instanceof Error
+          ? error.message
+          : t('eventPage.settings.moderatorUpdateError', 'Failed to update moderator.')
+      );
+    }
+  };
+
   const handleToggleNotification = (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n)));
   };
@@ -118,52 +146,47 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
 
   return (
     <Stack spacing={3}>
-      {/* Event Information */}
+      {/* Event Moderator */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('eventPage.settings.eventInfo', 'Event Information')}
-        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+          <PersonIcon color="action" />
+          <Typography variant="h6">
+            {t('eventPage.settings.moderator', 'Event Moderator')}
+          </Typography>
+        </Stack>
         <Divider sx={{ mb: 2 }} />
-
-        <Stack spacing={1}>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-              {t('eventPage.settings.eventNumber', 'Event Number')}:
-            </Typography>
-            <Typography variant="body2">{event.eventNumber}</Typography>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-              {t('eventPage.settings.eventCode', 'Event Code')}:
-            </Typography>
-            <Typography variant="body2" fontFamily="monospace">
-              {eventCode}
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-              {t('eventPage.settings.createdBy', 'Created By')}:
-            </Typography>
-            <Typography variant="body2">{event.organizerUsername}</Typography>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-              {t('eventPage.settings.createdAt', 'Created')}:
-            </Typography>
-            <Typography variant="body2">
-              {event.createdAt ? format(new Date(event.createdAt), 'MMMM d, yyyy') : '-'}
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ minWidth: 120 }}>
-              {t('eventPage.settings.lastModified', 'Last Modified')}:
-            </Typography>
-            <Typography variant="body2">
-              {event.updatedAt ? format(new Date(event.updatedAt), 'MMMM d, yyyy HH:mm') : '-'}
-            </Typography>
-          </Stack>
+        <Stack spacing={2}>
+          <Typography variant="body2" color="text.secondary">
+            {t(
+              'eventPage.settings.moderatorDesc',
+              'The organizer responsible for moderating this event.'
+            )}
+          </Typography>
+          <OrganizerSelect
+            value={selectedOrganizer}
+            onChange={handleOrganizerChange}
+            label={t('eventPage.settings.moderatorLabel', 'Moderator')}
+            includeUnassigned={false}
+            includeAllOption={false}
+            disabled={updateEventMutation.isPending}
+            size="medium"
+            sx={{ maxWidth: 400 }}
+            data-testid="moderator-select"
+          />
+          {moderatorUpdateError && (
+            <Alert severity="error" onClose={() => setModeratorUpdateError(null)}>
+              {moderatorUpdateError}
+            </Alert>
+          )}
         </Stack>
       </Paper>
+
+      <Snackbar
+        open={moderatorUpdateSuccess}
+        autoHideDuration={3000}
+        onClose={() => setModeratorUpdateSuccess(false)}
+        message={t('eventPage.settings.moderatorUpdated', 'Moderator updated successfully')}
+      />
 
       {/* Notifications */}
       <Paper sx={{ p: 3 }}>

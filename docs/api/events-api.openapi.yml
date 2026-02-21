@@ -52,6 +52,8 @@ tags:
     description: Topic management and backlog operations (Story 5.2)
   - name: Speaker Outreach
     description: Speaker outreach tracking and history (Story 5.3)
+  - name: Watch
+    description: Watch app organizer endpoints (Epic W2)
 
 paths:
   /events:
@@ -1102,6 +1104,207 @@ paths:
       security:
         - BearerAuth: []
 
+  /events/{eventCode}/speakers/invite:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Invite a speaker to an event
+      description: |
+        Create a SpeakerPool entry for a speaker and optionally auto-create
+        a User account if one doesn't exist.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+        - Auto-creates a User via UserApiClient if no user exists for the email
+        - Speaker starts in IDENTIFIED status
+        - Cognito account is NOT created for speakers initially
+
+        **Performance**: <300ms (P95)
+
+      operationId: inviteSpeaker
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteSpeakerRequest'
+      responses:
+        '201':
+          description: Speaker invited successfully (new entry created)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '200':
+          description: Speaker already exists in pool (idempotent return)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteSpeakerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/invite-batch:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Batch invite speakers to an event
+      description: |
+        Invite multiple speakers in a single request with partial failure support.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC5 (batch)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Maximum 50 speakers per batch
+        - Processing continues even if individual invitations fail
+        - Returns 207 Multi-Status when some succeed and some fail
+
+        **Performance**: <2000ms (P95) for 50 speakers
+
+      operationId: inviteSpeakerBatch
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchInviteRequest'
+      responses:
+        '200':
+          description: All invitations processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '207':
+          description: Partial success - some invitations failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchInviteResponse'
+        '400':
+          description: Validation error (e.g., empty speakers list)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /events/{eventCode}/speakers/{username}/send-invitation:
+    post:
+      tags:
+        - Speaker Invitation
+      summary: Send invitation email to a speaker
+      description: |
+        Send or resend a personalized invitation email with magic links for
+        accept/decline and a dashboard access link.
+
+        **Story**: 6.1b - Speaker Invitation System
+        **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
+        **Authorization**: Requires ORGANIZER role
+
+        **Business Rules**:
+        - Speaker must exist in the pool for this event
+        - Transitions speaker status to INVITED
+        - Generates two magic link tokens:
+          - RESPOND token (single-use) for accept/decline
+          - VIEW token (reusable, 30-day expiry) for dashboard access
+        - Publishes SpeakerInvitationSentEvent domain event
+        - Records outreach history and status transition history
+        - Email sent asynchronously; failure does not block the response
+
+        **Performance**: <300ms (P95)
+
+      operationId: sendSpeakerInvitation
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code
+          required: true
+          schema:
+            type: string
+            example: batbern-2026-spring
+        - name: username
+          in: path
+          description: Speaker's username or UUID (for brainstormed speakers)
+          required: true
+          schema:
+            type: string
+            example: john.doe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvitationRequest'
+      responses:
+        '200':
+          description: Invitation sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendInvitationResponse'
+        '400':
+          description: Validation error (e.g., missing email, invalid deadlines)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event or speaker not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
   /events/{eventCode}/speakers/{speakerId}/outreach:
     post:
       tags:
@@ -1369,6 +1572,108 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  /events/{eventCode}/timetable:
+    get:
+      tags:
+        - Sessions
+      summary: Get the authoritative timetable for an event
+      description: |
+        Returns the complete chronological slot grid for the event, including both
+        structural slots (MODERATION, BREAK, LUNCH) and droppable speaker slots
+        (SPEAKER_SLOT).  Structural slots are enriched with DB session slugs when
+        structural sessions have been generated.  Speaker slots show which speaker
+        session (if any) has been assigned to each position.
+
+        This endpoint is the single source of truth for the slot-assignment UI —
+        both the grid display and the auto-assign algorithm use these positions.
+
+        **Access**: ORGANIZER role required.
+      operationId: getEventTimetable
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BATbern142
+      responses:
+        '200':
+          description: Timetable successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimetableResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /events/{eventCode}/sessions/structural:
+    post:
+      tags:
+        - Sessions
+        - Organizer
+      summary: Generate structural sessions for an event
+      description: |
+        Generates structural sessions (moderation start, breaks, lunch, moderation end)
+        with computed start/end times based on the event type configuration.
+
+        The organizer is automatically assigned as MODERATOR on both moderation sessions.
+
+        **Requires ORGANIZER role.**
+
+        If `overwrite=false` (default) and structural sessions already exist, returns 409.
+        If `overwrite=true`, deletes existing structural sessions and recreates them.
+      operationId: generateStructuralSessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: path
+          description: Event code in format BATbern{number}
+          required: true
+          schema:
+            type: string
+            pattern: '^BATbern[0-9]+$'
+            example: BATbern142
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateStructuralSessionsRequest'
+      responses:
+        '201':
+          description: Structural sessions created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+        '409':
+          description: Structural sessions already exist (use overwrite=true to replace)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /events/{eventCode}/sessions/batch-import:
     post:
@@ -3167,8 +3472,499 @@ paths:
       security:
         - BearerAuth: []
 
+  /api/v1/watch/organizers/me/active-events:
+    get:
+      tags:
+        - Watch
+      summary: Get active events for authenticated organizer
+      description: |
+        Returns active events assigned to the authenticated organizer.
+        Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+
+        **Story W2.3**: Event Join & Schedule Sync
+        - AC#1: Full schedule including sessions and speaker metadata
+        - AC#4: Empty list when no active events
+        - AC#5: Event preview data when event is >1h away
+
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: getActiveEventsForOrganizer
+      responses:
+        '200':
+          description: Active events list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveEventsResponse'
+              examples:
+                withEvent:
+                  summary: Organizer has an active event
+                  value:
+                    activeEvents:
+                      - eventCode: "BATbern57"
+                        title: "BATbern 57 - Cloud Native Architectures"
+                        eventDate: "2026-03-01"
+                        venueName: "Kultur Casino Bern"
+                        typicalStartTime: "18:00"
+                        typicalEndTime: "22:00"
+                        themeImageUrl: null
+                        currentPublishedPhase: "AGENDA"
+                        eventStatus: "SCHEDULED"
+                        sessions:
+                          - sessionSlug: "cloud-keynote"
+                            title: "Cloud Architecture Keynote"
+                            abstract: "Opening keynote about cloud-native patterns"
+                            sessionType: "talk"
+                            scheduledStartTime: "2026-03-01T17:00:00Z"
+                            scheduledEndTime: "2026-03-01T17:45:00Z"
+                            durationMinutes: 45
+                            speakers:
+                              - username: "john.doe"
+                                firstName: "John"
+                                lastName: "Doe"
+                                company: null
+                                companyLogoUrl: null
+                                profilePictureUrl: "https://cdn.example.com/portrait/john.doe.jpg"
+                                bio: "Cloud architect with 10 years experience"
+                                speakerRole: "panelist"
+                            status: "SCHEDULED"
+                            actualStartTime: null
+                            actualEndTime: null
+                            overrunMinutes: 0
+                            completedBy: null
+                noEvents:
+                  summary: No active events
+                  value:
+                    activeEvents: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+  /api/v1/watch/events/{eventCode}/arrivals:
+    get:
+      tags:
+        - Watch
+      summary: Get speaker arrival status for an event
+      description: |
+        Returns all confirmed speaker arrivals for the given event.
+        Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+
+        **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: getArrivalStatus
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      responses:
+        '200':
+          description: Arrival status list (may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrivalStatusList'
+              examples:
+                withArrivals:
+                  value:
+                    arrivals:
+                      - speakerUsername: "anna.meier"
+                        confirmedBy: "marco.muster"
+                        arrivedAt: "2026-02-16T17:15:00Z"
+                empty:
+                  value:
+                    arrivals: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Watch
+      summary: Confirm a speaker's arrival
+      description: |
+        Confirms a speaker's arrival for the given event.
+        Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+        Also triggers real-time WebSocket broadcast to all organizer watches.
+
+        **REST Fallback**: Used when WebSocket is offline/reconnecting.
+        **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+        **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+      operationId: confirmSpeakerArrival
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "BATbern56"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmArrivalRequest'
+      responses:
+        '201':
+          description: Arrival confirmed — includes broadcast payload with server-authoritative counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeakerArrivalBroadcast'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+
+    # ── Timetable Schemas ────────────────────────────────────────────────────
+
+    TimetableSlot:
+      type: object
+      description: |
+        A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
+        speaker positions (the implicit gaps between structural sessions). All other types
+        map to persisted structural sessions (moderation, break, lunch).
+      required:
+        - type
+        - startTime
+        - endTime
+      properties:
+        type:
+          type: string
+          enum: [MODERATION, BREAK, LUNCH, SPEAKER_SLOT]
+          description: Slot type — determines rendering and whether the slot is droppable
+          example: SPEAKER_SLOT
+        startTime:
+          type: string
+          format: date-time
+          description: Slot start time (UTC ISO-8601)
+          example: "2025-06-15T07:05:00Z"
+        endTime:
+          type: string
+          format: date-time
+          description: Slot end time (UTC ISO-8601)
+          example: "2025-06-15T07:50:00Z"
+        title:
+          type: string
+          nullable: true
+          description: Human-readable label for structural slots; null for SPEAKER_SLOT
+          example: "Kaffee-Pause"
+        slotIndex:
+          type: integer
+          nullable: true
+          description: >
+            1-based global index for SPEAKER_SLOT entries across the full event day
+            (never reset when switching AM → PM block). Null for structural slots.
+          example: 1
+        sessionSlug:
+          type: string
+          nullable: true
+          description: >
+            Session slug of the structural DB session occupying this slot.
+            Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
+          example: "moderation-start-abc"
+        assignedSessionSlug:
+          type: string
+          nullable: true
+          description: >
+            Session slug of the speaker session assigned to this SPEAKER_SLOT.
+            Null if the slot is free, or for structural slots.
+          example: "speaker-xyz"
+
+    TimetableResponse:
+      type: object
+      description: Full timetable for an event including slot grid and unassigned sessions.
+      required:
+        - slots
+        - unassignedSessions
+      properties:
+        slots:
+          type: array
+          description: All slots in chronological order (structural and speaker slots interleaved)
+          items:
+            $ref: '#/components/schemas/TimetableSlot'
+        unassignedSessions:
+          type: array
+          description: Speaker sessions (non-structural) with no startTime assigned yet
+          items:
+            $ref: '#/components/schemas/SessionResponse'
+
+    # ── Watch App Schemas (W2.4) ─────────────────────────────────────────────
+
+    ConfirmArrivalRequest:
+      type: object
+      description: Request body to confirm a speaker's arrival.
+      required:
+        - speakerUsername
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+
+    ArrivalStatusList:
+      type: object
+      description: List of confirmed speaker arrivals for an event.
+      required:
+        - arrivals
+      properties:
+        arrivals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrivalStatus'
+
+    ArrivalStatus:
+      type: object
+      description: A single speaker arrival record.
+      required:
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+      properties:
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+
+    ArrivalCount:
+      type: object
+      description: Server-authoritative arrived/total counts for real-time counter sync.
+      required:
+        - arrived
+        - total
+      properties:
+        arrived:
+          type: integer
+          example: 2
+        total:
+          type: integer
+          example: 4
+
+    SpeakerArrivalBroadcast:
+      type: object
+      description: |
+        WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+        Also returned as REST response body for the POST endpoint.
+        Carries individual arrival details plus server-authoritative counts (FR39).
+      required:
+        - type
+        - eventCode
+        - speakerUsername
+        - confirmedBy
+        - arrivedAt
+        - arrivalCount
+      properties:
+        type:
+          type: string
+          enum: ["SPEAKER_ARRIVED"]
+          example: "SPEAKER_ARRIVED"
+        eventCode:
+          type: string
+          example: "BATbern56"
+        speakerUsername:
+          type: string
+          example: "anna.meier"
+        speakerFirstName:
+          type: string
+          example: "Anna"
+        speakerLastName:
+          type: string
+          example: "Meier"
+        confirmedBy:
+          type: string
+          example: "marco.muster"
+        arrivedAt:
+          type: string
+          format: date-time
+          example: "2026-02-16T17:15:00Z"
+        arrivalCount:
+          $ref: '#/components/schemas/ArrivalCount'
+
+    # ── Watch App Schemas (W2.3) ─────────────────────────────────────────────
+
+    ActiveEventsResponse:
+      type: object
+      description: Response wrapper for the organizer's active events (W2.3).
+      required:
+        - activeEvents
+      properties:
+        activeEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveEventDetail'
+
+    ActiveEventDetail:
+      type: object
+      description: Full event detail for Watch organizer sync, including sessions and speakers.
+      required:
+        - eventCode
+        - title
+        - eventDate
+        - venueName
+        - eventStatus
+        - sessions
+      properties:
+        eventCode:
+          type: string
+          example: "BATbern57"
+        title:
+          type: string
+          example: "BATbern 57 - Cloud Native Architectures"
+        eventDate:
+          type: string
+          format: date
+          example: "2026-03-01"
+        venueName:
+          type: string
+          example: "Kultur Casino Bern"
+        typicalStartTime:
+          type: string
+          nullable: true
+          description: "HH:mm in Europe/Zurich timezone, derived from first session"
+          example: "18:00"
+        typicalEndTime:
+          type: string
+          nullable: true
+          description: "HH:mm in Europe/Zurich timezone, derived from last session"
+          example: "22:00"
+        themeImageUrl:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/theme/batbern57.jpg"
+        currentPublishedPhase:
+          type: string
+          nullable: true
+          example: "AGENDA"
+        eventStatus:
+          type: string
+          enum: [SCHEDULED, LIVE, COMPLETED]
+          example: "SCHEDULED"
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSessionDetail'
+
+    WatchSessionDetail:
+      type: object
+      description: Session detail for Watch organizer sync.
+      required:
+        - sessionSlug
+        - title
+        - speakers
+      properties:
+        sessionSlug:
+          type: string
+          example: "cloud-keynote"
+        title:
+          type: string
+          example: "Cloud Architecture Keynote"
+        abstract:
+          type: string
+          nullable: true
+        sessionType:
+          type: string
+          nullable: true
+          example: "talk"
+        scheduledStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-03-01T17:00:00Z"
+        scheduledEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-03-01T17:45:00Z"
+        durationMinutes:
+          type: integer
+          nullable: true
+          example: 45
+        speakers:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchSpeakerDetail'
+        status:
+          type: string
+          nullable: true
+          enum: [SCHEDULED, ACTIVE, COMPLETED]
+          description: Derived from timing relative to now; W4 adds real-time override.
+          example: "SCHEDULED"
+        actualStartTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        actualEndTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Populated in W4 (session control). Always null in W2.3.
+        overrunMinutes:
+          type: integer
+          description: Populated in W4. Always 0 in W2.3.
+          example: 0
+        completedBy:
+          type: string
+          nullable: true
+          description: Populated in W4. Always null in W2.3.
+
+    WatchSpeakerDetail:
+      type: object
+      description: Speaker detail for Watch organizer sync.
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          example: "john.doe"
+        firstName:
+          type: string
+          nullable: true
+          example: "John"
+        lastName:
+          type: string
+          nullable: true
+          example: "Doe"
+        company:
+          type: string
+          nullable: true
+          description: Cross-service lookup deferred. Always null in W2.3.
+        companyLogoUrl:
+          type: string
+          nullable: true
+          description: Cross-service lookup deferred. Always null in W2.3.
+        profilePictureUrl:
+          type: string
+          nullable: true
+          example: "https://cdn.example.com/portrait/john.doe.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "Cloud architect with 10 years experience"
+        speakerRole:
+          type: string
+          nullable: true
+          example: "panelist"
+
+    # ── Core Schemas ────────────────────────────────────────────────────────
+
     Event:
       type: object
       required:
@@ -3343,6 +4139,15 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Session'
+            currentPublishedPhase:
+              type: string
+              nullable: true
+              enum: [TOPIC, SPEAKERS, AGENDA]
+              description: |
+                Progressive publishing phase for watch app (Story W1.2)
+                - TOPIC: Event topic selected, speakers TBA
+                - SPEAKERS: Speaker list published
+                - AGENDA: Full session details published
 
     Venue:
       type: object
@@ -3412,7 +4217,7 @@ components:
           type: string
           nullable: true
           description: Session type - null for placeholder sessions, assigned during agenda planning
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
           example: keynote
         startTime:
           type: string
@@ -3452,9 +4257,16 @@ components:
         materialsStatus:
           type: string
           description: |
-            Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
-            Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
-          enum: [pending, in_review, approved, requires_changes, rejected, revision_submitted]
+            Material submission workflow status
+            - NONE: No materials submitted yet (initial state)
+            - pending: Materials submitted, awaiting review
+            - in_review: Materials under review
+            - approved: Materials approved
+            - requires_changes: Materials need changes
+            - rejected: Materials rejected
+            - revision_submitted: Revised materials submitted
+            - COMPLETE: Materials finalized and approved (final state)
+          enum: [NONE, pending, in_review, approved, requires_changes, rejected, revision_submitted, COMPLETE]
           example: pending
 
     SessionSpeaker:
@@ -3926,7 +4738,7 @@ components:
           type: string
           nullable: true
           description: Session type - omit for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -3967,7 +4779,7 @@ components:
           type: string
           nullable: true
           description: Session type - can be null for placeholder sessions
-          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch]
+          enum: [keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation]
         startTime:
           type: string
           format: date-time
@@ -4319,6 +5131,30 @@ components:
           format: time
           description: Typical end time for this event type
           example: "17:00"
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          default: 5
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          default: 5
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          default: 20
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          default: 60
 
     UpdateEventSlotConfigurationRequest:
       type: object
@@ -4380,6 +5216,41 @@ components:
           description: Typical end time for this event type
           example: "17:00"
           nullable: true
+        moderationStartDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event start, in minutes
+          example: 5
+          nullable: true
+        moderationEndDuration:
+          type: integer
+          minimum: 1
+          description: Duration of moderation session at event end, in minutes
+          example: 5
+          nullable: true
+        breakDuration:
+          type: integer
+          minimum: 1
+          description: Duration of each break session, in minutes
+          example: 20
+          nullable: true
+        lunchDuration:
+          type: integer
+          minimum: 1
+          description: Duration of the lunch session, in minutes
+          example: 60
+          nullable: true
+
+    GenerateStructuralSessionsRequest:
+      type: object
+      description: Request to generate structural sessions (moderation, break, lunch) for an event.
+      properties:
+        overwrite:
+          type: boolean
+          default: false
+          description: |
+            If false (default), returns 409 if structural sessions already exist.
+            If true, deletes existing structural sessions and recreates them.
 
     PaginationMetadata:
       type: object
@@ -4673,6 +5544,270 @@ components:
           format: date-time
           description: Timestamp of last update
           example: 2025-12-14T14:35:00Z
+
+    InviteSpeakerRequest:
+      type: object
+      description: |
+        Request to invite a speaker to an event.
+        Story 6.1b - AC1: Speaker Invitation
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        firstName:
+          type: string
+          nullable: true
+          description: Speaker's first name (used for user creation if not found)
+          example: Jane
+        lastName:
+          type: string
+          nullable: true
+          description: Speaker's last name (used for user creation if not found)
+          example: Smith
+        company:
+          type: string
+          nullable: true
+          description: Speaker's company name
+          example: Tech Corp AG
+        sessionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Session to assign speaker to (optional)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        notes:
+          type: string
+          nullable: true
+          description: Notes about the speaker
+          example: Expert in cloud architecture
+
+    InviteSpeakerResponse:
+      type: object
+      description: |
+        Response for a speaker invitation.
+        Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+      required:
+        - speakerPoolId
+        - email
+        - speakerName
+        - status
+        - created
+        - createdAt
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        speakerName:
+          type: string
+          description: Display name of the speaker
+          example: Jane Smith
+        status:
+          type: string
+          enum:
+            - identified
+            - contacted
+            - ready
+            - accepted
+            - declined
+            - content_submitted
+            - quality_reviewed
+            - slot_assigned
+            - confirmed
+            - withdrew
+            - overflow
+          description: Current workflow status
+          example: identified
+        created:
+          type: boolean
+          description: True if newly created, false if existing (idempotent return)
+          example: true
+        userCreated:
+          type: boolean
+          description: True if a new User account was created
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: When the SpeakerPool entry was created
+          example: 2026-01-15T10:00:00Z
+
+    BatchInviteRequest:
+      type: object
+      description: |
+        Request to invite multiple speakers in a batch.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - speakers
+      properties:
+        speakers:
+          type: array
+          minItems: 1
+          maxItems: 50
+          description: List of speakers to invite (1-50 per batch)
+          items:
+            $ref: '#/components/schemas/InviteSpeakerRequest'
+
+    BatchInviteResponse:
+      type: object
+      description: |
+        Response for a batch speaker invitation with partial failure support.
+        Story 6.1b - AC5: Batch Invitation
+      required:
+        - totalRequested
+        - successCount
+        - failedCount
+        - results
+        - errors
+      properties:
+        totalRequested:
+          type: integer
+          description: Total number of speakers requested
+          example: 5
+        successCount:
+          type: integer
+          description: Number of speakers successfully invited
+          example: 4
+        failedCount:
+          type: integer
+          description: Number of failed invitations
+          example: 1
+        results:
+          type: array
+          description: Individual results for successful invitations
+          items:
+            $ref: '#/components/schemas/InviteSpeakerResponse'
+        errors:
+          type: array
+          description: Details of failed invitations
+          items:
+            type: object
+            required:
+              - email
+              - errorCode
+              - errorMessage
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email of the speaker that failed
+                example: invalid@broken.test
+              errorCode:
+                type: string
+                description: Error classification code
+                enum:
+                  - INVALID_REQUEST
+                  - EVENT_NOT_FOUND
+                  - USER_SERVICE_ERROR
+                  - INTERNAL_ERROR
+                example: USER_SERVICE_ERROR
+              errorMessage:
+                type: string
+                description: Human-readable error message
+                example: Failed to create user account
+
+    SendInvitationRequest:
+      type: object
+      description: |
+        Request to send/resend an invitation email to a speaker.
+        Story 6.1b - AC3: Invitation Email
+
+        The email includes:
+        - Accept/decline magic links (single-use RESPOND token)
+        - Dashboard access link (reusable VIEW token)
+        - Event details, deadlines, and session info
+      required:
+        - responseDeadline
+      properties:
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond (must be in the future)
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for speaker to submit content (must be after responseDeadline)
+          example: '2026-03-10'
+        locale:
+          type: string
+          nullable: true
+          description: Preferred language for the email (defaults to 'de')
+          enum:
+            - de
+            - en
+          example: de
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: Override email address (for speakers without email in database)
+          example: jane.smith@example.com
+
+    SendInvitationResponse:
+      type: object
+      description: |
+        Response after sending an invitation email.
+        Story 6.1b - AC3: Invitation Email
+      required:
+        - speakerPoolId
+        - status
+        - invitedAt
+        - responseDeadline
+      properties:
+        speakerPoolId:
+          type: string
+          format: uuid
+          description: UUID of the SpeakerPool entry
+          example: 123e4567-e89b-12d3-a456-426614174000
+        username:
+          type: string
+          nullable: true
+          description: Speaker's username
+          example: jane.smith
+        email:
+          type: string
+          format: email
+          description: Speaker's email address
+          example: jane.smith@example.com
+        status:
+          type: string
+          enum:
+            - invited
+          description: Updated status (always INVITED after sending)
+          example: invited
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the invitation was sent
+          example: 2026-01-15T10:00:00Z
+        responseDeadline:
+          type: string
+          format: date
+          description: Deadline for speaker to respond
+          example: '2026-02-28'
+        contentDeadline:
+          type: string
+          format: date
+          nullable: true
+          description: Deadline for content submission
+          example: '2026-03-10'
 
     TopicResponse:
       type: object

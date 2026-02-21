@@ -10,7 +10,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerPoolService } from '@/services/speakerPoolService';
-import type { AddSpeakerToPoolRequest } from '@/types/speakerPool.types';
+import type {
+  AddSpeakerToPoolRequest,
+  SendInvitationRequest,
+  SendReminderRequest,
+} from '@/types/speakerPool.types';
 
 /**
  * Query key factory for speaker pool
@@ -87,6 +91,73 @@ export function useDeleteSpeakerFromPool() {
       // Invalidate speaker pool list for this event to refetch
       queryClient.invalidateQueries({
         queryKey: speakerPoolKeys.list(variables.eventCode),
+      });
+    },
+  });
+}
+
+/**
+ * Hook to send invitation to speaker (Story 6.1c, ORGANIZER only)
+ *
+ * Transitions speaker from IDENTIFIED to INVITED state and sends invitation email.
+ *
+ * @param eventCode Event code (e.g., "BATbern56")
+ * @returns Mutation object with mutate function
+ * @example
+ * const sendInvitation = useSendInvitation('BATbern56');
+ * sendInvitation.mutate({
+ *   username: 'speaker-uuid',
+ *   options: { personalMessage: 'Looking forward to your talk!' }
+ * });
+ */
+export function useSendInvitation(eventCode: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ username, options }: { username: string; options?: SendInvitationRequest }) =>
+      speakerPoolService.sendInvitation(eventCode, username, options),
+    onSuccess: () => {
+      // Invalidate speaker pool list for this event to refetch (speaker moves to INVITED)
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(eventCode),
+      });
+      // Also invalidate status summary since counts have changed
+      queryClient.invalidateQueries({
+        queryKey: ['speakerStatusSummary', eventCode],
+      });
+    },
+  });
+}
+
+/**
+ * Hook to send reminder to speaker (Story 6.5, ORGANIZER only)
+ *
+ * Sends a deadline reminder email to an invited or accepted speaker.
+ *
+ * @param eventCode Event code (e.g., "BATbern56")
+ * @returns Mutation object with mutate function
+ * @example
+ * const sendReminder = useSendReminder('BATbern56');
+ * sendReminder.mutate({
+ *   speakerPoolId: 'uuid-here',
+ *   request: { reminderType: 'RESPONSE' }
+ * });
+ */
+export function useSendReminder(eventCode: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      speakerPoolId,
+      request,
+    }: {
+      speakerPoolId: string;
+      request: SendReminderRequest;
+    }) => speakerPoolService.sendReminder(eventCode, speakerPoolId, request),
+    onSuccess: () => {
+      // Invalidate speaker pool list to refetch updated data
+      queryClient.invalidateQueries({
+        queryKey: speakerPoolKeys.list(eventCode),
       });
     },
   });

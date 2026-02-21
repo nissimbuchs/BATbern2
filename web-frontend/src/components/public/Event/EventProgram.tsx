@@ -6,11 +6,36 @@
 
 import type { SessionUI, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 import { format } from 'date-fns';
-import { Clock, MapPin, FileText, Video, Presentation, Download } from 'lucide-react';
+import {
+  Clock,
+  MapPin,
+  FileText,
+  Video,
+  Presentation,
+  Download,
+  Coffee,
+  UtensilsCrossed,
+  Mic2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
 import { eventApiClient } from '@/services/eventApiClient';
+
+const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch']);
+
+const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
+
+const StructuralIcon = ({ sessionType }: { sessionType: string | null | undefined }) => {
+  switch (sessionType) {
+    case 'break':
+      return <Coffee className="h-5 w-5 text-zinc-500" />;
+    case 'lunch':
+      return <UtensilsCrossed className="h-5 w-5 text-zinc-500" />;
+    default:
+      return <Mic2 className="h-5 w-5 text-zinc-500" />;
+  }
+};
 
 interface EventProgramProps {
   sessions: SessionUI[];
@@ -170,106 +195,126 @@ export const EventProgram = ({ sessions, isArchived = false, eventCode }: EventP
 
                 {/* Sessions at this time */}
                 <div className="flex-1 pt-2 space-y-4">
-                  {slot.sessions.map((session) => (
-                    <div
-                      key={session.sessionSlug}
-                      className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 hover:border-zinc-700 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-3">
-                        <h3 className="text-xl font-light text-zinc-100">{session.title}</h3>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20 whitespace-nowrap">
-                          {session.sessionType}
-                        </span>
-                      </div>
-
-                      {session.description && (
-                        <p className="text-sm text-zinc-400 mb-4">{session.description}</p>
-                      )}
-
-                      <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
-                        <span className="flex items-center gap-1.5">
+                  {slot.sessions.map((session) =>
+                    isStructuralSession(session) ? (
+                      /* Structural session — compact icon strip */
+                      <div
+                        key={session.sessionSlug}
+                        className="flex items-center gap-4 px-5 py-3 rounded-lg bg-zinc-800/30 border border-zinc-700/40 text-zinc-500"
+                      >
+                        <StructuralIcon sessionType={session.sessionType} />
+                        <span className="font-medium text-zinc-400 flex-1">{session.title}</span>
+                        <span className="flex items-center gap-1.5 text-sm shrink-0">
                           <Clock className="h-4 w-4" />
                           {formatSessionDuration(session.startTime, session.endTime)}
                         </span>
-                        {session.room && (
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="h-4 w-4" />
-                            {session.room}
-                          </span>
-                        )}
                       </div>
+                    ) : (
+                      <div
+                        key={session.sessionSlug}
+                        className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 hover:border-zinc-700 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <h3 className="text-xl font-light text-zinc-100">{session.title}</h3>
+                          <span className="text-xs px-2 py-1 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20 whitespace-nowrap">
+                            {session.sessionType}
+                          </span>
+                        </div>
 
-                      <div className="mt-4 pt-4 border-t border-zinc-800">
-                        {session.speakers && session.speakers.length > 0 ? (
-                          <div>
-                            <p className="text-xs text-zinc-500 mb-2">
-                              {t('public.program.speaker')}:
+                        {session.description && (
+                          <p className="text-sm text-zinc-400 mb-4">{session.description}</p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            {formatSessionDuration(session.startTime, session.endTime)}
+                          </span>
+                          {session.room && (
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="h-4 w-4" />
+                              {session.room}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-zinc-800">
+                          {session.speakers && session.speakers.length > 0 ? (
+                            <div>
+                              <p className="text-xs text-zinc-500 mb-2">
+                                {t('public.program.speaker')}:
+                              </p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {session.speakers.map((speaker: SessionSpeaker) => (
+                                  <SpeakerDisplay
+                                    key={speaker.username}
+                                    speaker={speaker}
+                                    size="small"
+                                    showProfilePicture={true}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-zinc-400">
+                              {t('public.speakers.speakerTBA')}
                             </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {session.speakers.map((speaker: SessionSpeaker) => (
-                                <SpeakerDisplay
-                                  key={speaker.username}
-                                  speaker={speaker}
-                                  size="small"
-                                  showProfilePicture={true}
-                                />
-                              ))}
+                          )}
+                        </div>
+
+                        {/* Materials Section - Only for archived events (Story 5.9 - Task 8b) */}
+                        {isArchived && session.materials && session.materials.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-zinc-800">
+                            <p className="text-xs text-zinc-500 mb-3">
+                              {t('public.program.materials', 'Materials')}:
+                            </p>
+                            <div className="space-y-4">
+                              {Object.entries(groupMaterialsByType(session.materials)).map(
+                                ([type, materials]) => (
+                                  <div key={type}>
+                                    {/* Material Type Heading */}
+                                    <p className="text-xs font-medium text-zinc-400 mb-2 capitalize">
+                                      {getMaterialTypeLabel(type)}
+                                    </p>
+                                    <div className="space-y-2">
+                                      {materials.map((material) => {
+                                        const isDownloading = downloadingMaterials.has(material.id);
+                                        return (
+                                          <button
+                                            key={material.id}
+                                            onClick={() =>
+                                              handleMaterialDownload(
+                                                session.sessionSlug,
+                                                material.id
+                                              )
+                                            }
+                                            disabled={isDownloading}
+                                            aria-label={`Download ${material.fileName}`}
+                                            className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            {getMaterialTypeIcon(material.materialType)}
+                                            <span className="flex-1">{material.fileName}</span>
+                                            <span className="text-xs text-zinc-500">
+                                              {formatFileSize(material.fileSize)}
+                                            </span>
+                                            {isDownloading ? (
+                                              <span className="h-4 w-4 animate-spin">⏳</span>
+                                            ) : (
+                                              <Download className="h-4 w-4" />
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
-                        ) : (
-                          <p className="text-sm text-zinc-400">{t('public.speakers.speakerTBA')}</p>
                         )}
                       </div>
-
-                      {/* Materials Section - Only for archived events (Story 5.9 - Task 8b) */}
-                      {isArchived && session.materials && session.materials.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-zinc-800">
-                          <p className="text-xs text-zinc-500 mb-3">
-                            {t('public.program.materials', 'Materials')}:
-                          </p>
-                          <div className="space-y-4">
-                            {Object.entries(groupMaterialsByType(session.materials)).map(
-                              ([type, materials]) => (
-                                <div key={type}>
-                                  {/* Material Type Heading */}
-                                  <p className="text-xs font-medium text-zinc-400 mb-2 capitalize">
-                                    {getMaterialTypeLabel(type)}
-                                  </p>
-                                  <div className="space-y-2">
-                                    {materials.map((material) => {
-                                      const isDownloading = downloadingMaterials.has(material.id);
-                                      return (
-                                        <button
-                                          key={material.id}
-                                          onClick={() =>
-                                            handleMaterialDownload(session.sessionSlug, material.id)
-                                          }
-                                          disabled={isDownloading}
-                                          aria-label={`Download ${material.fileName}`}
-                                          className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                          {getMaterialTypeIcon(material.materialType)}
-                                          <span className="flex-1">{material.fileName}</span>
-                                          <span className="text-xs text-zinc-500">
-                                            {formatFileSize(material.fileSize)}
-                                          </span>
-                                          {isDownloading ? (
-                                            <span className="h-4 w-4 animate-spin">⏳</span>
-                                          ) : (
-                                            <Download className="h-4 w-4" />
-                                          )}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </div>
 

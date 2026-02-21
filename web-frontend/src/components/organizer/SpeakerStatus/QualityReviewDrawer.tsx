@@ -32,12 +32,14 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Close as CloseIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -125,24 +127,21 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
     });
   };
 
-  // Quality criteria checks
+  // Quality criteria checks (null-safe: API may return null for presentationAbstract)
+  const abstract = content?.presentationAbstract || '';
   const qualityCriteria = content
     ? [
         {
           label: t('qualityReview.criteria.abstractLength'),
-          passed: content.presentationAbstract.length <= MAX_ABSTRACT_LENGTH,
-          value: `${content.presentationAbstract.length} / ${MAX_ABSTRACT_LENGTH} ${t('qualityReview.characters')}`,
+          passed: abstract.length <= MAX_ABSTRACT_LENGTH,
+          value: `${abstract.length} / ${MAX_ABSTRACT_LENGTH} ${t('qualityReview.characters')}`,
         },
         {
           label: t('qualityReview.criteria.lessonsLearned'),
           // English: lessons learned, lesson learned
           // German: Erkenntnisse, Lerneffekte, Erfahrungen, Lehren
-          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
-            content.presentationAbstract
-          ),
-          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(
-            content.presentationAbstract
-          )
+          passed: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract),
+          value: /lessons?\s+learned|erkenntnisse|lerneffekte?|erfahrungen|lehren/i.test(abstract)
             ? t('qualityReview.detected')
             : t('qualityReview.notDetected'),
         },
@@ -152,11 +151,11 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
           // German: kaufen, erwerben, bestellen, rabatt, ermäßigung, verkauf, angebot, jetzt bestellen, kontaktieren
           passed:
             !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              content.presentationAbstract
+              abstract
             ),
           value:
             !/buy|purchase|discount|sale|order\s+now|contact\s+us|kaufen|erwerben|bestellen|rabatt|ermäßigung|verkauf|angebot|jetzt\s+bestellen|kontaktieren\s+sie/i.test(
-              content.presentationAbstract
+              abstract
             )
               ? t('qualityReview.passed')
               : t('qualityReview.promotionDetected'),
@@ -188,7 +187,7 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <CircularProgress />
+          <BATbernLoader size={96} />
         </Box>
       ) : content ? (
         <>
@@ -215,15 +214,42 @@ export const QualityReviewDrawer: React.FC<QualityReviewDrawerProps> = ({
               {t('qualityReview.presentationTitle')}
             </Typography>
             <Typography variant="h6" gutterBottom>
-              {content.presentationTitle}
+              {content.presentationTitle || t('qualityReview.noTitle', 'Untitled')}
             </Typography>
 
             <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
               {t('qualityReview.abstract')}
             </Typography>
             <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {content.presentationAbstract}
+              {content.presentationAbstract ||
+                t('qualityReview.noAbstract', 'No abstract provided')}
             </Typography>
+          </Paper>
+
+          {/* Material Upload */}
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              {t('qualityReview.material', 'Presentation Material')}
+            </Typography>
+            {content.hasMaterial && content.materialUrl ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <AttachFileIcon color="primary" fontSize="small" />
+                <Button
+                  variant="text"
+                  href={content.materialUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ textTransform: 'none' }}
+                >
+                  {content.materialFileName ||
+                    t('qualityReview.downloadMaterial', 'Download Material')}
+                </Button>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                {t('qualityReview.noMaterial', 'No material uploaded yet')}
+              </Typography>
+            )}
           </Paper>
 
           {/* Quality Criteria */}

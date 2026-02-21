@@ -1,0 +1,376 @@
+//
+//  LiveCountdownView.swift
+//  BATbern-watch Watch App
+//
+//  O3: Live countdown — Progress Ring + Card Stack (chosen design direction).
+//  W3.1: Compact ring in upper half, speaker card, next-session peek below.
+//  Source: docs/watch-app/ux-design-directions.html#Chosen-Direction
+//
+
+import SwiftUI
+
+struct LiveCountdownView: View {
+
+    @Environment(EventStateManager.self) private var eventState
+    @Environment(EventDataController.self) private var dataController
+    @Environment(WebSocketService.self) private var webSocketService
+    @State private var viewModel = LiveCountdownViewModel()
+    @State private var portraitData: Data?
+    /// W4.2 amendment: Guards against concurrent auto-advance Tasks.
+    @State private var isSendingDone: Bool = false
+    /// W4.2 Task 3: Controls presentation of O6 SessionTransitionView.
+    @State private var showTransition: Bool = false
+    /// W4.3: Extend session sheet.
+    @State private var showExtendPrompt: Bool = false
+    /// W4.3: Delayed (give prev session more time) sheet.
+    @State private var showDelayedPrompt: Bool = false
+    /// W4.3: Prevents double-sends while extend/delay action is in flight.
+    @State private var isActionInFlight: Bool = false
+    /// W4.4 AC1: Controls presentation of O5 BreakGongView.
+    @State private var showBreak: Bool = false
+
+    var body: some View {
+        Group {
+            if viewModel.activeSession != nil {
+                countdownContent
+            } else {
+                noSessionContent
+            }
+        }
+        .onAppear {
+            viewModel.eventState = eventState
+            viewModel.startTimer()
+            // W4.4 AC1: sync showBreak with current session on appear (e.g. mid-break app launch)
+            showBreak = viewModel.activeSession?.isBreak == true
+        }
+        .onDisappear {
+            viewModel.stopTimer()
+            // Do NOT disconnect here — sheets and fullScreenCover also fire onDisappear,
+            // which would tear down the WebSocket every time Extend/Delayed/Transition opens.
+            // The connection stays alive across sheet presentations; disconnect happens only
+            // when the user leaves the organizer zone entirely (parent view lifecycle).
+        }
+        // Task 3.11: connect WebSocket when view appears (event code from eventState)
+        .task(id: eventState.currentEvent?.eventCode) {
+            guard let eventCode = eventState.currentEvent?.eventCode else { return }
+            await webSocketService.connect(eventCode: eventCode)
+        }
+        // Task 3.7: JWT refresh — reconnect transparently when token rotates
+        .onChange(of: dataController.lastSynced) { _, _ in
+            // lastSynced updates when applyServerState runs — timer ticks confirming live
+        }
+        // W4.2 Task 10: Observe SESSION_ENDED signal — show O6 when next session exists.
+        // Review fix item 6: use consumeSessionEndedEvent() instead of direct nil mutation
+        // to keep reset logic encapsulated inside WebSocketService. Also advances queued events.
+        // M1 fix: !showTransition guard prevents N O6 flashes when N watches all auto-advance
+        // simultaneously and the server sends N idempotent SESSION_ENDED broadcasts.
+        .onChange(of: webSocketService.sessionEndedEvent) { _, event in
+            guard event != nil else { return }
+            if viewModel.nextSession != nil, !showTransition {
+                showTransition = true
+            }
+            webSocketService.consumeSessionEndedEvent()
+        }
+        // W4.2 amendment: Auto-advance when session enters overtime — no button tap required.
+        // shouldAutoAdvance transitions false→true exactly once per session, so this fires once.
+        // M1 fix: completedByUsername guard prevents re-sending if another Watch already ended it.
+        .onChange(of: viewModel.shouldAutoAdvance) { _, shouldAdvance in
+            guard shouldAdvance, !isSendingDone else { return }
+            guard viewModel.activeSession?.completedByUsername == nil else { return }
+            isSendingDone = true
+            Task {
+                if let slug = viewModel.activeSession?.id {
+                    await webSocketService.sendAction(.endSession(sessionSlug: slug))
+                }
+                isSendingDone = false
+            }
+        }
+        // M2 fix: Retry auto-advance after reconnect — if WebSocket was down when overtime hit,
+        // the sendAction call was swallowed. shouldAutoAdvance stays true but .onChange won't
+        // re-fire (value unchanged). Reconnect triggers this handler to retry.
+        .onChange(of: webSocketService.isConnected) { _, isConnected in
+            guard isConnected, viewModel.shouldAutoAdvance, !isSendingDone else { return }
+            guard viewModel.activeSession?.completedByUsername == nil else { return }
+            isSendingDone = true
+            Task {
+                if let slug = viewModel.activeSession?.id {
+                    await webSocketService.sendAction(.endSession(sessionSlug: slug))
+                }
+                isSendingDone = false
+            }
+        }
+        // W4.2 Task 10: Full-screen O6 SessionTransitionView — only when nextSession is set.
+        .fullScreenCover(isPresented: $showTransition) {
+            if let next = viewModel.nextSession {
+                SessionTransitionView(nextSession: next, onDismiss: { showTransition = false })
+            }
+        }
+        // W4.3: Extend session sheet
+        .sheet(isPresented: $showExtendPrompt) {
+            if let slug = viewModel.activeSession?.id {
+                ExtendSessionView(
+                    sessionSlug: slug,
+                    onExtend: { minutes in
+                        showExtendPrompt = false
+                        isActionInFlight = true
+                        Task {
+                            await webSocketService.sendAction(
+                                .extendSession(sessionSlug: slug, minutes: minutes))
+                        }
+                    },
+                    onDismiss: { showExtendPrompt = false }
+                )
+            }
+        }
+        // W4.3: Delayed session sheet
+        .sheet(isPresented: $showDelayedPrompt) {
+            if let slug = viewModel.activeSession?.id {
+                DelayedSessionView(
+                    currentSlug: slug,
+                    onDelay: { minutes in
+                        showDelayedPrompt = false
+                        isActionInFlight = true
+                        Task {
+                            await webSocketService.sendAction(
+                                .delayToPrevious(currentSlug: slug, minutes: minutes))
+                        }
+                    },
+                    onDismiss: { showDelayedPrompt = false }
+                )
+            }
+        }
+        // W4.3: Reset isActionInFlight when session changes (Delay: active session ID changes)
+        .onChange(of: viewModel.activeSession?.id) { _, _ in
+            isActionInFlight = false
+        }
+        // W4.3: Reset isActionInFlight when endTime changes (Extend: same session ID, new endTime)
+        .onChange(of: viewModel.activeSession?.endTime) { _, _ in
+            isActionInFlight = false
+        }
+        // W4.4 AC1: Auto-transition O3→O5 when the active session becomes a break.
+        // Dismisses O5 automatically when break ends (isBreak becomes false).
+        .onChange(of: viewModel.activeSession?.isBreak) { _, isBreak in
+            showBreak = isBreak == true
+        }
+        // W4.4 AC1/AC3: O5 BreakGongView — full-screen break screen.
+        // Shares the same ViewModel instance — no new timer, no new WebSocket.
+        .fullScreenCover(isPresented: $showBreak) {
+            BreakGongView(viewModel: viewModel)
+        }
+    }
+
+    // MARK: - Countdown Content
+
+    private var countdownContent: some View {
+        VStack(spacing: 5) {
+            // Ring row: action icons appear to the right when available, keeping ring centered otherwise.
+            HStack(alignment: .center, spacing: 8) {
+                if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
+                    Spacer(minLength: 0)
+                }
+                compactRing
+                if viewModel.shouldShowExtend || viewModel.shouldShowDelayed {
+                    VStack(spacing: 10) {
+                        if viewModel.shouldShowExtend {
+                            Button { showExtendPrompt = true } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isActionInFlight)
+                        }
+                        if viewModel.shouldShowDelayed {
+                            Button { showDelayedPrompt = true } label: {
+                                Image(systemName: "arrow.uturn.backward.circle.fill")
+                                    .font(.system(size: 24, weight: .semibold))
+                                    .foregroundStyle(.orange)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(isActionInFlight)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
+            speakerCard
+            if let next = viewModel.nextSession {
+                // W4.2 Task 0.5: replaced inline nextSessionCard() with NextSessionPeekView
+                NextSessionPeekView(session: next, style: .compact)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+    }
+
+    // MARK: - Compact Progress Ring (AC1-AC5)
+
+    /// Fixed-size ring with countdown inside — not edge-to-edge.
+    private var compactRing: some View {
+        ZStack {
+            // Background track
+            Circle()
+                .stroke(Color(white: 0.15), lineWidth: 7)
+
+            // Colored progress arc — starts at top (-90°)
+            Circle()
+                .trim(from: 0, to: viewModel.progress)
+                .stroke(
+                    countdownColor,
+                    style: StrokeStyle(lineWidth: 7, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .animation(.linear(duration: 0.5), value: viewModel.progress)
+
+            // Center: countdown + "REMAINING" label
+            VStack(spacing: 0) {
+                Text(viewModel.formattedTime)
+                    .font(.system(size: 26, weight: .bold, design: .monospaced))
+                    .foregroundStyle(countdownColor)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                if viewModel.urgencyLevel != .overtime {
+                    Text("REMAINING")
+                        .font(.system(size: 7))
+                        .foregroundStyle(.tertiary)
+                        .kerning(0.3)
+                }
+            }
+            .padding(.horizontal, 9)
+        }
+        .frame(width: BATbernWatchStyle.Spacing.countdownRingSize,
+               height: BATbernWatchStyle.Spacing.countdownRingSize)
+    }
+
+    // MARK: - Speaker Card (AC1)
+
+    /// Styled card: portrait circle + speaker name + talk title.
+    private var speakerCard: some View {
+        HStack(spacing: 7) {
+            // Portrait circle — PortraitCache backed, initials fallback
+            portraitCircle
+                .frame(width: 24, height: 24)
+
+            // Name + title (SF Pro Rounded / SF Pro per AC1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(viewModel.speakerNames)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                Text(viewModel.sessionTitle)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Color(white: 0.10))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(white: 0.15), lineWidth: 1)
+        )
+        .task(id: viewModel.activeSession?.id) {
+            await loadPortrait()
+        }
+    }
+
+    /// Portrait circle: cached image if available, initials gradient otherwise.
+    @ViewBuilder
+    private var portraitCircle: some View {
+        if let data = portraitData, let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .clipShape(Circle())
+        } else {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [
+                            Color(red: 0.17, green: 0.37, blue: 0.49),
+                            Color(red: 0.29, green: 0.57, blue: 0.72)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                Text(speakerInitials)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+
+    // MARK: - No-Session State
+
+    private var noSessionContent: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "timer")
+                .font(.system(size: 24))
+                .foregroundStyle(.secondary)
+            Text("No active session")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Cache-first portrait load: serves local file immediately, downloads if missing.
+    private func loadPortrait() async {
+        guard let urlString = viewModel.activeSession?.speakers.first?.profilePictureUrl,
+              let url = URL(string: urlString) else {
+            portraitData = nil
+            return
+        }
+        if let cached = PortraitCache.shared.getCachedPortrait(url: url) {
+            portraitData = cached
+            return
+        }
+        portraitData = try? await PortraitCache.shared.downloadAndCache(url: url)
+    }
+
+    /// Countdown color mapping per AC2-AC5.
+    private var countdownColor: Color {
+        switch viewModel.urgencyLevel {
+        case .normal, .caution:     return BATbernWatchStyle.Colors.batbernBlue
+        case .warning, .critical:   return .orange
+        case .overtime:             return .red
+        }
+    }
+
+    /// Status label reflects urgency state at a glance.
+    private var stateLabel: String {
+        switch viewModel.urgencyLevel {
+        case .normal:               return "ON TRACK"
+        case .caution:              return "5 MIN LEFT"
+        case .warning, .critical:   return "2 MIN LEFT"
+        case .overtime:             return "OVERRUN"
+        }
+    }
+
+    /// Two-letter initials from the first speaker's full name.
+    private var speakerInitials: String {
+        let firstName = viewModel.speakerNames
+            .components(separatedBy: ",")
+            .first?
+            .trimmingCharacters(in: .whitespaces) ?? viewModel.speakerNames
+        let parts = firstName.components(separatedBy: " ").filter { !$0.isEmpty }
+        let first = parts.first?.first.map(String.init) ?? ""
+        let last = parts.dropFirst().last?.first.map(String.init) ?? ""
+        let initials = (first + last).uppercased()
+        return initials.isEmpty ? "?" : initials
+    }
+
+    private static let startTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        f.timeZone = TimeZone(identifier: "Europe/Zurich") ?? .current
+        return f
+    }()
+
+    private func startTimeString(_ date: Date) -> String {
+        LiveCountdownView.startTimeFormatter.string(from: date)
+    }
+}

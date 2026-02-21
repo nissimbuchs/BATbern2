@@ -11,7 +11,8 @@ import { PartnerShowcaseCard } from '@/components/public/Partners';
 import { usePublicOrganizers } from '@/hooks/usePublicOrganizers';
 import { usePublicPartners } from '@/hooks/usePublicPartners';
 import { useTranslation } from 'react-i18next';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 
 const AboutPage = () => {
   const { t } = useTranslation('about');
@@ -68,7 +69,7 @@ const AboutPage = () => {
 
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+              <BATbernLoader size={64} />
             </div>
           ) : organizers.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

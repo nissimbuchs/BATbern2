@@ -10,8 +10,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @ComponentScan(basePackages = {"ch.batbern.events", "ch.batbern.shared"})
-@EnableJpaRepositories(basePackages = {"ch.batbern.events.repository", "ch.batbern.events.notification"})
-@EntityScan(basePackages = {"ch.batbern.events.domain", "ch.batbern.events.entity", "ch.batbern.events.notification"})
+@EnableJpaRepositories(basePackages = {
+    "ch.batbern.events.repository",
+    "ch.batbern.events.notification",
+    "ch.batbern.events.watch"
+})
+@EntityScan(basePackages = {
+    "ch.batbern.events.domain",
+    "ch.batbern.events.entity",
+    "ch.batbern.events.notification",
+    "ch.batbern.events.watch.domain"
+})
 public class EventManagementApplication {
 
     public static void main(String[] args) {

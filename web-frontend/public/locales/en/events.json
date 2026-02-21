@@ -87,6 +87,13 @@
       "actions": {
         "retry": "Retry"
       }
+    },
+    "settings": {
+      "moderator": "Event Moderator",
+      "moderatorDesc": "The organizer responsible for moderating this event.",
+      "moderatorLabel": "Moderator",
+      "moderatorUpdated": "Moderator updated successfully",
+      "moderatorUpdateError": "Failed to update moderator."
     }
   },
   "dashboard": {
@@ -205,6 +212,12 @@
       "breakSlots": "Break Slots",
       "lunchSlots": "Lunch Slots",
       "defaultCapacity": "Default Capacity",
+      "structuralDurations": "Structural Durations (minutes)",
+      "moderationStartDuration": "Moderation Start (min)",
+      "moderationEndDuration": "Moderation End (min)",
+      "breakDuration": "Break Duration (min)",
+      "lunchDuration": "Lunch Duration (min)",
+      "saveFailed": "Failed to save configuration",
       "accessDenied": "Access Denied",
       "organizerOnly": "Only organizers can access this page"
     },
@@ -404,7 +417,10 @@
     "autoAssignConfirmMessage": "This will automatically assign speakers to optimal time slots based on topic expertise and availability. Existing assignments will be overwritten. Continue?",
     "noSpeakers": "No speakers assigned",
     "noSessionsScheduled": "No sessions scheduled yet. Use 'Manage Speaker Assignments' to add speakers.",
-    "loadError": "Failed to load sessions. Please try again."
+    "loadError": "Failed to load sessions. Please try again.",
+    "deleteSession": "Delete",
+    "deleteSessionTitle": "Delete Session?",
+    "deleteSessionMessage": "Are you sure you want to delete the session '{{title}}'? This action cannot be undone."
   },
   "team": {
     "title": "Team Assignments",
@@ -716,6 +732,9 @@
       "shareEmail": "Share via Email",
       "shareText": "Join me at {{title}}!"
     },
+    "upcomingEvents": {
+      "title": "More Upcoming Events"
+    },
     "sessionTypes": {
       "keynote": "keynote",
       "presentation": "presentation",
@@ -762,7 +781,13 @@
     "timeline": {
       "title": "Session Timeline",
       "room": "{{room}}",
-      "matchPercent": "{{percent}}% match"
+      "matchPercent": "{{percent}}% match",
+      "headerTime": "Time"
+    },
+    "structuralSessions": {
+      "moderation": "Moderation",
+      "break": "Break",
+      "lunch": "Lunch"
     },
     "speakerPool": {
       "title": "Speaker Pool",
@@ -779,13 +804,29 @@
       },
       "viewPreferences": "Preferences"
     },
+    "quickActions": {
+      "title": "Quick Actions",
+      "total": "{{count}} Total Sessions",
+      "assigned": "{{count}} Assigned",
+      "pending": "{{count}} Pending",
+      "allAssigned": "All timings assigned!",
+      "goToPublishing": "Go to Publishing Tab",
+      "sessionsAssignedAnnouncement": "{{count}} sessions assigned successfully"
+    },
     "actions": {
       "autoAssign": "Auto-Assign",
       "clearAll": "Clear All",
       "cancel": "Cancel",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "generateStructure": "Generate Schedule Structure"
     },
     "modals": {
+      "generateStructure": {
+        "title": "Generate Schedule Structure",
+        "message": "Creates moderation blocks, breaks and lunch based on the event type configuration.",
+        "alreadyExist": "Moderation, break and lunch blocks already exist. Do you want to overwrite them?",
+        "overwrite": "Overwrite"
+      },
       "autoAssign": {
         "title": "Auto-Assign Sessions",
         "message": "Select algorithm for auto-assignment:",

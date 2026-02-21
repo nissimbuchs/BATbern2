@@ -1,0 +1,43 @@
+meta {
+  name: Setup Session for Content Submission (Story 6.3)
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/sessions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Cloud Architecture Best Practices",
+    "description": "A deep dive into cloud architecture patterns and best practices",
+    "sessionType": "presentation",
+    "startTime": "2026-06-15T09:00:00Z",
+    "endTime": "2026-06-15T10:00:00Z",
+    "room": "Main Hall",
+    "capacity": 100,
+    "language": "en"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.sessionSlug: isDefined
+}
+
+tests {
+  test("should create session for content submission tests - Story 6.3 Setup", function() {
+    expect(res.getStatus()).to.equal(201);
+    const session = res.getBody();
+    expect(session.sessionSlug).to.be.a('string');
+    bru.setVar("contentTestSessionSlug", session.sessionSlug);
+    bru.setVar("contentTestSessionTitle", session.title);
+  });
+}

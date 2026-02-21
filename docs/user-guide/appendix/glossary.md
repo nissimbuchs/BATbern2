@@ -17,15 +17,15 @@ Comprehensive glossary of terms used throughout the BATbern platform. Terms are 
 ## Events & Sessions
 
 ### Event
-A single BATbern gathering (e.g., "BATbern #45"). Each event has a unique event number, date, venue, and follows the 16-step workflow from planning to completion.
+A single BATbern gathering (e.g., "BATbern 2025"). Each event has a unique eventCode, date, venue, and progresses through a 9-state workflow from creation to archival.
 
 **Types**:
-- **Full-Day Event**: 8+ hour event (typically 9 AM - 6 PM) with 10+ speakers
-- **Afternoon Event**: 4-hour event (typically 1 PM - 5 PM) with 6-8 speakers
-- **Evening Event**: 2-3 hour event (typically 6 PM - 9 PM) with 4-6 speakers
+- **FULL_DAY**: 8+ hour event (typically 9 AM - 6 PM) with 8-12 sessions
+- **AFTERNOON**: 3-4 hour event (typically 2 PM - 6 PM) with 2-4 sessions
+- **EVENING**: 2-3 hour event (typically 6 PM - 9 PM) with 1-2 sessions
 
-### Event Number
-Unique sequential identifier for events (e.g., Event #45). Used throughout platform to reference specific events.
+### Event Code
+Auto-generated public identifier for events (e.g., "BAT-2025-001"). Used in URLs, QR codes, and public-facing materials. Different from internal UUID.
 
 ### Session
 Individual presentation or activity within an event. Each session has:
@@ -64,21 +64,15 @@ Individual with an account in the BATbern platform. Each user has:
 - Company association (optional)
 
 ### Organizer
-User with ORGANIZER role who plans and manages events. Can:
-- Create and edit events (assigned to them)
-- Advance workflow through 16 steps
-- Manage speakers and partners
-- Publish event details
-- Cannot: Create users, delete events (ADMIN only)
+User with ORGANIZER role who plans and manages events. Has full system access including:
+- Create and edit all events
+- Manage all entities (users, companies, events, speakers, partners)
+- Advance events through workflow states
+- Manage speaker outreach and content review
+- Assign time slots and publish agendas
+- Create and manage tasks
 
-### Admin
-User with ADMIN role who has full platform access. Can:
-- Everything ORGANIZER can do
-- Create and manage users
-- Delete any entity
-- Override workflow validations
-- Access all events (not just assigned)
-- Modify system settings
+**Note**: In BATbern, Organizers have complete administrative access to ensure operational flexibility.
 
 ### Speaker
 Individual who presents at events. May or may not have platform user account.
@@ -104,54 +98,75 @@ Organization associated with users, speakers, or partners. Includes:
 ## Workflow & States
 
 ### Workflow
-16-step process for planning and executing events. Organized into 6 phases (A-F):
-- **Phase A**: Setup (Steps 1-3)
-- **Phase B**: Outreach (Steps 4-6)
-- **Phase C**: Quality (Steps 7-8)
-- **Phase D**: Assignment (Steps 9-10)
-- **Phase E**: Publishing (Steps 11-12)
-- **Phase F**: Communication (Steps 13-16)
+BATbern uses **3 independent workflow systems** that operate in parallel:
 
-See [Workflow Documentation](../workflow/) for complete details.
+1. **Event Workflow** (9 states):
+   - CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
-### Step
-Individual stage within the workflow. Each step has:
-- **Number** (1-16)
-- **Name** (e.g., "Topic Selection")
-- **Validation criteria** (requirements to advance)
-- **Deadline** (optional, configurable)
+2. **Speaker Workflow** (11 states per speaker):
+   - identified → contacted → ready → accepted/declined → content_submitted → quality_reviewed → confirmed → overflow/withdrew
+
+3. **Task System** (4 states):
+   - TODO → IN_PROGRESS → COMPLETED/CANCELLED
+
+See [Workflow Documentation](../workflow/) for complete details on how these systems interact.
+
+### Phase
+Conceptual grouping of workflow activities for documentation purposes:
+- **Phase A**: Setup (Event creation, topic selection, speaker brainstorming)
+- **Phase B**: Outreach (Speaker engagement, content collection)
+- **Phase C**: Quality (Content review, quality scoring)
+- **Phase D**: Assignment (Slot assignment, agenda finalization)
+- **Phase E**: Lifecycle (Auto-publishing, auto-transitions, archival)
+- **Phase F**: Tasks (Parallel task management system)
+
+**Note**: Phases are documentation constructs, not workflow states. Events don't "transition between phases" - they transition between states.
 
 ### State / Status
-Current condition of an entity. Examples:
+Current condition of an entity. Uses lowercase snake_case in database, UPPERCASE in some UI displays.
 
-**Event States**:
-- `DRAFT` - Created but not started
-- `IN_PROGRESS` - Active, progressing through workflow
-- `PUBLISHED` - Public-facing information released
-- `COMPLETED` - Event occurred, workflow finished
+**Event States** (9 states):
+- `CREATED` - Event configured, ready for topic selection
+- `TOPIC_SELECTION` - Topics being selected
+- `SPEAKER_IDENTIFICATION` - Speakers being identified and progressing through their own workflows
+- `SLOT_ASSIGNMENT` - Quality-reviewed speakers being assigned to time slots
+- `AGENDA_PUBLISHED` - Agenda ready for finalization
+- `AGENDA_FINALIZED` - Locked agenda, ready for event execution
+- `EVENT_LIVE` - Event currently happening (auto-transition on event day)
+- `EVENT_COMPLETED` - Event finished (auto-transition after event ends)
 - `ARCHIVED` - Historical record, read-only
 
-**Speaker States**:
-- `IDENTIFIED` - Added to brainstorm list
-- `INVITED` - Invitation sent
-- `ACCEPTED` - Confirmed participation
-- `REJECTED` - Declined invitation
-- `CONTENT_SUBMITTED` - Materials uploaded
-- `APPROVED` - Passed quality review
-- `PUBLISHED` - Profile visible to attendees
-- `WITHDRAWN` - Dropped out after accepting
+**Speaker States** (11 states):
+- `identified` - Added to brainstorm list
+- `contacted` - Invitation sent
+- `ready` - Ready to accept/decline
+- `accepted` - Committed to presenting
+- `declined` - Not available
+- `content_submitted` - Materials uploaded
+- `quality_reviewed` - Content approved
+- `confirmed` - Quality reviewed AND slot assigned (auto-state)
+- `overflow` - Accepted but no slot available
+- `withdrew` - Dropped out after accepting
+
+**Task States** (4 states):
+- `TODO` - Not started
+- `IN_PROGRESS` - Currently working
+- `COMPLETED` - Finished
+- `CANCELLED` - No longer needed
 
 ### Validation
-Rule that must be satisfied before advancing to next workflow step. Examples:
-- "Minimum 8 speakers identified" (Step 3 → Step 4)
-- "All invited speakers responded" (Step 5 → Step 6)
-- "At least 10 speakers approved" (Step 8 → Step 9)
+Business logic rules enforced during state transitions. Examples:
+- Event must have selected topics before advancing from TOPIC_SELECTION to SPEAKER_IDENTIFICATION
+- Speaker must have content_submitted before advancing to quality_reviewed
+- Tasks must have assignees before moving to IN_PROGRESS
 
 ### Override
-Admin action to bypass validation and advance workflow despite unmet criteria. Requires:
-- Justification (reason for override)
-- Admin role
-- Audit trail (logged for review)
+Organizer action to bypass validation constraints. Common use cases:
+- Archive event in any state (use "Override Workflow Validation" checkbox)
+- Manually change speaker state outside normal workflow (for exceptional cases)
+- Skip certain validation steps when business requirements change
+
+**Note**: All overrides are logged for audit purposes.
 
 ---
 
@@ -301,28 +316,47 @@ Process of releasing new code to an environment:
 
 ---
 
-## Workflow Steps Reference
+## Workflow State Reference
 
-Quick reference for all 16 steps:
+Quick reference for all workflow states:
 
-| Step | Name | Phase | Key Actions |
-|------|------|-------|-------------|
-| 1 | Event Setup | A - Setup | Define event type, date, venue |
-| 2 | Topic Selection | A - Setup | Choose topics using heat map |
-| 3 | Speaker Brainstorming | A - Setup | Identify 8-10+ potential speakers |
-| 4 | Outreach Initiated | B - Outreach | Send speaker invitations |
-| 5 | Status Management | B - Outreach | Track responses (Accepted/Rejected/Pending) |
-| 6 | Content Collection | B - Outreach | Gather presentation materials |
-| 7 | Quality Review | C - Quality | Evaluate speaker content |
-| 8 | Threshold Validation | C - Quality | Ensure minimum approved speakers |
-| 9 | Overflow Management | D - Assignment | Handle excess speakers (voting) |
-| 10 | Slot Assignment | D - Assignment | Drag-and-drop speakers to time slots |
-| 11 | Topic Publishing | E - Publishing | Publish event topics publicly |
-| 12 | Speaker Publishing | E - Publishing | Publish speaker profiles publicly |
-| 13 | Newsletter Creation | F - Communication | Draft attendee communications |
-| 14 | Moderator Assignment | F - Communication | Assign session moderators |
-| 15 | Catering Coordination | F - Communication | Finalize food/beverage |
-| 16 | Partner Meetings | F - Communication | Coordinate sponsor logistics |
+**Event Workflow** (9 states - linear progression):
+
+| State | Key Activities | Next State |
+|-------|----------------|------------|
+| CREATED | Event configured with basic info | TOPIC_SELECTION |
+| TOPIC_SELECTION | Select topics using heat map, auto-creates 4 tasks | SPEAKER_IDENTIFICATION |
+| SPEAKER_IDENTIFICATION | Speakers progress through their own workflow (identified → confirmed) | SLOT_ASSIGNMENT |
+| SLOT_ASSIGNMENT | Assign quality-reviewed speakers to time slots | AGENDA_PUBLISHED |
+| AGENDA_PUBLISHED | Agenda ready, auto-creates "Newsletter: Speakers" task | AGENDA_FINALIZED |
+| AGENDA_FINALIZED | Finalized agenda, auto-creates 2 tasks, triggers 14-day auto-publish | EVENT_LIVE |
+| EVENT_LIVE | Event currently executing (auto-transition on event day) | EVENT_COMPLETED |
+| EVENT_COMPLETED | Event finished (auto-transition after event ends) | ARCHIVED |
+| ARCHIVED | Historical record, read-only | Terminal |
+
+**Speaker Workflow** (11 states - parallel per speaker):
+
+| State | Meaning | Common Transitions |
+|-------|---------|-------------------|
+| identified | Added to brainstorm list | contacted |
+| contacted | Invitation sent | ready |
+| ready | Can accept/decline | accepted, declined |
+| accepted | Committed to presenting | content_submitted |
+| declined | Not available | Terminal |
+| content_submitted | Materials uploaded | quality_reviewed |
+| quality_reviewed | Content approved | confirmed (when slot assigned) |
+| confirmed | Quality + slot both done | Terminal (success) |
+| overflow | Accepted but no slot | May become confirmed if slot opens |
+| withdrew | Dropped out | Terminal |
+
+**Task System** (4 states):
+
+| State | Meaning | Transition |
+|-------|---------|------------|
+| TODO | Not started, may be overdue (red) | IN_PROGRESS |
+| IN_PROGRESS | Currently working | COMPLETED, CANCELLED |
+| COMPLETED | Finished with notes | Terminal |
+| CANCELLED | No longer needed | Terminal |
 
 ---
 

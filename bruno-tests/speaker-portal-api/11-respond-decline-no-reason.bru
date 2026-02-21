@@ -1,0 +1,39 @@
+meta {
+  name: Decline Without Reason (Validation Error)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/invite
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "decline-noreason-{{timestamp}}@example.com",
+    "speakerName": "No Reason Test Speaker",
+    "company": "Test AG",
+    "expertise": "Testing",
+    "responseDeadline": "2026-06-01T23:59:59Z"
+  }
+}
+
+script:post-response {
+  // First create and invite the speaker, then we'll test decline without reason
+  if (res.getStatus() === 200 || res.getStatus() === 201) {
+    bru.setVar("noReasonTestUsername", res.getBody().username);
+  }
+}
+
+tests {
+  test("should setup speaker for no-reason decline test", function() {
+    const status = res.getStatus();
+    expect(status === 200 || status === 201).to.be.true;
+  });
+}

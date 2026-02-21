@@ -423,6 +423,107 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/speakers/invite': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Invite a speaker to an event
+     * @description Create a SpeakerPool entry for a speaker and optionally auto-create
+     *     a User account if one doesn't exist.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC1 (invite), AC2 (auto-create user), AC7 (idempotency)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - If the speaker email already exists in the pool for this event, returns existing entry (idempotent)
+     *     - Auto-creates a User via UserApiClient if no user exists for the email
+     *     - Speaker starts in IDENTIFIED status
+     *     - Cognito account is NOT created for speakers initially
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['inviteSpeaker'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/invite-batch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Batch invite speakers to an event
+     * @description Invite multiple speakers in a single request with partial failure support.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC5 (batch)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - Maximum 50 speakers per batch
+     *     - Processing continues even if individual invitations fail
+     *     - Returns 207 Multi-Status when some succeed and some fail
+     *
+     *     **Performance**: <2000ms (P95) for 50 speakers
+     */
+    post: operations['inviteSpeakerBatch'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/speakers/{username}/send-invitation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Send invitation email to a speaker
+     * @description Send or resend a personalized invitation email with magic links for
+     *     accept/decline and a dashboard access link.
+     *
+     *     **Story**: 6.1b - Speaker Invitation System
+     *     **Acceptance Criteria**: AC3 (email), AC4 (i18n), AC6 (domain events)
+     *     **Authorization**: Requires ORGANIZER role
+     *
+     *     **Business Rules**:
+     *     - Speaker must exist in the pool for this event
+     *     - Transitions speaker status to INVITED
+     *     - Generates two magic link tokens:
+     *       - RESPOND token (single-use) for accept/decline
+     *       - VIEW token (reusable, 30-day expiry) for dashboard access
+     *     - Publishes SpeakerInvitationSentEvent domain event
+     *     - Records outreach history and status transition history
+     *     - Email sent asynchronously; failure does not block the response
+     *
+     *     **Performance**: <300ms (P95)
+     */
+    post: operations['sendSpeakerInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/speakers/{speakerId}/outreach': {
     parameters: {
       query?: never;
@@ -507,6 +608,63 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
      */
     post: operations['createSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/timetable': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the authoritative timetable for an event
+     * @description Returns the complete chronological slot grid for the event, including both
+     *     structural slots (MODERATION, BREAK, LUNCH) and droppable speaker slots
+     *     (SPEAKER_SLOT).  Structural slots are enriched with DB session slugs when
+     *     structural sessions have been generated.  Speaker slots show which speaker
+     *     session (if any) has been assigned to each position.
+     *
+     *     This endpoint is the single source of truth for the slot-assignment UI —
+     *     both the grid display and the auto-assign algorithm use these positions.
+     *
+     *     **Access**: ORGANIZER role required.
+     */
+    get: operations['getEventTimetable'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/sessions/structural': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate structural sessions for an event
+     * @description Generates structural sessions (moderation start, breaks, lunch, moderation end)
+     *     with computed start/end times based on the event type configuration.
+     *
+     *     The organizer is automatically assigned as MODERATOR on both moderation sessions.
+     *
+     *     **Requires ORGANIZER role.**
+     *
+     *     If `overwrite=false` (default) and structural sessions already exist, returns 409.
+     *     If `overwrite=true`, deletes existing structural sessions and recreates them.
+     */
+    post: operations['generateStructuralSessions'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1268,10 +1426,283 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/watch/organizers/me/active-events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get active events for authenticated organizer
+     * @description Returns active events assigned to the authenticated organizer.
+     *     Events within ±3 days with workflow state AGENDA_PUBLISHED, AGENDA_FINALIZED, or EVENT_LIVE.
+     *
+     *     **Story W2.3**: Event Join & Schedule Sync
+     *     - AC#1: Full schedule including sessions and speaker metadata
+     *     - AC#4: Empty list when no active events
+     *     - AC#5: Event preview data when event is >1h away
+     *
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    get: operations['getActiveEventsForOrganizer'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/watch/events/{eventCode}/arrivals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get speaker arrival status for an event
+     * @description Returns all confirmed speaker arrivals for the given event.
+     *     Used by Watch clients on initial load when WebSocket is not yet connected (REST fallback).
+     *
+     *     **Story W2.4**: Speaker Arrival Tracking — FR38, FR39
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    get: operations['getArrivalStatus'];
+    put?: never;
+    /**
+     * Confirm a speaker's arrival
+     * @description Confirms a speaker's arrival for the given event.
+     *     Idempotent: confirming an already-arrived speaker is a no-op (UNIQUE DB constraint).
+     *     Also triggers real-time WebSocket broadcast to all organizer watches.
+     *
+     *     **REST Fallback**: Used when WebSocket is offline/reconnecting.
+     *     **Story W2.4**: Speaker Arrival Tracking — FR38 (sync within 3 seconds).
+     *     **Authorization**: Requires `ROLE_ORGANIZER` JWT claim.
+     */
+    post: operations['confirmSpeakerArrival'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * @description A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
+     *     speaker positions (the implicit gaps between structural sessions). All other types
+     *     map to persisted structural sessions (moderation, break, lunch).
+     */
+    TimetableSlot: {
+      /**
+       * @description Slot type — determines rendering and whether the slot is droppable
+       * @example SPEAKER_SLOT
+       * @enum {string}
+       */
+      type: 'MODERATION' | 'BREAK' | 'LUNCH' | 'SPEAKER_SLOT';
+      /**
+       * Format: date-time
+       * @description Slot start time (UTC ISO-8601)
+       * @example 2025-06-15T07:05:00Z
+       */
+      startTime: string;
+      /**
+       * Format: date-time
+       * @description Slot end time (UTC ISO-8601)
+       * @example 2025-06-15T07:50:00Z
+       */
+      endTime: string;
+      /**
+       * @description Human-readable label for structural slots; null for SPEAKER_SLOT
+       * @example Kaffee-Pause
+       */
+      title?: string | null;
+      /**
+       * @description 1-based global index for SPEAKER_SLOT entries across the full event day (never reset when switching AM → PM block). Null for structural slots.
+       * @example 1
+       */
+      slotIndex?: number | null;
+      /**
+       * @description Session slug of the structural DB session occupying this slot. Null when no structural sessions have been generated yet, or for SPEAKER_SLOT.
+       * @example moderation-start-abc
+       */
+      sessionSlug?: string | null;
+      /**
+       * @description Session slug of the speaker session assigned to this SPEAKER_SLOT. Null if the slot is free, or for structural slots.
+       * @example speaker-xyz
+       */
+      assignedSessionSlug?: string | null;
+    };
+    /** @description Full timetable for an event including slot grid and unassigned sessions. */
+    TimetableResponse: {
+      /** @description All slots in chronological order (structural and speaker slots interleaved) */
+      slots: components['schemas']['TimetableSlot'][];
+      /** @description Speaker sessions (non-structural) with no startTime assigned yet */
+      unassignedSessions: components['schemas']['SessionResponse'][];
+    };
+    /** @description Request body to confirm a speaker's arrival. */
+    ConfirmArrivalRequest: {
+      /** @example anna.meier */
+      speakerUsername: string;
+    };
+    /** @description List of confirmed speaker arrivals for an event. */
+    ArrivalStatusList: {
+      arrivals: components['schemas']['ArrivalStatus'][];
+    };
+    /** @description A single speaker arrival record. */
+    ArrivalStatus: {
+      /** @example anna.meier */
+      speakerUsername: string;
+      /** @example marco.muster */
+      confirmedBy: string;
+      /**
+       * Format: date-time
+       * @example 2026-02-16T17:15:00Z
+       */
+      arrivedAt: string;
+    };
+    /** @description Server-authoritative arrived/total counts for real-time counter sync. */
+    ArrivalCount: {
+      /** @example 2 */
+      arrived: number;
+      /** @example 4 */
+      total: number;
+    };
+    /**
+     * @description WebSocket broadcast payload sent to `/topic/events/{eventCode}/arrivals`.
+     *     Also returned as REST response body for the POST endpoint.
+     *     Carries individual arrival details plus server-authoritative counts (FR39).
+     */
+    SpeakerArrivalBroadcast: {
+      /**
+       * @example SPEAKER_ARRIVED
+       * @enum {string}
+       */
+      type: 'SPEAKER_ARRIVED';
+      /** @example BATbern56 */
+      eventCode: string;
+      /** @example anna.meier */
+      speakerUsername: string;
+      /** @example Anna */
+      speakerFirstName?: string;
+      /** @example Meier */
+      speakerLastName?: string;
+      /** @example marco.muster */
+      confirmedBy: string;
+      /**
+       * Format: date-time
+       * @example 2026-02-16T17:15:00Z
+       */
+      arrivedAt: string;
+      arrivalCount: components['schemas']['ArrivalCount'];
+    };
+    /** @description Response wrapper for the organizer's active events (W2.3). */
+    ActiveEventsResponse: {
+      activeEvents: components['schemas']['ActiveEventDetail'][];
+    };
+    /** @description Full event detail for Watch organizer sync, including sessions and speakers. */
+    ActiveEventDetail: {
+      /** @example BATbern57 */
+      eventCode: string;
+      /** @example BATbern 57 - Cloud Native Architectures */
+      title: string;
+      /**
+       * Format: date
+       * @example 2026-03-01
+       */
+      eventDate: string;
+      /** @example Kultur Casino Bern */
+      venueName: string;
+      /**
+       * @description HH:mm in Europe/Zurich timezone, derived from first session
+       * @example 18:00
+       */
+      typicalStartTime?: string | null;
+      /**
+       * @description HH:mm in Europe/Zurich timezone, derived from last session
+       * @example 22:00
+       */
+      typicalEndTime?: string | null;
+      /** @example https://cdn.example.com/theme/batbern57.jpg */
+      themeImageUrl?: string | null;
+      /** @example AGENDA */
+      currentPublishedPhase?: string | null;
+      /**
+       * @example SCHEDULED
+       * @enum {string}
+       */
+      eventStatus: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+      sessions: components['schemas']['WatchSessionDetail'][];
+    };
+    /** @description Session detail for Watch organizer sync. */
+    WatchSessionDetail: {
+      /** @example cloud-keynote */
+      sessionSlug: string;
+      /** @example Cloud Architecture Keynote */
+      title: string;
+      abstract?: string | null;
+      /** @example talk */
+      sessionType?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-03-01T17:00:00Z
+       */
+      scheduledStartTime?: string | null;
+      /**
+       * Format: date-time
+       * @example 2026-03-01T17:45:00Z
+       */
+      scheduledEndTime?: string | null;
+      /** @example 45 */
+      durationMinutes?: number | null;
+      speakers: components['schemas']['WatchSpeakerDetail'][];
+      /**
+       * @description Derived from timing relative to now; W4 adds real-time override.
+       * @example SCHEDULED
+       * @enum {string|null}
+       */
+      status?: 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | null;
+      /**
+       * Format: date-time
+       * @description Populated in W4 (session control). Always null in W2.3.
+       */
+      actualStartTime?: string | null;
+      /**
+       * Format: date-time
+       * @description Populated in W4 (session control). Always null in W2.3.
+       */
+      actualEndTime?: string | null;
+      /**
+       * @description Populated in W4. Always 0 in W2.3.
+       * @example 0
+       */
+      overrunMinutes?: number;
+      /** @description Populated in W4. Always null in W2.3. */
+      completedBy?: string | null;
+    };
+    /** @description Speaker detail for Watch organizer sync. */
+    WatchSpeakerDetail: {
+      /** @example john.doe */
+      username: string;
+      /** @example John */
+      firstName?: string | null;
+      /** @example Doe */
+      lastName?: string | null;
+      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      company?: string | null;
+      /** @description Cross-service lookup deferred. Always null in W2.3. */
+      companyLogoUrl?: string | null;
+      /** @example https://cdn.example.com/portrait/john.doe.jpg */
+      profilePictureUrl?: string | null;
+      /** @example Cloud architect with 10 years experience */
+      bio?: string | null;
+      /** @example panelist */
+      speakerRole?: string | null;
+    };
     Event: {
       /**
        * @description Human-readable event identifier in format "BATbern{number}".
@@ -1408,6 +1839,14 @@ export interface components {
     EventDetail: components['schemas']['Event'] & {
       venue?: components['schemas']['Venue'];
       sessions?: components['schemas']['Session'][];
+      /**
+       * @description Progressive publishing phase for watch app (Story W1.2)
+       *     - TOPIC: Event topic selected, speakers TBA
+       *     - SPEAKERS: Speaker list published
+       *     - AGENDA: Full session details published
+       * @enum {string|null}
+       */
+      currentPublishedPhase?: 'TOPIC' | 'SPEAKERS' | 'AGENDA' | null;
     };
     Venue: {
       id?: string;
@@ -1463,6 +1902,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -1493,18 +1933,27 @@ export interface components {
        */
       speakers?: components['schemas']['SessionSpeaker'][];
       /**
-       * @description Phase 2 Feature: Quality review status for session materials (presentation, bio, photo).
-       *     Based on QualityReviewStatus enum from architecture (03-data-architecture.md:783-790).
+       * @description Material submission workflow status
+       *     - NONE: No materials submitted yet (initial state)
+       *     - pending: Materials submitted, awaiting review
+       *     - in_review: Materials under review
+       *     - approved: Materials approved
+       *     - requires_changes: Materials need changes
+       *     - rejected: Materials rejected
+       *     - revision_submitted: Revised materials submitted
+       *     - COMPLETE: Materials finalized and approved (final state)
        * @example pending
        * @enum {string}
        */
       materialsStatus?:
+        | 'NONE'
         | 'pending'
         | 'in_review'
         | 'approved'
         | 'requires_changes'
         | 'rejected'
-        | 'revision_submitted';
+        | 'revision_submitted'
+        | 'COMPLETE';
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
@@ -1843,6 +2292,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -1881,6 +2331,7 @@ export interface components {
         | 'networking'
         | 'break'
         | 'lunch'
+        | 'moderation'
         | null;
       /**
        * Format: date-time
@@ -2151,6 +2602,30 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime: string;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationStartDuration: number;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @default 5
+       * @example 5
+       */
+      moderationEndDuration: number;
+      /**
+       * @description Duration of each break session, in minutes
+       * @default 20
+       * @example 20
+       */
+      breakDuration: number;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @default 60
+       * @example 60
+       */
+      lunchDuration: number;
     };
     /**
      * @description Request to update event slot configuration (Story 5.1).
@@ -2204,6 +2679,35 @@ export interface components {
        * @example 17:00
        */
       typicalEndTime?: string | null;
+      /**
+       * @description Duration of moderation session at event start, in minutes
+       * @example 5
+       */
+      moderationStartDuration?: number | null;
+      /**
+       * @description Duration of moderation session at event end, in minutes
+       * @example 5
+       */
+      moderationEndDuration?: number | null;
+      /**
+       * @description Duration of each break session, in minutes
+       * @example 20
+       */
+      breakDuration?: number | null;
+      /**
+       * @description Duration of the lunch session, in minutes
+       * @example 60
+       */
+      lunchDuration?: number | null;
+    };
+    /** @description Request to generate structural sessions (moderation, break, lunch) for an event. */
+    GenerateStructuralSessionsRequest: {
+      /**
+       * @description If false (default), returns 409 if structural sessions already exist.
+       *     If true, deletes existing structural sessions and recreates them.
+       * @default false
+       */
+      overwrite: boolean;
     };
     /** @description Pagination metadata from shared-kernel */
     PaginationMetadata: Record<string, never>;
@@ -2457,6 +2961,238 @@ export interface components {
        * @example 2025-12-14T14:35:00Z
        */
       updatedAt: string;
+    };
+    /**
+     * @description Request to invite a speaker to an event.
+     *     Story 6.1b - AC1: Speaker Invitation
+     */
+    InviteSpeakerRequest: {
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Speaker's first name (used for user creation if not found)
+       * @example Jane
+       */
+      firstName?: string | null;
+      /**
+       * @description Speaker's last name (used for user creation if not found)
+       * @example Smith
+       */
+      lastName?: string | null;
+      /**
+       * @description Speaker's company name
+       * @example Tech Corp AG
+       */
+      company?: string | null;
+      /**
+       * Format: uuid
+       * @description Session to assign speaker to (optional)
+       * @example 550e8400-e29b-41d4-a716-446655440000
+       */
+      sessionId?: string | null;
+      /**
+       * @description Notes about the speaker
+       * @example Expert in cloud architecture
+       */
+      notes?: string | null;
+    };
+    /**
+     * @description Response for a speaker invitation.
+     *     Story 6.1b - AC1, AC7: Speaker Invitation with idempotency
+     */
+    InviteSpeakerResponse: {
+      /**
+       * Format: uuid
+       * @description UUID of the SpeakerPool entry
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      speakerPoolId: string;
+      /**
+       * @description Speaker's username
+       * @example jane.smith
+       */
+      username?: string | null;
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email: string;
+      /**
+       * @description Display name of the speaker
+       * @example Jane Smith
+       */
+      speakerName: string;
+      /**
+       * @description Current workflow status
+       * @example identified
+       * @enum {string}
+       */
+      status:
+        | 'identified'
+        | 'contacted'
+        | 'ready'
+        | 'accepted'
+        | 'declined'
+        | 'content_submitted'
+        | 'quality_reviewed'
+        | 'slot_assigned'
+        | 'confirmed'
+        | 'withdrew'
+        | 'overflow';
+      /**
+       * @description True if newly created, false if existing (idempotent return)
+       * @example true
+       */
+      created: boolean;
+      /**
+       * @description True if a new User account was created
+       * @example true
+       */
+      userCreated?: boolean;
+      /**
+       * Format: date-time
+       * @description When the SpeakerPool entry was created
+       * @example 2026-01-15T10:00:00Z
+       */
+      createdAt: string;
+    };
+    /**
+     * @description Request to invite multiple speakers in a batch.
+     *     Story 6.1b - AC5: Batch Invitation
+     */
+    BatchInviteRequest: {
+      /** @description List of speakers to invite (1-50 per batch) */
+      speakers: components['schemas']['InviteSpeakerRequest'][];
+    };
+    /**
+     * @description Response for a batch speaker invitation with partial failure support.
+     *     Story 6.1b - AC5: Batch Invitation
+     */
+    BatchInviteResponse: {
+      /**
+       * @description Total number of speakers requested
+       * @example 5
+       */
+      totalRequested: number;
+      /**
+       * @description Number of speakers successfully invited
+       * @example 4
+       */
+      successCount: number;
+      /**
+       * @description Number of failed invitations
+       * @example 1
+       */
+      failedCount: number;
+      /** @description Individual results for successful invitations */
+      results: components['schemas']['InviteSpeakerResponse'][];
+      /** @description Details of failed invitations */
+      errors: {
+        /**
+         * Format: email
+         * @description Email of the speaker that failed
+         * @example invalid@broken.test
+         */
+        email: string;
+        /**
+         * @description Error classification code
+         * @example USER_SERVICE_ERROR
+         * @enum {string}
+         */
+        errorCode: 'INVALID_REQUEST' | 'EVENT_NOT_FOUND' | 'USER_SERVICE_ERROR' | 'INTERNAL_ERROR';
+        /**
+         * @description Human-readable error message
+         * @example Failed to create user account
+         */
+        errorMessage: string;
+      }[];
+    };
+    /**
+     * @description Request to send/resend an invitation email to a speaker.
+     *     Story 6.1b - AC3: Invitation Email
+     *
+     *     The email includes:
+     *     - Accept/decline magic links (single-use RESPOND token)
+     *     - Dashboard access link (reusable VIEW token)
+     *     - Event details, deadlines, and session info
+     */
+    SendInvitationRequest: {
+      /**
+       * Format: date
+       * @description Deadline for speaker to respond (must be in the future)
+       * @example 2026-02-28
+       */
+      responseDeadline: string;
+      /**
+       * Format: date
+       * @description Deadline for speaker to submit content (must be after responseDeadline)
+       * @example 2026-03-10
+       */
+      contentDeadline?: string | null;
+      /**
+       * @description Preferred language for the email (defaults to 'de')
+       * @example de
+       * @enum {string|null}
+       */
+      locale?: 'de' | 'en' | null;
+      /**
+       * Format: email
+       * @description Override email address (for speakers without email in database)
+       * @example jane.smith@example.com
+       */
+      email?: string | null;
+    };
+    /**
+     * @description Response after sending an invitation email.
+     *     Story 6.1b - AC3: Invitation Email
+     */
+    SendInvitationResponse: {
+      /**
+       * Format: uuid
+       * @description UUID of the SpeakerPool entry
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      speakerPoolId: string;
+      /**
+       * @description Speaker's username
+       * @example jane.smith
+       */
+      username?: string | null;
+      /**
+       * Format: email
+       * @description Speaker's email address
+       * @example jane.smith@example.com
+       */
+      email?: string;
+      /**
+       * @description Updated status (always INVITED after sending)
+       * @example invited
+       * @enum {string}
+       */
+      status: 'invited';
+      /**
+       * Format: date-time
+       * @description When the invitation was sent
+       * @example 2026-01-15T10:00:00Z
+       */
+      invitedAt: string;
+      /**
+       * Format: date
+       * @description Deadline for speaker to respond
+       * @example 2026-02-28
+       */
+      responseDeadline: string;
+      /**
+       * Format: date
+       * @description Deadline for content submission
+       * @example 2026-03-10
+       */
+      contentDeadline?: string | null;
     };
     /** @description Topic response with staleness score and similarity information */
     TopicResponse: {
@@ -3354,6 +4090,164 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
+  inviteSpeaker: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InviteSpeakerRequest'];
+      };
+    };
+    responses: {
+      /** @description Speaker already exists in pool (idempotent return) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InviteSpeakerResponse'];
+        };
+      };
+      /** @description Speaker invited successfully (new entry created) */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InviteSpeakerResponse'];
+        };
+      };
+      /** @description Validation error */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  inviteSpeakerBatch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BatchInviteRequest'];
+      };
+    };
+    responses: {
+      /** @description All invitations processed successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchInviteResponse'];
+        };
+      };
+      /** @description Partial success - some invitations failed */
+      207: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BatchInviteResponse'];
+        };
+      };
+      /** @description Validation error (e.g., empty speakers list) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  sendSpeakerInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code */
+        eventCode: string;
+        /** @description Speaker's username or UUID (for brainstormed speakers) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendInvitationRequest'];
+      };
+    };
+    responses: {
+      /** @description Invitation sent successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SendInvitationResponse'];
+        };
+      };
+      /** @description Validation error (e.g., missing email, invalid deadlines) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      403: components['responses']['Forbidden'];
+      /** @description Event or speaker not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
   getSpeakerOutreachHistory: {
     parameters: {
       query?: never;
@@ -3545,6 +4439,80 @@ export interface operations {
       400: components['responses']['BadRequest'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getEventTimetable: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern142 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Timetable successfully retrieved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TimetableResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  generateStructuralSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Event code in format BATbern{number} */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['GenerateStructuralSessionsRequest'];
+      };
+    };
+    responses: {
+      /** @description Structural sessions created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionResponse'][];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Structural sessions already exist (use overwrite=true to replace) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   batchImportSessions: {
@@ -4792,6 +5760,82 @@ export interface operations {
       };
       403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getActiveEventsForOrganizer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Active events list (may be empty) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ActiveEventsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getArrivalStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Arrival status list (may be empty) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ArrivalStatusList'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  confirmSpeakerArrival: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @example BATbern56 */
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmArrivalRequest'];
+      };
+    };
+    responses: {
+      /** @description Arrival confirmed — includes broadcast payload with server-authoritative counts */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpeakerArrivalBroadcast'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
 }

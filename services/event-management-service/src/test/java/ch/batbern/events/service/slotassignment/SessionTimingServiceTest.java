@@ -6,6 +6,7 @@ import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionTimingHistoryRepository;
+import ch.batbern.events.service.TimetableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,9 @@ class SessionTimingServiceTest {
     private EventRepository eventRepository;
 
     @Mock
+    private TimetableService timetableService;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private Session placeholderSession;
@@ -75,6 +79,7 @@ class SessionTimingServiceTest {
                 speakerPoolRepository,
                 speakerWorkflowService,
                 eventRepository,
+                timetableService,
                 eventPublisher
         );
 
@@ -117,7 +122,7 @@ class SessionTimingServiceTest {
 
         when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(placeholderSession));
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(speakerPoolRepository.findBySessionId(any())).thenReturn(Optional.empty()); // No speaker for this session
+        when(speakerPoolRepository.findBySessionId(any())).thenReturn(List.of()); // No speaker for this session
 
         // When: assignTiming(sessionSlug, startTime, endTime, room, changeReason)
         Session result = sessionTimingService.assignTiming(sessionSlug, startTime, endTime, room, changeReason, changedBy);
@@ -287,7 +292,7 @@ class SessionTimingServiceTest {
 
         when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(placeholderSession));
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(List.of(speaker));
 
         // When: assignTiming() is called
         sessionTimingService.assignTiming(sessionSlug, startTime, endTime, room, "initial_assignment", changedBy);
@@ -322,12 +327,115 @@ class SessionTimingServiceTest {
 
         when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(placeholderSession));
         when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(List.of(speaker));
 
         // When: assignTiming() is called
         sessionTimingService.assignTiming(sessionSlug, startTime, endTime, room, "initial_assignment", changedBy);
 
         // Then: Speaker workflow service should NOT be called
         verify(speakerWorkflowService, never()).updateSpeakerWorkflowState(any(), any(), any());
+    }
+
+    /**
+     * Regression Test: Handle multiple speakers assigned to same session
+     * Bug fix: findBySessionId returning 2 speakers caused NonUniqueResultException
+     * Sessions can have multiple speakers (panels, co-presentations), must handle all of them
+     */
+    @Test
+    void should_autoConfirmAllSpeakers_when_multipleSpeakersAssignedToSession() {
+        // Given: Session with TWO speakers in QUALITY_REVIEWED state
+        UUID speakerId1 = UUID.randomUUID();
+        UUID speakerId2 = UUID.randomUUID();
+
+        ch.batbern.events.domain.SpeakerPool speaker1 = ch.batbern.events.domain.SpeakerPool.builder()
+                .id(speakerId1)
+                .sessionId(placeholderSession.getId())
+                .speakerName("Speaker One")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
+                .build();
+
+        ch.batbern.events.domain.SpeakerPool speaker2 = ch.batbern.events.domain.SpeakerPool.builder()
+                .id(speakerId2)
+                .sessionId(placeholderSession.getId())
+                .speakerName("Speaker Two")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
+                .build();
+
+        String sessionSlug = "john-doe-techcorp";
+        Instant startTime = Instant.parse("2025-06-15T09:00:00Z");
+        Instant endTime = Instant.parse("2025-06-15T09:45:00Z");
+        String room = "Main Hall";
+        String changedBy = "test-organizer@batbern.ch";
+
+        when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(placeholderSession));
+        when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // Return LIST of multiple speakers - this was causing NonUniqueResultException before fix
+        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(List.of(speaker1, speaker2));
+
+        // When: assignTiming() is called
+        sessionTimingService.assignTiming(sessionSlug, startTime, endTime, room, "initial_assignment", changedBy);
+
+        // Then: Speaker workflow service should be called for BOTH speakers
+        verify(speakerWorkflowService).updateSpeakerWorkflowState(
+                eq(speakerId1),
+                eq(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED),
+                eq(changedBy)
+        );
+        verify(speakerWorkflowService).updateSpeakerWorkflowState(
+                eq(speakerId2),
+                eq(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED),
+                eq(changedBy)
+        );
+    }
+
+    /**
+     * Regression Test: Handle mixed speaker states when multiple speakers
+     * Only speakers in QUALITY_REVIEWED state should be auto-confirmed
+     */
+    @Test
+    void should_onlyAutoConfirmQualityReviewedSpeakers_when_multipleSpeakersWithMixedStates() {
+        // Given: Session with TWO speakers - one QUALITY_REVIEWED, one ACCEPTED
+        UUID speakerId1 = UUID.randomUUID();
+        UUID speakerId2 = UUID.randomUUID();
+
+        ch.batbern.events.domain.SpeakerPool speaker1 = ch.batbern.events.domain.SpeakerPool.builder()
+                .id(speakerId1)
+                .sessionId(placeholderSession.getId())
+                .speakerName("Speaker One")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.QUALITY_REVIEWED)
+                .build();
+
+        ch.batbern.events.domain.SpeakerPool speaker2 = ch.batbern.events.domain.SpeakerPool.builder()
+                .id(speakerId2)
+                .sessionId(placeholderSession.getId())
+                .speakerName("Speaker Two")
+                .status(ch.batbern.shared.types.SpeakerWorkflowState.ACCEPTED) // Not ready for auto-confirm
+                .build();
+
+        String sessionSlug = "john-doe-techcorp";
+        Instant startTime = Instant.parse("2025-06-15T09:00:00Z");
+        Instant endTime = Instant.parse("2025-06-15T09:45:00Z");
+        String room = "Main Hall";
+        String changedBy = "test-organizer@batbern.ch";
+
+        when(sessionRepository.findBySessionSlug(sessionSlug)).thenReturn(Optional.of(placeholderSession));
+        when(sessionRepository.save(any(Session.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(speakerPoolRepository.findBySessionId(placeholderSession.getId())).thenReturn(List.of(speaker1, speaker2));
+
+        // When: assignTiming() is called
+        sessionTimingService.assignTiming(sessionSlug, startTime, endTime, room, "initial_assignment", changedBy);
+
+        // Then: Only speaker1 (QUALITY_REVIEWED) should be auto-confirmed
+        verify(speakerWorkflowService).updateSpeakerWorkflowState(
+                eq(speakerId1),
+                eq(ch.batbern.shared.types.SpeakerWorkflowState.CONFIRMED),
+                eq(changedBy)
+        );
+        // speaker2 (ACCEPTED) should NOT be auto-confirmed
+        verify(speakerWorkflowService, never()).updateSpeakerWorkflowState(
+                eq(speakerId2),
+                any(),
+                any()
+        );
     }
 }

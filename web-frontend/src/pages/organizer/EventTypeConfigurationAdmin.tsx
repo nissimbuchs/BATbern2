@@ -22,11 +22,11 @@ import {
   DialogTitle,
   DialogContent,
   Alert,
-  CircularProgress,
   Box,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Edit as EditIcon } from '@mui/icons-material';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
@@ -101,7 +101,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
   if (isLoading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, textAlign: 'center' }}>
-        <CircularProgress />
+        <BATbernLoader size={96} />
       </Container>
     );
   }
@@ -149,7 +149,7 @@ export const EventTypeConfigurationAdmin: React.FC = () => {
       </Grid>
 
       {/* Edit Modal */}
-      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
           {t('dashboard.actions.edit')} {editingType && getEventTypeName(editingType)}
         </DialogTitle>

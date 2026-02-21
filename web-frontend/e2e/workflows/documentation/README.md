@@ -66,6 +66,7 @@ cd web-frontend
 ```
 
 This script:
+
 - Automatically logs in using stored credentials
 - Runs all 6 workflow phases sequentially
 - Captures 77 screenshots with phase-prefixed naming (a-01-, b-02-, etc.)

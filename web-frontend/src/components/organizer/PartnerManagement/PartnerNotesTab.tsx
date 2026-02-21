@@ -7,7 +7,6 @@ import {
   Button,
   Stack,
   Chip,
-  CircularProgress,
   Alert,
   IconButton,
   TextField,
@@ -18,6 +17,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Note as NoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 
@@ -110,7 +110,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-        <CircularProgress />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

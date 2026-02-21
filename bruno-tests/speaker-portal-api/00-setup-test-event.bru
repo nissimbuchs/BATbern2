@@ -1,0 +1,42 @@
+meta {
+  name: Setup Test Event for Speaker Portal
+  type: http
+  seq: 0
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "title": "Speaker Portal Test Event",
+    "eventNumber": 999,
+    "description": "Test event for speaker portal E2E tests",
+    "date": "2026-06-15T18:00:00Z",
+    "registrationDeadline": "2026-06-10T23:59:59Z",
+    "venueName": "Test Venue",
+    "venueAddress": "Test Address 1, 3000 Bern",
+    "venueCapacity": 100
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.eventCode: isDefined
+}
+
+tests {
+  test("should create test event for speaker portal tests", function() {
+    expect(res.getStatus()).to.equal(201);
+    const event = res.getBody();
+    expect(event.eventCode).to.be.a('string');
+    bru.setVar("speakerPortalTestEventCode", event.eventCode);
+  });
+}

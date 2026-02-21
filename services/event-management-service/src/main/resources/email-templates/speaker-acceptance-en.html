@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker Confirmation - {{eventTitle}}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #28a745;
+            margin: 0;
+            font-size: 24px;
+        }
+        .success-badge {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .event-details {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .event-details h2 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 20px;
+        }
+        .detail-row {
+            margin: 10px 0;
+            display: flex;
+        }
+        .detail-label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .session-info {
+            background-color: #e8f4fd;
+            border: 1px solid #0066cc;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .session-info h3 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 16px;
+        }
+        .portal-section {
+            background-color: #f0f7ff;
+            border: 2px solid #0066cc;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        .portal-section h2 {
+            color: #0066cc;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .portal-links {
+            margin: 20px 0;
+        }
+        .portal-link {
+            display: block;
+            background-color: #0066cc;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-radius: 4px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        .portal-link:hover {
+            background-color: #0052a3;
+        }
+        .portal-link.secondary {
+            background-color: #6c757d;
+        }
+        .portal-link.secondary:hover {
+            background-color: #545b62;
+        }
+        .important-note {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .important-note h3 {
+            margin-top: 0;
+            color: #856404;
+            font-size: 16px;
+        }
+        .deadline-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .deadline-box h3 {
+            margin-top: 0;
+            color: #721c24;
+            font-size: 16px;
+        }
+        .next-steps {
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .next-steps h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+        .next-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 10px 0;
+        }
+        .contact-box {
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .contact-box h3 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 16px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .footer a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>Thank You for Accepting!</h1>
+            <span class="success-badge">Participation Confirmed</span>
+        </div>
+
+        <p>Dear {{speakerName}},</p>
+
+        <p>Thank you for accepting our invitation to speak at the upcoming Berner Architekten Treffen event. We are excited to have you!</p>
+
+        <div class="event-details">
+            <h2>{{eventTitle}}</h2>
+            <div class="detail-row">
+                <span class="detail-label">Date:</span>
+                <span class="detail-value">{{eventDate}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Time:</span>
+                <span class="detail-value">{{eventTime}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Venue:</span>
+                <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+            </div>
+        </div>
+
+        {{#sessionTitle}}
+        <div class="session-info">
+            <h3>Your Session</h3>
+            <p><strong>{{sessionTitle}}</strong></p>
+        </div>
+        {{/sessionTitle}}
+
+        <div class="portal-section">
+            <h2>Your Speaker Portal</h2>
+            <p>Use the links below to manage your speaker profile and submit your presentation content. <strong>Save this email</strong> - these links are your access to the speaker portal.</p>
+
+            <div class="portal-links">
+                <a href="{{dashboardLink}}" class="portal-link">Speaker Dashboard</a>
+                <a href="{{profileUrl}}" class="portal-link secondary">Update Your Profile</a>
+                <a href="{{contentUrl}}" class="portal-link secondary">Submit Presentation Content</a>
+            </div>
+
+            <p style="font-size: 12px; color: #666;">
+                If the buttons don't work, copy these links into your browser:<br>
+                <strong>Profile:</strong> <a href="{{profileUrl}}" style="word-break: break-all;">{{profileUrl}}</a><br>
+                <strong>Content:</strong> <a href="{{contentUrl}}" style="word-break: break-all;">{{contentUrl}}</a>
+            </p>
+        </div>
+
+        <div class="important-note">
+            <h3>Important: Save This Email</h3>
+            <p>The portal links above are your personal access to update your profile and submit content. Keep this email safe - you can return to the portal anytime using these links.</p>
+        </div>
+
+        {{#contentDeadline}}
+        <div class="deadline-box">
+            <h3>Content Submission Deadline</h3>
+            <p>Please submit your presentation title and abstract by: <strong>{{contentDeadline}}</strong></p>
+        </div>
+        {{/contentDeadline}}
+
+        <div class="next-steps">
+            <h3>Next Steps</h3>
+            <ol>
+                <li><strong>Complete your speaker profile</strong> - Add your bio, photo, and expertise areas</li>
+                <li><strong>Submit your presentation content</strong> - Title, abstract, and optionally your slides</li>
+                <li><strong>Wait for confirmation</strong> - We'll review and confirm your session slot</li>
+            </ol>
+        </div>
+
+        <div class="contact-box">
+            <h3>Questions?</h3>
+            <p>If you have any questions or need assistance, please contact us:</p>
+            <p>
+                <strong>{{organizerName}}</strong><br>
+                <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
+            </p>
+        </div>
+
+        <p>We look forward to your presentation!</p>
+
+        <p>Best regards,<br>
+        <strong>The BATbern Team</strong></p>
+
+        <div class="footer">
+            <p>
+                <a href="{{dashboardLink}}">Speaker Dashboard</a> |
+                <a href="{{eventUrl}}">View Event Details</a> |
+                <a href="{{supportUrl}}">Contact Support</a>
+            </p>
+            <p>
+                Berner Architekten Treffen (BATbern)<br>
+                &copy; {{currentYear}} BATbern. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

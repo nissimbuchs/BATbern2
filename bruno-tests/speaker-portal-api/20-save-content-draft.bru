@@ -1,0 +1,35 @@
+meta {
+  name: Save Content Draft (Story 6.3)
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/content/draft
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{speakerViewToken}}",
+    "title": "Building Cloud-Native Applications",
+    "contentAbstract": "This presentation explores best practices for building scalable cloud-native applications. We will cover microservices architecture, containerization with Kubernetes, and lessons learned from real-world implementations."
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.draftId: isDefined
+  res.body.savedAt: isDefined
+}
+
+tests {
+  test("should save draft successfully - Story 6.3 AC4", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.draftId).to.be.a('string');
+    expect(body.savedAt).to.be.a('string');
+    bru.setVar("contentDraftId", body.draftId);
+  });
+}

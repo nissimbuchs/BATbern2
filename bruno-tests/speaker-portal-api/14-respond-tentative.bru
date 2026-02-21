@@ -1,0 +1,44 @@
+meta {
+  name: Tentative Response (Story 6.2a)
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/speaker-portal/respond
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{tentativeSpeakerToken}}",
+    "response": "TENTATIVE",
+    "reason": "Need to check travel dates with my team"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.tokenConsumed: eq false
+}
+
+tests {
+  test("should accept tentative response - Story 6.2a AC5", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.success).to.be.true;
+  });
+
+  test("should NOT consume token for tentative - Story 6.2a AC5", function() {
+    const body = res.getBody();
+    expect(body.tokenConsumed).to.be.false;
+  });
+
+  test("should remain in INVITED state with tentative flag - Story 6.2a AC5", function() {
+    const body = res.getBody();
+    expect(body.newWorkflowState).to.equal('INVITED');
+    expect(body.isTentative).to.be.true;
+  });
+}

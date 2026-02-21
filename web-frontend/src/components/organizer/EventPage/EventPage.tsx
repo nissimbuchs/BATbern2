@@ -18,7 +18,6 @@ import {
   Tabs,
   Tab,
   Typography,
-  CircularProgress,
   Alert,
   Button,
   Stack,
@@ -43,6 +42,7 @@ import { useEvent } from '@/hooks/useEvents';
 import { useEventStore } from '@/stores/eventStore';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
+import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 
 import { EventOverviewTab } from './EventOverviewTab';
@@ -132,7 +132,7 @@ export const EventPage: React.FC = () => {
           minHeight: '50vh',
         }}
       >
-        <CircularProgress />
+        <BATbernLoader size={96} />
       </Box>
     );
   }

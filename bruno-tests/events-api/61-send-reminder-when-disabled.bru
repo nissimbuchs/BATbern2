@@ -1,0 +1,39 @@
+meta {
+  name: Send Reminder When Disabled Returns 409 (Story 6.5 AC8)
+  type: http
+  seq: 61
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speaker-pool/{{createdSpeakerPoolId}}/send-reminder
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "reminderType": "RESPONSE",
+    "tier": "TIER_1"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.error: eq REMINDERS_DISABLED
+}
+
+tests {
+  test("should return 409 Conflict when reminders disabled - Story 6.5 AC8", function() {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("should return REMINDERS_DISABLED error - Story 6.5 AC8", function() {
+    const body = res.getBody();
+    expect(body.error).to.equal('REMINDERS_DISABLED');
+    expect(body.message).to.be.a('string');
+  });
+}
