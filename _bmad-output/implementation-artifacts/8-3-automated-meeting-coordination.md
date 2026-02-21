@@ -37,6 +37,17 @@ The meeting date is therefore derived from the linked BATbern event — no sched
 
 8. **AC8 - Performance**: Page loads in <3 seconds. Invite email sent asynchronously (user sees confirmation immediately, email dispatched in background).
 
+## Prerequisites & Integration with Story 8.0
+
+**Story 8.0 (Partner Portal Shell) must be complete before this story.**
+
+Story 8.3 is organizer-only — partners do not get a meetings page in the portal. However, Story 8.0's `PartnerDetailScreen` reuses `PartnerMeetingsTab`, which calls `usePartnerMeetings(companyName)`. That hook is currently a stub returning `[]`. **This story implements the real data** that populates that tab.
+
+Integration points:
+- **`usePartnerMeetings` hook** (already exists at `src/hooks/usePartnerMeetings.ts`): currently returns empty array — Task 2 of this story makes it call the real API endpoint, so meetings appear in both the organizer detail view (`/organizer/partners/:companyName` → Meetings tab) and the partner's own company detail view (`/partners/company` → Meetings tab)
+- **Organizer portal page**: new route `/organizer/partner-meetings` → `PartnerMeetingsPage` — add to organizer nav alongside other organizer management screens
+- Partners see upcoming meetings read-only in their company detail Meetings tab; they do not manage or create meetings
+
 ## What was deliberately cut
 
 | Removed | Reason |
@@ -82,6 +93,12 @@ CREATE TABLE IF NOT EXISTS partner_meetings (
 CREATE INDEX IF NOT EXISTS idx_partner_meetings_event ON partner_meetings(event_code);
 CREATE INDEX IF NOT EXISTS idx_partner_meetings_type  ON partner_meetings(meeting_type);
 ```
+
+### Task 1b: Implement usePartnerMeetings hook (Story 8.0 integration)
+
+- [ ] In `src/hooks/usePartnerMeetings.ts`: replace the stub empty-array return with a real API call to `GET /api/v1/partner-meetings?eventCode={eventCode}` or `GET /api/v1/partner-meetings` filtered by a company name lookup
+  - The meetings list in `PartnerMeetingsTab` (used by both organizer detail view and partner portal company view via Story 8.0) will automatically show real data once this hook is wired
+  - Cache: 5 minutes (read-only for partners)
 
 ### Task 2: OpenAPI Specification (AC: ALL — ADR-006)
 
@@ -176,6 +193,11 @@ END:VCALENDAR
   - `partner.meetings.fields.agenda`, `.notes`, `.location`, `.type.spring`, `.type.autumn`
   - `partner.meetings.sendInvite`, `.inviteSent`, `.inviteNotSent`
   - `partner.meetings.inviteSentOn`, `partner.meetings.noMeetings`
+
+### Task 8b: Wire organizer route into App.tsx
+
+- [ ] Add `/organizer/partner-meetings` route (OrganizerRoute) → renders `PartnerMeetingsPage`
+- [ ] Add "Partner Meetings" entry to the organizer navigation (wherever other organizer management items live — check existing organizer nav component)
 
 ### Task 9: Meeting List + Form (Organizer UI) (AC: 1, 2, 4, 5, 7, 8)
 

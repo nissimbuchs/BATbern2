@@ -26,6 +26,14 @@ so that I can justify our sponsorship internally.
 
 8. **AC8 - i18n**: All UI text in German (primary) and English (secondary).
 
+## Prerequisites
+
+**Story 8.0 (Partner Portal Shell) must be complete before this story.**
+
+Story 8.0 creates:
+- `PartnerPortalLayout` with the **Analytics** nav tab linking to `/partners/analytics`
+- `PartnerAnalyticsPlaceholder` at `/partners/analytics` — this story deletes that file and replaces it
+
 ## Architecture Decision
 
 **No materialized views. No nightly batch job. No local analytics storage.**
@@ -121,7 +129,19 @@ partner-coordination-service
   - `partner.analytics.range.last5years`, `partner.analytics.range.allHistory`
   - `partner.analytics.export.button`, `partner.analytics.noData`
 
-### Task 7: Frontend — Dashboard Page (AC: 1, 2, 3, 7, 8)
+### Task 7: Frontend — Wire into Partner Portal (AC: 1, 2, 3, 7, 8)
+
+- [ ] **Delete** `src/pages/PartnerAnalyticsPlaceholder.tsx` (created by Story 8.0)
+- [ ] In `App.tsx`, replace the `PartnerAnalyticsPlaceholder` import + element with `PartnerAttendanceDashboard`:
+  ```tsx
+  // BEFORE (Story 8.0 placeholder)
+  <Route path="analytics" element={<PartnerAnalyticsPlaceholder />} />
+  // AFTER (this story)
+  <Route path="analytics" element={<PartnerAttendanceDashboard />} />
+  ```
+- [ ] `PartnerAttendanceDashboard` reads `companyName` from `useAuth()` — same pattern as `PartnerCompanyPage` (Story 8.0)
+
+### Task 7b: Frontend — Dashboard Page (AC: 1, 2, 3, 7, 8)
 
 - [ ] Create `src/components/partner/PartnerAttendanceDashboard.tsx`
   - Two KPI cards at top: **Overall Attendance Rate** (avg % across events) | **Cost Per Attendee** (CHF)
@@ -132,6 +152,7 @@ partner-coordination-service
   - Desktop layout only — no mobile breakpoints
 
 ### Task 8: Frontend — Export Button (AC: 4)
+
 
 - [ ] Create `src/components/partner/AttendanceExportButton.tsx`
   - Single button: "Export Excel"

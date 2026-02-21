@@ -26,6 +26,15 @@ so that events cover subjects my company cares about.
 
 8. **AC8 - Performance**: Page loads in <3 seconds (P95).
 
+## Prerequisites
+
+**Story 8.0 (Partner Portal Shell) must be complete before this story.**
+
+Story 8.0 creates:
+- `PartnerPortalLayout` with the **Topics** nav tab linking to `/partners/topics`
+- `PartnerTopicsPlaceholder` at `/partners/topics` — this story deletes that file and replaces it
+- The organizer view needs a separate entry point — see Task routing note below
+
 ## What was deliberately cut
 
 | Removed | Reason |
@@ -120,6 +129,23 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
   - `partner.topics.status.proposed`, `.selected`, `.declined`
   - `partner.topics.plannedFor`, `partner.topics.empty`
   - `partner.topics.form.title`, `.description`, `.submit`
+
+### Task 6b: Wire into Partner Portal and Organizer nav (AC: 6)
+
+**Partner portal (Story 8.0 integration):**
+- [ ] **Delete** `src/pages/PartnerTopicsPlaceholder.tsx` (created by Story 8.0)
+- [ ] In `App.tsx`, replace `PartnerTopicsPlaceholder` with `TopicListPage`:
+  ```tsx
+  // BEFORE (Story 8.0 placeholder)
+  <Route path="topics" element={<PartnerTopicsPlaceholder />} />
+  // AFTER (this story)
+  <Route path="topics" element={<TopicListPage />} />
+  ```
+- [ ] `TopicListPage` renders with partner role behaviour (vote/suggest enabled, status-change hidden)
+
+**Organizer access:**
+- [ ] Add `/organizer/topics` route in `App.tsx` (OrganizerRoute) → renders `TopicStatusPanel` (organizer-only view with status controls)
+- [ ] Add "Topics" entry to organizer sidebar / nav (wherever other organizer nav items live)
 
 ### Task 7: Topic List Page (AC: 1, 2, 5, 7, 8)
 
