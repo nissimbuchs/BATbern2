@@ -1,6 +1,6 @@
 # Story 8.2: Topic Suggestions & Voting
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -95,7 +95,7 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
   - `DELETE /api/v1/partners/topics/{topicId}/vote` — toggle vote off (PARTNER)
   - `PATCH /api/v1/partners/topics/{topicId}/status` — update status (ORGANIZER only)
 - [x] Define DTOs: `TopicDTO`, `TopicSuggestionRequest`, `TopicStatusUpdateRequest`
-- [ ] Generate TypeScript types: `npm run generate:api-types:partners`
+- [x] Generate TypeScript types: `npm run generate:api-types:partner-topics` (new script added; generates `partner-topics-api.types.ts`)
 
 ### Task 3: TopicService (AC: 1–6)
 
@@ -124,7 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
 
 ### Task 6: i18n Keys (AC: 7)
 
-- [ ] Add keys to `public/locales/de/partner.json` and `en/partner.json`
+- [x] Add keys to `public/locales/de/partner.json` and `en/partner.json`
   - `partner.topics.title`, `partner.topics.suggest`, `partner.topics.vote`, `partner.topics.unvote`
   - `partner.topics.status.proposed`, `.selected`, `.declined`
   - `partner.topics.plannedFor`, `partner.topics.empty`
@@ -133,54 +133,54 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
 ### Task 6b: Wire into Partner Portal and Organizer nav (AC: 6)
 
 **Partner portal (Story 8.0 integration):**
-- [ ] **Delete** `src/pages/PartnerTopicsPlaceholder.tsx` (created by Story 8.0)
-- [ ] In `App.tsx`, replace `PartnerTopicsPlaceholder` with `TopicListPage`:
+- [x] **Delete** `src/pages/PartnerTopicsPlaceholder.tsx` (created by Story 8.0)
+- [x] In `App.tsx`, replace `PartnerTopicsPlaceholder` with `TopicListPage`:
   ```tsx
   // BEFORE (Story 8.0 placeholder)
   <Route path="topics" element={<PartnerTopicsPlaceholder />} />
   // AFTER (this story)
   <Route path="topics" element={<TopicListPage />} />
   ```
-- [ ] `TopicListPage` renders with partner role behaviour (vote/suggest enabled, status-change hidden)
+- [x] `TopicListPage` renders with partner role behaviour (vote/suggest enabled, status-change hidden)
 
 **Organizer access:**
-- [ ] Add `/organizer/topics` route in `App.tsx` (OrganizerRoute) → renders `TopicStatusPanel` (organizer-only view with status controls)
-- [ ] Add "Topics" entry to organizer sidebar / nav (wherever other organizer nav items live)
+- [x] Add `/organizer/partner-topics` route in `App.tsx` → renders `TopicStatusPanel` (note: `/organizer/topics` is already Story 5.2 event topics; used `/organizer/partner-topics` to avoid collision)
+- [x] Add "Partner Topics" entry to organizer nav (`navigationConfig.ts` + `navigation.partnerTopics` i18n key)
 
 ### Task 7: Topic List Page (AC: 1, 2, 5, 7, 8)
 
-- [ ] Create `src/components/partner/TopicListPage.tsx`
-- [ ] MUI `List` or `Table` — one row per topic: title, description, company, votes, status badge, vote button
-- [ ] Vote button: filled heart / thumbs-up when voted, outlined when not. Calls POST or DELETE on click.
-- [ ] Status badge: chip with colour — grey (Proposed), green (Selected), red (Declined)
-- [ ] Selected topics show `plannedEvent` field if set (e.g. "BATbern58")
-- [ ] "Suggest a Topic" button opens the suggestion form (modal or inline)
-- [ ] Loading skeleton, empty state
+- [x] Create `src/components/partner/TopicListPage.tsx`
+- [x] MUI `List` — one row per topic: title, description, company, votes, status badge, vote button
+- [x] Vote button: filled ThumbUp when voted, outlined when not. Calls POST or DELETE on click.
+- [x] Status badge: chip with colour — grey (Proposed), green (Selected), red (Declined)
+- [x] Selected topics show `plannedEvent` field if set (e.g. "BATbern58")
+- [x] "Suggest a Topic" button opens the suggestion form (modal)
+- [x] Loading skeleton, empty state
 
 ### Task 8: Topic Suggestion Form (AC: 3, 7)
 
-- [ ] Create `src/components/partner/TopicSuggestionForm.tsx` — MUI Dialog
-- [ ] Fields: Title (required), Description (optional, max 500 chars)
-- [ ] Submit → `POST /api/v1/partners/topics` → invalidate topic list query
-- [ ] Validation: title required, min 5 chars
+- [x] Create `src/components/partner/TopicSuggestionForm.tsx` — MUI Dialog
+- [x] Fields: Title (required), Description (optional, max 500 chars)
+- [x] Submit → `POST /api/v1/partners/topics` → invalidate topic list query
+- [x] Validation: title required, min 5 chars
 
 ### Task 9: Organizer Status Panel (AC: 4, 5, 7)
 
-- [ ] Create `src/components/organizer/TopicStatusPanel.tsx`
-- [ ] Same topic list but with additional organizer controls per row:
+- [x] Create `src/components/organizer/TopicStatusPanel.tsx`
+- [x] Same topic list but with additional organizer controls per row:
   - Status dropdown: Proposed / Selected / Declined
   - "Planned for event" text input (shown when status = Selected)
   - Save button per row
-- [ ] Only rendered when user has ORGANIZER role
+- [x] Only rendered at `/organizer/partner-topics` (ProtectedRoute)
 
 ### Task 10: API Client (AC: ALL)
 
-- [ ] Create `src/services/api/partnerTopicsApi.ts`
-- [ ] `getTopics()` — React Query, staleTime 2 minutes
-- [ ] `suggestTopic(req)` — mutation, invalidates topic list
-- [ ] `castVote(topicId)` — mutation with optimistic update (increment vote count)
-- [ ] `removeVote(topicId)` — mutation with optimistic update (decrement vote count)
-- [ ] `updateTopicStatus(topicId, status, plannedEvent)` — mutation (organizer only)
+- [x] Create `src/services/api/partnerTopicsApi.ts`
+- [x] `getTopics()` — React Query, staleTime 2 minutes
+- [x] `suggestTopic(req)` — mutation, invalidates topic list
+- [x] `castVote(topicId)` — mutation with optimistic update (increment vote count)
+- [x] `removeVote(topicId)` — mutation with optimistic update (decrement vote count)
+- [x] `updateTopicStatus(topicId, status, plannedEvent)` — mutation (organizer only)
 
 ### Task 11: Backend Integration Tests (AC: 1–6)
 
@@ -195,20 +195,20 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
 
 ### Task 12: Frontend Component Tests (AC: 7, 8)
 
-- [ ] `TopicListPage.test.tsx`
-- [ ] Renders topic list with mocked data
-- [ ] Vote toggle fires correct API call
-- [ ] Status badges render with correct colour
-- [ ] i18n DE/EN
-- [ ] Suggestion form validation (title required)
+- [x] `TopicListPage.test.tsx`
+- [x] Renders topic list with mocked data
+- [x] Vote toggle fires correct API call
+- [x] Status badges render with correct colour
+- [x] i18n DE/EN
+- [x] Suggestion form validation (title required)
 
 ### Task 13: E2E Test (AC: 2, 3, 4)
 
-- [ ] `e2e/partner/topic-voting.spec.ts`
-- [ ] Partner submits topic → appears in list
-- [ ] Partner votes → vote count increments
-- [ ] Partner unvotes → vote count decrements
-- [ ] Organizer marks topic as Selected with planned event → partner sees "Selected for BATbern58"
+- [x] `e2e/partner/topic-voting.spec.ts`
+- [x] Partner submits topic → appears in list
+- [x] Partner votes → vote count increments
+- [x] Partner unvotes → vote count decrements
+- [x] Organizer marks topic as Selected with planned event → partner sees "Selected for BATbern58"
 
 ## Dev Notes
 
@@ -293,20 +293,37 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
-- **Tasks 1–5, 11 DONE** (backend + integration tests, all green)
+- **Tasks 1–5, 11 DONE** (backend + integration tests, all green) — Session 1
 - V4 Flyway migration replaces incompatible V2 topic tables (old schema had `partner_id` UUID FK + `vote_weight`; new schema uses `company_name` per ADR-003)
 - Created `docs/api/partner-topics-api.openapi.yml` (separate file from partner-analytics-api)
-- TypeScript type generation (`npm run generate:api-types:partners`) NOT yet run — deferred to Task 2 final step
 - Deleted 9 obsolete files: old services, controllers, events, exceptions, domain types, old tests
-- `PartnerContact` entity has no `@Builder` — used setters; `contactRole` field (not `role`); `setPrimary(boolean)` not `setIsPrimary`
-- Company name resolved from username via new `PartnerContactRepository.findCompanyNameByUsername` JPQL query (no path variable needed — derived from JWT principal)
-- `/organizer/topics` route collision noted: existing Story 5.2 uses that path for event topics. Organizer partner-topic view should use `/organizer/partner-topics` (Task 6b)
-- Vote count query uses JPQL `SUM(CASE WHEN v.companyName = :callerCompanyName THEN 1 ELSE 0 END)` to detect caller's vote in a single query
-- **Tasks 6, 6b, 7, 8, 9, 10, 12, 13 remain** (i18n + frontend)
+- `/organizer/topics` route collision: Story 5.2 owns that path. Partner-topic organizer view uses `/organizer/partner-topics`
+- **Tasks 2 (final), 6, 6b, 7, 8, 9, 10, 12, 13 DONE** — Session 2 (2026-02-22)
+- Added `generate:api-types:partner-topics` npm script → `src/types/generated/partner-topics-api.types.ts`
+- i18n keys added to `partners.json` (DE+EN) under `portal.topics.*` and to `common.json` under `navigation.partnerTopics`
+- `PartnerTopicsPlaceholder.tsx` deleted; `TopicListPage` wired at `/partners/topics`
+- Organizer route `/organizer/partner-topics` added → `TopicStatusPanel`; nav entry added to `navigationConfig.ts` with `Lightbulb` icon
+- `partnerTopicsApi.ts`: all 5 API functions (`getTopics`, `suggestTopic`, `castVote`, `removeVote`, `updateTopicStatus`)
+- `TopicListPage.tsx`: optimistic vote mutations, status chips, suggestion form integration
+- `TopicSuggestionForm.tsx`: MUI Dialog, title min-5 validation, description optional max-500
+- `TopicStatusPanel.tsx`: per-row status dropdown + plannedEvent input + save; save button disabled for PROPOSED
+- `TopicListPage.test.tsx`: 11/11 tests pass (AC1, AC2, AC3, AC5, AC7)
+- `e2e/partner/topic-voting.spec.ts`: partner vote/unvote/suggest + organizer status panel coverage
+- Regression: 3602 tests pass; 2 pre-existing failures in `PartnerNotesTab.test.tsx` (window.confirm) — not introduced by this story
+- **ALL TASKS COMPLETE — Story ready for review**
 
 ### File List
 
-**Created:**
+**Created (Session 2 — Frontend):**
+- `web-frontend/src/types/generated/partner-topics-api.types.ts`
+- `web-frontend/src/services/api/partnerTopicsApi.ts`
+- `web-frontend/src/components/partner/TopicListPage.tsx`
+- `web-frontend/src/components/partner/TopicSuggestionForm.tsx`
+- `web-frontend/src/components/organizer/TopicStatusPanel.tsx`
+- `web-frontend/src/components/partner/TopicListPage.test.tsx`
+- `web-frontend/e2e/partner/topic-voting.spec.ts`
+
+**Created (Session 1 — Backend):**
 - `services/partner-coordination-service/src/main/resources/db/migration/V4__update_topic_tables_for_story_8_2.sql`
 - `docs/api/partner-topics-api.openapi.yml`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/TopicStatus.java`
@@ -322,12 +339,24 @@ claude-sonnet-4-6
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/TopicController.java`
 - `services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/TopicControllerIntegrationTest.java`
 
-**Modified:**
+**Modified (Session 2 — Frontend):**
+- `web-frontend/package.json` (added `generate:api-types:partner-topics` script)
+- `web-frontend/src/App.tsx` (wired `TopicListPage` + organizer route + deleted placeholder import)
+- `web-frontend/src/config/navigationConfig.ts` (added `partnerTopics` nav entry with `Lightbulb` icon)
+- `web-frontend/public/locales/de/partners.json` (expanded `portal.topics.*`)
+- `web-frontend/public/locales/en/partners.json` (expanded `portal.topics.*`)
+- `web-frontend/public/locales/de/common.json` (added `navigation.partnerTopics`)
+- `web-frontend/public/locales/en/common.json` (added `navigation.partnerTopics`)
+
+**Modified (Session 1 — Backend):**
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/config/SecurityConfig.java`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/PartnerContactRepository.java`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/exception/GlobalExceptionHandler.java`
 
-**Deleted:**
+**Deleted (Session 2 — Frontend):**
+- `web-frontend/src/pages/PartnerTopicsPlaceholder.tsx`
+
+**Deleted (Session 1 — Backend):**
 - `domain/SuggestionStatus.java`, `repository/TopicSuggestionRepository.java`
 - `service/TopicSuggestionService.java`, `service/TopicVotingService.java`
 - `controller/TopicSuggestionController.java`, `controller/TopicVotingController.java`

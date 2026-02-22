@@ -225,7 +225,35 @@
       "error": "Failed to load attendance data"
     },
     "topics": {
-      "comingSoon": "Topic voting coming soon"
+      "comingSoon": "Topic voting coming soon",
+      "title": "Topic Suggestions",
+      "suggest": "Suggest a Topic",
+      "vote": "Vote",
+      "unvote": "Remove Vote",
+      "status": {
+        "proposed": "Proposed",
+        "selected": "Selected",
+        "declined": "Declined"
+      },
+      "plannedFor": "Planned for",
+      "empty": "No topic suggestions yet",
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "submit": "Submit",
+        "titleRequired": "Title is required (at least 5 characters)",
+        "descriptionHint": "Optional, max 500 characters",
+        "dialogTitle": "Suggest a New Topic"
+      },
+      "organizer": {
+        "title": "Partner Topic Suggestions",
+        "status": "Status",
+        "plannedEvent": "Planned Event",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "loading": "Loading topics...",
+      "error": "Failed to load topics"
     }
   }
 }

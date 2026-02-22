@@ -56,7 +56,10 @@ const PartnerCompanyPage = React.lazy(() => import('@pages/PartnerCompanyPage'))
 const PartnerAttendanceDashboard = React.lazy(
   () => import('@components/partner/PartnerAttendanceDashboardPage')
 );
-const PartnerTopicsPlaceholder = React.lazy(() => import('@pages/PartnerTopicsPlaceholder'));
+// Story 8.2: TopicListPage replaces PartnerTopicsPlaceholder
+const TopicListPage = React.lazy(() => import('@components/partner/TopicListPage'));
+// Story 8.2: Organizer partner-topics status panel
+const TopicStatusPanel = React.lazy(() => import('@components/organizer/TopicStatusPanel'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
@@ -427,6 +430,18 @@ function App() {
                         </ProtectedRoute>
                       }
                     />
+                    {/* Story 8.2: Organizer Partner Topics Status Panel */}
+                    <Route
+                      path="/organizer/partner-topics"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <TopicStatusPanel />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
                     {/* Story 5.5: Task Management Page */}
                     <Route
                       path="/organizer/tasks"
@@ -499,7 +514,7 @@ function App() {
                       <Route index element={<Navigate to="company" replace />} />
                       <Route path="company" element={<PartnerCompanyPage />} />
                       <Route path="analytics" element={<PartnerAttendanceDashboard />} />
-                      <Route path="topics" element={<PartnerTopicsPlaceholder />} />
+                      <Route path="topics" element={<TopicListPage />} />
                     </Route>
 
                     {/* Story 8.0: Redirect old /analytics stub to partner portal */}

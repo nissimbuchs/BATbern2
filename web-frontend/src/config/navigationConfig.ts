@@ -16,6 +16,7 @@ import {
   Business,
   ManageAccounts,
   Public,
+  Lightbulb,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -73,6 +74,13 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart,
     roles: ['organizer'],
     description: 'View event analytics',
+  },
+  {
+    labelKey: 'navigation.partnerTopics',
+    path: '/organizer/partner-topics',
+    icon: Lightbulb,
+    roles: ['organizer'],
+    description: 'Review partner topic suggestions',
   },
   {
     labelKey: 'navigation.publicSite',

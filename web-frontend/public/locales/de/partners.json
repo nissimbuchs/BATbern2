@@ -225,7 +225,35 @@
       "error": "Daten konnten nicht geladen werden"
     },
     "topics": {
-      "comingSoon": "Themenabstimmung folgt bald"
+      "comingSoon": "Themenabstimmung folgt bald",
+      "title": "Themenvorschläge",
+      "suggest": "Thema vorschlagen",
+      "vote": "Abstimmen",
+      "unvote": "Stimme entfernen",
+      "status": {
+        "proposed": "Vorgeschlagen",
+        "selected": "Ausgewählt",
+        "declined": "Abgelehnt"
+      },
+      "plannedFor": "Geplant für",
+      "empty": "Noch keine Themenvorschläge",
+      "form": {
+        "title": "Titel",
+        "description": "Beschreibung",
+        "submit": "Einreichen",
+        "titleRequired": "Titel ist erforderlich (mindestens 5 Zeichen)",
+        "descriptionHint": "Optional, max. 500 Zeichen",
+        "dialogTitle": "Neues Thema vorschlagen"
+      },
+      "organizer": {
+        "title": "Partner-Themenvorschläge",
+        "status": "Status",
+        "plannedEvent": "Geplante Veranstaltung",
+        "save": "Speichern",
+        "saving": "Wird gespeichert..."
+      },
+      "loading": "Themen werden geladen...",
+      "error": "Themen konnten nicht geladen werden"
     }
   }
 }
