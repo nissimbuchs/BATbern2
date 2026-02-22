@@ -247,6 +247,11 @@
       },
       "organizer": {
         "title": "Partner-Themenvorschläge",
+        "col": {
+          "title": "Titel",
+          "company": "Unternehmen",
+          "votes": "Abstimmungen"
+        },
         "status": "Status",
         "plannedEvent": "Geplante Veranstaltung",
         "save": "Speichern",

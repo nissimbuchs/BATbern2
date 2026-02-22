@@ -19,4 +19,7 @@ public interface TopicVoteRepository extends JpaRepository<TopicVote, TopicVoteI
 
     /** Delete a specific vote (toggle-off). Silently succeeds if not found. */
     void deleteByTopicIdAndCompanyName(UUID topicId, String companyName);
+
+    /** Count votes for a specific topic — used in status-update response DTO. */
+    long countByTopicId(UUID topicId);
 }

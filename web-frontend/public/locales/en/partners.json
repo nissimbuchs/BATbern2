@@ -247,6 +247,11 @@
       },
       "organizer": {
         "title": "Partner Topic Suggestions",
+        "col": {
+          "title": "Title",
+          "company": "Company",
+          "votes": "Votes"
+        },
         "status": "Status",
         "plannedEvent": "Planned Event",
         "save": "Save",

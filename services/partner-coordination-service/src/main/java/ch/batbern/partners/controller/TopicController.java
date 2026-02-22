@@ -3,7 +3,6 @@ package ch.batbern.partners.controller;
 import ch.batbern.partners.dto.TopicDTO;
 import ch.batbern.partners.dto.TopicStatusUpdateRequest;
 import ch.batbern.partners.dto.TopicSuggestionRequest;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
 import ch.batbern.partners.service.TopicService;
 import io.micrometer.core.annotation.Timed;
@@ -42,7 +41,6 @@ public class TopicController {
 
     private final TopicService topicService;
     private final SecurityContextHelper securityContextHelper;
-    private final PartnerContactRepository partnerContactRepository;
 
     /**
      * GET /api/v1/partners/topics
@@ -118,12 +116,7 @@ public class TopicController {
 
     /** Returns the caller's company name, or null if they have no partner company (organizer). */
     private String resolveCallerCompanyNameOrNull() {
-        try {
-            String username = securityContextHelper.getCurrentUsername();
-            return partnerContactRepository.findCompanyNameByUsername(username).orElse(null);
-        } catch (SecurityException e) {
-            return null;
-        }
+        return topicService.resolveCallerCompanyNameOrNull();
     }
 
     /** Returns the caller's company name; throws AccessDeniedException if not found. */

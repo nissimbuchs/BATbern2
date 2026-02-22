@@ -135,9 +135,9 @@ const TopicStatusPanel: React.FC = () => {
         <Table size="small" data-testid="organizer-topics-table">
           <TableHead>
             <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Company</TableCell>
-              <TableCell align="right">Votes</TableCell>
+              <TableCell>{t('portal.topics.organizer.col.title')}</TableCell>
+              <TableCell>{t('portal.topics.organizer.col.company')}</TableCell>
+              <TableCell align="right">{t('portal.topics.organizer.col.votes')}</TableCell>
               <TableCell>{t('portal.topics.organizer.status')}</TableCell>
               <TableCell>{t('portal.topics.organizer.plannedEvent')}</TableCell>
               <TableCell></TableCell>

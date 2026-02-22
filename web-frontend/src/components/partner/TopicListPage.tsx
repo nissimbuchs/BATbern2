@@ -88,6 +88,9 @@ const TopicListPage: React.FC = () => {
         queryClient.setQueryData(['partnerTopics'], ctx.prev);
       }
     },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
+    },
   });
 
   const removeVoteMutation = useMutation({
@@ -108,6 +111,9 @@ const TopicListPage: React.FC = () => {
       if (ctx?.prev) {
         queryClient.setQueryData(['partnerTopics'], ctx.prev);
       }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
     },
   });
 

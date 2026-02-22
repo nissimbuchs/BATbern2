@@ -108,6 +108,10 @@ public class TopicService {
      * Update topic status (organizer only, enforced by @PreAuthorize on controller).
      */
     public TopicDTO updateStatus(UUID topicId, TopicStatusUpdateRequest request) {
+        if (request.status() == null || request.status().isBlank()) {
+            throw new IllegalArgumentException("Status is required and must be SELECTED or DECLINED.");
+        }
+
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
 
@@ -126,16 +130,21 @@ public class TopicService {
         topic.setPlannedEvent(request.plannedEvent());
         TopicSuggestion saved = topicRepository.save(topic);
 
-        // Compute current vote count for response
-        List<Object[]> rows = topicRepository.findAllWithVoteCounts("__NO_COMPANY__");
-        long voteCount = rows.stream()
-                .filter(r -> ((TopicSuggestion) r[0]).getId().equals(topicId))
-                .mapToLong(r -> (Long) r[1])
-                .findFirst()
-                .orElse(0L);
+        // Targeted count — avoids full-table scan just to get one vote count
+        long voteCount = topicVoteRepository.countByTopicId(topicId);
 
         log.info("Topic status updated: id={} status={} plannedEvent={}", topicId, newStatus, request.plannedEvent());
         return toDTO(saved, voteCount, 0L);
+    }
+
+    /** Resolves the current caller's company name, or null if the caller has no partner company (organiser). */
+    public String resolveCallerCompanyNameOrNull() {
+        try {
+            String username = securityContextHelper.getCurrentUsername();
+            return partnerContactRepository.findCompanyNameByUsername(username).orElse(null);
+        } catch (SecurityException e) {
+            return null;
+        }
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

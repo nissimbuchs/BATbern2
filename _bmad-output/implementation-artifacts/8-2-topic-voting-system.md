@@ -1,6 +1,6 @@
 # Story 8.2: Topic Suggestions & Voting
 
-Status: review
+Status: done
 
 ## Story
 
@@ -352,9 +352,20 @@ claude-sonnet-4-6
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/config/SecurityConfig.java`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/PartnerContactRepository.java`
 - `services/partner-coordination-service/src/main/java/ch/batbern/partners/exception/GlobalExceptionHandler.java`
+- `api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java` (modified as part of Epic 8 backend session, bundled in commit 55bb0a77)
 
 **Deleted (Session 2 — Frontend):**
 - `web-frontend/src/pages/PartnerTopicsPlaceholder.tsx`
+
+**Modified (Session 3 — Code Review Fixes):**
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java` (null-status guard + targeted vote count + resolveCallerCompanyNameOrNull())
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/TopicVoteRepository.java` (countByTopicId)
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/TopicController.java` (removed PartnerContactRepository injection; uses service)
+- `services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/TopicControllerIntegrationTest.java` (null-status test; castVote helper cleanup)
+- `web-frontend/src/components/organizer/TopicStatusPanel.tsx` (i18n table headers — AC7 fix)
+- `web-frontend/src/components/partner/TopicListPage.tsx` (onSuccess invalidation in vote mutations)
+- `web-frontend/public/locales/de/partners.json` (added portal.topics.organizer.col.*)
+- `web-frontend/public/locales/en/partners.json` (added portal.topics.organizer.col.*)
 
 **Deleted (Session 1 — Backend):**
 - `domain/SuggestionStatus.java`, `repository/TopicSuggestionRepository.java`

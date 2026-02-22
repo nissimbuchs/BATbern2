@@ -100,7 +100,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         // Topic A has 0 votes, Topic B will get 1 vote
         suggestTopic("alice", "AlphaCo", "Topic A", null);
         String topicBId = suggestTopic("bob", "BetaCo", "Topic B", null);
-        castVote("alice", "AlphaCo", topicBId);
+        castVote("alice", topicBId);
 
         mockMvc.perform(get(BASE).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("alice").roles("PARTNER")))
                 .andExpect(status().isOk())
@@ -133,7 +133,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "alice", roles = {"PARTNER"})
     void should_markCurrentPartnerHasVoted_when_partnerHasVoted() throws Exception {
         String topicId = suggestTopic("bob", "BetaCo", "Cloud Native", null);
-        castVote("alice", "AlphaCo", topicId);
+        castVote("alice", topicId);
 
         mockMvc.perform(get(BASE))
                 .andExpect(status().isOk())
@@ -171,7 +171,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "alice", roles = {"PARTNER"})
     void should_removeVote_and_decrement_voteCount() throws Exception {
         String topicId = suggestTopic("bob", "BetaCo", "Domain-Driven Design", null);
-        castVote("alice", "AlphaCo", topicId);
+        castVote("alice", topicId);
 
         mockMvc.perform(delete(BASE + "/" + topicId + "/vote"))
                 .andExpect(status().isNoContent());
@@ -194,8 +194,8 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "alice", roles = {"PARTNER"})
     void should_countVotesAccurately_when_multiplePartnersVote() throws Exception {
         String topicId = suggestTopic("bob", "BetaCo", "Software Architecture", null);
-        castVote("alice", "AlphaCo", topicId);
-        castVote("bob", "BetaCo", topicId);
+        castVote("alice", topicId);
+        castVote("bob", topicId);
 
         mockMvc.perform(get(BASE))
                 .andExpect(jsonPath("$[0].voteCount", is(2)));
@@ -284,6 +284,21 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    void should_return400_when_statusFieldIsNull() throws Exception {
+        String topicId = suggestTopic("alice", "AlphaCo", "Test Topic For Null Status", null);
+
+        Map<String, String> update = new HashMap<>();
+        update.put("plannedEvent", "BATbern58");
+        // status field intentionally omitted — must return 400, not 500
+
+        mockMvc.perform(patch(BASE + "/" + topicId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
     void should_return404_when_updatingStatus_of_nonExistentTopic() throws Exception {
         Map<String, String> update = new HashMap<>();
         update.put("status", "SELECTED");
@@ -368,8 +383,8 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         return json.get("id").asText();
     }
 
-    /** Cast a vote as a specific partner user */
-    private void castVote(String username, String companyName, String topicId) throws Exception {
+    /** Cast a vote as a specific partner user. Company is resolved from security context, not passed here. */
+    private void castVote(String username, String topicId) throws Exception {
         mockMvc.perform(post(BASE + "/" + topicId + "/vote")
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
                                 .user(username).roles("PARTNER")))
