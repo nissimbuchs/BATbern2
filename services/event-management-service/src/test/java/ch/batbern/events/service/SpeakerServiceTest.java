@@ -101,7 +101,7 @@ class SpeakerServiceTest {
                 .build();
 
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
-        when(speakerRepository.existsByUsername("john.doe")).thenReturn(false);
+        when(speakerRepository.findByUsername("john.doe")).thenReturn(Optional.empty());
         when(speakerRepository.save(any(Speaker.class))).thenReturn(mockSpeaker);
 
         // When
@@ -123,7 +123,7 @@ class SpeakerServiceTest {
                 .build();
 
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
-        when(speakerRepository.existsByUsername("john.doe")).thenReturn(true);
+        when(speakerRepository.findByUsername("john.doe")).thenReturn(Optional.of(mockSpeaker));
 
         // When/Then
         assertThatThrownBy(() -> speakerService.createSpeaker(request))
@@ -316,7 +316,7 @@ class SpeakerServiceTest {
                 .build();
 
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
-        when(speakerRepository.existsByUsername("john.doe")).thenReturn(false);
+        when(speakerRepository.findByUsername("john.doe")).thenReturn(Optional.empty());
         when(speakerRepository.save(any(Speaker.class))).thenReturn(mockSpeaker);
 
         // When
@@ -364,7 +364,7 @@ class SpeakerServiceTest {
                 .build();
 
         when(userApiClient.getUserByUsername("john.doe")).thenReturn(mockUserResponse);
-        when(speakerRepository.existsByUsername("john.doe")).thenReturn(true);
+        when(speakerRepository.findByUsername("john.doe")).thenReturn(Optional.of(mockSpeaker));
 
         // When/Then
         assertThatThrownBy(() -> speakerService.createSpeaker(request))

@@ -69,11 +69,9 @@ public class SpeakerProfileService {
         String username = tokenResult.username();
         log.debug("Token valid for username: {}", username);
 
-        // 2. Get Speaker entity (may be null for newly invited speakers not yet accepted)
-        Speaker speaker = speakerRepository.findByUsername(username).orElse(null);
-        if (speaker == null) {
-            log.debug("No Speaker entity found for username: {} — profile will use User data only", username);
-        }
+        // 2. Get Speaker entity — required; throw 404 if not found
+        Speaker speaker = speakerRepository.findByUsername(username)
+                .orElseThrow(() -> new SpeakerNotFoundException("Speaker not found for username: " + username));
 
         // 3. Enrich with User data from Company Service
         UserResponse user = userApiClient.getUserByUsername(username);
