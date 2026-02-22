@@ -1,0 +1,30 @@
+meta {
+  name: Setup - Cleanup Test Speaker
+  type: http
+  seq: 0
+}
+
+delete {
+  url: {{baseUrl}}/speakers/{{testDisposableSpeakerUsername}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+tests {
+  test("setup: cleanup returns 204 (deleted) or 404 (not found)", function() {
+    expect(res.getStatus()).to.be.oneOf([204, 404]);
+  });
+}
+
+script:post-response {
+  console.log("Setup: cleanup test speaker, status:", res.getStatus());
+}

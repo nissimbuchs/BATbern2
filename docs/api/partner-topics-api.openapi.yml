@@ -1,0 +1,214 @@
+openapi: "3.0.3"
+info:
+  title: "BATbern Partner Topics API"
+  description: "Topic suggestions and voting endpoints for the Partner Portal — Story 8.2"
+  version: "1.0.0"
+
+servers:
+  - url: "/api/v1"
+    description: "API Gateway base URL"
+
+paths:
+  /partners/topics:
+    get:
+      summary: "List all topic suggestions with vote counts"
+      description: |
+        Returns all topic suggestions, sorted by vote count descending.
+        For PARTNER callers, the `currentPartnerHasVoted` flag reflects whether
+        the caller's company has voted on each topic.
+        For ORGANIZER callers, `currentPartnerHasVoted` is always false.
+      operationId: "listTopics"
+      tags: ["Partner Topics"]
+      responses:
+        "200":
+          description: "List of topics sorted by vote count descending"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicDTO"
+        "401":
+          description: "Unauthorized"
+      security:
+        - bearerAuth: []
+
+    post:
+      summary: "Suggest a new topic"
+      description: |
+        Partner submits a new topic suggestion.
+        `companyName` and `suggestedBy` are extracted from the JWT principal.
+      operationId: "suggestTopic"
+      tags: ["Partner Topics"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicSuggestionRequest"
+      responses:
+        "201":
+          description: "Topic suggestion created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicDTO"
+        "400":
+          description: "Validation error"
+        "403":
+          description: "Forbidden — only PARTNER role may suggest topics"
+      security:
+        - bearerAuth: []
+
+  /partners/topics/{topicId}/vote:
+    post:
+      summary: "Cast a vote on a topic (toggle on)"
+      description: |
+        Adds the caller's company vote to the specified topic.
+        Idempotent — if the company already voted, the request succeeds with no change.
+      operationId: "castVote"
+      tags: ["Partner Topics"]
+      parameters:
+        - $ref: "#/components/parameters/topicId"
+      responses:
+        "204":
+          description: "Vote registered (or already existed)"
+        "403":
+          description: "Forbidden — only PARTNER role may vote"
+        "404":
+          description: "Topic not found"
+      security:
+        - bearerAuth: []
+
+    delete:
+      summary: "Remove a vote from a topic (toggle off)"
+      description: |
+        Removes the caller's company vote from the specified topic.
+        Idempotent — if no vote exists, the request succeeds with no change.
+      operationId: "removeVote"
+      tags: ["Partner Topics"]
+      parameters:
+        - $ref: "#/components/parameters/topicId"
+      responses:
+        "204":
+          description: "Vote removed (or did not exist)"
+        "403":
+          description: "Forbidden — only PARTNER role may vote"
+        "404":
+          description: "Topic not found"
+      security:
+        - bearerAuth: []
+
+  /partners/topics/{topicId}/status:
+    patch:
+      summary: "Update topic status (Organizer only)"
+      description: |
+        Organizer sets a topic status to SELECTED or DECLINED.
+        When setting SELECTED, `plannedEvent` may be provided (e.g. "BATbern58").
+      operationId: "updateTopicStatus"
+      tags: ["Partner Topics"]
+      parameters:
+        - $ref: "#/components/parameters/topicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicStatusUpdateRequest"
+      responses:
+        "200":
+          description: "Topic status updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicDTO"
+        "400":
+          description: "Invalid status value"
+        "403":
+          description: "Forbidden — only ORGANIZER role may update status"
+        "404":
+          description: "Topic not found"
+      security:
+        - bearerAuth: []
+
+components:
+  parameters:
+    topicId:
+      name: topicId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: "Topic suggestion UUID"
+
+  schemas:
+    TopicDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Topic UUID"
+        title:
+          type: string
+          description: "Topic title"
+        description:
+          type: string
+          nullable: true
+          description: "Topic description"
+        suggestedByCompany:
+          type: string
+          description: "Company that suggested this topic (ADR-003 identifier)"
+        voteCount:
+          type: integer
+          description: "Total number of votes"
+        currentPartnerHasVoted:
+          type: boolean
+          description: "True if the calling partner's company has voted for this topic"
+        status:
+          type: string
+          enum: [PROPOSED, SELECTED, DECLINED]
+          description: "Topic lifecycle status"
+        plannedEvent:
+          type: string
+          nullable: true
+          description: "Event code when topic is selected (e.g. BATbern58)"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, suggestedByCompany, voteCount, currentPartnerHasVoted, status, createdAt]
+
+    TopicSuggestionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 5
+          maxLength: 255
+          description: "Topic title (required)"
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: "Short description (optional, max 500 chars)"
+      required: [title]
+
+    TopicStatusUpdateRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [SELECTED, DECLINED]
+          description: "New status — only SELECTED or DECLINED allowed"
+        plannedEvent:
+          type: string
+          nullable: true
+          description: "Event code to associate with the selected topic (e.g. BATbern58)"
+      required: [status]
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

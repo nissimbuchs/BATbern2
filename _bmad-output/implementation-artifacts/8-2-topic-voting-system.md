@@ -1,6 +1,6 @@
 # Story 8.2: Topic Suggestions & Voting
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -56,9 +56,9 @@ Story 8.0 creates:
 
 ### Task 1: Check existing DB schema (AC: ALL)
 
-- [ ] Review `partner-coordination-service` Flyway migrations for existing `topic_votes` and `topic_suggestions` tables (created in Story 2.7)
-- [ ] If tables already exist and match the schema below — no migration needed
-- [ ] If tables are missing or schema differs, create migration `V8.2.1__update_topic_tables.sql`:
+- [x] Review `partner-coordination-service` Flyway migrations for existing `topic_votes` and `topic_suggestions` tables (created in Story 2.7)
+- [x] If tables already exist and match the schema below — no migration needed
+- [x] If tables are missing or schema differs, create migration `V8.2.1__update_topic_tables.sql`:
 
 ```sql
 -- topic_suggestions: one row per suggested topic
@@ -87,36 +87,36 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
 
 ### Task 2: OpenAPI Specification (AC: ALL — ADR-006)
 
-- [ ] Update `docs/api/partner-analytics-api.openapi.yml` (or create `partner-topics-api.openapi.yml`)
-- [ ] Define endpoints:
+- [x] Update `docs/api/partner-analytics-api.openapi.yml` (or create `partner-topics-api.openapi.yml`)
+- [x] Define endpoints:
   - `GET  /api/v1/partners/topics` — list all topics with vote counts (PARTNER + ORGANIZER)
   - `POST /api/v1/partners/topics` — suggest a new topic (PARTNER)
   - `POST /api/v1/partners/topics/{topicId}/vote` — toggle vote on (PARTNER)
   - `DELETE /api/v1/partners/topics/{topicId}/vote` — toggle vote off (PARTNER)
   - `PATCH /api/v1/partners/topics/{topicId}/status` — update status (ORGANIZER only)
-- [ ] Define DTOs: `TopicDTO`, `TopicSuggestionRequest`, `TopicStatusUpdateRequest`
+- [x] Define DTOs: `TopicDTO`, `TopicSuggestionRequest`, `TopicStatusUpdateRequest`
 - [ ] Generate TypeScript types: `npm run generate:api-types:partners`
 
 ### Task 3: TopicService (AC: 1–6)
 
-- [ ] Create `TopicService.java` in partner-coordination-service
-- [ ] `getAllTopics(String currentCompanyName): List<TopicDTO>` — query topics + vote counts, mark which ones current partner has voted for
-- [ ] `suggestTopic(String companyName, String username, TopicSuggestionRequest req)` — insert into topic_suggestions
-- [ ] `castVote(UUID topicId, String companyName)` — insert into topic_votes (ignore if already voted)
-- [ ] `removeVote(UUID topicId, String companyName)` — delete from topic_votes (ignore if not voted)
-- [ ] `updateStatus(UUID topicId, String status, String plannedEvent)` — ORGANIZER only; validate status is SELECTED or DECLINED
+- [x] Create `TopicService.java` in partner-coordination-service
+- [x] `getAllTopics(String currentCompanyName): List<TopicDTO>` — query topics + vote counts, mark which ones current partner has voted for
+- [x] `suggestTopic(String companyName, String username, TopicSuggestionRequest req)` — insert into topic_suggestions
+- [x] `castVote(UUID topicId, String companyName)` — insert into topic_votes (ignore if already voted)
+- [x] `removeVote(UUID topicId, String companyName)` — delete from topic_votes (ignore if not voted)
+- [x] `updateStatus(UUID topicId, String status, String plannedEvent)` — ORGANIZER only; validate status is SELECTED or DECLINED
 
 ### Task 4: TopicController (AC: 6, 8)
 
-- [ ] Create `TopicController.java`
-- [ ] Implement all 5 endpoints from OpenAPI spec
-- [ ] `@PreAuthorize` on status update: `hasRole('ORGANIZER')`
-- [ ] `@PreAuthorize` on vote/suggest: `hasRole('PARTNER')`
-- [ ] Add Micrometer timing
+- [x] Create `TopicController.java`
+- [x] Implement all 5 endpoints from OpenAPI spec
+- [x] `@PreAuthorize` on status update: `hasRole('ORGANIZER')`
+- [x] `@PreAuthorize` on vote/suggest: `hasRole('PARTNER')`
+- [x] Add Micrometer timing
 
 ### Task 5: SecurityConfig Update (AC: 6)
 
-- [ ] Add topic endpoints to `SecurityConfig.java`
+- [x] Add topic endpoints to `SecurityConfig.java`
   - `GET  /api/v1/partners/topics` → PARTNER, ORGANIZER
   - `POST /api/v1/partners/topics` → PARTNER
   - `POST/DELETE /api/v1/partners/topics/*/vote` → PARTNER
@@ -184,14 +184,14 @@ CREATE INDEX IF NOT EXISTS idx_topic_votes_topic ON topic_votes(topic_id);
 
 ### Task 11: Backend Integration Tests (AC: 1–6)
 
-- [ ] `TopicControllerIntegrationTest.java` (extends `AbstractIntegrationTest`)
-- [ ] Partner can suggest a topic
-- [ ] Partner can vote and unvote (toggle)
-- [ ] Duplicate vote is idempotent (no error on double-vote)
-- [ ] Partner cannot update status → 403
-- [ ] Organizer can update status
-- [ ] Vote count accurate after multiple partners vote
-- [ ] Topics sorted by vote count descending
+- [x] `TopicControllerIntegrationTest.java` (extends `AbstractIntegrationTest`)
+- [x] Partner can suggest a topic
+- [x] Partner can vote and unvote (toggle)
+- [x] Duplicate vote is idempotent (no error on double-vote)
+- [x] Partner cannot update status → 403
+- [x] Organizer can update status
+- [x] Vote count accurate after multiple partners vote
+- [x] Topics sorted by vote count descending
 
 ### Task 12: Frontend Component Tests (AC: 7, 8)
 
@@ -284,10 +284,53 @@ const voteMutation = useMutation({
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+- `/tmp/topic-test-run-1.log` — first test run (3 failures: short topic titles < 5 chars)
+- `/tmp/topic-test-run-2.log` — second test run (20/20 PASSED)
+
 ### Completion Notes List
 
+- **Tasks 1–5, 11 DONE** (backend + integration tests, all green)
+- V4 Flyway migration replaces incompatible V2 topic tables (old schema had `partner_id` UUID FK + `vote_weight`; new schema uses `company_name` per ADR-003)
+- Created `docs/api/partner-topics-api.openapi.yml` (separate file from partner-analytics-api)
+- TypeScript type generation (`npm run generate:api-types:partners`) NOT yet run — deferred to Task 2 final step
+- Deleted 9 obsolete files: old services, controllers, events, exceptions, domain types, old tests
+- `PartnerContact` entity has no `@Builder` — used setters; `contactRole` field (not `role`); `setPrimary(boolean)` not `setIsPrimary`
+- Company name resolved from username via new `PartnerContactRepository.findCompanyNameByUsername` JPQL query (no path variable needed — derived from JWT principal)
+- `/organizer/topics` route collision noted: existing Story 5.2 uses that path for event topics. Organizer partner-topic view should use `/organizer/partner-topics` (Task 6b)
+- Vote count query uses JPQL `SUM(CASE WHEN v.companyName = :callerCompanyName THEN 1 ELSE 0 END)` to detect caller's vote in a single query
+- **Tasks 6, 6b, 7, 8, 9, 10, 12, 13 remain** (i18n + frontend)
+
 ### File List
+
+**Created:**
+- `services/partner-coordination-service/src/main/resources/db/migration/V4__update_topic_tables_for_story_8_2.sql`
+- `docs/api/partner-topics-api.openapi.yml`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/TopicStatus.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/TopicSuggestion.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/TopicVoteId.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/TopicVote.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/TopicRepository.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/TopicVoteRepository.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/TopicDTO.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/TopicSuggestionRequest.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/TopicStatusUpdateRequest.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/TopicService.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/controller/TopicController.java`
+- `services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/TopicControllerIntegrationTest.java`
+
+**Modified:**
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/config/SecurityConfig.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/PartnerContactRepository.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/exception/GlobalExceptionHandler.java`
+
+**Deleted:**
+- `domain/SuggestionStatus.java`, `repository/TopicSuggestionRepository.java`
+- `service/TopicSuggestionService.java`, `service/TopicVotingService.java`
+- `controller/TopicSuggestionController.java`, `controller/TopicVotingController.java`
+- `events/TopicSuggestionSubmittedEvent.java`, `events/TopicVoteSubmittedEvent.java`
+- `exception/VoteAlreadyExistsException.java`
+- Old tests: `TopicSuggestionControllerIntegrationTest.java`, `TopicVotingControllerIntegrationTest.java`, `TopicSuggestionTest.java`, `TopicVoteTest.java`

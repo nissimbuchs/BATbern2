@@ -4,6 +4,7 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -141,26 +142,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle VoteAlreadyExistsException (duplicate vote attempt)
-     * Returns HTTP 409 Conflict
+     * Handle EntityNotFoundException (JPA entity not found) — Story 8.2.
+     * Returns HTTP 404 Not Found
      */
-    @ExceptionHandler(VoteAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleVoteAlreadyExistsException(
-            VoteAlreadyExistsException ex,
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
+            EntityNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("Vote already exists: {}", ex.getMessage());
+        log.warn("Entity not found: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("LOW")
                 .build();
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**

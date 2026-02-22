@@ -54,4 +54,15 @@ public interface PartnerContactRepository extends JpaRepository<PartnerContact, 
             + "WHERE c.partnerId = p.id AND c.username = :username AND p.companyName = :companyName")
     long countByUsernameAndCompanyName(@Param("username") String username,
                                        @Param("companyName") String companyName);
+
+    /**
+     * Resolve a partner user's company name from their username.
+     * Story 8.2: used by TopicService to extract companyName from JWT principal.
+     *
+     * @param username authenticated username (custom:username claim or @WithMockUser name)
+     * @return company name (ADR-003 identifier) for the given username, or empty if not a partner contact
+     */
+    @Query("SELECT p.companyName FROM PartnerContact c, Partner p "
+            + "WHERE c.partnerId = p.id AND c.username = :username")
+    java.util.Optional<String> findCompanyNameByUsername(@Param("username") String username);
 }
