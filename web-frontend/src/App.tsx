@@ -52,7 +52,10 @@ const Content = React.lazy(() => import('@pages/Content'));
 
 // Story 8.0: Partner Portal
 const PartnerCompanyPage = React.lazy(() => import('@pages/PartnerCompanyPage'));
-const PartnerAnalyticsPlaceholder = React.lazy(() => import('@pages/PartnerAnalyticsPlaceholder'));
+// Story 8.1: PartnerAnalyticsPlaceholder replaced by PartnerAttendanceDashboard
+const PartnerAttendanceDashboard = React.lazy(
+  () => import('@components/partner/PartnerAttendanceDashboardPage')
+);
 const PartnerTopicsPlaceholder = React.lazy(() => import('@pages/PartnerTopicsPlaceholder'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
@@ -495,7 +498,7 @@ function App() {
                     >
                       <Route index element={<Navigate to="company" replace />} />
                       <Route path="company" element={<PartnerCompanyPage />} />
-                      <Route path="analytics" element={<PartnerAnalyticsPlaceholder />} />
+                      <Route path="analytics" element={<PartnerAttendanceDashboard />} />
                       <Route path="topics" element={<PartnerTopicsPlaceholder />} />
                     </Route>
 

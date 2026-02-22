@@ -9,6 +9,8 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -238,6 +240,53 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle Spring Security access denied (insufficient role / @PreAuthorize failed).
+     * Story 8.1: AC6 — returns 403 when PARTNER tries to access another company's analytics.
+     * Returns HTTP 403 Forbidden
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Access denied: {}", request.getRequestURI());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(java.time.Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message("Access denied")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * Handle Spring Security authentication exceptions (not authenticated).
+     * Returns HTTP 401 Unauthorized
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+        log.warn("Authentication required: {}", request.getRequestURI());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(java.time.Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message("Authentication required")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     /**

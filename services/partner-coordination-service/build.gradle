@@ -40,6 +40,9 @@ dependencies {
     // Service-specific: OpenAPI nullable (if needed for this service)
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
 
+    // Service-specific: Apache POI for Excel export (Story 8.1: AC4)
+    implementation 'org.apache.poi:poi-ooxml:5.4.0'
+
     // Service-specific: DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }

@@ -198,7 +198,31 @@
     "noCompanyLinked": "Ihr Konto ist keinem Unternehmen zugeordnet",
     "noCompanyLinked.detail": "Bitte wenden Sie sich an Ihren Organisator",
     "analytics": {
-      "comingSoon": "Analysen folgen bald"
+      "comingSoon": "Analysen folgen bald",
+      "title": "Teilnahme-Dashboard",
+      "table": {
+        "event": "Veranstaltung",
+        "date": "Datum",
+        "yourAttendees": "Ihre Teilnehmer",
+        "totalAttendees": "Gesamtteilnehmer",
+        "percentage": "Anteil (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Kosten pro Teilnehmer",
+        "attendanceRate": "Durchschnittliche Teilnahmequote",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Letzte 5 Jahre",
+        "allHistory": "Gesamte Geschichte"
+      },
+      "export": {
+        "button": "Excel exportieren",
+        "loading": "Wird exportiert..."
+      },
+      "noData": "Keine Teilnahmedaten für den gewählten Zeitraum gefunden",
+      "loading": "Daten werden geladen...",
+      "error": "Daten konnten nicht geladen werden"
     },
     "topics": {
       "comingSoon": "Themenabstimmung folgt bald"

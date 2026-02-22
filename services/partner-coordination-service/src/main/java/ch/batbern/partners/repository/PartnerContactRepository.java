@@ -33,4 +33,10 @@ public interface PartnerContactRepository extends JpaRepository<PartnerContact, 
      * Count primary contacts for a partner
      */
     long countByPartnerIdAndIsPrimaryTrue(UUID partnerId);
+
+    /**
+     * Find all contacts associated with a given username.
+     * Story 8.1: Used by PartnerSecurityService to resolve which company a PARTNER user belongs to.
+     */
+    List<PartnerContact> findByUsername(String username);
 }

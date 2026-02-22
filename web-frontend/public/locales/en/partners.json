@@ -198,7 +198,31 @@
     "noCompanyLinked": "Your account is not linked to a company",
     "noCompanyLinked.detail": "Please contact your organizer",
     "analytics": {
-      "comingSoon": "Analytics coming soon"
+      "comingSoon": "Analytics coming soon",
+      "title": "Attendance Dashboard",
+      "table": {
+        "event": "Event",
+        "date": "Date",
+        "yourAttendees": "Your Attendees",
+        "totalAttendees": "Total Attendees",
+        "percentage": "Percentage (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Cost Per Attendee",
+        "attendanceRate": "Avg. Attendance Rate",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Last 5 Years",
+        "allHistory": "All History"
+      },
+      "export": {
+        "button": "Export Excel",
+        "loading": "Exporting..."
+      },
+      "noData": "No attendance data found for the selected period",
+      "loading": "Loading data...",
+      "error": "Failed to load attendance data"
     },
     "topics": {
       "comingSoon": "Topic voting coming soon"
