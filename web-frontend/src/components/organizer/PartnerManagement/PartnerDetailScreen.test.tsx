@@ -238,8 +238,8 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
   });
 
   /**
-   * Test: should_renderQuickStats_when_partnerLoaded
-   * Verify PartnerQuickStats is rendered
+   * Test: should_renderOverviewTabContent_when_partnerLoaded
+   * Verify overview tab content is rendered (quick stats were removed)
    */
   it('should_renderQuickStats_when_partnerLoaded', async () => {
     vi.mocked(usePartnerDetail).mockReturnValue({
@@ -252,9 +252,8 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
     renderWithProviders();
 
     await waitFor(() => {
-      // Should render quick stats
-      expect(screen.getByText(/Partner Since/i)).toBeInTheDocument();
-      expect(screen.getByText(/Events Attended/i)).toBeInTheDocument();
+      // Should render tab navigation
+      expect(screen.getByRole('tab', { name: /Overview/i })).toBeInTheDocument();
     });
   });
 
@@ -276,7 +275,7 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       // Should render tab navigation
       expect(screen.getByRole('tab', { name: /Overview/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Meetings/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Activity/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Analytics/i })).toBeInTheDocument();
     });
   });
 

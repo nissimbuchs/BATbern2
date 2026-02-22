@@ -25,6 +25,8 @@ vi.mock('react-i18next', () => ({
         'navigation.myEvents': 'My Events',
         'navigation.myContent': 'My Content',
         'navigation.myRegistrations': 'My Registrations',
+        'navigation.myCompany': 'My Company',
+        'navigation.topics': 'Topics',
       };
       return translations[key] || key;
     },
@@ -113,8 +115,9 @@ describe('NavigationMenu Component', () => {
     test('should_renderPartnerMenuItems_when_roleIsPartner', () => {
       renderWithRouter(<NavigationMenu userRole="partner" />);
 
-      // Partner should see: Analytics, and public site
-      expect(screen.getAllByText(/analytics/i)[0]).toBeInTheDocument();
+      // Partner should see: My Company, Topics, and public site
+      expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
     test('should_notShowSpeakersMenu_when_roleIsPartner', () => {
@@ -124,11 +127,11 @@ describe('NavigationMenu Component', () => {
       expect(screen.queryByText(/speakers/i)).not.toBeInTheDocument();
     });
 
-    test('should_linkToPartnerAnalytics_when_analyticsClicked', () => {
+    test('should_linkToPartnerTopics_when_topicsClicked', () => {
       renderWithRouter(<NavigationMenu userRole="partner" />);
 
-      const analyticsLink = screen.getAllByText(/analytics/i)[0].closest('a');
-      expect(analyticsLink).toHaveAttribute('href', '/partners/analytics');
+      const topicsLink = screen.getAllByText(/topics/i)[0].closest('a');
+      expect(topicsLink).toHaveAttribute('href', '/partners/topics');
     });
   });
 

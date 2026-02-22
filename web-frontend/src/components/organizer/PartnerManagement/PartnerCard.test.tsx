@@ -132,39 +132,25 @@ describe('PartnerCard Component', () => {
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('should_renderActionButtons_when_rendered', () => {
+    it('should_renderNoActionButtons_when_rendered', () => {
       renderWithRouter(<PartnerCard partner={mockPartner} />);
 
-      expect(screen.getByText('View Details')).toBeInTheDocument();
-      expect(screen.getByText('Send Email')).toBeInTheDocument();
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.queryByText('View Details')).not.toBeInTheDocument();
+      expect(screen.queryByText('Send Email')).not.toBeInTheDocument();
+      expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
     });
   });
 
   describe('User Interactions', () => {
-    it('should_navigateToDetails_when_viewDetailsClicked', async () => {
+    it('should_navigateToDetails_when_cardClicked', async () => {
       const user = userEvent.setup();
 
-      renderWithRouter(<PartnerCard partner={mockPartner} />);
+      const { container } = renderWithRouter(<PartnerCard partner={mockPartner} />);
 
-      const viewDetailsButton = screen.getByText('View Details');
-      await user.click(viewDetailsButton);
+      const card = container.querySelector('.MuiCard-root') as HTMLElement;
+      await user.click(card);
 
       expect(mockNavigate).toHaveBeenCalledWith('/organizer/partners/Test Company');
-    });
-
-    it('should_disableSendEmailButton_when_comingSoon', () => {
-      renderWithRouter(<PartnerCard partner={mockPartner} />);
-
-      const sendEmailButton = screen.getByText('Send Email');
-      expect(sendEmailButton).toBeDisabled();
-    });
-
-    it('should_disableAnalyticsButton_when_comingSoon', () => {
-      renderWithRouter(<PartnerCard partner={mockPartner} />);
-
-      const analyticsButton = screen.getByText('Analytics');
-      expect(analyticsButton).toBeDisabled();
     });
   });
 

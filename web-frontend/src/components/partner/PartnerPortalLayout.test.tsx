@@ -1,61 +1,39 @@
 /**
  * PartnerPortalLayout tests
- * Story 8.0: AC3
+ * Story 8.0: AC3 — layout now renders Outlet only (nav is in top AppHeader)
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { PartnerPortalLayout } from './PartnerPortalLayout';
-
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'portal.nav.myCompany': 'My Company',
-        'portal.nav.analytics': 'Analytics',
-        'portal.nav.topics': 'Topics',
-      };
-      return translations[key] ?? key;
-    },
-  }),
-}));
 
 const renderWithRouter = (initialPath = '/partners/company') => {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
-      <PartnerPortalLayout />
+      <Routes>
+        <Route element={<PartnerPortalLayout />}>
+          <Route path="/partners/company" element={<div>Company Content</div>} />
+          <Route path="/partners/topics" element={<div>Topics Content</div>} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 };
 
 describe('PartnerPortalLayout', () => {
-  it('should_renderThreeNavTabs_when_mounted', () => {
-    renderWithRouter();
-
-    expect(screen.getByRole('tab', { name: 'My Company' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Analytics' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Topics' })).toBeInTheDocument();
-  });
-
-  it('should_highlightMyCompanyTab_when_pathIsPartnersCompany', () => {
+  it('should_renderOutletContent_when_mounted', () => {
     renderWithRouter('/partners/company');
-
-    const myCompanyTab = screen.getByRole('tab', { name: 'My Company' });
-    expect(myCompanyTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Company Content')).toBeInTheDocument();
   });
 
-  it('should_highlightAnalyticsTab_when_pathIsPartnersAnalytics', () => {
-    renderWithRouter('/partners/analytics');
-
-    const analyticsTab = screen.getByRole('tab', { name: 'Analytics' });
-    expect(analyticsTab).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('should_highlightTopicsTab_when_pathIsPartnersTopics', () => {
+  it('should_renderTopicsContent_when_pathIsPartnerTopics', () => {
     renderWithRouter('/partners/topics');
+    expect(screen.getByText('Topics Content')).toBeInTheDocument();
+  });
 
-    const topicsTab = screen.getByRole('tab', { name: 'Topics' });
-    expect(topicsTab).toHaveAttribute('aria-selected', 'true');
+  it('should_notRenderSecondaryTabNav_when_mounted', () => {
+    renderWithRouter('/partners/company');
+    // Secondary tab bar was removed — no MUI Tabs in layout
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
   });
 });
