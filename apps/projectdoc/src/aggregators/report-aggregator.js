@@ -3,6 +3,10 @@ import JUnitParser from '../utils/parsers/junit-parser.js';
 import LcovParser from '../utils/parsers/lcov-parser.js';
 import SarifParser from '../utils/parsers/sarif-parser.js';
 import CheckstyleParser from '../utils/parsers/checkstyle-parser.js';
+import LocParser from '../utils/parsers/loc-parser.js';
+import SonarcloudParser from '../utils/parsers/sonarcloud-parser.js';
+import GitStatsParser from '../utils/parsers/git-stats-parser.js';
+import ProjectCountsParser from '../utils/parsers/project-counts-parser.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -32,14 +36,22 @@ export class ReportAggregator {
       javaCoverage,
       frontendCoverage,
       securityFindings,
-      qualityViolations
+      qualityViolations,
+      locMetrics,
+      sonarMetrics,
+      gitStats,
+      projectCounts
     ] = await Promise.all([
       this.collectJavaTests(),
       this.collectFrontendTests(),
       this.collectJavaCoverage(),
       this.collectFrontendCoverage(),
       this.collectSecurityFindings(),
-      this.collectQualityViolations()
+      this.collectQualityViolations(),
+      this.collectLocMetrics(),
+      this.collectSonarCloudMetrics(),
+      this.collectGitStats(),
+      this.collectProjectCounts()
     ]);
 
     // Build aggregated structure
@@ -59,7 +71,11 @@ export class ReportAggregator {
         javaCoverage,
         frontendCoverage,
         securityFindings,
-        qualityViolations
+        qualityViolations,
+        locMetrics,
+        sonarMetrics,
+        gitStats,
+        projectCounts
       }),
       modules: this.buildModuleData({
         javaTestResults,
@@ -77,7 +93,13 @@ export class ReportAggregator {
         frontend: frontendTestResults
       },
       security: securityFindings,
-      quality: qualityViolations
+      quality: qualityViolations,
+      codebase: {
+        loc: locMetrics,
+        sonar: sonarMetrics,
+        git: gitStats,
+        counts: projectCounts
+      }
     };
 
     aggregated.metadata.generationTime = Date.now() - startTime;
@@ -238,7 +260,7 @@ export class ReportAggregator {
    * @returns {Object} Overall summary
    */
   calculateOverallSummary(data) {
-    const { javaTestResults, frontendTestResults, javaCoverage, frontendCoverage, securityFindings, qualityViolations } = data;
+    const { javaTestResults, frontendTestResults, javaCoverage, frontendCoverage, securityFindings, qualityViolations, locMetrics, sonarMetrics, gitStats, projectCounts } = data;
 
     // Calculate test health (combine Java + frontend)
     const javaTests = javaTestResults.summary.overallStats.totalTests;
@@ -311,6 +333,19 @@ export class ReportAggregator {
         totalViolations: qualityViolations.summary.overallStats.totalViolations,
         errors: qualityErrors,
         warnings: qualityWarnings
+      },
+      codebase: {
+        totalLoc: locMetrics?.summary?.totalLoc || 0,
+        prodLoc: locMetrics?.summary?.prodLoc || 0,
+        testLoc: locMetrics?.summary?.testLoc || 0,
+        testToCodeRatio: locMetrics?.summary?.testToCodeRatio || 0,
+        techDebt: sonarMetrics?.techDebtFormatted || null,
+        techDebtMinutes: sonarMetrics?.techDebtMinutes || null,
+        duplicationPct: sonarMetrics?.duplicationPct || null,
+        maintainabilityRating: sonarMetrics?.maintainabilityRating || null,
+        commitsLast30Days: gitStats?.commitsLast30Days || 0,
+        totalTodos: projectCounts?.todos?.total || 0,
+        totalMigrations: projectCounts?.totalMigrations || 0
       }
     };
   }
@@ -421,6 +456,102 @@ export class ReportAggregator {
     }
 
     return modules;
+  }
+
+  /**
+   * Collect Lines of Code metrics using cloc
+   * @returns {Promise<Object>} LOC report object
+   */
+  async collectLocMetrics() {
+    console.log('Collecting LOC metrics...');
+
+    const locConfig = this.config.loc;
+    if (!locConfig || !locConfig.enabled) {
+      console.warn('LOC collection disabled');
+      return LocParser.emptyReport();
+    }
+
+    const startTime = Date.now();
+    const excludeDirs = locConfig.excludeDirs || [];
+    const javaModules = this.config.sources?.java?.modules || [];
+    const zones = [];
+
+    try {
+      // Backend Services — derive prod/test dirs from java modules list
+      const backendProd = javaModules.map(m => path.join(this.baseDir, m, 'src/main/java'));
+      const backendTest = javaModules.map(m => path.join(this.baseDir, m, 'src/test/java'));
+      zones.push(LocParser.analyzeZone(
+        'backendServices', locConfig.zones.backendServices?.label || 'Backend Services',
+        backendProd, backendTest, excludeDirs, this.baseDir
+      ));
+
+      // Other zones from config (regular + generated)
+      const otherZones = ['frontend', 'infrastructure', 'apps', 'scripts', 'generated'];
+      for (const zoneId of otherZones) {
+        const zoneCfg = locConfig.zones[zoneId];
+        if (!zoneCfg) continue;
+        // Generated zones can override the excludeDirs list (e.g. to NOT exclude 'generated' dirname)
+        const zoneExcludeDirs = zoneCfg.excludeDirsOverride || excludeDirs;
+        const prodDirs = (zoneCfg.prod || []).map(d => path.join(this.baseDir, d));
+        const testDirs = (zoneCfg.test || []).map(d => path.join(this.baseDir, d));
+        const zone = LocParser.analyzeZone(
+          zoneId, zoneCfg.label,
+          prodDirs, testDirs, zoneExcludeDirs, this.baseDir,
+          { notMatchFileProd: zoneCfg.notMatchFileProd, matchFileTest: zoneCfg.matchFileTest }
+        );
+        if (zoneCfg.isGenerated) zone.isGenerated = true;
+        zones.push(zone);
+      }
+
+      const clocVersion = LocParser.getClocVersion(this.baseDir);
+      return LocParser.buildReport(zones, clocVersion, Date.now() - startTime);
+    } catch (error) {
+      console.warn('LOC collection failed:', error.message);
+      return LocParser.emptyReport();
+    }
+  }
+
+  /**
+   * Fetch quality metrics from SonarCloud API
+   * @returns {Promise<Object|null>} SonarCloud metrics or null
+   */
+  async collectSonarCloudMetrics() {
+    console.log('Collecting SonarCloud metrics...');
+    try {
+      return await SonarcloudParser.fetchMetrics(this.config.sonarcloud);
+    } catch (error) {
+      console.warn('SonarCloud metrics fetch failed:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Collect git repository activity statistics
+   * @returns {Promise<Object>} Git stats object
+   */
+  async collectGitStats() {
+    console.log('Collecting git stats...');
+    try {
+      return GitStatsParser.collectStats(this.baseDir);
+    } catch (error) {
+      console.warn('Git stats collection failed:', error.message);
+      return GitStatsParser.emptyStats();
+    }
+  }
+
+  /**
+   * Collect project counts: TODO/FIXME, dependencies, migrations
+   * @returns {Promise<Object>} Project counts object
+   */
+  async collectProjectCounts() {
+    try {
+      const javaModules = this.config.sources?.java?.modules || [];
+      const excludeDirs = this.config.loc?.excludeDirs || [];
+      return await ProjectCountsParser.collectAll(this.baseDir, javaModules, excludeDirs);
+    } catch (error) {
+      console.warn('Project counts collection failed:', error.message);
+      return ProjectCountsParser.emptyResult();
+    }
   }
 
   /**

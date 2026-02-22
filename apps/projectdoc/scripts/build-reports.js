@@ -127,6 +127,7 @@ class ReportsBuilder {
     const coverageTemplate = await fs.readFile(path.join(templatesDir, 'coverage-report.html'), 'utf8');
     const securityTemplate = await fs.readFile(path.join(templatesDir, 'security-report.html'), 'utf8');
     const qualityTemplate = await fs.readFile(path.join(templatesDir, 'quality-report.html'), 'utf8');
+    const codebaseTemplate = await fs.readFile(path.join(templatesDir, 'codebase-report.html'), 'utf8');
 
     // Compile templates
     const compileDashboard = Handlebars.compile(dashboardTemplate);
@@ -134,6 +135,7 @@ class ReportsBuilder {
     const compileCoverage = Handlebars.compile(coverageTemplate);
     const compileSecurity = Handlebars.compile(securityTemplate);
     const compileQuality = Handlebars.compile(qualityTemplate);
+    const compileCodebase = Handlebars.compile(codebaseTemplate);
 
     // Ensure output directories exist
     await fs.ensureDir(this.outputDir);
@@ -210,6 +212,15 @@ class ReportsBuilder {
       externalLinks: this.config.externalLinks
     });
     await fs.writeFile(path.join(this.outputDir, 'quality.html'), qualityHtml);
+
+    // Generate codebase analysis page
+    console.log('  - Generating codebase analysis report...');
+    const codebaseHtml = compileCodebase({
+      codebase: reportData.codebase,
+      summary: reportData.summary,
+      externalLinks: this.config.externalLinks
+    });
+    await fs.writeFile(path.join(this.outputDir, 'codebase.html'), codebaseHtml);
   }
 
 
@@ -407,6 +418,13 @@ class ReportsBuilder {
         label: 'quality',
         message: summary.quality.errors === 0 ? 'passing' : `${summary.quality.errors} errors`,
         color: summary.quality.errors === 0 ? 'brightgreen' : 'red'
+      },
+      codebase: {
+        label: 'codebase',
+        message: summary.codebase?.totalLoc
+          ? `${(summary.codebase.totalLoc / 1000).toFixed(1)}K loc${summary.codebase.maintainabilityRating ? ' | ' + summary.codebase.maintainabilityRating : ''}`
+          : 'n/a',
+        color: 'blue'
       }
     };
   }
@@ -503,6 +521,38 @@ class ReportsBuilder {
       if (!tests) return 0;
       return tests.total - tests.passed - tests.failures - tests.errors;
     });
+
+    // Format LOC as K (e.g. 87432 → '87.4K', 1200 → '1.2K', 800 → '800')
+    Handlebars.registerHelper('formatKLoc', (value) => {
+      if (!value || value === 0) return '0';
+      if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+      return String(value);
+    });
+
+    // Round a float to 2 decimal places
+    Handlebars.registerHelper('toFixed2', (value) => {
+      if (value === null || value === undefined) return '-';
+      return parseFloat(value).toFixed(2);
+    });
+
+    // Format a ratio as percentage string (0.28 → '28%')
+    Handlebars.registerHelper('ratioToPercent', (value) => {
+      if (value === null || value === undefined) return '-';
+      return `${Math.round(parseFloat(value) * 100)}%`;
+    });
+
+    // SonarCloud rating CSS class (A → rating-a, etc.)
+    Handlebars.registerHelper('ratingClass', (letter) => {
+      if (!letter) return 'rating-unknown';
+      const map = { A: 'rating-a', B: 'rating-b', C: 'rating-c', D: 'rating-d', E: 'rating-e' };
+      return map[letter] || 'rating-unknown';
+    });
+
+    // Number with thousands separator
+    Handlebars.registerHelper('formatNumber', (value) => {
+      if (value === null || value === undefined) return '0';
+      return parseInt(value).toLocaleString('en-US');
+    });
   }
 }
 
@@ -518,6 +568,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`  Coverage: ${result.summary.coverage.overall}%`);
       console.log(`  Security Issues: ${result.summary.security.totalIssues}`);
       console.log(`  Quality Violations: ${result.summary.quality.totalViolations}`);
+      if (result.summary.codebase?.totalLoc > 0) {
+        const loc = result.summary.codebase;
+        console.log(`  Codebase: ${(loc.totalLoc / 1000).toFixed(1)}K LOC (prod: ${(loc.prodLoc / 1000).toFixed(1)}K, test: ${(loc.testLoc / 1000).toFixed(1)}K, ratio: ${loc.testToCodeRatio}x)${loc.techDebt ? `, debt: ${loc.techDebt}` : ''}`);
+      }
 
       // Exit with error code if build is failing
       if (result.healthStatus === 'failing') {

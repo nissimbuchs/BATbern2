@@ -125,6 +125,64 @@ export default {
     ]
   },
 
+  // Lines of Code analysis configuration
+  loc: {
+    enabled: true,
+    excludeDirs: [
+      'node_modules', 'build', 'dist', '.gradle', 'coverage',
+      'test-results', 'playwright-report', '.git', 'generated', 'out'
+    ],
+    // Zone definitions — backendServices paths are derived at runtime from sources.java.modules
+    zones: {
+      backendServices: {
+        label: 'Backend Services'
+        // prodDirs: derived from sources.java.modules + '/src/main/java'
+        // testDirs: derived from sources.java.modules + '/src/test/java'
+      },
+      frontend: {
+        label: 'Web Frontend',
+        prod: ['web-frontend/src'],
+        test: ['web-frontend/e2e'],
+        // Exclude inline unit test files from prod count, count them as test
+        notMatchFileProd: '\\.(test|spec)\\.(ts|tsx)$',
+        matchFileTest: '\\.(test|spec)\\.(ts|tsx)$'
+      },
+      infrastructure: {
+        label: 'Infrastructure (CDK)',
+        prod: ['infrastructure/lib', 'infrastructure/bin'],
+        test: ['infrastructure/test']
+      },
+      apps: {
+        label: 'Companion Apps',
+        prod: [
+          'apps/BATbern-watch/BATbern-watch Watch App',
+          'apps/workhours',
+          'apps/migration-analysis/src',
+          'apps/projectdoc/src'
+        ],
+        test: [
+          'apps/BATbern-watch/BATbern-watch Watch AppTests'
+        ]
+      },
+      scripts: {
+        label: 'Scripts & Automation',
+        prod: ['scripts'],
+        test: []
+      },
+      generated: {
+        label: 'Generated Code (OpenAPI Types)',
+        isGenerated: true,
+        prod: ['web-frontend/src/types/generated'],
+        test: [],
+        // 'generated' dir name intentionally omitted so cloc can enter the directory
+        excludeDirsOverride: [
+          'node_modules', 'build', 'dist', '.gradle', 'coverage',
+          'test-results', 'playwright-report', '.git', 'out'
+        ]
+      }
+    }
+  },
+
   // Historical data configuration
   history: {
     enabled: true,

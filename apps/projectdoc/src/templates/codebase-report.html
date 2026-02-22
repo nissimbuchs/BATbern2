@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codebase Analysis - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* Force light theme for the entire codebase page — base.css uses a dark theme */
+        body.codebase-page { background: #F5F5F5 !important; }
+        .codebase-container, .codebase-container * { color: #212121; }
+        .codebase-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        /* Override dark card/summary-card backgrounds */
+        .codebase-container .summary-card { background: white !important; border: 1px solid #E0E0E0; }
+        .codebase-container .summary-card h3 { color: #757575 !important; }
+        .codebase-container .summary-value { color: #1565C0 !important; }
+        .codebase-container .summary-detail { color: #757575 !important; }
+        .codebase-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+        @media (max-width: 900px) { .section-grid { grid-template-columns: 1fr; } }
+        .chart-container { position: relative; height: 280px; margin: 16px 0; }
+        .chart-container.dynamic-height { height: auto; }
+        .codebase-container .page-header h1,
+        .codebase-container .page-header p { color: #212121 !important; }
+        .metric-highlight { color: #1565C0 !important; }
+        .text-muted { color: #757575 !important; }
+        .section-card h2 { color: #1565C0 !important; }
+        .rating-badge { display: inline-block; width: 32px; height: 32px; border-radius: 50%; color: white !important; font-weight: bold; font-size: 14px; line-height: 32px; text-align: center; }
+        .rating-a { background: #2E7D32; }
+        .rating-b { background: #66BB6A; }
+        .rating-c { background: #FFA726; }
+        .rating-d { background: #EF6C00; }
+        .rating-e { background: #C62828; }
+        .rating-unknown { background: #9E9E9E; }
+        .sonar-ratings { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+        .sonar-rating-item { text-align: center; }
+        .sonar-rating-label { font-size: 11px; color: #757575; margin-top: 4px; }
+        .hotspot-bar { display: inline-block; background: #1565C0; height: 8px; border-radius: 4px; min-width: 4px; }
+        .todo-breakdown { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+        .todo-chip { padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
+        .todo-chip-todo { background: #E3F2FD; color: #1565C0; }
+        .todo-chip-fixme { background: #FFF3E0; color: #E65100; }
+        .todo-chip-hack { background: #FCE4EC; color: #C62828; }
+        .todo-chip-xxx { background: #F3E5F5; color: #6A1B9A; }
+        .todo-chip-nosonar { background: #F1F8E9; color: #33691E; }
+        .zone-generated-row td { background: #F9FBE7 !important; color: #558B2F !important; }
+        .zone-generated-row td strong { color: #558B2F !important; }
+        .generated-badge { display: inline-block; background: #F1F8E9; color: #33691E; border: 1px solid #C5E1A5; border-radius: 10px; font-size: 10px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+        .section-card { background: white; border: 1px solid #E0E0E0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+        .section-card h2 { margin: 0 0 16px 0; font-size: 18px; border-bottom: 2px solid #E3F2FD; padding-bottom: 8px; }
+        .unavailable-notice { color: #9E9E9E; font-style: italic; padding: 24px; text-align: center; }
+        table.codebase-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.codebase-table th { background: #F5F5F5; padding: 10px 12px; text-align: left; font-weight: 600; color: #424242; border-bottom: 2px solid #E0E0E0; }
+        table.codebase-table td { padding: 8px 12px; border-bottom: 1px solid #F5F5F5; }
+        table.codebase-table tr:hover td { background: #FAFAFA; }
+        .lang-color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .text-right { text-align: right; }
+        .text-muted { color: #9E9E9E; }
+        .metric-highlight { font-weight: 600; color: #1565C0; }
+    </style>
+</head>
+<body class="reports-page codebase-page">
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="../index.html" class="brand-link">
+                    <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">Platform Rewriting with ClaudeCode</span>
+                </a>
+            </div>
+            <nav class="header-nav">
+                <a href="../index.html" class="nav-link">📚 Documentation</a>
+                <a href="index.html" class="nav-link">📊 Reports</a>
+                <a href="../api/index.html" class="nav-link">🔌 APIs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <a href="index.html">Reports</a>
+        <span>›</span>
+        <span>Codebase Analysis</span>
+    </div>
+
+    <main class="codebase-container">
+        <header class="page-header">
+            <h1>Codebase Analysis</h1>
+            <p>Lines of code, complexity, git activity, and project structure metrics</p>
+        </header>
+
+        <!-- Hero Summary Cards -->
+        <section class="codebase-summary">
+            <div class="summary-card">
+                <div class="summary-icon">📐</div>
+                <div class="summary-content">
+                    <h3>Total LOC</h3>
+                    <div class="summary-value">{{formatKLoc codebase.loc.summary.totalLoc}}</div>
+                    <div class="summary-detail">{{formatNumber codebase.loc.summary.totalFiles}} files{{#if codebase.loc.summary.generatedLoc}} · +{{formatKLoc codebase.loc.summary.generatedLoc}} generated{{/if}}</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-icon">⚙️</div>
+                <div class="summary-content">
+                    <h3>Production Code</h3>
+                    <div class="summary-value">{{formatKLoc codebase.loc.summary.prodLoc}}</div>
+                    <div class="summary-detail">{{formatNumber codebase.loc.summary.prodFiles}} files · excl. generated</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-icon">🧪</div>
+                <div class="summary-content">
+                    <h3>Test / Code Ratio</h3>
+                    <div class="summary-value">{{toFixed2 codebase.loc.summary.testToCodeRatio}}x</div>
+                    <div class="summary-detail">{{formatKLoc codebase.loc.summary.testLoc}} test LOC</div>
+                </div>
+            </div>
+
+            {{#if codebase.sonar}}
+            <div class="summary-card">
+                <div class="summary-icon">💰</div>
+                <div class="summary-content">
+                    <h3>Tech Debt</h3>
+                    <div class="summary-value">{{codebase.sonar.techDebtFormatted}}</div>
+                    <div class="summary-detail">{{toFixed2 codebase.sonar.sqaleDebtRatio}}% debt ratio</div>
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-icon">🔁</div>
+                <div class="summary-content">
+                    <h3>Duplication</h3>
+                    <div class="summary-value">{{toFixed2 codebase.sonar.duplicationPct}}%</div>
+                    <div class="summary-detail">{{formatNumber codebase.sonar.duplicatedLines}} duplicated lines</div>
+                </div>
+            </div>
+            {{else}}
+            <div class="summary-card card-info">
+                <div class="summary-icon">💬</div>
+                <div class="summary-content">
+                    <h3>Comment Ratio</h3>
+                    <div class="summary-value">{{ratioToPercent codebase.loc.summary.commentRatio}}</div>
+                    <div class="summary-detail">{{formatNumber codebase.loc.summary.totalComment}} comment lines</div>
+                </div>
+            </div>
+            {{/if}}
+
+            <div class="summary-card">
+                <div class="summary-icon">🔥</div>
+                <div class="summary-content">
+                    <h3>Commits (30d)</h3>
+                    <div class="summary-value">{{codebase.git.commitsLast30Days}}</div>
+                    <div class="summary-detail">{{codebase.git.contributorCount}} contributors</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOC by Language -->
+        <div class="section-grid">
+            <div class="section-card">
+                <h2>📊 Lines of Code by Language</h2>
+                {{#if codebase.loc.byLanguage}}
+                <table class="codebase-table">
+                    <thead>
+                        <tr>
+                            <th>Language</th>
+                            <th class="text-right">Files</th>
+                            <th class="text-right">Code</th>
+                            <th class="text-right">Comment</th>
+                            <th class="text-right">Blank</th>
+                            <th class="text-right">% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each codebase.loc.byLanguage}}
+                        <tr>
+                            <td><strong>{{this.language}}</strong></td>
+                            <td class="text-right text-muted">{{formatNumber this.nFiles}}</td>
+                            <td class="text-right metric-highlight">{{formatNumber this.code}}</td>
+                            <td class="text-right text-muted">{{formatNumber this.comment}}</td>
+                            <td class="text-right text-muted">{{formatNumber this.blank}}</td>
+                            <td class="text-right">
+                                <span style="font-weight:600">{{this.percentage}}%</span>
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#F5F5F5;font-weight:600">
+                            <td>Total</td>
+                            <td class="text-right">{{formatNumber codebase.loc.summary.totalFiles}}</td>
+                            <td class="text-right" style="color:#1565C0">{{formatNumber codebase.loc.summary.totalLoc}}</td>
+                            <td class="text-right">{{formatNumber codebase.loc.summary.totalComment}}</td>
+                            <td class="text-right">{{formatNumber codebase.loc.summary.totalBlank}}</td>
+                            <td class="text-right">100%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                {{else}}
+                <div class="unavailable-notice">LOC data not available. Run <code>npm run build:reports</code> with cloc installed.</div>
+                {{/if}}
+            </div>
+
+            <div class="section-card">
+                <h2>📈 Language Distribution</h2>
+                <div id="languageChartWrapper" class="chart-container" style="min-height:280px">
+                    <canvas id="languageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOC by Zone -->
+        <div class="section-card">
+            <h2>🏗️ Code by Layer / Zone</h2>
+            {{#if codebase.loc.zones}}
+            <table class="codebase-table">
+                <thead>
+                    <tr>
+                        <th>Zone</th>
+                        <th class="text-right">Prod LOC</th>
+                        <th class="text-right">Prod Files</th>
+                        <th class="text-right">Test LOC</th>
+                        <th class="text-right">Test Files</th>
+                        <th class="text-right">Total LOC</th>
+                        <th class="text-right">Test/Code Ratio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each codebase.loc.zones}}
+                    <tr{{#if this.isGenerated}} class="zone-generated-row"{{/if}}>
+                        <td><strong>{{this.label}}</strong>{{#if this.isGenerated}}<span class="generated-badge">auto-generated</span>{{/if}}</td>
+                        <td class="text-right{{#unless this.isGenerated}} metric-highlight{{/unless}}">{{formatNumber this.prod.code}}</td>
+                        <td class="text-right text-muted">{{formatNumber this.prod.nFiles}}</td>
+                        <td class="text-right">{{formatNumber this.test.code}}</td>
+                        <td class="text-right text-muted">{{formatNumber this.test.nFiles}}</td>
+                        <td class="text-right"><strong>{{formatNumber this.total.code}}</strong></td>
+                        <td class="text-right">{{#if this.isGenerated}}<span class="text-muted">—</span>{{else}}{{toFixed2 this.testToCodeRatio}}x{{/if}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            <div style="margin-top:16px">
+                <div class="chart-container" style="height:220px">
+                    <canvas id="zoneChart"></canvas>
+                </div>
+            </div>
+            {{else}}
+            <div class="unavailable-notice">Zone data not available.</div>
+            {{/if}}
+        </div>
+
+        <!-- SonarCloud Quality (conditional) -->
+        {{#if codebase.sonar}}
+        <div class="section-card">
+            <h2>🔍 SonarCloud Quality Metrics</h2>
+            <div class="sonar-ratings">
+                {{#if codebase.sonar.reliabilityRating}}
+                <div class="sonar-rating-item">
+                    <div class="rating-badge {{ratingClass codebase.sonar.reliabilityRating}}">{{codebase.sonar.reliabilityRating}}</div>
+                    <div class="sonar-rating-label">Reliability</div>
+                </div>
+                {{/if}}
+                {{#if codebase.sonar.securityRating}}
+                <div class="sonar-rating-item">
+                    <div class="rating-badge {{ratingClass codebase.sonar.securityRating}}">{{codebase.sonar.securityRating}}</div>
+                    <div class="sonar-rating-label">Security</div>
+                </div>
+                {{/if}}
+                {{#if codebase.sonar.maintainabilityRating}}
+                <div class="sonar-rating-item">
+                    <div class="rating-badge {{ratingClass codebase.sonar.maintainabilityRating}}">{{codebase.sonar.maintainabilityRating}}</div>
+                    <div class="sonar-rating-label">Maintainability</div>
+                </div>
+                {{/if}}
+            </div>
+            <table class="codebase-table" style="margin-top:16px">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th class="text-right">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#if codebase.sonar.complexity}}
+                    <tr><td>Cyclomatic Complexity</td><td class="text-right metric-highlight">{{formatNumber codebase.sonar.complexity}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.cognitiveComplexity}}
+                    <tr><td>Cognitive Complexity</td><td class="text-right metric-highlight">{{formatNumber codebase.sonar.cognitiveComplexity}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.codeSmells}}
+                    <tr><td>Code Smells</td><td class="text-right">{{formatNumber codebase.sonar.codeSmells}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.bugs}}
+                    <tr><td>Bugs</td><td class="text-right {{#if (gt codebase.sonar.bugs 0)}}text-error{{else}}text-success{{/if}}">{{codebase.sonar.bugs}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.vulnerabilities}}
+                    <tr><td>Vulnerabilities</td><td class="text-right {{#if (gt codebase.sonar.vulnerabilities 0)}}text-error{{else}}text-success{{/if}}">{{codebase.sonar.vulnerabilities}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.duplicatedBlocks}}
+                    <tr><td>Duplicated Blocks</td><td class="text-right">{{formatNumber codebase.sonar.duplicatedBlocks}}</td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.techDebtFormatted}}
+                    <tr><td>Technical Debt</td><td class="text-right"><strong>{{codebase.sonar.techDebtFormatted}}</strong></td></tr>
+                    {{/if}}
+                    {{#if codebase.sonar.coveragePct}}
+                    <tr><td>Coverage (SonarCloud)</td><td class="text-right">{{toFixed2 codebase.sonar.coveragePct}}%</td></tr>
+                    {{/if}}
+                </tbody>
+            </table>
+            {{#if codebase.sonar.projectUrl}}
+            <div style="margin-top:12px;text-align:right">
+                <a href="{{codebase.sonar.projectUrl}}" target="_blank" class="tool-link-card" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:13px">
+                    🔍 View full analysis on SonarCloud ↗
+                </a>
+            </div>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        <!-- Git Activity -->
+        <div class="section-card">
+            <h2>📅 Git Activity</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+                <div>
+                    <table class="codebase-table">
+                        <tbody>
+                            <tr><td>Total Commits</td><td class="text-right metric-highlight">{{formatNumber codebase.git.totalCommits}}</td></tr>
+                            <tr><td>Commits (last 30 days)</td><td class="text-right metric-highlight">{{codebase.git.commitsLast30Days}}</td></tr>
+                            <tr><td>Commits (last 90 days)</td><td class="text-right">{{codebase.git.commitsLast90Days}}</td></tr>
+                            <tr><td>Contributors</td><td class="text-right">{{codebase.git.contributorCount}}</td></tr>
+                            {{#if codebase.git.firstCommitDate}}
+                            <tr><td>First Commit</td><td class="text-right text-muted">{{codebase.git.firstCommitDate}}</td></tr>
+                            {{/if}}
+                            {{#if codebase.git.lastCommitDate}}
+                            <tr><td>Last Commit</td><td class="text-right text-muted">{{codebase.git.lastCommitDate}}</td></tr>
+                            {{/if}}
+                        </tbody>
+                    </table>
+
+                    {{#if codebase.git.hotspotFiles}}
+                    <h3 style="margin:16px 0 8px;font-size:15px;color:#424242">🔥 Most Changed Files (Hotspots)</h3>
+                    <table class="codebase-table">
+                        <thead>
+                            <tr><th>File</th><th class="text-right">Changes</th></tr>
+                        </thead>
+                        <tbody>
+                            {{#each codebase.git.hotspotFiles}}
+                            <tr>
+                                <td style="font-size:12px;font-family:monospace">{{this.file}}</td>
+                                <td class="text-right"><strong>{{this.changeCount}}</strong></td>
+                            </tr>
+                            {{/each}}
+                        </tbody>
+                    </table>
+                    {{/if}}
+                </div>
+                <div>
+                    <h3 style="margin:0 0 8px;font-size:15px;color:#424242">Weekly Commit Activity (12 weeks)</h3>
+                    <div class="chart-container" style="height:200px">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Counts: TODO/FIXME + Dependencies + Migrations -->
+        <div class="section-grid">
+            <div class="section-card">
+                <h2>💬 TODO / FIXME Comments</h2>
+                {{#if codebase.counts.todos}}
+                <div style="font-size:32px;font-weight:700;color:#1565C0;margin-bottom:8px">
+                    {{formatNumber codebase.counts.todos.total}}
+                </div>
+                <div class="todo-breakdown">
+                    {{#if codebase.counts.todos.byType.TODO}}
+                    <span class="todo-chip todo-chip-todo">TODO: {{codebase.counts.todos.byType.TODO}}</span>
+                    {{/if}}
+                    {{#if codebase.counts.todos.byType.FIXME}}
+                    <span class="todo-chip todo-chip-fixme">FIXME: {{codebase.counts.todos.byType.FIXME}}</span>
+                    {{/if}}
+                    {{#if codebase.counts.todos.byType.HACK}}
+                    <span class="todo-chip todo-chip-hack">HACK: {{codebase.counts.todos.byType.HACK}}</span>
+                    {{/if}}
+                    {{#if codebase.counts.todos.byType.XXX}}
+                    <span class="todo-chip todo-chip-xxx">XXX: {{codebase.counts.todos.byType.XXX}}</span>
+                    {{/if}}
+                    {{#if codebase.counts.todos.byType.NOSONAR}}
+                    <span class="todo-chip todo-chip-nosonar">NOSONAR: {{codebase.counts.todos.byType.NOSONAR}}</span>
+                    {{/if}}
+                </div>
+                {{else}}
+                <div class="unavailable-notice">TODO count not available.</div>
+                {{/if}}
+            </div>
+
+            <div class="section-card">
+                <h2>🗃️ DB Migrations (Flyway)</h2>
+                {{#if codebase.counts.migrations}}
+                <div style="font-size:32px;font-weight:700;color:#1565C0;margin-bottom:8px">
+                    {{codebase.counts.totalMigrations}} migrations
+                </div>
+                <table class="codebase-table">
+                    <thead>
+                        <tr><th>Service</th><th class="text-right">Migrations</th><th class="text-right">Latest V</th></tr>
+                    </thead>
+                    <tbody>
+                        {{#each codebase.counts.migrations}}
+                        <tr>
+                            <td>{{this.module}}</td>
+                            <td class="text-right metric-highlight">{{this.count}}</td>
+                            <td class="text-right text-muted">V{{this.latestVersion}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+                {{else}}
+                <div class="unavailable-notice">Migration data not available.</div>
+                {{/if}}
+            </div>
+        </div>
+
+        <!-- Dependencies -->
+        <div class="section-card">
+            <h2>📦 Dependencies per Module</h2>
+            {{#if codebase.counts.dependencies}}
+            <p style="color:#757575;font-size:13px;margin-bottom:12px">
+                Total: <strong>{{formatNumber codebase.counts.totalDependencies}}</strong> direct dependencies across all modules
+            </p>
+            <table class="codebase-table">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th>Type</th>
+                        <th class="text-right">Prod Deps</th>
+                        <th class="text-right">Dev/Test Deps</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each codebase.counts.dependencies}}
+                    <tr>
+                        <td><strong>{{this.module}}</strong></td>
+                        <td><span class="severity-badge" style="background:{{#if (eq this.type 'java')}}#E3F2FD;color:#1565C0{{else}}#F1F8E9;color:#33691E{{/if}};padding:2px 8px;border-radius:10px;font-size:11px">{{this.type}}</span></td>
+                        <td class="text-right metric-highlight">{{this.prod}}</td>
+                        <td class="text-right text-muted">{{this.dev}}</td>
+                        <td class="text-right"><strong>{{this.total}}</strong></td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="unavailable-notice">Dependency data not available.</div>
+            {{/if}}
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="index.html">← Back to Dashboard</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+
+    <script>
+        const codebaseData = {{{json codebase}}};
+
+        // Force all Chart.js text to dark so it's visible on white card backgrounds
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = '#212121';
+            Chart.defaults.borderColor = '#E0E0E0';
+        }
+
+        // Language distribution chart (horizontal bar)
+        const langData = codebaseData.loc && codebaseData.loc.byLanguage ? codebaseData.loc.byLanguage : [];
+        if (langData.length > 0 && document.getElementById('languageChart')) {
+            const colors = [
+                '#1565C0','#FF6F00','#2E7D32','#6A1B9A','#00838F',
+                '#AD1457','#37474F','#F57F17','#0277BD','#558B2F',
+                '#4527A0','#D84315','#00695C','#283593','#5D4037'
+            ];
+
+            // Make chart tall enough for all language labels (32px per bar, min 300px)
+            const chartHeight = Math.max(300, langData.length * 32);
+            const wrapper = document.getElementById('languageChartWrapper');
+            if (wrapper) wrapper.style.height = chartHeight + 'px';
+
+            new Chart(document.getElementById('languageChart'), {
+                type: 'bar',
+                data: {
+                    labels: langData.map(l => l.language),
+                    datasets: [{
+                        label: 'Code LOC',
+                        data: langData.map(l => l.code),
+                        backgroundColor: langData.map((_, i) => colors[i % colors.length])
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (item) => ` ${item.raw.toLocaleString()} LOC (${langData[item.dataIndex].percentage}%)`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Lines of Code', color: '#212121' },
+                            ticks: { color: '#212121' },
+                            grid: { color: '#E0E0E0' }
+                        },
+                        y: {
+                            ticks: {
+                                autoSkip: false,
+                                color: '#212121'
+                            },
+                            grid: { color: '#E0E0E0' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Zone comparison chart (grouped bar: prod vs test)
+        const zoneData = codebaseData.loc && codebaseData.loc.zones ? codebaseData.loc.zones : [];
+        if (zoneData.length > 0 && document.getElementById('zoneChart')) {
+            new Chart(document.getElementById('zoneChart'), {
+                type: 'bar',
+                data: {
+                    labels: zoneData.map(z => z.label),
+                    datasets: [
+                        {
+                            label: 'Production LOC',
+                            data: zoneData.map(z => z.prod.code),
+                            backgroundColor: '#1565C0'
+                        },
+                        {
+                            label: 'Test LOC',
+                            data: zoneData.map(z => z.test.code),
+                            backgroundColor: '#FF6F00'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        x: { ticks: { maxRotation: 30, color: '#212121' }, grid: { color: '#E0E0E0' } },
+                        y: { beginAtZero: true, title: { display: true, text: 'Lines of Code', color: '#212121' }, ticks: { color: '#212121' }, grid: { color: '#E0E0E0' } }
+                    }
+                }
+            });
+        }
+
+        // Weekly activity sparkline
+        const weeklyData = codebaseData.git && codebaseData.git.weeklyActivity ? codebaseData.git.weeklyActivity : [];
+        if (weeklyData.length > 0 && document.getElementById('activityChart')) {
+            new Chart(document.getElementById('activityChart'), {
+                type: 'bar',
+                data: {
+                    labels: weeklyData.map(w => w.week),
+                    datasets: [{
+                        label: 'Commits',
+                        data: weeklyData.map(w => w.commits),
+                        backgroundColor: '#1565C0',
+                        borderRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { maxRotation: 45, font: { size: 10 }, color: '#212121' }, grid: { color: '#E0E0E0' } },
+                        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#212121' }, grid: { color: '#E0E0E0' } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

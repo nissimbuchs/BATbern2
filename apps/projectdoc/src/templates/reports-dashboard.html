@@ -122,6 +122,25 @@
                     </div>
                 </div>
             </div>
+
+            {{#if summary.codebase}}
+            {{#if (gt summary.codebase.totalLoc 0)}}
+            <div class="metric-card">
+                <div class="metric-icon">📐</div>
+                <div class="metric-content">
+                    <h3>Codebase</h3>
+                    <div class="metric-value">{{formatKLoc summary.codebase.totalLoc}}</div>
+                    <div class="metric-label">
+                        Lines of Code
+                        <br>Prod: {{formatKLoc summary.codebase.prodLoc}} | Test: {{formatKLoc summary.codebase.testLoc}}
+                    </div>
+                    <div class="metric-breakdown">
+                        Test/Code: {{toFixed2 summary.codebase.testToCodeRatio}}x{{#if summary.codebase.techDebt}} · Debt: {{summary.codebase.techDebt}}{{/if}}
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+            {{/if}}
         </section>
 
         <!-- Trend Charts -->
@@ -245,6 +264,11 @@
                     <div class="link-icon">✨</div>
                     <h3>Quality Dashboard</h3>
                     <p>Code quality violations and style issues</p>
+                </a>
+                <a href="codebase.html" class="link-card">
+                    <div class="link-icon">📐</div>
+                    <h3>Codebase Analysis</h3>
+                    <p>LOC by language, complexity, git activity, TODO counts, migrations</p>
                 </a>
                 {{#if externalLinks.sonarcloud}}
                 <a href="{{externalLinks.sonarcloud}}" target="_blank" class="link-card external">
