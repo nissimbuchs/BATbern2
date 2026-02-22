@@ -17,16 +17,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Chip,
-  Button,
-  Box,
-  LinearProgress,
-} from '@mui/material';
+import { Card, CardContent, Typography, Chip, Box, LinearProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { PartnerResponse } from '@/services/api/partnerApi';
@@ -94,7 +85,14 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
       ref={cardRef}
       data-testid="partner-card"
       className="mobile"
-      sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      onClick={handleViewDetails}
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        cursor: 'pointer',
+        '&:hover': { boxShadow: 6 },
+      }}
     >
       <CardContent sx={{ flexGrow: 1 }}>
         {/* Logo and Tier Badge */}
@@ -185,18 +183,6 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
           <LinearProgress variant="determinate" value={0} sx={{ mt: 0.5 }} role="progressbar" />
         </Box>
       </CardContent>
-
-      <CardActions>
-        <Button size="small" onClick={handleViewDetails}>
-          {t('card.viewDetails')}
-        </Button>
-        <Button size="small" disabled title={t('card.comingSoon')}>
-          {t('card.sendEmail')}
-        </Button>
-        <Button size="small" disabled title={t('card.comingSoon')}>
-          {t('card.analytics')}
-        </Button>
-      </CardActions>
     </Card>
   );
 };
