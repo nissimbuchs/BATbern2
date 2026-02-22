@@ -135,13 +135,18 @@ describe('PartnerAttendanceDashboard', () => {
       expect(screen.getByTestId('attendance-dashboard')).toBeInTheDocument();
     });
 
+    // Reset call count after initial render so we can precisely assert the toggle call
+    vi.mocked(analyticsApi.getAttendanceDashboard).mockClear();
+
     const allHistoryBtn = screen.getByTestId('range-allhistory');
     fireEvent.click(allHistoryBtn);
 
     await waitFor(() => {
-      expect(analyticsApi.getAttendanceDashboard).toHaveBeenCalledWith(
+      // Toggle must fire exactly one call with the all-history year (CURRENT_YEAR - 20)
+      expect(analyticsApi.getAttendanceDashboard).toHaveBeenCalledTimes(1);
+      expect(analyticsApi.getAttendanceDashboard).toHaveBeenLastCalledWith(
         'GoogleZH',
-        expect.any(Number)
+        new Date().getFullYear() - 20
       );
     });
   });

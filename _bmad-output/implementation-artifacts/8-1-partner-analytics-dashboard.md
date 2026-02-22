@@ -1,6 +1,6 @@
 # Story 8.1: Partner Attendance Dashboard
 
-Status: review
+Status: done
 
 ## Story
 
@@ -250,6 +250,16 @@ ALTER TABLE partners ADD COLUMN partnership_cost NUMERIC(10,2);
 - [Source: services/event-management-service — registrations table schema]
 - [Source: services/partner-coordination-service — existing HTTP client patterns]
 
+## Review Follow-ups (AI) — applied 2026-02-22
+
+- [x] [AI-Review][HIGH] H1 — N+1 query in `PartnerSecurityService.isCurrentUserCompany()`: added `countByUsernameAndCompanyName` JOIN query to `PartnerContactRepository`; removed `PartnerRepository` dependency from `PartnerSecurityService` [PartnerContactRepository.java, PartnerSecurityService.java]
+- [x] [AI-Review][HIGH] H2 — Double-deserialize anti-pattern in `EventManagementClientImpl`: replaced `Object.class` + `objectMapper.convertValue()` with `ParameterizedTypeReference<List<AttendanceSummaryDTO>>` for single-pass type-safe deserialization [EventManagementClientImpl.java]
+- [x] [AI-Review][MEDIUM] M1 — Weak test assertion in `EventAttendanceSummaryIntegrationTest`: `should_excludeOldEvents_with_default5YearWindow` now asserts `hasSize(1)` + correct `eventCode` [EventAttendanceSummaryIntegrationTest.java:150]
+- [x] [AI-Review][MEDIUM] M2 — Weak toggle test assertion in `PartnerAttendanceDashboard.test.tsx`: clears mock after initial render; asserts `toHaveBeenCalledTimes(1)` + `toHaveBeenLastCalledWith('GoogleZH', CURRENT_YEAR - 20)` [PartnerAttendanceDashboard.test.tsx:131-147]
+- [x] [AI-Review][MEDIUM] M3 — `URL.revokeObjectURL()` race condition: changed to `setTimeout(() => URL.revokeObjectURL(url), 100)` [partnerAnalyticsApi.ts:87-88]
+- [x] [AI-Review][MEDIUM] M4 — KPI "Avg. Attendance Rate" inconsistency: replaced arithmetic mean of per-event rates with aggregate rate (totalCompanyAttendees / totalAttendees), matching the totals row [PartnerAttendanceDashboard.tsx:79-85]
+- [x] [AI-Review][MEDIUM] M5 — `scripts/ci/run-bruno-tests.sh` debug edit (collections commented out) reverted; not part of this story
+
 ## Dev Agent Record
 
 ### Agent Model Used
@@ -293,6 +303,15 @@ claude-sonnet-4-6
 - `web-frontend/src/components/partner/AttendanceExportButton.tsx`
 - `web-frontend/src/components/partner/PartnerAttendanceDashboard.test.tsx`
 - `web-frontend/e2e/partner/analytics-dashboard.spec.ts`
+
+**Modified files (review fixes):**
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/repository/PartnerContactRepository.java` (added countByUsernameAndCompanyName JOIN query — H1)
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/security/PartnerSecurityService.java` (removed N+1 loop, use single JOIN query — H1)
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/client/impl/EventManagementClientImpl.java` (ParameterizedTypeReference, removed ObjectMapper — H2)
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/EventAttendanceSummaryIntegrationTest.java` (meaningful assertion on 5yr filter test — M1)
+- `web-frontend/src/components/partner/PartnerAttendanceDashboard.test.tsx` (precise toggle call assertion — M2)
+- `web-frontend/src/services/api/partnerAnalyticsApi.ts` (setTimeout revokeObjectURL — M3)
+- `web-frontend/src/components/partner/PartnerAttendanceDashboard.tsx` (aggregate attendance rate KPI — M4)
 
 **Modified files:**
 - `services/event-management-service/src/main/java/ch/batbern/events/controller/EventController.java` (added attendance-summary endpoint)

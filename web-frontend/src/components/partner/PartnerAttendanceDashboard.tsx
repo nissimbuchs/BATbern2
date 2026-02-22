@@ -76,13 +76,7 @@ export const PartnerAttendanceDashboard: React.FC<Props> = ({ companyName }) => 
   const summaries = data?.attendanceSummary ?? [];
   const totalCompanyAttendees = summaries.reduce((sum, s) => sum + s.companyAttendees, 0);
   const totalAttendees = summaries.reduce((sum, s) => sum + s.totalAttendees, 0);
-  const avgAttendanceRate =
-    summaries.length > 0
-      ? summaries.reduce((sum, s) => {
-          const rate = s.totalAttendees > 0 ? s.companyAttendees / s.totalAttendees : 0;
-          return sum + rate;
-        }, 0) / summaries.length
-      : 0;
+  const avgAttendanceRate = totalAttendees > 0 ? totalCompanyAttendees / totalAttendees : 0;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }} data-testid="attendance-dashboard">

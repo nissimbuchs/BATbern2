@@ -2,12 +2,11 @@ package ch.batbern.partners.client.impl;
 
 import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -33,7 +32,6 @@ import java.util.List;
 public class EventManagementClientImpl implements EventManagementClient {
 
     private final RestTemplate restTemplate;
-    private final ObjectMapper objectMapper;
 
     @Value("${event-management-service.base-url}")
     private String eventManagementBaseUrl;
@@ -62,17 +60,14 @@ public class EventManagementClientImpl implements EventManagementClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<Object> response = restTemplate.exchange(
+            ResponseEntity<List<AttendanceSummaryDTO>> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    Object.class
+                    new ParameterizedTypeReference<List<AttendanceSummaryDTO>>() {}
             );
 
-            List<AttendanceSummaryDTO> result = objectMapper.convertValue(
-                    response.getBody(),
-                    new TypeReference<List<AttendanceSummaryDTO>>() {}
-            );
+            List<AttendanceSummaryDTO> result = response.getBody();
 
             log.debug("Retrieved {} attendance summary entries for company={}",
                     result != null ? result.size() : 0, companyName);

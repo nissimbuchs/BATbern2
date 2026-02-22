@@ -147,8 +147,9 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
                         .param("companyName", COMPANY_GOOGLE)
                         .param("fromYear", String.valueOf(fromYear)))
                 .andExpect(status().isOk())
-                // event2024 (2024) - included if fromYear <= 2024; event2020 (2020) - excluded
-                .andExpect(jsonPath("$").isArray());
+                // event2024 (2024) is within range; event2020 (2020) is excluded
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern142"));
     }
 
     // ── AC5: Only confirmed registrations counted ────────────────────────────

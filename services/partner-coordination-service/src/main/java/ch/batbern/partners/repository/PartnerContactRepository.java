@@ -2,6 +2,8 @@ package ch.batbern.partners.repository;
 
 import ch.batbern.partners.domain.PartnerContact;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -39,4 +41,17 @@ public interface PartnerContactRepository extends JpaRepository<PartnerContact, 
      * Story 8.1: Used by PartnerSecurityService to resolve which company a PARTNER user belongs to.
      */
     List<PartnerContact> findByUsername(String username);
+
+    /**
+     * Check in a single JOIN query whether a username is a contact of the given company.
+     * Story 8.1 (review fix H1): replaces N+1 pattern in PartnerSecurityService.isCurrentUserCompany().
+     *
+     * @param username    authenticated user's username
+     * @param companyName ADR-003 meaningful company identifier
+     * @return count of matching contacts (0 = not a contact, >0 = is a contact)
+     */
+    @Query("SELECT COUNT(c) FROM PartnerContact c, Partner p "
+            + "WHERE c.partnerId = p.id AND c.username = :username AND p.companyName = :companyName")
+    long countByUsernameAndCompanyName(@Param("username") String username,
+                                       @Param("companyName") String companyName);
 }

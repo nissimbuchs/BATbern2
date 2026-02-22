@@ -1,15 +1,9 @@
 package ch.batbern.partners.security;
 
-import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.domain.PartnerContact;
 import ch.batbern.partners.repository.PartnerContactRepository;
-import ch.batbern.partners.repository.PartnerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Security service for partner-scoped authorization.
@@ -25,10 +19,10 @@ public class PartnerSecurityService {
 
     private final SecurityContextHelper securityContextHelper;
     private final PartnerContactRepository partnerContactRepository;
-    private final PartnerRepository partnerRepository;
 
     /**
      * Returns true if the currently authenticated user is a contact of the given partner company.
+     * Uses a single JOIN query (H1 fix: eliminates N+1 pattern).
      *
      * @param companyName company name (ADR-003 meaningful identifier) from path variable
      * @return true if the current user's username appears as a contact of that partner
@@ -36,17 +30,13 @@ public class PartnerSecurityService {
     public boolean isCurrentUserCompany(String companyName) {
         try {
             String username = securityContextHelper.getCurrentUsername();
-            List<PartnerContact> contacts = partnerContactRepository.findByUsername(username);
+            boolean isContact = partnerContactRepository
+                    .countByUsernameAndCompanyName(username, companyName) > 0;
 
-            for (PartnerContact contact : contacts) {
-                Optional<Partner> partner = partnerRepository.findById(contact.getPartnerId());
-                if (partner.isPresent() && companyName.equals(partner.get().getCompanyName())) {
-                    return true;
-                }
+            if (!isContact) {
+                log.debug("User '{}' is not a contact of company '{}'", username, companyName);
             }
-
-            log.debug("User '{}' is not a contact of company '{}'", username, companyName);
-            return false;
+            return isContact;
         } catch (SecurityException e) {
             log.debug("No authenticated user — isCurrentUserCompany returns false");
             return false;
