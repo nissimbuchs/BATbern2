@@ -68,7 +68,7 @@ class DomainRouterTest {
         String targetService = domainRouter.determineTargetService(requestPath);
 
         // Then
-        assertThat(targetService).isEqualTo("speaker-coordination-service");
+        assertThat(targetService).isEqualTo("event-management-service");
     }
 
     // Test 5.3: should_routeToPartnerService_when_partnersEndpointCalled
@@ -229,7 +229,7 @@ class DomainRouterTest {
         String targetService = domainRouter.determineTargetService(pathWithQuery);
 
         // Then
-        assertThat(targetService).isEqualTo("speaker-coordination-service");
+        assertThat(targetService).isEqualTo("event-management-service");
     }
 
     @Test
