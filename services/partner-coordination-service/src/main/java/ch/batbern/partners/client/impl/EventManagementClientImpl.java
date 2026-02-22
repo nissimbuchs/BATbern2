@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -132,6 +133,9 @@ public class EventManagementClientImpl implements EventManagementClient {
 
             return new EventSummaryDTO(eventCode, body.getTitle(), eventDate, startTime, endTime, venue);
 
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("Event not found in event-management-service: eventCode={}", eventCode);
+            throw new IllegalArgumentException("Event not found: " + eventCode);
         } catch (Exception e) {
             log.error("Failed to fetch event summary for eventCode={}: {}", eventCode, e.getMessage(), e);
             throw new RuntimeException(

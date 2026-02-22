@@ -194,6 +194,7 @@
       "notes": "Besprechungsnotizen",
       "location": "Ort",
       "eventCode": "BATbern Veranstaltungscode",
+      "eventCodeHint": "z.B. BATbern57",
       "date": "Datum",
       "startTime": "Startzeit",
       "endTime": "Endzeit",

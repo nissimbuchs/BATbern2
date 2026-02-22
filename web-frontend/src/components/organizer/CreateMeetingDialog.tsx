@@ -103,7 +103,8 @@ const CreateMeetingDialog: React.FC<CreateMeetingDialogProps> = ({ open, onClose
             value={form.eventCode}
             onChange={(e) => setField('eventCode', e.target.value)}
             error={!!errors.eventCode}
-            helperText={errors.eventCode}
+            helperText={errors.eventCode || t('meetings.fields.eventCodeHint')}
+            placeholder="BATbern57"
             required
             inputProps={{ 'data-testid': 'meeting-event-code' }}
           />

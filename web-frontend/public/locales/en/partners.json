@@ -194,6 +194,7 @@
       "notes": "Meeting Notes",
       "location": "Location",
       "eventCode": "BATbern Event Code",
+      "eventCodeHint": "e.g. BATbern57",
       "date": "Date",
       "startTime": "Start Time",
       "endTime": "End Time",
