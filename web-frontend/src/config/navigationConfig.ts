@@ -17,6 +17,7 @@ import {
   ManageAccounts,
   Public,
   Lightbulb,
+  CalendarMonth,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -81,6 +82,14 @@ export const navigationConfig: NavigationItem[] = [
     icon: Lightbulb,
     roles: ['organizer'],
     description: 'Review partner topic suggestions',
+  },
+  // Story 8.3: Partner Meeting Coordination
+  {
+    labelKey: 'navigation.partnerMeetings',
+    path: '/organizer/partner-meetings',
+    icon: CalendarMonth,
+    roles: ['organizer'],
+    description: 'Manage partner meetings',
   },
   {
     labelKey: 'navigation.publicSite',

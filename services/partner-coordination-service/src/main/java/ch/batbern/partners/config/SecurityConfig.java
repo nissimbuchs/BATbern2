@@ -94,6 +94,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/partners/topics/*/vote").hasRole("PARTNER")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/partners/topics/*/vote").hasRole("PARTNER")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/topics/*/status").hasRole("ORGANIZER")
+                // Story 8.3: Partner Meeting Coordination (AC6 — ORGANIZER only)
+                .requestMatchers("/api/v1/partner-meetings/**").hasRole("ORGANIZER")
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt

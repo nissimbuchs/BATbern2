@@ -60,6 +60,8 @@ const PartnerAttendanceDashboard = React.lazy(
 const TopicListPage = React.lazy(() => import('@components/partner/TopicListPage'));
 // Story 8.2: Organizer partner-topics status panel
 const TopicStatusPanel = React.lazy(() => import('@components/organizer/TopicStatusPanel'));
+// Story 8.3: Organizer partner meetings page
+const PartnerMeetingsPage = React.lazy(() => import('@components/organizer/PartnerMeetingsPage'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
@@ -437,6 +439,18 @@ function App() {
                         <ProtectedRoute>
                           <AuthLayout>
                             <TopicStatusPanel />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Story 8.3: Organizer Partner Meetings */}
+                    <Route
+                      path="/organizer/partner-meetings"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <PartnerMeetingsPage />
                           </AuthLayout>
                         </ProtectedRoute>
                       }

@@ -30,7 +30,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css,md}\"",
     "type-check": "tsc --noEmit",
     "security:scan": "trivy fs --scanners vuln,secret,misconfig --format sarif --output ../security-reports/web-frontend-trivy.sarif --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL .",
-    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:speakers && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:partner-topics && npm run generate:api-types:attendees",
+    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:speakers && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:partner-topics && npm run generate:api-types:partner-meetings && npm run generate:api-types:attendees",
     "check:api-types": "npm run generate:api-types && git diff --exit-code src/types/generated/ || (echo '\n❌ ERROR: Generated API types are out of date!\n\nRun the following command to update them:\n  cd web-frontend && npm run generate:api-types\n\nThen commit the updated files.\n' && exit 1)",
     "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",
     "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts && prettier --write src/types/generated/user-api.types.ts",
@@ -39,6 +39,7 @@
     "generate:api-types:topics": "openapi-typescript ../docs/api/topics-api.openapi.yml -o src/types/generated/topics-api.types.ts && prettier --write src/types/generated/topics-api.types.ts",
     "generate:api-types:partners": "openapi-typescript ../docs/api/partners-api.openapi.yml -o src/types/generated/partner-api.types.ts && prettier --write src/types/generated/partner-api.types.ts",
     "generate:api-types:partner-topics": "openapi-typescript ../docs/api/partner-topics-api.openapi.yml -o src/types/generated/partner-topics-api.types.ts && prettier --write src/types/generated/partner-topics-api.types.ts",
+    "generate:api-types:partner-meetings": "openapi-typescript ../docs/api/partner-meetings-api.openapi.yml -o src/types/generated/partner-meetings-api.types.ts && prettier --write src/types/generated/partner-meetings-api.types.ts",
     "generate:api-types:attendees": "openapi-typescript ../docs/api/attendees-api.openapi.yml -o src/types/generated/attendees-api.types.ts && prettier --write src/types/generated/attendees-api.types.ts"
   },
   "dependencies": {

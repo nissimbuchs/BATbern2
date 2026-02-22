@@ -8,57 +8,48 @@
     <link rel="icon" href="../assets/favicon.ico">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        /* Force light theme for the entire codebase page — base.css uses a dark theme */
-        body.codebase-page { background: #F5F5F5 !important; }
-        .codebase-container, .codebase-container * { color: #212121; }
-        .codebase-container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-        /* Override dark card/summary-card backgrounds */
-        .codebase-container .summary-card { background: white !important; border: 1px solid #E0E0E0; }
-        .codebase-container .summary-card h3 { color: #757575 !important; }
-        .codebase-container .summary-value { color: #1565C0 !important; }
-        .codebase-container .summary-detail { color: #757575 !important; }
+        /* Codebase page — layout & structure only; colors use theme CSS variables */
         .codebase-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
         .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
         @media (max-width: 900px) { .section-grid { grid-template-columns: 1fr; } }
         .chart-container { position: relative; height: 280px; margin: 16px 0; }
-        .chart-container.dynamic-height { height: auto; }
-        .codebase-container .page-header h1,
-        .codebase-container .page-header p { color: #212121 !important; }
-        .metric-highlight { color: #1565C0 !important; }
-        .text-muted { color: #757575 !important; }
-        .section-card h2 { color: #1565C0 !important; }
-        .rating-badge { display: inline-block; width: 32px; height: 32px; border-radius: 50%; color: white !important; font-weight: bold; font-size: 14px; line-height: 32px; text-align: center; }
-        .rating-a { background: #2E7D32; }
-        .rating-b { background: #66BB6A; }
-        .rating-c { background: #FFA726; }
-        .rating-d { background: #EF6C00; }
-        .rating-e { background: #C62828; }
-        .rating-unknown { background: #9E9E9E; }
+
+        /* Section cards */
+        .section-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+        .section-card h2 { margin: 0 0 16px 0; font-size: 18px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .section-card h3 { font-size: 15px; color: var(--foreground); margin: 16px 0 8px; }
+        .unavailable-notice { color: var(--muted-foreground); font-style: italic; padding: 24px; text-align: center; }
+
+        /* Tables */
+        table.codebase-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table.codebase-table th { background: var(--muted); padding: 10px 12px; text-align: left; font-weight: 600; color: var(--muted-foreground); border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; }
+        table.codebase-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--foreground); }
+        table.codebase-table tr:hover td { background: var(--muted); }
+        table.codebase-table tfoot td { background: var(--muted); font-weight: 600; }
+        .text-right { text-align: right; }
+        .metric-highlight { font-weight: 600; color: var(--primary); }
+
+        /* SonarCloud ratings */
         .sonar-ratings { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
         .sonar-rating-item { text-align: center; }
-        .sonar-rating-label { font-size: 11px; color: #757575; margin-top: 4px; }
-        .hotspot-bar { display: inline-block; background: #1565C0; height: 8px; border-radius: 4px; min-width: 4px; }
-        .todo-breakdown { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+        .sonar-rating-label { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
+        .rating-badge { display: inline-block; width: 32px; height: 32px; border-radius: 50%; color: white; font-weight: bold; font-size: 14px; line-height: 32px; text-align: center; }
+        .rating-a { background: #2E7D32; } .rating-b { background: #66BB6A; }
+        .rating-c { background: #FFA726; } .rating-d { background: #EF6C00; }
+        .rating-e { background: #C62828; } .rating-unknown { background: #6E6E6E; }
+
+        /* TODO chips — intentionally colorful semantic indicators */
+        .todo-breakdown { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
         .todo-chip { padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 500; }
-        .todo-chip-todo { background: #E3F2FD; color: #1565C0; }
-        .todo-chip-fixme { background: #FFF3E0; color: #E65100; }
-        .todo-chip-hack { background: #FCE4EC; color: #C62828; }
-        .todo-chip-xxx { background: #F3E5F5; color: #6A1B9A; }
-        .todo-chip-nosonar { background: #F1F8E9; color: #33691E; }
-        .zone-generated-row td { background: #F9FBE7 !important; color: #558B2F !important; }
-        .zone-generated-row td strong { color: #558B2F !important; }
-        .generated-badge { display: inline-block; background: #F1F8E9; color: #33691E; border: 1px solid #C5E1A5; border-radius: 10px; font-size: 10px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-weight: 500; }
-        .section-card { background: white; border: 1px solid #E0E0E0; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
-        .section-card h2 { margin: 0 0 16px 0; font-size: 18px; border-bottom: 2px solid #E3F2FD; padding-bottom: 8px; }
-        .unavailable-notice { color: #9E9E9E; font-style: italic; padding: 24px; text-align: center; }
-        table.codebase-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        table.codebase-table th { background: #F5F5F5; padding: 10px 12px; text-align: left; font-weight: 600; color: #424242; border-bottom: 2px solid #E0E0E0; }
-        table.codebase-table td { padding: 8px 12px; border-bottom: 1px solid #F5F5F5; }
-        table.codebase-table tr:hover td { background: #FAFAFA; }
-        .lang-color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
-        .text-right { text-align: right; }
-        .text-muted { color: #9E9E9E; }
-        .metric-highlight { font-weight: 600; color: #1565C0; }
+        .todo-chip-todo   { background: rgba(33,150,243,0.18); color: var(--primary); }
+        .todo-chip-fixme  { background: rgba(255,152,0,0.18);  color: var(--warning-yellow); }
+        .todo-chip-hack   { background: rgba(244,67,54,0.18);  color: var(--error-red); }
+        .todo-chip-xxx    { background: rgba(156,39,176,0.18); color: #CE93D8; }
+        .todo-chip-nosonar{ background: rgba(76,175,80,0.18);  color: var(--success-green); }
+
+        /* Generated code zone */
+        .zone-generated-row td { background: rgba(76,175,80,0.07) !important; }
+        .generated-badge { display: inline-block; background: rgba(76,175,80,0.15); color: var(--success-green); border: 1px solid rgba(76,175,80,0.3); border-radius: 10px; font-size: 10px; padding: 1px 7px; margin-left: 6px; vertical-align: middle; font-weight: 500; }
     </style>
 </head>
 <body class="reports-page codebase-page">
@@ -191,10 +182,10 @@
                         {{/each}}
                     </tbody>
                     <tfoot>
-                        <tr style="background:#F5F5F5;font-weight:600">
+                        <tr>
                             <td>Total</td>
                             <td class="text-right">{{formatNumber codebase.loc.summary.totalFiles}}</td>
-                            <td class="text-right" style="color:#1565C0">{{formatNumber codebase.loc.summary.totalLoc}}</td>
+                            <td class="text-right metric-highlight">{{formatNumber codebase.loc.summary.totalLoc}}</td>
                             <td class="text-right">{{formatNumber codebase.loc.summary.totalComment}}</td>
                             <td class="text-right">{{formatNumber codebase.loc.summary.totalBlank}}</td>
                             <td class="text-right">100%</td>
@@ -343,7 +334,7 @@
                     </table>
 
                     {{#if codebase.git.hotspotFiles}}
-                    <h3 style="margin:16px 0 8px;font-size:15px;color:#424242">🔥 Most Changed Files (Hotspots)</h3>
+                    <h3 style="margin:16px 0 8px;font-size:15px">🔥 Most Changed Files (Hotspots)</h3>
                     <table class="codebase-table">
                         <thead>
                             <tr><th>File</th><th class="text-right">Changes</th></tr>
@@ -360,7 +351,7 @@
                     {{/if}}
                 </div>
                 <div>
-                    <h3 style="margin:0 0 8px;font-size:15px;color:#424242">Weekly Commit Activity (12 weeks)</h3>
+                    <h3 style="margin:0 0 8px;font-size:15px">Weekly Commit Activity (12 weeks)</h3>
                     <div class="chart-container" style="height:200px">
                         <canvas id="activityChart"></canvas>
                     </div>
@@ -373,7 +364,7 @@
             <div class="section-card">
                 <h2>💬 TODO / FIXME Comments</h2>
                 {{#if codebase.counts.todos}}
-                <div style="font-size:32px;font-weight:700;color:#1565C0;margin-bottom:8px">
+                <div class="metric-highlight" style="font-size:32px;font-weight:700;margin-bottom:8px">
                     {{formatNumber codebase.counts.todos.total}}
                 </div>
                 <div class="todo-breakdown">
@@ -401,7 +392,7 @@
             <div class="section-card">
                 <h2>🗃️ DB Migrations (Flyway)</h2>
                 {{#if codebase.counts.migrations}}
-                <div style="font-size:32px;font-weight:700;color:#1565C0;margin-bottom:8px">
+                <div class="metric-highlight" style="font-size:32px;font-weight:700;margin-bottom:8px">
                     {{codebase.counts.totalMigrations}} migrations
                 </div>
                 <table class="codebase-table">
@@ -428,7 +419,7 @@
         <div class="section-card">
             <h2>📦 Dependencies per Module</h2>
             {{#if codebase.counts.dependencies}}
-            <p style="color:#757575;font-size:13px;margin-bottom:12px">
+            <p class="text-muted" style="font-size:13px;margin-bottom:12px">
                 Total: <strong>{{formatNumber codebase.counts.totalDependencies}}</strong> direct dependencies across all modules
             </p>
             <table class="codebase-table">
@@ -445,7 +436,7 @@
                     {{#each codebase.counts.dependencies}}
                     <tr>
                         <td><strong>{{this.module}}</strong></td>
-                        <td><span class="severity-badge" style="background:{{#if (eq this.type 'java')}}#E3F2FD;color:#1565C0{{else}}#F1F8E9;color:#33691E{{/if}};padding:2px 8px;border-radius:10px;font-size:11px">{{this.type}}</span></td>
+                        <td><span style="background:rgba(33,150,243,0.18);color:var(--primary);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500">{{this.type}}</span></td>
                         <td class="text-right metric-highlight">{{this.prod}}</td>
                         <td class="text-right text-muted">{{this.dev}}</td>
                         <td class="text-right"><strong>{{this.total}}</strong></td>
@@ -469,10 +460,10 @@
     <script>
         const codebaseData = {{{json codebase}}};
 
-        // Force all Chart.js text to dark so it's visible on white card backgrounds
+        // Apply theme colors to Chart.js — dark theme uses near-white text
         if (typeof Chart !== 'undefined') {
-            Chart.defaults.color = '#212121';
-            Chart.defaults.borderColor = '#E0E0E0';
+            Chart.defaults.color = 'rgba(255,255,255,0.75)';
+            Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
         }
 
         // Language distribution chart (horizontal bar)
@@ -514,16 +505,12 @@
                     scales: {
                         x: {
                             beginAtZero: true,
-                            title: { display: true, text: 'Lines of Code', color: '#212121' },
-                            ticks: { color: '#212121' },
-                            grid: { color: '#E0E0E0' }
+                            title: { display: true, text: 'Lines of Code' },
+                            grid: { color: 'rgba(255,255,255,0.08)' }
                         },
                         y: {
-                            ticks: {
-                                autoSkip: false,
-                                color: '#212121'
-                            },
-                            grid: { color: '#E0E0E0' }
+                            ticks: { autoSkip: false },
+                            grid: { color: 'rgba(255,255,255,0.08)' }
                         }
                     }
                 }
@@ -557,8 +544,8 @@
                         legend: { position: 'top' }
                     },
                     scales: {
-                        x: { ticks: { maxRotation: 30, color: '#212121' }, grid: { color: '#E0E0E0' } },
-                        y: { beginAtZero: true, title: { display: true, text: 'Lines of Code', color: '#212121' }, ticks: { color: '#212121' }, grid: { color: '#E0E0E0' } }
+                        x: { ticks: { maxRotation: 30 }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                        y: { beginAtZero: true, title: { display: true, text: 'Lines of Code' }, grid: { color: 'rgba(255,255,255,0.08)' } }
                     }
                 }
             });
@@ -583,8 +570,8 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { ticks: { maxRotation: 45, font: { size: 10 }, color: '#212121' }, grid: { color: '#E0E0E0' } },
-                        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#212121' }, grid: { color: '#E0E0E0' } }
+                        x: { ticks: { maxRotation: 45, font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.08)' } }
                     }
                 }
             });

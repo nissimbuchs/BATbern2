@@ -185,6 +185,44 @@
       "deletePartner": "Delete Partner Data"
     }
   },
+  "meetings": {
+    "title": "Partner Meetings",
+    "create": "Create Meeting",
+    "edit": "Edit Meeting",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Meeting Notes",
+      "location": "Location",
+      "eventCode": "BATbern Event Code",
+      "date": "Date",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "type": {
+        "spring": "Spring Meeting",
+        "autumn": "Autumn Meeting"
+      }
+    },
+    "sendInvite": "Send Calendar Invite",
+    "inviteSent": "Invite Sent",
+    "inviteNotSent": "Invite Not Sent",
+    "inviteSentOn": "Invite sent on {{date}}",
+    "noMeetings": "No partner meetings found",
+    "confirmSendInvite": "Send calendar invite to all partner contacts?",
+    "inviteQueued": "Sending calendar invite...",
+    "columns": {
+      "event": "Event",
+      "type": "Type",
+      "date": "Date",
+      "location": "Location",
+      "inviteStatus": "Invite",
+      "actions": "Actions"
+    },
+    "loading": "Loading meetings...",
+    "error": "Could not load meetings",
+    "createSuccess": "Meeting created successfully",
+    "updateSuccess": "Meeting updated successfully",
+    "inviteSuccess": "Calendar invite is being sent"
+  },
   "comingSoon": {
     "epic8": "Coming Soon - Epic 8",
     "story283": "Coming Soon - Story 2.8.3"

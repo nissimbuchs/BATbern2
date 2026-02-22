@@ -185,6 +185,44 @@
       "deletePartner": "Partnerdaten löschen"
     }
   },
+  "meetings": {
+    "title": "Partner-Meetings",
+    "create": "Meeting erstellen",
+    "edit": "Meeting bearbeiten",
+    "fields": {
+      "agenda": "Tagesordnung",
+      "notes": "Besprechungsnotizen",
+      "location": "Ort",
+      "eventCode": "BATbern Veranstaltungscode",
+      "date": "Datum",
+      "startTime": "Startzeit",
+      "endTime": "Endzeit",
+      "type": {
+        "spring": "Frühlings-Meeting",
+        "autumn": "Herbst-Meeting"
+      }
+    },
+    "sendInvite": "Kalendereinladung senden",
+    "inviteSent": "Einladung gesendet",
+    "inviteNotSent": "Einladung noch nicht gesendet",
+    "inviteSentOn": "Einladung gesendet am {{date}}",
+    "noMeetings": "Keine Partner-Meetings vorhanden",
+    "confirmSendInvite": "Kalendereinladung an alle Partner-Kontakte senden?",
+    "inviteQueued": "Kalendereinladung wird gesendet...",
+    "columns": {
+      "event": "Veranstaltung",
+      "type": "Typ",
+      "date": "Datum",
+      "location": "Ort",
+      "inviteStatus": "Einladung",
+      "actions": "Aktionen"
+    },
+    "loading": "Meetings werden geladen...",
+    "error": "Meetings konnten nicht geladen werden",
+    "createSuccess": "Meeting erfolgreich erstellt",
+    "updateSuccess": "Meeting erfolgreich aktualisiert",
+    "inviteSuccess": "Kalendereinladung wird versendet"
+  },
   "comingSoon": {
     "epic8": "Kommt bald - Epic 8",
     "story283": "Kommt bald - Story 2.8.3"

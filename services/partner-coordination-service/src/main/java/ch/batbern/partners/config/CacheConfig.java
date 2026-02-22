@@ -31,7 +31,8 @@ public class CacheConfig {
             "partners",               // Partner entity cache
             "companyApiCache",        // Company Service HTTP response cache (15min TTL)
             "userApiCache",           // User Service HTTP response cache (15min TTL)
-            "partnerAttendanceCache"  // Partner attendance data from event-management-service (Story 8.1)
+            "partnerAttendanceCache", // Partner attendance data from event-management-service (Story 8.1)
+            "eventSummaryCache"       // Event summary from event-management-service (Story 8.3, 1hr TTL)
         );
 
         cacheManager.setCaffeine(caffeineCacheBuilder());

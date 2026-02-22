@@ -202,21 +202,17 @@ describe('PartnerNotesTab Component', () => {
       deleteNote: mockDeleteNote,
     } as any);
 
-    // Mock window.confirm to return true
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     renderWithQueryClient(<PartnerNotesTab companyName="GoogleZH" />);
 
-    // Find delete button for first note
+    // Find delete button for first note (Delete icon buttons, then the dialog confirm)
     const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
     fireEvent.click(deleteButtons[0]);
 
-    await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalledWith(
-        expect.stringContaining('Are you sure you want to delete')
-      );
-      expect(mockDeleteNote).toHaveBeenCalledWith('note-1');
-    });
+    // Confirmation dialog should appear — click the confirm button
+    const confirmButton = await screen.findByTestId('confirm-delete-note');
+    fireEvent.click(confirmButton);
+
+    expect(mockDeleteNote).toHaveBeenCalledWith('note-1');
   });
 
   // AC7 Test 7.7: should_showAuthorAndTimestamp_when_noteDisplayed
@@ -329,18 +325,17 @@ describe('PartnerNotesTab Component', () => {
       deleteNote: mockDeleteNote,
     } as any);
 
-    // Mock window.confirm to return false (user cancels)
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
-
     renderWithQueryClient(<PartnerNotesTab companyName="GoogleZH" />);
 
     // Find delete button for first note
     const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
     fireEvent.click(deleteButtons[0]);
 
-    await waitFor(() => {
-      expect(window.confirm).toHaveBeenCalled();
-      expect(mockDeleteNote).not.toHaveBeenCalled();
-    });
+    // Confirmation dialog should appear — click Cancel to dismiss
+    await screen.findByTestId('confirm-delete-note');
+    const cancelButton = screen.getByRole('button', { name: /^cancel$/i });
+    fireEvent.click(cancelButton);
+
+    expect(mockDeleteNote).not.toHaveBeenCalled();
   });
 });

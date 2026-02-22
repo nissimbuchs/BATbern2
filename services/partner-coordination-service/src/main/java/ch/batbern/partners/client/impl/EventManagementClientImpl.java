@@ -2,6 +2,8 @@ package ch.batbern.partners.client.impl;
 
 import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
+import ch.batbern.partners.client.dto.EventSummaryDTO;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,19 +19,27 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
  * Implementation of EventManagementClient using Spring RestTemplate.
  * Story 8.1: Partner Attendance Dashboard
+ * Story 8.3: Partner Meeting Coordination — getEventSummary for ICS generation
  *
- * Communicates with event-management-service to retrieve attendance data.
- * Results are Caffeine-cached for 15 minutes to satisfy AC5 (data freshness / no real-time requirement).
+ * Communicates with event-management-service to retrieve attendance data and event summaries.
+ * Results are Caffeine-cached (15 min attendance, 1 hour event summary).
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class EventManagementClientImpl implements EventManagementClient {
+
+    private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
 
     private final RestTemplate restTemplate;
 
@@ -39,10 +49,6 @@ public class EventManagementClientImpl implements EventManagementClient {
     /**
      * Get attendance summary for a company from event-management-service.
      * Cached 15 minutes per (companyName, fromYear) pair (AC5).
-     *
-     * @param companyName ADR-003 meaningful company identifier
-     * @param fromYear    earliest year to include
-     * @return list of per-event attendance summaries
      */
     @Override
     @Cacheable(value = "partnerAttendanceCache", key = "#companyName + '-' + #fromYear")
@@ -82,6 +88,70 @@ public class EventManagementClientImpl implements EventManagementClient {
         }
     }
 
+    /**
+     * Get event summary from event-management-service for ICS generation.
+     * Cached 1 hour — event details rarely change (Story 8.3, AC8 performance).
+     */
+    @Override
+    @Cacheable(value = "eventSummaryCache", key = "#eventCode")
+    public EventSummaryDTO getEventSummary(String eventCode) {
+        log.debug("Fetching event summary from event-management-service: eventCode={}", eventCode);
+
+        String url = eventManagementBaseUrl + "/api/v1/events/" + eventCode;
+
+        try {
+            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            ResponseEntity<EventResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    request,
+                    EventResponse.class
+            );
+
+            EventResponse body = response.getBody();
+            if (body == null) {
+                throw new RuntimeException("Empty response from event-management-service for eventCode: " + eventCode);
+            }
+
+            // Derive LocalDate + LocalTime from the event's Instant date in Europe/Zurich zone
+            ZonedDateTime zurichDt = body.getDate() != null
+                    ? body.getDate().atZone(ZURICH)
+                    : ZonedDateTime.now(ZURICH);
+
+            LocalDate eventDate = zurichDt.toLocalDate();
+            LocalTime startTime = zurichDt.toLocalTime();
+            // EMS doesn't have an explicit endTime; default conference duration is ~4 hours
+            LocalTime endTime = startTime.plusHours(4);
+
+            // Combine venue name + address for ICS location
+            String venue = buildVenueString(body.getVenueName(), body.getVenueAddress());
+
+            log.debug("Event summary fetched: eventCode={}, date={}, venue={}", eventCode, eventDate, venue);
+
+            return new EventSummaryDTO(eventCode, body.getTitle(), eventDate, startTime, endTime, venue);
+
+        } catch (Exception e) {
+            log.error("Failed to fetch event summary for eventCode={}: {}", eventCode, e.getMessage(), e);
+            throw new RuntimeException(
+                    "Failed to fetch event summary from event-management-service for: " + eventCode, e);
+        }
+    }
+
+    private String buildVenueString(String venueName, String venueAddress) {
+        if (venueName == null && venueAddress == null) {
+            return null;
+        }
+        if (venueName == null) {
+            return venueAddress;
+        }
+        if (venueAddress == null) {
+            return venueName;
+        }
+        return venueName + ", " + venueAddress;
+    }
+
     private HttpHeaders createHeadersWithJwtToken() {
         HttpHeaders headers = new HttpHeaders();
         try {
@@ -99,5 +169,58 @@ public class EventManagementClientImpl implements EventManagementClient {
             log.warn("Failed to extract JWT token for event-management-service: {}", e.getMessage());
         }
         return headers;
+    }
+
+    /**
+     * Minimal response DTO for parsing GET /api/v1/events/{eventCode} response.
+     * Only the fields needed for ICS generation are mapped.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class EventResponse {
+        private String title;
+        private String eventCode;
+        private Instant date;
+        private String venueName;
+        private String venueAddress;
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getEventCode() {
+            return eventCode;
+        }
+
+        public void setEventCode(String eventCode) {
+            this.eventCode = eventCode;
+        }
+
+        public Instant getDate() {
+            return date;
+        }
+
+        public void setDate(Instant date) {
+            this.date = date;
+        }
+
+        public String getVenueName() {
+            return venueName;
+        }
+
+        public void setVenueName(String venueName) {
+            this.venueName = venueName;
+        }
+
+        public String getVenueAddress() {
+            return venueAddress;
+        }
+
+        public void setVenueAddress(String venueAddress) {
+            this.venueAddress = venueAddress;
+        }
     }
 }

@@ -1,18 +1,23 @@
 /**
- * usePartnerMeetings Hook Tests (RED Phase -> GREEN Phase)
+ * usePartnerMeetings Hook Tests (Story 8.3 — GREEN phase)
  *
  * TDD tests for Partner Meetings React Query hook
- * Story 2.8.2: Partner Detail View
+ * Story 8.3: Partner Meeting Coordination
  *
  * Test Scenarios:
- * - AC5, AC13: Partner meetings fetching for Meetings tab
+ * - AC5: Meeting list fetching
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePartnerMeetings } from './usePartnerMeetings';
 import React from 'react';
+
+// Mock the API so tests don't make real HTTP calls
+vi.mock('@/services/api/partnerMeetingsApi', () => ({
+  getMeetings: vi.fn().mockResolvedValue([]),
+}));
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -48,19 +53,22 @@ describe('usePartnerMeetings', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // TODO: Expects empty array until API implemented
     expect(result.current.error).toBeNull();
     expect(result.current.data).toEqual([]);
   });
 
-  // Test 2: should_notFetch_when_companyNameUndefined
-  it('should_notFetch_when_companyNameUndefined', () => {
-    const { result } = renderHook(() => usePartnerMeetings(undefined as unknown as string), {
+  // Test 2: should_fetchWithoutCompanyName_when_companyNameUndefined
+  // Story 8.3: meetings are global (not per-company), hook always fetches
+  it('should_fetchWithoutCompanyName_when_companyNameUndefined', async () => {
+    const { result } = renderHook(() => usePartnerMeetings(undefined), {
       wrapper: createWrapper(queryClient),
     });
 
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.data).toBeUndefined();
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.data).toEqual([]);
   });
 
   // Test 3: should_haveCorrectQueryKey_when_hookCalled
@@ -79,12 +87,7 @@ describe('usePartnerMeetings', () => {
     const queries = queryClient.getQueryCache().findAll();
     const query = queries.find((q) => {
       const key = q.queryKey;
-      return (
-        Array.isArray(key) &&
-        key[0] === 'partner' &&
-        key[1] === companyName &&
-        key[2] === 'meetings'
-      );
+      return Array.isArray(key) && key[0] === 'partnerMeetings' && key[1] === companyName;
     });
 
     expect(query).toBeDefined();

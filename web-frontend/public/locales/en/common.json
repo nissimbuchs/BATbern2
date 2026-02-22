@@ -23,7 +23,8 @@
     "about": "About",
     "pastEvents": "Past Events",
     "publicSite": "Public Website",
-    "partnerTopics": "Partner Topics"
+    "partnerTopics": "Partner Topics",
+    "partnerMeetings": "Partner Meetings"
   },
   "public": {
     "login": "Login",

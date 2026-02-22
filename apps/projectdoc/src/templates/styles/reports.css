@@ -26,7 +26,8 @@
 .module-detail-container,
 .coverage-container,
 .security-container,
-.quality-container {
+.quality-container,
+.codebase-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
