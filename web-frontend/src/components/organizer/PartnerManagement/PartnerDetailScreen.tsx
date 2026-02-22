@@ -157,8 +157,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+      {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
+      {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
 
       {/* Header */}
       <PartnerDetailHeader partner={partner} role={currentUser.role} />
