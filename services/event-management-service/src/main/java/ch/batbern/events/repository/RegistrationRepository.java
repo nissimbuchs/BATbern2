@@ -153,7 +153,7 @@ public interface RegistrationRepository
             SUM(CASE WHEN r.attendeeCompanyId = :companyId THEN 1L ELSE 0L END)
         )
         FROM Event e
-        LEFT JOIN Registration r ON r.eventId = e.id AND r.status = 'confirmed'
+        LEFT JOIN Registration r ON r.eventId = e.id AND r.status IN ('confirmed', 'attended')
         WHERE e.date >= :fromDate
         GROUP BY e.id, e.eventCode, e.date
         ORDER BY e.date DESC

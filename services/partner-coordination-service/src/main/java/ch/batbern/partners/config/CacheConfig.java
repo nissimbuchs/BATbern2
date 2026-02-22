@@ -28,11 +28,13 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
-            "partners",               // Partner entity cache
-            "companyApiCache",        // Company Service HTTP response cache (15min TTL)
-            "userApiCache",           // User Service HTTP response cache (15min TTL)
-            "partnerAttendanceCache", // Partner attendance data from event-management-service (Story 8.1)
-            "eventSummaryCache"       // Event summary from event-management-service (Story 8.3, 1hr TTL)
+            "partners",                  // Partner entity cache
+            "companyApiCache",           // Company Service HTTP response cache (15min TTL)
+            "userApiCache",              // User Service HTTP response cache (15min TTL)
+            "usersByCompanyRoleCache",   // User Service: users by company+role (15min TTL)
+            "usersByRoleCache",          // User Service: users by role across all companies (15min TTL)
+            "partnerAttendanceCache",    // Partner attendance data from event-management-service (Story 8.1)
+            "eventSummaryCache"          // Event summary from event-management-service (Story 8.3, 1hr TTL)
         );
 
         cacheManager.setCaffeine(caffeineCacheBuilder());
