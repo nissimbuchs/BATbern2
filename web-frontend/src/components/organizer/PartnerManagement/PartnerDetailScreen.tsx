@@ -1,7 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Container, Alert, AlertTitle, Skeleton, Stack } from '@mui/material';
+import {
+  Box,
+  Container,
+  Alert,
+  AlertTitle,
+  Skeleton,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Paper,
+} from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -168,12 +183,53 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         {/* Overview Tab */}
         {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
 
-        {/* Contacts Tab - TODO: Story 2.8.4 */}
+        {/* Contacts Tab */}
         {effectiveTab === 1 && (
-          <Alert severity="info" sx={{ my: 2 }}>
-            <AlertTitle>Contacts Management</AlertTitle>
-            Contact management will be implemented in Story 2.8.4
-          </Alert>
+          <Box sx={{ my: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {t('partners.contacts.title', 'Partner Contacts')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {t(
+                'partners.contacts.description',
+                'Users with the Partner role assigned to this company.'
+              )}
+            </Typography>
+            {!partner.contacts || partner.contacts.length === 0 ? (
+              <Alert severity="info">
+                <AlertTitle>{t('partners.contacts.empty', 'No contacts')}</AlertTitle>
+                {t(
+                  'partners.contacts.emptyDescription',
+                  'No partner users are assigned to this company yet.'
+                )}
+              </Alert>
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{t('partners.contacts.name', 'Name')}</TableCell>
+                      <TableCell>{t('partners.contacts.email', 'Email')}</TableCell>
+                      <TableCell>{t('partners.contacts.username', 'Username')}</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {partner.contacts.map((contact) => (
+                      <TableRow key={contact.username}>
+                        <TableCell>
+                          {contact.firstName || contact.lastName
+                            ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
+                            : contact.username}
+                        </TableCell>
+                        <TableCell>{contact.email ?? '—'}</TableCell>
+                        <TableCell>{contact.username}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Box>
         )}
 
         {/* Meetings Tab */}

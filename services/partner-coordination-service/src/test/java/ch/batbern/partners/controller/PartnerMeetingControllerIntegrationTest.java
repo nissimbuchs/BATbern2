@@ -7,9 +7,7 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.domain.PartnerContact;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -30,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -68,8 +67,6 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     PartnerMeetingRepository meetingRepository;
     @Autowired
     PartnerRepository partnerRepository;
-    @Autowired
-    PartnerContactRepository partnerContactRepository;
 
     @MockitoBean
     EventManagementClient eventManagementClient;
@@ -79,7 +76,6 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     void setUp() {
         meetingRepository.deleteAll();
-        partnerContactRepository.deleteAll();
         partnerRepository.deleteAll();
 
         // Default stub: any event code → a known event summary
@@ -93,10 +89,10 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                         "Bern Congress Centre"
                 ));
 
-        // Create a partner contact so sendInvite can collect emails
+        // Stub getUsersByRole so sendInvite can collect partner emails
         UserResponse mockUser = new UserResponse();
         mockUser.setEmail("contact@partner.com");
-        when(userServiceClient.getUserByUsername(anyString())).thenReturn(mockUser);
+        when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(mockUser));
     }
 
     // ─── AC1: Create meeting record ───────────────────────────────────────────
@@ -314,19 +310,11 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void createPartnerWithContact(String companyName, String username) {
-        Partner partner = Partner.builder()
+        partnerRepository.save(Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
                 .partnershipStartDate(LocalDate.now().minusYears(1))
                 .partnershipEndDate(LocalDate.now().plusYears(1))
-                .build();
-        partner = partnerRepository.save(partner);
-
-        PartnerContact contact = new PartnerContact();
-        contact.setPartnerId(partner.getId());
-        contact.setUsername(username);
-        contact.setContactRole(ch.batbern.partners.domain.ContactRole.PRIMARY);
-        contact.setPrimary(true);
-        partnerContactRepository.save(contact);
+                .build());
     }
 }

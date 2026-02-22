@@ -86,7 +86,7 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
   };
 
   const logoUrl = partner.company?.logoUrl;
-  const primaryContact = partner.contacts?.find((c) => c.isPrimary);
+  const primaryContact = partner.contacts?.[0];
   const tierEmoji = TIER_EMOJIS[partner.partnershipLevel.toUpperCase()] || '';
 
   return (

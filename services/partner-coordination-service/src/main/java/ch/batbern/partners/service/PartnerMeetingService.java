@@ -10,7 +10,6 @@ import ch.batbern.partners.dto.PartnerMeetingDTO;
 import ch.batbern.partners.dto.SendInviteResponse;
 import ch.batbern.partners.dto.UpdateMeetingRequest;
 import ch.batbern.partners.exception.PartnerNotFoundException;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +33,6 @@ import java.util.stream.Collectors;
 public class PartnerMeetingService {
 
     private final PartnerMeetingRepository meetingRepository;
-    private final PartnerContactRepository partnerContactRepository;
     private final EventManagementClient eventManagementClient;
     private final UserServiceClient userServiceClient;
     private final IcsGeneratorService icsGeneratorService;
@@ -172,36 +170,27 @@ public class PartnerMeetingService {
     /**
      * Collect all unique partner contact emails.
      *
-     * Gets all partner contact usernames, then fetches their email via UserServiceClient
-     * (cached at 15 minutes).
+     * Fetches all users with the PARTNER role from the User Service.
+     * Any PARTNER-role user is automatically a partner contact of their company.
      *
-     * Silently skips contacts where user lookup fails (logs warning).
+     * Silently returns empty list if User Service is unavailable (logs warning).
      */
     private List<String> collectPartnerContactEmails() {
-        List<String> emails = new ArrayList<>();
+        try {
+            List<UserResponse> partnerUsers = userServiceClient.getUsersByRole("PARTNER");
 
-        // Get all partner contact usernames (unique)
-        List<String> usernames = partnerContactRepository.findAll()
-                .stream()
-                .map(contact -> contact.getUsername())
-                .distinct()
-                .collect(Collectors.toList());
+            List<String> emails = partnerUsers.stream()
+                    .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
+                    .map(UserResponse::getEmail)
+                    .distinct()
+                    .collect(Collectors.toList());
 
-        log.debug("Collecting emails for {} unique partner contact usernames", usernames.size());
-
-        for (String username : usernames) {
-            try {
-                UserResponse user = userServiceClient.getUserByUsername(username);
-                if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
-                    emails.add(user.getEmail());
-                }
-            } catch (Exception e) {
-                log.warn("Could not fetch email for partner contact username={}: {}", username, e.getMessage());
-            }
+            log.debug("Collected {} partner contact emails", emails.size());
+            return emails;
+        } catch (Exception e) {
+            log.warn("Could not fetch partner contact emails from User Service: {}", e.getMessage());
+            return new ArrayList<>();
         }
-
-        log.debug("Collected {} valid partner contact emails", emails.size());
-        return emails;
     }
 
     private PartnerMeeting findMeetingById(UUID meetingId) {

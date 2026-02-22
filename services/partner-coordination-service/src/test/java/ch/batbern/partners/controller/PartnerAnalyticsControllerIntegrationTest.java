@@ -4,11 +4,10 @@ import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
+import ch.batbern.partners.client.UserServiceClient;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.domain.PartnerContact;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.domain.ContactRole;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,25 +60,26 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     private PartnerRepository partnerRepository;
 
-    @Autowired
-    private PartnerContactRepository partnerContactRepository;
-
     @MockitoBean
     private EventManagementClient eventManagementClient;
+
+    @MockitoBean
+    private UserServiceClient userServiceClient;
 
     private Partner googlePartner;
     private Partner microsoftPartner;
 
     @BeforeEach
     void setUp() {
-        partnerContactRepository.deleteAll();
         partnerRepository.deleteAll();
 
         googlePartner = createPartner("GoogleZH", PartnershipLevel.GOLD, new BigDecimal("10000.00"));
         microsoftPartner = createPartner("MicrosoftZH", PartnershipLevel.PLATINUM, new BigDecimal("20000.00"));
 
-        // Associate "partner.google" username with GoogleZH
-        createPartnerContact(googlePartner, "partner.google", ContactRole.PRIMARY, true);
+        // Associate "partner.google" with GoogleZH via User Service
+        UserResponse googleUser = new UserResponse();
+        googleUser.setCompanyId("GoogleZH");
+        when(userServiceClient.getUserByUsername("partner.google")).thenReturn(googleUser);
     }
 
     // ─── AC1/AC2: Dashboard returns per-event attendance data ────────────────
@@ -227,13 +227,4 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
         return partnerRepository.save(partner);
     }
 
-    private PartnerContact createPartnerContact(
-            Partner partner, String username, ContactRole role, boolean primary) {
-        PartnerContact contact = new PartnerContact();
-        contact.setPartnerId(partner.getId());
-        contact.setUsername(username);
-        contact.setContactRole(role);
-        contact.setPrimary(primary);
-        return partnerContactRepository.save(contact);
-    }
 }

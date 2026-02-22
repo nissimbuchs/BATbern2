@@ -55,11 +55,10 @@ const mockPartner: PartnerResponse = {
   },
   contacts: [
     {
-      id: 'contact-1',
+      username: 'john.doe',
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      isPrimary: true,
     },
   ],
   engagementScore: 75,

@@ -1,12 +1,12 @@
 package ch.batbern.partners.controller;
 
 import ch.batbern.partners.client.CompanyServiceClient;
+import ch.batbern.partners.client.UserServiceClient;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.domain.PartnerContact;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.partners.repository.TopicVoteRepository;
@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -62,13 +63,13 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     PartnerRepository partnerRepository;
     @Autowired
-    PartnerContactRepository partnerContactRepository;
-    @Autowired
     TopicRepository topicRepository;
     @Autowired
     TopicVoteRepository topicVoteRepository;
     @MockitoBean
     CompanyServiceClient companyServiceClient;
+    @MockitoBean
+    UserServiceClient userServiceClient;
 
     Partner partnerAlpha;
     Partner partnerBeta;
@@ -77,11 +78,14 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         topicVoteRepository.deleteAll();
         topicRepository.deleteAll();
-        partnerContactRepository.deleteAll();
         partnerRepository.deleteAll();
 
-        partnerAlpha = createPartnerWithContact("AlphaCo", "alice");
-        partnerBeta  = createPartnerWithContact("BetaCo", "bob");
+        partnerAlpha = createPartner("AlphaCo");
+        partnerBeta  = createPartner("BetaCo");
+
+        // Stub User Service: alice belongs to AlphaCo, bob to BetaCo
+        when(userServiceClient.getUserByUsername("alice")).thenReturn(makeUser("alice", "AlphaCo"));
+        when(userServiceClient.getUserByUsername("bob")).thenReturn(makeUser("bob", "BetaCo"));
     }
 
     // ─── AC1: Topic list sorted by vote count descending ─────────────────────
@@ -405,21 +409,19 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    private Partner createPartnerWithContact(String companyName, String username) {
-        Partner partner = Partner.builder()
+    private Partner createPartner(String companyName) {
+        return partnerRepository.save(Partner.builder()
                 .companyName(companyName)
                 .partnershipLevel(PartnershipLevel.GOLD)
                 .partnershipStartDate(LocalDate.now().minusYears(1))
                 .partnershipEndDate(LocalDate.now().plusYears(1))
-                .build();
-        partner = partnerRepository.save(partner);
+                .build());
+    }
 
-        PartnerContact contact = new PartnerContact();
-        contact.setPartnerId(partner.getId());
-        contact.setUsername(username);
-        contact.setContactRole(ch.batbern.partners.domain.ContactRole.PRIMARY);
-        contact.setPrimary(true);
-        partnerContactRepository.save(contact);
-        return partner;
+    private UserResponse makeUser(String username, String companyId) {
+        UserResponse user = new UserResponse();
+        user.setId(username);
+        user.setCompanyId(companyId);
+        return user;
     }
 }

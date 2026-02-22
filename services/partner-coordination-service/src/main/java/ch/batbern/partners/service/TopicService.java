@@ -6,7 +6,8 @@ import ch.batbern.partners.domain.TopicVote;
 import ch.batbern.partners.dto.TopicDTO;
 import ch.batbern.partners.dto.TopicSuggestionRequest;
 import ch.batbern.partners.dto.TopicStatusUpdateRequest;
-import ch.batbern.partners.repository.PartnerContactRepository;
+import ch.batbern.partners.client.UserServiceClient;
+import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
@@ -26,7 +27,7 @@ import java.util.UUID;
  *
  * Design notes:
  * - No EventBridge events (removed from scope: AC table in story).
- * - companyName extracted from security context via PartnerContactRepository lookup.
+ * - companyName extracted from security context via User Service lookup (user.companyId).
  * - Vote toggle: idempotent castVote / removeVote (no exception on duplicate / missing).
  */
 @Service
@@ -37,7 +38,7 @@ public class TopicService {
 
     private final TopicRepository topicRepository;
     private final TopicVoteRepository topicVoteRepository;
-    private final PartnerContactRepository partnerContactRepository;
+    private final UserServiceClient userServiceClient;
     private final SecurityContextHelper securityContextHelper;
 
     /**
@@ -141,19 +142,27 @@ public class TopicService {
     public String resolveCallerCompanyNameOrNull() {
         try {
             String username = securityContextHelper.getCurrentUsername();
-            return partnerContactRepository.findCompanyNameByUsername(username).orElse(null);
+            UserResponse user = userServiceClient.getUserByUsername(username);
+            String companyId = user != null ? user.getCompanyId() : null;
+            return (companyId != null && !companyId.isBlank()) ? companyId : null;
         } catch (SecurityException e) {
+            return null;
+        } catch (Exception e) {
+            log.debug("Could not resolve company for caller: {}", e.getMessage());
             return null;
         }
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Resolve the calling partner's company name from their username. */
+    /** Resolve the calling partner's company name from their username via the User Service. */
     public String resolveCompanyName(String username) {
-        return partnerContactRepository.findCompanyNameByUsername(username)
-                .orElseThrow(() -> new AccessDeniedException(
-                        "No partner company found for user: " + username));
+        UserResponse user = userServiceClient.getUserByUsername(username);
+        String companyId = user != null ? user.getCompanyId() : null;
+        if (companyId == null || companyId.isBlank()) {
+            throw new AccessDeniedException("No partner company found for user: " + username);
+        }
+        return companyId;
     }
 
     private void validate(TopicSuggestionRequest request) {

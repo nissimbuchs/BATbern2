@@ -46,10 +46,7 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
     },
     contacts: [
       {
-        id: 'contact-123',
         username: 'john.doe',
-        contactRole: 'primary',
-        isPrimary: true,
         email: 'john@techcorp.com',
         firstName: 'John',
         lastName: 'Doe',
