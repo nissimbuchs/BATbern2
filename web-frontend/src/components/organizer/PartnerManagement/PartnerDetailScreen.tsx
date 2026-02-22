@@ -5,6 +5,7 @@ import { Box, Container, Alert, AlertTitle, Skeleton, Stack } from '@mui/materia
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import { useAuth } from '@/hooks/useAuth';
 import { PartnerDetailHeader } from './PartnerDetailHeader';
 import { PartnerQuickStats } from './PartnerQuickStats';
 import { PartnerTabNavigation } from './PartnerTabNavigation';
@@ -18,16 +19,38 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 
+interface PartnerDetailScreenProps {
+  companyName?: string; // Story 8.0: provided by partner portal; organizer falls back to useParams()
+}
+
 /**
  * PartnerDetailScreen Component
  * Main screen integrating all partner detail components with tabbed interface
  */
-export const PartnerDetailScreen: React.FC = () => {
-  const { companyName } = useParams<{ companyName: string }>();
-  // const navigate = useNavigate(); // Removed: handleBack was removed
+export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) => {
+  const { companyName: urlCompanyName } = useParams<{ companyName: string }>();
+  const resolvedCompanyName = props.companyName ?? urlCompanyName ?? '';
+
   const { t } = useTranslation('organizer');
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
   const setActiveTab = usePartnerDetailStore((state) => state.setActiveTab);
+
+  // Story 8.0: Get role from auth context (replaces hardcoded mock)
+  const { user } = useAuth();
+  const currentUser = {
+    username: user?.username ?? '',
+    role: (user?.role?.toUpperCase() ?? 'ORGANIZER') as
+      | 'ORGANIZER'
+      | 'PARTNER'
+      | 'SPEAKER'
+      | 'ATTENDEE',
+  };
+
+  // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state (e.g. tab=5) cannot expose
+  // PartnerSettingsTab to a PARTNER user across Zustand sessions.
+  const PARTNER_MAX_TAB = 4; // Settings (5) is not visible for PARTNER
+  const effectiveTab =
+    currentUser.role === 'PARTNER' && activeTab > PARTNER_MAX_TAB ? 0 : activeTab;
 
   // Fetch partner detail with enriched data
   const {
@@ -35,15 +58,19 @@ export const PartnerDetailScreen: React.FC = () => {
     isLoading,
     isError,
     error,
-  } = usePartnerDetail(companyName || '', 'company,contacts,votes,meetings,activity');
+  } = usePartnerDetail(resolvedCompanyName, 'company,contacts,votes,meetings,activity');
 
   // Build breadcrumb items (memoized to prevent re-renders)
+  // Story 8.0 M1: breadcrumb path is role-aware — partners cannot access /organizer/partners
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [
-      { label: t('navigation.partners', 'Partners'), path: '/organizer/partners' },
-      { label: partner?.companyName || companyName || t('common.loading', 'Loading...') },
+      {
+        label: t('navigation.partners', 'Partners'),
+        path: currentUser.role === 'PARTNER' ? '/partners' : '/organizer/partners',
+      },
+      { label: partner?.companyName || resolvedCompanyName || t('common.loading', 'Loading...') },
     ],
-    [partner?.companyName, companyName, t]
+    [partner?.companyName, resolvedCompanyName, t, currentUser.role]
   );
 
   // Handle tab change
@@ -60,12 +87,6 @@ export const PartnerDetailScreen: React.FC = () => {
   const handleUpdateAutoRenewal = (autoRenewal: boolean) => {
     // TODO: Implement auto-renewal update mutation (Epic 8)
     console.log('Update auto-renewal:', autoRenewal);
-  };
-
-  // Mock current user (TODO: Get from auth context)
-  const currentUser = {
-    username: 'organizer1',
-    role: 'ORGANIZER' as const,
   };
 
   // Loading state
@@ -90,7 +111,7 @@ export const PartnerDetailScreen: React.FC = () => {
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Alert severity="error">
           <AlertTitle>Partner Not Found</AlertTitle>
-          The partner "{companyName}" could not be found.
+          The partner &quot;{resolvedCompanyName}&quot; could not be found.
         </Alert>
       </Container>
     );
@@ -126,7 +147,7 @@ export const PartnerDetailScreen: React.FC = () => {
       <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
 
       {/* Header */}
-      <PartnerDetailHeader partner={partner} />
+      <PartnerDetailHeader partner={partner} role={currentUser.role} />
 
       {/* Quick Stats */}
       <Box sx={{ mt: 3 }}>
@@ -135,16 +156,20 @@ export const PartnerDetailScreen: React.FC = () => {
 
       {/* Tab Navigation */}
       <Box sx={{ mt: 3 }}>
-        <PartnerTabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+        <PartnerTabNavigation
+          activeTab={effectiveTab}
+          onTabChange={handleTabChange}
+          role={currentUser.role}
+        />
       </Box>
 
       {/* Tab Panels */}
       <Box sx={{ mt: 3 }}>
         {/* Overview Tab */}
-        {activeTab === 0 && <PartnerOverviewTab partner={partner} />}
+        {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
 
         {/* Contacts Tab - TODO: Story 2.8.4 */}
-        {activeTab === 1 && (
+        {effectiveTab === 1 && (
           <Alert severity="info" sx={{ my: 2 }}>
             <AlertTitle>Contacts Management</AlertTitle>
             Contact management will be implemented in Story 2.8.4
@@ -152,16 +177,20 @@ export const PartnerDetailScreen: React.FC = () => {
         )}
 
         {/* Meetings Tab */}
-        {activeTab === 2 && <PartnerMeetingsTab companyName={partner.companyName} />}
+        {effectiveTab === 2 && (
+          <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
+        )}
 
         {/* Activity Tab */}
-        {activeTab === 3 && <PartnerActivityTab companyName={partner.companyName} />}
+        {effectiveTab === 3 && <PartnerActivityTab companyName={partner.companyName} />}
 
         {/* Notes Tab */}
-        {activeTab === 4 && <PartnerNotesTab companyName={partner.companyName} />}
+        {effectiveTab === 4 && (
+          <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
+        )}
 
-        {/* Settings Tab */}
-        {activeTab === 5 && (
+        {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
+        {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
           <PartnerSettingsTab
             partner={partner}
             currentUser={currentUser}

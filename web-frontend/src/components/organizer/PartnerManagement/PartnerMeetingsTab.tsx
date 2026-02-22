@@ -16,8 +16,11 @@ import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 
+type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
+
 interface PartnerMeetingsTabProps {
   companyName: string;
+  role?: UserRole; // Story 8.0: hide Add Meeting for PARTNER
 }
 
 // TODO: Remove when backend implements MeetingResponse with all fields
@@ -49,9 +52,10 @@ const getRsvpColor = (status: string): 'success' | 'warning' | 'default' => {
   return 'default';
 };
 
-export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyName }) => {
+export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyName, role }) => {
   const { t } = useTranslation('partners');
   const { data: meetings, isLoading, error } = usePartnerMeetings(companyName);
+  const isPartner = role === 'PARTNER';
 
   if (isLoading) {
     return (
@@ -77,14 +81,17 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
             {t('detail.header.comingSoon')}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          disabled
-          title={t('detail.header.comingSoon')}
-        >
-          {t('detail.meetingsTab.addMeeting')}
-        </Button>
+        {!isPartner && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            disabled
+            title={t('detail.header.comingSoon')}
+            data-testid="add-meeting-button"
+          >
+            {t('detail.meetingsTab.addMeeting')}
+          </Button>
+        )}
       </Stack>
 
       {/* Meetings List */}

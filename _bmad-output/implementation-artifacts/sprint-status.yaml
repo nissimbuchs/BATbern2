@@ -128,7 +128,7 @@ development_status:
 
   # Epic 8: Advanced Partner Analytics & Voting - IN PROGRESS (Nissim)
   epic-8: in-progress
-  8-0-partner-portal-shell: ready-for-dev
+  8-0-partner-portal-shell: done
   8-1-partner-analytics-dashboard: ready-for-dev
   8-2-topic-voting-system: ready-for-dev
   8-3-automated-meeting-coordination: ready-for-dev

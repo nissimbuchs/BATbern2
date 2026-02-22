@@ -21,8 +21,11 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 
+type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
+
 interface PartnerNotesTabProps {
   companyName: string;
+  role?: UserRole; // Story 8.0: read-only for PARTNER
 }
 
 interface Note {
@@ -37,6 +40,11 @@ interface Note {
 interface NoteFormData {
   title: string;
   content: string;
+}
+
+interface DeleteConfirmState {
+  noteId: string;
+  noteTitle: string;
 }
 
 // Format date for display
@@ -57,9 +65,10 @@ const getContentPreview = (htmlContent: string, maxLength: number = 100): string
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 };
 
-const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
+const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) => {
   const { t } = useTranslation('partners');
   const { showNoteModal, setShowNoteModal } = usePartnerDetailStore();
+  const isPartner = role === 'PARTNER';
   const {
     data: notes,
     isLoading,
@@ -71,6 +80,7 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
 
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [formData, setFormData] = useState<NoteFormData>({ title: '', content: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState | null>(null);
 
   const handleAddNote = () => {
     setEditingNote(null);
@@ -85,9 +95,18 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
   };
 
   const handleDeleteNote = (noteId: string, noteTitle: string) => {
-    if (window.confirm(`Are you sure you want to delete the note "${noteTitle}"?`)) {
-      deleteNote(noteId);
+    setDeleteConfirm({ noteId, noteTitle });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirm) {
+      deleteNote(deleteConfirm.noteId);
+      setDeleteConfirm(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm(null);
   };
 
   const handleSaveNote = () => {
@@ -131,24 +150,40 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
         <Typography variant="h6" color="text.secondary" gutterBottom>
           {t('detail.notesTab.noNotes')}
         </Typography>
-        <Typography variant="body2" color="text.secondary" mb={3}>
-          Add your first note to track important information about this partner
-        </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAddNote}>
-          {t('detail.notesTab.addNote')}
-        </Button>
+        {!isPartner && (
+          <>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              Add your first note to track important information about this partner
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={handleAddNote}
+              data-testid="add-note-button"
+            >
+              {t('detail.notesTab.addNote')}
+            </Button>
+          </>
+        )}
       </Box>
     );
   }
 
   return (
     <Box>
-      {/* Header with add button */}
+      {/* Header with add button — hidden for PARTNER */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h6">{t('detail.notesTab.title')}</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={handleAddNote}>
-          {t('detail.notesTab.addNote')}
-        </Button>
+        {!isPartner && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleAddNote}
+            data-testid="add-note-button"
+          >
+            {t('detail.notesTab.addNote')}
+          </Button>
+        )}
       </Stack>
 
       {/* Notes list */}
@@ -160,25 +195,27 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
                 <Typography variant="h6" fontWeight="medium">
                   {'title' in note ? (note as Note).title : 'Note'}
                 </Typography>
-                <Stack direction="row" spacing={1}>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEditNote(note as Note)}
-                    aria-label="Edit"
-                  >
-                    <Edit fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() =>
-                      handleDeleteNote(note.id, 'title' in note ? (note as Note).title : 'Note')
-                    }
-                    aria-label="Delete"
-                    color="error"
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
-                </Stack>
+                {!isPartner && (
+                  <Stack direction="row" spacing={1}>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleEditNote(note as Note)}
+                      aria-label="Edit"
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        handleDeleteNote(note.id, 'title' in note ? (note as Note).title : 'Note')
+                      }
+                      aria-label="Delete"
+                      color="error"
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                )}
               </Stack>
 
               {/* Content preview */}
@@ -205,10 +242,33 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName }) => {
         ))}
       </Stack>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirm} onClose={handleCancelDelete}>
+        <DialogTitle>{t('detail.notesTab.deleteNoteConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <Typography>
+            {t('detail.notesTab.deleteNoteConfirmMessage', {
+              title: deleteConfirm?.noteTitle ?? '',
+            })}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete}>{t('modal.actions.cancel')}</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmDelete}
+            data-testid="confirm-delete-note"
+          >
+            {t('modal.actions.delete')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Note Modal */}
       <Dialog open={showNoteModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingNote ? t('detail.notesTab.addNote') : t('detail.notesTab.addNote')}
+          {editingNote ? t('detail.notesTab.editNote') : t('detail.notesTab.addNote')}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} mt={1}>

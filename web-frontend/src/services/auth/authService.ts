@@ -366,6 +366,7 @@ class AuthService {
       role: primaryRole,
       roles: roles,
       companyId: tokenPayload['custom:companyId'],
+      companyName: tokenPayload['custom:companyName'] || undefined, // Story 8.0: resolved from JWT if present
       preferences,
       issuedAt: tokenPayload.iat,
       expiresAt: tokenPayload.exp,

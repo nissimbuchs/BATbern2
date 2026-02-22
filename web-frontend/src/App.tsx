@@ -29,6 +29,7 @@ import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PartnerPortalLayout } from '@/components/partner/PartnerPortalLayout';
 import theme from '@/theme';
 
 // Create React Query client
@@ -45,11 +46,14 @@ const queryClient = new QueryClient({
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
 const Events = React.lazy(() => import('@pages/Events'));
 const Speakers = React.lazy(() => import('@pages/Speakers'));
-const Partners = React.lazy(() => import('@pages/Partners'));
 const OrganizerPartners = React.lazy(() => import('@pages/OrganizerPartners'));
 const OrganizerPartnerDetail = React.lazy(() => import('@pages/OrganizerPartnerDetail'));
 const Content = React.lazy(() => import('@pages/Content'));
-const Analytics = React.lazy(() => import('@pages/Analytics'));
+
+// Story 8.0: Partner Portal
+const PartnerCompanyPage = React.lazy(() => import('@pages/PartnerCompanyPage'));
+const PartnerAnalyticsPlaceholder = React.lazy(() => import('@pages/PartnerAnalyticsPlaceholder'));
+const PartnerTopicsPlaceholder = React.lazy(() => import('@pages/PartnerTopicsPlaceholder'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
@@ -478,26 +482,27 @@ function App() {
                       }
                     />
 
+                    {/* Story 8.0: Partner Portal */}
                     <Route
                       path="/partners"
                       element={
                         <PartnerRoute>
                           <AuthLayout>
-                            <Partners />
+                            <PartnerPortalLayout />
                           </AuthLayout>
                         </PartnerRoute>
                       }
-                    />
+                    >
+                      <Route index element={<Navigate to="company" replace />} />
+                      <Route path="company" element={<PartnerCompanyPage />} />
+                      <Route path="analytics" element={<PartnerAnalyticsPlaceholder />} />
+                      <Route path="topics" element={<PartnerTopicsPlaceholder />} />
+                    </Route>
 
+                    {/* Story 8.0: Redirect old /analytics stub to partner portal */}
                     <Route
                       path="/analytics"
-                      element={
-                        <PartnerRoute>
-                          <AuthLayout>
-                            <Analytics />
-                          </AuthLayout>
-                        </PartnerRoute>
-                      }
+                      element={<Navigate to="/partners/analytics" replace />}
                     />
 
                     <Route

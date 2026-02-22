@@ -117,7 +117,8 @@
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "delete": "Delete"
     },
     "messages": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
@@ -169,6 +170,9 @@
     "notesTab": {
       "title": "Notes",
       "addNote": "Add Note",
+      "editNote": "Edit Note",
+      "deleteNoteConfirmTitle": "Delete Note",
+      "deleteNoteConfirmMessage": "Are you sure you want to delete \"{{title}}\"?",
       "titleLabel": "Title",
       "contentLabel": "Content",
       "htmlSupported": "HTML formatting is supported",
@@ -184,5 +188,20 @@
   "comingSoon": {
     "epic8": "Coming Soon - Epic 8",
     "story283": "Coming Soon - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "My Company",
+      "analytics": "Analytics",
+      "topics": "Topics"
+    },
+    "noCompanyLinked": "Your account is not linked to a company",
+    "noCompanyLinked.detail": "Please contact your organizer",
+    "analytics": {
+      "comingSoon": "Analytics coming soon"
+    },
+    "topics": {
+      "comingSoon": "Topic voting coming soon"
+    }
   }
 }
