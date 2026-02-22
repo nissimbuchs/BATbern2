@@ -177,6 +177,7 @@ class ReportsBuilder {
         faviconPath: `../../assets/favicon.ico`,
         logoPath: `../../assets/BATbern_color_logo_transparent.png`,
         homeLink: `../../index.html`,
+        userGuideLink: `../../user-guide/README.html`,
         reportsLink: `${pathPrefix}index.html`,
         apiLink: `../../api/index.html`,
         ...moduleData
