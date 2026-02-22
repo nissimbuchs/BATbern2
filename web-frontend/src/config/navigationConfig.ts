@@ -26,6 +26,7 @@ export interface NavigationItem {
   icon: typeof Dashboard;
   roles: UserRole[];
   description?: string;
+  children?: NavigationItem[];
 }
 
 /**
@@ -54,6 +55,29 @@ export const navigationConfig: NavigationItem[] = [
     icon: Handshake,
     roles: ['organizer'],
     description: 'Manage partners',
+    children: [
+      {
+        labelKey: 'navigation.partners',
+        path: '/organizer/partners',
+        icon: Handshake,
+        roles: ['organizer'],
+        description: 'Manage partners',
+      },
+      {
+        labelKey: 'navigation.partnerTopics',
+        path: '/organizer/partner-topics',
+        icon: Lightbulb,
+        roles: ['organizer'],
+        description: 'Review partner topic suggestions',
+      },
+      {
+        labelKey: 'navigation.partnerMeetings',
+        path: '/organizer/partner-meetings',
+        icon: CalendarMonth,
+        roles: ['organizer'],
+        description: 'Manage partner meetings',
+      },
+    ],
   },
   {
     labelKey: 'navigation.companies',
@@ -75,21 +99,6 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart,
     roles: ['organizer'],
     description: 'View event analytics',
-  },
-  {
-    labelKey: 'navigation.partnerTopics',
-    path: '/organizer/partner-topics',
-    icon: Lightbulb,
-    roles: ['organizer'],
-    description: 'Review partner topic suggestions',
-  },
-  // Story 8.3: Partner Meeting Coordination
-  {
-    labelKey: 'navigation.partnerMeetings',
-    path: '/organizer/partner-meetings',
-    icon: CalendarMonth,
-    roles: ['organizer'],
-    description: 'Manage partner meetings',
   },
   {
     labelKey: 'navigation.publicSite',
