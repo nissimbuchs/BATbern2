@@ -11,7 +11,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -38,6 +38,7 @@ help: ## Show this help message
 	@echo "  make test-java        - Run Java tests (unit + integration)"
 	@echo "  make test-node        - Run Node.js tests (unit tests only)"
 	@echo "  make test-watch       - Run watchOS app tests"
+	@echo "  make setup-test-users - Authenticate all E2E test role users (organizer/speaker/partner)"
 	@echo "  Note: Integration tests use Testcontainers (requires Docker) but AWS credentials NOT needed"
 	@echo ""
 	@echo "✨ Code Quality:"
@@ -168,6 +169,11 @@ test-node: ## Run Node.js tests with coverage
 	@echo "  CDK:      infrastructure/coverage/index.html"
 	@echo "  Frontend: web-frontend/coverage/index.html"
 	@echo "💡 To run E2E tests: cd web-frontend && npm run test:e2e"
+
+setup-test-users: ## Authenticate all test role users (organizer/speaker/partner) for E2E tests
+	@echo "🔑 Setting up multi-role test tokens for environment: $(or $(ENV),staging)"
+	@chmod +x scripts/auth/setup-test-users.sh
+	@./scripts/auth/setup-test-users.sh $(or $(ENV),staging)
 
 test-watch: ## Run watchOS app tests
 	@echo "🧪 Running watchOS app tests..."

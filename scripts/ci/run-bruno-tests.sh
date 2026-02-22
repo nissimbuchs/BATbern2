@@ -52,6 +52,39 @@ if [ -z "$AUTH_TOKEN" ]; then
         echo "Tests requiring authentication may fail"
     fi
 fi
+
+# Load per-role tokens (for Epic 8+ multi-role testing)
+# Exports ORGANIZER_AUTH_TOKEN, SPEAKER_AUTH_TOKEN, PARTNER_AUTH_TOKEN
+load_role_token() {
+    local role="$1"
+    local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
+    if [ -f "$role_config" ]; then
+        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" 2>/dev/null || true
+        local token
+        token=$(jq -r '.idToken' "$role_config" 2>/dev/null)
+        if [ "$token" != "null" ] && [ -n "$token" ]; then
+            echo "$token"
+            return 0
+        fi
+    fi
+    echo ""
+}
+
+ORGANIZER_AUTH_TOKEN=$(load_role_token organizer)
+SPEAKER_AUTH_TOKEN=$(load_role_token speaker)
+PARTNER_AUTH_TOKEN=$(load_role_token partner)
+
+# Fall back: if organizer role file missing, use legacy AUTH_TOKEN
+if [ -z "$ORGANIZER_AUTH_TOKEN" ]; then
+    ORGANIZER_AUTH_TOKEN="$AUTH_TOKEN"
+fi
+
+export ORGANIZER_AUTH_TOKEN SPEAKER_AUTH_TOKEN PARTNER_AUTH_TOKEN
+
+echo -e "${BLUE}Auth tokens available:${NC}"
+echo "  ORGANIZER: $([ -n "$ORGANIZER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
+echo "  SPEAKER:   $([ -n "$SPEAKER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
+echo "  PARTNER:   $([ -n "$PARTNER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
 echo ""
 
 # Check if Bruno CLI is installed
@@ -82,6 +115,7 @@ collections=(
     "users-api"
     "events-api"
     "partners-api"
+    "partner-meetings-api"
     "tasks-api"
 )
 

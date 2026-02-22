@@ -10,6 +10,7 @@ This guide covers the comprehensive end-to-end testing framework for the BATbern
 - API contracts
 - Infrastructure configuration
 - Service health
+- Role-based access (organizer, speaker, partner)
 
 ## Testing Layers
 
@@ -34,6 +35,66 @@ This guide covers the comprehensive end-to-end testing framework for the BATbern
 │ Fast validation of critical paths                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Multi-Role Authentication Setup
+
+Starting with Epic 8, tests run as three distinct roles against a shared staging Cognito pool. Each role has its own stored token.
+
+### Token Storage
+
+```
+~/.batbern/
+  staging.json               ← organizer (legacy — backward compatible)
+  staging-organizer.json     ← organizer (role-specific file)
+  staging-speaker.json       ← speaker
+  staging-partner.json       ← partner
+```
+
+### Local Setup
+
+```bash
+# 1. Copy the credential template
+cp .env.test.local.example .env.test.local
+
+# 2. Fill in credentials for each role (file is gitignored)
+#    ORGANIZER_EMAIL, ORGANIZER_PASSWORD  (required)
+#    SPEAKER_EMAIL,   SPEAKER_PASSWORD    (optional)
+#    PARTNER_EMAIL,   PARTNER_PASSWORD    (optional)
+
+# 3. Authenticate all roles in one command
+make setup-test-users                     # staging (default)
+make setup-test-users ENV=development     # development
+
+# Or authenticate a single role manually
+./scripts/auth/get-token.sh staging partner@batbern.ch mypassword partner
+```
+
+### Refreshing Tokens
+
+```bash
+./scripts/auth/refresh-token.sh staging           # refresh organizer (both files)
+./scripts/auth/refresh-token.sh staging partner   # refresh partner only
+./scripts/auth/refresh-token.sh staging speaker   # refresh speaker only
+```
+
+### CI/CD Secrets
+
+Add these GitHub secrets (Settings → Secrets and variables → Actions):
+
+| Secret | Description |
+|---|---|
+| `STAGING_ORGANIZER_EMAIL` | Organizer Cognito user email (fallback: `STAGING_TEST_USER_EMAIL`) |
+| `STAGING_ORGANIZER_PASSWORD` | Organizer Cognito user password |
+| `STAGING_SPEAKER_EMAIL` | Speaker Cognito user email |
+| `STAGING_SPEAKER_PASSWORD` | Speaker Cognito user password |
+| `STAGING_PARTNER_EMAIL` | Partner Cognito user email |
+| `STAGING_PARTNER_PASSWORD` | Partner Cognito user password |
+
+The pipeline exports `AUTH_TOKEN`, `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`, and `PARTNER_AUTH_TOKEN` to all test steps. Roles without configured secrets are skipped gracefully.
+
+---
 
 ## Layer 1: Shell Script Tests
 
@@ -140,16 +201,34 @@ This guide covers the comprehensive end-to-end testing framework for the BATbern
 
 23 tests covering full event management API lifecycle.
 
+### Environment Variables in Bruno
+
+Bruno environment files expose these auth variables:
+
+| Variable | Source | Usage |
+|---|---|---|
+| `{{authToken}}` | `process.env.AUTH_TOKEN` | Default — organizer token. Used by most existing tests |
+| `{{organizerAuthToken}}` | `process.env.ORGANIZER_AUTH_TOKEN` | Explicit organizer token |
+| `{{speakerAuthToken}}` | `process.env.SPEAKER_AUTH_TOKEN` | Speaker-scoped requests |
+| `{{partnerAuthToken}}` | `process.env.PARTNER_AUTH_TOKEN` | Partner-scoped requests (Epic 8) |
+
+**Writing a partner-scoped test** — override auth at request level:
+```bru
+get {
+  url: {{baseUrl}}/partners/topics
+  auth: bearer
+}
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+```
+
 ### Running Bruno Tests
 
 **Locally** (with Bruno GUI):
 ```bash
-# Open Bruno
+# Open Bruno, load collection, select environment, run tests
 bruno
-
-# Load collection: bruno-tests/companies-api
-# Select environment: staging
-# Run tests
 ```
 
 **CI/CD** (headless):
@@ -157,10 +236,10 @@ bruno
 # Install Bruno CLI globally
 npm install -g @usebruno/cli
 
-# Run tests for specific environment
+# Run tests (loads all role tokens automatically)
 ./scripts/ci/run-bruno-tests.sh staging
 
-# Run with auth token
+# Run with explicit organizer token (backward compat)
 ./scripts/ci/run-bruno-tests.sh staging "eyJhbGc..."
 ```
 
@@ -204,6 +283,28 @@ npm install -g @usebruno/cli
 - ✅ Accept-Language header respect
 - ✅ Error handling (404, 400)
 
+### Playwright Projects (Role-Based)
+
+`playwright.config.ts` defines three projects:
+
+| Project | Auth State | Test Pattern | Activated When |
+|---|---|---|---|
+| `chromium` | `.playwright-auth-state.json` (organizer) | all `e2e/**` except `partner/` and `speaker/` | always |
+| `speaker` | `.playwright-auth-speaker.json` | `e2e/speaker/**/*.spec.ts` | `SPEAKER_AUTH_TOKEN` env var set |
+| `partner` | `.playwright-auth-partner.json` | `e2e/partner/**/*.spec.ts` | `PARTNER_AUTH_TOKEN` env var set |
+
+`global-setup.ts` generates the per-role auth state files automatically from `~/.batbern/{env}-{role}.json` before tests run.
+
+**Writing a partner test** — place in `e2e/partner/`, no auth setup needed:
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('partner sees analytics dashboard', async ({ page }) => {
+  await page.goto('/partner/analytics');  // already authenticated as partner
+  await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible();
+});
+```
+
 ### Running Playwright Tests
 
 **Locally**:
@@ -214,13 +315,19 @@ cd web-frontend
 npm install -D @playwright/test
 npx playwright install --with-deps chromium
 
-# Run tests against staging
-E2E_BASE_URL=https://staging.batbern.ch \
-E2E_API_URL=https://api.staging.batbern.ch \
+# Run organizer tests only (default)
+TEST_ENV=staging npx playwright test --project=chromium
+
+# Run all projects (when role tokens are set)
+TEST_ENV=staging \
+SPEAKER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-speaker.json) \
+PARTNER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-partner.json) \
 npx playwright test
 
-# Run with auth token
-E2E_AUTH_TOKEN="eyJhbGc..." npx playwright test
+# Run partner tests only
+TEST_ENV=staging \
+PARTNER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-partner.json) \
+npx playwright test --project=partner
 
 # Run specific test file
 npx playwright test e2e/api-integration/cors-validation.spec.ts
@@ -229,7 +336,7 @@ npx playwright test e2e/api-integration/cors-validation.spec.ts
 **CI/CD**:
 ```bash
 # Automated in .github/workflows/deploy-staging.yml
-# Runs automatically after deployment
+# Projects activated based on which role tokens are available
 ```
 
 ---
@@ -351,17 +458,23 @@ npm run deploy:staging -- BATbern-staging-ApiGateway
 
 **Common causes**:
 1. Auth token expired (tokens expire after 1 hour)
-2. Using wrong environment token
+2. Using wrong role token for a protected endpoint
 3. Cognito user pool mismatch
 
 **Fix**:
 ```bash
-# Get fresh token from staging
-cd bruno-tests
-./get-staging-token.sh your-email@example.com your-password
+# Re-authenticate all roles
+make setup-test-users
 
-# Update environment file
-# Edit bruno-tests/companies-api/environments/staging.bru
+# Or re-authenticate a specific role
+./scripts/auth/get-token.sh staging your-email@example.com your-password organizer
+
+# Refresh without re-entering credentials (if refresh token still valid)
+./scripts/auth/refresh-token.sh staging organizer
+
+# Check which token is loaded
+jq '{role, email, retrievedAt, expiresIn}' ~/.batbern/staging-organizer.json
+jq '{role, email, retrievedAt, expiresIn}' ~/.batbern/staging-partner.json
 ```
 
 ### Playwright Test Failures
@@ -408,14 +521,16 @@ E2E_BASE_URL=https://staging.batbern.ch npx playwright test
 
 ### 2. Keep Auth Tokens Fresh
 
-Tokens expire after 1 hour. Get fresh tokens before testing:
+Tokens expire after 1 hour. The CI runners auto-refresh before tests. Locally:
 
 ```bash
-# Staging
-./bruno-tests/get-staging-token.sh your-email password
+# Re-authenticate all roles at once (reads from .env.test.local)
+make setup-test-users
 
-# Production
-AWS_PROFILE=batbern-prod aws cognito-idp initiate-auth ...
+# Refresh a single role without re-entering credentials
+./scripts/auth/refresh-token.sh staging           # organizer
+./scripts/auth/refresh-token.sh staging partner   # partner
+./scripts/auth/refresh-token.sh staging speaker   # speaker
 ```
 
 ### 3. Monitor Test Results

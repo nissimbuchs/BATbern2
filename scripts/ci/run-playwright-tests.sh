@@ -48,6 +48,35 @@ else
     echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password"
     echo "Tests requiring authentication will be skipped"
 fi
+
+# Load per-role tokens (for Epic 8+ multi-role testing)
+load_role_token() {
+    local role="$1"
+    local role_config=~/.batbern/${ENVIRONMENT}-${role}.json
+    if [ -f "$role_config" ]; then
+        ./scripts/auth/refresh-token.sh "$ENVIRONMENT" "$role" 2>/dev/null || true
+        local token
+        token=$(jq -r '.idToken' "$role_config" 2>/dev/null)
+        if [ "$token" != "null" ] && [ -n "$token" ]; then
+            echo "$token"
+            return 0
+        fi
+    fi
+    echo ""
+}
+
+ORGANIZER_AUTH_TOKEN=$(load_role_token organizer)
+SPEAKER_AUTH_TOKEN=$(load_role_token speaker)
+PARTNER_AUTH_TOKEN=$(load_role_token partner)
+
+[ -z "$ORGANIZER_AUTH_TOKEN" ] && ORGANIZER_AUTH_TOKEN="$AUTH_TOKEN"
+
+export ORGANIZER_AUTH_TOKEN SPEAKER_AUTH_TOKEN PARTNER_AUTH_TOKEN
+
+echo -e "${BLUE}Auth tokens available:${NC}"
+echo "  ORGANIZER: $([ -n "$ORGANIZER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
+echo "  SPEAKER:   $([ -n "$SPEAKER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
+echo "  PARTNER:   $([ -n "$PARTNER_AUTH_TOKEN" ] && echo 'yes' || echo 'no')"
 echo ""
 
 # Set environment-specific URLs
@@ -106,8 +135,17 @@ echo -e "${BLUE}Running Playwright tests...${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
+# Build project list: always run chromium (organizer), add role projects when tokens available
+PLAYWRIGHT_PROJECTS="--project=chromium"
+[ -n "$SPEAKER_AUTH_TOKEN" ] && PLAYWRIGHT_PROJECTS="$PLAYWRIGHT_PROJECTS --project=speaker"
+[ -n "$PARTNER_AUTH_TOKEN" ] && PLAYWRIGHT_PROJECTS="$PLAYWRIGHT_PROJECTS --project=partner"
+
+echo -e "${BLUE}Running projects: $PLAYWRIGHT_PROJECTS${NC}"
+echo ""
+
 # Run tests
-if npx playwright test --project=chromium; then
+# shellcheck disable=SC2086
+if npx playwright test $PLAYWRIGHT_PROJECTS; then
     echo ""
     echo -e "${GREEN}✅ Playwright tests PASSED${NC}"
     exit 0

@@ -877,59 +877,102 @@ jobs:
             echo "::warning::Header propagation tests script not found"
           fi
 
-      - name: Authenticate with Cognito for Bruno tests
-        id: get-bruno-auth-token
+      - name: Authenticate test users with Cognito (all roles)
+        id: get-test-tokens
         run: |
-          # Authenticate directly with Cognito using bootstrap user credentials
-          # This avoids the need to manually refresh GitHub secrets
-          echo "Authenticating with Cognito..."
+          # Authenticate all test role users with Cognito.
+          # Organizer: uses STAGING_ORGANIZER_EMAIL/PASSWORD (falls back to legacy STAGING_TEST_USER_*)
+          # Speaker:   uses STAGING_SPEAKER_EMAIL/PASSWORD (optional)
+          # Partner:   uses STAGING_PARTNER_EMAIL/PASSWORD (optional — required for Epic 8 partner tests)
+          #
+          # To add new role secrets: Repository → Settings → Secrets and variables → Actions
 
-          # Cognito configuration for staging
           REGION="eu-central-1"
-          USER_POOL_ID="eu-central-1_FtgfxgQRF"
           CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
-          EMAIL="${{ secrets.STAGING_TEST_USER_EMAIL }}"
-          PASSWORD="${{ secrets.STAGING_TEST_USER_PASSWORD }}"
 
-          if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
-            echo "::error::STAGING_TEST_USER_EMAIL and STAGING_TEST_USER_PASSWORD secrets must be set"
-            echo "::error::Go to: Repository → Settings → Secrets and variables → Actions"
-            echo "::error::Add: STAGING_TEST_USER_EMAIL = nissim@buchs.be"
-            echo "::error::Add: STAGING_TEST_USER_PASSWORD = <password>"
-          fi
+          get_cognito_token() {
+            local email="$1"
+            local password="$2"
+            local label="$3"
 
-          # Authenticate with Cognito
-          auth_response=$(aws cognito-idp initiate-auth \
-            --region $REGION \
-            --auth-flow USER_PASSWORD_AUTH \
-            --client-id $CLIENT_ID \
-            --auth-parameters USERNAME="$EMAIL",PASSWORD="$PASSWORD" \
-            --output json 2>&1)
+            if [ -z "$email" ] || [ -z "$password" ]; then
+              echo "::warning::No credentials configured for $label — skipping" >&2
+              echo ""
+              return 0
+            fi
 
-          if [ $? -ne 0 ]; then
-            echo "::error::Cognito authentication failed"
-            echo "$auth_response"
-            echo "::warning::Bruno auth failed, non blocking"
-          fi
+            local auth_response
+            auth_response=$(aws cognito-idp initiate-auth \
+              --region "$REGION" \
+              --auth-flow USER_PASSWORD_AUTH \
+              --client-id "$CLIENT_ID" \
+              --auth-parameters USERNAME="$email",PASSWORD="$password" \
+              --output json 2>&1)
 
-          # Extract ID token (contains 'aud' claim required by JWT validator)
-          ID_TOKEN=$(echo "$auth_response" | jq -r '.AuthenticationResult.IdToken')
+            if [ $? -ne 0 ]; then
+              echo "::warning::Cognito auth failed for $label" >&2
+              echo ""
+              return 0
+            fi
 
-          if [ "$ID_TOKEN" = "null" ] || [ -z "$ID_TOKEN" ]; then
-            echo "::error::Failed to extract ID token from Cognito response"
-          fi
+            local token
+            token=$(echo "$auth_response" | jq -r '.AuthenticationResult.IdToken // empty')
+            if [ -z "$token" ]; then
+              echo "::warning::Failed to extract ID token for $label" >&2
+              echo ""
+              return 0
+            fi
 
-          echo "✅ Successfully authenticated with Cognito"
-          echo "AUTH_TOKEN=$ID_TOKEN" >> $GITHUB_OUTPUT
+            echo "✅ Token obtained for $label" >&2
+            echo "$token"
+          }
+
+          # Organizer: prefer new dedicated secrets, fall back to legacy STAGING_TEST_USER_*
+          ORG_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_ORGANIZER_EMAIL || secrets.STAGING_TEST_USER_EMAIL }}" \
+            "${{ secrets.STAGING_ORGANIZER_PASSWORD || secrets.STAGING_TEST_USER_PASSWORD }}" \
+            "organizer")
+
+          SPK_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_SPEAKER_EMAIL }}" \
+            "${{ secrets.STAGING_SPEAKER_PASSWORD }}" \
+            "speaker")
+
+          PTR_TOKEN=$(get_cognito_token \
+            "${{ secrets.STAGING_PARTNER_EMAIL }}" \
+            "${{ secrets.STAGING_PARTNER_PASSWORD }}" \
+            "partner")
+
+          # Mask tokens in logs before writing to output
+          [ -n "$ORG_TOKEN" ] && echo "::add-mask::$ORG_TOKEN"
+          [ -n "$SPK_TOKEN" ] && echo "::add-mask::$SPK_TOKEN"
+          [ -n "$PTR_TOKEN" ] && echo "::add-mask::$PTR_TOKEN"
+
+          # Write outputs (AUTH_TOKEN kept for backward compat)
+          echo "AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
+          echo "ORGANIZER_AUTH_TOKEN=$ORG_TOKEN" >> $GITHUB_OUTPUT
+          echo "SPEAKER_AUTH_TOKEN=$SPK_TOKEN" >> $GITHUB_OUTPUT
+          echo "PARTNER_AUTH_TOKEN=$PTR_TOKEN" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "Token summary:"
+          echo "  organizer: $([ -n "$ORG_TOKEN" ] && echo 'yes' || echo 'no')"
+          echo "  speaker:   $([ -n "$SPK_TOKEN" ] && echo 'yes' || echo 'no')"
+          echo "  partner:   $([ -n "$PTR_TOKEN" ] && echo 'yes' || echo 'no')"
 
       - name: Run Bruno API contract tests
         continue-on-error: true
+        env:
+          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
+          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
+          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
+          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
         run: |
           if [ -f "scripts/ci/run-bruno-tests.sh" ]; then
             chmod +x scripts/ci/run-bruno-tests.sh
             echo "Running Bruno API contract tests..."
-            # Pass auth token as second argument
-            if ./scripts/ci/run-bruno-tests.sh staging "${{ steps.get-bruno-auth-token.outputs.AUTH_TOKEN }}"; then
+            # Pass organizer token as second argument for backward compat
+            if ./scripts/ci/run-bruno-tests.sh staging "$AUTH_TOKEN"; then
               echo "✅ Bruno API contract tests completed"
             else
               echo "::warning::Bruno API contract tests failed - see details above"
@@ -970,14 +1013,27 @@ jobs:
         if: false  # Temporarily disabled - tests running too long with errors
         continue-on-error: true
         working-directory: ./web-frontend
+        env:
+          TEST_ENV: staging
+          E2E_BASE_URL: https://staging.batbern.ch
+          E2E_API_URL: https://api.staging.batbern.ch
+          E2E_AWS_REGION: ${{ env.AWS_REGION }}
+          AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.AUTH_TOKEN }}
+          ORGANIZER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.ORGANIZER_AUTH_TOKEN }}
+          SPEAKER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.SPEAKER_AUTH_TOKEN }}
+          PARTNER_AUTH_TOKEN: ${{ steps.get-test-tokens.outputs.PARTNER_AUTH_TOKEN }}
         run: |
           echo "Running Playwright E2E tests against deployed staging environment..."
-          # Install Playwright if not cached
           if [ -f "playwright.config.ts" ] || [ -f "playwright.config.js" ]; then
             npm install -D @playwright/test
             npx playwright install --with-deps chromium
-            # Run E2E tests
-            if npx playwright test --project=chromium; then
+            # Build project list: always run chromium (organizer), add role projects when tokens available
+            PROJECTS="--project=chromium"
+            [ -n "$SPEAKER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=speaker"
+            [ -n "$PARTNER_AUTH_TOKEN" ] && PROJECTS="$PROJECTS --project=partner"
+            echo "Running projects: $PROJECTS"
+            # shellcheck disable=SC2086
+            if npx playwright test $PROJECTS; then
               echo "✅ Frontend E2E tests passed"
             else
               echo "::warning::Playwright E2E tests failed - see details above"
@@ -986,11 +1042,6 @@ jobs:
           else
             echo "::warning::Playwright config not found"
           fi
-        env:
-          E2E_BASE_URL: https://staging.batbern.ch
-          E2E_API_URL: https://api.staging.batbern.ch
-          E2E_AWS_REGION: ${{ env.AWS_REGION }}
-          AUTH_TOKEN: ${{ steps.get-bruno-auth-token.outputs.AUTH_TOKEN }}
 
       - name: Upload Playwright test results
         if: always()
