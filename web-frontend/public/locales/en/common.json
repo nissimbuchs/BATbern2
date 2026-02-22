@@ -24,7 +24,8 @@
     "pastEvents": "Past Events",
     "publicSite": "Public Website",
     "partnerTopics": "Partner Topics",
-    "partnerMeetings": "Partner Meetings"
+    "partnerMeetings": "Partner Meetings",
+    "topics": "Topic Suggestions"
   },
   "public": {
     "login": "Login",

@@ -42,6 +42,21 @@ public class PartnerContactService {
     private final SecurityContextHelper securityContextHelper;
 
     /**
+     * Resolve the partner company name for the currently authenticated user.
+     * Used by GET /api/v1/partners/me to let PARTNER users discover their company.
+     *
+     * @return company name (ADR-003 identifier) from partner_contacts table
+     * @throws PartnerNotFoundException if the user has no partner contact entry
+     */
+    @Transactional(readOnly = true)
+    public String resolveCurrentUserCompanyName() {
+        String username = securityContextHelper.getCurrentUsername();
+        return partnerContactRepository.findCompanyNameByUsername(username)
+                .orElseThrow(() -> new PartnerNotFoundException(
+                        "No partner company linked for user: " + username));
+    }
+
+    /**
      * Get all contacts for a partner with User data enrichment.
      */
     public List<PartnerContactResponse> getPartnerContacts(String companyName) {

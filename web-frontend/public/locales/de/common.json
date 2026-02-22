@@ -24,7 +24,8 @@
     "pastEvents": "Vergangene Veranstaltungen",
     "publicSite": "Öffentliche Webseite",
     "partnerTopics": "Partner-Themen",
-    "partnerMeetings": "Partner-Meetings"
+    "partnerMeetings": "Partner-Meetings",
+    "topics": "Themenvorschläge"
   },
   "public": {
     "login": "Anmelden",

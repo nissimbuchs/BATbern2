@@ -24,24 +24,18 @@ interface UseAuthReturn extends AuthenticationState {
 export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
 
 /**
- * Story 8.0 H3: Resolve companyName for partner users when not present in JWT.
- * Calls GET /partners?companyId={id} if the backend supports it; silently returns
- * undefined on failure so the partner still lands on the error-alert flow (AC5).
- *
- * NOTE: The partner API uses RSQL filter params (filter=companyId:{id}).
- * Confirmed endpoint shape is PartnerListResponse (page) — extract content[0].companyName.
+ * Resolve companyName for partner users when not present in JWT.
+ * Calls GET /partners/me which looks up the user's company via partner_contacts table.
+ * Silently returns undefined on failure so the partner still lands on the error-alert flow (AC5).
  */
-async function resolvePartnerCompanyName(companyId: string): Promise<string | undefined> {
+async function resolvePartnerCompanyName(): Promise<string | undefined> {
   try {
-    const response = await apiClient.get<{
-      companyName?: string;
-      content?: Array<{ companyName: string }>;
-    }>(`/partners?filter=companyId:${companyId}&size=1`);
-    return response.data?.companyName ?? response.data?.content?.[0]?.companyName;
+    const response = await apiClient.get<{ companyName: string }>('/partners/me');
+    return response.data?.companyName;
   } catch {
     console.warn(
-      '[AuthProvider] Could not resolve companyName for partner via /partners?filter=companyId — ' +
-        'verify backend supports this filter param'
+      '[AuthProvider] Could not resolve companyName via GET /partners/me — ' +
+        'ensure user is registered as a partner contact'
     );
     return undefined;
   }
@@ -74,10 +68,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Get current session tokens
           const tokenResult = await authService.refreshToken();
 
-          // Story 8.0: Resolve companyName for partner users if not in JWT
+          // Resolve companyName for partner users if not in JWT via GET /partners/me
           let resolvedCompanyName = user.companyName;
-          if (user.role === 'partner' && !resolvedCompanyName && user.companyId) {
-            resolvedCompanyName = await resolvePartnerCompanyName(user.companyId);
+          if (user.role === 'partner' && !resolvedCompanyName) {
+            resolvedCompanyName = await resolvePartnerCompanyName();
           }
 
           setState({
@@ -133,14 +127,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (result.success && result.user) {
         console.log('[AuthProvider] Sign in successful, updating global state');
 
-        // Story 8.0: Resolve companyName for partner users if not in JWT
+        // Resolve companyName for partner users if not in JWT via GET /partners/me
         let signedInUser = result.user;
-        if (
-          signedInUser.role === 'partner' &&
-          !signedInUser.companyName &&
-          signedInUser.companyId
-        ) {
-          const resolved = await resolvePartnerCompanyName(signedInUser.companyId);
+        if (signedInUser.role === 'partner' && !signedInUser.companyName) {
+          const resolved = await resolvePartnerCompanyName();
           if (resolved) {
             signedInUser = { ...signedInUser, companyName: resolved };
           }

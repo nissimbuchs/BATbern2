@@ -6,17 +6,21 @@ import ch.batbern.partners.dto.generated.PartnerListResponse;
 import ch.batbern.partners.dto.generated.PartnerResponse;
 import ch.batbern.partners.dto.generated.PartnerStatistics;
 import ch.batbern.partners.dto.generated.UpdatePartnerRequest;
+import ch.batbern.partners.service.PartnerContactService;
 import ch.batbern.partners.service.PartnerService;
 import ch.batbern.shared.api.PaginationMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,6 +36,7 @@ import java.util.Set;
 public class PartnerController implements PartnersApi {
 
     private final PartnerService partnerService;
+    private final PartnerContactService partnerContactService;
 
     @Override
     public ResponseEntity<PartnerListResponse> listPartners(
@@ -111,6 +116,19 @@ public class PartnerController implements PartnersApi {
         PartnerStatistics statistics = partnerService.getPartnerStatistics();
 
         return ResponseEntity.ok(statistics);
+    }
+
+    /**
+     * GET /api/v1/partners/me
+     * Returns the partner company for the currently authenticated PARTNER user.
+     * Resolves company via partner_contacts table (ADR-003: username-based lookup).
+     * Used by the frontend to populate companyName when it is absent from the JWT.
+     */
+    @GetMapping("/partners/me")
+    @PreAuthorize("hasRole('PARTNER')")
+    public ResponseEntity<Map<String, String>> getMyPartnerCompany() {
+        String companyName = partnerContactService.resolveCurrentUserCompanyName();
+        return ResponseEntity.ok(Map.of("companyName", companyName));
     }
 
     // Helper methods

@@ -145,32 +145,25 @@ export const navigationConfig: NavigationItem[] = [
 
   // Partner-specific items
   {
-    labelKey: 'navigation.dashboard',
-    path: '/partner/dashboard',
-    icon: Dashboard,
+    labelKey: 'navigation.myCompany',
+    path: '/partners/company',
+    icon: Business,
     roles: ['partner'],
-    description: 'Partner dashboard',
-  },
-  {
-    labelKey: 'navigation.events',
-    path: '/partner/events',
-    icon: Event,
-    roles: ['partner'],
-    description: 'View events',
+    description: 'Your company profile',
   },
   {
     labelKey: 'navigation.analytics',
-    path: '/partner/analytics',
+    path: '/partners/analytics',
     icon: BarChart,
     roles: ['partner'],
     description: 'View analytics',
   },
   {
-    labelKey: 'navigation.profile',
-    path: '/partner/profile',
-    icon: Person,
+    labelKey: 'navigation.topics',
+    path: '/partners/topics',
+    icon: Lightbulb,
     roles: ['partner'],
-    description: 'Your partner profile',
+    description: 'Topic suggestions',
   },
   {
     labelKey: 'navigation.publicSite',

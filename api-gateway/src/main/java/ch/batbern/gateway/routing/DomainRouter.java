@@ -84,7 +84,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/speakers") // SpeakerController lives in EMS
                 || cleanPath.startsWith("/api/v1/e2e-test")) { // Story 6.3: E2E test endpoints
             return "event-management-service";
-        } else if (cleanPath.startsWith("/api/v1/partners")) {
+        } else if (cleanPath.startsWith("/api/v1/partners")
+                || cleanPath.startsWith("/api/v1/partner-meetings")) {
             return "partner-coordination-service";
         } else if (cleanPath.startsWith("/api/v1/content")) {
             return "attendee-experience-service";
