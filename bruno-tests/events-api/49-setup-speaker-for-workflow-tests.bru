@@ -1,0 +1,42 @@
+meta {
+  name: Setup Fresh Speaker for Workflow and Reminder Tests
+  type: http
+  seq: 49
+}
+
+post {
+  url: {{baseUrl}}/events/{{createdEventCode}}/speakers/pool
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "speakerName": "Dr. Workflow Test Speaker",
+    "company": "Integration Test AG",
+    "expertise": "Workflow and reminder testing",
+    "assignedOrganizerId": "{{organizerUsername}}",
+    "notes": "Fresh IDENTIFIED speaker for tests 50-66"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.id: isDefined
+  res.body.status: eq IDENTIFIED
+}
+
+tests {
+  test("should create a fresh IDENTIFIED speaker for workflow tests", function() {
+    expect(res.getStatus()).to.equal(201);
+    const speaker = res.getBody();
+    expect(speaker.id).to.be.a('string');
+    expect(speaker.status).to.equal('IDENTIFIED');
+    // Override createdSpeakerPoolId so tests 50-66 start with a fresh IDENTIFIED speaker
+    bru.setVar("createdSpeakerPoolId", speaker.id);
+  });
+}
