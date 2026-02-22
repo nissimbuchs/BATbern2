@@ -15,7 +15,7 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { Edit, NoteAdd, Email, CalendarMonth, Analytics, ArrowBack } from '@mui/icons-material';
+import { Edit, NoteAdd, ArrowBack } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
@@ -182,53 +182,11 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                 )}
               </Stack>
             )}
-
-            {/* Engagement Bar Placeholder */}
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: 'grey.100',
-                borderRadius: 1,
-                textAlign: 'center',
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                📊 {t('detail.header.comingSoon')}
-              </Typography>
-            </Box>
           </Stack>
 
           {/* Action Buttons — hidden for PARTNER role */}
           {!isPartner && (
             <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                startIcon={<Email />}
-                disabled
-                size="small"
-                title={t('detail.header.comingSoon')}
-              >
-                {t('detail.header.sendEmail')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<CalendarMonth />}
-                disabled
-                size="small"
-                title={t('detail.header.comingSoon')}
-              >
-                {t('detail.header.scheduleMeeting')}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<Analytics />}
-                disabled
-                size="small"
-                title={t('detail.header.comingSoon')}
-              >
-                {t('detail.header.exportData')}
-              </Button>
               <Button variant="outlined" startIcon={<NoteAdd />} size="small">
                 {t('detail.notesTab.addNote')}
               </Button>

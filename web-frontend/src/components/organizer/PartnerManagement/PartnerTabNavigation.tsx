@@ -9,7 +9,7 @@ interface PartnerTabNavigationProps {
   role?: UserRole;
 }
 
-const ALL_TAB_LABELS = ['Overview', 'Contacts', 'Meetings', 'Activity', 'Notes', 'Settings'];
+const ALL_TAB_LABELS = ['Overview', 'Contacts', 'Meetings', 'Analytics', 'Notes', 'Settings'];
 
 // Story 8.0: Settings tab hidden for PARTNER role
 const getVisibleTabs = (role?: UserRole) => {

@@ -22,13 +22,12 @@ import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import { useAuth } from '@/hooks/useAuth';
 import { PartnerDetailHeader } from './PartnerDetailHeader';
-import { PartnerQuickStats } from './PartnerQuickStats';
 import { PartnerTabNavigation } from './PartnerTabNavigation';
 import { PartnerOverviewTab } from './PartnerOverviewTab';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
-import PartnerActivityTab from './PartnerActivityTab';
 import PartnerNotesTab from './PartnerNotesTab';
 import { PartnerSettingsTab } from './PartnerSettingsTab';
+import { PartnerAttendanceDashboard } from '@/components/partner/PartnerAttendanceDashboard';
 import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
@@ -164,11 +163,6 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
       {/* Header */}
       <PartnerDetailHeader partner={partner} role={currentUser.role} />
 
-      {/* Quick Stats */}
-      <Box sx={{ mt: 3 }}>
-        <PartnerQuickStats partner={partner} />
-      </Box>
-
       {/* Tab Navigation */}
       <Box sx={{ mt: 3 }}>
         <PartnerTabNavigation
@@ -237,8 +231,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
           <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
         )}
 
-        {/* Activity Tab */}
-        {effectiveTab === 3 && <PartnerActivityTab companyName={partner.companyName} />}
+        {/* Analytics Tab */}
+        {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
 
         {/* Notes Tab */}
         {effectiveTab === 4 && (
