@@ -55,13 +55,20 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
     static final String BASE = "/api/v1/partners/topics";
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
-    @Autowired PartnerRepository partnerRepository;
-    @Autowired PartnerContactRepository partnerContactRepository;
-    @Autowired TopicRepository topicRepository;
-    @Autowired TopicVoteRepository topicVoteRepository;
-    @MockitoBean CompanyServiceClient companyServiceClient;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
+    @Autowired
+    PartnerRepository partnerRepository;
+    @Autowired
+    PartnerContactRepository partnerContactRepository;
+    @Autowired
+    TopicRepository topicRepository;
+    @Autowired
+    TopicVoteRepository topicVoteRepository;
+    @MockitoBean
+    CompanyServiceClient companyServiceClient;
 
     Partner partnerAlpha;
     Partner partnerBeta;

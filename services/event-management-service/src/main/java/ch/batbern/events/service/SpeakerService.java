@@ -24,10 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -68,19 +68,26 @@ public class SpeakerService {
         Optional<Speaker> existing = speakerRepository.findByUsername(request.getUsername());
         if (existing.isPresent()) {
             if (existing.get().getDeletedAt() == null) {
-                throw new IllegalArgumentException("Speaker profile already exists for username: " + request.getUsername());
+                throw new IllegalArgumentException(
+                        "Speaker profile already exists for username: " + request.getUsername());
             }
             // Restore soft-deleted profile with new data
             Speaker toRestore = existing.get();
             toRestore.setDeletedAt(null);
-            toRestore.setAvailability(request.getAvailability() != null ? request.getAvailability() : SpeakerAvailability.AVAILABLE);
-            toRestore.setWorkflowState(request.getWorkflowState() != null ? request.getWorkflowState() : SpeakerWorkflowState.IDENTIFIED);
-            toRestore.setExpertiseAreas(request.getExpertiseAreas() != null ? new ArrayList<>(request.getExpertiseAreas()) : new ArrayList<>());
-            toRestore.setSpeakingTopics(request.getSpeakingTopics() != null ? new ArrayList<>(request.getSpeakingTopics()) : new ArrayList<>());
-            toRestore.setLanguages(request.getLanguages() != null ? new ArrayList<>(request.getLanguages()) : new ArrayList<>(List.of("de", "en")));
+            toRestore.setAvailability(request.getAvailability() != null
+                    ? request.getAvailability() : SpeakerAvailability.AVAILABLE);
+            toRestore.setWorkflowState(request.getWorkflowState() != null
+                    ? request.getWorkflowState() : SpeakerWorkflowState.IDENTIFIED);
+            toRestore.setExpertiseAreas(request.getExpertiseAreas() != null
+                    ? new ArrayList<>(request.getExpertiseAreas()) : new ArrayList<>());
+            toRestore.setSpeakingTopics(request.getSpeakingTopics() != null
+                    ? new ArrayList<>(request.getSpeakingTopics()) : new ArrayList<>());
+            toRestore.setLanguages(request.getLanguages() != null
+                    ? new ArrayList<>(request.getLanguages()) : new ArrayList<>(List.of("de", "en")));
             toRestore.setLinkedInUrl(request.getLinkedInUrl());
             toRestore.setTwitterHandle(request.getTwitterHandle());
-            toRestore.setCertifications(request.getCertifications() != null ? new ArrayList<>(request.getCertifications()) : new ArrayList<>());
+            toRestore.setCertifications(request.getCertifications() != null
+                    ? new ArrayList<>(request.getCertifications()) : new ArrayList<>());
             Speaker restored = speakerRepository.save(toRestore);
             log.info("Restored soft-deleted speaker profile for username: {}", restored.getUsername());
             return enrichWithUserData(restored);
