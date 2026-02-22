@@ -7,7 +7,7 @@ import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
 
 export const PartnerList: React.FC = () => {
-  const { viewMode, filters, sortBy, sortOrder, page, setPage } = usePartnerStore();
+  const { viewMode, filters, searchQuery, sortBy, sortOrder, page, setPage } = usePartnerStore();
 
   // Fetch partners using React Query
   const { data, isLoading, isError, error } = usePartners(
@@ -16,7 +16,17 @@ export const PartnerList: React.FC = () => {
     { page, size: 20 }
   );
 
-  const partners = data?.data || [];
+  const allPartners = data?.data || [];
+  const partners = searchQuery
+    ? allPartners.filter((partner) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          partner.companyName.toLowerCase().includes(q) ||
+          partner.company?.displayName?.toLowerCase().includes(q) ||
+          partner.company?.name?.toLowerCase().includes(q)
+        );
+      })
+    : allPartners;
   const pagination = data?.metadata;
 
   // Loading state
