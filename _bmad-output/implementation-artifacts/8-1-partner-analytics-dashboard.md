@@ -1,6 +1,6 @@
 # Story 8.1: Partner Attendance Dashboard
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -68,40 +68,45 @@ partner-coordination-service
 
 ### Task 1: New endpoint on event-management-service (AC: 1, 2, 5)
 
-- [ ] Add `GET /api/v1/events/attendance-summary` to `EventController.java`
+- [x] Add `GET /api/v1/events/attendance-summary` to `EventController.java`
   - Query params: `companyName` (String, required), `fromYear` (int, default = current year - 5)
   - Queries `registrations` table: `WHERE attendee_company_name = :companyName AND event_date >= :fromDate AND status = 'confirmed'`
   - Groups by event, returns list of `{eventCode, eventDate, totalAttendees, companyAttendees}`
-  - Add to OpenAPI spec: `docs/api/event-management-api.openapi.yml`
-  - Note: `registrations.attendee_company_name` — verify this field exists or use `attendee_company_id` with a join to resolve company_name via `companyName` parameter lookup
+  - Add to OpenAPI spec: `docs/api/events-api.openapi.yml`
+  - Used `attendee_company_id` (stores company name string per ADR-003, confirmed via V35 migration)
 
-- [ ] Create `AttendanceSummaryDTO.java` (eventCode, eventDate, totalAttendees, companyAttendees)
+- [x] Create `AttendanceSummaryDTO.java` (eventCode, eventDate, totalAttendees, companyAttendees)
 
-- [ ] Add security: endpoint accessible to PARTNER and ORGANIZER roles
+- [x] Add security: endpoint accessible to PARTNER and ORGANIZER roles
 
-- [ ] Write integration test: `EventAttendanceSummaryIntegrationTest.java`
+- [x] Write integration test: `EventAttendanceSummaryIntegrationTest.java` — 7 tests, ALL PASS
   - Test with `fromYear` filtering
   - Test returns only confirmed registrations
-  - Test `companyName` isolation (company A cannot see company B data via this endpoint — wait, actually this endpoint is called server-to-server, so isolation is enforced at partner-coordination-service level)
+  - Test role-based access (PARTNER and ORGANIZER can access, unauthenticated gets 401)
 
 ### Task 2: EventManagementClient in partner-coordination-service (AC: 1, 2, 5)
 
-- [ ] Create `EventManagementClient.java` (or extend if it exists)
+- [x] Create `EventManagementClient.java` interface + `EventManagementClientImpl.java`
   - Method: `getAttendanceSummary(String companyName, int fromYear): List<AttendanceSummaryDTO>`
   - Uses existing JWT propagation pattern (same as `UserServiceClient`, `CompanyServiceClient`)
-  - Add Caffeine cache: `@Cacheable(value = "partner-attendance", key = "#companyName + '-' + #fromYear")`  — 15-min TTL
+  - `@Cacheable(value = "partnerAttendanceCache", key = "#companyName + '-' + #fromYear")` — 15-min TTL via Caffeine
+  - Added `partnerAttendanceCache` to `CacheConfig.java`
+  - Added `event-management-service.base-url` to `application.yml` for all profiles
+  - Created `AttendanceSummaryDTO.java` in `client/dto` package
 
 ### Task 3: PartnerAnalyticsService (AC: 1, 2, 3)
 
-- [ ] Create `PartnerAnalyticsService.java`
+- [x] Create `PartnerAnalyticsService.java`
   - `getAttendanceDashboard(String companyName, int fromYear)`:
     - Calls `EventManagementClient.getAttendanceSummary()`
     - Fetches `partners.partnership_cost` from local partners table
     - Computes `costPerAttendee = partnershipCost / sum(companyAttendees)`
     - Returns `PartnerDashboardDTO` containing the list + costPerAttendee
   - Handle edge case: zero attendees → costPerAttendee = null (display as N/A)
+  - Added `V3__add_partnership_cost.sql` migration (NUMERIC(10,2), nullable)
+  - Updated `Partner.java` entity with `partnershipCost` field (BigDecimal)
 
-- [ ] Create `PartnerDashboardDTO.java` (attendanceSummary: List, costPerAttendee: BigDecimal)
+- [x] Create `PartnerDashboardDTO.java` (attendanceSummary: List, costPerAttendee: BigDecimal)
 
 ### Task 4: PartnerAnalyticsController (AC: 1–7)
 
@@ -249,10 +254,35 @@ ALTER TABLE partners ADD COLUMN partnership_cost NUMERIC(10,2);
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-sonnet-4-6
 
 ### Debug Log References
 
+- YAML parse error in `events-api.openapi.yml`: `description: Earliest year to include (default: current year - 5)` caused `mapping values are not allowed here` — fixed by writing "minus 5" instead of "- 5"
+- Compile error `EventWorkflowState.COMPLETED` → correct value is `EventWorkflowState.EVENT_COMPLETED`
+- `registrations.attendee_company_id` stores company name string (not UUID) — confirmed via V35 migration and RegistrationService code; direct string comparison with companyName parameter works correctly
+
 ### Completion Notes List
 
+- Tasks 1–3 complete (backend event-management-service endpoint + partner-coordination-service client + analytics service)
+- `partner-coordination-service` production `SecurityConfig` does NOT have `@EnableMethodSecurity` — must add before `@PreAuthorize` can work (to be done in Task 4)
+
 ### File List
+
+**New files:**
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/AttendanceSummaryDTO.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/EventAttendanceSummaryIntegrationTest.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/client/dto/AttendanceSummaryDTO.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/client/EventManagementClient.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/client/impl/EventManagementClientImpl.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/dto/PartnerDashboardDTO.java`
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/service/PartnerAnalyticsService.java`
+- `services/partner-coordination-service/src/main/resources/db/migration/V3__add_partnership_cost.sql`
+
+**Modified files:**
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/EventController.java` (added attendance-summary endpoint)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` (added findAttendanceSummary JPQL query)
+- `docs/api/events-api.openapi.yml` (added /events/attendance-summary path + AttendanceSummaryDTO schema)
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/config/CacheConfig.java` (added partnerAttendanceCache)
+- `services/partner-coordination-service/src/main/java/ch/batbern/partners/domain/Partner.java` (added partnershipCost field)
+- `services/partner-coordination-service/src/main/resources/application.yml` (added event-management-service.base-url)

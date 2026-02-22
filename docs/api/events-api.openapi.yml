@@ -56,6 +56,49 @@ tags:
     description: Watch app organizer endpoints (Epic W2)
 
 paths:
+  /events/attendance-summary:
+    get:
+      tags:
+        - Analytics
+      summary: Get attendance summary per event for a company
+      description: |
+        Returns per-event attendee counts (total and company-specific).
+        Called server-to-server by partner-coordination-service.
+
+        **Story**: 8.1 - Partner Attendance Dashboard (AC1, AC2, AC5, AC6)
+
+        **Authorization**: PARTNER or ORGANIZER role required.
+        Data isolation enforced at partner-coordination-service level.
+      operationId: getAttendanceSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: companyName
+          in: query
+          required: true
+          description: Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH')
+          schema:
+            type: string
+        - name: fromYear
+          in: query
+          required: false
+          description: "Earliest year to include (default: current year minus 5)"
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of per-event attendance summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttendanceSummaryDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — requires PARTNER or ORGANIZER role
+
   /events:
     get:
       tags:
@@ -3627,6 +3670,34 @@ paths:
 
 components:
   schemas:
+
+    # ── Partner Analytics Schemas (Story 8.1) ────────────────────────────────
+
+    AttendanceSummaryDTO:
+      type: object
+      description: Per-event attendance summary for a given company (Story 8.1)
+      required:
+        - eventCode
+        - eventDate
+        - totalAttendees
+        - companyAttendees
+      properties:
+        eventCode:
+          type: string
+          description: Event code (e.g. 'BATbern142')
+          example: BATbern142
+        eventDate:
+          type: string
+          format: date-time
+          description: Event date (ISO-8601)
+        totalAttendees:
+          type: integer
+          format: int64
+          description: Total confirmed attendees for this event
+        companyAttendees:
+          type: integer
+          format: int64
+          description: Confirmed attendees from the queried company
 
     # ── Timetable Schemas ────────────────────────────────────────────────────
 
