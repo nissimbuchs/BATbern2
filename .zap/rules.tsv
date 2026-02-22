@@ -1,0 +1,55 @@
+# ZAP Alert Rule Overrides for BATbern
+# Format: alertId	action	[url	[parameter	[attack	[evidence	[confidence]]]]]
+# Actions: IGNORE | WARN | FAIL
+# Omitting url/parameter means the rule applies to ALL URLs.
+#
+# Run `zap-api-scan.py --help` for full option list.
+# Alert IDs: https://www.zaproxy.org/docs/alerts/
+
+# ─── FALSE POSITIVES — IGNORE ─────────────────────────────────────────────────
+
+# Base64 Disclosure: JWT tokens in Authorization headers look like "base64"
+10094	IGNORE
+
+# Timestamp Disclosure (Unix epoch): timestamps in JSON API responses are intentional
+10096	IGNORE
+
+# Information Disclosure - Suspicious Comments: React build artifacts & Javadoc strings
+10027	IGNORE
+
+# Storable and Cacheable Content: API cache (Caffeine 15min TTL) is by design
+10049	IGNORE
+
+# Retrieved from Cache: expected when ZAP requests cached resources
+10050	IGNORE
+
+# Sub Resource Integrity Attribute Missing: assets loaded from CloudFront CDN
+90003	IGNORE
+
+# Modern Web Application: React SPA detection, not a vulnerability
+10109	IGNORE
+
+# Private IP Disclosure: internal AWS VPC IPs that may appear in error traces
+2	IGNORE
+
+# ─── INFORMATIONAL — WARN (non-blocking, report only) ─────────────────────────
+
+# Cookie No HttpOnly Flag: Cognito auth cookies managed by AWS SDK, not us
+10010	WARN
+
+# Cookie Without Secure Flag: same — Cognito SDK sets these
+10011	WARN
+
+# Content-Security-Policy Header Not Set: set by Spring SecurityHeadersFilter,
+# may not be visible to ZAP through CloudFront
+10038	WARN
+
+# Permissions Policy Header Not Set: set by Spring SecurityHeadersFilter
+10063	WARN
+
+# User Agent Fuzzer: not a vulnerability, just header variation probing
+10104	WARN
+
+# ─── FAIL (block CI) — high-confidence critical findings ─────────────────────
+# Nothing explicitly set to FAIL here — let ZAP's default severity thresholds apply.
+# Tighten this after the first clean run on staging.
