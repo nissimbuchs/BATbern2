@@ -207,6 +207,121 @@
         </section>
         {{/if}}
 
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- DAST Security Scan (OWASP ZAP)                            -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        {{#if dast}}
+        <section class="dast-section">
+            <h2 class="dast-heading">
+                <span class="dast-icon">🔍</span>
+                DAST Security Scan — OWASP ZAP
+                {{#if dast.scannedAt}}
+                <span class="dast-scanned-at">Scanned: {{dast.scannedAt}}</span>
+                {{/if}}
+            </h2>
+
+            <!-- DAST top-level status banner -->
+            {{#if dast.summary.clean}}
+            <div class="dast-banner dast-banner-clean">
+                ✅ All {{dast.summary.scansRun}} ZAP scan(s) completed — no High or Medium alerts detected.
+            </div>
+            {{else}}
+            <div class="dast-banner dast-banner-alerts">
+                ⚠️ {{dast.summary.scansRun}} ZAP scan(s) — {{dast.summary.high}} High · {{dast.summary.medium}} Medium · {{dast.summary.low}} Low alerts found.
+            </div>
+            {{/if}}
+
+            <!-- Per-scan breakdown table -->
+            <div class="dast-scans-table-wrap">
+                <h3>Per-Scan Summary</h3>
+                <table class="dast-scans-table">
+                    <thead>
+                        <tr>
+                            <th>Scan Target</th>
+                            <th>Scan Type</th>
+                            <th class="text-center text-risk-high">High</th>
+                            <th class="text-center text-risk-medium">Medium</th>
+                            <th class="text-center text-risk-low">Low</th>
+                            <th class="text-center">Info</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each dast.reports}}
+                        <tr>
+                            <td class="dast-scan-target">{{this.findings.target}}</td>
+                            <td class="dast-scan-name">{{this.scanName}}</td>
+                            <td class="text-center {{#if (gt this.findings.summary.high 0)}}text-risk-high{{/if}}">
+                                {{this.findings.summary.high}}
+                            </td>
+                            <td class="text-center {{#if (gt this.findings.summary.medium 0)}}text-risk-medium{{/if}}">
+                                {{this.findings.summary.medium}}
+                            </td>
+                            <td class="text-center {{#if (gt this.findings.summary.low 0)}}text-risk-low{{/if}}">
+                                {{this.findings.summary.low}}
+                            </td>
+                            <td class="text-center">{{this.findings.summary.info}}</td>
+                            <td class="text-center">
+                                {{#if (gt this.findings.summary.high 0)}}
+                                <span class="dast-badge dast-badge-fail">FAIL</span>
+                                {{else if (gt this.findings.summary.medium 0)}}
+                                <span class="dast-badge dast-badge-warn">WARN</span>
+                                {{else if (gt this.findings.summary.low 0)}}
+                                <span class="dast-badge dast-badge-low">LOW</span>
+                                {{else}}
+                                <span class="dast-badge dast-badge-pass">PASS</span>
+                                {{/if}}
+                            </td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Alert details (collapsed by default via <details>) -->
+            {{#if (gt dast.byAlertType.length 0)}}
+            <div class="dast-alerts-section">
+                <h3>Alert Details</h3>
+                {{#each dast.byAlertType}}
+                <details class="dast-alert-item dast-alert-risk-{{this.risk}}">
+                    <summary class="dast-alert-summary">
+                        <span class="dast-risk-badge dast-risk-{{this.risk}}">{{this.riskLabel}}</span>
+                        <span class="dast-alert-name">{{this.name}}</span>
+                        <span class="dast-alert-meta">plugin {{this.pluginId}} · {{this.totalInstances}} instance(s) in {{this.scans.length}} scan(s)</span>
+                    </summary>
+                    <div class="dast-alert-body">
+                        <div class="dast-alert-scans">
+                            <strong>Affected scans:</strong> {{this.scans}}
+                        </div>
+                        {{#if this.solution}}
+                        <div class="dast-alert-solution">
+                            <strong>Solution:</strong> {{{this.solution}}}
+                        </div>
+                        {{/if}}
+                        {{#if this.reference}}
+                        <div class="dast-alert-reference">
+                            <strong>Reference:</strong> {{{this.reference}}}
+                        </div>
+                        {{/if}}
+                    </div>
+                </details>
+                {{/each}}
+            </div>
+            {{/if}}
+        </section>
+        {{else}}
+        <section class="dast-section dast-not-run">
+            <h2 class="dast-heading">
+                <span class="dast-icon">🔍</span>
+                DAST Security Scan — OWASP ZAP
+            </h2>
+            <div class="dast-banner dast-banner-pending">
+                ℹ️ ZAP DAST scan has not been run yet. Trigger the
+                <strong>Security Scan (OWASP ZAP)</strong> workflow and re-generate reports.
+            </div>
+        </section>
+        {{/if}}
+
         <!-- Security Best Practices -->
         <section class="best-practices-section">
             <h2>Security Best Practices</h2>
@@ -224,8 +339,8 @@
                     <p>All code changes undergo security-focused code review.</p>
                 </div>
                 <div class="practice-card">
-                    <h4>✅ SARIF Integration</h4>
-                    <p>Security findings automatically uploaded to GitHub Security tab.</p>
+                    <h4>✅ DAST with OWASP ZAP</h4>
+                    <p>Dynamic application security testing runs weekly against staging via ZAP.</p>
                 </div>
             </div>
         </section>

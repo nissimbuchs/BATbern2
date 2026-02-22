@@ -202,6 +202,7 @@ class ReportsBuilder {
     console.log('  - Generating security report...');
     const securityHtml = compileSecurity({
       security: reportData.security,
+      dast: reportData.dast,
       externalLinks: this.config.externalLinks
     });
     await fs.writeFile(path.join(this.outputDir, 'security.html'), securityHtml);

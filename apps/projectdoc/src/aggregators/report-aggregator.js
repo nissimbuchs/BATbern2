@@ -7,6 +7,7 @@ import LocParser from '../utils/parsers/loc-parser.js';
 import SonarcloudParser from '../utils/parsers/sonarcloud-parser.js';
 import GitStatsParser from '../utils/parsers/git-stats-parser.js';
 import ProjectCountsParser from '../utils/parsers/project-counts-parser.js';
+import ZapParser from '../utils/parsers/zap-parser.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -36,6 +37,7 @@ export class ReportAggregator {
       javaCoverage,
       frontendCoverage,
       securityFindings,
+      zapDastFindings,
       qualityViolations,
       locMetrics,
       sonarMetrics,
@@ -47,6 +49,7 @@ export class ReportAggregator {
       this.collectJavaCoverage(),
       this.collectFrontendCoverage(),
       this.collectSecurityFindings(),
+      this.collectZapDastFindings(),
       this.collectQualityViolations(),
       this.collectLocMetrics(),
       this.collectSonarCloudMetrics(),
@@ -93,6 +96,7 @@ export class ReportAggregator {
         frontend: frontendTestResults
       },
       security: securityFindings,
+      dast: zapDastFindings,
       quality: qualityViolations,
       codebase: {
         loc: locMetrics,
@@ -228,6 +232,39 @@ export class ReportAggregator {
       summary: consolidated.summary,
       topVulnerabilities: consolidated.topVulnerabilities,
       byFile: consolidated.byFile
+    };
+  }
+
+  /**
+   * Collect OWASP ZAP DAST scan results from JSON report files.
+   * Returns null gracefully when no ZAP reports are present.
+   * @returns {Promise<Object|null>} ZAP findings or null
+   */
+  async collectZapDastFindings() {
+    console.log('Collecting ZAP DAST findings...');
+
+    const pattern = this.config.sources?.security?.zapPattern || 'security-reports/zap-*.json';
+    let reports;
+    try {
+      reports = await ZapParser.findAndParseReports(this.baseDir, pattern);
+    } catch (error) {
+      console.warn('ZAP DAST collection failed:', error.message);
+      return null;
+    }
+
+    if (reports.length === 0) {
+      console.warn('No ZAP DAST reports found — section will be hidden in dashboard');
+      return null;
+    }
+
+    const summary = ZapParser.calculateOverallSummary(reports);
+    const byAlertType = ZapParser.groupByAlertType(reports);
+
+    return {
+      reports,
+      summary,
+      byAlertType,
+      scannedAt: reports[0]?.findings?.generatedDate || null
     };
   }
 

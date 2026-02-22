@@ -65,7 +65,10 @@ export default {
       trivyPattern: 'trivy-results.sarif',
 
       // Snyk results (if available)
-      snykPattern: '**/snyk-*.json'
+      snykPattern: '**/snyk-*.json',
+
+      // OWASP ZAP DAST scan results (report_json.json renamed to zap-{scan}.json)
+      zapPattern: 'security-reports/zap-*.json'
     },
 
     quality: {
