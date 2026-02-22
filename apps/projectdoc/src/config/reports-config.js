@@ -68,7 +68,10 @@ export default {
       snykPattern: '**/snyk-*.json',
 
       // OWASP ZAP DAST scan results (report_json.json renamed to zap-{scan}.json)
-      zapPattern: 'security-reports/zap-*.json'
+      zapPattern: 'security-reports/zap-*.json',
+
+      // OWASP ZAP console log files (for per-rule PASS/WARN/FAIL breakdown)
+      zapLogPattern: 'security-reports/zap-logs/*.log'
     },
 
     quality: {

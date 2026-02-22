@@ -82,11 +82,13 @@ jobs:
           cmd_options: '-a -I'
           issue_title: 'ZAP Security Findings — ${{ matrix.api }} API'
 
-      - name: Stage JSON report for projectdoc — ${{ matrix.api }}
+      - name: Stage JSON + log reports for projectdoc — ${{ matrix.api }}
         if: always()
         run: |
-          mkdir -p zap-json-stage
+          mkdir -p zap-json-stage zap-json-stage/zap-logs
           cp report_json.json "zap-json-stage/zap-${{ matrix.api }}.json" 2>/dev/null || true
+          # The ZAP action writes the console log to zap.out
+          cp zap.out "zap-json-stage/zap-logs/zap-${{ matrix.api }}.log" 2>/dev/null || true
 
       - name: Upload HTML report — ${{ matrix.api }}
         if: always()
@@ -129,11 +131,12 @@ jobs:
           cmd_options: '-a -I --autooff'
           issue_title: 'ZAP Security Findings — Frontend'
 
-      - name: Stage JSON report for projectdoc — frontend
+      - name: Stage JSON + log reports for projectdoc — frontend
         if: always()
         run: |
-          mkdir -p zap-json-stage
+          mkdir -p zap-json-stage zap-json-stage/zap-logs
           cp report_json.json "zap-json-stage/zap-frontend.json" 2>/dev/null || true
+          cp zap.out "zap-json-stage/zap-logs/zap-frontend.log" 2>/dev/null || true
 
       - name: Upload HTML report — frontend
         if: always()

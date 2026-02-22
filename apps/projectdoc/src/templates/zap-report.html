@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWASP ZAP DAST Report - Test & Quality Dashboard</title>
+    <link rel="stylesheet" href="styles/reports.css">
+    <link rel="icon" href="../assets/favicon.ico">
+    <style>
+        /* ── ZAP detail page styles ─────────────────────────────── */
+        .zap-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        /* Scan overview cards */
+        .zap-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .zap-stat { background: var(--card); border-radius: 10px; padding: 1.25rem 1rem; text-align: center; box-shadow: var(--shadow-md); }
+        .zap-stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .zap-stat-label { font-size: 0.8rem; color: var(--muted-foreground); margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .zap-stat.pass  .zap-stat-value { color: #4CAF50; }
+        .zap-stat.warn  .zap-stat-value { color: #FFC107; }
+        .zap-stat.fail  .zap-stat-value { color: #F44336; }
+        .zap-stat.scans .zap-stat-value { color: var(--primary); }
+
+        /* Per-scan summary table */
+        .zap-section { background: var(--card); border-radius: 12px; padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-md); }
+        .zap-section h2 { margin: 0 0 1.25rem 0; font-size: 1.15rem; color: var(--foreground); }
+
+        .scan-summary-table { width: 100%; border-collapse: collapse; }
+        .scan-summary-table th { text-align: left; padding: 0.6rem 0.85rem; background: var(--bg-light); color: var(--muted-foreground); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; border-bottom: 2px solid var(--border); }
+        .scan-summary-table td { padding: 0.75rem 0.85rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .scan-summary-table tr:hover td { background: var(--bg-light); }
+        .scan-target { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--muted-foreground); }
+
+        /* Status pill badges */
+        .pill { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+        .pill-pass { background: rgba(76,175,80,0.15);  color: #4CAF50; }
+        .pill-warn { background: rgba(255,193,7,0.15);  color: #FFC107; }
+        .pill-fail { background: rgba(244,67,54,0.15);  color: #F44336; }
+        .pill-dash { background: rgba(158,158,158,0.1); color: #9E9E9E; }
+
+        /* Category matrix */
+        .category-block { background: var(--card); border-radius: 12px; margin-bottom: 1rem; box-shadow: var(--shadow-md); overflow: hidden; }
+        .category-header { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem; background: var(--bg-light); border-bottom: 1px solid var(--border); }
+        .category-title { font-weight: 700; font-size: 1rem; flex: 1; }
+        .category-status { font-size: 1.1rem; }
+
+        .rules-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .rules-table th { padding: 0.55rem 1rem; background: var(--bg-light); color: var(--muted-foreground); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .rules-table th.scan-col { text-align: center; min-width: 90px; }
+        .rules-table td { padding: 0.55rem 1rem; border-bottom: 1px solid var(--border); }
+        .rules-table tr:last-child td { border-bottom: none; }
+        .rules-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .rule-name { color: var(--foreground); }
+        .rule-id { color: var(--muted-foreground); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; margin-left: 0.4rem; }
+        .cell-center { text-align: center; }
+
+        /* Cell status icons */
+        .status-pass { color: #4CAF50; font-size: 1rem; }
+        .status-warn { color: #FFC107; font-size: 1rem; }
+        .status-fail { color: #F44336; font-size: 1rem; }
+        .status-dash { color: #555; font-size: 0.85rem; }
+
+        /* "no logs" banner */
+        .no-logs-notice { background: rgba(33,150,243,0.08); border: 1px solid rgba(33,150,243,0.25); border-radius: 8px; padding: 1rem 1.25rem; color: var(--muted-foreground); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+        /* Findings accordion (reuse dast styles) */
+        .findings-section { margin-top: 1rem; }
+        .findings-section h3 { font-size: 0.9rem; font-weight: 600; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.6rem; }
+    </style>
+</head>
+<body class="reports-page security-page">
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="../index.html" class="brand-link">
+                    <img src="../assets/BATbern_color_logo_transparent.png" alt="BATbern Logo" class="brand-logo">
+                    <span class="brand-text">BPlatform Rewriting with ClaudeCode</span>
+                </a>
+            </div>
+            <nav class="header-nav">
+                <a href="../user-guide/README.html" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14m-9-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4a4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3a3 3 0 0 0-3-3z"/></svg>
+                    User Guide
+                </a>
+                <a href="../index.html" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6l4 14M12 6v14M8 8v12M4 4v16"/></svg>
+                    Documentation
+                </a>
+                <a href="index.html" class="nav-link active">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16M7 16h8m-8-5h12M7 6h3"/></svg>
+                    Reports
+                </a>
+                <a href="../api/index.html" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18l6-6l-6-6M8 6l-6 6l6 6"/></svg>
+                    APIs
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="breadcrumbs">
+        <a href="../index.html">Home</a>
+        <span>›</span>
+        <a href="index.html">Reports</a>
+        <span>›</span>
+        <span>OWASP ZAP DAST</span>
+    </div>
+
+    <main class="zap-container">
+        <header class="page-header">
+            <h1>🔍 OWASP ZAP — DAST Security Scan</h1>
+            <p>Dynamic application security testing against the staging environment
+            {{#if dast.scannedAt}}<span style="color:var(--muted-foreground);font-size:0.85rem"> · Scanned: {{dast.scannedAt}}</span>{{/if}}
+            </p>
+        </header>
+
+        {{#if dast}}
+
+        <!-- ── Stat overview ─────────────────────────────────────── -->
+        <div class="zap-overview">
+            <div class="zap-stat scans">
+                <div class="zap-stat-value">{{dast.summary.scansRun}}</div>
+                <div class="zap-stat-label">Scans Run</div>
+            </div>
+            <div class="zap-stat {{#if (gt dast.summary.high 0)}}fail{{else}}pass{{/if}}">
+                <div class="zap-stat-value">{{dast.summary.high}}</div>
+                <div class="zap-stat-label">High</div>
+            </div>
+            <div class="zap-stat {{#if (gt dast.summary.medium 0)}}warn{{else}}pass{{/if}}">
+                <div class="zap-stat-value">{{dast.summary.medium}}</div>
+                <div class="zap-stat-label">Medium</div>
+            </div>
+            <div class="zap-stat {{#if (gt dast.summary.low 0)}}warn{{else}}pass{{/if}}">
+                <div class="zap-stat-value">{{dast.summary.low}}</div>
+                <div class="zap-stat-label">Low</div>
+            </div>
+            <div class="zap-stat">
+                <div class="zap-stat-value" style="color:var(--muted-foreground)">{{dast.summary.info}}</div>
+                <div class="zap-stat-label">Informational</div>
+            </div>
+            {{#if dast.categoryMatrix}}
+            <div class="zap-stat pass">
+                <div class="zap-stat-value">{{dast.categoryMatrix.totals.pass}}</div>
+                <div class="zap-stat-label">Rules Passed</div>
+            </div>
+            <div class="zap-stat {{#if (gt dast.categoryMatrix.totals.warn 0)}}warn{{else}}pass{{/if}}">
+                <div class="zap-stat-value">{{dast.categoryMatrix.totals.warn}}</div>
+                <div class="zap-stat-label">Rules Warned</div>
+            </div>
+            <div class="zap-stat {{#if (gt dast.categoryMatrix.totals.fail 0)}}fail{{else}}pass{{/if}}">
+                <div class="zap-stat-value">{{dast.categoryMatrix.totals.fail}}</div>
+                <div class="zap-stat-label">Rules Failed</div>
+            </div>
+            {{/if}}
+        </div>
+
+        <!-- ── Per-scan summary ──────────────────────────────────── -->
+        <div class="zap-section">
+            <h2>Per-Scan Summary</h2>
+            <table class="scan-summary-table">
+                <thead>
+                    <tr>
+                        <th>Scan</th>
+                        <th>Target</th>
+                        <th class="text-center">High</th>
+                        <th class="text-center">Medium</th>
+                        <th class="text-center">Low</th>
+                        <th class="text-center">Info</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each dast.reports}}
+                    <tr>
+                        <td><strong>{{this.scanName}}</strong></td>
+                        <td class="scan-target">{{this.findings.target}}</td>
+                        <td class="cell-center {{#if (gt this.findings.summary.high 0)}}text-error{{/if}}">{{this.findings.summary.high}}</td>
+                        <td class="cell-center {{#if (gt this.findings.summary.medium 0)}}text-warning{{/if}}">{{this.findings.summary.medium}}</td>
+                        <td class="cell-center">{{this.findings.summary.low}}</td>
+                        <td class="cell-center" style="color:var(--muted-foreground)">{{this.findings.summary.info}}</td>
+                        <td class="cell-center">
+                            {{#if (gt this.findings.summary.high 0)}}
+                            <span class="pill pill-fail">FAIL</span>
+                            {{else if (gt this.findings.summary.medium 0)}}
+                            <span class="pill pill-warn">WARN</span>
+                            {{else if (gt this.findings.summary.low 0)}}
+                            <span class="pill pill-warn">LOW</span>
+                            {{else}}
+                            <span class="pill pill-pass">PASS</span>
+                            {{/if}}
+                        </td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ── Per-category rule breakdown ──────────────────────── -->
+        {{#if dast.categoryMatrix}}
+        <div class="zap-section">
+            <h2>Rule Coverage by Category</h2>
+            <p style="color:var(--muted-foreground);font-size:0.875rem;margin-bottom:1.5rem">
+                Every security check ZAP ran, grouped by category.
+                ✅ = passed · ⚠️ = warning · ❌ = failed · – = not tested
+            </p>
+
+            {{#each dast.categoryMatrix.categories}}
+            <div class="category-block">
+                <div class="category-header">
+                    <span class="category-status">{{this.icon}}</span>
+                    <span class="category-title">{{this.name}}</span>
+                    <span style="font-size:0.8rem;color:var(--muted-foreground)">{{this.rules.length}} rules</span>
+                </div>
+                <table class="rules-table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:320px">Security Check</th>
+                            {{#each this.scanNames}}
+                            <th class="scan-col">{{this}}</th>
+                            {{/each}}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each this.rules}}
+                        <tr>
+                            <td class="rule-name">
+                                {{this.friendlyName}}
+                                <span class="rule-id">[{{this.ruleId}}]</span>
+                            </td>
+                            {{#each this.cells}}
+                            <td class="cell-center">
+                                {{#if (eq this.status "PASS")}}
+                                <span class="status-pass" title="Pass">✅</span>
+                                {{else if (eq this.status "WARN")}}
+                                <span class="status-warn" title="Warning">⚠️</span>
+                                {{else if (eq this.status "FAIL")}}
+                                <span class="status-fail" title="Fail">❌</span>
+                                {{else if (eq this.status "IGNORE")}}
+                                <span class="status-dash" title="Ignored">—</span>
+                                {{else}}
+                                <span class="status-dash" title="Not tested">–</span>
+                                {{/if}}
+                            </td>
+                            {{/each}}
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            {{/each}}
+        </div>
+
+        {{else}}
+        <div class="no-logs-notice">
+            ℹ️ Per-rule breakdown unavailable — ZAP console log files not found in
+            <code>security-reports/zap-logs/*.log</code>.
+            The log files are generated alongside the JSON reports when the
+            <strong>Security Scan (OWASP ZAP)</strong> workflow runs.
+        </div>
+        {{/if}}
+
+        <!-- ── Alert details ─────────────────────────────────────── -->
+        {{#if (gt dast.byAlertType.length 0)}}
+        <div class="zap-section">
+            <h2>Alert Details</h2>
+            <p style="color:var(--muted-foreground);font-size:0.875rem;margin-bottom:1rem">
+                Click any alert to expand solution and reference information.
+            </p>
+            {{#each dast.byAlertType}}
+            <details class="dast-alert-item dast-alert-risk-{{this.risk}}">
+                <summary class="dast-alert-summary">
+                    <span class="dast-risk-badge dast-risk-{{this.risk}}">{{this.riskLabel}}</span>
+                    <span class="dast-alert-name">{{this.name}}</span>
+                    <span class="dast-alert-meta">plugin {{this.pluginId}} · {{this.totalInstances}} instance(s) across {{this.scans.length}} scan(s)</span>
+                </summary>
+                <div class="dast-alert-body">
+                    <div class="dast-alert-scans">
+                        <strong>Affected scans:</strong> {{this.scans}}
+                    </div>
+                    {{#if this.solution}}
+                    <div class="dast-alert-solution">
+                        <strong>Solution:</strong> {{{this.solution}}}
+                    </div>
+                    {{/if}}
+                    {{#if this.reference}}
+                    <div class="dast-alert-reference">
+                        <strong>Reference:</strong> {{{this.reference}}}
+                    </div>
+                    {{/if}}
+                </div>
+            </details>
+            {{/each}}
+        </div>
+        {{/if}}
+
+        {{else}}
+        <!-- No ZAP data available -->
+        <div class="dast-banner dast-banner-pending" style="margin-top:2rem">
+            ℹ️ No ZAP DAST data available. Trigger the
+            <strong>Security Scan (OWASP ZAP)</strong> GitHub Actions workflow
+            and rebuild the reports.
+        </div>
+        {{/if}}
+
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <p><a href="index.html">← Back to Dashboard</a> &nbsp;|&nbsp; <a href="security.html">Security Report</a></p>
+            <p>BATbern Platform © 2025</p>
+        </div>
+    </footer>
+</body>
+</html>

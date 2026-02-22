@@ -128,6 +128,7 @@ class ReportsBuilder {
     const securityTemplate = await fs.readFile(path.join(templatesDir, 'security-report.html'), 'utf8');
     const qualityTemplate = await fs.readFile(path.join(templatesDir, 'quality-report.html'), 'utf8');
     const codebaseTemplate = await fs.readFile(path.join(templatesDir, 'codebase-report.html'), 'utf8');
+    const zapTemplate = await fs.readFile(path.join(templatesDir, 'zap-report.html'), 'utf8');
 
     // Compile templates
     const compileDashboard = Handlebars.compile(dashboardTemplate);
@@ -136,6 +137,7 @@ class ReportsBuilder {
     const compileSecurity = Handlebars.compile(securityTemplate);
     const compileQuality = Handlebars.compile(qualityTemplate);
     const compileCodebase = Handlebars.compile(codebaseTemplate);
+    const compileZap = Handlebars.compile(zapTemplate);
 
     // Ensure output directories exist
     await fs.ensureDir(this.outputDir);
@@ -150,6 +152,7 @@ class ReportsBuilder {
       modules: reportData.modules,
       trends: reportData.trends,
       comparison: reportData.comparison,
+      dast: reportData.dast,
       externalLinks: this.config.externalLinks,
       category: 'reports'
     });
@@ -206,6 +209,11 @@ class ReportsBuilder {
       externalLinks: this.config.externalLinks
     });
     await fs.writeFile(path.join(this.outputDir, 'security.html'), securityHtml);
+
+    // Generate ZAP DAST detail page
+    console.log('  - Generating ZAP DAST report...');
+    const zapHtml = compileZap({ dast: reportData.dast });
+    await fs.writeFile(path.join(this.outputDir, 'zap-report.html'), zapHtml);
 
     // Generate quality page
     console.log('  - Generating quality report...');

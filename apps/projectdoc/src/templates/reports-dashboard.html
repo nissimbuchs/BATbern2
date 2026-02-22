@@ -106,6 +106,34 @@
                 </div>
             </div>
 
+            {{#if dast}}
+            <div class="metric-card">
+                <div class="metric-icon">🔍</div>
+                <div class="metric-content">
+                    <h3>OWASP ZAP</h3>
+                    <div class="metric-value">{{dast.summary.scansRun}} scans</div>
+                    <div class="metric-label">
+                        {{#if dast.summary.clean}}
+                        <span class="badge badge-success">✅ Clean</span>
+                        {{else}}
+                        {{#if (gt dast.summary.high 0)}}
+                        <span class="badge badge-error">{{dast.summary.high}} High</span>
+                        {{/if}}
+                        {{#if (gt dast.summary.medium 0)}}
+                        <span class="badge badge-warning">{{dast.summary.medium}} Medium</span>
+                        {{/if}}
+                        {{#if (and (eq dast.summary.high 0) (eq dast.summary.medium 0))}}
+                        <span class="badge badge-warning">{{dast.summary.low}} Low</span>
+                        {{/if}}
+                        {{/if}}
+                    </div>
+                    <div class="metric-breakdown">
+                        <a href="zap-report.html" style="color:var(--primary);font-size:0.8rem">Full DAST report →</a>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+
             <div class="metric-card">
                 <div class="metric-icon">✨</div>
                 <div class="metric-content">
@@ -260,6 +288,13 @@
                     <h3>Security Dashboard</h3>
                     <p>Vulnerability findings and security scan results</p>
                 </a>
+                {{#if dast}}
+                <a href="zap-report.html" class="link-card">
+                    <div class="link-icon">🔍</div>
+                    <h3>OWASP ZAP DAST</h3>
+                    <p>Dynamic security testing — per-rule PASS/WARN/FAIL for every check across all scans</p>
+                </a>
+                {{/if}}
                 <a href="quality.html" class="link-card">
                     <div class="link-icon">✨</div>
                     <h3>Quality Dashboard</h3>
