@@ -110,14 +110,14 @@ skipped=0
 
 # Test collection directories
 collections=(
-    #"file-upload-api"
-    #"companies-api"
-    #"users-api"
-    #"events-api"
-    #"partners-api"
-    #"speakers-api"
+    "file-upload-api"
+    "companies-api"
+    "users-api"
+    "events-api"
+    "partners-api"
+    "speakers-api"
     "speaker-portal-api"
-    #"tasks-api"
+    "tasks-api"
 )
 
 # Run tests for each collection
