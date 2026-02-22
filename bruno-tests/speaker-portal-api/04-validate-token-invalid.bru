@@ -18,7 +18,7 @@ body:json {
 
 assert {
   res.status: eq 401
-  res.body.errorCode: isDefined
+  res.body.error: isDefined
 }
 
 tests {
@@ -28,6 +28,6 @@ tests {
 
   test("should return appropriate error code - Story 6.1a AC6", function() {
     const body = res.getBody();
-    expect(['TOKEN_NOT_FOUND', 'TOKEN_INVALID']).to.include(body.errorCode);
+    expect(['NOT_FOUND', 'EXPIRED', 'ALREADY_USED']).to.include(body.error);
   });
 }

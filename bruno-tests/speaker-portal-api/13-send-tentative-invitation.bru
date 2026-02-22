@@ -15,18 +15,15 @@ auth:bearer {
 }
 
 body:json {
-  {}
-}
-
-script:post-response {
-  if (res.getStatus() === 200) {
-    bru.setVar("tentativeSpeakerToken", res.getBody().token);
+  {
+    "responseDeadline": "2026-07-01"
   }
 }
 
 tests {
   test("should send invitation for tentative test", function() {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody().token).to.be.a('string');
+    const body = res.getBody();
+    expect(body.status).to.equal('INVITED');
   });
 }

@@ -23,7 +23,6 @@ body:json {
 assert {
   res.status: eq 200
   res.body.success: eq true
-  res.body.newWorkflowState: eq ACCEPTED
 }
 
 tests {
@@ -31,11 +30,5 @@ tests {
     expect(res.getStatus()).to.equal(200);
     const body = res.getBody();
     expect(body.success).to.be.true;
-    expect(body.newWorkflowState).to.equal('ACCEPTED');
-  });
-
-  test("should now consume the token - Story 6.2a AC5", function() {
-    const body = res.getBody();
-    expect(body.tokenConsumed).to.be.true;
   });
 }

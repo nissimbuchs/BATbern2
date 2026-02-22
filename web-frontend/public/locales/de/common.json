@@ -22,7 +22,10 @@
     "myRegistrations": "Meine Anmeldungen",
     "about": "Über uns",
     "pastEvents": "Vergangene Veranstaltungen",
-    "publicSite": "Öffentliche Webseite"
+    "publicSite": "Öffentliche Webseite",
+    "partnerTopics": "Partner-Themen",
+    "partnerMeetings": "Partner-Meetings",
+    "topics": "Themenvorschläge"
   },
   "public": {
     "login": "Anmelden",

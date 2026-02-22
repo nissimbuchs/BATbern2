@@ -1,0 +1,139 @@
+openapi: "3.0.3"
+info:
+  title: "BATbern Partner Analytics API"
+  description: "Partner attendance analytics and Excel export endpoints — Story 8.1"
+  version: "1.0.0"
+
+servers:
+  - url: "/api/v1"
+    description: "API Gateway base URL"
+
+paths:
+  /partners/{companyName}/analytics/dashboard:
+    get:
+      summary: "Get partner attendance dashboard"
+      description: |
+        Returns per-event attendance summary and cost-per-attendee KPI for a partner company.
+        Results are cached for 15 minutes (Caffeine cache in partner-coordination-service).
+      operationId: "getAttendanceDashboard"
+      tags: ["Partner Analytics"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Partner company name (ADR-003 meaningful identifier)"
+          example: "GoogleZH"
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+          description: "Earliest year to include. Defaults to current year minus 5 (last 5 years)."
+          example: 2020
+      responses:
+        "200":
+          description: "Attendance dashboard data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerDashboardResponse"
+        "403":
+          description: "Forbidden — PARTNER may only access their own company's analytics"
+        "404":
+          description: "Partner not found for the given companyName"
+      security:
+        - bearerAuth: []
+
+  /partners/{companyName}/analytics/export:
+    get:
+      summary: "Export attendance data as Excel (XLSX)"
+      description: |
+        Returns the attendance table as an XLSX file download.
+        Columns: Event, Date, Your Attendees, Total Attendees, Percentage.
+        Footer includes totals and cost-per-attendee.
+      operationId: "exportAttendance"
+      tags: ["Partner Analytics"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "Partner company name (ADR-003 meaningful identifier)"
+          example: "GoogleZH"
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+          description: "Earliest year to include. Defaults to current year minus 5."
+          example: 2020
+      responses:
+        "200":
+          description: "XLSX file download"
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              example: "attachment; filename=\"attendance-GoogleZH.xlsx\""
+        "403":
+          description: "Forbidden — PARTNER may only export their own company's data"
+        "404":
+          description: "Partner not found for the given companyName"
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    PartnerDashboardResponse:
+      type: object
+      properties:
+        attendanceSummary:
+          type: array
+          description: "Per-event attendance records, sorted by date descending"
+          items:
+            $ref: "#/components/schemas/AttendanceSummaryRecord"
+        costPerAttendee:
+          type: number
+          format: decimal
+          nullable: true
+          description: "Total partnership cost divided by total company attendees. Null if no attendees or no cost configured."
+          example: 555.56
+
+    AttendanceSummaryRecord:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          description: "Event code (ADR-003)"
+          example: "BATbern57"
+        eventDate:
+          type: string
+          format: date-time
+          description: "Event date (ISO-8601)"
+          example: "2024-06-01T00:00:00Z"
+        totalAttendees:
+          type: integer
+          format: int64
+          description: "Total confirmed registrations for this event"
+          example: 120
+        companyAttendees:
+          type: integer
+          format: int64
+          description: "Confirmed registrations from the partner company"
+          example: 12
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

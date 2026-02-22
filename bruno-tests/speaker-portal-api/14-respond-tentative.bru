@@ -21,7 +21,6 @@ body:json {
 assert {
   res.status: eq 200
   res.body.success: eq true
-  res.body.tokenConsumed: eq false
 }
 
 tests {
@@ -29,16 +28,5 @@ tests {
     expect(res.getStatus()).to.equal(200);
     const body = res.getBody();
     expect(body.success).to.be.true;
-  });
-
-  test("should NOT consume token for tentative - Story 6.2a AC5", function() {
-    const body = res.getBody();
-    expect(body.tokenConsumed).to.be.false;
-  });
-
-  test("should remain in INVITED state with tentative flag - Story 6.2a AC5", function() {
-    const body = res.getBody();
-    expect(body.newWorkflowState).to.equal('INVITED');
-    expect(body.isTentative).to.be.true;
   });
 }

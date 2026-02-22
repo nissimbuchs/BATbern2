@@ -7,9 +7,7 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
-import ch.batbern.partners.domain.PartnerContact;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.repository.PartnerContactRepository;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,9 +51,6 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
     @Autowired
     private PartnerRepository partnerRepository;
 
-    @Autowired
-    private PartnerContactRepository partnerContactRepository;
-
     @MockitoBean
     private CompanyServiceClient companyServiceClient;
 
@@ -75,15 +70,6 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         testPartner.setCreatedAt(java.time.Instant.now());
         testPartner = partnerRepository.save(testPartner);
 
-        // Create test contact
-        PartnerContact contact = new PartnerContact();
-        contact.setPartnerId(testPartner.getId());
-        contact.setUsername("perf.user");
-        contact.setContactRole(ch.batbern.partners.domain.ContactRole.PRIMARY);
-        contact.setPrimary(true);
-        contact.setCreatedAt(java.time.Instant.now());
-        partnerContactRepository.save(contact);
-
         // Mock HTTP clients
         CompanyResponse mockCompany = new CompanyResponse();
         mockCompany.setName("PerfTestCo");
@@ -91,11 +77,12 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         when(companyServiceClient.getCompany(anyString())).thenReturn(mockCompany);
 
         UserResponse mockUser = new UserResponse();
-        mockUser.setId("perf.user");  // Generated DTO uses setId() for username
+        mockUser.setId("perf.user");
         mockUser.setEmail("perf.user@example.com");
         mockUser.setFirstName("Performance");
         mockUser.setLastName("User");
-        when(userServiceClient.getUserProfile(anyString())).thenReturn(mockUser);
+        when(userServiceClient.getUsersByCompanyAndRole(anyString(), anyString()))
+                .thenReturn(java.util.List.of(mockUser));
     }
 
     @Test

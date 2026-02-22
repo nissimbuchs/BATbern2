@@ -207,8 +207,9 @@ paths:
       operationId: getPartnerContacts
       summary: List partner contacts
       description: |
-        Returns contacts enriched with User Service data (email, firstName, lastName, profilePictureUrl).
-        Per ADR-004: User data fetched via HTTP call to User Service.
+        Returns all users from the User Service who have the PARTNER role and belong to this company.
+        Contacts are derived automatically — any PARTNER-role user with matching companyId is a contact.
+        No explicit add/remove management is needed.
       responses:
         '200':
           description: List of partner contacts
@@ -220,84 +221,6 @@ paths:
                   $ref: '#/components/schemas/PartnerContactResponse'
         '404':
           description: Partner not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    post:
-      tags: [Partner Contacts]
-      operationId: addPartnerContact
-      summary: Add contact to partner
-      description: |
-        Validates user exists via User Service before adding.
-        Enforces uniqueness constraint (partner + username).
-        Business rule: At least one PRIMARY contact required.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddPartnerContactRequest'
-      responses:
-        '201':
-          description: Contact added
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PartnerContactResponse'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Partner or user not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Contact already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /partners/{companyName}/contacts/{username}:
-    parameters:
-      - name: companyName
-        in: path
-        required: true
-        schema:
-          type: string
-          maxLength: 12
-        description: Company name (meaningful ID per ADR-003)
-      - name: username
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Username (meaningful ID per ADR-003)
-
-    delete:
-      tags: [Partner Contacts]
-      operationId: removePartnerContact
-      summary: Remove contact from partner
-      description: |
-        Business rule: Cannot remove last primary contact.
-      responses:
-        '204':
-          description: Contact removed
-        '400':
-          description: Cannot remove last primary contact
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Partner or contact not found
           content:
             application/json:
               schema:
@@ -537,28 +460,22 @@ components:
       type: object
       required:
         - username
-        - contactRole
-        - isPrimary
       properties:
         username:
           type: string
           description: Meaningful ID per ADR-003
-        contactRole:
-          $ref: '#/components/schemas/ContactRole'
-        isPrimary:
-          type: boolean
         email:
           type: string
-          description: Enriched from User Service
+          description: From User Service
         firstName:
           type: string
-          description: Enriched from User Service
+          description: From User Service
         lastName:
           type: string
-          description: Enriched from User Service
+          description: From User Service
         profilePictureUrl:
           type: string
-          description: Enriched from User Service
+          description: From User Service
 
     PartnershipLevel:
       type: string
@@ -568,14 +485,6 @@ components:
         - GOLD
         - PLATINUM
         - STRATEGIC
-
-    ContactRole:
-      type: string
-      enum:
-        - PRIMARY
-        - BILLING
-        - TECHNICAL
-        - MARKETING
 
     CompanyInfo:
       type: object
@@ -599,22 +508,6 @@ components:
         location:
           type: string
           description: Company headquarters location
-
-    AddPartnerContactRequest:
-      type: object
-      required:
-        - username
-        - contactRole
-        - isPrimary
-      properties:
-        username:
-          type: string
-          description: Username (meaningful ID per ADR-003)
-        contactRole:
-          $ref: '#/components/schemas/ContactRole'
-        isPrimary:
-          type: boolean
-          description: Whether this is a primary contact
 
     CastVoteRequest:
       type: object

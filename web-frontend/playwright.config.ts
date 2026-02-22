@@ -104,18 +104,59 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    // Default test browsers (run when no --project specified)
+    // ── ORGANIZER (default) ──────────────────────────────────────────────────
+    // Runs all tests not claimed by role-specific projects.
+    // Uses .playwright-auth-state.json (organizer token — legacy path).
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: process.env.INCLUDE_DOCS_TESTS
-        ? []
-        : [
-            '**/workflows/documentation/**',
-            '**/screencast-event-workflow.spec.ts',
-            '**/verify-timing.spec.ts',
-          ],
+      testIgnore: [
+        // Exclude role-specific test directories (handled by partner/speaker projects)
+        '**/e2e/partner/**',
+        '**/e2e/speaker/**',
+        // Exclude documentation tests unless opted-in
+        ...(process.env.INCLUDE_DOCS_TESTS
+          ? []
+          : [
+              '**/workflows/documentation/**',
+              '**/screencast-event-workflow.spec.ts',
+              '**/verify-timing.spec.ts',
+            ]),
+      ],
     },
+
+    // ── SPEAKER (optional) ───────────────────────────────────────────────────
+    // Runs tests in e2e/speaker/ as an authenticated speaker user.
+    // Only activated when SPEAKER_AUTH_TOKEN env var is set (set by run-playwright-tests.sh
+    // or when the ~/.batbern/{env}-speaker.json token file exists).
+    ...(process.env.SPEAKER_AUTH_TOKEN
+      ? [
+          {
+            name: 'speaker',
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: '.playwright-auth-speaker.json',
+            },
+            testMatch: '**/e2e/speaker/**/*.spec.ts',
+          },
+        ]
+      : []),
+
+    // ── PARTNER (optional) ───────────────────────────────────────────────────
+    // Runs tests in e2e/partner/ as an authenticated partner user.
+    // Only activated when PARTNER_AUTH_TOKEN env var is set.
+    ...(process.env.PARTNER_AUTH_TOKEN
+      ? [
+          {
+            name: 'partner',
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: '.playwright-auth-partner.json',
+            },
+            testMatch: '**/e2e/partner/**/*.spec.ts',
+          },
+        ]
+      : []),
     // {
     //   name: 'Mobile Safari',
     //   use: { ...devices['iPhone 17'] },

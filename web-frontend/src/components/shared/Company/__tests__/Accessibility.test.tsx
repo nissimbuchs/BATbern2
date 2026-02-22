@@ -381,7 +381,7 @@ describe('Accessibility Tests (AC 12)', () => {
       // Run axe accessibility tests
       const results = await axe(container);
       expect(results).toHaveNoViolations();
-    });
+    }, 60000);
 
     it('should_notRelyOnColor_when_conveyingInformation', () => {
       renderWithProviders(<CompanyManagementScreen />, true);

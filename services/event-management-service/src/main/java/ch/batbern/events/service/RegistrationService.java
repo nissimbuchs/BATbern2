@@ -280,6 +280,7 @@ public class RegistrationService {
                         .registrationCode(generateUniqueRegistrationCode(item.getEventCode()))
                         .eventId(event.getId())
                         .attendeeUsername(username)
+                        .attendeeCompanyId(request.getCompanyId())
                         .status(status)
                         .registrationDate(Instant.now())
                         .build();

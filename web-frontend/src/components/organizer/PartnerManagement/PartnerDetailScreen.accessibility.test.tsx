@@ -22,6 +22,10 @@ vi.mock('@/hooks/usePartnerVotes');
 vi.mock('@/hooks/usePartnerMeetings');
 vi.mock('@/hooks/usePartnerActivity');
 vi.mock('@/hooks/usePartnerNotes');
+// Story 8.0: mock useAuth (PartnerDetailScreen now uses auth context)
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { username: 'organizer1', role: 'organizer' } }),
+}));
 
 const mockUsePartnerDetail = vi.mocked(usePartnerDetail);
 const mockUsePartnerVotes = vi.mocked(usePartnerVotes);

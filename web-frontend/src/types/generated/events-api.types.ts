@@ -4,6 +4,32 @@
  */
 
 export interface paths {
+  '/events/attendance-summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get attendance summary per event for a company
+     * @description Returns per-event attendee counts (total and company-specific).
+     *     Called server-to-server by partner-coordination-service.
+     *
+     *     **Story**: 8.1 - Partner Attendance Dashboard (AC1, AC2, AC5, AC6)
+     *
+     *     **Authorization**: PARTNER or ORGANIZER role required.
+     *     Data isolation enforced at partner-coordination-service level.
+     */
+    get: operations['getAttendanceSummary'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events': {
     parameters: {
       query?: never;
@@ -1492,6 +1518,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Per-event attendance summary for a given company (Story 8.1) */
+    AttendanceSummaryDTO: {
+      /**
+       * @description Event code (e.g. 'BATbern142')
+       * @example BATbern142
+       */
+      eventCode: string;
+      /**
+       * Format: date-time
+       * @description Event date (ISO-8601)
+       */
+      eventDate: string;
+      /**
+       * Format: int64
+       * @description Total confirmed attendees for this event
+       */
+      totalAttendees: number;
+      /**
+       * Format: int64
+       * @description Confirmed attendees from the queried company
+       */
+      companyAttendees: number;
+    };
     /**
      * @description A single slot in the event timetable. SPEAKER_SLOT entries represent droppable
      *     speaker positions (the implicit gaps between structural sessions). All other types
@@ -3456,6 +3505,45 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getAttendanceSummary: {
+    parameters: {
+      query: {
+        /** @description Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH') */
+        companyName: string;
+        /** @description Earliest year to include (default: current year minus 5) */
+        fromYear?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of per-event attendance summaries */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceSummaryDTO'][];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden — requires PARTNER or ORGANIZER role */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   listEvents: {
     parameters: {
       query?: {

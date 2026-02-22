@@ -4,58 +4,35 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-02-22
 
-**Current Phase:** MVP Complete - Epics 1-5 Functional (Minor Features Pending)
+**Current Phase:** Post-MVP — Epic 6 on Staging, Epic 8 in Active Development
 
-**MVP Status:** ✅ **PRODUCTION READY** - Core functionality complete, ready for launch with documented feature gaps
+**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1-5) complete. Epic 6 (Speaker Portal) deployed to staging. Epic 8 (Partner Coordination) in development.
 
 ### Epic Progress Summary
 
 | Epic | Status | Progress | Key Accomplishments |
 |------|--------|----------|---------------------|
-| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | 100% (27/27) | Shared Kernel, API Gateway, Auth (all flows), User Mgmt, CI/CD, Monitoring, API Consolidation |
-| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | 100% (8/8) | Company, User, Event, Partner Management (Backend + Frontend) |
-| **Epic 3: Historical Data Migration** | ✅ Complete | 100% (Implementation Ready) | All Batch Imports Implemented (Companies, Speakers, Events, Sessions, Participants) - Production data import pending |
-| **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% (All Stories) | Event Landing Page, Registration Flow, Email Confirmation, Testing, SEO, Performance Optimization, Archive Browsing (BAT-109), Content Search |
-| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 100% (8/8 stories) | Event Types, 9-State Workflow, Speaker Coordination, Content Submission, Quality Review, Task System, Auto-Publishing & Lifecycle Automation (BAT-16) |
-
-### Key Components Status
-
-| Component | Status | Stories |
-|-----------|--------|---------|
-| **Infrastructure Foundation** | ✅ Complete | 1.1-1.7, 1.9, 1.11 |
-| **API Gateway & Authentication** | ✅ Complete | 1.2 + sub-stories |
-| **Shared Kernel & Types** | ✅ Complete | 1.1, 1.15a |
-| **Company Management** | ✅ Complete | 1.14, 2.5.1 |
-| **User Management** | ✅ Complete | 1.14-2, 2.5.2 |
-| **Event Management** | ✅ Complete | 2.2, 2.5.3 |
-| **Partner Management** | ✅ Complete | 2.7, 2.8.1-2.8.4 |
-| **React Frontend Foundation** | ✅ Complete | 1.17 |
-| **Public Website - Registration** | ✅ Complete | 4.1.1-4.1.6 |
-| **Public Website - Testing & Performance** | ✅ Complete | 4.1.7, 4.1.8, 4.1.8a, 2.2a |
-| **Event Type & Workflow** | ✅ Complete | 5.1, 5.1a, 5.3 |
-| **Topic Selection** | 🔄 Ready for Review | 5.2 |
+| **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | 100% | Shared Kernel, API Gateway, Auth, User Mgmt, CI/CD, Monitoring |
+| **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | 100% | Company, User, Event, Partner Management (Backend + Frontend) |
+| **Epic 3: Historical Data Migration** | ✅ Complete | 100% | All batch imports implemented — production data import pending |
+| **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% | Event landing pages, 3-step registration wizard, archive browsing, SEO |
+| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 100% | 9-state workflow, speaker coordination, auto-publishing, lifecycle automation |
+| **Epic 6: Speaker Self-Service Portal** | 🚀 Staging | ~90% | Stories 6.0-6.3, 6.5 complete; Story 6.4 (dashboard) partial |
+| **Epic 7: Attendee Experience** | 📋 Planned | — | Post-MVP backlog |
+| **Epic 8: Partner Coordination** | 🔨 In Dev | ~25% | Story 8.0 (Portal Shell) complete; 8.1-8.3 ready for dev |
 
 ### MVP Completion Status
 
-**✅ All MVP Epics Complete (100%):**
-- ✅ **Epic 1**: Foundation & Core Infrastructure - 100% Complete
-- ✅ **Epic 2**: Entity CRUD & Domain Services - 100% Complete
-- ✅ **Epic 3**: Historical Data Migration - 100% Complete (tooling ready)
-- ✅ **Epic 4**: Public Website & Content Discovery - 100% Complete
-- ✅ **Epic 5**: Enhanced Organizer Workflows - 100% Complete (including BAT-16)
+**✅ All MVP Epics Complete (100%)**
 
 **Production Readiness (When Launching):**
-1. **Epic 3: Production Data Import** - ~1 day
-   - Import 2,307 historical participants via batch import modal
-   - Data integrity validation
-   - Performance monitoring
+- **Epic 3: Production Data Import** — import 2,307 historical participants via batch import modal (~1 day effort)
 
-**Post-MVP Enhancements (Phase 2+):**
-- Epic 6: Speaker Portal & Self-Service
-- Epic 7: Attendee Experience Enhancements
-- Epic 8: Partner Coordination Advanced Features
+**Active Post-MVP Work:**
+- Epic 6 on staging — full deployment to production pending Story 6.4 completion
+- Epic 8 in active development — Partner Portal Shell done, analytics/topics/meetings stories ready for dev
 
 ## Quick Start
 
@@ -106,16 +83,20 @@ make dev-native-down
 - ✅ Cognito User Pool (staging authentication)
 - ✅ S3 for file uploads (staging buckets)
 
-### First-Time Setup: Sync Users from Staging Cognito
+### First-Time Setup: Sync Users and Configure Test Auth
 
-After starting services for the first time, sync existing Cognito users to your local database:
+After starting services for the first time:
 
 ```bash
-# Get staging authentication token (one-time setup)
+# 1. Get staging authentication token (organizer)
 ./scripts/auth/get-token.sh staging your-email@example.com your-password
 
-# Sync users from staging Cognito to local PostgreSQL
+# 2. Sync users from staging Cognito to local PostgreSQL
 ./scripts/dev/sync-users-from-cognito.sh
+
+# 3. (Optional) Set up multi-role E2E test tokens (organizer + speaker + partner)
+cp .env.test.local.example .env.test.local   # fill in credentials for each role
+make setup-test-users                        # authenticates all roles
 ```
 
 ### Alternative: Docker Compose (For Integration Testing)
@@ -205,6 +186,7 @@ make build-node        # Node.js projects only
 make test              # Run all tests with coverage reports
 make test-java         # Java tests only (with coverage)
 make test-node         # Node.js tests only (with coverage)
+make setup-test-users  # Authenticate all E2E test role users (organizer/speaker/partner)
 ```
 
 **Code Quality:**
@@ -462,15 +444,33 @@ docs(api): update OpenAPI spec
 test(integration): add contract tests
 ```
 
-## 4-Layer E2E Testing Framework:
-  - Layer 1: Shell scripts (scripts/ci/*.sh)
-  - Layer 2: Bruno tests (bruno-tests/companies-api/*.bru)
-  - Layer 3: Playwright tests (web-frontend/e2e/*.spec.ts)
-  - Layer 4: Infrastructure tests (infrastructure/test/e2e/*.test.ts)
-  - Documentation: docs/testing/e2e-testing-guide.md
+## 4-Layer E2E Testing Framework
+  - Layer 1: Shell scripts (`scripts/ci/*.sh`) — smoke, CORS, header propagation
+  - Layer 2: Bruno tests (`bruno-tests/`) — API contract validation per collection
+  - Layer 3: Playwright tests (`web-frontend/e2e/`) — browser E2E, role-based projects
+  - Layer 4: Infrastructure tests (`infrastructure/test/e2e/`) — AWS resource validation
+  - Documentation: `docs/testing/e2e-testing-guide.md`
 
-## Local Authentication System:
-  - scripts/auth/get-token.sh - Token retrieval
+## Multi-Role E2E Authentication (Epic 8+)
+Tests can run as three distinct roles: **organizer**, **speaker**, **partner**.
+
+```bash
+# Local setup: copy template, fill credentials, authenticate
+cp .env.test.local.example .env.test.local
+make setup-test-users          # → ~/.batbern/staging-{organizer,speaker,partner}.json
+
+# Run partner E2E tests (Playwright partner project)
+cd web-frontend && PARTNER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-partner.json) \
+  npx playwright test --project=partner
+
+# Bruno tests: use {{partnerAuthToken}} in .bru files instead of {{authToken}}
+```
+
+Scripts:
+  - `scripts/auth/get-token.sh <env> <email> <pass> [role]` — get token for one role
+  - `scripts/auth/setup-test-users.sh [env]` — authenticate all roles at once
+  - `scripts/auth/refresh-token.sh [env] [role]` — refresh a role's token
+  - `.env.test.local.example` — credential template (copy to `.env.test.local`, gitignored)
 
 ## License
 

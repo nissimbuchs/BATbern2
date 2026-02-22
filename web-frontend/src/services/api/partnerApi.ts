@@ -20,7 +20,6 @@ export type TopicVoteResponse = components['schemas']['TopicVoteResponse'];
 export type CreatePartnerRequest = components['schemas']['CreatePartnerRequest'];
 export type UpdatePartnerRequest = components['schemas']['UpdatePartnerRequest'];
 export type PartnerContactResponse = components['schemas']['PartnerContactResponse'];
-export type AddPartnerContactRequest = components['schemas']['AddPartnerContactRequest'];
 export type TopicSuggestionResponse = components['schemas']['TopicSuggestionResponse'];
 export type SubmitSuggestionRequest = components['schemas']['SubmitSuggestionRequest'];
 export type PartnerStatistics = components['schemas']['PartnerStatistics'];
@@ -282,6 +281,22 @@ export const updatePartner = async (
   const response = await apiClient.patch<PartnerResponse>(
     `${PARTNER_API_PATH}/${companyName}`,
     request
+  );
+  return response.data;
+};
+
+/**
+ * Get partner contacts for a company.
+ * Returns all users with PARTNER role and matching companyId from User Service.
+ *
+ * @param companyName - Company name (meaningful ID per ADR-003)
+ * @returns Array of PartnerContactResponse
+ */
+export const getPartnerContacts = async (
+  companyName: string
+): Promise<PartnerContactResponse[]> => {
+  const response = await apiClient.get<PartnerContactResponse[]>(
+    `${PARTNER_API_PATH}/${companyName}/contacts`
   );
   return response.data;
 };

@@ -5,6 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { PartnerDetailScreen } from './PartnerDetailScreen';
 
+// Mock useAuth — Story 8.0
+const mockUseAuth = vi.fn();
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 // Mock hooks
 vi.mock('@/hooks/usePartnerDetail', () => ({
   usePartnerDetail: vi.fn(),
@@ -48,6 +54,9 @@ vi.mock('@/stores/partnerDetailStore', () => ({
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerVotes } from '@/hooks/usePartnerVotes';
 import { usePartnerActivity } from '@/hooks/usePartnerActivity';
+import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
+import { usePartnerNotes } from '@/hooks/usePartnerNotes';
+import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 
 // Mock partner data
 const mockPartnerDetail = {
@@ -89,8 +98,16 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       },
     });
 
+    // Default: ORGANIZER role
+    mockUseAuth.mockReturnValue({
+      user: { username: 'organizer1', role: 'organizer' },
+    });
+
     // Reset mocks
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      user: { username: 'organizer1', role: 'organizer' },
+    });
   });
 
   const renderWithProviders = (companyName = 'GoogleZH') => {
@@ -221,8 +238,8 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
   });
 
   /**
-   * Test: should_renderQuickStats_when_partnerLoaded
-   * Verify PartnerQuickStats is rendered
+   * Test: should_renderOverviewTabContent_when_partnerLoaded
+   * Verify overview tab content is rendered (quick stats were removed)
    */
   it('should_renderQuickStats_when_partnerLoaded', async () => {
     vi.mocked(usePartnerDetail).mockReturnValue({
@@ -235,9 +252,8 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
     renderWithProviders();
 
     await waitFor(() => {
-      // Should render quick stats
-      expect(screen.getByText(/Partner Since/i)).toBeInTheDocument();
-      expect(screen.getByText(/Events Attended/i)).toBeInTheDocument();
+      // Should render tab navigation
+      expect(screen.getByRole('tab', { name: /Overview/i })).toBeInTheDocument();
     });
   });
 
@@ -259,7 +275,7 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       // Should render tab navigation
       expect(screen.getByRole('tab', { name: /Overview/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /Meetings/i })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: /Activity/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /Analytics/i })).toBeInTheDocument();
     });
   });
 
@@ -370,5 +386,175 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
     // Just verify back button is present (navigation is handled by React Router)
     const backButton = screen.getByText(/Back/i);
     expect(backButton).toBeInTheDocument();
+  });
+});
+
+// Story 8.0: Role-based rendering tests
+describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    vi.clearAllMocks();
+    vi.mocked(usePartnerVotes).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as any);
+    vi.mocked(usePartnerActivity).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as any);
+    vi.mocked(usePartnerMeetings).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as any);
+    vi.mocked(usePartnerNotes).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    } as any);
+    vi.mocked(usePartnerDetail).mockReturnValue({
+      data: {
+        id: 'test-id',
+        companyName: 'Acme Corp',
+        partnershipLevel: 'GOLD' as const,
+        partnershipStartDate: '2023-01-01T00:00:00Z',
+        tierStartDate: '2023-01-01T00:00:00Z',
+        previousTier: null,
+        isActive: true,
+        company: { name: 'Acme Corp', industry: 'Tech', website: '', location: '' },
+        statistics: { eventsAttended: 5, lastEventName: null, activeVotes: 2, totalMeetings: 1 },
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as any);
+  });
+
+  const renderAsRole = (role: string, activeTab = 5) => {
+    mockUseAuth.mockReturnValue({ user: { username: 'testuser', role } });
+    vi.mocked(usePartnerDetailStore).mockImplementation((selector: any) => {
+      const state = {
+        activeTab,
+        showEditModal: false,
+        showNoteModal: false,
+        setActiveTab: vi.fn(),
+        setShowEditModal: vi.fn(),
+        setShowNoteModal: vi.fn(),
+      };
+      return typeof selector === 'function' ? selector(state) : state;
+    });
+
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/organizer/partners/Acme Corp']}>
+          <Routes>
+            <Route path="/organizer/partners/:companyName" element={<PartnerDetailScreen />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  it('should_showSettingsTab_when_organizerRole', async () => {
+    renderAsRole('organizer', 0);
+
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /Settings/i })).toBeInTheDocument();
+    });
+  });
+
+  it('should_hideSettingsTab_when_partnerRole', async () => {
+    renderAsRole('partner', 0);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('tab', { name: /Settings/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_showEditButton_when_organizerRole', async () => {
+    renderAsRole('organizer', 0);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('edit-partner-button')).toBeInTheDocument();
+    });
+  });
+
+  it('should_hideEditButton_when_partnerRole', async () => {
+    renderAsRole('partner', 0);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('edit-partner-button')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_showAddNoteButton_when_organizerRole', async () => {
+    // Tab 4 = Notes; usePartnerNotes returns [], so empty-state renders with add button
+    renderAsRole('organizer', 4);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-note-button')).toBeInTheDocument();
+    });
+  });
+
+  it('should_hideAddNoteButton_when_partnerRole', async () => {
+    renderAsRole('partner', 4);
+
+    await waitFor(() => {
+      // Notes empty state renders but Add Note button is hidden for PARTNER
+      expect(screen.queryByTestId('add-note-button')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_showAddMeetingButton_when_organizerRole', async () => {
+    renderAsRole('organizer', 2);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('add-meeting-button')).toBeInTheDocument();
+    });
+  });
+
+  it('should_hideAddMeetingButton_when_partnerRole', async () => {
+    renderAsRole('partner', 2);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('add-meeting-button')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_clampActiveTabToZero_when_partnerRoleAndTabIsSettings', async () => {
+    // Simulate stale store with activeTab=5 (Settings) and PARTNER role
+    // effectiveTab should clamp to 0, rendering Overview not Settings
+    renderAsRole('partner', 5);
+
+    await waitFor(() => {
+      // Overview tab content should render (Partnership Details), not Settings
+      expect(screen.getByText(/Partnership Details/i)).toBeInTheDocument();
+      // Settings tab must not be in the DOM
+      expect(screen.queryByRole('tab', { name: /Settings/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('should_usePropsCompanyName_when_companyNamePropProvided', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { username: 'testuser', role: 'partner', companyName: 'PropCompany' },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <PartnerDetailScreen companyName="PropCompany" />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(usePartnerDetail).toHaveBeenCalledWith('PropCompany', expect.any(String));
+    });
   });
 });

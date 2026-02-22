@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { NavigationMenu } from './NavigationMenu';
 
@@ -17,12 +17,16 @@ vi.mock('react-i18next', () => ({
         'navigation.events': 'Events',
         'navigation.speakers': 'Speakers',
         'navigation.partners': 'Partners',
+        'navigation.partnerTopics': 'Partner Topics',
+        'navigation.partnerMeetings': 'Partner Meetings',
         'navigation.analytics': 'Analytics',
         'navigation.content': 'Content',
         'navigation.profile': 'Profile',
         'navigation.myEvents': 'My Events',
         'navigation.myContent': 'My Content',
         'navigation.myRegistrations': 'My Registrations',
+        'navigation.myCompany': 'My Company',
+        'navigation.topics': 'Topics',
       };
       return translations[key] || key;
     },
@@ -66,11 +70,18 @@ describe('NavigationMenu Component', () => {
       expect(speakersLink).toHaveAttribute('href', '/organizer/speakers');
     });
 
-    test('should_linkToPartnersManagement_when_partnersClicked', () => {
+    test('should_showPartnersDropdown_when_partnersClicked', () => {
       renderWithRouter(<NavigationMenu userRole="organizer" />);
 
-      const partnersLink = screen.getAllByText(/partners/i)[0].closest('a');
-      expect(partnersLink).toHaveAttribute('href', '/organizer/partners');
+      // Partners is now a dropdown group button (queried by testid to avoid JSDOM block-in-inline issues)
+      const partnersButton = screen.getByTestId('nav-group-organizer-partners');
+      expect(partnersButton).toBeInTheDocument();
+      expect(partnersButton).toHaveAttribute('aria-haspopup', 'true');
+      expect(partnersButton).toHaveAttribute('aria-expanded', 'false');
+
+      // After clicking, aria-expanded becomes true (dropdown opens)
+      fireEvent.click(partnersButton);
+      expect(partnersButton).toHaveAttribute('aria-expanded', 'true');
     });
   });
 
@@ -104,11 +115,9 @@ describe('NavigationMenu Component', () => {
     test('should_renderPartnerMenuItems_when_roleIsPartner', () => {
       renderWithRouter(<NavigationMenu userRole="partner" />);
 
-      // Partner should see: Dashboard, Events (read-only), Analytics, Profile
-      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/analytics/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/profile/i)[0]).toBeInTheDocument();
+      // Partner should see: My Company, Topics, and public site
+      expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
     test('should_notShowSpeakersMenu_when_roleIsPartner', () => {
@@ -118,11 +127,11 @@ describe('NavigationMenu Component', () => {
       expect(screen.queryByText(/speakers/i)).not.toBeInTheDocument();
     });
 
-    test('should_linkToPartnerDashboard_when_dashboardClicked', () => {
+    test('should_linkToPartnerTopics_when_topicsClicked', () => {
       renderWithRouter(<NavigationMenu userRole="partner" />);
 
-      const dashboardLink = screen.getAllByText(/dashboard/i)[0].closest('a');
-      expect(dashboardLink).toHaveAttribute('href', '/partner/dashboard');
+      const topicsLink = screen.getAllByText(/topics/i)[0].closest('a');
+      expect(topicsLink).toHaveAttribute('href', '/partners/topics');
     });
   });
 

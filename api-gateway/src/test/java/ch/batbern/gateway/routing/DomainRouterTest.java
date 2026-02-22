@@ -68,7 +68,7 @@ class DomainRouterTest {
         String targetService = domainRouter.determineTargetService(requestPath);
 
         // Then
-        assertThat(targetService).isEqualTo("speaker-coordination-service");
+        assertThat(targetService).isEqualTo("event-management-service");
     }
 
     // Test 5.3: should_routeToPartnerService_when_partnersEndpointCalled
@@ -77,6 +77,33 @@ class DomainRouterTest {
     void should_routeToPartnerService_when_partnersEndpointCalled() {
         // Given
         String requestPath = "/api/v1/partners/coordination";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("partner-coordination-service");
+    }
+
+    // Test 5.3b: Story 8.3 — partner-meetings must route to partner-coordination-service
+    @Test
+    @DisplayName("should_routeToPartnerService_when_partnerMeetingsEndpointCalled")
+    void should_routeToPartnerService_when_partnerMeetingsEndpointCalled() {
+        // Given
+        String requestPath = "/api/v1/partner-meetings";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("partner-coordination-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToPartnerService_when_partnerMeetingsWithIdCalled")
+    void should_routeToPartnerService_when_partnerMeetingsWithIdCalled() {
+        // Given
+        String requestPath = "/api/v1/partner-meetings/550e8400-e29b-41d4-a716-446655440000";
 
         // When
         String targetService = domainRouter.determineTargetService(requestPath);
@@ -229,7 +256,7 @@ class DomainRouterTest {
         String targetService = domainRouter.determineTargetService(pathWithQuery);
 
         // Then
-        assertThat(targetService).isEqualTo("speaker-coordination-service");
+        assertThat(targetService).isEqualTo("event-management-service");
     }
 
     @Test
