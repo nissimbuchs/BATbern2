@@ -49,7 +49,7 @@ export class CognitoUserSyncTriggers extends Construct {
       DB_HOST: props.databaseEndpoint,
       DB_NAME: 'batbern',
       DB_SECRET_ARN: props.databaseSecret.secretArn,
-      LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: (isProd || props.envName === 'staging') ? 'INFO' : 'DEBUG',
     };
 
     // Common Lambda props
