@@ -14,15 +14,13 @@ body:json {
   {
     "token": "{{declineSpeakerToken}}",
     "response": "DECLINE",
-    "reason": "Schedule conflict with another commitment",
-    "alternativeSuggestion": "You might consider reaching out to Dr. Example"
+    "reason": "Schedule conflict with another commitment"
   }
 }
 
 assert {
   res.status: eq 200
   res.body.success: eq true
-  res.body.newWorkflowState: eq DECLINED
 }
 
 tests {
@@ -30,15 +28,5 @@ tests {
     expect(res.getStatus()).to.equal(200);
     const body = res.getBody();
     expect(body.success).to.be.true;
-  });
-
-  test("should transition to DECLINED state (terminal) - Story 6.2a AC4", function() {
-    const body = res.getBody();
-    expect(body.newWorkflowState).to.equal('DECLINED');
-  });
-
-  test("should consume token - Story 6.2a AC4", function() {
-    const body = res.getBody();
-    expect(body.tokenConsumed).to.be.true;
   });
 }

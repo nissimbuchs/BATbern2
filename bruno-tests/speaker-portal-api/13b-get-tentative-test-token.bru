@@ -1,0 +1,31 @@
+meta {
+  name: Get E2E Test Token for Tentative Speaker
+  type: http
+  seq: 13.5
+}
+
+post {
+  url: {{baseUrl}}/e2e-test/tokens/generate-for-speaker?eventCode={{speakerPortalTestEventCode}}&username={{tentativeSpeakerUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.tokens: isDefined
+}
+
+tests {
+  test("should generate test tokens for tentative speaker - E2E helper", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.tokens).to.exist;
+    bru.setVar("tentativeSpeakerToken", body.tokens.RESPOND);
+    console.log("Set tentativeSpeakerToken for tentative test");
+  });
+}

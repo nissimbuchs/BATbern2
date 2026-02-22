@@ -17,7 +17,7 @@ auth:bearer {
 body:json {
   {
     "username": "{{invitedSpeakerUsername}}",
-    "speakerRole": "MAIN_SPEAKER",
+    "speakerRole": "PRIMARY_SPEAKER",
     "presentationTitle": "Cloud Architecture Best Practices"
   }
 }
@@ -36,6 +36,6 @@ tests {
 
   test("should set speaker role correctly - Story 6.3 AC1 Setup", function() {
     const body = res.getBody();
-    expect(body.speakerRole).to.equal('MAIN_SPEAKER');
+    expect(body.speakerRole).to.equal('PRIMARY_SPEAKER');
   });
 }
