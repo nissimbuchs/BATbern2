@@ -161,13 +161,6 @@ export const navigationConfig: NavigationItem[] = [
     description: 'Your company profile',
   },
   {
-    labelKey: 'navigation.analytics',
-    path: '/partners/analytics',
-    icon: BarChart,
-    roles: ['partner'],
-    description: 'View analytics',
-  },
-  {
     labelKey: 'navigation.topics',
     path: '/partners/topics',
     icon: Lightbulb,
