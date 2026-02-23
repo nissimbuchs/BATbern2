@@ -23,7 +23,6 @@ import {
   People as PeopleIcon,
   Edit as EditIcon,
   Visibility as PreviewIcon,
-  Email as EmailIcon,
   Topic as TopicIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -120,11 +119,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
   const handlePreviewPublic = () => {
     // Open public page preview in new tab
     window.open(`/events/${eventCode}`, '_blank');
-  };
-
-  const handleSendNotification = () => {
-    // TODO: Open notification modal
-    console.log('Send notification for:', eventCode);
   };
 
   const handleSelectTopic = () => {
@@ -394,14 +388,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
             data-testid="select-topic-button"
           >
             {t('eventPage.overview.selectTopic', 'Select Topic')}
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<EmailIcon />}
-            onClick={handleSendNotification}
-            data-testid="send-notification-button"
-          >
-            {t('eventPage.overview.sendNotification', 'Send Notification')}
           </Button>
           <Button
             variant="outlined"
