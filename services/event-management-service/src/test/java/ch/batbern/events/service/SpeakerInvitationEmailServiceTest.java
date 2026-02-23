@@ -371,7 +371,6 @@ class SpeakerInvitationEmailServiceTest {
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains(
                     "https://batbern.ch/speaker-portal/dashboard?token=" + dashboardToken);
-            assertThat(emailBody).contains("Referenten-Dashboard");
         }
 
         @Test

@@ -39,7 +39,6 @@ import type { components as SpeakerComponents } from '@/types/generated/speakers
 import type { User } from '@/types/user.types';
 import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
-import { PartnerAttendanceDashboard } from '@/components/partner/PartnerAttendanceDashboard';
 import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
 import UserCard from '@/components/organizer/UserManagement/UserCard';
@@ -433,9 +432,8 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </Box>
       )}
 
-      {/* Overview: attendance stats + speakers from this company */}
+      {/* Overview: speakers from this company */}
       <TabPanel value={activeTab} index={0}>
-        <PartnerAttendanceDashboard companyName={company.name} />
         <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
           Speakers
         </Typography>
