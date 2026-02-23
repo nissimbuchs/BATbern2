@@ -24,10 +24,6 @@ vi.mock('@/hooks/usePartnerMeetings', () => ({
   usePartnerMeetings: vi.fn(),
 }));
 
-vi.mock('@/hooks/usePartnerActivity', () => ({
-  usePartnerActivity: vi.fn(),
-}));
-
 vi.mock('@/hooks/usePartnerNotes', () => ({
   usePartnerNotes: vi.fn(),
 }));
@@ -53,7 +49,6 @@ vi.mock('@/stores/partnerDetailStore', () => ({
 
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerVotes } from '@/hooks/usePartnerVotes';
-import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -297,12 +292,6 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       isError: false,
     } as any);
 
-    vi.mocked(usePartnerActivity).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    } as any);
-
     renderWithProviders();
 
     await waitFor(() => {
@@ -399,11 +388,6 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
     });
     vi.clearAllMocks();
     vi.mocked(usePartnerVotes).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    } as any);
-    vi.mocked(usePartnerActivity).mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,

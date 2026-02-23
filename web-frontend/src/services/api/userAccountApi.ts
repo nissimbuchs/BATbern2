@@ -30,61 +30,50 @@ export const getUserProfile = async (
   activity?: UserActivity[];
 }> => {
   const includeParam = include.join(',');
-  try {
-    const response = await apiClient.get(`${USER_API_PATH}/me?include=${includeParam}`);
-    const data = response.data;
+  const response = await apiClient.get(`${USER_API_PATH}/me?include=${includeParam}`);
+  const data = response.data;
 
-    // Backend returns flat structure with user data at root level
-    // Transform to expected structure: { user: {...}, preferences: {...}, settings: {...} }
-    const { preferences, settings, activity, ...userData } = data;
+  // Backend returns flat structure with user data at root level
+  // Transform to expected structure: { user: {...}, preferences: {...}, settings: {...} }
+  const { preferences, settings, activity, ...userData } = data;
 
-    return {
-      user: {
-        ...userData,
-        username: userData.id, // Backend uses 'id' as username
-        memberSince: userData.createdAt,
-        // Map backend fields to frontend types
-        company: userData.company
-          ? {
-              id: userData.company.id || userData.companyId,
-              name: userData.company.name,
-              uid: userData.company.uid,
-            }
-          : undefined,
-      },
-      preferences: preferences
+  return {
+    user: {
+      ...userData,
+      username: userData.id, // Backend uses 'id' as username
+      memberSince: userData.createdAt,
+      // Map backend fields to frontend types
+      company: userData.company
         ? {
-            theme: mapTheme(preferences.theme),
-            timezone: preferences.timezone || 'Europe/Zurich',
-            notificationChannels: {
-              email: preferences.emailNotifications ?? true,
-              inApp: preferences.inAppNotifications ?? true,
-              push: preferences.pushNotifications ?? false,
-            },
-            notificationFrequency: mapNotificationFrequency(preferences.notificationFrequency),
+            id: userData.company.id || userData.companyId,
+            name: userData.company.name,
+            uid: userData.company.uid,
           }
         : undefined,
-      settings: settings
-        ? {
-            profileVisibility: mapProfileVisibility(settings.profileVisibility),
-            showEmail: settings.showEmail ?? false,
-            showCompany: settings.showCompany ?? true,
-            showActivity: settings.showActivityHistory ?? true,
-            allowMessaging: settings.allowMessaging ?? true,
-          }
-        : undefined,
-      activity: activity || [],
-    };
-  } catch (error: unknown) {
-    // TEMPORARY: Return mock data for development until backend implements endpoint
-    // TODO: Remove this fallback once backend /users/me endpoint is ready
-    const axiosError = error as { response?: { status?: number } };
-    if (axiosError?.response?.status === 404) {
-      console.warn('[userAccountApi] Backend endpoint not ready, using mock data for development');
-      return getMockUserProfile();
-    }
-    throw error;
-  }
+    },
+    preferences: preferences
+      ? {
+          theme: mapTheme(preferences.theme),
+          timezone: preferences.timezone || 'Europe/Zurich',
+          notificationChannels: {
+            email: preferences.emailNotifications ?? true,
+            inApp: preferences.inAppNotifications ?? true,
+            push: preferences.pushNotifications ?? false,
+          },
+          notificationFrequency: mapNotificationFrequency(preferences.notificationFrequency),
+        }
+      : undefined,
+    settings: settings
+      ? {
+          profileVisibility: mapProfileVisibility(settings.profileVisibility),
+          showEmail: settings.showEmail ?? false,
+          showCompany: settings.showCompany ?? true,
+          showActivity: settings.showActivityHistory ?? true,
+          allowMessaging: settings.allowMessaging ?? true,
+        }
+      : undefined,
+    activity: activity || [],
+  };
 };
 
 // Helper functions to map backend enums to frontend enums
@@ -104,73 +93,6 @@ const mapProfileVisibility = (visibility?: string): 'PUBLIC' | 'MEMBERS_ONLY' | 
   if (!visibility) return 'MEMBERS_ONLY';
   const mapped = visibility.toUpperCase().replace('_', '_');
   return mapped as 'PUBLIC' | 'MEMBERS_ONLY' | 'PRIVATE';
-};
-
-/**
- * TEMPORARY: Mock user profile for development
- * TODO: Remove once backend /users/me endpoint is implemented
- */
-const getMockUserProfile = (): {
-  user: User;
-  preferences: UserPreferences;
-  settings: UserSettings;
-  activity: UserActivity[];
-} => {
-  return {
-    user: {
-      id: 'mock-user-id',
-      username: 'anna.mueller',
-      email: 'anna.mueller@example.com',
-      emailVerified: true,
-      firstName: 'Anna',
-      lastName: 'Müller',
-      bio: 'Software architect passionate about event-driven systems and cloud-native applications.',
-      profilePictureUrl: undefined,
-      company: {
-        id: 'mock-company-id',
-        name: 'Swiss IT Solutions AG',
-      },
-      roles: ['ORGANIZER'],
-      memberSince: '2024-01-15T10:00:00Z',
-    },
-    preferences: {
-      theme: 'LIGHT',
-      timezone: 'Europe/Zurich',
-      notificationChannels: {
-        email: true,
-        inApp: true,
-        push: false,
-      },
-      notificationFrequency: 'IMMEDIATE',
-    },
-    settings: {
-      profileVisibility: 'MEMBERS_ONLY',
-      showEmail: false,
-      showCompany: true,
-      showActivity: true,
-      allowMessaging: true,
-    },
-    activity: [
-      {
-        id: 'activity-1',
-        type: 'LOGIN',
-        description: 'Logged in',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min ago
-      },
-      {
-        id: 'activity-2',
-        type: 'PROFILE_UPDATE',
-        description: 'Updated profile information',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-      },
-      {
-        id: 'activity-3',
-        type: 'PASSWORD_CHANGE',
-        description: 'Changed password',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days ago
-      },
-    ],
-  };
 };
 
 /**

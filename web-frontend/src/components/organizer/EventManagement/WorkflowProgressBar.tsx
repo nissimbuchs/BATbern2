@@ -7,7 +7,7 @@
  *
  * Displays workflow progress with:
  * - Progress bar showing completion percentage (0-100%)
- * - Current step indicator (Step X/16: Step Name)
+ * - Current step indicator (Step X/9: Step Name)
  * - Clickable progress bar navigation to workflow visualization
  * - Warning indicators for blockers (⚠️)
  * - [View Workflow Details] button
@@ -35,11 +35,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { WorkflowState } from '@/types/event.types';
-import {
-  WORKFLOW_STATE_ORDER,
-  getProgressColor,
-  getWorkflowStateI18nKey,
-} from '@/utils/workflow/workflowState';
+import { WORKFLOW_STATE_ORDER, getProgressColor } from '@/utils/workflow/workflowState';
 
 interface WorkflowProgressBarProps {
   workflow: WorkflowState;
@@ -53,7 +49,6 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   workflow,
   eventCode,
   compact = false,
-  workflowState: explicitWorkflowState,
 }) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
@@ -63,28 +58,14 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
   // Handle undefined/null workflow
   const safeWorkflow: WorkflowState = workflow || {
     currentStep: 1,
-    totalSteps: 16,
+    totalSteps: WORKFLOW_STATE_ORDER.length,
     completionPercentage: 0,
     steps: [],
     blockers: [],
   };
 
-  const { currentStep, totalSteps, completionPercentage, blockers } = safeWorkflow;
-
-  // Use explicit workflow state if provided, otherwise derive from step number (Story 5.1a)
-  let derivedWorkflowState: string;
-  if (explicitWorkflowState) {
-    derivedWorkflowState = explicitWorkflowState;
-  } else {
-    const workflowStateIndex = Math.max(
-      0,
-      Math.min(currentStep - 1, WORKFLOW_STATE_ORDER.length - 1)
-    );
-    derivedWorkflowState = WORKFLOW_STATE_ORDER[workflowStateIndex];
-  }
-
-  // Get translated workflow state name
-  const stepName = t(getWorkflowStateI18nKey(derivedWorkflowState), derivedWorkflowState);
+  const { blockers } = safeWorkflow;
+  const completionPercentage = Math.round(safeWorkflow.completionPercentage * 10) / 10;
 
   // Check for critical blockers
   const hasCriticalBlockers = blockers.some((b) => b.severity === 'critical');
@@ -134,42 +115,25 @@ export const WorkflowProgressBar: React.FC<WorkflowProgressBarProps> = ({
     >
       {/* Progress Bar Section */}
       <Box sx={{ flex: 1 }}>
-        {/* Status and Step Indicator */}
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={0.5}
-          spacing={1}
-        >
-          <Typography variant="body2" color="text.secondary">
-            {stepName || (currentStep === totalSteps ? t('workflow.completed') : '')}
-          </Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2" color="text.secondary">
-              {currentStep === totalSteps
-                ? ''
-                : t('workflow.stepIndicator', { current: currentStep, total: totalSteps })}
-            </Typography>
-            {/* Blocker Warning Indicator */}
-            {blockers.length > 0 && (
-              <Tooltip title={blockerTooltipContent} arrow>
-                <Chip
-                  icon={hasCriticalBlockers ? <ErrorIcon /> : <WarningIcon />}
-                  label={
-                    <>
-                      {hasCriticalBlockers && '🔴 '}⚠️{' '}
-                      {t('workflow.blockers', { count: blockers.length })}
-                    </>
-                  }
-                  size="small"
-                  color={hasCriticalBlockers ? 'error' : 'warning'}
-                  variant="outlined"
-                />
-              </Tooltip>
-            )}
-          </Stack>
-        </Stack>
+        {/* Blocker Warning Indicator */}
+        {blockers.length > 0 && (
+          <Box mb={0.5}>
+            <Tooltip title={blockerTooltipContent} arrow>
+              <Chip
+                icon={hasCriticalBlockers ? <ErrorIcon /> : <WarningIcon />}
+                label={
+                  <>
+                    {hasCriticalBlockers && '🔴 '}⚠️{' '}
+                    {t('workflow.blockers', { count: blockers.length })}
+                  </>
+                }
+                size="small"
+                color={hasCriticalBlockers ? 'error' : 'warning'}
+                variant="outlined"
+              />
+            </Tooltip>
+          </Box>
+        )}
 
         {/* Progress Bar with Percentage */}
         <Stack direction="row" alignItems="center" spacing={1}>

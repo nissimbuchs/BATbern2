@@ -13,14 +13,12 @@ import { PartnerDetailScreen } from './PartnerDetailScreen';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerVotes } from '@/hooks/usePartnerVotes';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
-import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 
 // Mock hooks
 vi.mock('@/hooks/usePartnerDetail');
 vi.mock('@/hooks/usePartnerVotes');
 vi.mock('@/hooks/usePartnerMeetings');
-vi.mock('@/hooks/usePartnerActivity');
 vi.mock('@/hooks/usePartnerNotes');
 // Story 8.0: mock useAuth (PartnerDetailScreen now uses auth context)
 vi.mock('@/hooks/useAuth', () => ({
@@ -30,7 +28,6 @@ vi.mock('@/hooks/useAuth', () => ({
 const mockUsePartnerDetail = vi.mocked(usePartnerDetail);
 const mockUsePartnerVotes = vi.mocked(usePartnerVotes);
 const mockUsePartnerMeetings = vi.mocked(usePartnerMeetings);
-const mockUsePartnerActivity = vi.mocked(usePartnerActivity);
 const mockUsePartnerNotes = vi.mocked(usePartnerNotes);
 
 // Mock store
@@ -55,7 +52,6 @@ vi.mock('@/stores/partnerDetailStore', () => ({
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerVotes } from '@/hooks/usePartnerVotes';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
-import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 
 // Mock partner data
@@ -127,12 +123,6 @@ describe('Partner Detail Screen - Accessibility', () => {
     });
 
     mockUsePartnerMeetings.mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    });
-
-    mockUsePartnerActivity.mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,

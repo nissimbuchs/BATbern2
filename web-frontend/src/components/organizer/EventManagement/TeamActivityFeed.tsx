@@ -39,12 +39,14 @@ import {
   Warning as WarningIcon,
   Event as EventIcon,
   DoneAll as DoneAllIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import type { Notification, NotificationType } from '@/types/notification';
-import { useMarkAsRead } from '@/hooks/useNotifications';
+import { useMarkAsRead, useBatchMarkAsRead, useDeleteNotification } from '@/hooks/useNotifications';
 
 interface TeamActivityFeedProps {
   notifications: Notification[];
@@ -140,9 +142,12 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
   onReload,
   limit,
 }) => {
-  const { i18n } = useTranslation('events');
+  const { t, i18n } = useTranslation('common');
   const locale = i18n.language === 'de' ? de : enUS;
+  const navigate = useNavigate();
   const markAsReadMutation = useMarkAsRead();
+  const batchMarkAsReadMutation = useBatchMarkAsRead();
+  const deleteNotificationMutation = useDeleteNotification();
 
   const displayedNotifications = limit ? notifications.slice(0, limit) : notifications;
   const hasMore = limit && notifications.length > limit;
@@ -157,12 +162,30 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    try {
+      await batchMarkAsReadMutation.mutateAsync(unreadIds);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const handleDelete = async (notificationId: string) => {
+    try {
+      await deleteNotificationMutation.mutateAsync(notificationId);
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
       <Box>
         <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6">Notifications</Typography>
+          <Typography variant="h6">{t('notifications.title')}</Typography>
           <CircularProgress size={20} />
         </Stack>
         <List>
@@ -182,10 +205,10 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       <Box textAlign="center" py={4}>
         <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
         <Typography variant="h6" gutterBottom>
-          Notifications
+          {t('notifications.title')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          No notifications yet
+          {t('notifications.noNotifications')}
         </Typography>
       </Box>
     );
@@ -196,7 +219,7 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="h6">Notifications</Typography>
+          <Typography variant="h6">{t('notifications.title')}</Typography>
           <Badge badgeContent={unreadCount} color="error">
             <Chip
               label={totalCount}
@@ -206,19 +229,36 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
           </Badge>
         </Stack>
 
-        <IconButton
-          onClick={onReload}
-          disabled={isLoading}
-          size="small"
-          aria-label="reload activity feed"
-        >
-          <RefreshIcon />
-        </IconButton>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          {unreadCount > 0 && (
+            <Tooltip title={t('notifications.markAllAsRead')}>
+              <IconButton
+                onClick={handleMarkAllAsRead}
+                disabled={batchMarkAsReadMutation.isPending}
+                size="small"
+                aria-label={t('notifications.markAllAsRead')}
+              >
+                <DoneAllIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title={t('notifications.reload')}>
+            <IconButton
+              onClick={onReload}
+              disabled={isLoading}
+              size="small"
+              aria-label={t('notifications.reload')}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       </Stack>
 
       {/* Last updated timestamp */}
       <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-        Last updated: {formatDistanceToNow(new Date(), { locale, addSuffix: true })}
+        {t('notifications.lastUpdated')}:{' '}
+        {formatDistanceToNow(new Date(), { locale, addSuffix: true })}
       </Typography>
 
       {/* Notification list */}
@@ -243,18 +283,28 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
                 borderColor: `${color}.main`,
               }}
               secondaryAction={
-                isUnread ? (
-                  <Tooltip title="Mark as read">
+                <Stack direction="row" spacing={0}>
+                  {isUnread && (
+                    <Tooltip title={t('notifications.markAsRead')}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleMarkAsRead(notification.id)}
+                        disabled={markAsReadMutation.isPending}
+                      >
+                        <DoneAllIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title={t('notifications.delete')}>
                     <IconButton
-                      edge="end"
                       size="small"
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      disabled={markAsReadMutation.isPending}
+                      onClick={() => handleDelete(notification.id)}
+                      disabled={deleteNotificationMutation.isPending}
                     >
-                      <DoneAllIcon fontSize="small" />
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                ) : null
+                </Stack>
               }
             >
               <ListItemAvatar>
@@ -308,8 +358,12 @@ export const TeamActivityFeed: React.FC<TeamActivityFeedProps> = ({
       {/* View All button */}
       {hasMore && (
         <Box textAlign="center" mt={2}>
-          <Button variant="outlined" size="small">
-            View All ({totalCount})
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => navigate('/organizer/notifications')}
+          >
+            {t('notifications.viewAll')} ({totalCount})
           </Button>
         </Box>
       )}

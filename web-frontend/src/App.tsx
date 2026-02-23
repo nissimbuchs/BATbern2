@@ -14,12 +14,7 @@ import { useAuth } from '@hooks/useAuth';
 import HomePage from '@pages/public/HomePage';
 import { BaseLayout } from '@components/shared/Layout/BaseLayout';
 import { AuthPageLayout } from '@components/shared/Layout/AuthPageLayout';
-import {
-  ProtectedRoute,
-  SpeakerRoute,
-  PartnerRoute,
-  AttendeeRoute,
-} from '@components/auth/ProtectedRoute';
+import { ProtectedRoute, SpeakerRoute, PartnerRoute } from '@components/auth/ProtectedRoute';
 import { LoginForm } from '@components/auth/LoginForm';
 import { ForgotPasswordForm } from '@components/auth/ForgotPasswordForm';
 import { ResetPasswordForm } from '@components/auth/ResetPasswordForm';
@@ -44,11 +39,9 @@ const queryClient = new QueryClient({
 
 // Route-level code splitting with React.lazy() (Task 13b)
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
-const Events = React.lazy(() => import('@pages/Events'));
 const Speakers = React.lazy(() => import('@pages/Speakers'));
 const OrganizerPartners = React.lazy(() => import('@pages/OrganizerPartners'));
 const OrganizerPartnerDetail = React.lazy(() => import('@pages/OrganizerPartnerDetail'));
-const Content = React.lazy(() => import('@pages/Content'));
 
 // Story 8.0: Partner Portal
 const PartnerCompanyPage = React.lazy(() => import('@pages/PartnerCompanyPage'));
@@ -72,8 +65,8 @@ const UserAccountPage = React.lazy(() => import('@pages/UserAccountPage/UserAcco
 
 // Event Management Pages - Story 2.5.3, Task 4
 const EventManagementDashboard = React.lazy(() => import('@pages/EventManagementDashboard'));
-const EventCreate = React.lazy(() => import('@pages/EventCreate'));
-const EventTimeline = React.lazy(() => import('@pages/EventTimeline'));
+const OrganizerAnalyticsPage = React.lazy(() => import('@pages/organizer/OrganizerAnalyticsPage'));
+const NotificationsPage = React.lazy(() => import('@pages/organizer/NotificationsPage'));
 const EventPage = React.lazy(() => import('@pages/organizer/EventPage')); // Story 5.6: Unified event page
 const EventTypeConfigurationAdmin = React.lazy(
   () => import('@pages/organizer/EventTypeConfigurationAdmin')
@@ -269,14 +262,6 @@ function App() {
                     {/* Story 9.1: Speaker Portal - JWT Magic Login */}
                     <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
 
-                    <Route
-                      path="/search"
-                      element={
-                        <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-100">
-                          Search (Coming in 4.3)
-                        </div>
-                      }
-                    />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/support" element={<SupportPage />} />
@@ -343,17 +328,6 @@ function App() {
                       }
                     />
 
-                    <Route
-                      path="/events"
-                      element={
-                        <ProtectedRoute>
-                          <AuthLayout>
-                            <Events />
-                          </AuthLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-
                     {/* Event Management Routes - Story 2.5.3, Task 4 */}
                     <Route
                       path="/organizer/events"
@@ -361,26 +335,6 @@ function App() {
                         <ProtectedRoute>
                           <AuthLayout>
                             <EventManagementDashboard />
-                          </AuthLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/organizer/events/create"
-                      element={
-                        <ProtectedRoute>
-                          <AuthLayout>
-                            <EventCreate />
-                          </AuthLayout>
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/organizer/events/timeline"
-                      element={
-                        <ProtectedRoute>
-                          <AuthLayout>
-                            <EventTimeline />
                           </AuthLayout>
                         </ProtectedRoute>
                       }
@@ -537,17 +491,6 @@ function App() {
                       element={<Navigate to="/partners/analytics" replace />}
                     />
 
-                    <Route
-                      path="/content"
-                      element={
-                        <AttendeeRoute>
-                          <AuthLayout>
-                            <Content />
-                          </AuthLayout>
-                        </AttendeeRoute>
-                      }
-                    />
-
                     {/* Company Management Routes */}
                     <Route
                       path="/organizer/companies/*"
@@ -568,6 +511,30 @@ function App() {
                             <CompanyManagement />
                           </AuthLayout>
                         </SpeakerRoute>
+                      }
+                    />
+
+                    {/* Organizer Notifications */}
+                    <Route
+                      path="/organizer/notifications"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <NotificationsPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Organizer Analytics - placeholder until implemented */}
+                    <Route
+                      path="/organizer/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <OrganizerAnalyticsPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
                       }
                     />
 

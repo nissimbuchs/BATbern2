@@ -483,5 +483,20 @@
     "detail": {
       "backToArchive": "← Back to Archive"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllAsRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "delete": "Delete",
+    "reload": "Reload",
+    "viewAll": "View All",
+    "empty": "No notifications",
+    "noNotifications": "No notifications yet",
+    "lastUpdated": "Last updated",
+    "deleteConfirmation": {
+      "title": "Delete Notification",
+      "message": "Are you sure you want to delete this notification?"
+    }
   }
 }

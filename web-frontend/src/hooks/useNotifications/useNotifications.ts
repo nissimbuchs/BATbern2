@@ -84,9 +84,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
     queryKey: ['notifications'],
     queryFn: fetchNotifications,
     staleTime: options?.staleTime ?? 1000 * 60, // 1 minute default
-    // TODO: Re-enable when Story 1.15a.10 (Notifications API) is implemented
-    // Backend endpoints not yet available - causes 500 errors
-    enabled: options?.enabled ?? false, // Disabled by default until backend ready
+    enabled: options?.enabled ?? true,
   });
 
   // Mutation for marking single notification as read
