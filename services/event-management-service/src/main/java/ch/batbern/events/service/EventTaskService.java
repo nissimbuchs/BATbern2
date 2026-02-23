@@ -442,6 +442,44 @@ public class EventTaskService {
     public record TemplateAssignmentConfig(UUID templateId, String assignedOrganizerUsername) {}
 
     /**
+     * Update an existing task (patch semantics — only non-null fields are applied).
+     *
+     * Allows editing notes, due date, and assigned organizer without changing task status.
+     *
+     * @param taskId the task ID
+     * @param notes updated notes (null = keep existing)
+     * @param dueDate updated due date (null = keep existing)
+     * @param assignedOrganizerUsername updated assignee (null = keep existing, empty = unassign)
+     * @return the updated task
+     * @throws jakarta.persistence.EntityNotFoundException if task not found
+     */
+    @Transactional
+    public EventTask updateTask(UUID taskId, String notes, java.time.Instant dueDate, String assignedOrganizerUsername) {
+        log.info("Updating task {}: notes={}, dueDate={}, assignee={}",
+                taskId, notes != null, dueDate, assignedOrganizerUsername);
+
+        EventTask task = eventTaskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
+
+        if (notes != null) {
+            task.setNotes(notes.trim().isEmpty() ? null : notes);
+        }
+        if (dueDate != null) {
+            task.setDueDate(dueDate);
+        }
+        if (assignedOrganizerUsername != null) {
+            // Empty string means unassign; non-empty means assign
+            task.setAssignedOrganizerUsername(
+                    assignedOrganizerUsername.trim().isEmpty() ? null : assignedOrganizerUsername
+            );
+        }
+
+        EventTask updated = eventTaskRepository.save(task);
+        log.info("Task {} updated", taskId);
+        return updated;
+    }
+
+    /**
      * Create an ad-hoc task (not from template).
      *
      * @param eventId the event ID

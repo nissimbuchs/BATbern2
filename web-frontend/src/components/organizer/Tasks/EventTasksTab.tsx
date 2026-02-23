@@ -86,7 +86,8 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   });
 
   // Separate default and custom templates
-  const defaultTemplates = allTemplates.filter((t) => t.isDefault);
+  const defaultTemplates = allTemplates.filter((tmpl) => tmpl.isDefault);
+  const customTemplates = allTemplates.filter((tmpl) => !tmpl.isDefault);
 
   const handleAddCustomTask = () => {
     setIsCustomTaskModalOpen(true);
@@ -219,6 +220,112 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
           </List>
         </Paper>
       </Stack>
+
+      {/* Custom Template Tasks Section (organizer-created templates) */}
+      {customTemplates.length > 0 && (
+        <>
+          <Divider sx={{ my: 3 }} />
+          <Stack spacing={2}>
+            <Typography variant="h6">
+              {t('tasks.customTemplates', 'Custom Task Templates')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t(
+                'tasks.customTemplatesDescription',
+                'These templates were created by your team. Select any you want to include for this event.'
+              )}
+            </Typography>
+
+            <Paper variant="outlined" sx={{ p: 2 }}>
+              <List>
+                {customTemplates.map((template) => {
+                  const isSelected = selectedTemplates.includes(template.id);
+                  const assignee = templateAssignees[template.id] || '';
+                  const hasTaskInstance = disabledTemplates.includes(template.id);
+
+                  return (
+                    <ListItem
+                      key={template.id}
+                      sx={{
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                        flexDirection: 'column',
+                        alignItems: 'stretch',
+                        backgroundColor: hasTaskInstance ? 'action.disabledBackground' : 'inherit',
+                      }}
+                    >
+                      <Stack direction="row" spacing={2} alignItems="center" width="100%">
+                        {/* Checkbox */}
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
+                              disabled={hasTaskInstance}
+                            />
+                          }
+                          label={
+                            hasTaskInstance ? (
+                              <>
+                                {template.name}
+                                <Chip
+                                  label={t('tasks.taskExists', 'Task exists')}
+                                  size="small"
+                                  color="info"
+                                  sx={{ ml: 1 }}
+                                />
+                              </>
+                            ) : (
+                              template.name
+                            )
+                          }
+                          sx={{ flex: 1 }}
+                        />
+
+                        {/* Assignee Dropdown */}
+                        <OrganizerSelect
+                          value={assignee}
+                          onChange={(organizerId) => onAssigneeChange(template.id, organizerId)}
+                          organizers={organizers}
+                          label={t('tasks.assignTo', 'Assign To')}
+                          sx={{ minWidth: 200 }}
+                          disabled={!isSelected || hasTaskInstance}
+                          includeUnassigned={true}
+                          includeAllOption={false}
+                        />
+
+                        {/* Info Icon */}
+                        <Tooltip
+                          title={
+                            <Stack spacing={0.5}>
+                              <Typography variant="caption">
+                                <strong>{t('tasks.triggerState', 'Trigger')}:</strong>{' '}
+                                {template.triggerState}
+                              </Typography>
+                              <Typography variant="caption">
+                                <strong>{t('tasks.dueDate', 'Due')}:</strong>{' '}
+                                {template.dueDateType === 'immediate'
+                                  ? t('tasks.immediate', 'Immediate')
+                                  : `${template.dueDateOffsetDays} ${t('tasks.days', 'days')}`}
+                              </Typography>
+                            </Stack>
+                          }
+                        >
+                          <IconButton size="small">
+                            <InfoIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </ListItem>
+                  );
+                })}
+              </List>
+            </Paper>
+          </Stack>
+        </>
+      )}
 
       <Divider sx={{ my: 3 }} />
 

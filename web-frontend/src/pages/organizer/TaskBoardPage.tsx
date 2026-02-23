@@ -75,6 +75,7 @@ const TaskBoardPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'mine'>('mine');
   const [sortBy, setSortBy] = useState<'dueDate' | 'createdAt'>('dueDate');
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<EventTaskResponse | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [completionNotes, setCompletionNotes] = useState('');
   const [activeTask, setActiveTask] = useState<EventTaskResponse | null>(null);
@@ -145,6 +146,11 @@ const TaskBoardPage: React.FC = () => {
   const todoTasks = sortedTasks.filter((task) => task.status === 'todo');
   const inProgressTasks = sortedTasks.filter((task) => task.status === 'in_progress');
   const completedTasks = sortedTasks.filter((task) => task.status === 'completed');
+
+  const handleEditTask = (task: EventTaskResponse) => {
+    setEditingTask(task);
+    setIsCustomTaskModalOpen(true);
+  };
 
   const handleCompleteTask = (taskId: string) => {
     setCompletingTaskId(taskId);
@@ -231,7 +237,10 @@ const TaskBoardPage: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setIsCustomTaskModalOpen(true)}
+              onClick={() => {
+                setEditingTask(null);
+                setIsCustomTaskModalOpen(true);
+              }}
             >
               {t('tasks.addCustomTask', 'Add Custom Task')}
             </Button>
@@ -286,6 +295,7 @@ const TaskBoardPage: React.FC = () => {
                       status="pending"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -321,6 +331,7 @@ const TaskBoardPage: React.FC = () => {
                       status="todo"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -356,6 +367,7 @@ const TaskBoardPage: React.FC = () => {
                       status="in_progress"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -386,7 +398,13 @@ const TaskBoardPage: React.FC = () => {
                     >
                       {t('tasks.completedDescription', 'Finished tasks')}
                     </Typography>
-                    <TaskColumn tasks={completedTasks} status="completed" locale={locale} t={t} />
+                    <TaskColumn
+                      tasks={completedTasks}
+                      status="completed"
+                      locale={locale}
+                      onEdit={handleEditTask}
+                      t={t}
+                    />
                   </Paper>
                 </DroppableColumn>
               </Grid>
@@ -441,12 +459,16 @@ const TaskBoardPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Custom Task Modal */}
+      {/* Custom Task Modal (create or edit) */}
       <CustomTaskModal
         open={isCustomTaskModalOpen}
-        onClose={() => setIsCustomTaskModalOpen(false)}
-        eventId={null} // Ad-hoc task not tied to specific event
+        onClose={() => {
+          setIsCustomTaskModalOpen(false);
+          setEditingTask(null);
+        }}
+        eventId={null}
         organizerUsername={organizerUsername}
+        existingTask={editingTask ?? undefined}
       />
     </>
   );
@@ -480,10 +502,18 @@ interface DraggableTaskProps {
   status: 'pending' | 'todo' | 'in_progress' | 'completed';
   locale: Locale;
   onComplete?: (taskId: string) => void;
+  onEdit?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
-const DraggableTask: React.FC<DraggableTaskProps> = ({ task, status, locale, onComplete, t }) => {
+const DraggableTask: React.FC<DraggableTaskProps> = ({
+  task,
+  status,
+  locale,
+  onComplete,
+  onEdit,
+  t,
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
@@ -501,6 +531,7 @@ const DraggableTask: React.FC<DraggableTaskProps> = ({ task, status, locale, onC
       task={task}
       locale={locale}
       onComplete={onComplete}
+      onEdit={onEdit}
       showCompleteButton={status !== 'completed'}
       showEventCode={true}
       showTriggerState={true}
@@ -530,10 +561,18 @@ interface TaskColumnProps {
   status: 'pending' | 'todo' | 'in_progress' | 'completed';
   locale: Locale;
   onComplete?: (taskId: string) => void;
+  onEdit?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
-const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComplete, t }) => {
+const TaskColumn: React.FC<TaskColumnProps> = ({
+  tasks,
+  status,
+  locale,
+  onComplete,
+  onEdit,
+  t,
+}) => {
   if (tasks.length === 0) {
     return (
       <Box textAlign="center" py={4}>
@@ -553,6 +592,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComple
           status={status}
           locale={locale}
           onComplete={onComplete}
+          onEdit={onEdit}
           t={t}
         />
       ))}

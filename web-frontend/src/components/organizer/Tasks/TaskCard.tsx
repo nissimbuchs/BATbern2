@@ -22,7 +22,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Edit as EditIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { type Locale } from 'date-fns/locale';
 import { type EventTaskResponse } from '@/services/taskService';
@@ -33,6 +33,7 @@ export interface TaskCardProps {
   task: EventTaskResponse;
   locale: Locale;
   onComplete?: (taskId: string) => void;
+  onEdit?: (task: EventTaskResponse) => void;
   showCompleteButton?: boolean;
   showEventCode?: boolean;
   showTriggerState?: boolean;
@@ -53,6 +54,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   task,
   locale,
   onComplete,
+  onEdit,
   showCompleteButton = true,
   showEventCode = true,
   showTriggerState = false,
@@ -96,20 +98,36 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <Typography variant="subtitle2" fontWeight="bold">
           {task.taskName}
         </Typography>
-        {showCompleteButton && onComplete && task.status !== 'completed' && (
-          <Tooltip title={t('tasks.markComplete', 'Mark complete')}>
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                onComplete(task.id);
-              }}
-              aria-label="Complete task"
-            >
-              <CheckCircleIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        )}
+        <Stack direction="row" spacing={0}>
+          {onEdit && (
+            <Tooltip title={t('tasks.editTask', 'Edit task')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(task);
+                }}
+                aria-label="Edit task"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {showCompleteButton && onComplete && task.status !== 'completed' && (
+            <Tooltip title={t('tasks.markComplete', 'Mark complete')}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onComplete(task.id);
+                }}
+                aria-label="Complete task"
+              >
+                <CheckCircleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
       </Stack>
 
       {/* Task Details */}
