@@ -109,7 +109,9 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
               size="small"
               sx={{ mb: 0.5 }}
             />
-            <Typography variant="h6">{partner.companyName}</Typography>
+            {(!logoUrl || !isVisible) && (
+              <Typography variant="h6">{partner.companyName}</Typography>
+            )}
           </Box>
         </Box>
 
