@@ -1,0 +1,212 @@
+openapi: "3.0.3"
+info:
+  title: "BATbern Partner Notes API"
+  description: "Partner notes endpoints — Story 8.4. ORGANIZER-only; partners must not see notes."
+  version: "1.0.0"
+
+servers:
+  - url: "/api/v1"
+    description: "API Gateway base URL"
+
+paths:
+  /partners/{companyName}/notes:
+    get:
+      summary: "List all notes for a partner"
+      description: |
+        Returns all notes for the specified partner sorted by created_at descending.
+        ORGANIZER role required (AC1, AC2).
+      operationId: "listPartnerNotes"
+      tags: ["Partner Notes"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "List of partner notes"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartnerNoteDTO"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+        "404":
+          description: "Partner not found"
+      security:
+        - bearerAuth: []
+
+    post:
+      summary: "Create a note for a partner"
+      description: |
+        Creates a note for the specified partner. title and content are required.
+        author_username is captured from the authenticated user's JWT.
+        ORGANIZER role required (AC1, AC3).
+      operationId: "createPartnerNote"
+      tags: ["Partner Notes"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteRequest"
+      responses:
+        "201":
+          description: "Note created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerNoteDTO"
+        "400":
+          description: "Invalid request"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+        "404":
+          description: "Partner not found"
+      security:
+        - bearerAuth: []
+
+  /partners/{companyName}/notes/{noteId}:
+    patch:
+      summary: "Update a partner note"
+      description: |
+        Partial update — only provided non-null fields are changed.
+        ORGANIZER role required (AC1, AC4).
+      operationId: "updatePartnerNote"
+      tags: ["Partner Notes"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteRequest"
+      responses:
+        "200":
+          description: "Note updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerNoteDTO"
+        "400":
+          description: "Invalid request"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+        "404":
+          description: "Note not found"
+      security:
+        - bearerAuth: []
+
+    delete:
+      summary: "Delete a partner note"
+      description: |
+        Deletes the specified note. ORGANIZER role required (AC1, AC5).
+      operationId: "deletePartnerNote"
+      tags: ["Partner Notes"]
+      parameters:
+        - name: companyName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: "Note deleted"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+        "404":
+          description: "Note not found"
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    PartnerNoteDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Note ID"
+        title:
+          type: string
+          description: "Note title"
+        content:
+          type: string
+          description: "Note content (HTML supported)"
+        authorUsername:
+          type: string
+          description: "Organizer username (ADR-003)"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - content
+        - authorUsername
+        - createdAt
+        - updatedAt
+
+    CreateNoteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          description: "Note title (required)"
+        content:
+          type: string
+          description: "Note content (required)"
+      required:
+        - title
+        - content
+
+    UpdateNoteRequest:
+      type: object
+      description: "All fields optional — only provided non-null fields are changed"
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: "Note title"
+        content:
+          type: string
+          nullable: true
+          description: "Note content"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

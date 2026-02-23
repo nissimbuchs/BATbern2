@@ -491,6 +491,7 @@
     "delete": "Delete",
     "reload": "Reload",
     "viewAll": "View All",
+    "hideRead": "Hide read",
     "empty": "No notifications",
     "noNotifications": "No notifications yet",
     "lastUpdated": "Last updated",

@@ -60,9 +60,9 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
       | 'ATTENDEE',
   };
 
-  // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state (e.g. tab=5) cannot expose
-  // PartnerSettingsTab to a PARTNER user across Zustand sessions.
-  const PARTNER_MAX_TAB = 4; // Settings (5) is not visible for PARTNER
+  // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state cannot expose hidden tabs to PARTNER.
+  // Story 8.4: Notes (4) and Settings (5) are not visible for PARTNER
+  const PARTNER_MAX_TAB = 3; // Analytics (3) is the last visible tab for PARTNER
   const effectiveTab =
     currentUser.role === 'PARTNER' && activeTab > PARTNER_MAX_TAB ? 0 : activeTab;
 
@@ -90,17 +90,6 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   // Handle tab change
   const handleTabChange = (newTab: number) => {
     setActiveTab(newTab);
-  };
-
-  // Handle status and auto-renewal updates (callbacks for Settings tab)
-  const handleUpdateStatus = (isActive: boolean) => {
-    // TODO: Implement status update mutation (Epic 8)
-    console.log('Update status:', isActive);
-  };
-
-  const handleUpdateAutoRenewal = (autoRenewal: boolean) => {
-    // TODO: Implement auto-renewal update mutation (Epic 8)
-    console.log('Update auto-renewal:', autoRenewal);
   };
 
   // Loading state
@@ -234,19 +223,14 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         {/* Analytics Tab */}
         {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
 
-        {/* Notes Tab */}
-        {effectiveTab === 4 && (
+        {/* Notes Tab — Story 8.4: hidden for PARTNER (organizer-internal notes) */}
+        {effectiveTab === 4 && currentUser.role !== 'PARTNER' && (
           <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
         )}
 
         {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
         {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
-          <PartnerSettingsTab
-            partner={partner}
-            currentUser={currentUser}
-            onUpdateStatus={handleUpdateStatus}
-            onUpdateAutoRenewal={handleUpdateAutoRenewal}
-          />
+          <PartnerSettingsTab partner={partner} currentUser={currentUser} />
         )}
       </Box>
 

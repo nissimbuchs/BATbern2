@@ -12,9 +12,10 @@ interface PartnerTabNavigationProps {
 const ALL_TAB_LABELS = ['Overview', 'Contacts', 'Meetings', 'Analytics', 'Notes', 'Settings'];
 
 // Story 8.0: Settings tab hidden for PARTNER role
+// Story 8.4: Notes tab also hidden for PARTNER (organizer-internal notes)
 const getVisibleTabs = (role?: UserRole) => {
   if (role === 'PARTNER') {
-    return ALL_TAB_LABELS.filter((label) => label !== 'Settings');
+    return ALL_TAB_LABELS.filter((label) => label !== 'Settings' && label !== 'Notes');
   }
   return ALL_TAB_LABELS;
 };

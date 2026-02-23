@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Card, CardContent, Typography, Stack, Chip, Button, Alert } from '@mui/material';
 import { Add as AddIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
+import CreateMeetingDialog from '@/components/organizer/CreateMeetingDialog';
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
@@ -26,6 +27,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
   const { t } = useTranslation('partners');
   const { data: meetings, isLoading, error } = usePartnerMeetings(companyName);
   const isPartner = role === 'PARTNER';
+  const [createOpen, setCreateOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -41,28 +43,21 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
 
   return (
     <Box>
-      {/* Header with Epic 8 message */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            {t('detail.meetingsTab.title')}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('detail.header.comingSoon')}
-          </Typography>
-        </Box>
+        <Typography variant="h6">{t('detail.meetingsTab.title')}</Typography>
         {!isPartner && (
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            disabled
-            title={t('detail.header.comingSoon')}
+            onClick={() => setCreateOpen(true)}
             data-testid="add-meeting-button"
           >
             {t('detail.meetingsTab.addMeeting')}
           </Button>
         )}
       </Stack>
+
+      <CreateMeetingDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 
       {/* Meetings List */}
       {!meetings || meetings.length === 0 ? (

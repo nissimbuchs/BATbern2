@@ -126,12 +126,13 @@ development_status:
   epic-7: backlog
   epic-7-retrospective: optional
 
-  # Epic 8: Advanced Partner Analytics & Voting - COMPLETE (2026-02-22)
-  epic-8: done
+  # Epic 8: Advanced Partner Analytics & Voting - IN PROGRESS (8.4 added 2026-02-23)
+  epic-8: in-progress
   8-0-partner-portal-shell: done
   8-1-partner-analytics-dashboard: done
   8-2-topic-voting-system: done
   8-3-automated-meeting-coordination: done
+  8-4-partner-notes: review
   epic-8-retrospective: optional
 
   # Epic 9: Speaker Authentication - BACKLOG

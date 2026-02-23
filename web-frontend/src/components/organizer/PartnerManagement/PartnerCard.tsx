@@ -93,46 +93,15 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
       <CardContent sx={{ flexGrow: 1 }}>
         {/* Logo and Tier Badge */}
         <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <Box
-            sx={{
-              width: 60,
-              height: 60,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            {logoUrl && isVisible ? (
-              <Box
-                component="img"
-                src={logoUrl}
-                alt={partner.companyName}
-                loading="lazy"
-                sx={{
-                  maxWidth: 60,
-                  maxHeight: 60,
-                  objectFit: 'contain',
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                }}
-              >
-                {partner.companyName.substring(0, 2).toUpperCase()}
-              </Box>
-            )}
-          </Box>
+          {logoUrl && isVisible && (
+            <Box
+              component="img"
+              src={logoUrl}
+              alt={partner.companyName}
+              loading="lazy"
+              sx={{ maxWidth: 60, maxHeight: 60, objectFit: 'contain', flexShrink: 0 }}
+            />
+          )}
           <Box flexGrow={1}>
             <Chip
               label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
@@ -140,7 +109,9 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
               size="small"
               sx={{ mb: 0.5 }}
             />
-            <Typography variant="h6">{partner.companyName}</Typography>
+            {(!logoUrl || !isVisible) && (
+              <Typography variant="h6">{partner.companyName}</Typography>
+            )}
           </Box>
         </Box>
 

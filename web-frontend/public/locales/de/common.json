@@ -492,6 +492,7 @@
     "delete": "Löschen",
     "reload": "Aktualisieren",
     "viewAll": "Alle anzeigen",
+    "hideRead": "Gelesene ausblenden",
     "empty": "Keine Benachrichtigungen",
     "noNotifications": "Noch keine Benachrichtigungen",
     "lastUpdated": "Zuletzt aktualisiert",

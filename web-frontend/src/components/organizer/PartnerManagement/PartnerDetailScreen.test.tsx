@@ -524,6 +524,22 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
     });
   });
 
+  // Story 8.4: Notes panel must not render for PARTNER even with activeTab=4
+  it('should_notRenderNotesTab_when_partnerRoleAndEffectiveTabFour', async () => {
+    // With PARTNER_MAX_TAB=3, activeTab=4 is clamped to 0 (Overview)
+    // Defensive guard `currentUser.role !== 'PARTNER'` on Notes panel also prevents render
+    renderAsRole('partner', 4);
+
+    await waitFor(() => {
+      // Overview renders (clamped from 4→0)
+      expect(screen.getByText(/Partnership Details/i)).toBeInTheDocument();
+      // Notes tab is not in tab nav
+      expect(screen.queryByRole('tab', { name: /Notes/i })).not.toBeInTheDocument();
+      // Add Note button must not appear
+      expect(screen.queryByTestId('add-note-button')).not.toBeInTheDocument();
+    });
+  });
+
   it('should_usePropsCompanyName_when_companyNamePropProvided', async () => {
     mockUseAuth.mockReturnValue({
       user: { username: 'testuser', role: 'partner', companyName: 'PropCompany' },

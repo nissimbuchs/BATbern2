@@ -27,7 +27,7 @@ export const PartnerOverviewStats: React.FC = () => {
     return (
       <Box sx={{ mb: 3 }}>
         <Grid container spacing={2}>
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3].map((i) => (
             <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
               <Card>
                 <CardContent>
@@ -94,20 +94,6 @@ export const PartnerOverviewStats: React.FC = () => {
               </Typography>
               <Typography variant="h4" component="div">
                 {activePartners}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Engaged Partners - Placeholder for Epic 8 */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card data-testid="stats-engaged-partners">
-            <CardContent>
-              <Typography color="text.secondary" variant="body2" gutterBottom>
-                Engaged Partners
-              </Typography>
-              <Typography variant="body2" component="div" color="text.disabled">
-                Coming Soon - Epic 8
               </Typography>
             </CardContent>
           </Card>

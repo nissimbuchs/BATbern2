@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -16,6 +16,8 @@ import {
   Button,
   Skeleton,
   Divider,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   DoneAll as DoneAllIcon,
@@ -37,9 +39,10 @@ const NotificationsPage: React.FC = () => {
   const { t, i18n } = useTranslation('common');
   const locale = i18n.language === 'de' ? de : enUS;
   const { user } = useAuth();
+  const [hideRead, setHideRead] = useState(false);
 
   const { data, isLoading } = useNotifications(
-    { username: user?.username || '', status: 'ALL' },
+    { username: user?.username || '', status: hideRead ? 'UNREAD' : undefined },
     { page: 1, limit: 50 }
   );
 
@@ -61,16 +64,28 @@ const NotificationsPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           {t('notifications.title')}
         </Typography>
-        {unreadIds.length > 0 && (
-          <Button
-            variant="outlined"
-            startIcon={<DoneAllIcon />}
-            onClick={handleMarkAllAsRead}
-            disabled={batchMarkAsReadMutation.isPending}
-          >
-            {t('notifications.markAllAsRead')} ({unreadIds.length})
-          </Button>
-        )}
+        <Stack direction="row" spacing={2} alignItems="center">
+          <FormControlLabel
+            control={
+              <Switch
+                checked={hideRead}
+                onChange={(e) => setHideRead(e.target.checked)}
+                size="small"
+              />
+            }
+            label={t('notifications.hideRead')}
+          />
+          {unreadIds.length > 0 && (
+            <Button
+              variant="outlined"
+              startIcon={<DoneAllIcon />}
+              onClick={handleMarkAllAsRead}
+              disabled={batchMarkAsReadMutation.isPending}
+            >
+              {t('notifications.markAllAsRead')} ({unreadIds.length})
+            </Button>
+          )}
+        </Stack>
       </Stack>
 
       <Paper>
