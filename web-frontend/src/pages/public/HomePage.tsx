@@ -185,10 +185,12 @@ const HomePage = () => {
           </div>
         )}
 
-        {event.topics && event.topics.length > 0 && (
+        {event.topic?.name && (
           <div className="mt-12">
             <h3 className="text-xl font-light text-zinc-100 mb-4">Topics</h3>
-            <TopicBadges topics={event.topics} />
+            <TopicBadges
+              topics={[{ id: event.topic.code ?? event.topicCode ?? '', name: event.topic.name }]}
+            />
           </div>
         )}
 
