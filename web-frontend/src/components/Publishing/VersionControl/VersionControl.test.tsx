@@ -300,19 +300,6 @@ describe('VersionControl', () => {
       });
     });
 
-    // NOTE: Component doesn't have a reason field - reason is hardcoded
-    it.skip('should require reason field in modal', async () => {
-      // TODO: Implement reason field in modal if needed
-    });
-
-    it.skip('should validate reason field has minimum 10 characters', async () => {
-      // TODO: Implement reason field validation if needed
-    });
-
-    it.skip('should validate reason field has maximum 500 characters', async () => {
-      // TODO: Implement reason field validation if needed
-    });
-
     it('should call rollbackVersion when confirm button clicked', async () => {
       render(<VersionControl eventCode="BATbern142" />);
 
@@ -415,25 +402,4 @@ describe('VersionControl', () => {
     });
   });
 
-  // NOTE: Component doesn't show rollback history (rolledBackAt, rolledBackBy, rollbackReason)
-  describe.skip('Rollback History', () => {
-    it('should show rollback indicator for rolled back versions', () => {
-      // TODO: Implement rollback history display if needed
-    });
-
-    it('should show rollback reason in tooltip', async () => {
-      // TODO: Implement rollback reason tooltip if needed
-    });
-  });
-
-  // NOTE: Component doesn't have aria-labels or screen reader announcements yet
-  describe.skip('Accessibility', () => {
-    it('should have accessible labels for version table', () => {
-      // TODO: Add aria-label to table container
-    });
-
-    it('should announce rollback success to screen readers', async () => {
-      // TODO: Add screen reader announcements for rollback actions
-    });
-  });
 });
