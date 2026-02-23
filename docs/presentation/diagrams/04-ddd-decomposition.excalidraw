@@ -72,8 +72,8 @@
       "verticalAlign": "top",
       "autoResize": false,
       "lineHeight": 1.25,
-      "text": "API Gateway (top) · 5 Bounded Contexts · Shared Kernel (bottom)",
-      "originalText": "API Gateway (top) · 5 Bounded Contexts · Shared Kernel (bottom)"
+      "text": "API Gateway (top) · 5 Bounded Contexts · Shared Kernel (bottom)  |  arrows = HTTP calls (confirmed in code)",
+      "originalText": "API Gateway (top) · 5 Bounded Contexts · Shared Kernel (bottom)  |  arrows = HTTP calls (confirmed in code)"
     },
     {
       "angle": 0,
@@ -269,7 +269,11 @@
         },
         {
           "type": "arrow",
-          "id": "arrow-partner-to-event"
+          "id": "arrow-partner-to-ems"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-partner-to-cums"
         }
       ],
       "containerId": null,
@@ -354,7 +358,7 @@
       "y": 275.6,
       "width": 232,
       "height": 14,
-      "strokeColor": "#94a3b8",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "ch.batbern.partners",
       "originalText": "ch.batbern.partners",
@@ -429,7 +433,11 @@
         },
         {
           "type": "arrow",
-          "id": "arrow-partner-to-event"
+          "id": "arrow-partner-to-ems"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-ems-to-cums"
         }
       ],
       "containerId": null,
@@ -514,7 +522,7 @@
       "y": 275.6,
       "width": 232,
       "height": 14,
-      "strokeColor": "#94a3b8",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "ch.batbern.events",
       "originalText": "ch.batbern.events",
@@ -566,8 +574,8 @@
     {
       "angle": 0,
       "fillStyle": "solid",
-      "strokeWidth": 2,
-      "strokeStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "dashed",
       "roughness": 0,
       "opacity": 100,
       "groupIds": [
@@ -586,10 +594,6 @@
         {
           "type": "arrow",
           "id": "arrow-bc2-to-sk"
-        },
-        {
-          "type": "arrow",
-          "id": "arrow-speaker-to-company"
         }
       ],
       "containerId": null,
@@ -606,8 +610,8 @@
       "y": 240,
       "width": 248,
       "height": 220,
-      "strokeColor": "#10b981",
-      "backgroundColor": "#0d2b22"
+      "strokeColor": "#475569",
+      "backgroundColor": "#0d1117"
     },
     {
       "angle": 0,
@@ -636,7 +640,7 @@
       "y": 254,
       "width": 232,
       "height": 19.599999999999998,
-      "strokeColor": "#10b981",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "Speaker Coordination",
       "originalText": "Speaker Coordination",
@@ -674,7 +678,7 @@
       "y": 275.6,
       "width": 232,
       "height": 14,
-      "strokeColor": "#94a3b8",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "ch.batbern.speakers",
       "originalText": "ch.batbern.speakers",
@@ -711,11 +715,11 @@
       "x": 584,
       "y": 297.6,
       "width": 232,
-      "height": 92.39999999999999,
-      "strokeColor": "#94a3b8",
+      "height": 61.599999999999994,
+      "strokeColor": "#475569",
       "backgroundColor": "transparent",
-      "text": "Speaker · SpeakerPool\nInvitation · InvitationToken\nMaterialSubmission · ReminderLog\n\n→ SpeakerInvitedEvent\n→ MaterialSubmittedEvent",
-      "originalText": "Speaker · SpeakerPool\nInvitation · InvitationToken\nMaterialSubmission · ReminderLog\n\n→ SpeakerInvitedEvent\n→ MaterialSubmittedEvent",
+      "text": "⚠ Empty shell\nAll logic merged into\nEvent Management\n(Epic 5 realignment)",
+      "originalText": "⚠ Empty shell\nAll logic merged into\nEvent Management\n(Epic 5 realignment)",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
@@ -749,7 +753,11 @@
         },
         {
           "type": "arrow",
-          "id": "arrow-speaker-to-company"
+          "id": "arrow-ems-to-cums"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-partner-to-cums"
         }
       ],
       "containerId": null,
@@ -834,7 +842,7 @@
       "y": 275.6,
       "width": 232,
       "height": 14,
-      "strokeColor": "#94a3b8",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "ch.batbern.companyuser",
       "originalText": "ch.batbern.companyuser",
@@ -990,7 +998,7 @@
       "y": 275.6,
       "width": 232,
       "height": 14,
-      "strokeColor": "#94a3b8",
+      "strokeColor": "#64748b",
       "backgroundColor": "transparent",
       "text": "ch.batbern.attendees",
       "originalText": "ch.batbern.attendees",
@@ -1027,11 +1035,11 @@
       "x": 1120,
       "y": 297.6,
       "width": 232,
-      "height": 46.199999999999996,
+      "height": 77,
       "strokeColor": "#94a3b8",
       "backgroundColor": "transparent",
-      "text": "Registration · QRCode\n\n→ RegistrationConfirmedEvent",
-      "originalText": "Registration · QRCode\n\n→ RegistrationConfirmedEvent",
+      "text": "Registration · QRCode\n\n→ RegistrationConfirmedEvent\n\n(Epic 7 — deferred)",
+      "originalText": "Registration · QRCode\n\n→ RegistrationConfirmedEvent\n\n(Epic 7 — deferred)",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
@@ -1213,7 +1221,7 @@
       "strokeWidth": 1,
       "strokeStyle": "solid",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1265,7 +1273,7 @@
       "strokeWidth": 1,
       "strokeStyle": "solid",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1315,9 +1323,9 @@
       "angle": 0,
       "fillStyle": "solid",
       "strokeWidth": 1,
-      "strokeStyle": "solid",
+      "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 30,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1338,7 +1346,7 @@
       "y": 190,
       "width": 0,
       "height": 50,
-      "strokeColor": "#64748b",
+      "strokeColor": "#334155",
       "backgroundColor": "transparent",
       "startBinding": {
         "elementId": "shape-apigw",
@@ -1369,7 +1377,7 @@
       "strokeWidth": 1,
       "strokeStyle": "solid",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1421,7 +1429,7 @@
       "strokeWidth": 1,
       "strokeStyle": "solid",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1473,7 +1481,7 @@
       "strokeWidth": 1,
       "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1525,7 +1533,7 @@
       "strokeWidth": 1,
       "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1577,7 +1585,7 @@
       "strokeWidth": 1,
       "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 25,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1598,7 +1606,7 @@
       "y": 460,
       "width": 0,
       "height": 50,
-      "strokeColor": "#8b5cf6",
+      "strokeColor": "#334155",
       "backgroundColor": "transparent",
       "startBinding": {
         "elementId": "shape-speaker-coord",
@@ -1629,7 +1637,7 @@
       "strokeWidth": 1,
       "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1681,7 +1689,7 @@
       "strokeWidth": 1,
       "strokeStyle": "dashed",
       "roughness": 0,
-      "opacity": 100,
+      "opacity": 80,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1730,10 +1738,10 @@
     {
       "angle": 0,
       "fillStyle": "solid",
-      "strokeWidth": 1,
+      "strokeWidth": 2,
       "strokeStyle": "dotted",
       "roughness": 0,
-      "opacity": 90,
+      "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1748,7 +1756,7 @@
       "updated": 1771900000000,
       "link": null,
       "locked": false,
-      "id": "arrow-partner-to-event",
+      "id": "arrow-partner-to-ems",
       "type": "arrow",
       "x": 288,
       "y": 350,
@@ -1798,11 +1806,11 @@
       "updated": 1771900000000,
       "link": null,
       "locked": false,
-      "id": "label-partner-to-event",
+      "id": "lbl-partner-to-ems",
       "type": "text",
-      "x": 228,
-      "y": 330,
-      "width": 140,
+      "x": 233,
+      "y": 332,
+      "width": 150,
       "height": 12,
       "strokeColor": "#f59e0b",
       "backgroundColor": "transparent",
@@ -1818,10 +1826,10 @@
     {
       "angle": 0,
       "fillStyle": "solid",
-      "strokeWidth": 1,
+      "strokeWidth": 2,
       "strokeStyle": "dotted",
       "roughness": 0,
-      "opacity": 90,
+      "opacity": 100,
       "groupIds": [],
       "frameId": null,
       "roundness": {
@@ -1836,16 +1844,16 @@
       "updated": 1771900000000,
       "link": null,
       "locked": false,
-      "id": "arrow-speaker-to-company",
+      "id": "arrow-ems-to-cums",
       "type": "arrow",
-      "x": 824,
-      "y": 350,
-      "width": 20,
-      "height": 0,
+      "x": 432,
+      "y": 460,
+      "width": 536,
+      "height": 22,
       "strokeColor": "#3b82f6",
       "backgroundColor": "transparent",
       "startBinding": {
-        "elementId": "shape-speaker-coord",
+        "elementId": "shape-event-mgmt",
         "focus": 0,
         "gap": 1
       },
@@ -1862,7 +1870,15 @@
           0
         ],
         [
-          20,
+          0,
+          22
+        ],
+        [
+          536,
+          22
+        ],
+        [
+          536,
           0
         ]
       ]
@@ -1886,11 +1902,11 @@
       "updated": 1771900000000,
       "link": null,
       "locked": false,
-      "id": "label-speaker-to-company",
+      "id": "lbl-ems-to-cums",
       "type": "text",
-      "x": 774,
-      "y": 330,
-      "width": 120,
+      "x": 620,
+      "y": 484,
+      "width": 160,
       "height": 12,
       "strokeColor": "#3b82f6",
       "backgroundColor": "transparent",
@@ -1900,8 +1916,140 @@
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "text": "HTTP: user profile",
-      "originalText": "HTTP: user profile"
+      "text": "HTTP: user enrichment (UserApiClient)",
+      "originalText": "HTTP: user enrichment (UserApiClient)"
+    },
+    {
+      "angle": 0,
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "dotted",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": {
+        "type": 2
+      },
+      "boundElements": [],
+      "containerId": null,
+      "version": 1,
+      "versionNonce": 1,
+      "isDeleted": false,
+      "seed": 1,
+      "updated": 1771900000000,
+      "link": null,
+      "locked": false,
+      "id": "arrow-partner-to-cums",
+      "type": "arrow",
+      "x": 164,
+      "y": 460,
+      "width": 804,
+      "height": 40,
+      "strokeColor": "#f59e0b",
+      "backgroundColor": "transparent",
+      "startBinding": {
+        "elementId": "shape-partner-coord",
+        "focus": 0,
+        "gap": 1
+      },
+      "endBinding": {
+        "elementId": "shape-company-user",
+        "focus": 0,
+        "gap": 1
+      },
+      "startArrowhead": null,
+      "endArrowhead": "arrow",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          804,
+          40
+        ],
+        [
+          804,
+          0
+        ]
+      ]
+    },
+    {
+      "angle": 0,
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "boundElements": [],
+      "containerId": null,
+      "version": 1,
+      "versionNonce": 1,
+      "isDeleted": false,
+      "seed": 1,
+      "updated": 1771900000000,
+      "link": null,
+      "locked": false,
+      "id": "lbl-partner-to-cums",
+      "type": "text",
+      "x": 476,
+      "y": 502,
+      "width": 180,
+      "height": 12,
+      "strokeColor": "#f59e0b",
+      "backgroundColor": "transparent",
+      "fontSize": 9,
+      "fontFamily": 3,
+      "textAlign": "center",
+      "verticalAlign": "top",
+      "autoResize": true,
+      "lineHeight": 1.25,
+      "text": "HTTP: company & user lookup (2 clients)",
+      "originalText": "HTTP: company & user lookup (2 clients)"
+    },
+    {
+      "angle": 0,
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "boundElements": [],
+      "containerId": null,
+      "version": 1,
+      "versionNonce": 1,
+      "isDeleted": false,
+      "seed": 1,
+      "updated": 1771900000000,
+      "link": null,
+      "locked": false,
+      "id": "text-eventbridge-note",
+      "type": "text",
+      "x": 40,
+      "y": 636,
+      "width": 1320,
+      "height": 14,
+      "strokeColor": "#64748b",
+      "backgroundColor": "transparent",
+      "fontSize": 10,
+      "fontFamily": 3,
+      "textAlign": "center",
+      "verticalAlign": "top",
+      "autoResize": false,
+      "lineHeight": 1.25,
+      "text": "All services publish domain events to AWS EventBridge  ·  No cross-service event consumers exist (each service uses Spring @EventListener internally)",
+      "originalText": "All services publish domain events to AWS EventBridge  ·  No cross-service event consumers exist (each service uses Spring @EventListener internally)"
     }
   ],
   "appState": {
