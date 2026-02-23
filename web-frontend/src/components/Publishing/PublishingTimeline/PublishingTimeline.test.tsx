@@ -291,5 +291,4 @@ describe('PublishingTimeline', () => {
       expect(screen.getByTestId('icon-pending-agenda')).toBeInTheDocument();
     });
   });
-
 });

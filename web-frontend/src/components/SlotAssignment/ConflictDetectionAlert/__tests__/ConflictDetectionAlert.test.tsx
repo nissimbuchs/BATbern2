@@ -245,5 +245,4 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       expect(screen.getByTestId('conflict-severity')).toHaveTextContent(/warning/i);
     });
   });
-
 });

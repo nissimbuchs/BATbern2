@@ -401,5 +401,4 @@ describe('VersionControl', () => {
       );
     });
   });
-
 });

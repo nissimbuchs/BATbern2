@@ -221,7 +221,6 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // Actual testid is 'drag-handle' not 'grab-handle'
       expect(within(firstCard).getByTestId('drag-handle')).toBeVisible();
     });
-
   });
 
   describe('View Preferences Button', () => {
@@ -348,5 +347,4 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       expect(screen.getAllByTestId('skeleton-card')).toHaveLength(3); // Shows 3 skeleton cards
     });
   });
-
 });
