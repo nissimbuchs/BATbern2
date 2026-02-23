@@ -1,6 +1,6 @@
 # BATbern Event Management Platform - Enhanced PRD
 
-**Last Updated:** 2026-02-16
+**Last Updated:** 2026-02-23
 
 ## 1. Project Analysis and Context
 
@@ -204,10 +204,11 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 4**: Weeks 22-26 (Public Website & Content Discovery) - ✅ **100% COMPLETE**
 - **Epic 5**: Weeks 27-35 (Enhanced Organizer Workflows) - ✅ **100% COMPLETE** (including BAT-16)
 - **Epic 6**: Weeks 36-44 (Speaker Portal & Support) - ✅ **100% COMPLETE** (All stories deployed to staging, Story 6.4 QA passed)
-- **Epic 7**: Weeks 45+ (Attendee Experience Enhancements - DEFERRED to Phase 3)
-- **Epic 8**: Weeks 45+ (Partner Coordination - 🚧 IN PROGRESS)
+- **Epic 7**: Weeks 45+ (Attendee Experience Enhancements - 📦 DEFERRED to Phase 3)
+- **Epic 8**: Weeks 45+ (Partner Coordination - ✅ **100% COMPLETE** 2026-02-22)
+- **Epic 9**: Weeks 46+ (Speaker Authentication & Account Integration - 🔨 IN PROGRESS — Story 9.1 JWT magic link complete; 9.2-9.5 planned)
 
-**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 Phase 1 & 2 deployed to staging with automated speaker invitation, self-service response portal, content submission, and deadline reminders. Epics 7-8 deferred to Phase 3 as optional enhancement layer.
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 deferred to Phase 3; Epic 9 planned for unified speaker/attendee JWT authentication.
 
 ### 4.2 Content Management & Storage Architecture
 

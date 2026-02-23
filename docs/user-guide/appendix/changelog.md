@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v0.9.0 (Beta)
-**Last Updated**: 2025-12-18
+**Current Version**: v1.2.0
+**Last Updated**: 2026-02-23
 
 ---
 
@@ -28,28 +28,62 @@ Each release includes:
 
 ## Upcoming Releases
 
-### v1.0.0 - BATbern GA (General Availability) `[PLANNED Q1 2025]`
+### v1.3.0 - Speaker Authentication Unification `[PLANNED Q2 2026]`
 
-**Target Date**: February 2025
-**Type**: Major Release (Production Launch)
+**Target Date**: Q2 2026
+**Type**: Minor Release (Epic 9 — Stories 9.2–9.5)
 
-**Planned Features**:
-- ✅ Complete 16-Step Workflow
-- ✅ All Entity CRUD Operations
-- 🔨 In-App Notifications
-- 🔨 Email Notification System
-- 📋 Company Hierarchy
-- 📋 Partner Engagement Metrics
+**Already Delivered (v1.2.x)**:
+- ✅ Story 9.1: JWT magic link authentication — RS256 signed, HTTP-only cookie, backward compatible with Epic 6 tokens
 
-**Stability Goals**:
-- 99.9% uptime SLA
-- <200ms API response time (P95)
-- Zero critical bugs
-- Full documentation coverage
+**Remaining Planned Features**:
+- 📋 Story 9.2: Auto-create/extend Cognito accounts on invitation acceptance (SPEAKER role assignment)
+- 📋 Story 9.3: Dual auth — magic link + email/password for speakers
+- 📋 Story 9.4: Migration script for Epic 6 staging token-based users (7-day grace period)
+- 📋 Story 9.5: Unified multi-role navigation (speaker + attendee portal in single session)
 
 ---
 
-## v0.9.x - Beta Releases (Current)
+## v1.2.x - Current Release
+
+### v1.2.0 - Partner Coordination Complete `[2026-02-22]`
+
+**Type**: Minor Release (Epic 8)
+
+**New Features**:
+- ✅ Partner Attendance Analytics Dashboard — per-company attendance table (last 5 years / full history toggle), cost-per-attendee KPI, XLSX export via Apache POI
+- ✅ Topic Suggestions & Voting — partners suggest topics + toggle-vote (one per company); organizers set status (Selected/Declined) with optional "planned for event" note; sorted by votes descending
+- ✅ Partner Meeting Coordination — meeting record linked to BATbern event by event code; free-text agenda; RFC 5545 ICS calendar invite sent async via AWS SES to all partner contacts; post-meeting notes
+
+**Architecture**:
+- Analytics data queried on demand from `event-management-service`; Caffeine-cached 15 min
+- No materialized views, no nightly batch (max ~60 events ever)
+- Standard ICS (no Microsoft Graph / Outlook dependency)
+- Role-based access enforced at API level (PARTNER sees own company only; ORGANIZER sees all)
+
+---
+
+### v1.1.0 - Speaker Self-Service Portal Complete `[2026-02-16]`
+
+**Type**: Minor Release (Epic 6)
+
+**New Features**:
+- ✅ Automated Speaker Invitations — magic link emails via AWS SES; bulk send; tracking (sent/responded)
+- ✅ Self-Service Response Portal — Accept/Decline via unique link (no account required); auto-updates organizer speaker status; organizer manual override available
+- ✅ Speaker Material Self-Submission — multi-step wizard for title, abstract (1000-char limit), CV, photo, presentation; drag-and-drop upload via S3 presigned URLs; draft auto-save
+- ✅ Speaker Dashboard — view upcoming/past events, material submission status, event details; WCAG 2.1 AA accessible; i18n EN/DE; 30-day magic link session
+- ✅ Automated Deadline Reminders — configurable 3-tier escalation (friendly → urgent → organizer escalation); deduplication (no reminder if materials already submitted); full reminder log
+
+**Multi-Role E2E Test Auth**:
+- ✅ `make setup-test-users` — authenticate all roles at once
+- ✅ Per-role token storage: `~/.batbern/staging-{organizer,speaker,partner}.json`
+- ✅ Playwright `speaker` and `partner` projects activated by env var
+
+---
+
+## v0.9.x - Prior Releases
+
+### v0.9.0 - Workflow Phase F & Documentation `[2025-12-18]`
 
 ### v0.9.0 - Workflow Phase F & Documentation `[2025-12-18]`
 
@@ -388,10 +422,10 @@ Each release includes:
 
 | Version | Status | Support End Date |
 |---------|--------|------------------|
-| v0.9.x | **Current** | Until v1.0.0 release |
-| v0.8.x | Security fixes only | 2025-03-01 |
-| v0.7.x | Unsupported | Ended 2024-12-01 |
-| v0.6.x and earlier | Unsupported | Ended 2024-11-01 |
+| v1.2.x | **Current** | Until v1.3.0 release |
+| v1.1.x | Security fixes only | 2026-05-01 |
+| v0.9.x | Unsupported | Ended 2026-01-01 |
+| v0.8.x and earlier | Unsupported | Ended 2025-06-01 |
 
 **Support Includes**:
 - Security patches (critical vulnerabilities)

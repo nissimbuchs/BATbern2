@@ -4,11 +4,11 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-02-23
 
-**Current Phase:** Post-MVP — Epic 6 on Staging, Epic 8 in Active Development
+**Current Phase:** Post-MVP — Epics 1-6 and 8 complete; Epic 7 (Attendee Experience) deferred; Epic 9 (Speaker Auth) planned
 
-**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1-5) complete. Epic 6 (Speaker Portal) deployed to staging. Epic 8 (Partner Coordination) in development.
+**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1-5) complete. Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented.
 
 ### Epic Progress Summary
 
@@ -19,9 +19,10 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 | **Epic 3: Historical Data Migration** | ✅ Complete | 100% | All batch imports implemented — production data import pending |
 | **Epic 4: Public Website & Content Discovery** | ✅ Complete | 100% | Event landing pages, 3-step registration wizard, archive browsing, SEO |
 | **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 100% | 9-state workflow, speaker coordination, auto-publishing, lifecycle automation |
-| **Epic 6: Speaker Self-Service Portal** | 🚀 Staging | ~90% | Stories 6.0-6.3, 6.5 complete; Story 6.4 (dashboard) partial |
-| **Epic 7: Attendee Experience** | 📋 Planned | — | Post-MVP backlog |
-| **Epic 8: Partner Coordination** | 🔨 In Dev | ~25% | Story 8.0 (Portal Shell) complete; 8.1-8.3 ready for dev |
+| **Epic 6: Speaker Self-Service Portal** | ✅ Complete | 100% | All 6 stories (6.0-6.5) deployed — invitation, response portal, materials, dashboard, reminders |
+| **Epic 7: Attendee Experience** | 📦 Deferred | — | Phase 3 backlog — personal dashboard, bookmarks, PWA |
+| **Epic 8: Partner Coordination** | ✅ Complete | 100% | Partner portal shell, attendance analytics, topic voting, meeting coordination with ICS invites |
+| **Epic 9: Speaker Authentication** | 🔨 In Progress | 20% | Story 9.1 (JWT magic link) complete; 9.2–9.5 (Cognito accounts, dual auth, migration, multi-role nav) planned |
 
 ### MVP Completion Status
 
@@ -30,9 +31,10 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 **Production Readiness (When Launching):**
 - **Epic 3: Production Data Import** — import 2,307 historical participants via batch import modal (~1 day effort)
 
-**Active Post-MVP Work:**
-- Epic 6 on staging — full deployment to production pending Story 6.4 completion
-- Epic 8 in active development — Partner Portal Shell done, analytics/topics/meetings stories ready for dev
+**Next Steps:**
+- Epic 9 Stories 9.2–9.5 — Cognito account creation on invitation accept, dual auth, staging migration, multi-role nav
+- Epic 3: Production data import (~1 day effort)
+- Epic 7 (Attendee Experience) — personal dashboard, bookmarks, PWA (Phase 3)
 
 ## Quick Start
 
@@ -339,6 +341,18 @@ Version: v1.2.3
 - **Task Management System** - Configurable tasks with auto-creation
 - **Auto-Publishing Engine** - CDN integration with scheduled publishing
 - **Lifecycle Automation** - EVENT_LIVE and EVENT_COMPLETED transitions
+
+**Speaker Self-Service Portal (Epic 6) - ✅ 100% Complete:**
+- **Automated Invitations** - AWS SES magic link invitation system
+- **Self-Service Response Portal** - Speaker accept/decline via unique link (no login required)
+- **Material Submission** - Speaker self-upload of title, abstract, CV, photo, presentation
+- **Speaker Dashboard** - View upcoming/past events; WCAG 2.1 AA accessible
+- **Deadline Reminders** - Configurable automated reminder tiers (friendly → urgent → escalate)
+
+**Partner Coordination (Epic 8) - ✅ 100% Complete:**
+- **Attendance Analytics Dashboard** - Per-company attendance table with cost-per-attendee KPI + XLSX export
+- **Topic Voting** - Partners suggest topics and toggle-vote; organizers set status (Selected/Declined)
+- **Meeting Coordination** - RFC 5545 ICS calendar invites with agenda sent to all partner contacts
 
 ### Technology Stack
 - **Backend:** Java 21, Spring Boot 3.5+

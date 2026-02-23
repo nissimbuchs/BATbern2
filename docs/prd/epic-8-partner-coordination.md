@@ -1,6 +1,6 @@
 # Epic 8: Partner Coordination
 
-**Status:** 🚧 **IN PROGRESS** (feature/epic-8-partner-coordination)
+**Status:** ✅ **COMPLETE** (deployed to staging 2026-02-22, branch feature/epic-8-partner-coordination merged)
 
 **Simplified (2026-02-21):** Epic 8 was originally scoped with QuickSight, Microsoft Graph, materialized views, and tier-based voting. These were cut as massively over-engineered for a community of ~5–10 partners and ~3 events/year. The three stories below reflect what was actually decided and built.
 

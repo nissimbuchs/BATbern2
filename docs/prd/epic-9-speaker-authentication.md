@@ -1,6 +1,6 @@
 # Epic 9: Speaker Authentication & Account Integration
 
-**Status:** 📋 **PLANNED** (Ready for Implementation)
+**Status:** 🔨 **IN PROGRESS** — Story 9.1 complete; Stories 9.2–9.5 planned
 
 **Epic Goal**: Unify authentication architecture so speakers who are also attendees can access both portals with a single JWT-based session, eliminating dual login patterns and preventing duplicate accounts.
 
@@ -94,7 +94,17 @@
 
 ## Epic 9 Stories
 
-### Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal
+### Story 9.1: JWT-Based Magic Link Authentication for Speaker Portal ✅
+
+**Status:** ✅ Complete (2026-02-21)
+
+**Implemented in:**
+- `services/event-management-service/.../MagicLinkService.java` — `generateJwtToken()` RS256 signed, 30-day expiry
+- `services/event-management-service/.../JwtConfig.java` — RSA key pair, auto-generated for dev/test
+- `services/event-management-service/.../SpeakerMagicLoginController.java` — `POST /api/v1/auth/speaker-magic-login`, HTTP-only cookie, session bridge to existing dashboard
+- `services/event-management-service/.../SpeakerInvitationEmailService.java` — embeds JWT in magic link URL (`?jwt=<token>`)
+- `web-frontend/src/pages/speaker-portal/SpeakerMagicLoginPage.tsx` — extracts `?jwt=` param, calls login endpoint, redirects to dashboard
+- Both token-based (Epic 6) and JWT-based (Epic 9) magic links work in parallel (backward compatible)
 
 **User Story:**
 As a **speaker**, I want to click a magic link that logs me in automatically with a JWT token, so that I can access the speaker portal without creating a separate password.
