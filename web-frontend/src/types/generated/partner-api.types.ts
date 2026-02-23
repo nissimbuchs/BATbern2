@@ -62,44 +62,14 @@ export interface paths {
     };
     /**
      * List partner contacts
-     * @description Returns contacts enriched with User Service data (email, firstName, lastName, profilePictureUrl).
-     *     Per ADR-004: User data fetched via HTTP call to User Service.
+     * @description Returns all users from the User Service who have the PARTNER role and belong to this company.
+     *     Contacts are derived automatically — any PARTNER-role user with matching companyId is a contact.
+     *     No explicit add/remove management is needed.
      */
     get: operations['getPartnerContacts'];
     put?: never;
-    /**
-     * Add contact to partner
-     * @description Validates user exists via User Service before adding.
-     *     Enforces uniqueness constraint (partner + username).
-     *     Business rule: At least one PRIMARY contact required.
-     */
-    post: operations['addPartnerContact'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/partners/{companyName}/contacts/{username}': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Company name (meaningful ID per ADR-003) */
-        companyName: string;
-        /** @description Username (meaningful ID per ADR-003) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
     post?: never;
-    /**
-     * Remove contact from partner
-     * @description Business rule: Cannot remove last primary contact.
-     */
-    delete: operations['removePartnerContact'];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -225,21 +195,17 @@ export interface components {
     PartnerContactResponse: {
       /** @description Meaningful ID per ADR-003 */
       username: string;
-      contactRole: components['schemas']['ContactRole'];
-      isPrimary: boolean;
-      /** @description Enriched from User Service */
+      /** @description From User Service */
       email?: string;
-      /** @description Enriched from User Service */
+      /** @description From User Service */
       firstName?: string;
-      /** @description Enriched from User Service */
+      /** @description From User Service */
       lastName?: string;
-      /** @description Enriched from User Service */
+      /** @description From User Service */
       profilePictureUrl?: string;
     };
     /** @enum {string} */
     PartnershipLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'STRATEGIC';
-    /** @enum {string} */
-    ContactRole: 'PRIMARY' | 'BILLING' | 'TECHNICAL' | 'MARKETING';
     /** @description Enriched from Company Service (ADR-004) */
     CompanyInfo: {
       companyName?: string;
@@ -253,13 +219,6 @@ export interface components {
       website?: string;
       /** @description Company headquarters location */
       location?: string;
-    };
-    AddPartnerContactRequest: {
-      /** @description Username (meaningful ID per ADR-003) */
-      username: string;
-      contactRole: components['schemas']['ContactRole'];
-      /** @description Whether this is a primary contact */
-      isPrimary: boolean;
     };
     CastVoteRequest: {
       /**
@@ -559,101 +518,6 @@ export interface operations {
         };
       };
       /** @description Partner not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  addPartnerContact: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Company name (meaningful ID per ADR-003) */
-        companyName: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['AddPartnerContactRequest'];
-      };
-    };
-    responses: {
-      /** @description Contact added */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PartnerContactResponse'];
-        };
-      };
-      /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Partner or user not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Contact already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  removePartnerContact: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Company name (meaningful ID per ADR-003) */
-        companyName: string;
-        /** @description Username (meaningful ID per ADR-003) */
-        username: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Contact removed */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Cannot remove last primary contact */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      /** @description Partner or contact not found */
       404: {
         headers: {
           [name: string]: unknown;

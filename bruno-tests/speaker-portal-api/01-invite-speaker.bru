@@ -16,12 +16,11 @@ auth:bearer {
 
 body:json {
   {
-    "email": "speaker-test-{{timestamp}}@example.com",
-    "speakerName": "Test Speaker",
+    "email": "speaker-test-{{$guid}}@example.com",
+    "firstName": "Test",
+    "lastName": "Speaker",
     "company": "Test Company AG",
-    "expertise": "Software Architecture, Cloud Computing",
-    "responseDeadline": "2026-06-01T23:59:59Z",
-    "personalMessage": "We would love to have you speak at our event!"
+    "notes": "Software Architecture, Cloud Computing"
   }
 }
 
@@ -47,6 +46,6 @@ tests {
 
   test("should set workflow state to IDENTIFIED or INVITED - Story 6.1b AC3", function() {
     const body = res.getBody();
-    expect(['IDENTIFIED', 'INVITED']).to.include(body.workflowState);
+    expect(['IDENTIFIED', 'INVITED']).to.include(body.status);
   });
 }

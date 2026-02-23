@@ -4,8 +4,8 @@ meta {
   seq: 8
 }
 
-put {
-  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+patch {
+  url: {{baseUrl}}/speakers/{{testDisposableSpeakerUsername}}
   body: json
   auth: bearer
 }
@@ -23,7 +23,7 @@ headers {
 
 body:json {
   {
-    "username": "{{testSpeakerCreatedUsername}}",
+    "username": "{{testDisposableSpeakerUsername}}",
     "availability": "BUSY",
     "expertiseAreas": ["Cloud Architecture", "Security", "DevOps"],
     "speakingTopics": ["AWS", "Kubernetes", "Terraform"]

@@ -19,11 +19,13 @@ const Dashboard: React.FC = () => {
     // Redirect to role-specific dashboard
     if (user?.role === 'organizer') {
       navigate('/organizer/events', { replace: true });
+    } else if (user?.role === 'partner') {
+      navigate('/partners/company', { replace: true });
+    } else if (user?.role === 'speaker') {
+      navigate('/speaker/dashboard', { replace: true });
+    } else if (user?.role === 'attendee') {
+      navigate('/attendee/events', { replace: true });
     }
-    // Add other role-specific redirects here as needed
-    // else if (user?.role === 'speaker') { navigate('/speakers', { replace: true }); }
-    // else if (user?.role === 'partner') { navigate('/partners', { replace: true }); }
-    // else if (user?.role === 'attendee') { navigate('/content', { replace: true }); }
   }, [user, navigate]);
 
   // Show loading while redirecting

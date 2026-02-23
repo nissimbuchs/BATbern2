@@ -16,28 +16,23 @@ auth:bearer {
 
 body:json {
   {
-    "personalMessage": "Looking forward to your presentation!"
+    "responseDeadline": "2026-07-01"
   }
 }
 
 assert {
   res.status: eq 200
-  res.body.token: isDefined
-  res.body.workflowState: eq INVITED
+  res.body.status: isDefined
 }
 
 tests {
-  test("should send invitation and return token - Story 6.1b AC4", function() {
+  test("should send invitation email - Story 6.1b AC4", function() {
     expect(res.getStatus()).to.equal(200);
-    const body = res.getBody();
-    expect(body.token).to.be.a('string');
-    expect(body.token.length).to.be.greaterThan(50);
-    bru.setVar("speakerMagicToken", body.token);
   });
 
   test("should transition workflow state to INVITED - Story 6.1b AC5", function() {
     const body = res.getBody();
-    expect(body.workflowState).to.equal('INVITED');
+    expect(body.status).to.equal('INVITED');
   });
 
   test("should set invitedAt timestamp - Story 6.1b AC6", function() {

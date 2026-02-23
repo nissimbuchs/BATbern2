@@ -1,6 +1,7 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.dto.AttendanceSummaryDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -127,4 +128,37 @@ public interface RegistrationRepository
     @Query("SELECT r.attendeeUsername FROM Registration r JOIN Event e "
             + "ON r.eventId = e.id WHERE e.eventCode = :eventCode")
     List<String> findUsernamesByEventCode(@Param("eventCode") String eventCode);
+
+    /**
+     * Attendance summary per event for a given company.
+     * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5
+     *
+     * Returns one row per event containing:
+     * - eventCode (e.g. "BATbern142")
+     * - eventDate
+     * - totalAttendees: all confirmed registrations for that event
+     * - companyAttendees: confirmed registrations where attendeeCompanyId = :companyId
+     *
+     * Only events on or after :fromDate are included.
+     *
+     * @param companyId  company identifier (ADR-003 meaningful ID = company name)
+     * @param fromDate   earliest event date to include
+     * @return list of per-event attendance summaries ordered by date descending
+     */
+    @Query("""
+        SELECT new ch.batbern.events.dto.AttendanceSummaryDTO(
+            e.eventCode,
+            e.date,
+            COUNT(r.id),
+            SUM(CASE WHEN r.attendeeCompanyId = :companyId THEN 1L ELSE 0L END)
+        )
+        FROM Event e
+        LEFT JOIN Registration r ON r.eventId = e.id AND r.status IN ('confirmed', 'attended')
+        WHERE e.date >= :fromDate
+        GROUP BY e.id, e.eventCode, e.date
+        ORDER BY e.date DESC
+        """)
+    List<AttendanceSummaryDTO> findAttendanceSummary(
+            @Param("companyId") String companyId,
+            @Param("fromDate") Instant fromDate);
 }

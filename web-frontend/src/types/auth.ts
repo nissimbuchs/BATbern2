@@ -28,6 +28,7 @@ export interface UserContext {
   role: UserRole; // Primary role (first in roles array)
   roles: UserRole[]; // All roles (Story 1.2.6: ADR-001 supports multiple roles)
   companyId?: string;
+  companyName?: string; // Story 8.0: Resolved from JWT custom:companyName or partner API
   preferences: UserPreferences;
   issuedAt: number;
   expiresAt: number;
@@ -131,5 +132,6 @@ export interface CognitoTokenClaims {
   email: string;
   email_verified: boolean;
   'custom:companyId'?: string;
+  'custom:companyName'?: string; // Story 8.0: Optional JWT claim for partner company name
   'custom:preferences': string;
 }

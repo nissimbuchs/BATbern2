@@ -187,6 +187,10 @@ public class SecurityConfig {
                         // Story 1.15a.1b: Public speaker list endpoint (GET only, POST/DELETE require ORGANIZER)
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/speakers").permitAll()
 
+                        // SpeakerController: public read endpoints (speaker directory)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speakers").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/speakers/*").permitAll()
+
                         // Story 5.9: Public materials download endpoint for archived events
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*/materials/*/download").permitAll()
 

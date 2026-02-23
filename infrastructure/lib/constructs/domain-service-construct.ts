@@ -62,7 +62,7 @@ export function createDomainService(
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
       AWS_REGION: props.config.region,
-      LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
       SERVICE_NAME: serviceName,
       ...(props.databaseEndpoint && {
         DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,

@@ -21,6 +21,10 @@ vi.mock('@/hooks/usePartnerVotes');
 vi.mock('@/hooks/usePartnerMeetings');
 vi.mock('@/hooks/usePartnerActivity');
 vi.mock('@/hooks/usePartnerNotes');
+// Story 8.0: mock useAuth (PartnerDetailScreen now uses auth context)
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { username: 'organizer1', role: 'organizer' } }),
+}));
 
 const mockUsePartnerDetail = vi.mocked(usePartnerDetail);
 const mockUsePartnerVotes = vi.mocked(usePartnerVotes);
@@ -46,12 +50,6 @@ vi.mock('@/stores/partnerDetailStore', () => ({
     return mockStoreState;
   }),
 }));
-
-import { usePartnerDetail } from '@/hooks/usePartnerDetail';
-import { usePartnerVotes } from '@/hooks/usePartnerVotes';
-import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
-import { usePartnerActivity } from '@/hooks/usePartnerActivity';
-import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 
 // Mock partner data
 const mockPartnerDetail = {
@@ -181,7 +179,7 @@ describe('Partner Detail Screen - Responsive Design', () => {
 
     // Quick stats cards should be present
     const statsCards = container.querySelectorAll('[data-testid="stat-card"]');
-    expect(statsCards.length).toBe(4); // Partner Since, Events, Votes, Meetings
+    expect(statsCards.length).toBe(0); // Quick stats row was removed post-epic-8
   });
 
   // Test 14.2: Mobile viewport should show vertical tabs
@@ -221,9 +219,9 @@ describe('Partner Detail Screen - Responsive Design', () => {
       </QueryClientProvider>
     );
 
-    // Quick stats cards should be present
+    // Quick stats row was removed post-epic-8
     const statsCards = container.querySelectorAll('[data-testid="stat-card"]');
-    expect(statsCards.length).toBe(4);
+    expect(statsCards.length).toBe(0);
   });
 
   // Test 14.4: Tablet viewport should have horizontal tabs
@@ -261,9 +259,9 @@ describe('Partner Detail Screen - Responsive Design', () => {
       </QueryClientProvider>
     );
 
-    // Quick stats cards should be present
+    // Quick stats row was removed post-epic-8
     const statsCards = container.querySelectorAll('[data-testid="stat-card"]');
-    expect(statsCards.length).toBe(4);
+    expect(statsCards.length).toBe(0);
   });
 
   // Test 14.6: Desktop viewport should have horizontal tabs
@@ -302,7 +300,7 @@ describe('Partner Detail Screen - Responsive Design', () => {
     // All major components should render
     expect(container.querySelector('[data-testid="partner-detail-container"]')).toBeInTheDocument();
     expect(container.querySelector('.MuiTabs-root')).toBeInTheDocument();
-    expect(container.querySelectorAll('[data-testid="stat-card"]').length).toBe(4);
+    expect(container.querySelectorAll('[data-testid="stat-card"]').length).toBe(0);
   });
 
   // Test 14.8: Container should have responsive max-width

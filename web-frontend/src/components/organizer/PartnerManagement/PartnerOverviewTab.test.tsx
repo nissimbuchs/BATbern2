@@ -57,17 +57,17 @@ const mockPartnerData: PartnerResponse = {
 
 describe('PartnerOverviewTab', () => {
   describe('AC4.1: should_renderOverviewTab_when_tabActivated', () => {
-    it('renders the overview tab with all panels', () => {
+    it('renders the overview tab with partnership details', () => {
       renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
 
       // Should have Partnership Details section
       expect(screen.getByRole('heading', { name: /Partnership Details/i })).toBeInTheDocument();
 
-      // Should have Engagement Metrics section
-      expect(screen.getByRole('heading', { name: /Engagement Metrics/i })).toBeInTheDocument();
-
-      // Should have Recent Activity section
-      expect(screen.getByRole('heading', { name: /Recent Activity/i })).toBeInTheDocument();
+      // Engagement Metrics and Recent Activity panels were removed post-epic-8
+      expect(
+        screen.queryByRole('heading', { name: /Engagement Metrics/i })
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /Recent Activity/i })).not.toBeInTheDocument();
     });
   });
 
@@ -164,28 +164,11 @@ describe('PartnerOverviewTab', () => {
     });
   });
 
-  describe('AC4.5: should_showEngagementPlaceholder_when_epic8Deferred', () => {
-    it('displays "Coming Soon - Epic 8" message', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Coming Soon - Epic 8/i)).toBeInTheDocument();
-    });
-
-    it('displays placeholder score breakdown', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Event Attendance/i)).toBeInTheDocument();
-      expect(screen.getByText(/Topic Voting/i)).toBeInTheDocument();
-      expect(screen.getByText(/Meeting Participation/i)).toBeInTheDocument();
-      expect(screen.getByText(/Content Interaction/i)).toBeInTheDocument();
-    });
-
-    it('displays "View Full Analytics" link', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      const analyticsLink = screen.getByText(/View Full Analytics →/i);
-      expect(analyticsLink).toBeInTheDocument();
-    });
+  // Engagement metrics panel removed post-epic-8 (analytics now in separate tab)
+  describe.skip('AC4.5: should_showEngagementPlaceholder_when_epic8Deferred', () => {
+    it('displays "Coming Soon - Epic 8" message', () => {});
+    it('displays placeholder score breakdown', () => {});
+    it('displays "View Full Analytics" link', () => {});
   });
 
   describe.skip('AC4.6: should_displayRecentActivity_when_activityLoaded (TODO: Epic 8)', () => {

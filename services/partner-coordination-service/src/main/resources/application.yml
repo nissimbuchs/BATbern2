@@ -68,6 +68,9 @@ company-service:
 user-service:
   base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://company-user-management:8080}
 
+event-management-service:
+  base-url: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
+
 # Resilience4j Circuit Breaker
 resilience4j:
   circuitbreaker:
@@ -165,6 +168,9 @@ company-service:
 user-service:
   base-url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8081}
 
+event-management-service:
+  base-url: ${EVENT_MANAGEMENT_SERVICE_URL:http://localhost:8082}
+
 logging:
   level:
     root: INFO
@@ -196,6 +202,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9999/oauth2/default
+
+event-management-service:
+  base-url: http://localhost:8082
 
 logging:
   level:

@@ -205,7 +205,7 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 5**: Weeks 27-35 (Enhanced Organizer Workflows) - ✅ **100% COMPLETE** (including BAT-16)
 - **Epic 6**: Weeks 36-44 (Speaker Portal & Support) - ✅ **100% COMPLETE** (All stories deployed to staging, Story 6.4 QA passed)
 - **Epic 7**: Weeks 45+ (Attendee Experience Enhancements - DEFERRED to Phase 3)
-- **Epic 8**: Weeks 45+ (Partner Coordination - DEFERRED to Phase 3)
+- **Epic 8**: Weeks 45+ (Partner Coordination - 🚧 IN PROGRESS)
 
 **Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 Phase 1 & 2 deployed to staging with automated speaker invitation, self-service response portal, content submission, and deadline reminders. Epics 7-8 deferred to Phase 3 as optional enhancement layer.
 
@@ -335,7 +335,7 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 
 **Phase 3: Enhanced Experiences (Weeks 45+, DEFERRED)**
 - **[Epic 7: Attendee Experience Enhancements](./prd/epic-7-attendee-experience-enhancements.md)** - Personal engagement, mobile PWA, offline access (6 weeks, DEFERRED to Phase 3)
-- **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Analytics dashboards, topic voting, meeting coordination (4 weeks, DEFERRED to Phase 3)
+- **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Attendance dashboard (table + Excel export), topic suggestions & voting (simple toggle), partner meeting coordination with ICS calendar invites (🚧 IN PROGRESS)
 
 Each epic document contains:
 - Detailed user stories with architecture alignment
@@ -423,12 +423,12 @@ Each epic document contains:
 - Content recommendation engine providing relevant suggestions
 - User satisfaction scores >4.5/5 for attendee experience
 
-**Epic 8 Success Criteria (Partner Coordination)** - 🔄 **DEFERRED to Phase 3**
-- Partner topic voting adoption by 100% of partners
-- Analytics dashboards showing employee attendance and engagement
-- Efficient meeting coordination with automated scheduling
-- Topic suggestions influencing event planning decisions
-- Partner satisfaction with strategic influence mechanisms
+**Epic 8 Success Criteria (Partner Coordination)** - 🚧 **IN PROGRESS**
+- Partners can view attendance table (company vs total per event) with Excel export
+- All partners can suggest topics and cast simple toggle votes; organizer can set status
+- Organizer can send ICS calendar invite (RFC 5545) to all partner contacts via SES
+- Partner meeting records linked to BATbern events with agenda and post-meeting notes
+- Dashboard load P95 < 5s; all role-based access rules enforced and integration-tested
 
 ### Overall Platform Success - ✅ MVP + PHASE 2 ACHIEVED
 

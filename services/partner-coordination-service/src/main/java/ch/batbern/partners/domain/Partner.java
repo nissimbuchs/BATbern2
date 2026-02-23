@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -59,6 +60,14 @@ public class Partner {
 
     @Column(name = "partnership_end_date")
     private LocalDate partnershipEndDate;
+
+    /**
+     * Annual partnership cost in CHF.
+     * Story 8.1: Used to compute cost-per-attendee KPI (AC3).
+     * Nullable — when null, cost-per-attendee is displayed as N/A.
+     */
+    @Column(name = "partnership_cost", precision = 10, scale = 2)
+    private BigDecimal partnershipCost;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

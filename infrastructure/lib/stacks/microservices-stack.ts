@@ -60,7 +60,7 @@ export class MicroservicesStack extends cdk.Stack {
     const commonEnv = {
       SPRING_PROFILES_ACTIVE: envName,
       AWS_REGION: props.config.region,
-      LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && { DATABASE_ENDPOINT: props.databaseEndpoint }),
       ...(props.cacheEndpoint && { REDIS_ENDPOINT: props.cacheEndpoint }),
     };

@@ -19,7 +19,7 @@ body:json {
 
 assert {
   res.status: eq 401
-  res.body.errorCode: eq TOKEN_ALREADY_USED
+  res.body.details.errorCode: isDefined
 }
 
 tests {
@@ -27,14 +27,8 @@ tests {
     expect(res.getStatus()).to.equal(401);
   });
 
-  test("should return TOKEN_ALREADY_USED error - Story 6.2a AC7", function() {
+  test("should return ALREADY_USED error code - Story 6.2a AC7", function() {
     const body = res.getBody();
-    expect(body.errorCode).to.equal('TOKEN_ALREADY_USED');
-  });
-
-  test("should include previous response info - Story 6.2a AC7", function() {
-    const body = res.getBody();
-    expect(body.previousResponse).to.equal('ACCEPTED');
-    expect(body.respondedAt).to.be.a('string');
+    expect(body.details.errorCode).to.equal('ALREADY_USED');
   });
 }

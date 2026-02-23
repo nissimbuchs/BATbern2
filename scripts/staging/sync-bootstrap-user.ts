@@ -144,10 +144,17 @@ async function getCognitoUser(userPoolId: string, email: string): Promise<{
     const cognitoUserId = getAttribute('sub');
     const emailVerified = getAttribute('email_verified') === 'true';
 
+    // Derive name from email local part (e.g. "batbern.organizer@..." → "Batbern" / "Organizer")
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const emailLocal = email.split('@')[0] ?? '';
+    const emailParts = emailLocal.split('.');
+    const emailFirstName = capitalize(emailParts[0] ?? 'User');
+    const emailLastName = capitalize(emailParts[1] ?? 'User');
+
     // Parse custom:preferences for first/last name if available
     const preferencesJson = getAttribute('custom:preferences');
-    let firstName = 'Nissim'; // Default for bootstrap user
-    let lastName = 'Buchs'; // Default for bootstrap user
+    let firstName = emailFirstName;
+    let lastName = emailLastName;
 
     if (preferencesJson) {
       try {
@@ -155,11 +162,11 @@ async function getCognitoUser(userPoolId: string, email: string): Promise<{
         firstName = prefs.firstName || firstName;
         lastName = prefs.lastName || lastName;
       } catch (e) {
-        console.warn('⚠️  Could not parse custom:preferences, using defaults');
+        console.warn('⚠️  Could not parse custom:preferences, using email-derived name');
       }
     }
 
-    // Also check standard name attributes
+    // Standard name attributes take priority over email-derived name
     const givenName = getAttribute('given_name');
     const familyName = getAttribute('family_name');
 

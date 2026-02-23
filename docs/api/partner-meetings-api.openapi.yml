@@ -1,0 +1,290 @@
+openapi: "3.0.3"
+info:
+  title: "BATbern Partner Meetings API"
+  description: "Partner meeting coordination endpoints — Story 8.3"
+  version: "1.0.0"
+
+servers:
+  - url: "/api/v1"
+    description: "API Gateway base URL"
+
+paths:
+  /partner-meetings:
+    get:
+      summary: "List all partner meetings"
+      description: |
+        Returns all partner meetings sorted by meeting date descending.
+        ORGANIZER role required.
+      operationId: "listPartnerMeetings"
+      tags: ["Partner Meetings"]
+      responses:
+        "200":
+          description: "List of partner meetings"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartnerMeetingDTO"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+      security:
+        - bearerAuth: []
+
+    post:
+      summary: "Create a new partner meeting"
+      description: |
+        Creates a partner meeting record linked to a BATbern event by event code.
+        Date is auto-filled from the linked event. ORGANIZER role required.
+      operationId: "createPartnerMeeting"
+      tags: ["Partner Meetings"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeetingRequest"
+      responses:
+        "201":
+          description: "Meeting created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerMeetingDTO"
+        "400":
+          description: "Invalid request"
+        "403":
+          description: "Forbidden — ORGANIZER role required"
+      security:
+        - bearerAuth: []
+
+  /partner-meetings/{meetingId}:
+    get:
+      summary: "Get a single partner meeting"
+      operationId: "getPartnerMeeting"
+      tags: ["Partner Meetings"]
+      parameters:
+        - name: meetingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "Meeting details"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerMeetingDTO"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Meeting not found"
+      security:
+        - bearerAuth: []
+
+    patch:
+      summary: "Update meeting agenda or notes"
+      description: |
+        Updates the agenda (before meeting) or notes (after meeting).
+        ORGANIZER role required.
+      operationId: "updatePartnerMeeting"
+      tags: ["Partner Meetings"]
+      parameters:
+        - name: meetingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeetingRequest"
+      responses:
+        "200":
+          description: "Meeting updated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerMeetingDTO"
+        "400":
+          description: "Invalid request"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Meeting not found"
+      security:
+        - bearerAuth: []
+
+  /partner-meetings/{meetingId}/send-invite:
+    post:
+      summary: "Send calendar invite to all partner contacts"
+      description: |
+        Generates an ICS file (RFC 5545) with two VEVENTs — the partner meeting and
+        the linked BATbern event — and sends it via SES to all partner contacts.
+        Returns 202 Accepted immediately; email is dispatched asynchronously.
+        ORGANIZER role required.
+      operationId: "sendPartnerMeetingInvite"
+      tags: ["Partner Meetings"]
+      parameters:
+        - name: meetingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "202":
+          description: "Invite queued for sending"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendInviteResponse"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Meeting not found"
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    PartnerMeetingDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Meeting ID"
+        eventCode:
+          type: string
+          description: "Linked BATbern event code (ADR-003)"
+          example: "BATbern57"
+        meetingType:
+          type: string
+          enum: [SPRING, AUTUMN]
+          description: "Whether this is the spring or autumn partner meeting"
+        meetingDate:
+          type: string
+          format: date
+          description: "Meeting date (same as the BATbern event date)"
+        startTime:
+          type: string
+          example: "12:00"
+          description: "Meeting start time (HH:mm)"
+        endTime:
+          type: string
+          example: "14:00"
+          description: "Meeting end time (HH:mm)"
+        location:
+          type: string
+          description: "Meeting venue/location"
+        agenda:
+          type: string
+          description: "Free-text agenda"
+        notes:
+          type: string
+          description: "Post-meeting notes"
+        inviteSentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Timestamp when calendar invite was sent, null if not yet sent"
+        createdBy:
+          type: string
+          description: "Organizer username (ADR-003)"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - eventCode
+        - meetingType
+        - meetingDate
+        - startTime
+        - endTime
+        - createdBy
+        - createdAt
+        - updatedAt
+
+    CreateMeetingRequest:
+      type: object
+      properties:
+        eventCode:
+          type: string
+          description: "BATbern event code to link the meeting to (ADR-003)"
+          example: "BATbern57"
+        meetingType:
+          type: string
+          enum: [SPRING, AUTUMN]
+        startTime:
+          type: string
+          example: "12:00"
+          description: "Meeting start time (HH:mm)"
+        endTime:
+          type: string
+          example: "14:00"
+          description: "Meeting end time (HH:mm)"
+        location:
+          type: string
+          description: "Meeting venue"
+        agenda:
+          type: string
+          description: "Initial agenda text"
+      required:
+        - eventCode
+        - meetingType
+        - startTime
+        - endTime
+
+    UpdateMeetingRequest:
+      type: object
+      description: "All fields optional — only provided fields are updated"
+      properties:
+        agenda:
+          type: string
+          nullable: true
+          description: "Meeting agenda (free text)"
+        notes:
+          type: string
+          nullable: true
+          description: "Post-meeting notes (free text)"
+        location:
+          type: string
+          nullable: true
+        startTime:
+          type: string
+          description: "HH:mm format"
+        endTime:
+          type: string
+          description: "HH:mm format"
+
+    SendInviteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Calendar invite is being sent to all partner contacts"
+        meetingId:
+          type: string
+          format: uuid
+        recipientCount:
+          type: integer
+          description: "Number of partner contacts the invite is being sent to"
+      required:
+        - message
+        - meetingId
+        - recipientCount
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

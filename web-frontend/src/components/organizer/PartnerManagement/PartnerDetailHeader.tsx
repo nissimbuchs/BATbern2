@@ -15,14 +15,17 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { Edit, NoteAdd, Email, CalendarMonth, Analytics, ArrowBack } from '@mui/icons-material';
+import { Edit, NoteAdd, ArrowBack } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
+type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
+
 interface PartnerDetailHeaderProps {
   partner: PartnerResponse;
+  role?: UserRole; // Story 8.0: hide edit/action buttons for PARTNER
 }
 
 // Tier emoji mapping
@@ -56,10 +59,11 @@ const getInitials = (name: string): string => {
   return name.substring(0, 2).toUpperCase();
 };
 
-export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner }) => {
+export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner, role }) => {
   const { t } = useTranslation('partners');
   const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
+  const isPartner = role === 'PARTNER';
 
   const handleEdit = () => {
     openEditModal(partner);
@@ -77,12 +81,14 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }} data-testid="partner-detail-header">
       <Stack spacing={3}>
-        {/* Back Button */}
-        <Box>
-          <Button startIcon={<ArrowBack />} onClick={handleBack}>
-            {t('detail.header.backButton', 'Back to Partner Directory')}
-          </Button>
-        </Box>
+        {/* Back Button — hidden for PARTNER (portal layout provides navigation) */}
+        {!isPartner && (
+          <Box>
+            <Button startIcon={<ArrowBack />} onClick={handleBack}>
+              {t('detail.header.backButton', 'Back to Partner Directory')}
+            </Button>
+          </Box>
+        )}
 
         {/* Header Content */}
         <Stack direction="row" spacing={3} alignItems="flex-start">
@@ -176,65 +182,25 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                 )}
               </Stack>
             )}
-
-            {/* Engagement Bar Placeholder */}
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: 'grey.100',
-                borderRadius: 1,
-                textAlign: 'center',
-              }}
-            >
-              <Typography variant="body2" color="text.secondary">
-                📊 {t('detail.header.comingSoon')}
-              </Typography>
-            </Box>
           </Stack>
 
-          {/* Action Buttons */}
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              startIcon={<Email />}
-              disabled
-              size="small"
-              title={t('detail.header.comingSoon')}
-            >
-              {t('detail.header.sendEmail')}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<CalendarMonth />}
-              disabled
-              size="small"
-              title={t('detail.header.comingSoon')}
-            >
-              {t('detail.header.scheduleMeeting')}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Analytics />}
-              disabled
-              size="small"
-              title={t('detail.header.comingSoon')}
-            >
-              {t('detail.header.exportData')}
-            </Button>
-            <Button variant="outlined" startIcon={<NoteAdd />} size="small">
-              {t('detail.notesTab.addNote')}
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Edit />}
-              onClick={handleEdit}
-              size="small"
-              data-testid="edit-partner-button"
-            >
-              {t('modal.editTitle')}
-            </Button>
-          </Stack>
+          {/* Action Buttons — hidden for PARTNER role */}
+          {!isPartner && (
+            <Stack direction="row" spacing={1}>
+              <Button variant="outlined" startIcon={<NoteAdd />} size="small">
+                {t('detail.notesTab.addNote')}
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Edit />}
+                onClick={handleEdit}
+                size="small"
+                data-testid="edit-partner-button"
+              >
+                {t('modal.editTitle')}
+              </Button>
+            </Stack>
+          )}
         </Stack>
       </Stack>
     </Paper>

@@ -14,7 +14,7 @@ body:json {
   {
     "token": "{{speakerViewToken}}",
     "fileName": "cloud-architecture-presentation.pdf",
-    "contentType": "application/pdf",
+    "mimeType": "application/pdf",
     "fileSize": 1048576
   }
 }
@@ -42,7 +42,7 @@ tests {
 
   test("should return expiry time - Story 6.3 AC7", function() {
     const body = res.getBody();
-    expect(body.expiresIn).to.be.a('number');
-    expect(body.expiresIn).to.be.greaterThan(0);
+    expect(body.expiresInMinutes).to.be.a('number');
+    expect(body.expiresInMinutes).to.be.greaterThan(0);
   });
 }

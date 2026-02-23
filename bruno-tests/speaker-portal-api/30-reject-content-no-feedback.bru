@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/events/{{testEventCode}}/speakers/{{rejectionSpeakerPoolId}}/review
+  url: {{baseUrl}}/events/{{speakerPortalTestEventCode}}/speakers/{{rejectionSpeakerPoolId}}/review
   body: json
   auth: bearer
 }
@@ -34,6 +34,6 @@ tests {
     expect(res.getStatus()).to.equal(400);
     const body = res.getBody();
     // Error message should indicate feedback is required
-    expect(body.message || body.error).to.include('feedback');
+    expect((body.message || body.error || '').toLowerCase()).to.include('feedback');
   });
 }

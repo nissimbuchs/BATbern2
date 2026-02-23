@@ -4,11 +4,15 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -139,26 +143,26 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle VoteAlreadyExistsException (duplicate vote attempt)
-     * Returns HTTP 409 Conflict
+     * Handle EntityNotFoundException (JPA entity not found) — Story 8.2.
+     * Returns HTTP 404 Not Found
      */
-    @ExceptionHandler(VoteAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleVoteAlreadyExistsException(
-            VoteAlreadyExistsException ex,
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
+            EntityNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("Vote already exists: {}", ex.getMessage());
+        log.warn("Entity not found: {}", ex.getMessage());
 
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
                 .message(ex.getMessage())
                 .correlationId(CorrelationIdGenerator.generate())
                 .severity("LOW")
                 .build();
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**
@@ -238,6 +242,81 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(error);
+    }
+
+    /**
+     * Handle Spring Security access denied (insufficient role / @PreAuthorize failed).
+     * Story 8.1: AC6 — returns 403 when PARTNER tries to access another company's analytics.
+     * Returns HTTP 403 Forbidden
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
+        log.warn("Access denied: {}", request.getRequestURI());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(java.time.Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.FORBIDDEN.value())
+                .error("Forbidden")
+                .message("Access denied")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * Handle Spring Security authentication exceptions (not authenticated).
+     * Returns HTTP 401 Unauthorized
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            AuthenticationException ex,
+            HttpServletRequest request) {
+        log.warn("Authentication required: {}", request.getRequestURI());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(java.time.Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("Unauthorized")
+                .message("Authentication required")
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Handle @Valid bean validation failures (e.g. @NotBlank, @NotNull on request bodies).
+     * Returns HTTP 400 Bad Request.
+     *
+     * Story 8.3: required to return 400 for invalid CreateMeetingRequest.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("Validation failed");
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(message)
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     /**

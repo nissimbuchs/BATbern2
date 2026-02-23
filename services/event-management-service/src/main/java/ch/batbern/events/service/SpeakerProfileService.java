@@ -69,12 +69,9 @@ public class SpeakerProfileService {
         String username = tokenResult.username();
         log.debug("Token valid for username: {}", username);
 
-        // 2. Get Speaker entity
+        // 2. Get Speaker entity — required; throw 404 if not found
         Speaker speaker = speakerRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    log.warn("Speaker not found for username: {}", username);
-                    return new SpeakerNotFoundException(username);
-                });
+                .orElseThrow(() -> new SpeakerNotFoundException("Speaker not found for username: " + username));
 
         // 3. Enrich with User data from Company Service
         UserResponse user = userApiClient.getUserByUsername(username);
@@ -112,9 +109,14 @@ public class SpeakerProfileService {
         String username = tokenResult.username();
         log.debug("Token valid for username: {}", username);
 
-        // 2. Get Speaker entity
+        // 2. Get or create Speaker entity (lazy init for newly invited speakers)
         Speaker speaker = speakerRepository.findByUsername(username)
-                .orElseThrow(() -> new SpeakerNotFoundException(username));
+                .orElseGet(() -> {
+                    log.info("Creating Speaker entity for profile update: {}", username);
+                    return speakerRepository.save(Speaker.builder()
+                            .username(username)
+                            .build());
+                });
 
         // 3. Validate request
         validateUpdateRequest(request);
@@ -163,35 +165,41 @@ public class SpeakerProfileService {
         int score = 0;
 
         // First name: prefer local Speaker value, fall back to User service
-        String firstName = speaker.getFirstName() != null ? speaker.getFirstName() : user.getFirstName();
+        String firstName = (speaker != null && speaker.getFirstName() != null)
+                ? speaker.getFirstName() : user.getFirstName();
         if (firstName != null && !firstName.isBlank()) {
             score += 15;
         }
 
         // Last name: prefer local Speaker value, fall back to User service
-        String lastName = speaker.getLastName() != null ? speaker.getLastName() : user.getLastName();
+        String lastName = (speaker != null && speaker.getLastName() != null)
+                ? speaker.getLastName() : user.getLastName();
         if (lastName != null && !lastName.isBlank()) {
             score += 15;
         }
 
         // Bio: prefer local Speaker value, fall back to User service
-        String bio = speaker.getBio() != null ? speaker.getBio() : user.getBio();
+        String bio = (speaker != null && speaker.getBio() != null)
+                ? speaker.getBio() : user.getBio();
         if (bio != null && !bio.isBlank()) {
             score += 20;
         }
 
         // Profile picture: prefer local Speaker value, fall back to User service
-        if (speaker.getProfilePictureUrl() != null || user.getProfilePictureUrl() != null) {
+        String speakerPicUrl = speaker != null ? speaker.getProfilePictureUrl() : null;
+        if (speakerPicUrl != null || user.getProfilePictureUrl() != null) {
             score += 20;
         }
 
         // Expertise areas
-        if (speaker.getExpertiseAreas() != null && !speaker.getExpertiseAreas().isEmpty()) {
+        if (speaker != null && speaker.getExpertiseAreas() != null
+                && !speaker.getExpertiseAreas().isEmpty()) {
             score += 15;
         }
 
         // Languages
-        if (speaker.getLanguages() != null && !speaker.getLanguages().isEmpty()) {
+        if (speaker != null && speaker.getLanguages() != null
+                && !speaker.getLanguages().isEmpty()) {
             score += 15;
         }
 
@@ -206,35 +214,41 @@ public class SpeakerProfileService {
         List<String> missing = new ArrayList<>();
 
         // First name: prefer local Speaker value, fall back to User service
-        String firstName = speaker.getFirstName() != null ? speaker.getFirstName() : user.getFirstName();
+        String firstName = (speaker != null && speaker.getFirstName() != null)
+                ? speaker.getFirstName() : user.getFirstName();
         if (firstName == null || firstName.isBlank()) {
             missing.add("firstName");
         }
 
         // Last name: prefer local Speaker value, fall back to User service
-        String lastName = speaker.getLastName() != null ? speaker.getLastName() : user.getLastName();
+        String lastName = (speaker != null && speaker.getLastName() != null)
+                ? speaker.getLastName() : user.getLastName();
         if (lastName == null || lastName.isBlank()) {
             missing.add("lastName");
         }
 
         // Bio: prefer local Speaker value, fall back to User service
-        String bio = speaker.getBio() != null ? speaker.getBio() : user.getBio();
+        String bio = (speaker != null && speaker.getBio() != null)
+                ? speaker.getBio() : user.getBio();
         if (bio == null || bio.isBlank()) {
             missing.add("bio");
         }
 
         // Profile picture: prefer local Speaker value, fall back to User service
-        if (speaker.getProfilePictureUrl() == null && user.getProfilePictureUrl() == null) {
+        String speakerPicUrl = speaker != null ? speaker.getProfilePictureUrl() : null;
+        if (speakerPicUrl == null && user.getProfilePictureUrl() == null) {
             missing.add("profilePictureUrl");
         }
 
         // Expertise areas
-        if (speaker.getExpertiseAreas() == null || speaker.getExpertiseAreas().isEmpty()) {
+        if (speaker == null || speaker.getExpertiseAreas() == null
+                || speaker.getExpertiseAreas().isEmpty()) {
             missing.add("expertiseAreas");
         }
 
         // Languages
-        if (speaker.getLanguages() == null || speaker.getLanguages().isEmpty()) {
+        if (speaker == null || speaker.getLanguages() == null
+                || speaker.getLanguages().isEmpty()) {
             missing.add("languages");
         }
 
@@ -253,16 +267,16 @@ public class SpeakerProfileService {
             TokenValidationResult tokenResult) {
 
         // Prefer local Speaker values, fall back to User service values
-        String firstName = speaker.getFirstName() != null
+        String firstName = (speaker != null && speaker.getFirstName() != null)
                 ? speaker.getFirstName() : user.getFirstName();
-        String lastName = speaker.getLastName() != null
+        String lastName = (speaker != null && speaker.getLastName() != null)
                 ? speaker.getLastName() : user.getLastName();
-        String bio = speaker.getBio() != null
+        String bio = (speaker != null && speaker.getBio() != null)
                 ? speaker.getBio() : user.getBio();
-        String email = speaker.getEmail() != null
+        String email = (speaker != null && speaker.getEmail() != null)
                 ? speaker.getEmail() : user.getEmail();
-        String profilePictureUrl = speaker.getProfilePictureUrl() != null
-                ? speaker.getProfilePictureUrl()
+        String speakerPicUrl = speaker != null ? speaker.getProfilePictureUrl() : null;
+        String profilePictureUrl = speakerPicUrl != null ? speakerPicUrl
                 : (user.getProfilePictureUrl() != null ? user.getProfilePictureUrl().toString() : null);
 
         // AC10: Session context for navigation
@@ -276,11 +290,11 @@ public class SpeakerProfileService {
                 .lastName(lastName)
                 .bio(bio)
                 .profilePictureUrl(profilePictureUrl)
-                // Speaker-specific fields (always from Speaker entity)
-                .expertiseAreas(speaker.getExpertiseAreas())
-                .speakingTopics(speaker.getSpeakingTopics())
-                .linkedInUrl(speaker.getLinkedInUrl())
-                .languages(speaker.getLanguages())
+                // Speaker-specific fields (null when no Speaker entity exists yet)
+                .expertiseAreas(speaker != null ? speaker.getExpertiseAreas() : null)
+                .speakingTopics(speaker != null ? speaker.getSpeakingTopics() : null)
+                .linkedInUrl(speaker != null ? speaker.getLinkedInUrl() : null)
+                .languages(speaker != null ? speaker.getLanguages() : null)
                 // Computed
                 .profileCompleteness(completeness)
                 .missingFields(missingFields)

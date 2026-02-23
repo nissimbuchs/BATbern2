@@ -17,7 +17,7 @@ describe('PartnerTabNavigation', () => {
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /contacts/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /meetings/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /activity/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /analytics/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /notes/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
   });
@@ -66,7 +66,7 @@ describe('PartnerTabNavigation', () => {
   it('should_persistActiveTab_when_urlHashUsed', () => {
     // This test verifies that the component can work with URL hash
     // The actual hash persistence will be handled by the parent component
-    const tabNames = ['overview', 'contacts', 'meetings', 'activity', 'notes', 'settings'];
+    const tabNames = ['overview', 'contacts', 'meetings', 'analytics', 'notes', 'settings'];
 
     tabNames.forEach((_, index) => {
       const { unmount } = render(
@@ -84,8 +84,8 @@ describe('PartnerTabNavigation', () => {
     // which will be used by parent to trigger lazy loading
     render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} />);
 
-    // Click on Activity tab (index 3)
-    const activityTab = screen.getByRole('tab', { name: /activity/i });
+    // Click on Analytics tab (index 3)
+    const activityTab = screen.getByRole('tab', { name: /analytics/i });
     fireEvent.click(activityTab);
 
     // Verify callback was called with correct index for lazy loading
@@ -139,7 +139,7 @@ describe('PartnerTabNavigation', () => {
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /contacts/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /meetings/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /activity/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /analytics/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /notes/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
   });

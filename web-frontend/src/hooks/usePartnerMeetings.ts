@@ -1,43 +1,35 @@
 /**
  * usePartnerMeetings Hook
  *
- * React Query hook for fetching partner meetings
- * Story 2.8.2: Partner Detail View
+ * Story 8.3: Partner Meeting Coordination — Task 1b
  *
- * Features:
- * - Fetches partner meetings for Meetings tab
- * - 2-minute cache for meeting data (more volatile)
- * - Lazy loading (only fetches when tab activated)
+ * React Query hook for fetching partner meetings.
+ * Used by PartnerMeetingsTab in the organizer detail view
+ * and the partner portal company view (Story 8.0 integration).
  *
- * AC: 5 (Meetings Tab), 13 (Integration Tests)
+ * Cache: 5 minutes (read-only for partners; organizer invalidates on mutation)
+ * AC: 5 (Meeting List)
  */
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-// import { getPartnerMeetings } from '@/services/api/partnerApi';
-// import type { MeetingResponse } from '@/services/api/partnerApi';
-
-// TODO: Remove stub when meetings API is implemented
-interface MeetingResponse {
-  id: string;
-  title: string;
-  date: string;
-}
+import { getMeetings, type PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
 /**
- * usePartnerMeetings - Fetch partner meetings
+ * usePartnerMeetings — Fetch all partner meetings (ORGANIZER role required).
  *
- * @param companyName - Company name (meaningful ID)
- * @returns UseQueryResult with array of meetings
+ * Note: Partner meetings are global (one per BATbern event, all partners invited).
+ * The optional companyName param is accepted for call-site compatibility but is not
+ * used for filtering — all meetings are returned regardless.
  *
- * Cache: 2 minutes (meeting data is more volatile)
+ * @returns UseQueryResult with array of PartnerMeetingDTO sorted by date descending
  */
 export const usePartnerMeetings = (
-  companyName: string
-): UseQueryResult<MeetingResponse[], Error> => {
+  companyName?: string
+): UseQueryResult<PartnerMeetingDTO[], Error> => {
   return useQuery({
-    queryKey: ['partner', companyName, 'meetings'],
-    queryFn: async () => [], // TODO: Replace with getPartnerMeetings(companyName) when API implemented
-    enabled: !!companyName,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    // Include companyName in key only when provided (stable key for PartnerMeetingsTab usage)
+    queryKey: companyName ? ['partnerMeetings', companyName] : ['partnerMeetings'],
+    queryFn: getMeetings,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

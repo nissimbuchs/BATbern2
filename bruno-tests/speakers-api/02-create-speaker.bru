@@ -23,7 +23,7 @@ headers {
 
 body:json {
   {
-    "username": "{{testSpeakerUsername}}",
+    "username": "{{testDisposableSpeakerUsername}}",
     "availability": "AVAILABLE",
     "expertiseAreas": ["Cloud Architecture", "Security"],
     "speakingTopics": ["AWS", "Kubernetes"],
@@ -38,9 +38,7 @@ assert {
 
 script:post-response {
   if (res.getStatus() === 201) {
-    const speaker = res.getBody();
-    bru.setEnvVar("testSpeakerCreatedUsername", speaker.username);
-    console.log("Created speaker with username:", speaker.username);
+    console.log("Created speaker with username:", res.getBody().username);
   }
 }
 

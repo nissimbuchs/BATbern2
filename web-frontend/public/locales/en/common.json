@@ -22,7 +22,10 @@
     "myRegistrations": "My Registrations",
     "about": "About",
     "pastEvents": "Past Events",
-    "publicSite": "Public Website"
+    "publicSite": "Public Website",
+    "partnerTopics": "Partner Topics",
+    "partnerMeetings": "Partner Meetings",
+    "topics": "Topic Suggestions"
   },
   "public": {
     "login": "Login",
