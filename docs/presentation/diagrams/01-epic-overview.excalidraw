@@ -23,14 +23,14 @@
       "roundness": null,
       "boundElements": [],
       "containerId": null,
-      "text": "BATbern Platform \u2014 Epic Roadmap",
+      "text": "BATbern Platform — Epic Roadmap",
       "fontSize": 28,
       "fontFamily": 3,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "BATbern Platform \u2014 Epic Roadmap"
+      "originalText": "BATbern Platform — Epic Roadmap"
     },
     {
       "id": "text-subtitle",
@@ -52,14 +52,14 @@
       "roundness": null,
       "boundElements": [],
       "containerId": null,
-      "text": "Enterprise Software alleine mit AI bauen \u2014 2024\u20132026",
+      "text": "Enterprise Software alleine mit AI bauen — 2024–2026",
       "fontSize": 16,
       "fontFamily": 3,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "Enterprise Software alleine mit AI bauen \u2014 2024\u20132026"
+      "originalText": "Enterprise Software alleine mit AI bauen — 2024–2026"
     },
     {
       "id": "text-label-a",
@@ -81,14 +81,14 @@
       "roundness": null,
       "boundElements": [],
       "containerId": null,
-      "text": "\u2705  MVP \u2014 COMPLETE",
+      "text": "✅  MVP — COMPLETE",
       "fontSize": 13,
       "fontFamily": 3,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "\u2705  MVP \u2014 COMPLETE"
+      "originalText": "✅  MVP — COMPLETE"
     },
     {
       "id": "shape-e1",
@@ -105,19 +105,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e1"],
+      "groupIds": [
+        "group-e1"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e1"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e1"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e1",
       "type": "text",
       "x": 60,
-      "y": 140,
+      "y": 169.8,
       "width": 240,
-      "height": 110,
+      "height": 50.4,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -126,19 +136,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e1"],
+      "groupIds": [
+        "group-e1"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e1",
-      "text": "E1 \u2705\nFoundation & Infrastructure\nShared Kernel \u00b7 AWS CDK 3-env",
+      "text": "E1 ✅\nFoundation & Infrastructure\nShared Kernel · AWS CDK 3-env",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E1 \u2705\nFoundation & Infrastructure\nShared Kernel \u00b7 AWS CDK 3-env"
+      "originalText": "E1 ✅\nFoundation & Infrastructure\nShared Kernel · AWS CDK 3-env"
     },
     {
       "id": "shape-e2",
@@ -155,19 +167,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e2"],
+      "groupIds": [
+        "group-e2"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e2"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e2"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e2",
       "type": "text",
       "x": 320,
-      "y": 140,
+      "y": 161.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -176,19 +198,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e2"],
+      "groupIds": [
+        "group-e2"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e2",
-      "text": "E2 \u2705\nEntity CRUD &\nDomain Services\nCompany \u00b7 User \u00b7 Event \u00b7 Partner",
+      "text": "E2 ✅\nEntity CRUD &\nDomain Services\nCompany · User · Event · Partner",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E2 \u2705\nEntity CRUD &\nDomain Services\nCompany \u00b7 User \u00b7 Event \u00b7 Partner"
+      "originalText": "E2 ✅\nEntity CRUD &\nDomain Services\nCompany · User · Event · Partner"
     },
     {
       "id": "shape-e3",
@@ -205,19 +229,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e3"],
+      "groupIds": [
+        "group-e3"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e3"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e3"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e3",
       "type": "text",
       "x": 580,
-      "y": 140,
+      "y": 161.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -226,19 +260,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e3"],
+      "groupIds": [
+        "group-e3"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e3",
-      "text": "E3 \u2705\nHistorical Data Migration\n60 Events \u00b7 269 Speakers\n2\u2019307 Attendees",
+      "text": "E3 ✅\nHistorical Data Migration\n60 Events · 269 Speakers\n2’307 Attendees",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E3 \u2705\nHistorical Data Migration\n60 Events \u00b7 269 Speakers\n2\u2019307 Attendees"
+      "originalText": "E3 ✅\nHistorical Data Migration\n60 Events · 269 Speakers\n2’307 Attendees"
     },
     {
       "id": "shape-e4",
@@ -255,19 +291,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e4"],
+      "groupIds": [
+        "group-e4"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e4"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e4"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e4",
       "type": "text",
       "x": 840,
-      "y": 140,
+      "y": 161.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -276,19 +322,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e4"],
+      "groupIds": [
+        "group-e4"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e4",
-      "text": "E4 \u2705\nPublic Website\nEvent landing \u00b7 3-step reg\n\u00b7 Archive",
+      "text": "E4 ✅\nPublic Website\nEvent landing · 3-step reg\n· Archive",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E4 \u2705\nPublic Website\nEvent landing \u00b7 3-step reg\n\u00b7 Archive"
+      "originalText": "E4 ✅\nPublic Website\nEvent landing · 3-step reg\n· Archive"
     },
     {
       "id": "shape-e5",
@@ -305,19 +353,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e5"],
+      "groupIds": [
+        "group-e5"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e5"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e5"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e5",
       "type": "text",
       "x": 1100,
-      "y": 140,
+      "y": 161.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -326,19 +384,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e5"],
+      "groupIds": [
+        "group-e5"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e5",
-      "text": "E5 \u2705\nOrganizer Workflows\n9-state workflow\n\u00b7 Auto-publishing",
+      "text": "E5 ✅\nOrganizer Workflows\n9-state workflow\n· Auto-publishing",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E5 \u2705\nOrganizer Workflows\n9-state workflow\n\u00b7 Auto-publishing"
+      "originalText": "E5 ✅\nOrganizer Workflows\n9-state workflow\n· Auto-publishing"
     },
     {
       "id": "text-label-b",
@@ -384,19 +444,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e6"],
+      "groupIds": [
+        "group-e6"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e6"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e6"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e6",
       "type": "text",
       "x": 60,
-      "y": 300,
+      "y": 321.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -405,19 +475,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e6"],
+      "groupIds": [
+        "group-e6"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e6",
-      "text": "E6 \u2705\nSpeaker Self-Service\nPortal\nMagic link \u00b7 Materials",
+      "text": "E6 ✅\nSpeaker Self-Service\nPortal\nMagic link · Materials",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E6 \u2705\nSpeaker Self-Service\nPortal\nMagic link \u00b7 Materials"
+      "originalText": "E6 ✅\nSpeaker Self-Service\nPortal\nMagic link · Materials"
     },
     {
       "id": "shape-e7",
@@ -434,19 +506,29 @@
       "strokeStyle": "dashed",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e7"],
+      "groupIds": [
+        "group-e7"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e7"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e7"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e7",
       "type": "text",
       "x": 320,
-      "y": 300,
+      "y": 321.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#94a3b8",
       "backgroundColor": "transparent",
@@ -455,19 +537,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e7"],
+      "groupIds": [
+        "group-e7"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e7",
-      "text": "E7 \ud83d\udce6\nAttendee Experience\n(DEFERRED)\nDashboard \u00b7 PWA",
+      "text": "E7 📦\nAttendee Experience\n(DEFERRED)\nDashboard · PWA",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E7 \ud83d\udce6\nAttendee Experience\n(DEFERRED)\nDashboard \u00b7 PWA"
+      "originalText": "E7 📦\nAttendee Experience\n(DEFERRED)\nDashboard · PWA"
     },
     {
       "id": "shape-e8",
@@ -484,19 +568,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e8"],
+      "groupIds": [
+        "group-e8"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e8"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e8"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e8",
       "type": "text",
       "x": 580,
-      "y": 300,
+      "y": 321.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -505,19 +599,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e8"],
+      "groupIds": [
+        "group-e8"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e8",
-      "text": "E8 \u2705\nPartner Coordination\nAnalytics \u00b7 Topic voting\n\u00b7 Meeting ICS",
+      "text": "E8 ✅\nPartner Coordination\nAnalytics · Topic voting\n· Meeting ICS",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E8 \u2705\nPartner Coordination\nAnalytics \u00b7 Topic voting\n\u00b7 Meeting ICS"
+      "originalText": "E8 ✅\nPartner Coordination\nAnalytics · Topic voting\n· Meeting ICS"
     },
     {
       "id": "shape-e9",
@@ -534,19 +630,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e9"],
+      "groupIds": [
+        "group-e9"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-e9"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-e9"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-e9",
       "type": "text",
       "x": 840,
-      "y": 300,
+      "y": 321.4,
       "width": 240,
-      "height": 110,
+      "height": 67.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -555,19 +661,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-e9"],
+      "groupIds": [
+        "group-e9"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-e9",
-      "text": "E9 \ud83d\udd28\nSpeaker Auth\nJWT magic link (9.1 \u2705)\n\u00b7 Cognito accounts",
+      "text": "E9 🔨\nSpeaker Auth\nJWT magic link (9.1 ✅)\n· Cognito accounts",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "E9 \ud83d\udd28\nSpeaker Auth\nJWT magic link (9.1 \u2705)\n\u00b7 Cognito accounts"
+      "originalText": "E9 🔨\nSpeaker Auth\nJWT magic link (9.1 ✅)\n· Cognito accounts"
     },
     {
       "id": "text-label-c",
@@ -589,14 +697,14 @@
       "roundness": null,
       "boundElements": [],
       "containerId": null,
-      "text": "\u231a  WATCH APP TRACK",
+      "text": "⌚  WATCH APP TRACK",
       "fontSize": 13,
       "fontFamily": 3,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "\u231a  WATCH APP TRACK"
+      "originalText": "⌚  WATCH APP TRACK"
     },
     {
       "id": "shape-w1",
@@ -613,19 +721,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w1"],
+      "groupIds": [
+        "group-w1"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 12},
-      "boundElements": [{"type": "text", "id": "text-w1"}],
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-w1"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-w1",
       "type": "text",
       "x": 60,
-      "y": 460,
+      "y": 473.2,
       "width": 200,
-      "height": 60,
+      "height": 33.599999999999994,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -634,19 +752,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w1"],
+      "groupIds": [
+        "group-w1"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-w1",
-      "text": "W1 \u2705\nPublic Companion",
+      "text": "W1 ✅\nPublic Companion",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "W1 \u2705\nPublic Companion"
+      "originalText": "W1 ✅\nPublic Companion"
     },
     {
       "id": "shape-w2",
@@ -663,19 +783,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w2"],
+      "groupIds": [
+        "group-w2"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 12},
-      "boundElements": [{"type": "text", "id": "text-w2"}],
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-w2"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-w2",
       "type": "text",
       "x": 280,
-      "y": 460,
+      "y": 473.2,
       "width": 200,
-      "height": 60,
+      "height": 33.599999999999994,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -684,19 +814,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w2"],
+      "groupIds": [
+        "group-w2"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-w2",
-      "text": "W2 \u2705\nPairing & Organizer",
+      "text": "W2 ✅\nPairing & Organizer",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "W2 \u2705\nPairing & Organizer"
+      "originalText": "W2 ✅\nPairing & Organizer"
     },
     {
       "id": "shape-w3",
@@ -713,19 +845,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w3"],
+      "groupIds": [
+        "group-w3"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 12},
-      "boundElements": [{"type": "text", "id": "text-w3"}],
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-w3"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-w3",
       "type": "text",
       "x": 500,
-      "y": 460,
+      "y": 473.2,
       "width": 200,
-      "height": 60,
+      "height": 33.599999999999994,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -734,19 +876,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w3"],
+      "groupIds": [
+        "group-w3"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-w3",
-      "text": "W3 \u2705\nCountdown & Haptics",
+      "text": "W3 ✅\nCountdown & Haptics",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "W3 \u2705\nCountdown & Haptics"
+      "originalText": "W3 ✅\nCountdown & Haptics"
     },
     {
       "id": "shape-w4",
@@ -763,19 +907,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w4"],
+      "groupIds": [
+        "group-w4"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 12},
-      "boundElements": [{"type": "text", "id": "text-w4"}],
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-w4"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-w4",
       "type": "text",
       "x": 720,
-      "y": 460,
+      "y": 473.2,
       "width": 200,
-      "height": 60,
+      "height": 33.599999999999994,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -784,19 +938,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w4"],
+      "groupIds": [
+        "group-w4"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-w4",
-      "text": "W4 \u2705\nSession Control",
+      "text": "W4 ✅\nSession Control",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "W4 \u2705\nSession Control"
+      "originalText": "W4 ✅\nSession Control"
     },
     {
       "id": "shape-w5",
@@ -813,19 +969,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w5"],
+      "groupIds": [
+        "group-w5"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 12},
-      "boundElements": [{"type": "text", "id": "text-w5"}],
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-w5"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-w5",
       "type": "text",
       "x": 940,
-      "y": 460,
+      "y": 473.2,
       "width": 200,
-      "height": 60,
+      "height": 33.599999999999994,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -834,19 +1000,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-w5"],
+      "groupIds": [
+        "group-w5"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-w5",
-      "text": "W5 \u2705\nOffline Resilience",
+      "text": "W5 ✅\nOffline Resilience",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "W5 \u2705\nOffline Resilience"
+      "originalText": "W5 ✅\nOffline Resilience"
     }
   ],
   "appState": {

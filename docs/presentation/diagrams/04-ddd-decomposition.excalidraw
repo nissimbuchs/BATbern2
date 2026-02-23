@@ -76,19 +76,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-shared-kernel"],
+      "groupIds": [
+        "group-shared-kernel"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-shared-kernel"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-shared-kernel"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-shared-kernel",
       "type": "text",
       "x": 540,
-      "y": 260,
+      "y": 291.2,
       "width": 260,
-      "height": 180,
+      "height": 117.6,
       "angle": 0,
       "strokeColor": "#c4b5fd",
       "backgroundColor": "transparent",
@@ -97,19 +107,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-shared-kernel"],
+      "groupIds": [
+        "group-shared-kernel"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-shared-kernel",
-      "text": "Shared Kernel\n\nCommon types \u00b7 Domain events\nError hierarchy \u00b7 Pagination\nFilterParser \u00b7 JWT utilities\n\nshared-kernel/",
+      "text": "Shared Kernel\n\nCommon types · Domain events\nError hierarchy · Pagination\nFilterParser · JWT utilities\n\nshared-kernel/",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Shared Kernel\n\nCommon types \u00b7 Domain events\nError hierarchy \u00b7 Pagination\nFilterParser \u00b7 JWT utilities\n\nshared-kernel/"
+      "originalText": "Shared Kernel\n\nCommon types · Domain events\nError hierarchy · Pagination\nFilterParser · JWT utilities\n\nshared-kernel/"
     },
     {
       "id": "shape-apigw",
@@ -126,19 +138,33 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-apigw"],
+      "groupIds": [
+        "group-apigw"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-apigw"}, {"type": "arrow", "id": "arrow-apigw-to-sk"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-apigw"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-apigw-to-sk"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-apigw",
       "type": "text",
       "x": 40,
-      "y": 290,
+      "y": 316.1,
       "width": 180,
-      "height": 160,
+      "height": 107.8,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -147,19 +173,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-apigw"],
+      "groupIds": [
+        "group-apigw"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-apigw",
-      "text": "API Gateway\nch.batbern.gateway\n\nNOT a domain service\nJWT validation\nRate limiting\nDomainRouter \u00b7 CORS",
+      "text": "API Gateway\nch.batbern.gateway\n\nNOT a domain service\nJWT validation\nRate limiting\nDomainRouter · CORS",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "API Gateway\nch.batbern.gateway\n\nNOT a domain service\nJWT validation\nRate limiting\nDomainRouter \u00b7 CORS"
+      "originalText": "API Gateway\nch.batbern.gateway\n\nNOT a domain service\nJWT validation\nRate limiting\nDomainRouter · CORS"
     },
     {
       "id": "shape-event-mgmt",
@@ -176,19 +204,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-event-mgmt"],
+      "groupIds": [
+        "group-d4-event-mgmt"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-d4-event-mgmt"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-d4-event-mgmt"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-d4-event-mgmt",
       "type": "text",
       "x": 280,
-      "y": 40,
+      "y": 80.7,
       "width": 240,
-      "height": 220,
+      "height": 138.6,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -197,19 +235,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-event-mgmt"],
+      "groupIds": [
+        "group-d4-event-mgmt"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-event-mgmt",
-      "text": "Event Management\nch.batbern.events\n\nEvent \u00b7 Session \u00b7 Topic\nSessionMaterial\nSpeakerArrival \u00b7 EventTask\n\n\u2192 EventStateChangedEvent\n\u2192 SessionUpdatedEvent",
+      "text": "Event Management\nch.batbern.events\n\nEvent · Session · Topic\nSessionMaterial\nSpeakerArrival · EventTask\n\n→ EventStateChangedEvent\n→ SessionUpdatedEvent",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Event Management\nch.batbern.events\n\nEvent \u00b7 Session \u00b7 Topic\nSessionMaterial\nSpeakerArrival \u00b7 EventTask\n\n\u2192 EventStateChangedEvent\n\u2192 SessionUpdatedEvent"
+      "originalText": "Event Management\nch.batbern.events\n\nEvent · Session · Topic\nSessionMaterial\nSpeakerArrival · EventTask\n\n→ EventStateChangedEvent\n→ SessionUpdatedEvent"
     },
     {
       "id": "shape-speaker-coord",
@@ -226,19 +266,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-speaker-coord"],
+      "groupIds": [
+        "group-d4-speaker-coord"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-d4-speaker-coord"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-d4-speaker-coord"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-d4-speaker-coord",
       "type": "text",
       "x": 860,
-      "y": 40,
+      "y": 73,
       "width": 240,
-      "height": 220,
+      "height": 154,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -247,19 +297,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-speaker-coord"],
+      "groupIds": [
+        "group-d4-speaker-coord"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-speaker-coord",
-      "text": "Speaker Coordination\nch.batbern.speakers\n\nSpeaker \u00b7 SpeakerPool\nInvitation \u00b7 InvitationToken\nMaterialSubmission\nReminderLog\n\n\u2192 SpeakerInvitedEvent\n\u2192 MaterialSubmittedEvent",
+      "text": "Speaker Coordination\nch.batbern.speakers\n\nSpeaker · SpeakerPool\nInvitation · InvitationToken\nMaterialSubmission\nReminderLog\n\n→ SpeakerInvitedEvent\n→ MaterialSubmittedEvent",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Speaker Coordination\nch.batbern.speakers\n\nSpeaker \u00b7 SpeakerPool\nInvitation \u00b7 InvitationToken\nMaterialSubmission\nReminderLog\n\n\u2192 SpeakerInvitedEvent\n\u2192 MaterialSubmittedEvent"
+      "originalText": "Speaker Coordination\nch.batbern.speakers\n\nSpeaker · SpeakerPool\nInvitation · InvitationToken\nMaterialSubmission\nReminderLog\n\n→ SpeakerInvitedEvent\n→ MaterialSubmittedEvent"
     },
     {
       "id": "shape-partner-coord",
@@ -276,19 +328,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-partner-coord"],
+      "groupIds": [
+        "group-d4-partner-coord"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-d4-partner-coord"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-d4-partner-coord"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-d4-partner-coord",
       "type": "text",
       "x": 860,
-      "y": 440,
+      "y": 478.4,
       "width": 240,
-      "height": 200,
+      "height": 123.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -297,19 +359,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-partner-coord"],
+      "groupIds": [
+        "group-d4-partner-coord"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-partner-coord",
-      "text": "Partner Coordination\nch.batbern.partners\n\nPartner \u00b7 PartnerMeeting\nTopicSuggestion \u00b7 TopicVote\n\n\u2192 PartnerMeetingCreatedEvent\n\u2192 TopicVotedEvent",
+      "text": "Partner Coordination\nch.batbern.partners\n\nPartner · PartnerMeeting\nTopicSuggestion · TopicVote\n\n→ PartnerMeetingCreatedEvent\n→ TopicVotedEvent",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Partner Coordination\nch.batbern.partners\n\nPartner \u00b7 PartnerMeeting\nTopicSuggestion \u00b7 TopicVote\n\n\u2192 PartnerMeetingCreatedEvent\n\u2192 TopicVotedEvent"
+      "originalText": "Partner Coordination\nch.batbern.partners\n\nPartner · PartnerMeeting\nTopicSuggestion · TopicVote\n\n→ PartnerMeetingCreatedEvent\n→ TopicVotedEvent"
     },
     {
       "id": "shape-company-user",
@@ -326,19 +390,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-company-user"],
+      "groupIds": [
+        "group-d4-company-user"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-d4-company-user"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-d4-company-user"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-d4-company-user",
       "type": "text",
       "x": 280,
-      "y": 440,
+      "y": 478.4,
       "width": 240,
-      "height": 200,
+      "height": 123.19999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -347,19 +421,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-company-user"],
+      "groupIds": [
+        "group-d4-company-user"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-company-user",
-      "text": "Company & User Mgmt\nch.batbern.companyuser\n\nCompany \u00b7 User\nWatchPairing \u00b7 Logo\n\n\u2192 UserCreatedEvent\n\u2192 CompanyUpdatedEvent",
+      "text": "Company & User Mgmt\nch.batbern.companyuser\n\nCompany · User\nWatchPairing · Logo\n\n→ UserCreatedEvent\n→ CompanyUpdatedEvent",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Company & User Mgmt\nch.batbern.companyuser\n\nCompany \u00b7 User\nWatchPairing \u00b7 Logo\n\n\u2192 UserCreatedEvent\n\u2192 CompanyUpdatedEvent"
+      "originalText": "Company & User Mgmt\nch.batbern.companyuser\n\nCompany · User\nWatchPairing · Logo\n\n→ UserCreatedEvent\n→ CompanyUpdatedEvent"
     },
     {
       "id": "shape-attendee-exp",
@@ -376,19 +452,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-attendee-exp"],
+      "groupIds": [
+        "group-d4-attendee-exp"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-d4-attendee-exp"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-d4-attendee-exp"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-d4-attendee-exp",
       "type": "text",
       "x": 1160,
-      "y": 270,
+      "y": 303.8,
       "width": 220,
-      "height": 160,
+      "height": 92.39999999999999,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -397,19 +483,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-d4-attendee-exp"],
+      "groupIds": [
+        "group-d4-attendee-exp"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-attendee-exp",
-      "text": "Attendee Experience\nch.batbern.attendees\n\nRegistration \u00b7 QRCode\n\n\u2192 RegistrationConfirmedEvent",
+      "text": "Attendee Experience\nch.batbern.attendees\n\nRegistration · QRCode\n\n→ RegistrationConfirmedEvent",
       "fontSize": 11,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Attendee Experience\nch.batbern.attendees\n\nRegistration \u00b7 QRCode\n\n\u2192 RegistrationConfirmedEvent"
+      "originalText": "Attendee Experience\nch.batbern.attendees\n\nRegistration · QRCode\n\n→ RegistrationConfirmedEvent"
     },
     {
       "id": "arrow-apigw-to-sk",
@@ -428,14 +516,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-apigw", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-shared-kernel", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-apigw",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [320, 0]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          320,
+          0
+        ]
+      ]
     },
     {
       "id": "text-apigw-to-sk-label",
@@ -483,14 +590,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-shared-kernel", "focus": -0.4, "gap": 8},
-      "endBinding": {"elementId": "shape-event-mgmt", "focus": 0.4, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": -0.4,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-event-mgmt",
+        "focus": 0.4,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [-220, -110]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -220,
+          -110
+        ]
+      ]
     },
     {
       "id": "arrow-sk-to-speaker-coord",
@@ -509,14 +635,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-shared-kernel", "focus": 0.4, "gap": 8},
-      "endBinding": {"elementId": "shape-speaker-coord", "focus": -0.4, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": 0.4,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-speaker-coord",
+        "focus": -0.4,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [220, -110]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          220,
+          -110
+        ]
+      ]
     },
     {
       "id": "arrow-sk-to-partner-coord",
@@ -535,14 +680,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-shared-kernel", "focus": 0.4, "gap": 8},
-      "endBinding": {"elementId": "shape-partner-coord", "focus": -0.4, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": 0.4,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-partner-coord",
+        "focus": -0.4,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [220, 110]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          220,
+          110
+        ]
+      ]
     },
     {
       "id": "arrow-sk-to-company-user",
@@ -561,14 +725,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-shared-kernel", "focus": -0.4, "gap": 8},
-      "endBinding": {"elementId": "shape-company-user", "focus": 0.4, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": -0.4,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-company-user",
+        "focus": 0.4,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [-220, 110]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -220,
+          110
+        ]
+      ]
     },
     {
       "id": "arrow-sk-to-attendee-exp",
@@ -587,14 +770,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-shared-kernel", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-attendee-exp", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-shared-kernel",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-attendee-exp",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [360, 0]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          360,
+          0
+        ]
+      ]
     },
     {
       "id": "text-sk-arrows-label",
@@ -642,14 +844,33 @@
       "opacity": 80,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-speaker-coord", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-company-user", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-speaker-coord",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-company-user",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [-440, 180]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -440,
+          180
+        ]
+      ]
     },
     {
       "id": "text-speaker-to-company-label",
@@ -697,14 +918,33 @@
       "opacity": 80,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-partner-coord", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-event-mgmt", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-partner-coord",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-event-mgmt",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [-440, -180]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -440,
+          -180
+        ]
+      ]
     },
     {
       "id": "text-partner-to-event-label",

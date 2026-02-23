@@ -23,14 +23,14 @@
       "roundness": null,
       "boundElements": [],
       "containerId": null,
-      "text": "CI/CD Pipeline \u2014 Fully Automated",
+      "text": "CI/CD Pipeline — Fully Automated",
       "fontSize": 26,
       "fontFamily": 3,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "CI/CD Pipeline \u2014 Fully Automated"
+      "originalText": "CI/CD Pipeline — Fully Automated"
     },
     {
       "id": "shape-lane-dev-header",
@@ -47,19 +47,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-dev-header"],
+      "groupIds": [
+        "group-lane-dev-header"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 4},
-      "boundElements": [{"type": "text", "id": "text-lane-dev-header"}],
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-lane-dev-header"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-lane-dev-header",
       "type": "text",
       "x": 20,
-      "y": 70,
+      "y": 87,
       "width": 460,
-      "height": 54,
+      "height": 20,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -68,19 +78,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-dev-header"],
+      "groupIds": [
+        "group-lane-dev-header"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-lane-dev-header",
-      "text": "\ud83d\udcbb  Developer Machine",
+      "text": "💻  Developer Machine",
       "fontSize": 16,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "\ud83d\udcbb  Developer Machine"
+      "originalText": "💻  Developer Machine"
     },
     {
       "id": "shape-lane-github-header",
@@ -97,19 +109,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-github-header"],
+      "groupIds": [
+        "group-lane-github-header"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 4},
-      "boundElements": [{"type": "text", "id": "text-lane-github-header"}],
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-lane-github-header"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-lane-github-header",
       "type": "text",
       "x": 540,
-      "y": 70,
+      "y": 87,
       "width": 460,
-      "height": 54,
+      "height": 20,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -118,19 +140,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-github-header"],
+      "groupIds": [
+        "group-lane-github-header"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-lane-github-header",
-      "text": "\ud83d\udc19  GitHub Actions",
+      "text": "🐙  GitHub Actions",
       "fontSize": 16,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "\ud83d\udc19  GitHub Actions"
+      "originalText": "🐙  GitHub Actions"
     },
     {
       "id": "shape-lane-aws-header",
@@ -147,19 +171,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-aws-header"],
+      "groupIds": [
+        "group-lane-aws-header"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 4},
-      "boundElements": [{"type": "text", "id": "text-lane-aws-header"}],
+      "roundness": {
+        "type": 3,
+        "value": 4
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-lane-aws-header"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-lane-aws-header",
       "type": "text",
       "x": 1060,
-      "y": 70,
+      "y": 87,
       "width": 460,
-      "height": 54,
+      "height": 20,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -168,19 +202,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-lane-aws-header"],
+      "groupIds": [
+        "group-lane-aws-header"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-lane-aws-header",
-      "text": "\u2601\ufe0f  AWS Staging",
+      "text": "☁️  AWS Staging",
       "fontSize": 16,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "\u2601\ufe0f  AWS Staging"
+      "originalText": "☁️  AWS Staging"
     },
     {
       "id": "shape-box-commit",
@@ -197,19 +233,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-commit"],
+      "groupIds": [
+        "group-box-commit"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-box-commit"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-box-commit"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-box-commit",
       "type": "text",
       "x": 60,
-      "y": 150,
+      "y": 173,
       "width": 380,
-      "height": 130,
+      "height": 84,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -218,19 +264,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-commit"],
+      "groupIds": [
+        "group-box-commit"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-commit",
-      "text": "git commit \u2192 pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format",
+      "text": "git commit → pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "git commit \u2192 pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format"
+      "originalText": "git commit → pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format"
     },
     {
       "id": "arrow-commit-to-push",
@@ -249,14 +297,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-box-commit", "focus": 0, "gap": 6},
-      "endBinding": {"elementId": "shape-box-push", "focus": 0, "gap": 6},
+      "startBinding": {
+        "elementId": "shape-box-commit",
+        "focus": 0,
+        "gap": 6
+      },
+      "endBinding": {
+        "elementId": "shape-box-push",
+        "focus": 0,
+        "gap": 6
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [0, 40]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ]
     },
     {
       "id": "shape-box-push",
@@ -273,19 +340,33 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-push"],
+      "groupIds": [
+        "group-box-push"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-box-push"}, {"type": "arrow", "id": "arrow-dev-to-github"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-box-push"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-dev-to-github"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-box-push",
       "type": "text",
       "x": 60,
-      "y": 320,
+      "y": 324.4,
       "width": 380,
-      "height": 160,
+      "height": 151.2,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -294,19 +375,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-push"],
+      "groupIds": [
+        "group-box-push"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-push",
-      "text": "git push \u2192 pre-push hook\n\nSmart change detection\nshared-kernel changed? \u2192 test ALL\ndocs/infra only? \u2192 SKIP tests\nsingle service? \u2192 test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage",
+      "text": "git push → pre-push hook\n\nSmart change detection\nshared-kernel changed? → test ALL\ndocs/infra only? → SKIP tests\nsingle service? → test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "git push \u2192 pre-push hook\n\nSmart change detection\nshared-kernel changed? \u2192 test ALL\ndocs/infra only? \u2192 SKIP tests\nsingle service? \u2192 test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage"
+      "originalText": "git push → pre-push hook\n\nSmart change detection\nshared-kernel changed? → test ALL\ndocs/infra only? → SKIP tests\nsingle service? → test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage"
     },
     {
       "id": "shape-box-pipeline",
@@ -323,19 +406,33 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-pipeline"],
+      "groupIds": [
+        "group-box-pipeline"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-box-pipeline"}, {"type": "arrow", "id": "arrow-github-to-aws"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-box-pipeline"
+        },
+        {
+          "type": "arrow",
+          "id": "arrow-github-to-aws"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-box-pipeline",
       "type": "text",
       "x": 580,
-      "y": 150,
+      "y": 197.4,
       "width": 380,
-      "height": 330,
+      "height": 235.2,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -344,19 +441,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-pipeline"],
+      "groupIds": [
+        "group-box-pipeline"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-pipeline",
-      "text": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci \u2192 lint \u2192 test \u2192 build\nStage 4: SonarCloud multi-module\nStage 5: \u25b6 deploy-staging.yml",
+      "text": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci → lint → test → build\nStage 4: SonarCloud multi-module\nStage 5: ▶ deploy-staging.yml",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci \u2192 lint \u2192 test \u2192 build\nStage 4: SonarCloud multi-module\nStage 5: \u25b6 deploy-staging.yml"
+      "originalText": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci → lint → test → build\nStage 4: SonarCloud multi-module\nStage 5: ▶ deploy-staging.yml"
     },
     {
       "id": "shape-box-deploy",
@@ -373,19 +472,29 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-deploy"],
+      "groupIds": [
+        "group-box-deploy"
+      ],
       "frameId": null,
-      "roundness": {"type": 3, "value": 8},
-      "boundElements": [{"type": "text", "id": "text-box-deploy"}],
+      "roundness": {
+        "type": 3,
+        "value": 8
+      },
+      "boundElements": [
+        {
+          "type": "text",
+          "id": "text-box-deploy"
+        }
+      ],
       "containerId": null
     },
     {
       "id": "text-box-deploy",
       "type": "text",
       "x": 1100,
-      "y": 150,
+      "y": 180.60000000000002,
       "width": 380,
-      "height": 330,
+      "height": 268.79999999999995,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
@@ -394,19 +503,21 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "groupIds": ["group-box-deploy"],
+      "groupIds": [
+        "group-box-deploy"
+      ],
       "frameId": null,
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-deploy",
-      "text": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n\u2192 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n\u2192 health check \u2705",
+      "text": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n→ 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check ✅",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.4,
-      "originalText": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n\u2192 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n\u2192 health check \u2705"
+      "originalText": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n→ 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check ✅"
     },
     {
       "id": "arrow-dev-to-github",
@@ -425,14 +536,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-box-push", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-box-pipeline", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-box-push",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-box-pipeline",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [140, 0]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          140,
+          0
+        ]
+      ]
     },
     {
       "id": "text-label-dev-to-github",
@@ -480,14 +610,33 @@
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
-      "roundness": {"type": 2},
+      "roundness": {
+        "type": 2
+      },
       "boundElements": [],
       "containerId": null,
-      "startBinding": {"elementId": "shape-box-pipeline", "focus": 0, "gap": 8},
-      "endBinding": {"elementId": "shape-box-deploy", "focus": 0, "gap": 8},
+      "startBinding": {
+        "elementId": "shape-box-pipeline",
+        "focus": 0,
+        "gap": 8
+      },
+      "endBinding": {
+        "elementId": "shape-box-deploy",
+        "focus": 0,
+        "gap": 8
+      },
       "startArrowhead": null,
       "endArrowhead": "arrow",
-      "points": [[0, 0], [140, 0]]
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          140,
+          0
+        ]
+      ]
     },
     {
       "id": "text-label-github-to-aws",
