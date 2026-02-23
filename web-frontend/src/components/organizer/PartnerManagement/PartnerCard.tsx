@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, Typography, Chip } from '@mui/material';
+import { Box, Card, CardContent, Typography, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { PartnerResponse } from '@/services/api/partnerApi';
