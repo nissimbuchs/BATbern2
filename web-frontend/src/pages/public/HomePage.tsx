@@ -25,7 +25,6 @@ import { EventProgram } from '@/components/public/Event/EventProgram';
 import { VenueMap } from '@/components/public/Event/VenueMap';
 import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
-import { TopicBadges } from '@/components/public/Event/TopicBadges';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
@@ -182,15 +181,6 @@ const HomePage = () => {
           <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
             <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
             <EventLogistics event={event} />
-          </div>
-        )}
-
-        {event.topic?.name && (
-          <div className="mt-12">
-            <h3 className="text-xl font-light text-zinc-100 mb-4">Topics</h3>
-            <TopicBadges
-              topics={[{ id: event.topic.code ?? event.topicCode ?? '', name: event.topic.name }]}
-            />
           </div>
         )}
 
