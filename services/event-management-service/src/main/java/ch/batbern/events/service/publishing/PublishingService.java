@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -371,8 +372,11 @@ public class PublishingService {
                     minSlotsRequired, event.getEventType().getValue(), sessionCount));
         }
 
-        // Sessions validation - all sessions must have timing
-        List<Session> allSessions = sessionRepository.findByEventId(event.getId());
+        // Sessions validation - all speaker sessions must have timing (excludes structural: moderation/break/lunch)
+        Set<String> structuralSessionTypes = Set.of("moderation", "break", "lunch");
+        List<Session> allSessions = sessionRepository.findByEventId(event.getId()).stream()
+                .filter(s -> !structuralSessionTypes.contains(s.getSessionType()))
+                .collect(Collectors.toList());
         List<Session> unassignedSessions = allSessions.stream()
                 .filter(s -> s.getStartTime() == null || s.getEndTime() == null)
                 .collect(Collectors.toList());
