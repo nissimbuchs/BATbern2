@@ -9,15 +9,11 @@
  * - Partnership tier badge with emoji
  * - Company information (name, industry)
  * - Primary contact information
- * - Last event attendance
- * - Topic votes count
- * - Next meeting date
- * - Engagement bar (placeholder for Epic 8)
  * - Quick action buttons
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, Typography, Chip, Box, LinearProgress } from '@mui/material';
+import { Card, CardContent, Typography, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { PartnerResponse } from '@/services/api/partnerApi';
@@ -159,29 +155,6 @@ const PartnerCardComponent: React.FC<PartnerCardProps> = ({ partner }) => {
             👤 {primaryContact.firstName} {primaryContact.lastName} ({primaryContact.email})
           </Typography>
         )}
-
-        {/* TODO: Future feature - Last Event (requires backend implementation) */}
-        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
-          📊 Last Event: {partner.lastEventName || 'N/A'}
-        </Typography> */}
-
-        {/* TODO: Future feature - Topic Votes (requires backend implementation) */}
-        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
-          🗳️ Topic Votes: {partner.votesCount || 0} active
-        </Typography> */}
-
-        {/* TODO: Future feature - Next Meeting (requires backend implementation) */}
-        {/* <Typography variant="body2" color="text.secondary" gutterBottom>
-          📅 Next Meeting: {partner.nextMeetingDate || 'Pending'}
-        </Typography> */}
-
-        {/* Engagement Bar - Placeholder for Epic 8 */}
-        <Box mt={2}>
-          <Typography variant="caption" color="text.secondary">
-            {t('card.engagement')}: {t('card.engagementComingSoon')}
-          </Typography>
-          <LinearProgress variant="determinate" value={0} sx={{ mt: 0.5 }} role="progressbar" />
-        </Box>
       </CardContent>
     </Card>
   );

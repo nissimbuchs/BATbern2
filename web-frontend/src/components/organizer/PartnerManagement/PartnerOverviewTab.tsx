@@ -60,8 +60,6 @@ export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner 
 
   const tierEmoji = TIER_EMOJIS[partner.partnershipLevel] || '';
   const benefits = TIER_BENEFITS[partner.partnershipLevel] || [];
-  // TODO: previousTier requires backend implementation
-  // const previousTierEmoji = partner.previousTier ? TIER_EMOJIS[partner.previousTier] : '';
 
   return (
     <Box>

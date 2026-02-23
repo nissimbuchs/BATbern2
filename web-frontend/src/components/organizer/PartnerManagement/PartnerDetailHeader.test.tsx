@@ -155,11 +155,6 @@ describe('PartnerDetailHeader Component', () => {
     });
   });
 
-  describe('AC1.4: Engagement Bar Placeholder', () => {
-    // Removed: engagement bar placeholder was removed post-epic-8
-    it.skip('should_showEngagementPlaceholder_when_epic8Deferred', async () => {});
-  });
-
   describe('AC1.5: Action Buttons', () => {
     // Test 1.8: should_openEditModal_when_editButtonClicked
     it('should_openEditModal_when_editButtonClicked', async () => {
@@ -173,9 +168,6 @@ describe('PartnerDetailHeader Component', () => {
 
       expect(mockOpenEditModal).toHaveBeenCalledWith(mockPartner);
     });
-
-    // Removed: email/meeting/export buttons were removed post-epic-8
-    it.skip('should_disableEpic8Buttons_when_rendered', async () => {});
 
     it('should_haveAddNoteButton_when_rendered', async () => {
       await act(async () => {
