@@ -25,7 +25,8 @@ import { ExpandLess, ExpandMore, ArrowDropDown } from '@mui/icons-material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getNavigationForRole, isPathActive } from '@/config/navigationConfig';
-import type { NavigationItem, UserRole } from '@/config/navigationConfig';
+import type { NavigationItem } from '@/config/navigationConfig';
+import type { UserRole } from '@/types/auth';
 
 interface NavigationMenuProps {
   userRole: UserRole;
