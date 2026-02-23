@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
+import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+};
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
 // Mock the hook
@@ -41,7 +48,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByRole('heading', { name: /^meetings$/i, level: 6 })).toBeInTheDocument();
   });
@@ -65,7 +72,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText('Q1 Partnership Review')).toBeInTheDocument();
     expect(screen.getByText('Strategic Planning Session')).toBeInTheDocument();
@@ -87,7 +94,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/invite sent/i)).toBeInTheDocument();
   });
@@ -105,7 +112,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     // Should display formatted date (e.g., "Mar 15, 2025")
     expect(screen.getByText(/mar 15, 2025/i)).toBeInTheDocument();
@@ -120,7 +127,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/no meetings scheduled/i)).toBeInTheDocument();
   });
@@ -134,7 +141,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
@@ -148,7 +155,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/failed to load meetings/i)).toBeInTheDocument();
   });

@@ -16,6 +16,7 @@ import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom/vitest';
 import { TeamActivityFeed } from '../TeamActivityFeed';
 import type { Notification } from '@/types/notification';
@@ -29,10 +30,14 @@ const createTestQueryClient = () =>
     },
   });
 
-// Test wrapper with QueryClientProvider
+// Test wrapper with QueryClientProvider and Router (TeamActivityFeed uses useNavigate)
 const renderWithQueryClient = (ui: React.ReactElement) => {
   const testQueryClient = createTestQueryClient();
-  return render(<QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
+    </MemoryRouter>
+  );
 };
 
 // Mock react-i18next
@@ -49,6 +54,14 @@ vi.mock('react-i18next', () => ({
         'dashboard.activityAction.materials_uploaded': 'uploaded materials',
         'dashboard.activityAction.workflow_advanced': 'advanced workflow',
         'dashboard.activityAction.speaker_invited': 'invited speaker',
+        'notifications.title': 'Notifications',
+        'notifications.noNotifications': 'No notifications yet',
+        'notifications.lastUpdated': 'Last updated',
+        'notifications.viewAll': 'View All',
+        'notifications.markAllAsRead': 'Mark all as read',
+        'notifications.markAsRead': 'Mark as read',
+        'notifications.delete': 'Delete',
+        'notifications.reload': 'Reload',
       };
 
       // Handle pluralization for activityCount
@@ -69,9 +82,17 @@ vi.mock('date-fns', () => ({
   formatDistanceToNow: () => '2 days ago',
 }));
 
-// Mock useMarkAsRead hook
+// Mock notification hooks
 vi.mock('@/hooks/useNotifications', () => ({
   useMarkAsRead: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useBatchMarkAsRead: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteNotification: () => ({
     mutateAsync: vi.fn(),
     isPending: false,
   }),

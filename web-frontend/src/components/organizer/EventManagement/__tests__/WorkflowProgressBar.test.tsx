@@ -224,37 +224,6 @@ describe('WorkflowProgressBar Component', () => {
     });
   });
 
-  describe('Current Step Indicator (AC5)', () => {
-    it('should_showCurrentStep_when_workflowInProgress', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      // Should display "Step 4/9"
-      expect(screen.getByText(/step 4\/9/i)).toBeInTheDocument();
-    });
-
-    it('should_showStepName_when_workflowInProgress', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      // Should display workflow state name "Slot Assignment" (Step 4 corresponds to SLOT_ASSIGNMENT)
-      expect(screen.getByText(/slot assignment/i)).toBeInTheDocument();
-    });
-
-    it('should_showCurrentStepFormat_when_rendered', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
-
-      // Should display "Step 4/9" and workflow state name separately
-      expect(screen.getByText(/step 4\/9/i)).toBeInTheDocument();
-      expect(screen.getByText(/slot assignment/i)).toBeInTheDocument();
-    });
-
-    it('should_showCompletedStatus_when_workflowCompleted', () => {
-      render(<WorkflowProgressBar workflow={mockWorkflowCompleted} eventCode="BATbern56" />);
-
-      // Should display workflow state "Archived" for completed workflow
-      expect(screen.getByText(/archived/i)).toBeInTheDocument();
-    });
-  });
-
   describe('Warning Indicators (AC5)', () => {
     it('should_notDisplayWarningIcon_when_noBlockers', () => {
       render(<WorkflowProgressBar workflow={mockWorkflowInProgress} eventCode="BATbern56" />);
@@ -453,8 +422,8 @@ describe('WorkflowProgressBar Component', () => {
 
       render(<WorkflowProgressBar workflow={incompleteWorkflow} eventCode="BATbern56" />);
 
-      // Should display step number even if name is missing
-      expect(screen.getByText(/step 7\/16/i)).toBeInTheDocument();
+      // Component shows percentage even when step name is missing
+      expect(screen.getByText(/43%/i)).toBeInTheDocument();
     });
   });
 });

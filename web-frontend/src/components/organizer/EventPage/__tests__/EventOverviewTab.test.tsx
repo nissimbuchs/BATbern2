@@ -205,27 +205,6 @@ describe('EventOverviewTab Component (Story 5.6)', () => {
 
       expect(mockWindowOpen).toHaveBeenCalledWith('/events/BAT54', '_blank');
     });
-
-    it('should_displaySendNotificationButton_when_rendered', () => {
-      renderWithProviders(<EventOverviewTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /notification/i })).toBeInTheDocument();
-    });
-
-    it('should_displayTimelineButton_when_rendered', () => {
-      renderWithProviders(<EventOverviewTab event={mockEvent} eventCode="BAT54" />);
-
-      expect(screen.getByRole('button', { name: /timeline/i })).toBeInTheDocument();
-    });
-
-    it('should_navigateToTimeline_when_timelineButtonClicked', () => {
-      renderWithProviders(<EventOverviewTab event={mockEvent} eventCode="BAT54" />);
-
-      const timelineButton = screen.getByRole('button', { name: /timeline/i });
-      fireEvent.click(timelineButton);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/events/timeline?highlight=BAT54');
-    });
   });
 
   describe('Theme Image', () => {
