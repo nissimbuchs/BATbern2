@@ -17,7 +17,9 @@ const mockPartners = {
       partnershipLevel: 'GOLD',
       isActive: true,
       company: { industry: 'Tech' },
-      contacts: [{ firstName: 'John', lastName: 'Doe', email: 'john@test.com', isPrimary: true }],
+      contacts: [
+        { username: 'john.doe', firstName: 'John', lastName: 'Doe', email: 'john@test.com' },
+      ],
     },
   ],
   pagination: {

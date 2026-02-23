@@ -1,10 +1,13 @@
 #!/bin/bash
 # Auto-refresh authentication token using refresh token
-# Usage: ./scripts/auth/refresh-token.sh [environment]
+# Usage: ./scripts/auth/refresh-token.sh [environment] [role]
+# role: organizer (default), speaker, partner
+# When role is organizer (or empty), also refreshes the legacy {env}.json file.
 
 set -e
 
 ENVIRONMENT=${1:-"staging"}
+ROLE=${2:-""}
 
 # Color output
 RED='\033[0;31m'
@@ -13,11 +16,22 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Load config
-local_config=~/.batbern/${ENVIRONMENT}.json
+# Determine config file based on role
+if [ -z "$ROLE" ] || [ "$ROLE" = "organizer" ]; then
+    local_config=~/.batbern/${ENVIRONMENT}.json
+    role_config=~/.batbern/${ENVIRONMENT}-organizer.json
+else
+    local_config=~/.batbern/${ENVIRONMENT}-${ROLE}.json
+    role_config=""
+fi
+
 if [ ! -f "$local_config" ]; then
     echo -e "${RED}ERROR: No token config found at $local_config${NC}"
-    echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password"
+    if [ -z "$ROLE" ] || [ "$ROLE" = "organizer" ]; then
+        echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password"
+    else
+        echo "Run: ./scripts/auth/get-token.sh $ENVIRONMENT your-email your-password $ROLE"
+    fi
     exit 1
 fi
 
@@ -119,10 +133,14 @@ fi
 email=$(jq -r '.email' "$local_config")
 user_id=$(jq -r '.userId' "$local_config")
 
-# Update config file with new tokens (keep existing refresh token)
-cat > "$local_config" <<EOF
+# Helper: write refreshed token JSON to a given file path
+write_refreshed_token() {
+    local file_path="$1"
+    local role_label="${ROLE:-organizer}"
+    cat > "$file_path" <<EOF
 {
   "environment": "$ENVIRONMENT",
+  "role": "$role_label",
   "userId": "$user_id",
   "email": "$email",
   "idToken": "$id_token",
@@ -132,9 +150,19 @@ cat > "$local_config" <<EOF
   "retrievedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 }
 EOF
+    chmod 600 "$file_path"
+}
 
-chmod 600 "$local_config"
+# Update primary config file with new tokens (keep existing refresh token)
+write_refreshed_token "$local_config"
+
+# For organizer: also update the role-specific file to keep in sync
+if [ -n "$role_config" ]; then
+    cp "$local_config" "$role_config"
+    chmod 600 "$role_config"
+fi
 
 echo -e "${GREEN}✓ Token refreshed successfully${NC}"
 echo "New token expires in: $new_expires_in seconds (~$((new_expires_in / 3600)) hours)"
 echo "Stored in: $local_config"
+[ -n "$role_config" ] && echo "Also updated: $role_config"

@@ -30,10 +30,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 2 (Epic 6) - Speaker Self-Service Portal ✅ **DEPLOYED TO STAGING** (2026-02-06)
-- Stories 6.0-6.3: Complete (invitation, response, content submission)
-- Story 6.4: Partial (dashboard views available)
-- Story 6.5: Complete (automated reminders deployed 2026-02-06)
+**Current Phase:** Phase 2 (Epic 6 on Staging) + Phase 3 (Epic 8 in Development)
+- Epic 6: Stories 6.0-6.3, 6.5 complete; Story 6.4 partial (dashboard views available)
+- Epic 8: Story 8.0 (Partner Portal Shell) complete; Stories 8.1-8.3 ready for dev
 
 ## Project Overview
 
@@ -290,17 +289,21 @@ grep -i "routing\|proxying" /tmp/batbern-1-api-gateway.log
 
 ### Testing Strategy (4-Layer E2E Framework)
 
-1. **Layer 1**: Shell scripts (`scripts/ci/*.sh`) - Infrastructure validation
-2. **Layer 2**: Bruno tests (`bruno-tests/**/*.bru`) - API contract tests
-3. **Layer 3**: Playwright tests (`web-frontend/e2e/*.spec.ts`) - UI E2E tests
-4. **Layer 4**: Infrastructure tests (`infrastructure/test/e2e/*.test.ts`) - CDK tests
+1. **Layer 1**: Shell scripts (`scripts/ci/*.sh`) — smoke, CORS, header propagation
+2. **Layer 2**: Bruno tests (`bruno-tests/**/*.bru`) — API contract tests (collections: companies, users, events, partners, partner-meetings, tasks, file-upload)
+3. **Layer 3**: Playwright tests (`web-frontend/e2e/*.spec.ts`) — UI E2E; role-based projects: `chromium` (organizer), `speaker`, `partner`
+4. **Layer 4**: Infrastructure tests (`infrastructure/test/e2e/*.test.ts`) — CDK / AWS resource validation
 
 ```bash
-# Run Bruno API contract tests
+# Run Bruno API contract tests (loads all role tokens automatically)
 ./scripts/ci/run-bruno-tests.sh
 
-# Run Playwright E2E tests
+# Run Playwright E2E tests (organizer project)
 cd web-frontend && npm run test:e2e
+
+# Run partner tests
+cd web-frontend && PARTNER_AUTH_TOKEN=$(jq -r .idToken ~/.batbern/staging-partner.json) \
+  npx playwright test --project=partner
 
 # Run all layers
 make test
@@ -308,12 +311,37 @@ make test
 
 ### Authentication for Testing
 
+**Single role (organizer — backward compatible):**
 ```bash
-# Get authentication token for local testing
-./scripts/auth/get-token.sh
-
-# Token is automatically injected into Bruno tests via environment
+./scripts/auth/get-token.sh staging your-email@example.com your-password
+# Stores to ~/.batbern/staging.json (legacy) and ~/.batbern/staging-organizer.json
 ```
+
+**Multi-role setup (Epic 8+):**
+```bash
+# Copy credential template and fill in per-role credentials
+cp .env.test.local.example .env.test.local
+
+# Authenticate organizer + speaker + partner in one command
+make setup-test-users                     # staging (default)
+make setup-test-users ENV=development     # development
+
+# Stores tokens at ~/.batbern/staging-{organizer,speaker,partner}.json
+```
+
+**Refresh tokens without re-entering credentials:**
+```bash
+./scripts/auth/refresh-token.sh staging             # organizer (both files)
+./scripts/auth/refresh-token.sh staging partner     # partner only
+```
+
+**Token storage:** `~/.batbern/{env}.json` (organizer legacy) + `~/.batbern/{env}-{role}.json` per role.
+
+**Bruno:** exports `AUTH_TOKEN` (organizer), `ORGANIZER_AUTH_TOKEN`, `SPEAKER_AUTH_TOKEN`, `PARTNER_AUTH_TOKEN` — use `{{partnerAuthToken}}` in partner-scoped `.bru` files.
+
+**Playwright:** `global-setup.ts` writes `.playwright-auth-{role}.json` per available role. Projects: `chromium` (organizer), `speaker` (activated by `SPEAKER_AUTH_TOKEN` env var), `partner` (activated by `PARTNER_AUTH_TOKEN` env var). Partner tests live in `e2e/partner/`, speaker tests in `e2e/speaker/`.
+
+**CI/CD:** `deploy-staging.yml` gets tokens for all roles from GitHub secrets (`STAGING_ORGANIZER_*`, `STAGING_SPEAKER_*`, `STAGING_PARTNER_*`). Falls back to `STAGING_TEST_USER_*` for organizer.
 
 ## Critical Development Standards
 

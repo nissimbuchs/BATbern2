@@ -46,10 +46,7 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
     },
     contacts: [
       {
-        id: 'contact-123',
         username: 'john.doe',
-        contactRole: 'primary',
-        isPrimary: true,
         email: 'john@techcorp.com',
         firstName: 'John',
         lastName: 'Doe',
@@ -198,15 +195,7 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
     });
   });
 
-  describe('AC3: Test 3.7 - should_navigateToDetail_when_viewDetailsClicked', () => {
-    it('should call navigation when View Details button clicked', () => {
-      render(<PartnerCard partner={mockPartnerWithLogo} />, { wrapper: createWrapper() });
-
-      const viewDetailsButton = screen.getByRole('button', { name: 'card.viewDetails' });
-      expect(viewDetailsButton).toBeInTheDocument();
-      expect(viewDetailsButton).toBeEnabled();
-    });
-
+  describe('AC3: Test 3.7 - should_navigateToDetail_when_cardClicked', () => {
     it('should have clickable card that navigates to detail', () => {
       const { container } = render(<PartnerCard partner={mockPartnerWithLogo} />, {
         wrapper: createWrapper(),
@@ -214,6 +203,12 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
 
       const card = container.querySelector('.MuiCard-root');
       expect(card).toBeInTheDocument();
+      expect(card).toHaveStyle({ cursor: 'pointer' });
+    });
+
+    it('should not render View Details button', () => {
+      render(<PartnerCard partner={mockPartnerWithLogo} />, { wrapper: createWrapper() });
+      expect(screen.queryByRole('button', { name: 'card.viewDetails' })).not.toBeInTheDocument();
     });
   });
 
@@ -282,13 +277,6 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
 
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toBeInTheDocument();
-    });
-
-    it('should have View Details button enabled', () => {
-      render(<PartnerCard partner={mockPartnerWithLogo} />, { wrapper: createWrapper() });
-
-      const viewDetailsButton = screen.getByRole('button', { name: 'card.viewDetails' });
-      expect(viewDetailsButton).toBeEnabled();
     });
   });
 });

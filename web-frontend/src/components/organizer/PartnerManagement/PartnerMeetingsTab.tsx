@@ -1,38 +1,17 @@
 import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Stack,
-  Chip,
-  Button,
-  Alert,
-  Link,
-  Divider,
-} from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, Chip, Button, Alert } from '@mui/material';
 import { Add as AddIcon, EventNote as EventNoteIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
+import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
+
+type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 
 interface PartnerMeetingsTabProps {
   companyName: string;
+  role?: UserRole; // Story 8.0: hide Add Meeting for PARTNER
 }
-
-// TODO: Remove when backend implements MeetingResponse with all fields
-// interface Meeting {
-//   id: string;
-//   meetingType: string;
-//   scheduledDate: string;
-//   location: string;
-//   agenda: string;
-//   rsvpStatus?: string;
-//   materials?: Array<{
-//     name: string;
-//     url: string;
-//   }>;
-// }
 
 const formatMeetingDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -43,15 +22,10 @@ const formatMeetingDate = (dateString: string): string => {
   });
 };
 
-const getRsvpColor = (status: string): 'success' | 'warning' | 'default' => {
-  if (status === 'CONFIRMED') return 'success';
-  if (status === 'PENDING') return 'warning';
-  return 'default';
-};
-
-export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyName }) => {
+export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyName, role }) => {
   const { t } = useTranslation('partners');
   const { data: meetings, isLoading, error } = usePartnerMeetings(companyName);
+  const isPartner = role === 'PARTNER';
 
   if (isLoading) {
     return (
@@ -77,14 +51,17 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
             {t('detail.header.comingSoon')}
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          disabled
-          title={t('detail.header.comingSoon')}
-        >
-          {t('detail.meetingsTab.addMeeting')}
-        </Button>
+        {!isPartner && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            disabled
+            title={t('detail.header.comingSoon')}
+            data-testid="add-meeting-button"
+          >
+            {t('detail.meetingsTab.addMeeting')}
+          </Button>
+        )}
       </Stack>
 
       {/* Meetings List */}
@@ -104,7 +81,7 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
         </Card>
       ) : (
         <Stack spacing={2}>
-          {meetings.map((meeting) => (
+          {meetings.map((meeting: PartnerMeetingDTO) => (
             <Card key={meeting.id}>
               <CardContent>
                 <Stack spacing={2}>
@@ -112,26 +89,12 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        {'agenda' in meeting
-                          ? (meeting as { agenda: string }).agenda
-                          : meeting.title}
+                        {meeting.agenda ?? `${meeting.meetingType} Meeting`}
                       </Typography>
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Chip
-                          label={
-                            'meetingType' in meeting
-                              ? (meeting as { meetingType: string }).meetingType
-                              : 'Meeting'
-                          }
-                          size="small"
-                          variant="outlined"
-                        />
-                        {'rsvpStatus' in meeting && (
-                          <Chip
-                            label={(meeting as { rsvpStatus: string }).rsvpStatus}
-                            size="small"
-                            color={getRsvpColor((meeting as { rsvpStatus: string }).rsvpStatus)}
-                          />
+                        <Chip label={meeting.meetingType} size="small" variant="outlined" />
+                        {meeting.inviteSentAt && (
+                          <Chip label="Invite Sent" size="small" color="success" />
                         )}
                       </Stack>
                     </Box>
@@ -140,50 +103,12 @@ export const PartnerMeetingsTab: React.FC<PartnerMeetingsTabProps> = ({ companyN
                   {/* Meeting Details */}
                   <Stack spacing={1}>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Date:</strong>{' '}
-                      {formatMeetingDate(
-                        'scheduledDate' in meeting
-                          ? (meeting as { scheduledDate: string }).scheduledDate
-                          : meeting.date
-                      )}
+                      <strong>Date:</strong> {formatMeetingDate(meeting.meetingDate)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      <strong>Location:</strong>{' '}
-                      {'location' in meeting ? (meeting as { location: string }).location : 'TBD'}
+                      <strong>Location:</strong> {meeting.location ?? 'TBD'}
                     </Typography>
                   </Stack>
-
-                  {/* Meeting Materials */}
-                  {'materials' in meeting &&
-                    Array.isArray(
-                      (meeting as { materials: Array<{ name: string; url: string }> }).materials
-                    ) &&
-                    (meeting as { materials: Array<{ name: string; url: string }> }).materials
-                      .length > 0 && (
-                      <>
-                        <Divider />
-                        <Box>
-                          <Typography variant="subtitle2" gutterBottom>
-                            Meeting Materials
-                          </Typography>
-                          <Stack spacing={1}>
-                            {(
-                              meeting as { materials: Array<{ name: string; url: string }> }
-                            ).materials.map((material, index) => (
-                              <Link
-                                key={index}
-                                href={material.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                underline="hover"
-                              >
-                                {material.name}
-                              </Link>
-                            ))}
-                          </Stack>
-                        </Box>
-                      </>
-                    )}
                 </Stack>
               </CardContent>
             </Card>

@@ -1,5 +1,5 @@
 meta {
-  name: Invalid Status Transition (ACCEPTED → DECLINED)
+  name: Invalid Status Transition (ACCEPTED → IDENTIFIED backwards)
   type: http
   seq: 40
 }
@@ -16,8 +16,8 @@ auth:bearer {
 
 body:json {
   {
-    "newStatus": "DECLINED",
-    "reason": "Attempting invalid transition for testing"
+    "newStatus": "IDENTIFIED",
+    "reason": "Attempting invalid backwards transition for testing"
   }
 }
 
@@ -36,12 +36,12 @@ tests {
     expect(error.error).to.be.a('string');
     expect(error.message).to.include('transition');
     expect(error.message).to.include('ACCEPTED');
-    expect(error.message).to.include('DECLINED');
+    expect(error.message).to.include('IDENTIFIED');
   });
 
-  test("should prevent ACCEPTED → DECLINED transition - Story 5.4 AC12", function() {
+  test("should prevent ACCEPTED → IDENTIFIED backwards transition - Story 5.4 AC12", function() {
     const error = res.getBody();
-    // Invalid transition per workflow rules: cannot un-accept
+    // Invalid backwards transition: ACCEPTED → IDENTIFIED is not in the state machine
     expect(error.error).to.equal('InvalidStateTransitionException');
   });
 }

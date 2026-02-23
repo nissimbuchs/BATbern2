@@ -29,16 +29,16 @@ tests {
 
   test("should include speaker-specific fields - Story 6.2b AC3", function() {
     const body = res.getBody();
-    // These may be null for new speakers
-    expect(body).to.have.property('expertise');
+    // These may be null for new speakers not yet accepted
+    expect(body).to.have.property('expertiseAreas');
     expect(body).to.have.property('speakingTopics');
     expect(body).to.have.property('languages');
   });
 
   test("should include profile completeness indicator - Story 6.2b AC4", function() {
     const body = res.getBody();
-    expect(body.completenessPercentage).to.be.a('number');
-    expect(body.completenessPercentage).to.be.at.least(0);
-    expect(body.completenessPercentage).to.be.at.most(100);
+    expect(body.profileCompleteness).to.be.a('number');
+    expect(body.profileCompleteness).to.be.at.least(0);
+    expect(body.profileCompleteness).to.be.at.most(100);
   });
 }

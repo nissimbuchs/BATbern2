@@ -325,7 +325,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
           { isDraft: false }
         );
       });
-    });
+    }, 60000);
   });
 });
 

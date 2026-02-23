@@ -26,6 +26,7 @@ tests {
     const body = res.getBody();
     expect(body.hasDraft).to.be.true;
     expect(body.draftTitle).to.equal('Building Cloud-Native Applications');
-    expect(body.draftVersion).to.equal(1);
+    // Version may be > 1 if a draft was saved before submission (both use ContentSubmission table)
+    expect(body.draftVersion).to.be.at.least(1);
   });
 }

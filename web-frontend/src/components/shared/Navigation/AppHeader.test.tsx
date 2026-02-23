@@ -49,6 +49,8 @@ vi.mock('react-i18next', () => ({
         'navigation.myContent': 'My Content',
         'navigation.myRegistrations': 'My Registrations',
         'navigation.profile': 'Profile',
+        'navigation.myCompany': 'My Company',
+        'navigation.topics': 'Topics',
         'menu.profile': 'Profile',
         'menu.settings': 'Settings',
         'menu.help': 'Help',
@@ -206,9 +208,9 @@ describe('AppHeader Component', () => {
 
       renderWithProviders(<AppHeader />);
 
-      // Partner should see Dashboard, Events, Analytics
-      expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
-      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      // Partner should see My Company and Topics
+      expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
     });
 
     test('should_renderAttendeeNavigation_when_userRoleIsAttendee', async () => {

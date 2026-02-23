@@ -16,6 +16,8 @@ import {
   Business,
   ManageAccounts,
   Public,
+  Lightbulb,
+  CalendarMonth,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -24,6 +26,7 @@ export interface NavigationItem {
   icon: typeof Dashboard;
   roles: UserRole[];
   description?: string;
+  children?: NavigationItem[];
 }
 
 /**
@@ -52,6 +55,29 @@ export const navigationConfig: NavigationItem[] = [
     icon: Handshake,
     roles: ['organizer'],
     description: 'Manage partners',
+    children: [
+      {
+        labelKey: 'navigation.partners',
+        path: '/organizer/partners',
+        icon: Handshake,
+        roles: ['organizer'],
+        description: 'Manage partners',
+      },
+      {
+        labelKey: 'navigation.partnerTopics',
+        path: '/organizer/partner-topics',
+        icon: Lightbulb,
+        roles: ['organizer'],
+        description: 'Review partner topic suggestions',
+      },
+      {
+        labelKey: 'navigation.partnerMeetings',
+        path: '/organizer/partner-meetings',
+        icon: CalendarMonth,
+        roles: ['organizer'],
+        description: 'Manage partner meetings',
+      },
+    ],
   },
   {
     labelKey: 'navigation.companies',
@@ -128,32 +154,18 @@ export const navigationConfig: NavigationItem[] = [
 
   // Partner-specific items
   {
-    labelKey: 'navigation.dashboard',
-    path: '/partner/dashboard',
-    icon: Dashboard,
+    labelKey: 'navigation.myCompany',
+    path: '/partners/company',
+    icon: Business,
     roles: ['partner'],
-    description: 'Partner dashboard',
+    description: 'Your company profile',
   },
   {
-    labelKey: 'navigation.events',
-    path: '/partner/events',
-    icon: Event,
+    labelKey: 'navigation.topics',
+    path: '/partners/topics',
+    icon: Lightbulb,
     roles: ['partner'],
-    description: 'View events',
-  },
-  {
-    labelKey: 'navigation.analytics',
-    path: '/partner/analytics',
-    icon: BarChart,
-    roles: ['partner'],
-    description: 'View analytics',
-  },
-  {
-    labelKey: 'navigation.profile',
-    path: '/partner/profile',
-    icon: Person,
-    roles: ['partner'],
-    description: 'Your partner profile',
+    description: 'Topic suggestions',
   },
   {
     labelKey: 'navigation.publicSite',

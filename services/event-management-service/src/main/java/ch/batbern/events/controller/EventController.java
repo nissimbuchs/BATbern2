@@ -1958,4 +1958,51 @@ public class EventController {
 
         return ResponseEntity.noContent().build();
     }
+
+    // ================================
+    // Partner Analytics Endpoints (Story 8.1: Partner Attendance Dashboard)
+    // ================================
+
+    /**
+     * Get attendance summary per event for a given company.
+     * Story 8.1: Partner Attendance Dashboard - AC1, AC2, AC5, AC6
+     *
+     * GET /api/v1/events/attendance-summary?companyName={name}&fromYear={year}
+     *
+     * Server-to-server endpoint: called by partner-coordination-service.
+     * Returns one row per event with total and company-specific attendee counts.
+     * Isolation is enforced at partner-coordination-service level (PARTNER sees only own company).
+     *
+     * @param companyName Company identifier (ADR-003 meaningful ID)
+     * @param fromYear    Earliest year to include (defaults to current year - 5)
+     * @return List of attendance summaries ordered by event date descending
+     */
+    @GetMapping("/attendance-summary")
+    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
+    @Operation(
+            summary = "Get attendance summary per event for a company",
+            description = "Returns per-event attendee counts (total and company-specific). "
+                    + "Called server-to-server by partner-coordination-service. "
+                    + "Requires PARTNER or ORGANIZER role."
+    )
+    public ResponseEntity<List<ch.batbern.events.dto.AttendanceSummaryDTO>> getAttendanceSummary(
+            @Parameter(description = "Company identifier (ADR-003 meaningful ID, e.g. 'GoogleZH')",
+                       required = true)
+            @RequestParam String companyName,
+            @Parameter(description = "Earliest year to include (default: current year - 5)")
+            @RequestParam(required = false) Integer fromYear) {
+
+        log.debug("GET /api/v1/events/attendance-summary - companyName: {}, fromYear: {}",
+                companyName, fromYear);
+
+        int resolvedFromYear = (fromYear != null) ? fromYear : (LocalDate.now().getYear() - 5);
+        Instant fromDate = LocalDate.of(resolvedFromYear, 1, 1)
+                .atStartOfDay(ZoneId.of("UTC"))
+                .toInstant();
+
+        List<ch.batbern.events.dto.AttendanceSummaryDTO> result =
+                registrationRepository.findAttendanceSummary(companyName, fromDate);
+
+        return ResponseEntity.ok(result);
+    }
 }

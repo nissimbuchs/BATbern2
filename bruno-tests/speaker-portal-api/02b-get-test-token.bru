@@ -1,0 +1,32 @@
+meta {
+  name: Get E2E Test Token for Speaker (Story 6.1a)
+  type: http
+  seq: 2.5
+}
+
+post {
+  url: {{baseUrl}}/e2e-test/tokens/generate-for-speaker?eventCode={{speakerPortalTestEventCode}}&username={{invitedSpeakerUsername}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.tokens: isDefined
+}
+
+tests {
+  test("should generate test tokens for speaker - E2E helper", function() {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.tokens).to.exist;
+    bru.setVar("speakerMagicToken", body.tokens.RESPOND);
+    bru.setVar("speakerViewToken", body.tokens.VIEW);
+    console.log("Set speakerMagicToken and speakerViewToken for subsequent tests");
+  });
+}

@@ -156,15 +156,8 @@ describe('PartnerDetailHeader Component', () => {
   });
 
   describe('AC1.4: Engagement Bar Placeholder', () => {
-    // Test 1.6: should_showEngagementPlaceholder_when_epic8Deferred
-    it('should_showEngagementPlaceholder_when_epic8Deferred', async () => {
-      await act(async () => {
-        renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
-      });
-
-      // Check for the emoji placeholder (i18n may not load in test)
-      expect(screen.getByText(/📊/)).toBeInTheDocument();
-    });
+    // Removed: engagement bar placeholder was removed post-epic-8
+    it.skip('should_showEngagementPlaceholder_when_epic8Deferred', async () => {});
   });
 
   describe('AC1.5: Action Buttons', () => {
@@ -181,19 +174,8 @@ describe('PartnerDetailHeader Component', () => {
       expect(mockOpenEditModal).toHaveBeenCalledWith(mockPartner);
     });
 
-    it('should_disableEpic8Buttons_when_rendered', async () => {
-      await act(async () => {
-        renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
-      });
-
-      const sendEmailButton = screen.getByRole('button', { name: /Send Email/i });
-      const scheduleMeetingButton = screen.getByRole('button', { name: /Schedule Meeting/i });
-      const exportDataButton = screen.getByRole('button', { name: /Export Data/i });
-
-      expect(sendEmailButton).toBeDisabled();
-      expect(scheduleMeetingButton).toBeDisabled();
-      expect(exportDataButton).toBeDisabled();
-    });
+    // Removed: email/meeting/export buttons were removed post-epic-8
+    it.skip('should_disableEpic8Buttons_when_rendered', async () => {});
 
     it('should_haveAddNoteButton_when_rendered', async () => {
       await act(async () => {

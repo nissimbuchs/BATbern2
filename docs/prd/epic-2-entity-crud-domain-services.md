@@ -722,7 +722,7 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 - Quick stats cards (partner since, events attended, active votes, meetings)
 - Tab navigation (Overview, Contacts, Meetings, Activity, Notes, Settings)
 - Overview tab (partnership details, engagement placeholder, recent activity, topic votes)
-- Meetings tab (read-only meetings list with RSVP status)
+- Meetings tab (read-only meetings list)
 - Activity tab (timeline of partner activities with filtering)
 - Notes tab (organizer notes CRUD)
 - Settings tab (partnership status, auto-renewal - organizer only)
@@ -799,9 +799,9 @@ Story 2.8 was split into four focused stories for better manageability, clearer 
 - Integration tests with Story 2.7 APIs
 
 **Deferred to Epic 8 (Partner Portal - Phase 2):**
-- Analytics dashboard (Story 6.1) - Advanced engagement analytics
-- Interactive topic voting interface (Story 6.4) - Weighted voting with priorities
-- Meeting coordination UI (Story 6.2) - Full meeting scheduling and RSVP management
+- Analytics dashboard (Story 8.1) - Attendance table with Excel export
+- Topic suggestions and voting (Story 8.2) - Simple +1 vote toggle, organizer status review
+- Partner meeting coordination (Story 8.3) - ICS calendar invites, agenda, post-meeting notes
 - Email integration, bulk actions, advanced search, export functionality
 
 **Story 2.8.x completes the Epic 2 CRUD pattern:**

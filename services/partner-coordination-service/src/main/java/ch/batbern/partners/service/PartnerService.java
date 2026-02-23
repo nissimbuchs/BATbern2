@@ -6,6 +6,7 @@ import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.dto.generated.CompanyInfo;
 import ch.batbern.partners.dto.generated.CreatePartnerRequest;
+import ch.batbern.partners.dto.generated.PartnerContactResponse;
 import ch.batbern.partners.dto.generated.PartnerResponse;
 import ch.batbern.partners.dto.generated.PartnerStatistics;
 import ch.batbern.partners.dto.generated.PartnerStatisticsTierCounts;
@@ -51,6 +52,7 @@ public class PartnerService {
     private final CompanyServiceClient companyServiceClient;
     private final DomainEventPublisher eventPublisher;
     private final SecurityContextHelper securityContextHelper;
+    private final PartnerContactService partnerContactService;
 
     /**
      * List all partners with optional filtering and HTTP enrichment.
@@ -98,6 +100,9 @@ public class PartnerService {
                     if (includes != null && includes.contains("company")) {
                         enrichWithCompanyData(response, partner.getCompanyName());
                     }
+                    if (includes != null && includes.contains("contacts")) {
+                        enrichWithContacts(response, partner.getCompanyName());
+                    }
 
                     return response;
                 })
@@ -123,6 +128,9 @@ public class PartnerService {
         // HTTP enrichment per ADR-004
         if (includes.contains("company")) {
             enrichWithCompanyData(response, companyName);
+        }
+        if (includes.contains("contacts")) {
+            enrichWithContacts(response, companyName);
         }
 
         return response;
@@ -269,6 +277,20 @@ public class PartnerService {
             response.setCompany(companyInfo);
         } catch (Exception e) {
             log.warn("Failed to enrich partner {} with company data: {}", companyName, e.getMessage());
+            // Continue without enrichment - fail gracefully
+        }
+    }
+
+    /**
+     * Enrich partner response with contacts via User Service (ADR-004).
+     * Contacts are derived: any PARTNER user whose companyId matches.
+     */
+    private void enrichWithContacts(PartnerResponse response, String companyName) {
+        try {
+            List<PartnerContactResponse> contacts = partnerContactService.getPartnerContacts(companyName);
+            response.setContacts(contacts);
+        } catch (Exception e) {
+            log.warn("Failed to enrich partner {} with contacts: {}", companyName, e.getMessage());
             // Continue without enrichment - fail gracefully
         }
     }

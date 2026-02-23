@@ -1,12 +1,15 @@
 #!/bin/bash
 # Authenticate with Cognito and store token locally
-# Usage: ./scripts/auth/get-token.sh <environment> <email> <password>
+# Usage: ./scripts/auth/get-token.sh <environment> <email> <password> [role]
+# role: organizer (default), speaker, partner
+# When role is organizer (or empty), also writes the legacy {env}.json for backward compatibility.
 
 set -e
 
 ENVIRONMENT=${1:-"staging"}
 EMAIL=${2}
 PASSWORD=${3}
+ROLE=${4:-""}
 
 # Color output
 RED='\033[0;31m'
@@ -17,8 +20,9 @@ NC='\033[0m' # No Color
 
 if [ -z "$EMAIL" ] || [ -z "$PASSWORD" ]; then
     echo -e "${RED}ERROR: Email and password required${NC}"
-    echo "Usage: $0 <environment> <email> <password>"
+    echo "Usage: $0 <environment> <email> <password> [role]"
     echo "Example: $0 staging test@batbern.ch mypassword"
+    echo "Example: $0 staging partner@batbern.ch mypassword partner"
     exit 1
 fi
 
@@ -28,6 +32,7 @@ echo -e "${BLUE}================================${NC}"
 echo ""
 echo "Environment: $ENVIRONMENT"
 echo "Email: $EMAIL"
+[ -n "$ROLE" ] && echo "Role: $ROLE"
 echo ""
 
 # Get Cognito configuration based on environment
@@ -93,11 +98,14 @@ echo ""
 # Create config directory if it doesn't exist
 mkdir -p ~/.batbern
 
-# Store tokens in local config
-config_file=~/.batbern/${ENVIRONMENT}.json
-cat > "$config_file" <<EOF
+# Helper: write token JSON to a given file path
+write_token_file() {
+    local file_path="$1"
+    local role_label="$2"
+    cat > "$file_path" <<EOF
 {
   "environment": "$ENVIRONMENT",
+  "role": "$role_label",
   "userId": "$user_id",
   "email": "$EMAIL",
   "idToken": "$id_token",
@@ -107,18 +115,26 @@ cat > "$config_file" <<EOF
   "retrievedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 }
 EOF
+    chmod 600 "$file_path"
+    echo -e "${GREEN}✓ Token stored in: $file_path${NC}"
+}
 
-chmod 600 "$config_file"
+# Determine storage paths based on role
+if [ -z "$ROLE" ] || [ "$ROLE" = "organizer" ]; then
+    # Write legacy file (backward compat) and role-specific file
+    write_token_file ~/.batbern/${ENVIRONMENT}.json "organizer"
+    write_token_file ~/.batbern/${ENVIRONMENT}-organizer.json "organizer"
+else
+    # Write only the role-specific file
+    write_token_file ~/.batbern/${ENVIRONMENT}-${ROLE}.json "$ROLE"
+fi
 
-echo -e "${GREEN}✓ Token stored in: $config_file${NC}"
 echo -e "${YELLOW}Token will expire at: $(date -v+${expires_in}S +"%Y-%m-%d %H:%M:%S")${NC}"
 echo ""
 echo -e "${BLUE}Token details:${NC}"
 echo "ID Token (first 50 chars): ${id_token:0:50}..."
 echo ""
-echo -e "${GREEN}✓ Configuration saved to ~/.batbern/${ENVIRONMENT}.json${NC}"
-echo ""
 echo -e "${BLUE}Next steps:${NC}"
-echo "1. Bruno tests will automatically use this token"
+echo "1. Bruno/Playwright tests will automatically use this token"
 echo "2. Token will expire after ~$(($expires_in / 60)) minutes"
 echo "3. Re-run this script when token expires"

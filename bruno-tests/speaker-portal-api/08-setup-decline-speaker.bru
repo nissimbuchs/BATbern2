@@ -16,11 +16,10 @@ auth:bearer {
 
 body:json {
   {
-    "email": "decline-test-{{timestamp}}@example.com",
-    "speakerName": "Decline Test Speaker",
-    "company": "Test Decline AG",
-    "expertise": "Testing",
-    "responseDeadline": "2026-06-01T23:59:59Z"
+    "email": "decline-test-{{$guid}}@example.com",
+    "firstName": "Decline",
+    "lastName": "Speaker",
+    "company": "Test Decline AG"
   }
 }
 

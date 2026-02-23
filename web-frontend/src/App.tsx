@@ -29,6 +29,7 @@ import { setNavigationCallback } from '@/services/api/apiClient';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
 import { LanguageSync } from '@components/shared/LanguageSync/LanguageSync';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PartnerPortalLayout } from '@/components/partner/PartnerPortalLayout';
 import theme from '@/theme';
 
 // Create React Query client
@@ -45,11 +46,22 @@ const queryClient = new QueryClient({
 const Dashboard = React.lazy(() => import('@pages/Dashboard'));
 const Events = React.lazy(() => import('@pages/Events'));
 const Speakers = React.lazy(() => import('@pages/Speakers'));
-const Partners = React.lazy(() => import('@pages/Partners'));
 const OrganizerPartners = React.lazy(() => import('@pages/OrganizerPartners'));
 const OrganizerPartnerDetail = React.lazy(() => import('@pages/OrganizerPartnerDetail'));
 const Content = React.lazy(() => import('@pages/Content'));
-const Analytics = React.lazy(() => import('@pages/Analytics'));
+
+// Story 8.0: Partner Portal
+const PartnerCompanyPage = React.lazy(() => import('@pages/PartnerCompanyPage'));
+// Story 8.1: PartnerAnalyticsPlaceholder replaced by PartnerAttendanceDashboard
+const PartnerAttendanceDashboard = React.lazy(
+  () => import('@components/partner/PartnerAttendanceDashboardPage')
+);
+// Story 8.2: TopicListPage replaces PartnerTopicsPlaceholder
+const TopicListPage = React.lazy(() => import('@components/partner/TopicListPage'));
+// Story 8.2: Organizer partner-topics status panel
+const TopicStatusPanel = React.lazy(() => import('@components/organizer/TopicStatusPanel'));
+// Story 8.3: Organizer partner meetings page
+const PartnerMeetingsPage = React.lazy(() => import('@components/organizer/PartnerMeetingsPage'));
 const CompanyManagement = React.lazy(
   () => import('@components/shared/Company/CompanyManagementScreen')
 );
@@ -420,6 +432,30 @@ function App() {
                         </ProtectedRoute>
                       }
                     />
+                    {/* Story 8.2: Organizer Partner Topics Status Panel */}
+                    <Route
+                      path="/organizer/partner-topics"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <TopicStatusPanel />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Story 8.3: Organizer Partner Meetings */}
+                    <Route
+                      path="/organizer/partner-meetings"
+                      element={
+                        <ProtectedRoute>
+                          <AuthLayout>
+                            <PartnerMeetingsPage />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
                     {/* Story 5.5: Task Management Page */}
                     <Route
                       path="/organizer/tasks"
@@ -478,26 +514,27 @@ function App() {
                       }
                     />
 
+                    {/* Story 8.0: Partner Portal */}
                     <Route
                       path="/partners"
                       element={
                         <PartnerRoute>
                           <AuthLayout>
-                            <Partners />
+                            <PartnerPortalLayout />
                           </AuthLayout>
                         </PartnerRoute>
                       }
-                    />
+                    >
+                      <Route index element={<Navigate to="company" replace />} />
+                      <Route path="company" element={<PartnerCompanyPage />} />
+                      <Route path="analytics" element={<PartnerAttendanceDashboard />} />
+                      <Route path="topics" element={<TopicListPage />} />
+                    </Route>
 
+                    {/* Story 8.0: Redirect old /analytics stub to partner portal */}
                     <Route
                       path="/analytics"
-                      element={
-                        <PartnerRoute>
-                          <AuthLayout>
-                            <Analytics />
-                          </AuthLayout>
-                        </PartnerRoute>
-                      }
+                      element={<Navigate to="/partners/analytics" replace />}
                     />
 
                     <Route

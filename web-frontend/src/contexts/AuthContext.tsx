@@ -7,6 +7,7 @@
 import React, { createContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { authService } from '@services/auth/authService';
 import { AuthenticationState, LoginCredentials, SignUpData, UserRole } from '@/types/auth';
+import apiClient from '@/services/api/apiClient';
 
 interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;
@@ -21,6 +22,24 @@ interface UseAuthReturn extends AuthenticationState {
 }
 
 export const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
+
+/**
+ * Resolve companyName for partner users when not present in JWT.
+ * Calls GET /partners/me which looks up the user's company via partner_contacts table.
+ * Silently returns undefined on failure so the partner still lands on the error-alert flow (AC5).
+ */
+async function resolvePartnerCompanyName(): Promise<string | undefined> {
+  try {
+    const response = await apiClient.get<{ companyName: string }>('/partners/me');
+    return response.data?.companyName;
+  } catch {
+    console.warn(
+      '[AuthProvider] Could not resolve companyName via GET /partners/me — ' +
+        'ensure user is registered as a partner contact'
+    );
+    return undefined;
+  }
+}
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -49,10 +68,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Get current session tokens
           const tokenResult = await authService.refreshToken();
 
+          // Resolve companyName for partner users if not in JWT via GET /partners/me
+          let resolvedCompanyName = user.companyName;
+          if (user.role === 'partner' && !resolvedCompanyName) {
+            resolvedCompanyName = await resolvePartnerCompanyName();
+          }
+
           setState({
             isAuthenticated: true,
             isLoading: false,
-            user,
+            user:
+              resolvedCompanyName !== user.companyName
+                ? { ...user, companyName: resolvedCompanyName }
+                : user,
             error: null,
             accessToken: tokenResult.accessToken || null,
           });
@@ -98,10 +126,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (result.success && result.user) {
         console.log('[AuthProvider] Sign in successful, updating global state');
+
+        // Resolve companyName for partner users if not in JWT via GET /partners/me
+        let signedInUser = result.user;
+        if (signedInUser.role === 'partner' && !signedInUser.companyName) {
+          const resolved = await resolvePartnerCompanyName();
+          if (resolved) {
+            signedInUser = { ...signedInUser, companyName: resolved };
+          }
+        }
+
         setState({
           isAuthenticated: true,
           isLoading: false,
-          user: result.user,
+          user: signedInUser,
           error: null,
           accessToken: result.accessToken || null,
         });

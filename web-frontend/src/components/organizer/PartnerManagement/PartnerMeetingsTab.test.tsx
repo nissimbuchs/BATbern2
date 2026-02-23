@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
+import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
 // Mock the hook
 vi.mock('@/hooks/usePartnerMeetings', () => ({
@@ -8,6 +9,25 @@ vi.mock('@/hooks/usePartnerMeetings', () => ({
 }));
 
 const { usePartnerMeetings } = await import('@/hooks/usePartnerMeetings');
+
+// ─── Test fixtures ─────────────────────────────────────────────────────────────
+
+const makeMeeting = (overrides: Partial<PartnerMeetingDTO> = {}): PartnerMeetingDTO => ({
+  id: 'meeting-1',
+  eventCode: 'BATbern57',
+  meetingType: 'SPRING',
+  meetingDate: '2025-03-15',
+  startTime: '12:00:00',
+  endTime: '14:00:00',
+  location: 'Bern Office',
+  agenda: 'Q1 Partnership Review',
+  notes: null,
+  inviteSentAt: null,
+  createdBy: 'organizer',
+  createdAt: '2025-01-01T10:00:00Z',
+  updatedAt: '2025-01-01T10:00:00Z',
+  ...overrides,
+});
 
 describe('PartnerMeetingsTab', () => {
   const mockCompanyName = 'GoogleZH';
@@ -28,23 +48,14 @@ describe('PartnerMeetingsTab', () => {
 
   // Test 5.2: should_displayMeetingsList_when_meetingsLoaded
   it('should display meetings list when meetings loaded', () => {
-    const mockMeetings = [
-      {
-        id: 'meeting-1',
-        meetingType: 'SEASONAL',
-        scheduledDate: '2025-03-15T10:00:00Z',
-        location: 'Bern Office',
-        agenda: 'Q1 Partnership Review',
-        rsvpStatus: 'CONFIRMED',
-      },
-      {
+    const mockMeetings: PartnerMeetingDTO[] = [
+      makeMeeting({ id: 'meeting-1', agenda: 'Q1 Partnership Review', location: 'Bern Office' }),
+      makeMeeting({
         id: 'meeting-2',
-        meetingType: 'STRATEGIC',
-        scheduledDate: '2025-06-20T14:00:00Z',
-        location: 'Virtual',
+        meetingType: 'AUTUMN',
         agenda: 'Strategic Planning Session',
-        rsvpStatus: 'PENDING',
-      },
+        location: 'Virtual',
+      }),
     ];
 
     vi.mocked(usePartnerMeetings).mockReturnValue({
@@ -62,25 +73,11 @@ describe('PartnerMeetingsTab', () => {
     expect(screen.getByText(/virtual/i)).toBeInTheDocument();
   });
 
-  // Test 5.3: should_displayRSVPStatus_when_meetingHasRSVP
-  it('should display RSVP status when meeting has RSVP', () => {
-    const mockMeetings = [
-      {
-        id: 'meeting-1',
-        meetingType: 'SEASONAL',
-        scheduledDate: '2025-03-15T10:00:00Z',
-        location: 'Bern Office',
-        agenda: 'Q1 Partnership Review',
-        rsvpStatus: 'CONFIRMED',
-      },
-      {
-        id: 'meeting-2',
-        meetingType: 'STRATEGIC',
-        scheduledDate: '2025-06-20T14:00:00Z',
-        location: 'Virtual',
-        agenda: 'Strategic Planning Session',
-        rsvpStatus: 'PENDING',
-      },
+  // Test 5.3: should_displayInviteStatus_when_inviteSent
+  // Updated for Story 8.3: rsvpStatus removed; inviteSentAt is the new invite-sent indicator
+  it('should display Invite Sent chip when invite was sent', () => {
+    const mockMeetings: PartnerMeetingDTO[] = [
+      makeMeeting({ id: 'meeting-1', inviteSentAt: '2025-03-01T10:00:00Z' }),
     ];
 
     vi.mocked(usePartnerMeetings).mockReturnValue({
@@ -92,8 +89,7 @@ describe('PartnerMeetingsTab', () => {
 
     render(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
-    expect(screen.getByText(/confirmed/i)).toBeInTheDocument();
-    expect(screen.getByText(/pending/i)).toBeInTheDocument();
+    expect(screen.getByText(/invite sent/i)).toBeInTheDocument();
   });
 
   // Test 5.4: should_showEpic8Message_when_fullFeaturesDeferred
@@ -128,46 +124,16 @@ describe('PartnerMeetingsTab', () => {
   });
 
   // Test 5.6: should_displayMeetingMaterials_when_available
-  it('should display meeting materials when available', () => {
-    const mockMeetings = [
-      {
-        id: 'meeting-1',
-        meetingType: 'SEASONAL',
-        scheduledDate: '2025-03-15T10:00:00Z',
-        location: 'Bern Office',
-        agenda: 'Q1 Partnership Review',
-        rsvpStatus: 'CONFIRMED',
-        materials: [
-          { name: 'Agenda Document', url: 'https://example.com/agenda.pdf' },
-          { name: 'Presentation Slides', url: 'https://example.com/slides.pdf' },
-        ],
-      },
-    ];
-
-    vi.mocked(usePartnerMeetings).mockReturnValue({
-      data: mockMeetings,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as any);
-
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
-
-    expect(screen.getByText('Agenda Document')).toBeInTheDocument();
-    expect(screen.getByText('Presentation Slides')).toBeInTheDocument();
+  // Story 8.3: Meeting materials feature was removed from scope — no materials field in PartnerMeetingDTO.
+  it.skip('should display meeting materials when available — feature removed from scope (Story 8.3)', () => {
+    // Meeting materials distribution was cut from scope (see story "What was deliberately cut" section).
+    // Keeping this test as a reminder of the removed feature.
   });
 
   // Test 5.7: should_formatMeetingDate_when_displayed
   it('should format meeting date when displayed', () => {
-    const mockMeetings = [
-      {
-        id: 'meeting-1',
-        meetingType: 'SEASONAL',
-        scheduledDate: '2025-03-15T10:00:00Z',
-        location: 'Bern Office',
-        agenda: 'Q1 Partnership Review',
-        rsvpStatus: 'CONFIRMED',
-      },
+    const mockMeetings: PartnerMeetingDTO[] = [
+      makeMeeting({ id: 'meeting-1', meetingDate: '2025-03-15' }),
     ];
 
     vi.mocked(usePartnerMeetings).mockReturnValue({

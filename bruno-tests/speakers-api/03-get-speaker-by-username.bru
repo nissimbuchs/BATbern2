@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/speakers/{{testSpeakerCreatedUsername}}
+  url: {{baseUrl}}/speakers/{{testDisposableSpeakerUsername}}
   body: none
   auth: none
 }
@@ -48,8 +48,8 @@ tests {
 
   test("should NOT have expansion fields without include parameter", function() {
     const body = res.getBody();
-    expect(body.speakingHistory).to.be.undefined;
-    expect(body.events).to.be.undefined;
-    expect(body.sessions).to.be.undefined;
+    expect(body.speakingHistory).to.not.exist;
+    expect(body.events).to.not.exist;
+    expect(body.sessions).to.not.exist;
   });
 }

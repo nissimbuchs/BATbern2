@@ -53,7 +53,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       SPRING_PROFILES_ACTIVE: envName,
       APP_ENVIRONMENT: envName,
       AWS_REGION: props.config.region,
-      LOG_LEVEL: isProd ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
       ...(props.databaseEndpoint && {
         DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
       }),
@@ -75,8 +75,8 @@ export class ApiGatewayServiceStack extends cdk.Stack {
 
     // Create task definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDef', {
-      cpu: 256,
-      memoryLimitMiB: 512, // Fargate valid CPU/Memory: 256 CPU requires 512-2048 MB
+      cpu: 512,
+      memoryLimitMiB: 1024, // Increased from 256/512 to fix ~1 min cold-start on Fargate
       runtimePlatform: {
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         cpuArchitecture: ecs.CpuArchitecture.ARM64,
@@ -215,6 +215,12 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 3,
     });
+
+    // Increase ALB idle timeout to 120s to avoid 60s timeout during cold starts
+    (this.service.loadBalancer.node.defaultChild as cdk.CfnResource).addPropertyOverride(
+      'LoadBalancerAttributes',
+      [{ Key: 'idle_timeout.timeout_seconds', Value: '120' }],
+    );
 
     // Enable Service Connect for service-to-service communication
     // This allows API Gateway to communicate directly with microservices using DNS names

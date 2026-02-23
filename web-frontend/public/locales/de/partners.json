@@ -117,7 +117,8 @@
     "actions": {
       "save": "Speichern",
       "cancel": "Abbrechen",
-      "saving": "Wird gespeichert..."
+      "saving": "Wird gespeichert...",
+      "delete": "Löschen"
     },
     "messages": {
       "unsavedChanges": "Sie haben ungespeicherte Änderungen. Sind Sie sicher, dass Sie schliessen möchten?",
@@ -169,6 +170,9 @@
     "notesTab": {
       "title": "Notizen",
       "addNote": "Notiz hinzufügen",
+      "editNote": "Notiz bearbeiten",
+      "deleteNoteConfirmTitle": "Notiz löschen",
+      "deleteNoteConfirmMessage": "Möchten Sie \"{{title}}\" wirklich löschen?",
       "titleLabel": "Titel",
       "contentLabel": "Inhalt",
       "htmlSupported": "HTML-Formatierung wird unterstützt",
@@ -181,8 +185,119 @@
       "deletePartner": "Partnerdaten löschen"
     }
   },
+  "meetings": {
+    "title": "Partner-Meetings",
+    "create": "Meeting erstellen",
+    "edit": "Meeting bearbeiten",
+    "fields": {
+      "agenda": "Tagesordnung",
+      "notes": "Besprechungsnotizen",
+      "location": "Ort",
+      "eventCode": "BATbern Veranstaltungscode",
+      "eventCodeHint": "z.B. BATbern57",
+      "date": "Datum",
+      "startTime": "Startzeit",
+      "endTime": "Endzeit",
+      "type": {
+        "spring": "Frühlings-Meeting",
+        "autumn": "Herbst-Meeting"
+      }
+    },
+    "sendInvite": "Kalendereinladung senden",
+    "inviteSent": "Einladung gesendet",
+    "inviteNotSent": "Einladung noch nicht gesendet",
+    "inviteSentOn": "Einladung gesendet am {{date}}",
+    "noMeetings": "Keine Partner-Meetings vorhanden",
+    "confirmSendInvite": "Kalendereinladung an alle Partner-Kontakte senden?",
+    "inviteQueued": "Kalendereinladung wird gesendet...",
+    "columns": {
+      "event": "Veranstaltung",
+      "type": "Typ",
+      "date": "Datum",
+      "location": "Ort",
+      "inviteStatus": "Einladung",
+      "actions": "Aktionen"
+    },
+    "loading": "Meetings werden geladen...",
+    "error": "Meetings konnten nicht geladen werden",
+    "createSuccess": "Meeting erfolgreich erstellt",
+    "updateSuccess": "Meeting erfolgreich aktualisiert",
+    "inviteSuccess": "Kalendereinladung wird versendet"
+  },
   "comingSoon": {
     "epic8": "Kommt bald - Epic 8",
     "story283": "Kommt bald - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "Mein Unternehmen",
+      "analytics": "Analysen",
+      "topics": "Themen"
+    },
+    "noCompanyLinked": "Ihr Konto ist keinem Unternehmen zugeordnet",
+    "noCompanyLinked.detail": "Bitte wenden Sie sich an Ihren Organisator",
+    "analytics": {
+      "comingSoon": "Analysen folgen bald",
+      "title": "Teilnahme-Dashboard",
+      "table": {
+        "event": "Veranstaltung",
+        "date": "Datum",
+        "yourAttendees": "Ihre Teilnehmer",
+        "totalAttendees": "Gesamtteilnehmer",
+        "percentage": "Anteil (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Kosten pro Teilnehmer",
+        "attendanceRate": "Durchschnittliche Teilnahmequote",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Letzte 5 Jahre",
+        "allHistory": "Gesamte Geschichte"
+      },
+      "export": {
+        "button": "Excel exportieren",
+        "loading": "Wird exportiert..."
+      },
+      "noData": "Keine Teilnahmedaten für den gewählten Zeitraum gefunden",
+      "loading": "Daten werden geladen...",
+      "error": "Daten konnten nicht geladen werden"
+    },
+    "topics": {
+      "comingSoon": "Themenabstimmung folgt bald",
+      "title": "Themenvorschläge",
+      "suggest": "Thema vorschlagen",
+      "vote": "Abstimmen",
+      "unvote": "Stimme entfernen",
+      "status": {
+        "proposed": "Vorgeschlagen",
+        "selected": "Ausgewählt",
+        "declined": "Abgelehnt"
+      },
+      "plannedFor": "Geplant für",
+      "empty": "Noch keine Themenvorschläge",
+      "form": {
+        "title": "Titel",
+        "description": "Beschreibung",
+        "submit": "Einreichen",
+        "titleRequired": "Titel ist erforderlich (mindestens 5 Zeichen)",
+        "descriptionHint": "Optional, max. 500 Zeichen",
+        "dialogTitle": "Neues Thema vorschlagen"
+      },
+      "organizer": {
+        "title": "Partner-Themenvorschläge",
+        "col": {
+          "title": "Titel",
+          "company": "Unternehmen",
+          "votes": "Abstimmungen"
+        },
+        "status": "Status",
+        "plannedEvent": "Geplante Veranstaltung",
+        "save": "Speichern",
+        "saving": "Wird gespeichert..."
+      },
+      "loading": "Themen werden geladen...",
+      "error": "Themen konnten nicht geladen werden"
+    }
   }
 }

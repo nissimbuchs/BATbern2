@@ -154,6 +154,13 @@ create_env_native() {
     source "${ENV_FILE}"
     set +a
 
+    # Compute AWS profile for native services.
+    # Local dev always targets staging Cognito for admin SDK calls.
+    # Reads AWS_PROFILE from .env if explicitly set; ignores the parent shell's
+    # AWS_PROFILE (which may point to a different account, e.g. batbern-dev).
+    NATIVE_AWS_PROFILE=$(grep "^AWS_PROFILE=" "${ENV_FILE}" 2>/dev/null | head -1 | cut -d= -f2 | tr -d '"' | tr -d "'" | xargs)
+    NATIVE_AWS_PROFILE="${NATIVE_AWS_PROFILE:-batbern-staging}"
+
     # Override ports with instance-specific calculated values
     # (These override any values from the base .env file)
     API_GATEWAY_PORT=$BASE_PORT
@@ -214,7 +221,7 @@ API_BASE_URL=http://localhost:${API_GATEWAY_PORT}
 # ==============================================
 AWS_REGION=${AWS_REGION:-eu-central-1}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
-AWS_PROFILE=${AWS_PROFILE:-batbern-dev}
+AWS_PROFILE=${NATIVE_AWS_PROFILE}
 
 # ==============================================
 # AWS Cognito Configuration

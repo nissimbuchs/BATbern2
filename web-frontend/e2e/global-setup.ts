@@ -2,8 +2,13 @@
  * Playwright Global Setup
  *
  * Handles authentication state setup before running tests.
- * Reads AUTH_TOKEN from environment (set by run-playwright-tests.sh)
- * and injects it into browser storage for authenticated test execution.
+ * Reads tokens from ~/.batbern/{env}-{role}.json (or the legacy {env}.json for organizer)
+ * and injects them into browser storage for authenticated test execution.
+ *
+ * Writes per-role auth state files:
+ *   .playwright-auth-state.json          (organizer — legacy path, used by chromium project)
+ *   .playwright-auth-speaker.json        (speaker project)
+ *   .playwright-auth-partner.json        (partner project)
  */
 
 import { chromium } from '@playwright/test';
@@ -34,99 +39,110 @@ async function globalSetup() {
   console.log(`[Global Setup] Environment: ${testEnv}`);
   console.log(`[Global Setup] Base URL: ${envConfig.baseURL}`);
 
-  // Try to load tokens from ~/.batbern/{environment}.json file
   const fs = await import('fs');
   const os = await import('os');
   const path = await import('path');
-  const tokenFilePath = path.join(os.homedir(), '.batbern', `${testEnv}.json`);
 
-  if (!fs.existsSync(tokenFilePath)) {
-    console.log('[Global Setup] ⚠️  No token file found - tests requiring auth will fail');
-    console.log(`[Global Setup] Expected file: ${tokenFilePath}`);
-    console.log('[Global Setup] Run: ./scripts/auth/get-token.sh <environment> <email> <password>');
-    return;
-  }
+  /**
+   * Inject tokens for a specific role into a fresh browser context and save the storage state.
+   * Returns the idToken string if successful, empty string otherwise.
+   */
+  async function setupRoleAuth(
+    role: string,
+    tokenFilePath: string,
+    stateFilePath: string,
+    fallbackFilePath?: string
+  ): Promise<string> {
+    // Resolve the token file to use (primary or fallback for backward compat)
+    const resolvedTokenFile = fs.existsSync(tokenFilePath)
+      ? tokenFilePath
+      : fallbackFilePath && fs.existsSync(fallbackFilePath)
+        ? fallbackFilePath
+        : null;
 
-  const tokenData = JSON.parse(fs.readFileSync(tokenFilePath, 'utf8'));
-  const { idToken, accessToken, refreshToken } = tokenData;
-
-  if (!idToken || !accessToken || !refreshToken) {
-    console.log('[Global Setup] ⚠️  Token file missing required tokens');
-    return;
-  }
-
-  console.log('[Global Setup] ✓ Tokens loaded from file, setting up authenticated state');
-
-  // Export AUTH_TOKEN to environment for API integration tests
-  process.env.AUTH_TOKEN = idToken;
-  console.log('[Global Setup] ✓ AUTH_TOKEN exported to environment');
-
-  // Create browser and page to set up auth state
-  const browser = await chromium.launch();
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  try {
-    // Navigate to the app to establish domain context
-    await page.goto(envConfig.baseURL);
-
-    // Inject auth tokens into localStorage in AMPLIFY V6 format
-    await page.evaluate(
-      ({ idToken, accessToken, refreshToken }) => {
-        // Parse idToken to get username/sub and client ID
-        const base64Url = idToken.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
+    if (!resolvedTokenFile) {
+      console.log(
+        `[Global Setup] ⚠️  No token file for role=${role} — tests for this role will be skipped`
+      );
+      if (role !== 'organizer') {
+        console.log(`[Global Setup] Expected file: ${tokenFilePath}`);
+        console.log(
+          `[Global Setup] Run: ./scripts/auth/get-token.sh ${testEnv} <email> <password> ${role}`
         );
-        const payload = JSON.parse(jsonPayload);
+      }
+      return '';
+    }
 
-        // Extract client ID and username from token
-        const clientId = payload.aud; // audience = client ID
-        const username = payload['cognito:username'];
+    const tokenData = JSON.parse(fs.readFileSync(resolvedTokenFile, 'utf8'));
+    const { idToken, accessToken, refreshToken } = tokenData;
 
-        // Set Amplify V6 Cognito token provider keys with CORRECT tokens
-        const prefix = `CognitoIdentityServiceProvider.${clientId}`;
+    if (!idToken || !accessToken || !refreshToken) {
+      console.log(`[Global Setup] ⚠️  Token file missing required tokens for role=${role}`);
+      return '';
+    }
 
-        localStorage.setItem(`${prefix}.${username}.idToken`, idToken);
-        localStorage.setItem(`${prefix}.${username}.accessToken`, accessToken);
-        localStorage.setItem(`${prefix}.${username}.refreshToken`, refreshToken);
-        localStorage.setItem(`${prefix}.${username}.clockDrift`, '0');
-        localStorage.setItem(`${prefix}.LastAuthUser`, username);
+    console.log(`[Global Setup] Setting up auth state for role=${role}`);
 
-        // Also set legacy keys for backward compatibility
-        localStorage.setItem('authToken', idToken);
-        localStorage.setItem('idToken', idToken);
+    const browser = await chromium.launch();
+    const context = await browser.newContext();
+    const page = await context.newPage();
 
-        const authState = {
-          idToken: idToken,
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          expiresAt: payload.exp * 1000,
-          isAuthenticated: true,
-        };
-        localStorage.setItem('auth', JSON.stringify(authState));
+    try {
+      // Navigate to the app to establish domain context
+      await page.goto(envConfig.baseURL);
 
-        // Set language to English for E2E tests (user default might be German)
-        localStorage.setItem('batbern-language', 'en');
-      },
-      { idToken, accessToken, refreshToken }
-    );
+      // Inject auth tokens into localStorage in AMPLIFY V6 format
+      await page.evaluate(
+        ({ idToken, accessToken, refreshToken }) => {
+          // Parse idToken to get username/sub and client ID
+          const base64Url = idToken.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const payload = JSON.parse(jsonPayload);
 
-    console.log('[Global Setup] ✓ Auth token injected into localStorage (Amplify V6 format)');
-    console.log('[Global Setup] ✓ Language set to English for E2E tests');
+          // Extract client ID and username from token
+          const clientId = payload.aud; // audience = client ID
+          const username = payload['cognito:username'];
 
-    // Save the storage state to be reused in tests
-    await context.storageState({ path: '.playwright-auth-state.json' });
-    console.log('[Global Setup] ✓ Auth state saved to .playwright-auth-state.json');
+          // Set Amplify V6 Cognito token provider keys with CORRECT tokens
+          const prefix = `CognitoIdentityServiceProvider.${clientId}`;
 
-    // Validate storage state was saved correctly
-    const fs = await import('fs');
-    if (fs.existsSync('.playwright-auth-state.json')) {
-      const savedState = JSON.parse(fs.readFileSync('.playwright-auth-state.json', 'utf8'));
+          localStorage.setItem(`${prefix}.${username}.idToken`, idToken);
+          localStorage.setItem(`${prefix}.${username}.accessToken`, accessToken);
+          localStorage.setItem(`${prefix}.${username}.refreshToken`, refreshToken);
+          localStorage.setItem(`${prefix}.${username}.clockDrift`, '0');
+          localStorage.setItem(`${prefix}.LastAuthUser`, username);
+
+          // Also set legacy keys for backward compatibility
+          localStorage.setItem('authToken', idToken);
+          localStorage.setItem('idToken', idToken);
+
+          const authState = {
+            idToken: idToken,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: payload.exp * 1000,
+            isAuthenticated: true,
+          };
+          localStorage.setItem('auth', JSON.stringify(authState));
+
+          // Set language to English for E2E tests (user default might be German)
+          localStorage.setItem('batbern-language', 'en');
+        },
+        { idToken, accessToken, refreshToken }
+      );
+
+      // Save the storage state for this role
+      await context.storageState({ path: stateFilePath });
+      console.log(`[Global Setup] ✓ Auth state saved: ${stateFilePath} (role=${role})`);
+
+      // Validate storage state
+      const savedState = JSON.parse(fs.readFileSync(stateFilePath, 'utf8'));
       const origins = (savedState.origins || []) as Array<{
         localStorage?: Array<{ name: string; value: string }>;
       }>;
@@ -134,19 +150,58 @@ async function globalSetup() {
         origin.localStorage?.some((item) => item.name.includes('CognitoIdentityServiceProvider'))
       );
       if (hasTokens) {
-        console.log('[Global Setup] ✓ Storage state validated - Cognito tokens present');
+        console.log(`[Global Setup] ✓ Storage state validated for role=${role}`);
       } else {
-        console.warn('[Global Setup] ⚠️  Storage state saved but no Cognito tokens found');
+        console.warn(
+          `[Global Setup] ⚠️  Storage state saved but no Cognito tokens found for role=${role}`
+        );
       }
-    } else {
-      console.warn('[Global Setup] ⚠️  Storage state file was not created');
+
+      return idToken;
+    } catch (error) {
+      console.error(`[Global Setup] ✗ Failed to set up auth state for role=${role}:`, error);
+      return '';
+    } finally {
+      await browser.close();
     }
-  } catch (error) {
-    console.error('[Global Setup] ✗ Failed to set up auth state:', error);
-    throw error;
-  } finally {
-    await browser.close();
   }
+
+  const homedir = os.homedir();
+  const batbernDir = path.join(homedir, '.batbern');
+
+  // ── ORGANIZER (required) ──────────────────────────────────────────────────
+  // Write to legacy .playwright-auth-state.json for backward compat with chromium project
+  const organizerIdToken = await setupRoleAuth(
+    'organizer',
+    path.join(batbernDir, `${testEnv}-organizer.json`),
+    '.playwright-auth-state.json',
+    path.join(batbernDir, `${testEnv}.json`) // fallback to legacy file
+  );
+
+  if (!organizerIdToken) {
+    console.log(
+      '[Global Setup] ⚠️  Organizer auth not configured — tests requiring auth will fail'
+    );
+    console.log(`[Global Setup] Run: ./scripts/auth/get-token.sh ${testEnv} <email> <password>`);
+  } else {
+    // Export AUTH_TOKEN from organizer (existing behavior for API integration tests)
+    process.env.AUTH_TOKEN = organizerIdToken;
+    console.log('[Global Setup] ✓ AUTH_TOKEN exported to environment (organizer)');
+  }
+
+  // ── SPEAKER (optional) ────────────────────────────────────────────────────
+  await setupRoleAuth(
+    'speaker',
+    path.join(batbernDir, `${testEnv}-speaker.json`),
+    '.playwright-auth-speaker.json'
+  );
+
+  // ── PARTNER (optional) ────────────────────────────────────────────────────
+  await setupRoleAuth(
+    'partner',
+    path.join(batbernDir, `${testEnv}-partner.json`),
+    '.playwright-auth-partner.json'
+  );
 }
 
 export default globalSetup;

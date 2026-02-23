@@ -38,7 +38,6 @@ const mockPartners = [
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        isPrimary: true,
       },
     ],
   },

@@ -26,7 +26,8 @@
 .module-detail-container,
 .coverage-container,
 .security-container,
-.quality-container {
+.quality-container,
+.codebase-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
@@ -1028,6 +1029,207 @@
 .text-error { color: var(--error-red); }
 .text-critical { color: var(--critical-red); }
 .text-muted { color: var(--muted-foreground); }
+
+/* ═══════════════════════════════════════════════════════
+   DAST Section (OWASP ZAP)
+   ═══════════════════════════════════════════════════════ */
+
+.dast-section {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-md);
+}
+
+.dast-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem 0;
+  font-size: 1.4rem;
+  color: var(--foreground);
+}
+
+.dast-icon { font-size: 1.4rem; }
+
+.dast-scanned-at {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+
+/* Status banners */
+.dast-banner {
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.dast-banner-clean {
+  background: rgba(76, 175, 80, 0.12);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+  color: #4CAF50;
+}
+
+.dast-banner-alerts {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.35);
+  color: #FF9800;
+}
+
+.dast-banner-pending {
+  background: rgba(33, 150, 243, 0.10);
+  border: 1px solid rgba(33, 150, 243, 0.30);
+  color: var(--muted-foreground);
+}
+
+/* Per-scan table */
+.dast-scans-table-wrap { margin-bottom: 1.75rem; }
+
+.dast-scans-table-wrap h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.75rem 0;
+}
+
+.dast-scans-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dast-scans-table thead th {
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-light);
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+}
+
+.dast-scans-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.dast-scans-table tbody tr:hover { background: var(--bg-light); }
+
+.dast-scans-table tbody td {
+  padding: 0.75rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.dast-scan-target {
+  color: var(--muted-foreground);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem !important;
+}
+
+.dast-scan-name { font-weight: 600; }
+
+/* Risk colours */
+.text-risk-high   { color: var(--error-red); font-weight: 700; }
+.text-risk-medium { color: var(--warning-yellow); font-weight: 700; }
+.text-risk-low    { color: var(--info-blue); }
+
+/* Status badges in table */
+.dast-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dast-badge-pass { background: rgba(76,175,80,0.15);  color: #4CAF50; }
+.dast-badge-warn { background: rgba(255,193,7,0.15);  color: #FFC107; }
+.dast-badge-low  { background: rgba(33,150,243,0.12); color: #2196F3; }
+.dast-badge-fail { background: rgba(244,67,54,0.15);  color: #F44336; }
+
+/* Alert details (<details>) */
+.dast-alerts-section { margin-top: 0.5rem; }
+
+.dast-alerts-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.75rem 0;
+}
+
+.dast-alert-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.dast-alert-item[open] { border-color: var(--primary); }
+.dast-alert-item.dast-alert-risk-high   { border-left: 3px solid var(--error-red); }
+.dast-alert-item.dast-alert-risk-medium { border-left: 3px solid var(--warning-yellow); }
+.dast-alert-item.dast-alert-risk-low    { border-left: 3px solid var(--info-blue); }
+.dast-alert-item.dast-alert-risk-info   { border-left: 3px solid var(--muted-foreground); }
+
+.dast-alert-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.9rem;
+  background: var(--bg-light);
+}
+
+.dast-alert-summary:hover { background: var(--border); }
+.dast-alert-summary::marker { display: none; }
+
+.dast-alert-name { font-weight: 600; flex: 1; }
+
+.dast-alert-meta {
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+}
+
+/* Risk label badges inside details */
+.dast-risk-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.dast-risk-high   { background: rgba(244,67,54,0.15);  color: #F44336; }
+.dast-risk-medium { background: rgba(255,193,7,0.15);  color: #FFC107; }
+.dast-risk-low    { background: rgba(33,150,243,0.12); color: #2196F3; }
+.dast-risk-info   { background: rgba(158,158,158,0.15); color: #9E9E9E; }
+
+.dast-alert-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+
+.dast-alert-body > div { margin-bottom: 0.6rem; }
+.dast-alert-body strong { color: var(--foreground); }
+
+.dast-alert-scans { color: var(--foreground); }
 
 /* Responsive Design */
 @media (max-width: 768px) {

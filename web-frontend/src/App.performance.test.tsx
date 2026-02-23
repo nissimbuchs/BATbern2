@@ -55,7 +55,7 @@ describe('Performance Optimization - Code Splitting', () => {
 
     it('should_useLazyLoading_when_renderingPartnersRoute', async () => {
       // Verify Partners component is in separate file
-      const partnersModule = await import('./pages/Partners');
+      const partnersModule = await import('./pages/OrganizerPartners');
       expect(partnersModule.default).toBeDefined();
     });
 
@@ -66,8 +66,8 @@ describe('Performance Optimization - Code Splitting', () => {
     });
 
     it('should_useLazyLoading_when_renderingAnalyticsRoute', async () => {
-      // Verify Analytics component is in separate file
-      const analyticsModule = await import('./pages/Analytics');
+      // /analytics redirects to /partners/analytics, served by PartnerAttendanceDashboardPage
+      const analyticsModule = await import('@components/partner/PartnerAttendanceDashboardPage');
       expect(analyticsModule.default).toBeDefined();
     });
   });

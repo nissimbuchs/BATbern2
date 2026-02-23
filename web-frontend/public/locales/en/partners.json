@@ -117,7 +117,8 @@
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "delete": "Delete"
     },
     "messages": {
       "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
@@ -169,6 +170,9 @@
     "notesTab": {
       "title": "Notes",
       "addNote": "Add Note",
+      "editNote": "Edit Note",
+      "deleteNoteConfirmTitle": "Delete Note",
+      "deleteNoteConfirmMessage": "Are you sure you want to delete \"{{title}}\"?",
       "titleLabel": "Title",
       "contentLabel": "Content",
       "htmlSupported": "HTML formatting is supported",
@@ -181,8 +185,119 @@
       "deletePartner": "Delete Partner Data"
     }
   },
+  "meetings": {
+    "title": "Partner Meetings",
+    "create": "Create Meeting",
+    "edit": "Edit Meeting",
+    "fields": {
+      "agenda": "Agenda",
+      "notes": "Meeting Notes",
+      "location": "Location",
+      "eventCode": "BATbern Event Code",
+      "eventCodeHint": "e.g. BATbern57",
+      "date": "Date",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "type": {
+        "spring": "Spring Meeting",
+        "autumn": "Autumn Meeting"
+      }
+    },
+    "sendInvite": "Send Calendar Invite",
+    "inviteSent": "Invite Sent",
+    "inviteNotSent": "Invite Not Sent",
+    "inviteSentOn": "Invite sent on {{date}}",
+    "noMeetings": "No partner meetings found",
+    "confirmSendInvite": "Send calendar invite to all partner contacts?",
+    "inviteQueued": "Sending calendar invite...",
+    "columns": {
+      "event": "Event",
+      "type": "Type",
+      "date": "Date",
+      "location": "Location",
+      "inviteStatus": "Invite",
+      "actions": "Actions"
+    },
+    "loading": "Loading meetings...",
+    "error": "Could not load meetings",
+    "createSuccess": "Meeting created successfully",
+    "updateSuccess": "Meeting updated successfully",
+    "inviteSuccess": "Calendar invite is being sent"
+  },
   "comingSoon": {
     "epic8": "Coming Soon - Epic 8",
     "story283": "Coming Soon - Story 2.8.3"
+  },
+  "portal": {
+    "nav": {
+      "myCompany": "My Company",
+      "analytics": "Analytics",
+      "topics": "Topics"
+    },
+    "noCompanyLinked": "Your account is not linked to a company",
+    "noCompanyLinked.detail": "Please contact your organizer",
+    "analytics": {
+      "comingSoon": "Analytics coming soon",
+      "title": "Attendance Dashboard",
+      "table": {
+        "event": "Event",
+        "date": "Date",
+        "yourAttendees": "Your Attendees",
+        "totalAttendees": "Total Attendees",
+        "percentage": "Percentage (%)"
+      },
+      "kpi": {
+        "costPerAttendee": "Cost Per Attendee",
+        "attendanceRate": "Avg. Attendance Rate",
+        "currency": "CHF"
+      },
+      "range": {
+        "last5years": "Last 5 Years",
+        "allHistory": "All History"
+      },
+      "export": {
+        "button": "Export Excel",
+        "loading": "Exporting..."
+      },
+      "noData": "No attendance data found for the selected period",
+      "loading": "Loading data...",
+      "error": "Failed to load attendance data"
+    },
+    "topics": {
+      "comingSoon": "Topic voting coming soon",
+      "title": "Topic Suggestions",
+      "suggest": "Suggest a Topic",
+      "vote": "Vote",
+      "unvote": "Remove Vote",
+      "status": {
+        "proposed": "Proposed",
+        "selected": "Selected",
+        "declined": "Declined"
+      },
+      "plannedFor": "Planned for",
+      "empty": "No topic suggestions yet",
+      "form": {
+        "title": "Title",
+        "description": "Description",
+        "submit": "Submit",
+        "titleRequired": "Title is required (at least 5 characters)",
+        "descriptionHint": "Optional, max 500 characters",
+        "dialogTitle": "Suggest a New Topic"
+      },
+      "organizer": {
+        "title": "Partner Topic Suggestions",
+        "col": {
+          "title": "Title",
+          "company": "Company",
+          "votes": "Votes"
+        },
+        "status": "Status",
+        "plannedEvent": "Planned Event",
+        "save": "Save",
+        "saving": "Saving..."
+      },
+      "loading": "Loading topics...",
+      "error": "Failed to load topics"
+    }
   }
 }
