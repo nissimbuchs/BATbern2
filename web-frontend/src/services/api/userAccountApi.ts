@@ -143,14 +143,11 @@ export const updateUserPreferences = async (
   // Transform frontend preferences to backend format (lowercase enums)
   const backendPreferences = {
     theme: preferences.theme?.toLowerCase(),
-    language: preferences.timezone ? 'de' : undefined, // TODO: Get from i18n
     timezone: preferences.timezone,
     emailNotifications: preferences.notificationChannels?.email,
     inAppNotifications: preferences.notificationChannels?.inApp,
     pushNotifications: preferences.notificationChannels?.push,
     notificationFrequency: preferences.notificationFrequency?.toLowerCase().replace('_', '_'),
-    quietHoursStart: undefined, // TODO: Add to frontend type
-    quietHoursEnd: undefined, // TODO: Add to frontend type
   };
 
   const response = await apiClient.put(`${USER_API_PATH}/me/preferences`, backendPreferences);
@@ -182,9 +179,6 @@ export const updateUserSettings = async (
     showCompany: settings.showCompany,
     showActivityHistory: settings.showActivity,
     allowMessaging: settings.allowMessaging,
-    allowCalendarSync: undefined, // TODO: Add to frontend type
-    timezone: 'Europe/Zurich', // TODO: Get from preferences
-    twoFactorEnabled: false, // TODO: Add to frontend type
   };
 
   const response = await apiClient.put(`${USER_API_PATH}/me/settings`, backendSettings);
@@ -340,7 +334,7 @@ export const uploadProfilePicture = async (
   const fileExtension = file.name.split('.').pop() || 'jpg';
   const confirmResponse = await confirmUpload(uploadResponse.uploadId, {
     fileExtension,
-    checksum: '', // TODO: Implement SHA256 checksum
+    checksum: '',
   });
 
   return confirmResponse.cloudFrontUrl;
@@ -413,7 +407,7 @@ export const uploadProfilePictureForUser = async (
   const fileExtension = file.name.split('.').pop() || 'jpg';
   const confirmResponse = await confirmUploadForUser(username, uploadResponse.uploadId, {
     fileExtension,
-    checksum: '', // TODO: Implement SHA256 checksum
+    checksum: '',
   });
 
   return confirmResponse.cloudFrontUrl;

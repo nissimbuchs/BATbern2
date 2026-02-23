@@ -55,12 +55,13 @@ export const listUsers = async (
     params.role = filters.role[0];
   }
 
-  // Build filter object for JSON filter syntax (for active status only)
-  const filterObj: Record<string, string | boolean> = {};
-
+  // Backend expects ?company=GoogleZH as a dedicated query param (not inside filter JSON)
   if (filters.company) {
-    filterObj.company = filters.company;
+    params.company = filters.company;
   }
+
+  // Build filter object for JSON filter syntax (active status only)
+  const filterObj: Record<string, string | boolean> = {};
 
   if (filters.status && filters.status !== 'all') {
     filterObj.active = filters.status === 'active';

@@ -47,7 +47,6 @@ import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
 import SpeakerBatchImportModal from './SpeakerBatchImportModal';
 import { ParticipantBatchImportModal } from './ParticipantBatchImportModal';
-// import UserSyncPanel from './UserSyncPanel'; // TODO: Re-enable when AWS credentials configured (Story 1.2.5)
 import type { User } from '@/types/user.types';
 
 const UserList: React.FC = () => {
@@ -183,10 +182,6 @@ const UserList: React.FC = () => {
             </Button>
           </Stack>
         </Stack>
-
-        {/* User Sync Panel - Story 1.2.5 */}
-        {/* TODO: Re-enable when AWS credentials configured - requires STS SDK for role assumption */}
-        {/* <UserSyncPanel /> */}
 
         {/* Filters Panel */}
         <UserFilters />
