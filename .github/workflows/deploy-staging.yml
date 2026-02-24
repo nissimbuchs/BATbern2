@@ -588,7 +588,7 @@ jobs:
 
       - name: Deploy Layer 4.2 - Event Management Service
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 60
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 4.2: Event Management Service"
@@ -700,6 +700,7 @@ jobs:
 
       - name: Selective Deploy - Event Management
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && contains(steps.changes.outputs.changed_services, 'event-management')
+        timeout-minutes: 60
         working-directory: ./infrastructure
         run: |
           echo "🎯 Selective deployment: Event Management Service"
