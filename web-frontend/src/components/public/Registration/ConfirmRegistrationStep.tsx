@@ -6,8 +6,8 @@
  */
 
 import { Card } from '@/components/public/ui/card';
-import { Checkbox } from '@/components/public/ui/ui/checkbox';
-import { Textarea } from '@/components/public/ui/ui/textarea';
+import { Checkbox } from '@/components/public/ui/checkbox';
+import { Textarea } from '@/components/public/ui/textarea';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 
 export interface ConfirmRegistrationStepProps {

@@ -6,7 +6,7 @@
  */
 
 import { ReactNode } from 'react';
-import { Collapsible, CollapsibleContent } from '@/components/public/ui/ui/collapsible';
+import { Collapsible, CollapsibleContent } from '@/components/public/ui/collapsible';
 
 export interface RegistrationAccordionProps {
   /** Whether the accordion section is expanded */

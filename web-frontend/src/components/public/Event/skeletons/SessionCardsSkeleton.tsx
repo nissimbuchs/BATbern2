@@ -6,7 +6,7 @@
  * Shows placeholder cards in a grid layout matching the expected session display.
  */
 
-import { Skeleton } from '@/components/public/ui/ui/skeleton';
+import { Skeleton } from '@/components/public/ui/skeleton';
 
 export const SessionCardsSkeleton = () => (
   <div className="py-12 px-4 md:px-8 bg-zinc-900">
