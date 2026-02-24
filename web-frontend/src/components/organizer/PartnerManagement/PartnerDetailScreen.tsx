@@ -16,7 +16,19 @@ import {
   TableRow,
   Typography,
   Paper,
+  BottomNavigation,
+  BottomNavigationAction,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
+import {
+  Dashboard as OverviewIcon,
+  Contacts as ContactsIcon,
+  Event as MeetingsIcon,
+  BarChart as AnalyticsIcon,
+  Note as NotesIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -46,6 +58,8 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const resolvedCompanyName = props.companyName ?? urlCompanyName ?? '';
 
   const { t } = useTranslation('organizer');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
   const setActiveTab = usePartnerDetailStore((state) => state.setActiveTab);
 
@@ -144,98 +158,134 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     );
   }
 
+  const isPartner = currentUser.role === 'PARTNER';
+
+  // Tabs visible per role — mirrors PartnerTabNavigation logic
+  const allTabs = [
+    { label: 'Overview', icon: <OverviewIcon /> },
+    { label: 'Contacts', icon: <ContactsIcon /> },
+    { label: 'Meetings', icon: <MeetingsIcon /> },
+    { label: 'Analytics', icon: <AnalyticsIcon /> },
+    { label: 'Notes', icon: <NotesIcon /> },
+    { label: 'Settings', icon: <SettingsIcon /> },
+  ];
+  const visibleTabs = isPartner
+    ? allTabs.filter((tab) => tab.label !== 'Settings' && tab.label !== 'Notes')
+    : allTabs;
+
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
-      {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
-      {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
+    <Box sx={{ pb: isMobile ? 8 : 0 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
+        {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
+        {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
 
-      {/* Header */}
-      <PartnerDetailHeader partner={partner} role={currentUser.role} />
+        {/* Header */}
+        <PartnerDetailHeader partner={partner} role={currentUser.role} />
 
-      {/* Tab Navigation */}
-      <Box sx={{ mt: 3 }}>
-        <PartnerTabNavigation
-          activeTab={effectiveTab}
-          onTabChange={handleTabChange}
-          role={currentUser.role}
-        />
-      </Box>
-
-      {/* Tab Panels */}
-      <Box sx={{ mt: 3 }}>
-        {/* Overview Tab */}
-        {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
-
-        {/* Contacts Tab */}
-        {effectiveTab === 1 && (
-          <Box sx={{ my: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              {t('partners.contacts.title', 'Partner Contacts')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {t(
-                'partners.contacts.description',
-                'Users with the Partner role assigned to this company.'
-              )}
-            </Typography>
-            {!partner.contacts || partner.contacts.length === 0 ? (
-              <Alert severity="info">
-                <AlertTitle>{t('partners.contacts.empty', 'No contacts')}</AlertTitle>
-                {t(
-                  'partners.contacts.emptyDescription',
-                  'No partner users are assigned to this company yet.'
-                )}
-              </Alert>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>{t('partners.contacts.name', 'Name')}</TableCell>
-                      <TableCell>{t('partners.contacts.email', 'Email')}</TableCell>
-                      <TableCell>{t('partners.contacts.username', 'Username')}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {partner.contacts.map((contact) => (
-                      <TableRow key={contact.username}>
-                        <TableCell>
-                          {contact.firstName || contact.lastName
-                            ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
-                            : contact.username}
-                        </TableCell>
-                        <TableCell>{contact.email ?? '—'}</TableCell>
-                        <TableCell>{contact.username}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+        {/* Desktop Tab Navigation */}
+        {!isMobile && (
+          <Box sx={{ mt: 3 }}>
+            <PartnerTabNavigation
+              activeTab={effectiveTab}
+              onTabChange={handleTabChange}
+              role={currentUser.role}
+            />
           </Box>
         )}
 
-        {/* Meetings Tab */}
-        {effectiveTab === 2 && (
-          <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
-        )}
+        {/* Tab Panels */}
+        <Box sx={{ mt: 3 }}>
+          {/* Overview Tab */}
+          {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
 
-        {/* Analytics Tab */}
-        {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
+          {/* Contacts Tab */}
+          {effectiveTab === 1 && (
+            <Box sx={{ my: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                {t('partners.contacts.title', 'Partner Contacts')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {t(
+                  'partners.contacts.description',
+                  'Users with the Partner role assigned to this company.'
+                )}
+              </Typography>
+              {!partner.contacts || partner.contacts.length === 0 ? (
+                <Alert severity="info">
+                  <AlertTitle>{t('partners.contacts.empty', 'No contacts')}</AlertTitle>
+                  {t(
+                    'partners.contacts.emptyDescription',
+                    'No partner users are assigned to this company yet.'
+                  )}
+                </Alert>
+              ) : (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>{t('partners.contacts.name', 'Name')}</TableCell>
+                        <TableCell>{t('partners.contacts.email', 'Email')}</TableCell>
+                        <TableCell>{t('partners.contacts.username', 'Username')}</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {partner.contacts.map((contact) => (
+                        <TableRow key={contact.username}>
+                          <TableCell>
+                            {contact.firstName || contact.lastName
+                              ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
+                              : contact.username}
+                          </TableCell>
+                          <TableCell>{contact.email ?? '—'}</TableCell>
+                          <TableCell>{contact.username}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </Box>
+          )}
 
-        {/* Notes Tab — Story 8.4: hidden for PARTNER (organizer-internal notes) */}
-        {effectiveTab === 4 && currentUser.role !== 'PARTNER' && (
-          <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
-        )}
+          {/* Meetings Tab */}
+          {effectiveTab === 2 && (
+            <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
+          )}
 
-        {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
-        {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
-          <PartnerSettingsTab partner={partner} currentUser={currentUser} />
-        )}
-      </Box>
+          {/* Analytics Tab */}
+          {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
 
-      {/* Edit Partner Modal */}
-      <PartnerCreateEditModal />
-    </Container>
+          {/* Notes Tab — Story 8.4: hidden for PARTNER (organizer-internal notes) */}
+          {effectiveTab === 4 && currentUser.role !== 'PARTNER' && (
+            <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
+          )}
+
+          {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
+          {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
+            <PartnerSettingsTab partner={partner} currentUser={currentUser} />
+          )}
+        </Box>
+
+        {/* Edit Partner Modal */}
+        <PartnerCreateEditModal />
+      </Container>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+          <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
+            {visibleTabs.map((tab, idx) => (
+              <BottomNavigationAction
+                key={tab.label}
+                value={idx}
+                label={tab.label}
+                icon={tab.icon}
+                sx={{ minWidth: 0, flex: 1, px: 0 }}
+              />
+            ))}
+          </BottomNavigation>
+        </Paper>
+      )}
+    </Box>
   );
 };
