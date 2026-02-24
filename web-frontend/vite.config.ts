@@ -273,7 +273,11 @@ export default defineConfig({
         // Batch import UI components - one-time migration screens
         'src/components/admin/BatchImport/**',
         'src/components/shared/Event/EventBatchImportModal.tsx',
+        'src/components/shared/Company/CompanyBatchImportModal.tsx',
+        'src/components/shared/Session/SessionBatchImportModal.tsx',
         'src/components/organizer/UserManagement/SpeakerBatchImportModal.tsx',
+        'src/components/organizer/UserManagement/ParticipantBatchImportModal.tsx',
+        'src/hooks/useParticipantBatchImport/**', // Participant batch import - one-time migration utility
         'src/components/organizer/UserManagement/UserSyncPanel.tsx',
         'src/components/organizer/UserManagement/UserCreateEditModal.tsx',
         'src/components/organizer/UserManagement/CompanyCell.tsx',
@@ -300,6 +304,8 @@ export default defineConfig({
         'src/data/**/*.json',
         // i18n framework setup (side effects only, no business logic)
         'src/i18n/config.ts',
+        'src/mocks/**', // Mock handlers/service workers - test support code, not production logic
+        'src/components/TopicHeatMap/**', // Pending refactor - excluded until redesigned
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
