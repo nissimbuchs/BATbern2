@@ -241,7 +241,7 @@ export const EventPage: React.FC = () => {
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={currentTab} onChange={handleMobileNavChange} showLabels>
+          <BottomNavigation value={currentTab} onChange={handleMobileNavChange}>
             {TABS.map((tab) => (
               <BottomNavigationAction
                 key={tab.id}
@@ -249,6 +249,7 @@ export const EventPage: React.FC = () => {
                 label={t(tab.labelKey, tab.id)}
                 icon={tab.icon}
                 data-testid={`event-tab-${tab.id}`}
+                sx={{ minWidth: 0, flex: 1, px: 0 }}
               />
             ))}
           </BottomNavigation>
