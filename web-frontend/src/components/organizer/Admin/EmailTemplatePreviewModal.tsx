@@ -28,6 +28,21 @@ const CONTENT_PLACEHOLDER = `
   [CONTENT AREA]
 </div>`;
 
+/** Replace system/layout variables with sensible preview values. */
+function substitutePreviewVariables(html: string): string {
+  const previewValues: Record<string, string> = {
+    logoUrl: '/BATbern_color_logo.svg',
+    currentYear: String(new Date().getFullYear()),
+    dashboardLink: '#',
+    eventUrl: '#',
+    supportUrl: '#',
+  };
+  return html.replace(
+    /\{\{(\w+)\}\}/g,
+    (_match, key: string) => previewValues[key] ?? `{{${key}}}`
+  );
+}
+
 interface Props {
   template: EmailTemplateResponse;
   onClose: () => void;
@@ -43,8 +58,12 @@ export const EmailTemplatePreviewModal: React.FC<Props> = ({ template, onClose }
       setLoading(true);
       try {
         if (template.isLayout) {
-          // Replace {{content}} with a visible placeholder
-          setMergedHtml(template.htmlBody.replace('{{content}}', CONTENT_PLACEHOLDER));
+          // Replace {{content}} with a visible placeholder, then substitute system vars
+          setMergedHtml(
+            substitutePreviewVariables(
+              template.htmlBody.replace('{{content}}', CONTENT_PLACEHOLDER)
+            )
+          );
         } else if (template.layoutKey) {
           // Fetch layout and merge
           try {
@@ -52,13 +71,15 @@ export const EmailTemplatePreviewModal: React.FC<Props> = ({ template, onClose }
               template.layoutKey,
               template.locale
             );
-            setMergedHtml(layout.htmlBody.replace('{{content}}', template.htmlBody));
+            setMergedHtml(
+              substitutePreviewVariables(layout.htmlBody.replace('{{content}}', template.htmlBody))
+            );
           } catch {
             // Layout not found — show content directly
-            setMergedHtml(template.htmlBody);
+            setMergedHtml(substitutePreviewVariables(template.htmlBody));
           }
         } else {
-          setMergedHtml(template.htmlBody);
+          setMergedHtml(substitutePreviewVariables(template.htmlBody));
         }
       } finally {
         setLoading(false);
