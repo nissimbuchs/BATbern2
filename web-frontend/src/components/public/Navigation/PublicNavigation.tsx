@@ -17,8 +17,17 @@ interface PublicNavigationProps {
 }
 
 export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { t } = useTranslation('common');
+
+  const initials = user
+    ? user.username
+        .split(/[.\s_-]/)
+        .map((p) => p[0] ?? '')
+        .join('')
+        .toUpperCase()
+        .slice(0, 2) || '?'
+    : '';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const getPortalPath = () => {
@@ -67,7 +76,12 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
             <div className="hidden md:flex items-center gap-3">
               {isAuthenticated ? (
                 <Button asChild>
-                  <Link to={getPortalPath()}>{t('public.goToPortal')}</Link>
+                  <Link to={getPortalPath()} className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
+                      {initials}
+                    </span>
+                    {t('public.goToPortal')}
+                  </Link>
                 </Button>
               ) : (
                 <>
@@ -138,7 +152,14 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
         <div className="px-4 pb-4 flex flex-col gap-3">
           {isAuthenticated ? (
             <Button asChild className="w-full">
-              <Link to={getPortalPath()} onClick={closeMobileMenu}>
+              <Link
+                to={getPortalPath()}
+                onClick={closeMobileMenu}
+                className="flex items-center gap-2"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-semibold leading-none">
+                  {initials}
+                </span>
                 {t('public.goToPortal')}
               </Link>
             </Button>

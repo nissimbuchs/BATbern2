@@ -40,6 +40,20 @@
       }
     }
   },
+  "attendee": {
+    "welcome": {
+      "title": "Willkommen bei BATbern!",
+      "titleWithName": "Willkommen, {{name}}!",
+      "subtitle": "Ihr Konto ist bereit. Entdecken Sie unsere kommenden Veranstaltungen und das Archiv.",
+      "dashboardSoon": "Ihr persönliches Dashboard ist in Arbeit — wir informieren Sie, sobald es verfügbar ist.",
+      "browseEvents": "Veranstaltungen entdecken",
+      "viewArchive": "Archiv ansehen",
+      "canDoTitle": "Was Sie jetzt tun können",
+      "canDo1": "Kommende BATbern-Veranstaltungen entdecken und sich anmelden",
+      "canDo2": "Vergangene Vorträge und Materialien im Archiv erkunden",
+      "canDo3": "Ihr Konto und Benachrichtigungseinstellungen verwalten"
+    }
+  },
   "footer": {
     "tagline": "Technologieaustausch zwischen IT Experten",
     "quickLinks": "Schnelllinks",

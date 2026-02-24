@@ -40,6 +40,20 @@
       }
     }
   },
+  "attendee": {
+    "welcome": {
+      "title": "Welcome to BATbern!",
+      "titleWithName": "Welcome, {{name}}!",
+      "subtitle": "Your account is ready. Browse our upcoming events and archives.",
+      "dashboardSoon": "Your personal dashboard is on its way — we'll let you know when it's live.",
+      "browseEvents": "Browse Events",
+      "viewArchive": "View Archive",
+      "canDoTitle": "What you can do right now",
+      "canDo1": "Browse and register for upcoming BATbern events",
+      "canDo2": "Explore past talks and speaker materials in the archive",
+      "canDo3": "Manage your account and notification preferences"
+    }
+  },
   "footer": {
     "tagline": "Technology exchange between IT experts",
     "quickLinks": "Quick Links",

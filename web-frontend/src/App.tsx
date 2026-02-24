@@ -92,6 +92,7 @@ const CancelRegistrationPage = React.lazy(() => import('@pages/public/CancelRegi
 const RegistrationConfirmationPage = React.lazy(
   () => import('@pages/public/RegistrationConfirmationPage')
 );
+const AttendeeWelcomePage = React.lazy(() => import('@pages/attendee/AttendeeWelcomePage'));
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
 
@@ -325,6 +326,16 @@ function App() {
                           <AuthLayout>
                             <Dashboard />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Attendee landing page — Epic 7 stub */}
+                    <Route
+                      path="/attendee"
+                      element={
+                        <ProtectedRoute>
+                          <AttendeeWelcomePage />
                         </ProtectedRoute>
                       }
                     />
