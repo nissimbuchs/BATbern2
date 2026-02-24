@@ -1,6 +1,6 @@
 # Story 10.2: Email Template Management
 
-Status: ready
+Status: review
 
 ## Story
 
@@ -156,14 +156,14 @@ A 4th tab "Email Templates" added to the `/organizer/admin` page (built in Story
 
 Before any backend work: the developer must author the layout template HTML files. These will be seeded into the DB on first service startup.
 
-- [ ] Create `services/event-management-service/src/main/resources/email-templates/layout-batbern-default-de.html`
+- [x] Create `services/event-management-service/src/main/resources/email-templates/layout-batbern-default-de.html`
   - Full `<!DOCTYPE html><html><head>` with all shared CSS (colors, fonts, button styles, `.email-container`, `.header`, `.cta-button`, `.footer`, `.event-details`, etc.)
   - Extract CSS from existing `speaker-invitation-de.html` as the baseline — it has the complete stylesheet
   - BATbern logo/header at top (use a `{{logoUrl}}` variable or hardcode a placeholder image URL)
   - `<div class="email-container">{{content}}</div>` — the injection point
   - Shared footer: navigation links (`{{dashboardLink}}`, `{{eventUrl}}`, `{{supportUrl}}`), copyright `&copy; {{currentYear}} BATbern`
   - Subject: none (layout has no subject)
-- [ ] Create `services/event-management-service/src/main/resources/email-templates/layout-batbern-default-en.html`
+- [x] Create `services/event-management-service/src/main/resources/email-templates/layout-batbern-default-en.html`
   - Same structure; footer links use English labels
 
 > **Note:** After authoring the layout files, verify that the CSS classes used by existing content templates (`.event-details`, `.session-info`, `.cta-button`, `.cta-accept`, `.cta-decline`, `.deadline-box`, `.contact-box`) are all present in the layout CSS. Content templates reference these classes without defining them.
@@ -175,29 +175,29 @@ Before any backend work: the developer must author the layout template HTML file
 > **ADR-006 Contract-First Order**: OpenAPI spec written first (2a). Backend interfaces generated from spec.
 
 #### 2a. OpenAPI spec (FIRST — ADR-006)
-- [ ] Add to `docs/api/events.openapi.yml`:
+- [x] Add to `docs/api/events.openapi.yml`:
   - Schemas: `EmailTemplateResponse` (with `isLayout`, `layoutKey`, nullable `subject`), `CreateEmailTemplateRequest` (with `layoutKey`), `UpdateEmailTemplateRequest` (with `layoutKey`)
   - Query params: `isLayout` boolean on `GET /api/v1/email-templates`
   - Endpoints: same 5 as before (GET list, GET single, POST, PUT, DELETE) — update paths to `/{templateKey}/{locale}`
-- [ ] Regenerate frontend types: `cd web-frontend && npm run generate:api-types`
-- [ ] Run `./gradlew :services:event-management-service:build` → generates `EmailTemplatesApi` interface
+- [x] Regenerate frontend types: `cd web-frontend && npm run generate:api-types`
+- [x] Run `./gradlew :services:event-management-service:build` → generates `EmailTemplatesApi` interface
 
 #### 2b. Flyway migration
-- [ ] Create `V62__create_email_templates_table.sql` with the schema from AC1 (includes `is_layout`, `layout_key`, nullable `subject`)
+- [x] Create `V62__create_email_templates_table.sql` with the schema from AC1 (includes `is_layout`, `layout_key`, nullable `subject`)
 
 #### 2c. Domain + Repository
-- [ ] `EmailTemplate.java` JPA entity — fields: `id`, `templateKey`, `category`, `locale`, `subject` (nullable), `htmlBody`, `variables` (JSONB), `isLayout`, `layoutKey` (nullable), `isSystemTemplate`, `createdAt`, `updatedAt`
-- [ ] `EmailTemplateRepository.java`:
+- [x] `EmailTemplate.java` JPA entity — fields: `id`, `templateKey`, `category`, `locale`, `subject` (nullable), `htmlBody`, `variables` (JSONB), `isLayout`, `layoutKey` (nullable), `isSystemTemplate`, `createdAt`, `updatedAt`
+- [x] `EmailTemplateRepository.java`:
   - `findByTemplateKeyAndLocale(String key, String locale): Optional<EmailTemplate>`
   - `findByCategory(String category): List<EmailTemplate>`
   - `findByIsLayoutTrue(): List<EmailTemplate>`
 
 #### 2d. Seed service (TDD — test first)
-- [ ] Write `EmailTemplateSeedServiceTest`:
+- [x] Write `EmailTemplateSeedServiceTest`:
   - Verify 22 content templates seeded (`is_layout=false`)
   - Verify 2 layout templates seeded from `layout-batbern-default-{de,en}.html` (`is_layout=true`, `category='LAYOUT'`)
   - Verify idempotency (second `@PostConstruct` call leaves DB unchanged)
-- [ ] `EmailTemplateSeedService.java`:
+- [x] `EmailTemplateSeedService.java`:
   - Scans classpath `email-templates/*.html`
   - Filename `layout-{key}-{locale}.html` → `isLayout=true`, `templateKey=key`, `category='LAYOUT'`
   - Filename `{key}-{locale}.html` → `isLayout=false`, category from key prefix
@@ -206,8 +206,8 @@ Before any backend work: the developer must author the layout template HTML file
   - Seed failure: log ERROR per template, continue
 
 #### 2e. Service (TDD — test first)
-- [ ] Write `EmailTemplateServiceTest`
-- [ ] `EmailTemplateService.java`:
+- [x] Write `EmailTemplateServiceTest`
+- [x] `EmailTemplateService.java`:
   - `findAll(category?, isLayout?)` → list
   - `findByKeyAndLocale(key, locale)` → Optional
   - `create(CreateEmailTemplateRequest)` → validates: content templates must have subject; layout templates must not be `isSystemTemplate=true`
@@ -215,17 +215,17 @@ Before any backend work: the developer must author the layout template HTML file
   - `delete(templateKey, locale)` → 400 if `isSystemTemplate=true` OR `isLayout=true`
 
 #### 2f. Mapper (ADR-006)
-- [ ] `EmailTemplateMapper.java` in `service/mapper/` — pure mapper:
+- [x] `EmailTemplateMapper.java` in `service/mapper/` — pure mapper:
   - `toResponse(EmailTemplate) → EmailTemplateResponse`
   - `toEntity(CreateEmailTemplateRequest) → EmailTemplate`
 
 #### 2g. Controller (TDD — integration test first)
-- [ ] Write `EmailTemplateControllerIntegrationTest extends AbstractIntegrationTest`
+- [x] Write `EmailTemplateControllerIntegrationTest extends AbstractIntegrationTest`
   - Test: list returns 24 templates after seed (22 content + 2 layout)
   - Test: create content template with `layoutKey='batbern-default'`
   - Test: delete system template returns 400
   - Test: delete layout template returns 400
-- [ ] `EmailTemplateController.java` — **implements generated `EmailTemplatesApi`**
+- [x] `EmailTemplateController.java` — **implements generated `EmailTemplatesApi`**
   - `GET /api/v1/email-templates?category=&isLayout=`
   - `GET /api/v1/email-templates/{templateKey}/{locale}`
   - `POST /api/v1/email-templates`
@@ -233,39 +233,39 @@ Before any backend work: the developer must author the layout template HTML file
   - `DELETE /api/v1/email-templates/{templateKey}/{locale}`
 
 #### 2h. API Gateway routing verification (ADR-008)
-- [ ] Verify `/api/v1/email-templates` routes to `event-management-service` in API Gateway config
-- [ ] Add routing entry if not covered by existing wildcard
+- [x] Verify `/api/v1/email-templates` routes to `event-management-service` in API Gateway config
+- [x] Add routing entry if not covered by existing wildcard
 
 #### 2i. Update email senders
-- [ ] `SpeakerInvitationEmailService` — load content template → if `layoutKey` set, load layout + merge → substitute variables → fall back to classpath if DB absent
-- [ ] `SpeakerReminderEmailService` — same pattern
-- [ ] `SpeakerAcceptanceEmailService` — same pattern
-- [ ] `RegistrationEmailService` — same pattern
-- [ ] Extract shared merger logic to `EmailTemplateService.mergeWithLayout(contentHtml, layoutKey, locale)` to avoid duplication across senders
-- [ ] Update email service tests to mock DB lookup + verify merger is called when `layoutKey` is set
+- [x] `SpeakerInvitationEmailService` — load content template → if `layoutKey` set, load layout + merge → substitute variables → fall back to classpath if DB absent
+- [x] `SpeakerReminderEmailService` — same pattern
+- [x] `SpeakerAcceptanceEmailService` — same pattern
+- [x] `RegistrationEmailService` — same pattern
+- [x] Extract shared merger logic to `EmailTemplateService.mergeWithLayout(contentHtml, layoutKey, locale)` to avoid duplication across senders
+- [x] Update email service tests to mock DB lookup + verify merger is called when `layoutKey` is set
 
 ---
 
 ### Task 3: Frontend — Email Templates Tab (AC: 2)
 
 #### 3a. Dependencies
-- [ ] `npm install @monaco-editor/react @tinymce/tinymce-react`
-- [ ] Add TinyMCE self-hosted or configure free-tier API key (register at tiny.cloud for domain)
-- [ ] Run `npm run generate:api-types` (generated types from Task 2a)
+- [x] `npm install @monaco-editor/react @tinymce/tinymce-react`
+- [x] Add TinyMCE self-hosted or configure free-tier API key (register at tiny.cloud for domain)
+- [x] Run `npm run generate:api-types` (generated types from Task 2a)
 
 #### 3b. Service + hooks
-- [ ] Create `web-frontend/src/services/emailTemplateService.ts`
+- [x] Create `web-frontend/src/services/emailTemplateService.ts`
   - `listTemplates(params?: { category?: string; isLayout?: boolean })` — maps to `GET /api/v1/email-templates`
   - `getTemplate(templateKey, locale)` — maps to `GET /{templateKey}/{locale}`
   - `createTemplate(req)`, `updateTemplate(templateKey, locale, req)`, `deleteTemplate(templateKey, locale)`
   - Uses `apiClient`; URL paths ADR-003 compliant (`/{templateKey}/{locale}`)
-- [ ] Create `web-frontend/src/hooks/useEmailTemplates.ts`
+- [x] Create `web-frontend/src/hooks/useEmailTemplates.ts`
   - `useEmailTemplates(params?)` — query key `['emailTemplates', params]`
   - `useLayoutTemplates()` — convenience: `useEmailTemplates({ isLayout: true })`
   - `useUpdateEmailTemplate()`, `useDeleteEmailTemplate()`, `useCreateEmailTemplate()` mutations
 
 #### 3c. EmailTemplateEditModal
-- [ ] Create `web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.tsx`
+- [x] Create `web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.tsx`
   - Props: `template?: EmailTemplateResponse` (edit) | undefined (create), `isLayoutMode: boolean`, `onClose: () => void`
   - **Layout mode** (`isLayoutMode=true`):
     - No subject field
@@ -280,7 +280,7 @@ Before any backend work: the developer must author the layout template HTML file
   - Inline validation: htmlBody required; subject required for content mode
 
 #### 3d. EmailTemplatePreviewModal
-- [ ] Create `web-frontend/src/components/organizer/Admin/EmailTemplatePreviewModal.tsx`
+- [x] Create `web-frontend/src/components/organizer/Admin/EmailTemplatePreviewModal.tsx`
   - Props: `template: EmailTemplateResponse`
   - For content templates with `layoutKey` set:
     - Fetches layout via `getTemplate(template.layoutKey, template.locale)`
@@ -292,7 +292,7 @@ Before any backend work: the developer must author the layout template HTML file
   - For layout templates: replaces `{{content}}` in preview with a grey placeholder `<div>` so the layout structure is visible
 
 #### 3e. EmailTemplatesTab
-- [ ] Create `web-frontend/src/components/organizer/Admin/EmailTemplatesTab.tsx`
+- [x] Create `web-frontend/src/components/organizer/Admin/EmailTemplatesTab.tsx`
   - **Layout Templates section** (shown above the divider, distinct background):
     - Title: "Layout Templates" with info tooltip: "Defines the BATbern look & feel for all emails. Changes here affect all templates using this layout."
     - Lists layout templates from `useLayoutTemplates()`
@@ -303,8 +303,8 @@ Before any backend work: the developer must author the layout template HTML file
     - Language filter: DE | EN toggle (client-side)
     - Template list: key, subject (truncated), layoutKey badge (`batbern-default` chip or "standalone"), updated date, [Preview] [Edit] [Delete if custom]
     - `[+ New Template]` → `EmailTemplateEditModal` in create mode (content, `layoutKey='batbern-default'`)
-- [ ] Add 4th tab "Email Templates" to `EventManagementAdminPage` — renders `<EmailTemplatesTab />`
-- [ ] i18n: `emailTemplates.*` keys in `de/organizer.json` + `en/organizer.json`:
+- [x] Add 4th tab "Email Templates" to `EventManagementAdminPage` — renders `<EmailTemplatesTab />`
+- [x] i18n: `emailTemplates.*` keys in `de/organizer.json` + `en/organizer.json`:
   ```json
   {
     "emailTemplates": {

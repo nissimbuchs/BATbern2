@@ -21,13 +21,14 @@ import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { EventTypesTab } from '@/components/organizer/Admin/EventTypesTab';
 import { ImportDataTab } from '@/components/organizer/Admin/ImportDataTab';
 import { TaskTemplatesTab } from '@/components/organizer/Admin/TaskTemplatesTab';
+import { EmailTemplatesTab } from '@/components/organizer/Admin/EmailTemplatesTab';
 
 const EventManagementAdminPage: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const tabIndex = Math.max(0, Math.min(2, Number(searchParams.get('tab') ?? 0)));
+  const tabIndex = Math.max(0, Math.min(3, Number(searchParams.get('tab') ?? 0)));
 
   const breadcrumbItems: BreadcrumbItem[] = useMemo(
     () => [{ label: t('menu.administration', 'Administration') }],
@@ -53,7 +54,7 @@ const EventManagementAdminPage: React.FC = () => {
     { label: t('admin.tabs.eventTypes', 'Event Types'), component: <EventTypesTab /> },
     { label: t('admin.tabs.importData', 'Import Data'), component: <ImportDataTab /> },
     { label: t('admin.tabs.taskTemplates', 'Task Templates'), component: <TaskTemplatesTab /> },
-    // Story 10.2 will add: { label: t('admin.tabs.emailTemplates', 'Email Templates'), component: <EmailTemplatesTab /> }
+    { label: t('admin.tabs.emailTemplates', 'Email Templates'), component: <EmailTemplatesTab /> },
   ];
 
   return (

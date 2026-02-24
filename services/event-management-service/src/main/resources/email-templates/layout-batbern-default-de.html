@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BATbern</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0066cc;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header .logo {
+            display: block;
+            margin: 0 auto 12px auto;
+        }
+        .header h1 {
+            color: #0066cc;
+            margin: 0;
+            font-size: 24px;
+        }
+        .event-details {
+            background-color: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .event-details h2 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 20px;
+        }
+        .detail-row {
+            margin: 10px 0;
+            display: flex;
+        }
+        .detail-label {
+            font-weight: bold;
+            min-width: 140px;
+            color: #555;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .session-info {
+            background-color: #e8f4fd;
+            border: 1px solid #0066cc;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .session-info h3 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 16px;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 14px 40px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 10px;
+            font-size: 16px;
+        }
+        .cta-accept {
+            background-color: #28a745;
+            color: #ffffff !important;
+        }
+        .cta-accept:hover {
+            background-color: #218838;
+        }
+        .cta-decline {
+            background-color: #dc3545;
+            color: #ffffff !important;
+        }
+        .cta-decline:hover {
+            background-color: #c82333;
+        }
+        .deadline-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .deadline-box h3 {
+            margin-top: 0;
+            color: #856404;
+            font-size: 16px;
+        }
+        .contact-box {
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .contact-box h3 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 16px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .footer a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <img src="{{logoUrl}}" alt="BATbern Logo" class="logo" width="120" height="40" onerror="this.style.display='none'">
+            <h1>Berner Architekten Treffen</h1>
+        </div>
+
+        {{content}}
+
+        <div class="footer">
+            <p>
+                <a href="{{dashboardLink}}">Dashboard</a> |
+                <a href="{{eventUrl}}">Event-Details</a> |
+                <a href="{{supportUrl}}">Support</a>
+            </p>
+            <p>
+                Berner Architekten Treffen (BATbern)<br>
+                &copy; {{currentYear}} BATbern. Alle Rechte vorbehalten.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -503,5 +503,58 @@
       "title": "Benachrichtigung löschen",
       "message": "Möchten Sie diese Benachrichtigung wirklich löschen?"
     }
+  },
+  "emailTemplates": {
+    "title": "E-Mail-Vorlagen",
+    "layoutTemplates": "Layout-Vorlagen",
+    "layoutTemplatesInfo": "Definiert das Look & Feel für alle BATbern-E-Mails. Änderungen hier wirken sich auf alle Vorlagen aus, die dieses Layout verwenden.",
+    "contentTemplates": "E-Mail-Inhalte",
+    "categories": {
+      "SPEAKER": "Referenten-E-Mails",
+      "REGISTRATION": "Registrierungs-E-Mails",
+      "TASK_REMINDER": "Aufgaben-Erinnerungen"
+    },
+    "layoutKey": "Layout",
+    "standalone": "Kein Layout (eigenständig)",
+    "systemTemplate": "System-Vorlage",
+    "subject": "Betreff",
+    "htmlBody": "HTML-Inhalt",
+    "variables": "Verfügbare Variablen",
+    "preview": "Vorschau",
+    "editTitle": "Vorlage bearbeiten",
+    "createTitle": "Neue Vorlage",
+    "newTemplate": "+ Neue Vorlage",
+    "noLayouts": "Keine Layout-Vorlagen gefunden.",
+    "noTemplates": "Keine Vorlagen für diesen Filter gefunden.",
+    "missingContentPlaceholder": "{{content}}-Platzhalter fehlt — E-Mail-Inhalt wird leer sein",
+    "cannotDeleteSystem": "System-Vorlagen können nicht gelöscht werden.",
+    "cannotDeleteLayout": "Layout-Vorlagen können nicht gelöscht werden.",
+    "deleteFailed": "Löschen fehlgeschlagen.",
+    "saveFailed": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "validation": {
+      "htmlBodyRequired": "HTML-Inhalt ist erforderlich.",
+      "subjectRequired": "Betreff ist für Inhaltsvorlagen erforderlich.",
+      "templateKeyRequired": "Vorlageschlüssel ist erforderlich.",
+      "allFieldsRequired": "Vorlageschlüssel, Betreff und HTML-Inhalt sind erforderlich."
+    }
+  },
+  "admin": {
+    "tabs": {
+      "eventTypes": "Event-Typen",
+      "importData": "Daten importieren",
+      "taskTemplates": "Aufgabenvorlagen",
+      "emailTemplates": "E-Mail-Vorlagen"
+    },
+    "accessDenied": "Zugang verweigert",
+    "organizerOnly": "Diese Seite ist nur für Organisatoren.",
+    "taskTemplates": {
+      "defaultSection": "Standard-Vorlagen",
+      "customSection": "Benutzerdefinierte Vorlagen",
+      "addTemplate": "+ Vorlage hinzufügen",
+      "noDefaults": "Keine Standard-Vorlagen.",
+      "noCustom": "Noch keine benutzerdefinierten Vorlagen.",
+      "confirmDelete": "Vorlage löschen?",
+      "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
+    }
   }
 }

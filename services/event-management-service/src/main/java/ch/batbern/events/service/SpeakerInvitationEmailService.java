@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
@@ -20,6 +21,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service for sending speaker invitation emails.
@@ -39,6 +41,7 @@ public class SpeakerInvitationEmailService {
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
     private final MagicLinkService magicLinkService;
+    private final EmailTemplateService emailTemplateService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -128,66 +131,85 @@ public class SpeakerInvitationEmailService {
             String dashboardToken,
             String jwtToken
     ) {
-        try {
-            // Determine template file based on locale
-            String templateName = locale.getLanguage().equals("de")
-                    ? "email-templates/speaker-invitation-de.html"
-                    : "email-templates/speaker-invitation-en.html";
+        // Determine template file based on locale
+        String localeStr = locale.getLanguage();
+        String templateName = localeStr.equals("de")
+                ? "email-templates/speaker-invitation-de.html"
+                : "email-templates/speaker-invitation-en.html";
 
-            ClassPathResource resource = new ClassPathResource(templateName);
-            String template = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        // 1. Try DB lookup; fall back to classpath if absent (Story 10.2)
+        String template = loadHtmlContent("speaker-invitation", localeStr, templateName);
 
-            // Build magic link URLs
-            String acceptLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=accept";
-            String declineLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=decline";
-            String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + dashboardToken;
-            // Story 9.1: JWT-based magic login link (new-style auth)
-            String jwtMagicLink = baseUrl + "/speaker-portal/magic-login?jwt=" + jwtToken;
+        // Build magic link URLs
+        String acceptLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=accept";
+        String declineLink = baseUrl + "/speaker-portal/respond?token=" + respondToken + "&action=decline";
+        String dashboardLink = baseUrl + "/speaker-portal/dashboard?token=" + dashboardToken;
+        // Story 9.1: JWT-based magic login link (new-style auth)
+        String jwtMagicLink = baseUrl + "/speaker-portal/magic-login?jwt=" + jwtToken;
 
-            // Get session details if assigned
-            String sessionTitle = "";
-            String sessionDescription = "";
-            if (speaker.getSessionId() != null) {
-                Session session = sessionRepository.findById(speaker.getSessionId()).orElse(null);
-                if (session != null) {
-                    sessionTitle = session.getTitle() != null ? session.getTitle() : "";
-                    sessionDescription = session.getDescription() != null ? session.getDescription() : "";
-                }
+        // Get session details if assigned
+        String sessionTitle = "";
+        String sessionDescription = "";
+        if (speaker.getSessionId() != null) {
+            Session session = sessionRepository.findById(speaker.getSessionId()).orElse(null);
+            if (session != null) {
+                sessionTitle = session.getTitle() != null ? session.getTitle() : "";
+                sessionDescription = session.getDescription() != null ? session.getDescription() : "";
             }
+        }
 
-            // Prepare template variables
-            Map<String, String> variables = Map.ofEntries(
-                    Map.entry("speakerName", speaker.getSpeakerName()),
-                    Map.entry("eventTitle", event.getTitle()),
-                    Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                    Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
-                    Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                    Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("sessionTitle", sessionTitle),
-                    Map.entry("sessionDescription", sessionDescription),
-                    Map.entry("acceptLink", acceptLink),
-                    Map.entry("declineLink", declineLink),
-                    Map.entry("dashboardLink", dashboardLink),
-                    Map.entry("responseDeadline", speaker.getResponseDeadline() != null
-                            ? speaker.getResponseDeadline().format(DATE_FORMATTER)
-                            : ""),
-                    Map.entry("contentDeadline", speaker.getContentDeadline() != null
-                            ? speaker.getContentDeadline().format(DATE_FORMATTER)
-                            : ""),
-                    Map.entry("organizerName", organizerName),
-                    Map.entry("organizerEmail", organizerEmail),
-                    Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                    Map.entry("supportUrl", baseUrl + "/support"),
-                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                    Map.entry("jwtMagicLink", jwtMagicLink)
-            );
+        // Prepare template variables
+        Map<String, String> variables = Map.ofEntries(
+                Map.entry("speakerName", speaker.getSpeakerName()),
+                Map.entry("eventTitle", event.getTitle()),
+                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
+                Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
+                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
+                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
+                Map.entry("sessionTitle", sessionTitle),
+                Map.entry("sessionDescription", sessionDescription),
+                Map.entry("acceptLink", acceptLink),
+                Map.entry("declineLink", declineLink),
+                Map.entry("dashboardLink", dashboardLink),
+                Map.entry("responseDeadline", speaker.getResponseDeadline() != null
+                        ? speaker.getResponseDeadline().format(DATE_FORMATTER)
+                        : ""),
+                Map.entry("contentDeadline", speaker.getContentDeadline() != null
+                        ? speaker.getContentDeadline().format(DATE_FORMATTER)
+                        : ""),
+                Map.entry("organizerName", organizerName),
+                Map.entry("organizerEmail", organizerEmail),
+                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
+                Map.entry("supportUrl", baseUrl + "/support"),
+                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                Map.entry("jwtMagicLink", jwtMagicLink)
+        );
 
-            // Replace template variables
-            return emailService.replaceVariables(template, variables);
+        // Replace template variables
+        return emailService.replaceVariables(template, variables);
+    }
 
+    /**
+     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
+     * Story 10.2 AC1: DB-first template loading.
+     */
+    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
+        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
+        if (dbTemplate.isPresent()) {
+            String contentHtml = dbTemplate.get().getHtmlBody();
+            String layoutKey = dbTemplate.get().getLayoutKey();
+            if (layoutKey != null) {
+                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
+            }
+            return contentHtml;
+        }
+        // Classpath fallback
+        try {
+            ClassPathResource resource = new ClassPathResource(classpathFallback);
+            return resource.getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            log.error("Failed to load email template for locale: {}", locale, e);
-            throw new RuntimeException("Failed to load email template", e);
+            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
+            return "";
         }
     }
 }

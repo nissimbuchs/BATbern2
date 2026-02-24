@@ -411,8 +411,8 @@ if [[ "${AGENTVIBES_TEST_MODE:-false}" != "true" ]] && [[ "${AGENTVIBES_NO_PLAYB
   fi
 fi
 
-# Wait for audio to finish, then release lock
-(sleep $DURATION; rm -f "$LOCK_FILE") &
+# Wait for audio to finish, then release lock and clean up audio file
+(sleep $DURATION; rm -f "$LOCK_FILE"; rm -f "$TEMP_FILE") &
 disown
 
 echo "🎵 Saved to: $TEMP_FILE"

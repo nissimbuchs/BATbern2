@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
@@ -56,6 +57,9 @@ class SpeakerInvitationEmailServiceTest {
     @Mock
     private MagicLinkService magicLinkService;
 
+    @Mock
+    private EmailTemplateService emailTemplateService;
+
     private SpeakerInvitationEmailService invitationEmailService;
 
     private SpeakerPool speaker;
@@ -66,7 +70,11 @@ class SpeakerInvitationEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        invitationEmailService = new SpeakerInvitationEmailService(emailService, sessionRepository, magicLinkService);
+        invitationEmailService = new SpeakerInvitationEmailService(
+                emailService, sessionRepository, magicLinkService, emailTemplateService);
+        // By default, DB lookup returns empty → classpath fallback is used
+        when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
+                .thenReturn(Optional.empty());
         ReflectionTestUtils.setField(invitationEmailService, "baseUrl", "https://batbern.ch");
         when(magicLinkService.generateJwtToken(any())).thenReturn("test.jwt.token");
         ReflectionTestUtils.setField(invitationEmailService, "organizerName", "BATbern Team");
@@ -443,6 +451,48 @@ class SpeakerInvitationEmailServiceTest {
             verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("TBA");
+        }
+
+        @Test
+        @DisplayName("should use DB template htmlBody when available (Story 10.2)")
+        void should_useDbTemplate_whenAvailable() {
+            // Given
+            EmailTemplate dbTemplate = new EmailTemplate();
+            dbTemplate.setHtmlBody("<p>DB template for {{speakerName}}</p>");
+            dbTemplate.setLayoutKey(null);
+            when(emailTemplateService.findByKeyAndLocale("speaker-invitation", "de"))
+                    .thenReturn(Optional.of(dbTemplate));
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+            // When
+            invitationEmailService.sendInvitationEmail(
+                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
+
+            // Then
+            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            assertThat(bodyCaptor.getValue()).contains("John Doe"); // {{speakerName}} replaced
+        }
+
+        @Test
+        @DisplayName("should merge layout when DB template has layoutKey set (Story 10.2)")
+        void should_mergeLayout_whenLayoutKeySet() {
+            // Given
+            EmailTemplate dbTemplate = new EmailTemplate();
+            dbTemplate.setHtmlBody("<p>Content for {{speakerName}}</p>");
+            dbTemplate.setLayoutKey("batbern-default");
+            when(emailTemplateService.findByKeyAndLocale("speaker-invitation", "de"))
+                    .thenReturn(Optional.of(dbTemplate));
+            when(emailTemplateService.mergeWithLayout(anyString(), eq("batbern-default"), eq("de")))
+                    .thenReturn("<html><p>Content for {{speakerName}}</p></html>");
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+            // When
+            invitationEmailService.sendInvitationEmail(
+                    speaker, event, respondToken, dashboardToken, Locale.GERMAN);
+
+            // Then
+            verify(emailTemplateService).mergeWithLayout(anyString(), eq("batbern-default"), eq("de"));
+            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
         }
 
         @Test

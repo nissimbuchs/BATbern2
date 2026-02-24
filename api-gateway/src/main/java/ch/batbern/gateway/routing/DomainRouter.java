@@ -82,7 +82,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/materials") // Story 5.9: Materials upload
                 || cleanPath.startsWith("/api/v1/speaker-portal") // Story 6.2a: Speaker portal
                 || cleanPath.startsWith("/api/v1/speakers") // SpeakerController lives in EMS
-                || cleanPath.startsWith("/api/v1/e2e-test")) { // Story 6.3: E2E test endpoints
+                || cleanPath.startsWith("/api/v1/e2e-test") // Story 6.3: E2E test endpoints
+                || cleanPath.startsWith("/api/v1/email-templates")) { // Story 10.2: Email template management
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
                 || cleanPath.startsWith("/api/v1/partner-meetings")) {

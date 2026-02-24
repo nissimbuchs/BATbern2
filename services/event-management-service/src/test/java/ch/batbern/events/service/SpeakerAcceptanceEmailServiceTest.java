@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -43,6 +46,7 @@ import static org.mockito.Mockito.when;
  * - Test 2.14: should_notSendEmail_when_speakerDeclines (not applicable - service only called on accept)
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SpeakerAcceptanceEmailServiceTest {
 
     @Mock
@@ -50,6 +54,9 @@ class SpeakerAcceptanceEmailServiceTest {
 
     @Mock
     private SessionRepository sessionRepository;
+
+    @Mock
+    private EmailTemplateService emailTemplateService;
 
     private SpeakerAcceptanceEmailService acceptanceEmailService;
 
@@ -60,7 +67,7 @@ class SpeakerAcceptanceEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        acceptanceEmailService = new SpeakerAcceptanceEmailService(emailService, sessionRepository);
+        acceptanceEmailService = new SpeakerAcceptanceEmailService(emailService, sessionRepository, emailTemplateService);
         ReflectionTestUtils.setField(acceptanceEmailService, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(acceptanceEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(acceptanceEmailService, "organizerEmail", "events@batbern.ch");
@@ -94,6 +101,9 @@ class SpeakerAcceptanceEmailServiceTest {
         speaker.setContentDeadline(LocalDate.of(2026, 2, 15));
 
         viewToken = "test-view-token-12345";
+
+        // Default: no DB template — use classpath fallback
+        when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
 
         // Mock email service to return template as-is for variable replacement
         when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation -> {
@@ -277,6 +287,47 @@ class SpeakerAcceptanceEmailServiceTest {
             // When/Then - should not throw
             acceptanceEmailService.sendAcceptanceConfirmationEmail(
                     speaker, event, viewToken, Locale.ENGLISH);
+        }
+
+        @Test
+        @DisplayName("should use DB template when available")
+        void should_useDbTemplate_whenAvailable() {
+            // Given
+            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+            EmailTemplate dbTemplate = new EmailTemplate();
+            dbTemplate.setHtmlBody("<p>DB template for {{speakerName}}</p>");
+            when(emailTemplateService.findByKeyAndLocale("speaker-acceptance", "en"))
+                    .thenReturn(Optional.of(dbTemplate));
+            ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+
+            // When
+            acceptanceEmailService.sendAcceptanceConfirmationEmail(
+                    speaker, event, viewToken, Locale.ENGLISH);
+
+            // Then
+            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            assertThat(bodyCaptor.getValue()).contains("DB template for John Doe");
+        }
+
+        @Test
+        @DisplayName("should merge with layout when layoutKey is set")
+        void should_mergeLayout_whenLayoutKeySet() {
+            // Given
+            when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+            EmailTemplate dbTemplate = new EmailTemplate();
+            dbTemplate.setHtmlBody("<p>Content block</p>");
+            dbTemplate.setLayoutKey("batbern-default");
+            when(emailTemplateService.findByKeyAndLocale("speaker-acceptance", "en"))
+                    .thenReturn(Optional.of(dbTemplate));
+            when(emailTemplateService.mergeWithLayout("<p>Content block</p>", "batbern-default", "en"))
+                    .thenReturn("<html><body><p>Content block</p></body></html>");
+
+            // When
+            acceptanceEmailService.sendAcceptanceConfirmationEmail(
+                    speaker, event, viewToken, Locale.ENGLISH);
+
+            // Then
+            verify(emailTemplateService).mergeWithLayout("<p>Content block</p>", "batbern-default", "en");
         }
     }
 }

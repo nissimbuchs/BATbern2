@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,12 +16,15 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +45,7 @@ import static org.mockito.Mockito.when;
  * Story 2.2a Task B12: Email confirmation service tests
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("RegistrationEmailService Tests")
 class RegistrationEmailServiceTest {
 
@@ -49,6 +54,9 @@ class RegistrationEmailServiceTest {
 
     @Mock
     private IcsCalendarService icsCalendarService;
+
+    @Mock
+    private EmailTemplateService emailTemplateService;
 
     @InjectMocks
     private RegistrationEmailService registrationEmailService;
@@ -71,6 +79,9 @@ class RegistrationEmailServiceTest {
         ReflectionTestUtils.setField(registrationEmailService, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(registrationEmailService, "organizerName", "BATbern Team");
         ReflectionTestUtils.setField(registrationEmailService, "organizerEmail", "events@batbern.ch");
+
+        // Default: no DB template — use classpath fallback
+        when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
     }
 
     @Test
