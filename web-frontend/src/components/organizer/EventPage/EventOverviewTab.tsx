@@ -205,7 +205,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 onClick={handleEditDetails}
                 data-testid="edit-event-button"
               >
-                {t('common.edit', 'Edit')}
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  {t('common.edit', 'Edit')}
+                </Box>
               </Button>
             </Stack>
             <Divider sx={{ mb: 2 }} />

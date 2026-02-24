@@ -25,7 +25,9 @@
     "publicSite": "Public Website",
     "partnerTopics": "Partner Topics",
     "partnerMeetings": "Partner Meetings",
-    "topics": "Topic Suggestions"
+    "topics": "Topic Suggestions",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "public": {
     "login": "Login",
