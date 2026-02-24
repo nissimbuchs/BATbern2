@@ -33,6 +33,8 @@ import type { Event, EventDetailUI, WorkflowStep } from '@/types/event.types';
 import {
   isEarlyStage,
   getWorkflowStateLabel,
+  getWorkflowStepNumber,
+  getWorkflowProgress,
   WORKFLOW_STATE_ORDER,
 } from '@/utils/workflow/workflowState';
 import { topicService } from '@/services/topicService';
@@ -144,16 +146,18 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 data-testid="workflow-status-badge"
               />
               <Typography variant="body2" color="text.secondary">
-                {t('eventPage.overview.step', 'Step')} {eventUI.workflowStep || 1}/
+                {t('eventPage.overview.step', 'Step')}{' '}
+                {getWorkflowStepNumber(event.workflowState || 'CREATED')}/
                 {WORKFLOW_STATE_ORDER.length}
               </Typography>
             </Stack>
             <WorkflowProgressBar
               workflow={{
-                currentStep: (eventUI.workflowStep || 1) as WorkflowStep,
+                currentStep: getWorkflowStepNumber(
+                  event.workflowState || 'CREATED'
+                ) as WorkflowStep,
                 totalSteps: WORKFLOW_STATE_ORDER.length,
-                completionPercentage:
-                  ((eventUI.workflowStep || 1) / WORKFLOW_STATE_ORDER.length) * 100,
+                completionPercentage: getWorkflowProgress(event.workflowState || 'CREATED'),
                 steps: [],
                 blockers: [],
               }}
