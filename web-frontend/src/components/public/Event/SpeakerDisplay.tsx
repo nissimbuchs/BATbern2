@@ -6,7 +6,9 @@
 
 import type { SessionSpeaker } from '@/types/event.types';
 import { Building2 } from 'lucide-react';
+import { useInView } from 'react-intersection-observer';
 import { useCompany } from '@/hooks/useCompany/useCompany';
+import { useUserPortrait } from '@/hooks/useUserPortrait';
 
 interface SpeakerDisplayProps {
   speaker: SessionSpeaker;
@@ -32,11 +34,26 @@ export const SpeakerDisplay = ({
   showProfilePicture = true,
   className = '',
 }: SpeakerDisplayProps) => {
-  const { data: company } = useCompany(speaker.company || '', {
+  // Trigger lazy portrait fetch once the component enters (or nears) the viewport.
+  // rootMargin '300px' pre-loads portraits just before they scroll into view.
+  const { ref, inView } = useInView({ triggerOnce: true, rootMargin: '300px' });
+
+  // Only lazy-fetch when the server didn't already supply the URL (archive list path).
+  const { data: lazyPortraitUrl } = useUserPortrait(
+    speaker.username,
+    showProfilePicture && inView && !speaker.profilePictureUrl
+  );
+
+  const effectivePortraitUrl = speaker.profilePictureUrl ?? lazyPortraitUrl ?? null;
+
+  // Use the logo URL pre-loaded by the backend cross-service join when available.
+  // Fall back to useCompany for contexts where companyLogoUrl is not provided (e.g. detail page).
+  // Passing '' disables useCompany's internal query (it guards on !!name).
+  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : speaker.company || '', {
     expand: ['logo'],
   });
 
-  const logoUrl = company?.logo?.url;
+  const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 
   // Size mappings
   const sizeClasses = {
@@ -69,15 +86,15 @@ export const SpeakerDisplay = ({
   const sizes = sizeClasses[size];
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      {/* Profile Picture */}
+    <div ref={ref} className={`flex items-center gap-3 ${className}`}>
+      {/* Profile Picture — shown immediately if URL is known; otherwise initials until lazy-loaded */}
       {showProfilePicture && (
         <div
           className={`${sizes.avatar} rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0`}
         >
-          {speaker.profilePictureUrl ? (
+          {effectivePortraitUrl ? (
             <img
-              src={speaker.profilePictureUrl}
+              src={effectivePortraitUrl}
               alt={`${speaker.firstName} ${speaker.lastName}`}
               className="h-full w-full object-cover"
               width={80}

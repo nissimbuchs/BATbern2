@@ -218,6 +218,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };

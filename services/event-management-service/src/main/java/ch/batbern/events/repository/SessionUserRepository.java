@@ -103,4 +103,28 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
      * @return list of SessionUser associations for the user
      */
     List<SessionUser> findByUsername(String username);
+
+    /**
+     * Batch-load portrait URLs and company names for a set of speaker usernames.
+     *
+     * INTENTIONAL ARCHITECTURE BREAK: reads from user_profiles (owned by
+     * company-user-management-service). Both services share the same PostgreSQL
+     * database in this monorepo, making this one DB query far more efficient than
+     * issuing one HTTP call per speaker to the user management service.
+     *
+     * @param usernames set of speaker usernames from session_users
+     * @return username → { profilePictureUrl, companyId } projection
+     */
+    @Query(value = "SELECT up.username AS username, "
+            + "up.profile_picture_url AS profilePictureUrl, "
+            + "up.company_id AS companyId, "
+            + "(SELECT l.cloudfront_url FROM logos l "
+            + " WHERE l.associated_entity_id = up.company_id "
+            + "   AND l.associated_entity_type = 'COMPANY' "
+            + " LIMIT 1) AS companyLogoUrl "
+            + "FROM user_profiles up "
+            + "WHERE up.username IN :usernames",
+           nativeQuery = true)
+    List<UserPortraitProjection> findUserPortraitsByUsernames(
+            @Param("usernames") java.util.Collection<String> usernames);
 }

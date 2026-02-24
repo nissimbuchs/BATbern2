@@ -51,6 +51,14 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
     List<Session> findByEventIdWithSpeakers(UUID eventId);
 
     /**
+     * Batch-load sessions with their session users for multiple events in one query.
+     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 session queries.
+     */
+    @Query("SELECT DISTINCT s FROM Session s LEFT JOIN FETCH s.sessionUsers "
+           + "WHERE s.eventId IN :eventIds ORDER BY s.startTime, s.sessionSlug")
+    List<Session> findByEventIdInWithSpeakers(@Param("eventIds") java.util.Collection<UUID> eventIds);
+
+    /**
      * Find all sessions for a specific event and session type
      */
     List<Session> findByEventIdAndSessionType(UUID eventId, String sessionType);

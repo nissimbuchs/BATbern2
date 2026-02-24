@@ -2170,6 +2170,13 @@ export interface components {
        */
       profilePictureUrl?: string;
       /**
+       * Format: uri
+       * @description Company logo CloudFront URL (cross-service DB join: logos table).
+       *     Populated on archive list responses to avoid a separate useCompany API call.
+       * @example https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
+       */
+      companyLogoUrl?: string;
+      /**
        * @description Speaker's biography (from User entity)
        * @example Software engineer passionate about cloud architecture and security
        */

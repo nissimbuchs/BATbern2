@@ -32,6 +32,12 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
     Optional<Topic> findByTopicCode(String topicCode);
 
     /**
+     * Batch-load topics by a set of topic codes.
+     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 topic queries.
+     */
+    List<Topic> findByTopicCodeIn(java.util.Collection<String> topicCodes);
+
+    /**
      * Check if topic exists by topicCode.
      */
     boolean existsByTopicCode(String topicCode);
