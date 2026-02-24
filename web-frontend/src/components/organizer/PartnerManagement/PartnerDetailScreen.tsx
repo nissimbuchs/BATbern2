@@ -56,7 +56,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   const [limit, setLimit] = useState(20);
 
   const { data, isLoading, isError } = useUserList({
-    filters: { company: companyName },
+    filters: { company: companyName, role: ['PARTNER'] },
     pagination: { page, limit },
   });
 
