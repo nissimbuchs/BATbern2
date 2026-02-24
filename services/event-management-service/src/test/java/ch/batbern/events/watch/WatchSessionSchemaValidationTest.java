@@ -1,6 +1,6 @@
 package ch.batbern.events.watch;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import org.junit.jupiter.api.DisplayName;

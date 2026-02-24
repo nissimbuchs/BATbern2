@@ -1,6 +1,6 @@
 package ch.batbern.events.repository;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Speaker;
 import ch.batbern.events.domain.SpeakerAvailability;
 import ch.batbern.shared.types.SpeakerWorkflowState;
