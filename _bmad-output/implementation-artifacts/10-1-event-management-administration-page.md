@@ -1,6 +1,6 @@
 # Story 10.1: Event Management Administration Page
 
-Status: ready
+Status: done
 
 ## Story
 
@@ -43,53 +43,53 @@ Email template management is a follow-on backend+frontend feature delivered in *
 
 ### Task 1: Frontend scaffold + routing (AC: 1)
 
-- [ ] Write test for `EventManagementAdminPage` (renders correct tabs, role guard)
-- [ ] Create `web-frontend/src/pages/organizer/EventManagementAdminPage.tsx`
+- [x]Write test for `EventManagementAdminPage` (renders correct tabs, role guard)
+- [x]Create `web-frontend/src/pages/organizer/EventManagementAdminPage.tsx`
   - MUI `Tabs` with 3 tabs, tab index from `useSearchParams` (`?tab=N`)
   - ORGANIZER role guard
   - `Breadcrumbs`: Home → Administration
   - Page designed to accept a 4th tab (Email Templates) in Story 10.2 — keep tab component array clean
-- [ ] `App.tsx`: add lazy route `/organizer/admin`, redirect `/organizer/event-types` → `/organizer/admin?tab=0`
-- [ ] `UserMenuDropdown.tsx`: add "Administration" `MenuItem` (organizer only) with `AdminPanelSettingsIcon`, navigates to `/organizer/admin`
-- [ ] i18n: `menu.administration` key in `de/common.json` ("Verwaltung") + `en/common.json` ("Administration")
+- [x]`App.tsx`: add lazy route `/organizer/admin`, redirect `/organizer/event-types` → `/organizer/admin?tab=0`
+- [x]`UserMenuDropdown.tsx`: add "Administration" `MenuItem` (organizer only) with `AdminPanelSettingsIcon`, navigates to `/organizer/admin`
+- [x]i18n: `menu.administration` key in `de/common.json` ("Verwaltung") + `en/common.json` ("Administration")
 
 ---
 
 ### Task 2: Tab 0 — Event Types (AC: 2)
 
-- [ ] Create `web-frontend/src/components/organizer/Admin/EventTypesTab.tsx`
+- [x]Create `web-frontend/src/components/organizer/Admin/EventTypesTab.tsx`
   - Extract JSX body from `EventTypeConfigurationAdmin.tsx` (Grid + Card + Dialog), keep all hooks local
   - Remove outer `Container` and `Breadcrumbs` (page handles those)
-- [ ] Wire into `EventManagementAdminPage` tab 0
-- [ ] Verify edit flow still works end-to-end
+- [x]Wire into `EventManagementAdminPage` tab 0
+- [x]Verify edit flow still works end-to-end
 
 ---
 
 ### Task 3: Tab 1 — Import Event Data (AC: 3)
 
-- [ ] Create `web-frontend/src/components/organizer/Admin/ImportDataTab.tsx`
+- [x]Create `web-frontend/src/components/organizer/Admin/ImportDataTab.tsx`
   - `Grid` of 5 `Card`s: Events, Sessions, Companies, Speakers, Participants
   - Each card: title, description text, trigger button → opens respective batch import modal
   - State: 5 `open` booleans, one per modal
   - Import all 5 modal components directly
-- [ ] Remove from `EventManagementDashboard.tsx`: `isBatchImportOpen` + `isSessionBatchImportOpen` state, QuickActions import buttons, `EventBatchImportModal` + `SessionBatchImportModal` renders + imports
-- [ ] Remove from `CompanyManagementScreen.tsx`: `isBatchImportOpen` state, upload button, `CompanyBatchImportModal` render + import
-- [ ] Remove from `UserList.tsx`: `batchImportModalOpen` + `participantImportModalOpen` state, both upload buttons, both modal renders + imports
+- [x]Remove from `EventManagementDashboard.tsx`: `isBatchImportOpen` + `isSessionBatchImportOpen` state, QuickActions import buttons, `EventBatchImportModal` + `SessionBatchImportModal` renders + imports
+- [x]Remove from `CompanyManagementScreen.tsx`: `isBatchImportOpen` state, upload button, `CompanyBatchImportModal` render + import
+- [x]Remove from `UserList.tsx`: `batchImportModalOpen` + `participantImportModalOpen` state, both upload buttons, both modal renders + imports
 
 ---
 
 ### Task 4: Tab 2 — Task Templates (AC: 4)
 
-- [ ] Create `web-frontend/src/components/organizer/Admin/TaskTemplateEditModal.tsx`
+- [x]Create `web-frontend/src/components/organizer/Admin/TaskTemplateEditModal.tsx`
   - Props: `open`, `onClose`, `template: TaskTemplateResponse`
   - Fields: name (TextField), triggerState (Select — 9 workflow states), dueDateType (Select: immediate/relative_to_event/absolute), dueDateOffsetDays (number TextField, shown only if `relative_to_event`)
   - Save → `taskService.updateTemplate(template.id, request)` → `queryClient.invalidateQueries(['tasks', 'templates'])` → close
-- [ ] Create `web-frontend/src/components/organizer/Admin/TaskTemplatesTab.tsx`
+- [x]Create `web-frontend/src/components/organizer/Admin/TaskTemplatesTab.tsx`
   - `useQuery(['tasks', 'templates'], taskService.listAllTemplates)`
   - **Default Templates** section: read-only list (name, triggerState Chip, dueDate summary)
   - **Custom Templates** section: `[+ Add Template]` → `CustomTaskModal` (eventId=null); per-row [Edit] → `TaskTemplateEditModal`; [Delete] → `window.confirm()` + `taskService.deleteTemplate()` + invalidate
-- [ ] Wire into `EventManagementAdminPage` tab 2
-- [ ] Reuses existing `taskService.updateTemplate()`, `taskService.deleteTemplate()`, `CustomTaskModal`
+- [x]Wire into `EventManagementAdminPage` tab 2
+- [x]Reuses existing `taskService.updateTemplate()`, `taskService.deleteTemplate()`, `CustomTaskModal`
 
 ---
 
@@ -113,6 +113,7 @@ Email template management is a follow-on backend+frontend feature delivered in *
 ```
 web-frontend/src/
 ├── pages/organizer/EventManagementAdminPage.tsx                 NEW
+├── pages/organizer/EventManagementAdminPage.test.tsx            NEW
 └── components/organizer/Admin/
     ├── EventTypesTab.tsx                                        NEW
     ├── ImportDataTab.tsx                                        NEW
@@ -123,10 +124,14 @@ web-frontend/src/
 **Modified:**
 - `src/App.tsx` — new route + redirect `/organizer/event-types` → `/organizer/admin?tab=0`
 - `src/components/shared/Navigation/UserMenuDropdown.tsx` — Administration item
+- `src/components/shared/Navigation/UserMenuDropdown.test.tsx` — Administration navigation tests
 - `src/components/organizer/EventManagement/EventManagementDashboard.tsx` — remove import buttons/modals
+- `src/components/organizer/EventManagement/QuickActions.tsx` — update Event Types nav to `/organizer/admin?tab=0`
 - `src/components/shared/Company/CompanyManagementScreen.tsx` — remove import button/modal
 - `src/components/organizer/UserManagement/UserList.tsx` — remove import buttons/modals
+- `src/components/organizer/UserManagement/UserList.test.tsx` — remove stale SpeakerBatchImportModal mock
 - `public/locales/de/common.json` + `en/common.json` — `menu.administration`
+- `docs/api/events-api.openapi.yml` — Story 10.2 Email Templates API spec (pre-defined for next story)
 
 ---
 

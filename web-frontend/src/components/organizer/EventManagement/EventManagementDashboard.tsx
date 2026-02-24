@@ -12,7 +12,7 @@
  * - Quick actions sidebar
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Paper, Typography, Box, Stack, Alert, Container } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useTranslation } from 'react-i18next';
@@ -29,8 +29,6 @@ import { EventSearch } from './EventSearch';
 import { TaskWidget } from '../Tasks/TaskWidget';
 import { TeamActivityFeed } from './TeamActivityFeed';
 import { EventForm } from './EventForm';
-import { EventBatchImportModal } from '@/components/shared/Event/EventBatchImportModal';
-import { SessionBatchImportModal } from '@/components/shared/Session/SessionBatchImportModal';
 import { EventPagination } from './EventPagination';
 import { QuickActions } from './QuickActions';
 import type { EventFilters } from '@/types/event.types';
@@ -54,9 +52,6 @@ export const EventManagementDashboard: React.FC = () => {
     openEditModal,
     closeEditModal,
   } = useEventStore();
-
-  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
-  const [isSessionBatchImportOpen, setIsSessionBatchImportOpen] = useState(false);
 
   // Fetch data with React Query hooks
   // Include registrations to get actual registration counts from database
@@ -187,11 +182,7 @@ export const EventManagementDashboard: React.FC = () => {
           <Grid size={{ xs: 12, md: 4 }}>
             <Stack spacing={3}>
               {/* Quick Actions - Story 5.1 */}
-              <QuickActions
-                onNewEvent={handleNewEvent}
-                onBatchImport={() => setIsBatchImportOpen(true)}
-                onBatchImportSessions={() => setIsSessionBatchImportOpen(true)}
-              />
+              <QuickActions onNewEvent={handleNewEvent} />
 
               {/* Critical Tasks - Story 5.5 Phase 6 */}
               <Paper sx={{ p: 3 }} data-testid="critical-tasks-section">
@@ -242,26 +233,6 @@ export const EventManagementDashboard: React.FC = () => {
             }}
           />
         )}
-
-        {/* Batch Import Modal */}
-        <EventBatchImportModal
-          open={isBatchImportOpen}
-          onClose={() => setIsBatchImportOpen(false)}
-          onImportComplete={(result) => {
-            console.log('Import complete:', result);
-            // The useEvents hook will automatically refetch due to query invalidation
-          }}
-        />
-
-        {/* Session Batch Import Modal */}
-        <SessionBatchImportModal
-          open={isSessionBatchImportOpen}
-          onClose={() => setIsSessionBatchImportOpen(false)}
-          onImportComplete={(result) => {
-            console.log('Session import complete:', result);
-            // The useEvents hook will automatically refetch due to query invalidation
-          }}
-        />
       </Container>
     </Box>
   );

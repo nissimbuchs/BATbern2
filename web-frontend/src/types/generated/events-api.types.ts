@@ -1514,10 +1514,144 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/email-templates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List email templates
+     * @description Returns all email templates with optional filtering by category and layout flag.
+     *
+     *     **Story**: 10.2 - Email Template Management
+     *     **Authorization**: ORGANIZER role required.
+     */
+    get: operations['listEmailTemplates'];
+    put?: never;
+    /**
+     * Create a custom email template
+     * @description Creates a new custom (non-system) email template.
+     *
+     *     **Story**: 10.2 - Email Template Management
+     *     **Authorization**: ORGANIZER role required.
+     */
+    post: operations['createEmailTemplate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/email-templates/{templateKey}/{locale}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a single email template
+     * @description Returns a single email template by key and locale.
+     *
+     *     **Story**: 10.2 - Email Template Management
+     *     **Authorization**: ORGANIZER role required.
+     */
+    get: operations['getEmailTemplate'];
+    /**
+     * Update an email template
+     * @description Updates subject, htmlBody and/or layoutKey of an existing template.
+     *
+     *     **Story**: 10.2 - Email Template Management
+     *     **Authorization**: ORGANIZER role required.
+     */
+    put: operations['updateEmailTemplate'];
+    post?: never;
+    /**
+     * Delete a custom email template
+     * @description Deletes a custom (non-system) email template. Returns 400 for system or layout templates.
+     *
+     *     **Story**: 10.2 - Email Template Management
+     *     **Authorization**: ORGANIZER role required.
+     */
+    delete: operations['deleteEmailTemplate'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Email template with full content and metadata */
+    EmailTemplateResponse: {
+      /** @description Template identifier key (e.g. speaker-invitation, batbern-default) */
+      templateKey: string;
+      /** @description Locale code (de or en) */
+      locale: string;
+      /**
+       * @description Template category
+       * @enum {string}
+       */
+      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+      /** @description Email subject line (null for layout templates) */
+      subject?: string | null;
+      /** @description HTML body content */
+      htmlBody: string;
+      /** @description Available template variables (JSONB) */
+      variables?: {
+        [key: string]: unknown;
+      } | null;
+      /** @description True if this is a layout (shell) template */
+      isLayout: boolean;
+      /** @description Key of the layout template to use (null for standalone or layout templates) */
+      layoutKey?: string | null;
+      /** @description True if this is a built-in system template (cannot be deleted) */
+      isSystemTemplate: boolean;
+      /**
+       * Format: date-time
+       * @description Last update timestamp
+       */
+      updatedAt: string;
+    };
+    /** @description Request to create a custom email template */
+    CreateEmailTemplateRequest: {
+      /** @description Unique template key */
+      templateKey: string;
+      /** @description Locale code (de or en) */
+      locale: string;
+      /**
+       * @description Template category
+       * @enum {string}
+       */
+      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+      /** @description Email subject (required for content templates, null for layout) */
+      subject?: string | null;
+      /** @description HTML body content */
+      htmlBody: string;
+      /** @description Available template variables */
+      variables?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * @description Whether this is a layout template
+       * @default false
+       */
+      isLayout: boolean;
+      /** @description Layout template key to use (e.g. batbern-default) */
+      layoutKey?: string | null;
+    };
+    /** @description Request to update an existing email template */
+    UpdateEmailTemplateRequest: {
+      /** @description Updated subject line (null for layout templates) */
+      subject?: string | null;
+      /** @description Updated HTML body */
+      htmlBody?: string;
+      /** @description Updated layout key (null = standalone) */
+      layoutKey?: string | null;
+    };
     /** @description Per-event attendance summary for a given company (Story 8.1) */
     AttendanceSummaryDTO: {
       /**
@@ -5924,6 +6058,163 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+    };
+  };
+  listEmailTemplates: {
+    parameters: {
+      query?: {
+        /** @description Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT) */
+        category?: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+        /** @description Filter to layout templates only (true) or content templates only (false) */
+        isLayout?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description List of email templates */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmailTemplateResponse'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  createEmailTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateEmailTemplateRequest'];
+      };
+    };
+    responses: {
+      /** @description Template created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmailTemplateResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Template with this key and locale already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getEmailTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Template key (e.g. speaker-invitation, batbern-default) */
+        templateKey: string;
+        /** @description Locale (de or en) */
+        locale: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Email template */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmailTemplateResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  updateEmailTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Template key */
+        templateKey: string;
+        /** @description Locale (de or en) */
+        locale: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateEmailTemplateRequest'];
+      };
+    };
+    responses: {
+      /** @description Template updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EmailTemplateResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+    };
+  };
+  deleteEmailTemplate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Template key */
+        templateKey: string;
+        /** @description Locale (de or en) */
+        locale: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Template deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Cannot delete system or layout templates */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
     };
   };
 }

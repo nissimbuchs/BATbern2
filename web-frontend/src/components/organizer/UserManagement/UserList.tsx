@@ -30,12 +30,7 @@ import {
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import Grid from '@mui/material/Grid';
-import {
-  Add as AddIcon,
-  Upload as UploadIcon,
-  ViewModule as GridIcon,
-  ViewList as ListIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useUserManagementStore } from '@/stores/userManagementStore';
@@ -47,8 +42,6 @@ import UserCreateEditModal from './UserCreateEditModal';
 import RoleManagerModal from './RoleManagerModal';
 import DeleteUserDialog from './DeleteUserDialog';
 import UserPagination from './UserPagination';
-import SpeakerBatchImportModal from './SpeakerBatchImportModal';
-import { ParticipantBatchImportModal } from './ParticipantBatchImportModal';
 import type { User } from '@/types/user.types';
 
 const UserList: React.FC = () => {
@@ -62,9 +55,6 @@ const UserList: React.FC = () => {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [roleManagerUser, setRoleManagerUser] = useState<User | null>(null);
   const [deleteDialogUser, setDeleteDialogUser] = useState<User | null>(null);
-  const [batchImportModalOpen, setBatchImportModalOpen] = useState(false);
-  const [participantImportModalOpen, setParticipantImportModalOpen] = useState(false);
-
   // Fetch user list with React Query
   const { data, isLoading, isError, refetch } = useUserList({
     filters,
@@ -162,27 +152,6 @@ const UserList: React.FC = () => {
             )}
 
             <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<UploadIcon />}
-              onClick={() => setBatchImportModalOpen(true)}
-            >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                {t('batchImport.button')}
-              </Box>
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              startIcon={<UploadIcon />}
-              onClick={() => setParticipantImportModalOpen(true)}
-              data-testid="import-participants-button"
-            >
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                {t('participantImport.button')}
-              </Box>
-            </Button>
-            <Button
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
@@ -266,16 +235,6 @@ const UserList: React.FC = () => {
           open={!!deleteDialogUser}
           onClose={() => setDeleteDialogUser(null)}
           onSuccess={() => refetch()}
-        />
-        <SpeakerBatchImportModal
-          open={batchImportModalOpen}
-          onClose={() => setBatchImportModalOpen(false)}
-          onImportComplete={() => refetch()}
-        />
-        <ParticipantBatchImportModal
-          open={participantImportModalOpen}
-          onClose={() => setParticipantImportModalOpen(false)}
-          onImportComplete={() => refetch()}
         />
       </Container>
     </Box>

@@ -68,9 +68,10 @@ const EventManagementDashboard = React.lazy(() => import('@pages/EventManagement
 const OrganizerAnalyticsPage = React.lazy(() => import('@pages/organizer/OrganizerAnalyticsPage'));
 const NotificationsPage = React.lazy(() => import('@pages/organizer/NotificationsPage'));
 const EventPage = React.lazy(() => import('@pages/organizer/EventPage')); // Story 5.6: Unified event page
-const EventTypeConfigurationAdmin = React.lazy(
-  () => import('@pages/organizer/EventTypeConfigurationAdmin')
-); // Story 5.1
+// Story 10.1: Admin page consolidating Event Types, Import Data, Task Templates
+const EventManagementAdminPage = React.lazy(
+  () => import('@pages/organizer/EventManagementAdminPage')
+);
 
 // Topic Management Page - Story 5.2
 const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManagementPage'));
@@ -366,15 +367,21 @@ function App() {
                       path="/organizer/events/:eventCode/edit"
                       element={<Navigate to=".." replace />}
                     />
+                    {/* Story 10.1: Admin page with Event Types, Import Data, Task Templates tabs */}
                     <Route
-                      path="/organizer/event-types"
+                      path="/organizer/admin"
                       element={
                         <ProtectedRoute>
                           <AuthLayout>
-                            <EventTypeConfigurationAdmin />
+                            <EventManagementAdminPage />
                           </AuthLayout>
                         </ProtectedRoute>
                       }
+                    />
+                    {/* Story 10.1: Redirect old /event-types route to admin tab 0 */}
+                    <Route
+                      path="/organizer/event-types"
+                      element={<Navigate to="/organizer/admin?tab=0" replace />}
                     />
                     <Route
                       path="/organizer/topics"

@@ -1,8 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import UserMenuDropdown from './UserMenuDropdown';
 import { UserContext } from '../../../types/auth';
+
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -47,7 +53,7 @@ const mockUser: UserContext = {
 };
 
 const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
+  return render(<MemoryRouter>{component}</MemoryRouter>);
 };
 
 describe('UserMenuDropdown', () => {
@@ -57,6 +63,7 @@ describe('UserMenuDropdown', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
     // Create a mock anchor element for the Menu
     anchorEl = document.createElement('div');
   });
@@ -442,6 +449,60 @@ describe('UserMenuDropdown', () => {
 
       const menuItems = screen.getAllByRole('menuitem');
       expect(menuItems.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Administration item (Story 10.1 — AC1)', () => {
+    it('should_showAdministrationItem_when_userIsOrganizer', () => {
+      renderWithRouter(
+        <UserMenuDropdown
+          user={mockUser}
+          anchorEl={anchorEl}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      expect(screen.getByTestId('administration-link')).toBeInTheDocument();
+    });
+
+    it('should_notShowAdministrationItem_when_userIsSpeaker', () => {
+      const speakerUser = { ...mockUser, role: 'speaker' as const };
+      renderWithRouter(
+        <UserMenuDropdown
+          user={speakerUser}
+          anchorEl={anchorEl}
+          open={true}
+          onClose={vi.fn()}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      expect(screen.queryByTestId('administration-link')).not.toBeInTheDocument();
+    });
+
+    it('should_navigateToAdminPage_when_administrationItemClicked', async () => {
+      const mockOnClose = vi.fn();
+      renderWithRouter(
+        <UserMenuDropdown
+          user={mockUser}
+          anchorEl={anchorEl}
+          open={true}
+          onClose={mockOnClose}
+          onLogout={mockOnLogout}
+          onLanguageChange={mockOnLanguageChange}
+        />
+      );
+
+      fireEvent.click(screen.getByTestId('administration-link'));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/organizer/admin');
+        expect(mockOnClose).toHaveBeenCalled();
+      });
     });
   });
 });

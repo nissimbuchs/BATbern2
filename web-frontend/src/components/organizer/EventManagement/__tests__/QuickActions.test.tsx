@@ -87,7 +87,7 @@ describe('QuickActions Component', () => {
     const eventTypesButton = screen.getByRole('button', { name: /event types/i });
     fireEvent.click(eventTypesButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/organizer/event-types');
+    expect(mockNavigate).toHaveBeenCalledWith('/organizer/admin?tab=0');
   });
 
   /**

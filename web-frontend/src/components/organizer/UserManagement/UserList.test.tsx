@@ -106,10 +106,6 @@ vi.mock('./UserPagination', () => ({
   default: () => <div data-testid="user-pagination">Pagination</div>,
 }));
 
-vi.mock('./SpeakerBatchImportModal', () => ({
-  default: () => <div data-testid="speaker-batch-import-modal">Batch Import</div>,
-}));
-
 const mockUsers: User[] = [
   {
     id: 'user-1',
@@ -201,12 +197,6 @@ describe('UserList Component', () => {
       expect(screen.getByText('addUser')).toBeInTheDocument();
     });
 
-    it('should_renderBatchImportButton_when_componentMounts', () => {
-      renderWithProviders(<UserList />);
-
-      expect(screen.getByText('batchImport.button')).toBeInTheDocument();
-    });
-
     it('should_renderUserTable_when_dataLoaded', () => {
       renderWithProviders(<UserList />);
 
@@ -237,19 +227,6 @@ describe('UserList Component', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('user-create-edit-modal')).toBeInTheDocument();
-      });
-    });
-
-    it('should_openBatchImportModal_when_batchImportClicked', async () => {
-      const user = userEvent.setup();
-
-      renderWithProviders(<UserList />);
-
-      const batchImportButton = screen.getByText('batchImport.button');
-      await user.click(batchImportButton);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('speaker-batch-import-modal')).toBeInTheDocument();
       });
     });
 
