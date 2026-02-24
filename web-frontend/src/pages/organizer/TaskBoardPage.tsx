@@ -201,10 +201,26 @@ const TaskBoardPage: React.FC = () => {
     <>
       <Container maxWidth={false} sx={{ py: 3 }}>
         {/* Page Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4">{t('tasks.taskBoard', 'Task Board')}</Typography>
-          <Stack direction="row" spacing={2} alignItems="center">
-            {/* Filters */}
+        <Stack spacing={2} mb={3}>
+          {/* Row 1: title + add button */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h4">{t('tasks.taskBoard', 'Task Board')}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditingTask(null);
+                setIsCustomTaskModalOpen(true);
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('tasks.addCustomTask', 'Add Custom Task')}
+              </Box>
+            </Button>
+          </Stack>
+
+          {/* Row 2: filters — wrap on mobile */}
+          <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
               select
               size="small"
@@ -212,7 +228,7 @@ const TaskBoardPage: React.FC = () => {
               onChange={(e) => setFilter(e.target.value as 'all' | 'mine')}
               label={t('tasks.filter', 'Filter')}
               data-testid="task-filter-select"
-              sx={{ minWidth: 150 }}
+              sx={{ minWidth: 140 }}
             >
               <MenuItem value="mine" data-testid="task-filter-option-mine">
                 {t('tasks.myTasks', 'My Tasks')}
@@ -228,22 +244,11 @@ const TaskBoardPage: React.FC = () => {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'createdAt')}
               label={t('tasks.sortBy', 'Sort By')}
-              sx={{ minWidth: 150 }}
+              sx={{ minWidth: 140 }}
             >
               <MenuItem value="dueDate">{t('tasks.dueDate', 'Due Date')}</MenuItem>
               <MenuItem value="createdAt">{t('tasks.createdDate', 'Created Date')}</MenuItem>
             </TextField>
-
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => {
-                setEditingTask(null);
-                setIsCustomTaskModalOpen(true);
-              }}
-            >
-              {t('tasks.addCustomTask', 'Add Custom Task')}
-            </Button>
           </Stack>
         </Stack>
 
@@ -273,7 +278,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'grey.50',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -309,7 +314,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'warning.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -345,7 +350,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'info.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -381,7 +386,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'success.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
