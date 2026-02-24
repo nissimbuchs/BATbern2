@@ -1,6 +1,6 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.TaskTemplate;
 import ch.batbern.events.repository.TaskTemplateRepository;
 import org.junit.jupiter.api.BeforeEach;

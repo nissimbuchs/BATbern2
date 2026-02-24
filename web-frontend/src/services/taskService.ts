@@ -117,6 +117,16 @@ export interface UpdateTaskStatusRequest {
 }
 
 /**
+ * Update Event Task Request DTO (matches backend UpdateEventTaskRequest.java)
+ * All fields are optional — null/undefined = keep existing value
+ */
+export interface UpdateEventTaskRequest {
+  notes?: string | null;
+  dueDate?: string | null;
+  assignedOrganizerUsername?: string | null;
+}
+
+/**
  * Task Service
  *
  * Handles all HTTP requests for task management
@@ -319,6 +329,24 @@ class TaskService {
   async reassignTask(taskId: string, request: ReassignTaskRequest): Promise<EventTaskResponse> {
     const response = await apiClient.put<EventTaskResponse>(
       `${TASKS_API_PATH}/${taskId}/reassign`,
+      request
+    );
+
+    return response.data;
+  }
+
+  /**
+   * Update task details (notes, dueDate, assignedOrganizerUsername) — patch semantics
+   *
+   * Only provided fields are updated; null = keep existing value.
+   *
+   * @param taskId Task UUID
+   * @param request Fields to update
+   * @returns Updated task details
+   */
+  async updateTask(taskId: string, request: UpdateEventTaskRequest): Promise<EventTaskResponse> {
+    const response = await apiClient.patch<EventTaskResponse>(
+      `${TASKS_API_PATH}/${taskId}`,
       request
     );
 

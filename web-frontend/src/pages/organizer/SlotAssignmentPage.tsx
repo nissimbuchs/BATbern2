@@ -85,7 +85,16 @@ const SlotAssignmentPage: React.FC = () => {
       </Breadcrumbs>
 
       {/* Page Header */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 2,
+        }}
+      >
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             {t('slotAssignment.pageTitle')}

@@ -24,10 +24,6 @@ vi.mock('@/hooks/usePartnerMeetings', () => ({
   usePartnerMeetings: vi.fn(),
 }));
 
-vi.mock('@/hooks/usePartnerActivity', () => ({
-  usePartnerActivity: vi.fn(),
-}));
-
 vi.mock('@/hooks/usePartnerNotes', () => ({
   usePartnerNotes: vi.fn(),
 }));
@@ -53,7 +49,6 @@ vi.mock('@/stores/partnerDetailStore', () => ({
 
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerVotes } from '@/hooks/usePartnerVotes';
-import { usePartnerActivity } from '@/hooks/usePartnerActivity';
 import { usePartnerMeetings } from '@/hooks/usePartnerMeetings';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -297,12 +292,6 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
       isError: false,
     } as any);
 
-    vi.mocked(usePartnerActivity).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    } as any);
-
     renderWithProviders();
 
     await waitFor(() => {
@@ -366,10 +355,10 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
   });
 
   /**
-   * Test: should_navigateBack_when_backButtonClicked
-   * Verify back button is rendered and clickable
+   * Test: should_renderBreadcrumbs_when_partnerLoaded
+   * Back navigation is via Breadcrumbs (replaced back button)
    */
-  it('should_navigateBack_when_backButtonClicked', async () => {
+  it('should_renderBreadcrumbs_when_partnerLoaded', async () => {
     vi.mocked(usePartnerDetail).mockReturnValue({
       data: mockPartnerDetail,
       isLoading: false,
@@ -380,12 +369,9 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText(/Back/i)).toBeInTheDocument();
+      // Breadcrumbs nav is always rendered for ORGANIZER role
+      expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument();
     });
-
-    // Just verify back button is present (navigation is handled by React Router)
-    const backButton = screen.getByText(/Back/i);
-    expect(backButton).toBeInTheDocument();
   });
 });
 
@@ -399,11 +385,6 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
     });
     vi.clearAllMocks();
     vi.mocked(usePartnerVotes).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-    } as any);
-    vi.mocked(usePartnerActivity).mockReturnValue({
       data: [],
       isLoading: false,
       isError: false,
@@ -537,6 +518,22 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
       expect(screen.getByText(/Partnership Details/i)).toBeInTheDocument();
       // Settings tab must not be in the DOM
       expect(screen.queryByRole('tab', { name: /Settings/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // Story 8.4: Notes panel must not render for PARTNER even with activeTab=4
+  it('should_notRenderNotesTab_when_partnerRoleAndEffectiveTabFour', async () => {
+    // With PARTNER_MAX_TAB=3, activeTab=4 is clamped to 0 (Overview)
+    // Defensive guard `currentUser.role !== 'PARTNER'` on Notes panel also prevents render
+    renderAsRole('partner', 4);
+
+    await waitFor(() => {
+      // Overview renders (clamped from 4→0)
+      expect(screen.getByText(/Partnership Details/i)).toBeInTheDocument();
+      // Notes tab is not in tab nav
+      expect(screen.queryByRole('tab', { name: /Notes/i })).not.toBeInTheDocument();
+      // Add Note button must not appear
+      expect(screen.queryByTestId('add-note-button')).not.toBeInTheDocument();
     });
   });
 

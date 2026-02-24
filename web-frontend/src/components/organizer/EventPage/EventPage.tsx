@@ -21,7 +21,6 @@ import {
   Alert,
   Button,
   Stack,
-  Chip,
   useTheme,
   useMediaQuery,
   BottomNavigation,
@@ -43,7 +42,6 @@ import { useEventStore } from '@/stores/eventStore';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { getWorkflowStateLabel } from '@/utils/workflow/workflowState';
 
 import { EventOverviewTab } from './EventOverviewTab';
 import { EventSpeakersTab } from './EventSpeakersTab';
@@ -205,16 +203,6 @@ export const EventPage: React.FC = () => {
           mb={3}
         >
           <Box>
-            <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
-              <Chip
-                label={getWorkflowStateLabel(event.workflowState || 'CREATED', t)}
-                color="primary"
-                size="small"
-              />
-              <Typography variant="caption" color="text.secondary">
-                {eventCode}
-              </Typography>
-            </Stack>
             <Typography variant="h4" component="h1">
               {event.title}
             </Typography>
@@ -253,7 +241,7 @@ export const EventPage: React.FC = () => {
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={currentTab} onChange={handleMobileNavChange} showLabels>
+          <BottomNavigation value={currentTab} onChange={handleMobileNavChange}>
             {TABS.map((tab) => (
               <BottomNavigationAction
                 key={tab.id}
@@ -261,6 +249,7 @@ export const EventPage: React.FC = () => {
                 label={t(tab.labelKey, tab.id)}
                 icon={tab.icon}
                 data-testid={`event-tab-${tab.id}`}
+                sx={{ minWidth: 0, flex: 1, px: 0 }}
               />
             ))}
           </BottomNavigation>

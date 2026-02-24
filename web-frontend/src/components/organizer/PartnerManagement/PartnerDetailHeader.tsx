@@ -15,10 +15,10 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { Edit, NoteAdd, ArrowBack } from '@mui/icons-material';
+import { Edit, NoteAdd } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
+import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
@@ -26,6 +26,7 @@ type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 interface PartnerDetailHeaderProps {
   partner: PartnerResponse;
   role?: UserRole; // Story 8.0: hide edit/action buttons for PARTNER
+  isMobile?: boolean;
 }
 
 // Tier emoji mapping
@@ -59,18 +60,23 @@ const getInitials = (name: string): string => {
   return name.substring(0, 2).toUpperCase();
 };
 
-export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner, role }) => {
+export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
+  partner,
+  role,
+  isMobile = false,
+}) => {
   const { t } = useTranslation('partners');
-  const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
+  const { setActiveTab, setShowNoteModal } = usePartnerDetailStore();
   const isPartner = role === 'PARTNER';
 
   const handleEdit = () => {
     openEditModal(partner);
   };
 
-  const handleBack = () => {
-    navigate('/organizer/partners');
+  const handleAddNote = () => {
+    setActiveTab(4); // Navigate to Notes tab
+    setShowNoteModal(true);
   };
 
   const companyName = partner.company?.name || partner.companyName;
@@ -81,22 +87,14 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }} data-testid="partner-detail-header">
       <Stack spacing={3}>
-        {/* Back Button — hidden for PARTNER (portal layout provides navigation) */}
-        {!isPartner && (
-          <Box>
-            <Button startIcon={<ArrowBack />} onClick={handleBack}>
-              {t('detail.header.backButton', 'Back to Partner Directory')}
-            </Button>
-          </Box>
-        )}
-
         {/* Header Content */}
-        <Stack direction="row" spacing={3} alignItems="flex-start">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}
           <Box
             sx={{
-              width: 120,
-              height: 120,
+              width: { xs: 80, sm: 120 },
+              height: { xs: 80, sm: 120 },
+              flexShrink: 0,
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -108,23 +106,23 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                 src={partner.company.logoUrl}
                 alt={companyName}
                 sx={{
-                  maxWidth: 120,
-                  maxHeight: 120,
+                  maxWidth: { xs: 80, sm: 120 },
+                  maxHeight: { xs: 80, sm: 120 },
                   objectFit: 'contain',
                 }}
               />
             ) : (
               <Box
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: { xs: 80, sm: 120 },
+                  height: { xs: 80, sm: 120 },
                   borderRadius: 1,
                   bgcolor: 'primary.main',
                   color: 'primary.contrastText',
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  fontSize: '2.5rem',
+                  fontSize: { xs: '1.75rem', sm: '2.5rem' },
                   fontWeight: 600,
                 }}
               >
@@ -133,18 +131,52 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
             )}
           </Box>
 
-          {/* Company Info */}
-          <Stack spacing={1} flex={1}>
-            {/* Company Name and Tier */}
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="h4" component="h1">
-                {companyName}
-              </Typography>
-              <Chip
-                label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
-                color={tierColor}
-                size="medium"
-              />
+          {/* Company Info + Action Buttons */}
+          <Stack spacing={1} flex={1} width="100%">
+            {/* Company Name, Tier, and Actions row */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              justifyContent="space-between"
+            >
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
+                >
+                  {companyName}
+                </Typography>
+                <Chip
+                  label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
+                  color={tierColor}
+                  size="medium"
+                />
+              </Stack>
+
+              {/* Action Buttons — hidden for PARTNER role */}
+              {!isPartner && (
+                <Stack direction="row" spacing={1} flexShrink={0}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<NoteAdd />}
+                    size="small"
+                    onClick={handleAddNote}
+                  >
+                    {!isMobile && t('detail.notesTab.addNote')}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Edit />}
+                    onClick={handleEdit}
+                    size="small"
+                    data-testid="edit-partner-button"
+                  >
+                    {!isMobile && t('modal.editTitle')}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
 
             {/* Company Details */}
@@ -183,24 +215,6 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
               </Stack>
             )}
           </Stack>
-
-          {/* Action Buttons — hidden for PARTNER role */}
-          {!isPartner && (
-            <Stack direction="row" spacing={1}>
-              <Button variant="outlined" startIcon={<NoteAdd />} size="small">
-                {t('detail.notesTab.addNote')}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Edit />}
-                onClick={handleEdit}
-                size="small"
-                data-testid="edit-partner-button"
-              >
-                {t('modal.editTitle')}
-              </Button>
-            </Stack>
-          )}
         </Stack>
       </Stack>
     </Paper>

@@ -112,6 +112,33 @@ describe('PartnerTabNavigation', () => {
     expect(mockOnTabChange).toHaveBeenCalledWith(5);
   });
 
+  // Story 8.4: should hide Notes tab for PARTNER role
+  it('should_hideNotesTab_when_partnerRole', () => {
+    render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} role="PARTNER" />);
+
+    expect(screen.queryByRole('tab', { name: /notes/i })).not.toBeInTheDocument();
+    // Settings also hidden for PARTNER
+    expect(screen.queryByRole('tab', { name: /settings/i })).not.toBeInTheDocument();
+    // Other tabs still visible
+    expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /analytics/i })).toBeInTheDocument();
+  });
+
+  // Story 8.4: Notes tab visible for ORGANIZER
+  it('should_showNotesTab_when_organizerRole', () => {
+    render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} role="ORGANIZER" />);
+
+    expect(screen.getByRole('tab', { name: /notes/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
+  });
+
+  // Regression: Settings still hidden for PARTNER (Story 8.0)
+  it('should_hideSettingsTab_when_partnerRole', () => {
+    render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} role="PARTNER" />);
+
+    expect(screen.queryByRole('tab', { name: /settings/i })).not.toBeInTheDocument();
+  });
+
   // Additional test: should wrap around when using arrow keys at boundaries
   it('should_wrapAround_when_arrowKeyAtBoundary', () => {
     // At last tab, right arrow should wrap to first

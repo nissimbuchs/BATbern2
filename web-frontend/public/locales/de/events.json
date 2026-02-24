@@ -94,6 +94,20 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgreich aktualisiert",
       "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
+    },
+    "speakers": {
+      "progress": "Fortschritt",
+      "confirmed": "bestätigt",
+      "thresholdMet": "Mindestzahl erreicht",
+      "needMore": "Mehr Referenten benötigt",
+      "acceptanceRate": "Zusagerate",
+      "viewMode": "Ansichtsmodus",
+      "kanban": "Kanban",
+      "sessions": "Sessions",
+      "addSpeakers": "Referenten hinzufügen",
+      "addToPool": "Referenten zum Pool hinzufügen",
+      "kanbanView": "Kanban-Ansicht",
+      "sessionsView": "Sessions-Ansicht"
     }
   },
   "dashboard": {
@@ -167,12 +181,75 @@
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
     }
   },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Aufgaben"
+  },
   "tasks": {
     "criticalTasks": "Kritische Aufgaben",
     "noCriticalTasks": "Keine kritischen Aufgaben",
     "greatJob": "Gute Arbeit!",
     "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
-    "viewAllTasks": "Alle Aufgaben anzeigen"
+    "viewAllTasks": "Alle Aufgaben anzeigen",
+    "eventTasksDescription": "Konfigurieren Sie Aufgaben, die automatisch erstellt und aktiviert werden, wenn die Veranstaltung die Workflow-Zustände durchläuft.",
+    "defaultTemplates": "Standard-Aufgabenvorlagen",
+    "defaultTemplatesDescription": "Dies sind die Standard-Planungsaufgaben. Alle sind vorausgewählt und werden erstellt, wenn Sie die Veranstaltung speichern.",
+    "taskExists": "Aufgabe existiert",
+    "assignTo": "Zuweisen an",
+    "triggerState": "Auslöser",
+    "dueDate": "Fällig",
+    "immediate": "Sofort",
+    "days": "Tage",
+    "customTemplates": "Benutzerdefinierte Aufgabenvorlagen",
+    "customTemplatesDescription": "Diese Vorlagen wurden von Ihrem Team erstellt. Wählen Sie diejenigen aus, die Sie für diese Veranstaltung einschließen möchten.",
+    "customTasks": "Benutzerdefinierte Aufgaben",
+    "addCustomTask": "Aufgabe hinzufügen",
+    "noCustomTasks": "Noch keine benutzerdefinierten Aufgaben. Klicken Sie auf \"Aufgabe hinzufügen\", um eine zu erstellen.",
+    "trigger": "Auslöser",
+    "assignedTo": "Zugewiesen an",
+    "unassigned": "Nicht zugewiesen",
+    "editTask": "Aufgabe bearbeiten",
+    "deleteTask": "Aufgabe löschen",
+    "taskName": "Aufgabenname",
+    "taskNamePlaceholder": "z.B. Bestätigungs-E-Mail für Veranstaltungsort senden",
+    "selectEvent": "Veranstaltung (optional)",
+    "selectEventHelp": "Veranstaltung auswählen oder als Vorlage speichern",
+    "noEvent": "Keine Veranstaltung (als Vorlage speichern)",
+    "triggerStateHelp": "Der Workflow-Status, der diese Aufgabe aktiviert",
+    "workflowStates": {
+      "topic_selection": "Themenauswahl",
+      "speaker_brainstorming": "Referenten-Brainstorming",
+      "speaker_outreach": "Referentenansprache",
+      "agenda_published": "Agenda veröffentlicht",
+      "agenda_finalized": "Agenda abgeschlossen",
+      "event_live": "Veranstaltung live",
+      "post_event_wrap_up": "Nachbereitung",
+      "archived": "Archiviert"
+    },
+    "dueDateType": "Fälligkeitstyp",
+    "dueDateTypes": {
+      "immediate": "Sofort (jetzt)",
+      "relative_to_event": "Relativ zum Veranstaltungsdatum",
+      "absolute": "Absolutes Datum"
+    },
+    "offsetDays": "Versatz in Tagen",
+    "offsetDaysHelp": "Negativ = vor der Veranstaltung, Positiv = nach der Veranstaltung",
+    "absoluteDueDate": "Fälligkeitsdatum",
+    "assignedOrganizer": "Zugewiesener Organisator",
+    "notes": "Notizen (Optional)",
+    "notesPlaceholder": "Anweisungen oder Kontext hinzufügen...",
+    "saveAsTemplate": "Als wiederverwendbare Vorlage speichern",
+    "createTemplate": "Vorlage erstellen",
+    "createTask": "Aufgabe erstellen",
+    "errors": {
+      "loadTemplatesFailed": "Aufgabenvorlagen konnten nicht geladen werden",
+      "taskNameRequired": "Aufgabenname ist erforderlich",
+      "triggerStateRequired": "Auslösestatus ist erforderlich",
+      "offsetDaysRequired": "Versatz in Tagen ist erforderlich",
+      "eventRequired": "Bitte wählen Sie eine Veranstaltung oder speichern Sie als Vorlage",
+      "updateTaskFailed": "Aufgabe konnte nicht aktualisiert werden",
+      "createTaskFailed": "Aufgabe konnte nicht erstellt werden"
+    }
   },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
@@ -224,7 +301,11 @@
     "themeImage": "Veranstaltungs-Themenbild",
     "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",
     "themeImageAlt": "Themenbild für Veranstaltung",
-    "removeThemeImage": "Themenbild entfernen"
+    "removeThemeImage": "Themenbild entfernen",
+    "overrideValidation": "Workflow-Validierung überschreiben (erlaubt beliebige Zustandsübergänge)",
+    "overrideReason": "Begründung (Optional)",
+    "overrideReasonPlaceholder": "Warum überschreiben Sie die Workflow-Validierung?",
+    "overrideReasonHelp": "Dies wird zu Revisionszwecken protokolliert"
   },
   "eventTypes": {
     "FULL_DAY": "Ganztägig",

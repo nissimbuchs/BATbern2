@@ -3,7 +3,7 @@
  * Displays event logistics information with icons
  */
 
-import { Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventDetail } from '@/types/event.types';
 import { useTranslation } from 'react-i18next';
@@ -70,6 +70,17 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
             <p className="text-lg font-light text-zinc-100">
               {event.currentAttendeeCount || 0} / {event.venueCapacity}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Topic */}
+      {event.topic?.name && (
+        <div className="flex items-start gap-3">
+          <Tag className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+          <div>
+            <p className="text-sm text-zinc-400">{t('public.logistics.topic', 'Topic')}</p>
+            <p className="text-lg font-light text-zinc-100">{event.topic.name}</p>
           </div>
         </div>
       )}

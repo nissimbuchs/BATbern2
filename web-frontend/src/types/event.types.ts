@@ -155,7 +155,7 @@ export type WorkflowStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13
 
 export interface WorkflowState {
   currentStep: WorkflowStep;
-  totalSteps: 16;
+  totalSteps: number;
   completionPercentage: number; // 0-100
   steps: WorkflowStepDetail[];
   blockers: WorkflowBlocker[];

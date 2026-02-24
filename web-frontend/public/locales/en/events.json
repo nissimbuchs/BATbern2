@@ -94,6 +94,20 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator updated successfully",
       "moderatorUpdateError": "Failed to update moderator."
+    },
+    "speakers": {
+      "progress": "Progress",
+      "confirmed": "confirmed",
+      "thresholdMet": "Threshold met",
+      "needMore": "Need more speakers",
+      "acceptanceRate": "acceptance rate",
+      "viewMode": "View mode",
+      "kanban": "Kanban",
+      "sessions": "Sessions",
+      "addSpeakers": "Add Speakers",
+      "addToPool": "Add Speakers to Pool",
+      "kanbanView": "Kanban view",
+      "sessionsView": "Sessions view"
     }
   },
   "dashboard": {
@@ -167,12 +181,75 @@
       "failedToLoadEvents": "Failed to load events"
     }
   },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Tasks"
+  },
   "tasks": {
     "criticalTasks": "Critical Tasks",
     "noCriticalTasks": "No critical tasks",
     "greatJob": "Great job!",
     "errorLoadingTasks": "Failed to load tasks",
-    "viewAllTasks": "View All Tasks"
+    "viewAllTasks": "View All Tasks",
+    "eventTasksDescription": "Configure tasks that will be automatically created and activated as the event progresses through workflow states.",
+    "defaultTemplates": "Default Task Templates",
+    "defaultTemplatesDescription": "These are the standard event planning tasks. All are pre-selected and will be created when you save the event.",
+    "taskExists": "Task exists",
+    "assignTo": "Assign To",
+    "triggerState": "Trigger",
+    "dueDate": "Due",
+    "immediate": "Immediate",
+    "days": "days",
+    "customTemplates": "Custom Task Templates",
+    "customTemplatesDescription": "These templates were created by your team. Select any you want to include for this event.",
+    "customTasks": "Custom Tasks",
+    "addCustomTask": "Add Custom Task",
+    "noCustomTasks": "No custom tasks yet. Click \"Add Custom Task\" to create one.",
+    "trigger": "Trigger",
+    "assignedTo": "Assigned to",
+    "unassigned": "Unassigned",
+    "editTask": "Edit task",
+    "deleteTask": "Delete task",
+    "taskName": "Task Name",
+    "taskNamePlaceholder": "e.g., Send venue confirmation email",
+    "selectEvent": "Event (optional)",
+    "selectEventHelp": "Select an event to create a task for, or save as template",
+    "noEvent": "No event (save as template)",
+    "triggerStateHelp": "The event state that activates this task",
+    "workflowStates": {
+      "topic_selection": "Topic Selection",
+      "speaker_brainstorming": "Speaker Brainstorming",
+      "speaker_outreach": "Speaker Outreach",
+      "agenda_published": "Agenda Published",
+      "agenda_finalized": "Agenda Finalized",
+      "event_live": "Event Live",
+      "post_event_wrap_up": "Post Event Wrap-Up",
+      "archived": "Archived"
+    },
+    "dueDateType": "Due Date Type",
+    "dueDateTypes": {
+      "immediate": "Immediate (now)",
+      "relative_to_event": "Relative to event date",
+      "absolute": "Absolute date"
+    },
+    "offsetDays": "Offset Days",
+    "offsetDaysHelp": "Negative = before event, Positive = after event",
+    "absoluteDueDate": "Due Date",
+    "assignedOrganizer": "Assigned Organizer",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "Add any instructions or context...",
+    "saveAsTemplate": "Save as reusable template",
+    "createTemplate": "Create Template",
+    "createTask": "Create Task",
+    "errors": {
+      "loadTemplatesFailed": "Failed to load task templates",
+      "taskNameRequired": "Task name is required",
+      "triggerStateRequired": "Trigger state is required",
+      "offsetDaysRequired": "Offset days is required",
+      "eventRequired": "Please select an event or save as template",
+      "updateTaskFailed": "Failed to update task",
+      "createTaskFailed": "Failed to create task"
+    }
   },
   "form": {
     "createEvent": "Create New Event",
@@ -225,6 +302,10 @@
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
     "themeImageAlt": "Theme image for event",
     "removeThemeImage": "Remove theme image",
+    "overrideValidation": "Override workflow validation (allows any state transition)",
+    "overrideReason": "Override Reason (Optional)",
+    "overrideReasonPlaceholder": "Why are you overriding workflow validation?",
+    "overrideReasonHelp": "This will be logged for audit purposes",
     "errors": {
       "failedToLoadEventTypes": "Failed to load event types"
     }

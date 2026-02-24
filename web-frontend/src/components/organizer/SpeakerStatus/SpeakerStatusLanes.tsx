@@ -73,18 +73,25 @@ const STATUS_COLORS: Record<string, string> = {
   DECLINED: '#f44336', // Red
 };
 
-// Status lanes to display (Story 5.5 - Extended from 5 to 8 lanes, Story 6.1b added INVITED)
-const STATUS_LANES: SpeakerWorkflowState[] = [
+// Status lanes split into two groups for responsive layout.
+// Group 1: outreach/decision pipeline (wraps as its own row on smaller screens)
+// Group 2: post-acceptance pipeline (starts on a new row on smaller screens)
+const OUTREACH_LANES: SpeakerWorkflowState[] = [
   'IDENTIFIED',
-  'INVITED', // NEW - Story 6.1b: automated invitation sent
+  'INVITED',
   'CONTACTED',
   'READY',
   'ACCEPTED',
-  'CONTENT_SUBMITTED', // NEW - Story 5.5
-  'QUALITY_REVIEWED', // NEW - Story 5.5
-  'CONFIRMED', // NEW - Story 5.5
+];
+
+const POST_ACCEPTANCE_LANES: SpeakerWorkflowState[] = [
+  'CONTENT_SUBMITTED',
+  'QUALITY_REVIEWED',
+  'CONFIRMED',
   'DECLINED',
 ];
+
+const STATUS_LANES: SpeakerWorkflowState[] = [...OUTREACH_LANES, ...POST_ACCEPTANCE_LANES];
 
 export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
   eventCode,
@@ -250,20 +257,39 @@ export const SpeakerStatusLanes: React.FC<SpeakerStatusLanesProps> = ({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <Grid container spacing={2} sx={{ width: '100%', flex: 1, minHeight: 0 }}>
-          {STATUS_LANES.map((status) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3, lg: 1.5 }} key={status} sx={{ display: 'flex' }}>
-              <StatusLane
-                status={status}
-                speakers={speakersByStatus[status] || []}
-                sessions={sessions}
-                eventCode={eventCode}
-                color={STATUS_COLORS[status]}
-                onSpeakerClick={handleSpeakerClick}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+          {/* Group 1: Outreach pipeline (IDENTIFIED → ACCEPTED) */}
+          <Grid container spacing={2}>
+            {OUTREACH_LANES.map((status) => (
+              <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
+                <StatusLane
+                  status={status}
+                  speakers={speakersByStatus[status] || []}
+                  sessions={sessions}
+                  eventCode={eventCode}
+                  color={STATUS_COLORS[status]}
+                  onSpeakerClick={handleSpeakerClick}
+                />
+              </Grid>
+            ))}
+          </Grid>
+
+          {/* Group 2: Post-acceptance pipeline (CONTENT_SUBMITTED → DECLINED) */}
+          <Grid container spacing={2}>
+            {POST_ACCEPTANCE_LANES.map((status) => (
+              <Grid size={{ xs: 12, sm: 6, md: 'grow' }} key={status} sx={{ display: 'flex' }}>
+                <StatusLane
+                  status={status}
+                  speakers={speakersByStatus[status] || []}
+                  sessions={sessions}
+                  eventCode={eventCode}
+                  color={STATUS_COLORS[status]}
+                  onSpeakerClick={handleSpeakerClick}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Stack>
 
         <DragOverlay>
           {activeSpeaker ? (

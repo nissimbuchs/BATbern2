@@ -88,6 +88,7 @@ const CompanyManagementScreen: React.FC = () => {
   const isDetailView = location.pathname !== '/organizer/companies';
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const effectiveViewMode = isMobile ? 'list' : viewMode;
   const [filters, setFilters] = useState<CompanyFiltersType>({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
@@ -179,22 +180,24 @@ const CompanyManagementScreen: React.FC = () => {
                 {t('company.title')}
               </Typography>
 
-              <Stack direction="row" spacing={2}>
-                {/* View Toggle */}
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={handleViewModeChange}
-                  aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
-                  size="small"
-                >
-                  <ToggleButton value="grid" aria-label={t('company.viewMode.grid')}>
-                    <GridIcon />
-                  </ToggleButton>
-                  <ToggleButton value="list" aria-label={t('company.viewMode.list')}>
-                    <ListIcon />
-                  </ToggleButton>
-                </ToggleButtonGroup>
+              <Stack direction="row" spacing={1} alignItems="center">
+                {/* View Toggle — hidden on mobile (list view is forced) */}
+                {!isMobile && (
+                  <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={handleViewModeChange}
+                    aria-label={t('company.viewMode.toggleCurrent', { mode: viewMode })}
+                    size="small"
+                  >
+                    <ToggleButton value="grid" aria-label={t('company.viewMode.grid')}>
+                      <GridIcon />
+                    </ToggleButton>
+                    <ToggleButton value="list" aria-label={t('company.viewMode.list')}>
+                      <ListIcon />
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                )}
 
                 {/* Batch Import Button */}
                 <Button
@@ -203,7 +206,9 @@ const CompanyManagementScreen: React.FC = () => {
                   onClick={() => setIsBatchImportOpen(true)}
                   aria-label={t('company.batchImport.button')}
                 >
-                  {t('company.batchImport.button')}
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    {t('company.batchImport.button')}
+                  </Box>
                 </Button>
 
                 {/* Create Button */}
@@ -214,7 +219,9 @@ const CompanyManagementScreen: React.FC = () => {
                   aria-label={t('company.createCompany')}
                   data-testid="create-company-button"
                 >
-                  {t('company.createCompany')}
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    {t('company.createCompany')}
+                  </Box>
                 </Button>
               </Stack>
             </Stack>
@@ -236,7 +243,7 @@ const CompanyManagementScreen: React.FC = () => {
                   <CompanyList
                     companies={companiesData?.data || []}
                     isLoading={isLoadingCompanies}
-                    viewMode={viewMode}
+                    viewMode={effectiveViewMode}
                     onCompanyClick={(id) => navigate(`${id}`)}
                   />
                 </Box>

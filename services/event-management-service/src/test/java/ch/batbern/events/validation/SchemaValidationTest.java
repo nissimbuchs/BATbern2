@@ -1,6 +1,6 @@
 package ch.batbern.events.validation;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package ch.batbern.events.notification;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

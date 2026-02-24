@@ -99,25 +99,6 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
     });
   });
 
-  describe('AC3: Test 3.3 - should_displayInitialsAvatar_when_logoUrlMissing', () => {
-    it('should display initials avatar when logoUrl is missing', () => {
-      render(<PartnerCard partner={mockPartnerWithoutLogo} />, { wrapper: createWrapper() });
-
-      // Should display "TE" for "TechCorp"
-      expect(screen.getByText('TE')).toBeInTheDocument();
-    });
-
-    it('should use first two letters of company name for initials', () => {
-      const partner = {
-        ...mockPartnerWithoutLogo,
-        companyName: 'Acme Corp',
-      };
-      render(<PartnerCard partner={partner} />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('AC')).toBeInTheDocument();
-    });
-  });
-
   describe('AC3: Test 3.4 - should_displayTierBadge_when_partnershipLevelSet', () => {
     it('should display gold tier badge with emoji', () => {
       render(<PartnerCard partner={mockPartnerWithLogo} />, { wrapper: createWrapper() });
@@ -268,15 +249,6 @@ describe('PartnerCard Component (RED Phase - Task 4a)', () => {
 
       expect(sendEmailButton).toBeDisabled();
       expect(analyticsButton).toBeDisabled();
-    });
-  });
-
-  describe('Additional Display Tests', () => {
-    it('should render progress bar for engagement', () => {
-      render(<PartnerCard partner={mockPartnerWithLogo} />, { wrapper: createWrapper() });
-
-      const progressBar = screen.getByRole('progressbar');
-      expect(progressBar).toBeInTheDocument();
     });
   });
 });

@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/public/ui/form';
-import { Input } from '@/components/public/ui/ui/input';
+import { Input } from '@/components/public/ui/input';
 import { CompanyAutocomplete } from './CompanyAutocomplete';
 import type { CreateRegistrationRequest } from '@/types/event.types';
 

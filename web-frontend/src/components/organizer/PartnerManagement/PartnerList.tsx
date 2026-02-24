@@ -1,5 +1,15 @@
 import React from 'react';
-import { Box, Stack, Typography, Button, ButtonGroup, Skeleton, Alert } from '@mui/material';
+import {
+  Box,
+  Stack,
+  Typography,
+  Button,
+  ButtonGroup,
+  Skeleton,
+  Alert,
+  useTheme,
+  useMediaQuery,
+} from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { FirstPage, NavigateBefore, NavigateNext, LastPage } from '@mui/icons-material';
 import { PartnerCard } from './PartnerCard';
@@ -8,6 +18,9 @@ import { usePartnerStore } from '@/stores/partnerStore';
 
 export const PartnerList: React.FC = () => {
   const { viewMode, filters, searchQuery, sortBy, sortOrder, page, setPage } = usePartnerStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const effectiveViewMode = isMobile ? 'list' : viewMode;
 
   // Fetch partners using React Query
   const { data, isLoading, isError, error } = usePartners(
@@ -105,7 +118,7 @@ export const PartnerList: React.FC = () => {
   };
 
   // Grid view
-  if (viewMode === 'grid') {
+  if (effectiveViewMode === 'grid') {
     return (
       <Box>
         <Grid container spacing={2} data-testid="partner-grid" data-columns="3" data-spacing="3">

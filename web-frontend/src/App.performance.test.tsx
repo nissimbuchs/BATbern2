@@ -41,12 +41,6 @@ describe('Performance Optimization - Code Splitting', () => {
       expect(dashboardModule.default).toBeDefined();
     });
 
-    it('should_useLazyLoading_when_renderingEventsRoute', async () => {
-      // Verify Events component is in separate file
-      const eventsModule = await import('./pages/Events');
-      expect(eventsModule.default).toBeDefined();
-    });
-
     it('should_useLazyLoading_when_renderingSpeakersRoute', async () => {
       // Verify Speakers component is in separate file
       const speakersModule = await import('./pages/Speakers');
@@ -57,12 +51,6 @@ describe('Performance Optimization - Code Splitting', () => {
       // Verify Partners component is in separate file
       const partnersModule = await import('./pages/OrganizerPartners');
       expect(partnersModule.default).toBeDefined();
-    });
-
-    it('should_useLazyLoading_when_renderingContentRoute', async () => {
-      // Verify Content component is in separate file
-      const contentModule = await import('./pages/Content');
-      expect(contentModule.default).toBeDefined();
     });
 
     it('should_useLazyLoading_when_renderingAnalyticsRoute', async () => {

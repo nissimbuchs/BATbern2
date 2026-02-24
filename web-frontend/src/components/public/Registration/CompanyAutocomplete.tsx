@@ -15,15 +15,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/public/ui/ui/input';
+import { Input } from '@/components/public/ui/input';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandItem,
   CommandList,
-} from '@/components/public/ui/ui/command';
-import { Popover, PopoverContent, PopoverAnchor } from '@/components/public/ui/ui/popover';
+} from '@/components/public/ui/command';
+import { Popover, PopoverContent, PopoverAnchor } from '@/components/public/ui/popover';
 import { searchCompanies } from '@/services/api/companyApi';
 import type { components } from '@/types/generated/company-api.types';
 import { Loader2 } from 'lucide-react';

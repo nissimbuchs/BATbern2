@@ -4,19 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-02-03
+**Last Updated:** 2026-02-23
 
-**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epic 6 DEPLOYED TO STAGING**
+**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6 and 8 COMPLETE**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epic 6 (Speaker Self-Service Portal) Phase 1 & 2 deployed to staging.
+**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal) and 8 (Partner Coordination) fully implemented. Epic 7 deferred; Epic 9 planned.
 
 **Epic Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
 - ✅ **Epic 2**: Entity CRUD & Domain Services - 100% COMPLETE
-- ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import scheduled)
+- ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import pending)
 - ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
 - ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
-- ✅ **Epic 6**: Speaker Self-Service Portal - DEPLOYED TO STAGING (Phase 1 & 2 complete)
+- ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
+- 📦 **Epic 7**: Attendee Experience Enhancements - DEFERRED to Phase 3
+- ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
+- 🔨 **Epic 9**: Speaker Authentication & Account Integration - IN PROGRESS (Story 9.1 JWT magic link done; 9.2-9.5 planned)
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -27,12 +30,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Public website with event registration (3-step wizard + QR codes)
 - ✅ Historical archive browsing with content search
 - ✅ Historical data migration tooling (production import pending user trigger)
+- ✅ Speaker self-service portal (invitations, response, materials, dashboard, reminders)
+- ✅ Partner coordination (attendance analytics + XLSX export, topic voting, ICS meeting invites)
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 2 (Epic 6 on Staging) + Phase 3 (Epic 8 in Development)
-- Epic 6: Stories 6.0-6.3, 6.5 complete; Story 6.4 partial (dashboard views available)
-- Epic 8: Story 8.0 (Partner Portal Shell) complete; Stories 8.1-8.3 ready for dev
+**Current Phase:** Phase 3 — Epics 1-6 and 8 complete; Epic 9 in progress (Story 9.1 done); Epic 7 deferred
 
 ## Project Overview
 
@@ -47,7 +50,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epic 6 on Staging**
+**Phase:** ✅ **MVP COMPLETE** + **Epics 6 and 8 COMPLETE**
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -55,19 +58,23 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 3**: Historical Data Migration - **100% COMPLETE** (tooling ready, production import pending)
 - ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
-- ✅ **Epic 6**: Speaker Self-Service Portal - **DEPLOYED TO STAGING** (Stories 6.0-6.3, 6.5 complete; Story 6.4 partial)
+- ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
+- 📦 **Epic 7**: Attendee Experience Enhancements - **DEFERRED to Phase 3**
+- ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
+- 🔨 **Epic 9**: Speaker Authentication & Account Integration - **IN PROGRESS** (Story 9.1 JWT magic link complete; 9.2-9.5 planned)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
 - ✅ All core functionality delivered and tested
 - ✅ Platform ready for production launch
-- ✅ Epic 6 Speaker Portal deployed to staging (2026-02-03)
+- ✅ Epic 6 Speaker Portal complete (2026-02-16 QA passed)
+- ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
 **When Adding New Features:**
-- ✅ MVP platform is 100% feature-complete
-- Epic 6 Phase 1 & 2 deployed with automated reminders - remaining: Story 6.4 (full dashboard)
-- Current focus: Epic 6 testing on staging, bug fixes, production readiness
-- Prioritize Epic 6 completion and production deployment
+- ✅ Platform through Epic 8 is feature-complete (except Epic 7)
+- Epic 9: Stories 9.2-9.5 next (Cognito account creation, dual auth, migration, multi-role nav)
+- Epic 7: Personal dashboard, bookmarks, PWA — deferred to Phase 3
+- Prioritize Epic 9 completion, production readiness, and Epic 3 data import
 
 ## Build System
 

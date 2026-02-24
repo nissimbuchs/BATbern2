@@ -154,7 +154,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onClick }) => {
             {user.roles.map((role) => (
               <Chip
                 key={role}
-                label={role}
+                label={t(`filters.role.${role.toLowerCase()}`)}
                 size="small"
                 color={getRoleBadgeColor(role as Role)}
                 icon={<span>{ROLE_ICONS[role as Role]}</span>}

@@ -336,9 +336,16 @@ public class EventController {
         }
 
         // Story 5.9: Calculate session materials metrics
+        // Total = speaker sessions with a timeslot assigned (excludes structural: moderation/break/lunch)
         List<ch.batbern.events.domain.Session> allSessions = sessionRepository.findByEventId(eventId);
-        long totalSessions = allSessions.size();
+        Set<String> structuralTypes = Set.of("moderation", "break", "lunch");
+        long totalSessions = allSessions.stream()
+                .filter(session -> session.getStartTime() != null)
+                .filter(session -> !structuralTypes.contains(session.getSessionType()))
+                .count();
         long sessionsWithMaterials = allSessions.stream()
+                .filter(session -> session.getStartTime() != null)
+                .filter(session -> !structuralTypes.contains(session.getSessionType()))
                 .filter(session -> {
                     // Count sessions with materialsStatus = COMPLETE
                     List<ch.batbern.events.dto.SessionMaterialResponse> materials =

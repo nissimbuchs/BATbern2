@@ -53,4 +53,9 @@ USER spring
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=55.0", \
+  "-XX:InitialRAMPercentage=40.0", \
+  "-XX:+UseG1GC", \
+  "-jar", "app.jar"]

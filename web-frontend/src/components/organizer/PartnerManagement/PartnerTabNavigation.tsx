@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tabs, Tab, Box, useTheme, useMediaQuery } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 
@@ -9,24 +10,30 @@ interface PartnerTabNavigationProps {
   role?: UserRole;
 }
 
-const ALL_TAB_LABELS = ['Overview', 'Contacts', 'Meetings', 'Analytics', 'Notes', 'Settings'];
-
-// Story 8.0: Settings tab hidden for PARTNER role
-const getVisibleTabs = (role?: UserRole) => {
-  if (role === 'PARTNER') {
-    return ALL_TAB_LABELS.filter((label) => label !== 'Settings');
-  }
-  return ALL_TAB_LABELS;
-};
-
 export const PartnerTabNavigation: React.FC<PartnerTabNavigationProps> = ({
   activeTab,
   onTabChange,
   role,
 }) => {
+  const { t } = useTranslation('partners');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // <640px
-  const visibleTabs = getVisibleTabs(role);
+
+  const allTabs = [
+    { key: 'overview', label: t('detail.tabs.overview') },
+    { key: 'contacts', label: t('detail.tabs.contacts') },
+    { key: 'meetings', label: t('detail.tabs.meetings') },
+    { key: 'analytics', label: t('detail.tabs.analytics') },
+    { key: 'notes', label: t('detail.tabs.notes') },
+    { key: 'settings', label: t('detail.tabs.settings') },
+  ];
+
+  // Story 8.0: Settings tab hidden for PARTNER role
+  // Story 8.4: Notes tab also hidden for PARTNER (organizer-internal notes)
+  const visibleTabs =
+    role === 'PARTNER'
+      ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes')
+      : allTabs;
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     onTabChange(newValue);
@@ -68,10 +75,10 @@ export const PartnerTabNavigation: React.FC<PartnerTabNavigationProps> = ({
         scrollButtons="auto"
         orientation={isMobile ? 'vertical' : 'horizontal'}
       >
-        {visibleTabs.map((label, index) => (
+        {visibleTabs.map((tab, index) => (
           <Tab
-            key={label}
-            label={label}
+            key={tab.key}
+            label={tab.label}
             id={`partner-tab-${index}`}
             aria-controls={`partner-tabpanel-${index}`}
           />

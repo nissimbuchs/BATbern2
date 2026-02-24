@@ -24,12 +24,13 @@ REMOTE_BRANCH=$(git rev-parse --abbrev-ref @{push} 2>/dev/null || echo "origin/$
 
 # Get list of changed files
 echo -e "${CYAN}🔍 Detecting changed files...${NC}"
-CHANGED_FILES=$(git diff --name-only $REMOTE_BRANCH...HEAD 2>/dev/null || git diff --name-only HEAD)
+CHANGED_FILES=$(git diff --name-only $REMOTE_BRANCH...HEAD 2>/dev/null \
+  || git diff --name-only $(git merge-base origin/develop HEAD 2>/dev/null || echo "HEAD~1")..HEAD 2>/dev/null \
+  || git diff --name-only HEAD~1)
 
 if [ -z "$CHANGED_FILES" ]; then
-    echo -e "${YELLOW}⚠️  No changes detected. Running minimal validation...${NC}"
-    # If no changes detected, just validate the code compiles
-    CHANGED_FILES=$(git diff --name-only --cached)
+    echo -e "${YELLOW}⚠️  No changes detected via remote branch. Falling back to origin/develop merge base...${NC}"
+    CHANGED_FILES=$(git diff --name-only $(git merge-base origin/develop HEAD 2>/dev/null || echo "HEAD~1")..HEAD 2>/dev/null || true)
 fi
 
 # Display changed files

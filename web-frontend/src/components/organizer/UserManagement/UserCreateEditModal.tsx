@@ -26,6 +26,8 @@ import {
   Badge,
   Tooltip,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -74,6 +76,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
   user,
 }) => {
   const { t } = useTranslation('userManagement');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
 
@@ -300,6 +304,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="user-dialog-title"
     >
       <DialogTitle id="user-dialog-title">

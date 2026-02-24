@@ -58,17 +58,6 @@ export interface PartnerSort {
   sortOrder: 'asc' | 'desc';
 }
 
-// ============================================================================
-// Supporting types for Story 2.8.2 (Partner Detail View)
-// ============================================================================
-
-/**
- * Activity filter parameters
- */
-export interface ActivityFilters {
-  type?: 'vote' | 'meeting' | 'note' | 'partnership_change';
-}
-
 /**
  * List partners with filters, sorting, and pagination
  * Includes HTTP enrichment via ?include=company,contacts (ADR-004)
@@ -158,99 +147,6 @@ export const getPartnerVotes = async (companyName: string): Promise<TopicVoteRes
   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/votes`);
   return response.data;
 };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Get partner meetings
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @returns Array of MeetingResponse
-//  */
-// export const getPartnerMeetings = async (companyName: string): Promise<MeetingResponse[]> => {
-//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/meetings`);
-//   return response.data;
-// };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Get partner activity timeline
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @param filters - Optional activity filters (type)
-//  * @returns Array of ActivityResponse
-//  */
-// export const getPartnerActivity = async (
-//   companyName: string,
-//   filters?: ActivityFilters
-// ): Promise<ActivityResponse[]> => {
-//   const params: Record<string, string> = {};
-//   if (filters?.type) {
-//     params.filter = `type:${filters.type}`;
-//   }
-//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/activity`, { params });
-//   return response.data;
-// };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Get partner notes
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @returns Array of NoteResponse
-//  */
-// export const getPartnerNotes = async (companyName: string): Promise<NoteResponse[]> => {
-//   const response = await apiClient.get(`${PARTNER_API_PATH}/${companyName}/notes`);
-//   return response.data;
-// };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Create a new partner note
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @param note - CreateNoteRequest payload
-//  * @returns Created NoteResponse
-//  */
-// export const createPartnerNote = async (
-//   companyName: string,
-//   note: CreateNoteRequest
-// ): Promise<NoteResponse> => {
-//   const response = await apiClient.post(`${PARTNER_API_PATH}/${companyName}/notes`, note);
-//   return response.data;
-// };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Update an existing partner note
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @param noteId - Note ID to update
-//  * @param note - UpdateNoteRequest payload
-//  * @returns Updated NoteResponse
-//  */
-// export const updatePartnerNote = async (
-//   companyName: string,
-//   noteId: string,
-//   note: UpdateNoteRequest
-// ): Promise<NoteResponse> => {
-//   const response = await apiClient.patch(
-//     `${PARTNER_API_PATH}/${companyName}/notes/${noteId}`,
-//     note
-//   );
-//   return response.data;
-// };
-
-// TODO: Future feature - Add to OpenAPI spec when implemented
-// /**
-//  * Delete a partner note
-//  * Story 2.8.2
-//  * @param companyName - Company name (meaningful ID)
-//  * @param noteId - Note ID to delete
-//  * @returns void
-//  */
-// export const deletePartnerNote = async (companyName: string, noteId: string): Promise<void> => {
-//   await apiClient.delete(`${PARTNER_API_PATH}/${companyName}/notes/${noteId}`);
-// };
 
 // ============================================================================
 // Story 2.8.3: Partner Create/Edit Modal APIs

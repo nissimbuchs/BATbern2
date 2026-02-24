@@ -94,7 +94,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      expect(screen.getByText(/no notifications/i)).toBeInTheDocument();
+      expect(screen.getByText('Keine Benachrichtigungen')).toBeInTheDocument();
     });
 
     it('should_renderReloadButton_when_componentMounted', () => {
@@ -289,7 +289,7 @@ describe('NotificationDropdown', () => {
         onClose: vi.fn(),
       });
 
-      const markAllButton = screen.getByRole('button', { name: /mark all as read/i });
+      const markAllButton = screen.getByRole('button', { name: 'Alle als gelesen markieren' });
       await user.click(markAllButton);
 
       expect(onMarkAsRead).toHaveBeenCalledWith('all');
@@ -401,7 +401,7 @@ describe('NotificationDropdown', () => {
       await user.click(deleteButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/are you sure/i)).toBeInTheDocument();
+        expect(screen.getByText(/möchten sie/i)).toBeInTheDocument();
       });
     });
 

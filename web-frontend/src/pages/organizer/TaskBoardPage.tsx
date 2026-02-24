@@ -56,6 +56,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
@@ -75,15 +76,22 @@ const TaskBoardPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'mine'>('mine');
   const [sortBy, setSortBy] = useState<'dueDate' | 'createdAt'>('dueDate');
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<EventTaskResponse | null>(null);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [completionNotes, setCompletionNotes] = useState('');
   const [activeTask, setActiveTask] = useState<EventTaskResponse | null>(null);
 
-  // Drag-and-drop sensors
+  // Drag-and-drop sensors — PointerSensor for mouse/stylus, TouchSensor for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // 8px movement required to activate drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // hold 250ms to initiate drag (vs scroll)
+        tolerance: 5, // allow 5px movement during hold without cancelling
       },
     })
   );
@@ -146,6 +154,11 @@ const TaskBoardPage: React.FC = () => {
   const inProgressTasks = sortedTasks.filter((task) => task.status === 'in_progress');
   const completedTasks = sortedTasks.filter((task) => task.status === 'completed');
 
+  const handleEditTask = (task: EventTaskResponse) => {
+    setEditingTask(task);
+    setIsCustomTaskModalOpen(true);
+  };
+
   const handleCompleteTask = (taskId: string) => {
     setCompletingTaskId(taskId);
   };
@@ -195,10 +208,26 @@ const TaskBoardPage: React.FC = () => {
     <>
       <Container maxWidth={false} sx={{ py: 3 }}>
         {/* Page Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4">{t('tasks.taskBoard', 'Task Board')}</Typography>
-          <Stack direction="row" spacing={2} alignItems="center">
-            {/* Filters */}
+        <Stack spacing={2} mb={3}>
+          {/* Row 1: title + add button */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography variant="h4">{t('tasks.taskBoard', 'Task Board')}</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditingTask(null);
+                setIsCustomTaskModalOpen(true);
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('tasks.addCustomTask', 'Add Custom Task')}
+              </Box>
+            </Button>
+          </Stack>
+
+          {/* Row 2: filters — stack vertically on mobile */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               select
               size="small"
@@ -206,7 +235,7 @@ const TaskBoardPage: React.FC = () => {
               onChange={(e) => setFilter(e.target.value as 'all' | 'mine')}
               label={t('tasks.filter', 'Filter')}
               data-testid="task-filter-select"
-              sx={{ minWidth: 150 }}
+              sx={{ minWidth: 140 }}
             >
               <MenuItem value="mine" data-testid="task-filter-option-mine">
                 {t('tasks.myTasks', 'My Tasks')}
@@ -222,19 +251,11 @@ const TaskBoardPage: React.FC = () => {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'createdAt')}
               label={t('tasks.sortBy', 'Sort By')}
-              sx={{ minWidth: 150 }}
+              sx={{ minWidth: 140 }}
             >
               <MenuItem value="dueDate">{t('tasks.dueDate', 'Due Date')}</MenuItem>
               <MenuItem value="createdAt">{t('tasks.createdDate', 'Created Date')}</MenuItem>
             </TextField>
-
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setIsCustomTaskModalOpen(true)}
-            >
-              {t('tasks.addCustomTask', 'Add Custom Task')}
-            </Button>
           </Stack>
         </Stack>
 
@@ -264,7 +285,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'grey.50',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -286,6 +307,7 @@ const TaskBoardPage: React.FC = () => {
                       status="pending"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -299,7 +321,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'warning.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -321,6 +343,7 @@ const TaskBoardPage: React.FC = () => {
                       status="todo"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -334,7 +357,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'info.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -356,6 +379,7 @@ const TaskBoardPage: React.FC = () => {
                       status="in_progress"
                       locale={locale}
                       onComplete={handleCompleteTask}
+                      onEdit={handleEditTask}
                       t={t}
                     />
                   </Paper>
@@ -369,7 +393,7 @@ const TaskBoardPage: React.FC = () => {
                     sx={{
                       p: 2,
                       bgcolor: 'success.lighter',
-                      height: 'calc(100vh - 220px)',
+                      height: { xs: 280, md: 'calc(100vh - 260px)' },
                       display: 'flex',
                       flexDirection: 'column',
                     }}
@@ -386,7 +410,13 @@ const TaskBoardPage: React.FC = () => {
                     >
                       {t('tasks.completedDescription', 'Finished tasks')}
                     </Typography>
-                    <TaskColumn tasks={completedTasks} status="completed" locale={locale} t={t} />
+                    <TaskColumn
+                      tasks={completedTasks}
+                      status="completed"
+                      locale={locale}
+                      onEdit={handleEditTask}
+                      t={t}
+                    />
                   </Paper>
                 </DroppableColumn>
               </Grid>
@@ -441,12 +471,16 @@ const TaskBoardPage: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Custom Task Modal */}
+      {/* Custom Task Modal (create or edit) */}
       <CustomTaskModal
         open={isCustomTaskModalOpen}
-        onClose={() => setIsCustomTaskModalOpen(false)}
-        eventId={null} // Ad-hoc task not tied to specific event
+        onClose={() => {
+          setIsCustomTaskModalOpen(false);
+          setEditingTask(null);
+        }}
+        eventId={null}
         organizerUsername={organizerUsername}
+        existingTask={editingTask ?? undefined}
       />
     </>
   );
@@ -480,10 +514,18 @@ interface DraggableTaskProps {
   status: 'pending' | 'todo' | 'in_progress' | 'completed';
   locale: Locale;
   onComplete?: (taskId: string) => void;
+  onEdit?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
-const DraggableTask: React.FC<DraggableTaskProps> = ({ task, status, locale, onComplete, t }) => {
+const DraggableTask: React.FC<DraggableTaskProps> = ({
+  task,
+  status,
+  locale,
+  onComplete,
+  onEdit,
+  t,
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
   });
@@ -501,6 +543,7 @@ const DraggableTask: React.FC<DraggableTaskProps> = ({ task, status, locale, onC
       task={task}
       locale={locale}
       onComplete={onComplete}
+      onEdit={onEdit}
       showCompleteButton={status !== 'completed'}
       showEventCode={true}
       showTriggerState={true}
@@ -530,10 +573,18 @@ interface TaskColumnProps {
   status: 'pending' | 'todo' | 'in_progress' | 'completed';
   locale: Locale;
   onComplete?: (taskId: string) => void;
+  onEdit?: (task: EventTaskResponse) => void;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
-const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComplete, t }) => {
+const TaskColumn: React.FC<TaskColumnProps> = ({
+  tasks,
+  status,
+  locale,
+  onComplete,
+  onEdit,
+  t,
+}) => {
   if (tasks.length === 0) {
     return (
       <Box textAlign="center" py={4}>
@@ -553,6 +604,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ tasks, status, locale, onComple
           status={status}
           locale={locale}
           onComplete={onComplete}
+          onEdit={onEdit}
           t={t}
         />
       ))}
