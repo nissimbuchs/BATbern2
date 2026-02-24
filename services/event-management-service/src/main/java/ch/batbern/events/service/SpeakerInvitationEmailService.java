@@ -88,8 +88,8 @@ public class SpeakerInvitationEmailService {
             // Story 9.1: Generate JWT magic link for new-style authentication
             String jwtToken = magicLinkService.generateJwtToken(speaker.getId());
 
-            // Load and populate email template
-            String htmlBody = loadEmailTemplate(
+            // Load and populate email template (html + subject)
+            EmailContent content = loadEmailTemplate(
                     emailLocale,
                     speaker,
                     event,
@@ -99,16 +99,11 @@ public class SpeakerInvitationEmailService {
                     jwtToken
             );
 
-            // Determine subject based on locale
-            String subject = emailLocale.getLanguage().equals("de")
-                    ? "Einladung als Referent - " + event.getTitle()
-                    : "Speaker Invitation - " + event.getTitle();
-
             // Send email (no attachments for invitation)
             emailService.sendHtmlEmail(
                     speaker.getEmail(),
-                    subject,
-                    htmlBody
+                    content.subject(),
+                    content.html()
             );
 
             log.info("Invitation email sent successfully to: {}", LoggingUtils.maskEmail(speaker.getEmail()));
@@ -119,10 +114,12 @@ public class SpeakerInvitationEmailService {
         }
     }
 
+    private record EmailContent(String html, String subject) {}
+
     /**
      * Load and populate email template with speaker/event data.
      */
-    private String loadEmailTemplate(
+    private EmailContent loadEmailTemplate(
             Locale locale,
             SpeakerPool speaker,
             Event event,
@@ -186,8 +183,13 @@ public class SpeakerInvitationEmailService {
                 Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
-        // Replace template variables
-        return emailService.replaceVariables(template, variables);
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject("speaker-invitation", localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? "Einladung als Referent - " + event.getTitle()
+                        : "Speaker Invitation - " + event.getTitle());
+        return new EmailContent(html, subject);
     }
 
     /**

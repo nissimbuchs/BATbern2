@@ -124,6 +124,17 @@ public class EmailTemplateService {
     }
 
     /**
+     * Returns the stored subject for a template, if present and non-blank.
+     * Caller should run replaceVariables() on the result before using it as an email subject.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> resolveSubject(String templateKey, String locale) {
+        return findByKeyAndLocale(templateKey, locale)
+                .map(EmailTemplate::getSubject)
+                .filter(s -> s != null && !s.isBlank());
+    }
+
+    /**
      * Merges content HTML with a layout template at the {{content}} placeholder.
      *
      * If the layout template is not found in DB, logs a WARN and returns contentHtml directly

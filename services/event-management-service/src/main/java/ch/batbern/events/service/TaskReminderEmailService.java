@@ -85,13 +85,9 @@ public class TaskReminderEmailService {
                     LoggingUtils.maskEmail(organizer.getEmail()), task.getTaskName(), event.getEventCode());
 
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
-            String htmlBody = buildEmailBody(task, event, organizer, emailLocale);
+            EmailContent content = buildEmailBody(task, event, organizer, emailLocale);
 
-            String subject = emailLocale.getLanguage().equals("de")
-                    ? "Aufgabenerinnerung: " + task.getTaskName() + " fällig morgen"
-                    : "Task Reminder: " + task.getTaskName() + " due tomorrow";
-
-            emailService.sendHtmlEmail(organizer.getEmail(), subject, htmlBody);
+            emailService.sendHtmlEmail(organizer.getEmail(), content.subject(), content.html());
 
             log.info("Task deadline reminder sent successfully to: {}",
                     LoggingUtils.maskEmail(organizer.getEmail()));
@@ -103,7 +99,9 @@ public class TaskReminderEmailService {
         }
     }
 
-    private String buildEmailBody(EventTask task, Event event, UserResponse organizer, Locale locale) {
+    private record EmailContent(String html, String subject) {}
+
+    private EmailContent buildEmailBody(EventTask task, Event event, UserResponse organizer, Locale locale) {
         String localeStr = locale.getLanguage();
         String classpathFallback = localeStr.equals("de")
                 ? "email-templates/task-reminder-de.html"
@@ -139,7 +137,13 @@ public class TaskReminderEmailService {
                 Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
-        return emailService.replaceVariables(contentHtml, variables);
+        String html = emailService.replaceVariables(contentHtml, variables);
+        String subject = emailTemplateService.resolveSubject("task-reminder", localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? "Aufgabenerinnerung: " + task.getTaskName() + " fällig morgen"
+                        : "Task Reminder: " + task.getTaskName() + " due tomorrow");
+        return new EmailContent(html, subject);
     }
 
     /**

@@ -71,12 +71,10 @@ public class SpeakerReminderEmailService {
         try {
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
 
-            String htmlBody = loadReminderTemplate(
+            EmailContent content = loadReminderTemplate(
                     emailLocale, speaker, event, reminderType, tier, deadline, portalToken);
 
-            String subject = buildSubject(emailLocale, reminderType, tier, event.getTitle());
-
-            emailService.sendHtmlEmail(speaker.getEmail(), subject, htmlBody);
+            emailService.sendHtmlEmail(speaker.getEmail(), content.subject(), content.html());
 
             log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}",
                     reminderType, tier, LoggingUtils.maskEmail(speaker.getEmail()), event.getEventCode());
@@ -116,7 +114,9 @@ public class SpeakerReminderEmailService {
         return urgency + ": " + typeLabel + " - " + eventTitle;
     }
 
-    private String loadReminderTemplate(
+    private record EmailContent(String html, String subject) {}
+
+    private EmailContent loadReminderTemplate(
             Locale locale,
             SpeakerPool speaker,
             Event event,
@@ -155,7 +155,11 @@ public class SpeakerReminderEmailService {
                 Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
-        return emailService.replaceVariables(template, variables);
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject(templateKey, lang)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> buildSubject(locale, reminderType, tier, event.getTitle()));
+        return new EmailContent(html, subject);
     }
 
     /**

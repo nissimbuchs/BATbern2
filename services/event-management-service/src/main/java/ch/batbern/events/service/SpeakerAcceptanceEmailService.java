@@ -85,8 +85,8 @@ public class SpeakerAcceptanceEmailService {
             // Convert event date to Swiss timezone
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
-            // Load and populate email template
-            String htmlBody = loadEmailTemplate(
+            // Load and populate email template (html + subject)
+            EmailContent content = loadEmailTemplate(
                     emailLocale,
                     speaker,
                     event,
@@ -94,16 +94,11 @@ public class SpeakerAcceptanceEmailService {
                     viewToken
             );
 
-            // Determine subject based on locale
-            String subject = emailLocale.getLanguage().equals("de")
-                    ? "Bestätigung Ihrer Teilnahme - " + event.getTitle()
-                    : "Speaker Confirmation - " + event.getTitle();
-
             // Send email
             emailService.sendHtmlEmail(
                     speaker.getEmail(),
-                    subject,
-                    htmlBody
+                    content.subject(),
+                    content.html()
             );
 
             log.info("Acceptance confirmation email sent successfully to: {}",
@@ -116,10 +111,12 @@ public class SpeakerAcceptanceEmailService {
         }
     }
 
+    private record EmailContent(String html, String subject) {}
+
     /**
      * Load and populate email template with speaker/event data.
      */
-    private String loadEmailTemplate(
+    private EmailContent loadEmailTemplate(
             Locale locale,
             SpeakerPool speaker,
             Event event,
@@ -172,8 +169,13 @@ public class SpeakerAcceptanceEmailService {
                 Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
-        // Replace template variables
-        return emailService.replaceVariables(template, variables);
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject("speaker-acceptance", localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? "Bestätigung Ihrer Teilnahme - " + event.getTitle()
+                        : "Speaker Confirmation - " + event.getTitle());
+        return new EmailContent(html, subject);
     }
 
     /**

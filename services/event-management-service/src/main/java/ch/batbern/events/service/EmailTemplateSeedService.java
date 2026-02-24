@@ -30,6 +30,9 @@ public class EmailTemplateSeedService {
     private static final Pattern FILENAME_PATTERN =
             Pattern.compile("^(?:(layout)-)?(.+)-(de|en)\\.html$");
 
+    private static final Pattern SUBJECT_COMMENT_PATTERN =
+            Pattern.compile("^<!--\\s*subject:\\s*(.+?)\\s*-->\\r?\\n?");
+
     private final EmailTemplateRepository emailTemplateRepository;
 
     public EmailTemplateSeedService(EmailTemplateRepository emailTemplateRepository) {
@@ -61,7 +64,9 @@ public class EmailTemplateSeedService {
                 continue;
             }
             try {
-                String htmlBody = resource.getContentAsString(StandardCharsets.UTF_8);
+                String rawHtml = resource.getContentAsString(StandardCharsets.UTF_8);
+                String subject = parsed.isLayout() ? null : parseSubject(rawHtml);
+                String htmlBody = subject != null ? stripSubjectComment(rawHtml) : rawHtml;
                 String category = parsed.isLayout() ? "LAYOUT" : deriveCategory(parsed.templateKey());
                 boolean existed = emailTemplateRepository.existsByTemplateKeyAndLocale(
                         parsed.templateKey(), parsed.locale());
@@ -70,7 +75,7 @@ public class EmailTemplateSeedService {
                 } else {
                     String layoutKey = parsed.isLayout() ? null : "batbern-default";
                     seedTemplate(parsed.templateKey(), parsed.locale(), parsed.isLayout(),
-                            category, null, htmlBody, layoutKey);
+                            category, subject, htmlBody, layoutKey);
                     seeded++;
                 }
             } catch (Exception e) {
@@ -99,6 +104,23 @@ public class EmailTemplateSeedService {
         template.setSystemTemplate(true);
         template.setLayoutKey(layoutKey);
         emailTemplateRepository.save(template);
+    }
+
+    /**
+     * Extracts the subject line from an optional {@code <!-- subject: ... -->} comment
+     * at the very start of the HTML file. Returns {@code null} if not present.
+     */
+    String parseSubject(String html) {
+        Matcher m = SUBJECT_COMMENT_PATTERN.matcher(html);
+        return m.find() ? m.group(1).trim() : null;
+    }
+
+    /**
+     * Removes the {@code <!-- subject: ... -->} comment from the top of the HTML body
+     * so it is not stored as visible content in the template.
+     */
+    String stripSubjectComment(String html) {
+        return SUBJECT_COMMENT_PATTERN.matcher(html).replaceFirst("").trim();
     }
 
     /**

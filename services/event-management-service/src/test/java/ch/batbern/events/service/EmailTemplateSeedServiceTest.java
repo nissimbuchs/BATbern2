@@ -187,6 +187,39 @@ class EmailTemplateSeedServiceTest {
 
         assertThat(layoutCount).isGreaterThanOrEqualTo(2);
         assertThat(contentCount).isGreaterThanOrEqualTo(18);
+
+        // All content templates must have a subject (seeded from <!-- subject: ... --> comment)
+        List<EmailTemplate> contentWithoutSubject = allSaved.stream()
+                .filter(t -> !t.isLayout())
+                .filter(t -> t.getSubject() == null || t.getSubject().isBlank())
+                .toList();
+        assertThat(contentWithoutSubject)
+                .as("All content templates should have a subject from the HTML comment")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("should parse subject from HTML comment at start of file")
+    void should_parseSubject_fromComment() {
+        String html = "<!-- subject: Speaker Invitation - {{eventTitle}} -->\n<h2>Hello</h2>";
+        assertThat(emailTemplateSeedService.parseSubject(html))
+                .isEqualTo("Speaker Invitation - {{eventTitle}}");
+    }
+
+    @Test
+    @DisplayName("should return null when no subject comment present")
+    void should_returnNull_whenNoSubjectComment() {
+        String html = "<h2>Hello</h2><p>No comment here.</p>";
+        assertThat(emailTemplateSeedService.parseSubject(html)).isNull();
+    }
+
+    @Test
+    @DisplayName("should strip subject comment from HTML body")
+    void should_stripSubjectComment_fromHtml() {
+        String html = "<!-- subject: Test Subject -->\n<h2>Hello</h2>";
+        String stripped = emailTemplateSeedService.stripSubjectComment(html);
+        assertThat(stripped).isEqualTo("<h2>Hello</h2>");
+        assertThat(stripped).doesNotContain("<!-- subject:");
     }
 
     @Test

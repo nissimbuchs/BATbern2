@@ -86,7 +86,7 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
             // Load email template (i18n)
-            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event,
+            EmailContent content = loadEmailTemplate(emailLocale, registration, userProfile, event,
                 eventDateTime, confirmationToken, cancellationToken);
 
             // Generate calendar file (.ics)
@@ -99,14 +99,10 @@ public class RegistrationEmailService {
                     "text/calendar; charset=utf-8; method=REQUEST"
             );
 
-            String subject = emailLocale.getLanguage().equals("de")
-                    ? "Registrierungsbestätigung - " + event.getTitle()
-                    : "Registration Confirmation - " + event.getTitle();
-
             emailService.sendHtmlEmailWithAttachments(
                     userProfile.getEmail(),
-                    subject,
-                    htmlBody,
+                    content.subject(),
+                    content.html(),
                     List.of(calendarAttachment)
             );
 
@@ -118,10 +114,12 @@ public class RegistrationEmailService {
         }
     }
 
+    private record EmailContent(String html, String subject) {}
+
     /**
      * Load and populate email template with user/event data.
      */
-    private String loadEmailTemplate(Locale locale, Registration registration,
+    private EmailContent loadEmailTemplate(Locale locale, Registration registration,
         UserResponse userProfile, Event event, ZonedDateTime eventDateTime,
         String confirmationToken, String cancellationToken) {
         String localeStr = locale.getLanguage().equals("de") ? "de" : "en";
@@ -155,8 +153,13 @@ public class RegistrationEmailService {
                 Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
-        // Replace template variables
-        return emailService.replaceVariables(template, variables);
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? "Registrierungsbestätigung - " + event.getTitle()
+                        : "Registration Confirmation - " + event.getTitle());
+        return new EmailContent(html, subject);
     }
 
     /**
