@@ -454,7 +454,8 @@ public class EventTaskService {
      * @throws jakarta.persistence.EntityNotFoundException if task not found
      */
     @Transactional
-    public EventTask updateTask(UUID taskId, String notes, java.time.Instant dueDate, String assignedOrganizerUsername) {
+    public EventTask updateTask(
+            UUID taskId, String notes, java.time.Instant dueDate, String assignedOrganizerUsername) {
         log.info("Updating task {}: notes={}, dueDate={}, assignee={}",
                 taskId, notes != null, dueDate, assignedOrganizerUsername);
 
