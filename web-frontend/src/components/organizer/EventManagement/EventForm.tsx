@@ -39,6 +39,8 @@ import {
   FormControlLabel,
   Tabs,
   Tab,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -151,6 +153,8 @@ interface EventFormProps {
 export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose, onSuccess }) => {
   const { t } = useTranslation('events');
   const { user, isLoading: isAuthLoading } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Mutation hooks for proper cache management (MVC pattern)
   const createEventMutation = useCreateEvent();
@@ -618,6 +622,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         onClose={handleCloseClick}
         maxWidth="md"
         fullWidth
+        fullScreen={isMobile}
         data-testid={mode === 'create' ? 'create-event-modal' : 'event-edit-modal'}
       >
         <DialogTitle data-testid="event-form-dialog-title">
@@ -676,7 +681,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               )}
 
               {/* Event Number and Title side-by-side */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Controller
                   name="eventNumber"
                   control={control}
@@ -689,7 +694,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       helperText={errors.eventNumber?.message}
                       margin="normal"
                       data-testid="event-number-field"
-                      sx={{ width: '150px' }}
+                      sx={{ width: { xs: '100%', sm: '150px' } }}
                     />
                   )}
                 />
@@ -730,7 +735,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               />
 
               {/* Event Date and Registration Deadline side-by-side */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Controller
                   name="date"
                   control={control}
@@ -768,7 +773,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
               </Box>
 
               {/* Event Type and Venue Capacity side-by-side */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <Controller
                   name="eventType"
                   control={control}
@@ -979,7 +984,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, pb: 2 }}>
           <Button onClick={handleCloseClick} data-testid="close-edit-modal-button">
             {t('form.cancel')}
           </Button>
