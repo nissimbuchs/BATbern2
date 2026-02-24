@@ -182,7 +182,8 @@ public class SpeakerInvitationEmailService {
                 Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                 Map.entry("supportUrl", baseUrl + "/support"),
                 Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("jwtMagicLink", jwtMagicLink)
+                Map.entry("jwtMagicLink", jwtMagicLink),
+                Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
         // Replace template variables

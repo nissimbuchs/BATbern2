@@ -22,16 +22,19 @@
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #0066cc;
-            padding-bottom: 20px;
+            background-color: #1976d2;
+            color: white;
+            padding: 30px 20px;
             margin-bottom: 30px;
+            border-radius: 8px 8px 0 0;
         }
         .header .logo {
-            display: block;
-            margin: 0 auto 12px auto;
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 10px;
         }
         .header h1 {
-            color: #0066cc;
+            color: white;
             margin: 0;
             font-size: 24px;
         }
@@ -253,7 +256,7 @@
 <body>
     <div class="email-container">
         <div class="header">
-            <img src="{{logoUrl}}" alt="BATbern Logo" class="logo" width="120" height="40" onerror="this.style.display='none'">
+            <img src="{{logoUrl}}" alt="BATbern Logo" class="logo" onerror="this.style.display='none'">
             <h1>Berner Architekten Treffen</h1>
         </div>
 

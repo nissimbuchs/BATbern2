@@ -135,7 +135,8 @@ public class TaskReminderEmailService {
                 Map.entry("dashboardLink", baseUrl + "/dashboard"),
                 Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                 Map.entry("supportUrl", baseUrl + "/support"),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
+                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
         return emailService.replaceVariables(contentHtml, variables);

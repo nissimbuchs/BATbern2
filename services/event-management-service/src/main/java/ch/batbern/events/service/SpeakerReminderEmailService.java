@@ -151,7 +151,8 @@ public class SpeakerReminderEmailService {
                 Map.entry("portalLink", portalLink),
                 Map.entry("organizerName", organizerName),
                 Map.entry("organizerEmail", organizerEmail),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
+                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
         );
 
         return emailService.replaceVariables(template, variables);
