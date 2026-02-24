@@ -35,13 +35,12 @@ const AppHeader = React.memo(function AppHeader({
   const { t } = useTranslation();
   const { isMobile, isTablet } = useBreakpoints();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   // Use props if provided, otherwise fall back to stores/hooks
   const { user: storeUser, signOut } = useAuth();
-  const { setNotificationDrawerOpen, setUserMenuOpen: setUserMenuOpenState } = useUIStore();
+  const { setUserMenuOpen: setUserMenuOpenState } = useUIStore();
   const navigate = useNavigate();
 
   const user = userProp || storeUser;
@@ -53,8 +52,7 @@ const AppHeader = React.memo(function AppHeader({
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
 
   const handleNotificationClick = () => {
-    setNotificationMenuOpen(!notificationMenuOpen);
-    setNotificationDrawerOpen(true);
+    navigate('/organizer/notifications');
   };
 
   const handleTasksClick = () => {
@@ -143,8 +141,6 @@ const AppHeader = React.memo(function AppHeader({
             <IconButton
               color="inherit"
               aria-label="notifications"
-              aria-expanded={notificationMenuOpen}
-              aria-haspopup="true"
               aria-describedby={unreadCount > 0 ? 'notification-badge-description' : undefined}
               onClick={handleNotificationClick}
             >
