@@ -198,7 +198,7 @@ const UserTable: React.FC<UserTableProps> = ({ users, onRowClick, onAction }) =>
                   {user.roles.map((role) => (
                     <Chip
                       key={role}
-                      label={role}
+                      label={t(`filters.role.${role.toLowerCase()}`)}
                       size="small"
                       color={getRoleBadgeColor(role as Role)}
                       icon={<span>{ROLE_ICONS[role as Role]}</span>}

@@ -110,9 +110,9 @@ describe('UserTable Component', () => {
         <UserTable users={mockUsers} onRowClick={mockRowClick} onAction={mockAction} />
       );
 
-      expect(screen.getByText('ORGANIZER')).toBeInTheDocument();
-      expect(screen.getByText('SPEAKER')).toBeInTheDocument();
-      expect(screen.getByText('PARTNER')).toBeInTheDocument();
+      expect(screen.getByText('filters.role.organizer')).toBeInTheDocument();
+      expect(screen.getByText('filters.role.speaker')).toBeInTheDocument();
+      expect(screen.getByText('filters.role.partner')).toBeInTheDocument();
     });
 
     it('should_displayActiveStatus_when_userIsActive', () => {
