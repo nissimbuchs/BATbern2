@@ -174,15 +174,15 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     : allTabs;
 
   return (
-    <Box sx={{ pb: isMobile ? 8 : 0 }}>
+    <Box sx={{ pb: 8 }}>
       <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
         {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
         {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
 
         {/* Header */}
-        <PartnerDetailHeader partner={partner} role={currentUser.role} />
+        <PartnerDetailHeader partner={partner} role={currentUser.role} isMobile={isMobile} />
 
-        {/* Desktop Tab Navigation */}
+        {/* Tab Navigation — desktop only (bottom nav always shown) */}
         {!isMobile && (
           <Box sx={{ mt: 3 }}>
             <PartnerTabNavigation
@@ -270,22 +270,20 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         <PartnerCreateEditModal />
       </Container>
 
-      {/* Mobile Bottom Navigation */}
-      {isMobile && (
-        <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
-          <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
-            {visibleTabs.map((tab, idx) => (
-              <BottomNavigationAction
-                key={tab.label}
-                value={idx}
-                label={tab.label}
-                icon={tab.icon}
-                sx={{ minWidth: 0, flex: 1, px: 0 }}
-              />
-            ))}
-          </BottomNavigation>
-        </Paper>
-      )}
+      {/* Bottom Navigation — always visible */}
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+        <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
+          {visibleTabs.map((tab, idx) => (
+            <BottomNavigationAction
+              key={tab.label}
+              value={idx}
+              label={tab.label}
+              icon={tab.icon}
+              sx={{ minWidth: 0, flex: 1, px: 0 }}
+            />
+          ))}
+        </BottomNavigation>
+      </Paper>
     </Box>
   );
 };

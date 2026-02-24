@@ -26,6 +26,7 @@ type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 interface PartnerDetailHeaderProps {
   partner: PartnerResponse;
   role?: UserRole; // Story 8.0: hide edit/action buttons for PARTNER
+  isMobile?: boolean;
 }
 
 // Tier emoji mapping
@@ -59,7 +60,11 @@ const getInitials = (name: string): string => {
   return name.substring(0, 2).toUpperCase();
 };
 
-export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partner, role }) => {
+export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
+  partner,
+  role,
+  isMobile = false,
+}) => {
   const { t } = useTranslation('partners');
   const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
@@ -162,7 +167,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
               {!isPartner && (
                 <Stack direction="row" spacing={1} flexShrink={0}>
                   <Button variant="outlined" startIcon={<NoteAdd />} size="small">
-                    {t('detail.notesTab.addNote')}
+                    {!isMobile && t('detail.notesTab.addNote')}
                   </Button>
                   <Button
                     variant="contained"
@@ -171,7 +176,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                     size="small"
                     data-testid="edit-partner-button"
                   >
-                    {t('modal.editTitle')}
+                    {!isMobile && t('modal.editTitle')}
                   </Button>
                 </Stack>
               )}
