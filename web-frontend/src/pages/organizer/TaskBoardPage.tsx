@@ -219,8 +219,8 @@ const TaskBoardPage: React.FC = () => {
             </Button>
           </Stack>
 
-          {/* Row 2: filters — wrap on mobile */}
-          <Stack direction="row" spacing={2} flexWrap="wrap">
+          {/* Row 2: filters — stack vertically on mobile */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <TextField
               select
               size="small"
