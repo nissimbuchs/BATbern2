@@ -134,6 +134,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const resolvedCompanyName = props.companyName ?? urlCompanyName ?? '';
 
   const { t } = useTranslation('organizer');
+  const { t: tPartners } = useTranslation('partners');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
@@ -238,15 +239,15 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
 
   // Tabs visible per role — mirrors PartnerTabNavigation logic
   const allTabs = [
-    { label: 'Overview', icon: <OverviewIcon /> },
-    { label: 'Contacts', icon: <ContactsIcon /> },
-    { label: 'Meetings', icon: <MeetingsIcon /> },
-    { label: 'Analytics', icon: <AnalyticsIcon /> },
-    { label: 'Notes', icon: <NotesIcon /> },
-    { label: 'Settings', icon: <SettingsIcon /> },
+    { key: 'overview', label: tPartners('detail.tabs.overview'), icon: <OverviewIcon /> },
+    { key: 'contacts', label: tPartners('detail.tabs.contacts'), icon: <ContactsIcon /> },
+    { key: 'meetings', label: tPartners('detail.tabs.meetings'), icon: <MeetingsIcon /> },
+    { key: 'analytics', label: tPartners('detail.tabs.analytics'), icon: <AnalyticsIcon /> },
+    { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
+    { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },
   ];
   const visibleTabs = isPartner
-    ? allTabs.filter((tab) => tab.label !== 'Settings' && tab.label !== 'Notes')
+    ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes')
     : allTabs;
 
   return (
@@ -307,7 +308,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
           {visibleTabs.map((tab, idx) => (
             <BottomNavigationAction
-              key={tab.label}
+              key={tab.key}
               value={idx}
               icon={tab.icon}
               sx={{ minWidth: 0, flex: 1, px: 0 }}

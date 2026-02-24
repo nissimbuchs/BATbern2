@@ -183,6 +183,14 @@
       "activePartnership": "Active Partnership",
       "exportData": "Export Partner Data",
       "deletePartner": "Delete Partner Data"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "contacts": "Contacts",
+      "meetings": "Meetings",
+      "analytics": "Analytics",
+      "notes": "Notes",
+      "settings": "Settings"
     }
   },
   "meetings": {
