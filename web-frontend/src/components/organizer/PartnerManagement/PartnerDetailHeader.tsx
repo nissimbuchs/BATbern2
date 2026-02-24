@@ -15,9 +15,8 @@
 
 import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
-import { Edit, NoteAdd, ArrowBack } from '@mui/icons-material';
+import { Edit, NoteAdd } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
@@ -66,16 +65,11 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
   isMobile = false,
 }) => {
   const { t } = useTranslation('partners');
-  const navigate = useNavigate();
   const { openEditModal } = usePartnerModalStore();
   const isPartner = role === 'PARTNER';
 
   const handleEdit = () => {
     openEditModal(partner);
-  };
-
-  const handleBack = () => {
-    navigate('/organizer/partners');
   };
 
   const companyName = partner.company?.name || partner.companyName;
@@ -86,15 +80,6 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }} data-testid="partner-detail-header">
       <Stack spacing={3}>
-        {/* Back Button — hidden for PARTNER (portal layout provides navigation) */}
-        {!isPartner && (
-          <Box>
-            <Button startIcon={<ArrowBack />} onClick={handleBack}>
-              {t('detail.header.backButton', 'Back to Partner Directory')}
-            </Button>
-          </Box>
-        )}
-
         {/* Header Content */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}
