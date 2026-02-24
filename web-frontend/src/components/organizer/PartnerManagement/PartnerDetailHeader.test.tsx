@@ -181,17 +181,13 @@ describe('PartnerDetailHeader Component', () => {
   });
 
   describe('AC1.6: Back Button Navigation', () => {
-    // Test 1.7: should_navigateBack_when_backButtonClicked
-    it('should_navigateBack_when_backButtonClicked', async () => {
-      const user = userEvent.setup();
+    // Back navigation is handled by PartnerDetailScreen via Breadcrumbs — not by the header
+    it('should_notRenderBackButton_because_parentHandlesNavigation', async () => {
       await act(async () => {
         renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
       });
 
-      const backButton = screen.getByRole('button', { name: /Back to Partner Directory/i });
-      await user.click(backButton);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/partners');
+      expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
     });
   });
 

@@ -355,10 +355,10 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
   });
 
   /**
-   * Test: should_navigateBack_when_backButtonClicked
-   * Verify back button is rendered and clickable
+   * Test: should_renderBreadcrumbs_when_partnerLoaded
+   * Back navigation is via Breadcrumbs (replaced back button)
    */
-  it('should_navigateBack_when_backButtonClicked', async () => {
+  it('should_renderBreadcrumbs_when_partnerLoaded', async () => {
     vi.mocked(usePartnerDetail).mockReturnValue({
       data: mockPartnerDetail,
       isLoading: false,
@@ -369,12 +369,9 @@ describe('PartnerDetailScreen - Main Integration Tests', () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText(/Back/i)).toBeInTheDocument();
+      // Breadcrumbs nav is always rendered for ORGANIZER role
+      expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument();
     });
-
-    // Just verify back button is present (navigation is handled by React Router)
-    const backButton = screen.getByText(/Back/i);
-    expect(backButton).toBeInTheDocument();
   });
 });
 

@@ -187,6 +187,18 @@ describe('ArchivePage Component', () => {
     queryClient.clear();
     // Reset localStorage
     window.localStorage.clear();
+    // Mock window.matchMedia (not available in vitest/jsdom)
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(max-width: 1023px)' ? window.innerWidth < 1024 : false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
     // Set up topicService mock AFTER clearAllMocks
     vi.mocked(topicService.getTopics).mockResolvedValue({
       data: mockTopics,

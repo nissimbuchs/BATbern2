@@ -10,6 +10,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHeader from './AppHeader';
 import { useUIStore } from '@/stores/uiStore';
 
+const mockNavigate = vi.fn();
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return { ...actual, useNavigate: () => mockNavigate };
+});
+
 // Mock stores and hooks
 vi.mock('@/stores/uiStore');
 vi.mock('@/hooks/useAuth');
@@ -248,19 +254,13 @@ describe('AppHeader Component', () => {
       expect(badge).toBeInTheDocument();
     });
 
-    test('should_openNotificationDrawer_when_bellClicked', () => {
-      const setNotificationDrawerOpen = vi.fn();
-      vi.mocked(useUIStore).mockReturnValue({
-        ...vi.mocked(useUIStore)(),
-        setNotificationDrawerOpen,
-      });
-
+    test('should_navigateToNotifications_when_bellClicked', () => {
       renderWithProviders(<AppHeader />);
 
       const notificationButton = screen.getByLabelText(/notifications/i);
       fireEvent.click(notificationButton);
 
-      expect(setNotificationDrawerOpen).toHaveBeenCalledWith(true);
+      expect(mockNavigate).toHaveBeenCalledWith('/organizer/notifications');
     });
   });
 

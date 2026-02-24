@@ -68,9 +68,18 @@ export function FilterSheet({
             <FilterSidebar
               filters={filters}
               topics={topics}
-              onFilterChange={onFilterChange}
-              onClearFilters={onClearFilters}
-              onSortChange={onSortChange}
+              onFilterChange={(f) => {
+                onFilterChange(f);
+                setIsOpen(false);
+              }}
+              onClearFilters={() => {
+                onClearFilters();
+                setIsOpen(false);
+              }}
+              onSortChange={(s) => {
+                onSortChange(s);
+                setIsOpen(false);
+              }}
               currentSort={currentSort}
               loading={loading}
             />
