@@ -105,7 +105,9 @@
       "kanban": "Kanban",
       "sessions": "Sessions",
       "addSpeakers": "Referenten hinzufügen",
-      "addToPool": "Referenten zum Pool hinzufügen"
+      "addToPool": "Referenten zum Pool hinzufügen",
+      "kanbanView": "Kanban-Ansicht",
+      "sessionsView": "Sessions-Ansicht"
     }
   },
   "dashboard": {

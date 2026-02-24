@@ -105,7 +105,9 @@
       "kanban": "Kanban",
       "sessions": "Sessions",
       "addSpeakers": "Add Speakers",
-      "addToPool": "Add Speakers to Pool"
+      "addToPool": "Add Speakers to Pool",
+      "kanbanView": "Kanban view",
+      "sessionsView": "Sessions view"
     }
   },
   "dashboard": {
