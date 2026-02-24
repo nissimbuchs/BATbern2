@@ -25,6 +25,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Stack,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import Grid from '@mui/material/Grid';
@@ -52,6 +54,8 @@ import type { User } from '@/types/user.types';
 const UserList: React.FC = () => {
   const { t } = useTranslation('userManagement');
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { filters, pagination, setPage, setLimit } = useUserManagementStore();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -138,22 +142,24 @@ const UserList: React.FC = () => {
             {t('title')}
           </Typography>
 
-          <Stack direction="row" spacing={2}>
-            {/* View Toggle */}
-            <ToggleButtonGroup
-              value={viewMode}
-              exclusive
-              onChange={handleViewModeChange}
-              aria-label={t('viewMode.toggle')}
-              size="small"
-            >
-              <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
-                <GridIcon />
-              </ToggleButton>
-              <ToggleButton value="list" aria-label={t('viewMode.list')}>
-                <ListIcon />
-              </ToggleButton>
-            </ToggleButtonGroup>
+          <Stack direction="row" spacing={1}>
+            {/* View Toggle — hidden on mobile (cards forced) */}
+            {!isMobile && (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={handleViewModeChange}
+                aria-label={t('viewMode.toggle')}
+                size="small"
+              >
+                <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
+                  <GridIcon />
+                </ToggleButton>
+                <ToggleButton value="list" aria-label={t('viewMode.list')}>
+                  <ListIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
 
             <Button
               variant="outlined"
@@ -161,7 +167,9 @@ const UserList: React.FC = () => {
               startIcon={<UploadIcon />}
               onClick={() => setBatchImportModalOpen(true)}
             >
-              {t('batchImport.button')}
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('batchImport.button')}
+              </Box>
             </Button>
             <Button
               variant="outlined"
@@ -170,7 +178,9 @@ const UserList: React.FC = () => {
               onClick={() => setParticipantImportModalOpen(true)}
               data-testid="import-participants-button"
             >
-              {t('participantImport.button')}
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('participantImport.button')}
+              </Box>
             </Button>
             <Button
               variant="contained"
@@ -178,7 +188,9 @@ const UserList: React.FC = () => {
               startIcon={<AddIcon />}
               onClick={handleOpenCreateModal}
             >
-              {t('addUser')}
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('addUser')}
+              </Box>
             </Button>
           </Stack>
         </Stack>
@@ -186,8 +198,14 @@ const UserList: React.FC = () => {
         {/* Filters Panel */}
         <UserFilters />
 
-        {/* User List - Grid or Table View */}
-        {viewMode === 'list' ? (
+        {/* User List - Cards on mobile, Grid or Table on desktop */}
+        {isMobile ? (
+          <Stack spacing={2}>
+            {users.map((user) => (
+              <UserCard key={user.id} user={user} onClick={handleRowClick} />
+            ))}
+          </Stack>
+        ) : viewMode === 'list' ? (
           <UserTable
             users={users}
             onRowClick={handleRowClick}
