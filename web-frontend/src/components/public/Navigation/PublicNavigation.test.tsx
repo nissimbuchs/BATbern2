@@ -50,9 +50,9 @@ describe('PublicNavigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('About')).toBeInTheDocument();
-    expect(screen.getByText('Past Events')).toBeInTheDocument();
+    expect(screen.getAllByText('Home').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('About').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Past Events').length).toBeGreaterThan(0);
   });
 
   it('should show Login button when not authenticated', () => {

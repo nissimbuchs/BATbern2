@@ -211,66 +211,6 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
-  // NOTE: Component has simplified resolution - only Cancel and "Choose Different Slot" buttons
-  describe.skip('Resolution Options', () => {
-    it('should_showResolutionOptions_when_conflictDisplayed', () => {
-      // TODO: Implement advanced resolution options (Find Alternative, Change Room, Reassign)
-    });
-
-    it('should_showOverrideOption_when_warningOnly', () => {
-      // TODO: Implement override option for warnings
-    });
-
-    it('should_hideOverrideOption_when_error', () => {
-      // Given: Conflict is an error (room_overlap, speaker_double_booked)
-      renderWithProviders(
-        <ConflictDetectionAlert
-          conflict={mockRoomOverlapConflict}
-          isOpen={true}
-          onClose={() => {}}
-          onResolve={() => {}}
-        />
-      );
-
-      // Then: Override option is NOT available for errors (component doesn't have override yet)
-      expect(screen.queryByRole('button', { name: /override/i })).not.toBeInTheDocument();
-    });
-
-    it.skip('should_findAlternativeSlot_when_optionSelected', () => {
-      // TODO: Implement find alternative slot option
-    });
-
-    it.skip('should_changeRoom_when_optionSelected', () => {
-      // TODO: Implement change room option
-    });
-
-    it.skip('should_reassignOtherSession_when_optionSelected', () => {
-      // TODO: Implement reassign other session option
-    });
-
-    it('should_cancel_when_optionSelected', () => {
-      // Given: [Cancel] button exists
-      const onClose = vi.fn();
-
-      renderWithProviders(
-        <ConflictDetectionAlert
-          conflict={mockRoomOverlapConflict}
-          isOpen={true}
-          onClose={onClose}
-          onResolve={() => {}}
-        />
-      );
-
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
-
-      // When: Button is clicked
-      fireEvent.click(cancelButton);
-
-      // Then: Modal closes without changes
-      expect(onClose).toHaveBeenCalled();
-    });
-  });
-
   describe('Severity Indicators', () => {
     it('should_showErrorBadge_when_criticalConflict', () => {
       // Severity indicators: error vs warning
@@ -303,13 +243,6 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       // Then: Shows warning severity badge (translation outputs "WARNING" in all caps)
       expect(screen.getByTestId('conflict-severity')).toHaveClass('severity-warning');
       expect(screen.getByTestId('conflict-severity')).toHaveTextContent(/warning/i);
-    });
-  });
-
-  // NOTE: Component doesn't show conflict count yet, just displays all conflicts
-  describe.skip('Multiple Conflicts', () => {
-    it('should_displayAllConflicts_when_multipleExist', () => {
-      // TODO: Add conflict count display (e.g., "2 conflicts detected")
     });
   });
 });

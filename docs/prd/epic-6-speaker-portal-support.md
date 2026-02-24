@@ -309,7 +309,7 @@ As a **speaker**, I want to upload my presentation materials through a self-serv
 
 ### Story 6.4: Speaker Dashboard (View-Only) ✅
 
-**Status:** ✅ Complete (implementation complete 2026-02-16, QA review pending)
+**Status:** ✅ Complete (implementation complete 2026-02-16, QA PASSED — 98/100 quality score)
 
 **User Story:**
 As a **speaker**, I want to view my upcoming and past BATbern presentations, so that I can see my speaking history and event details.

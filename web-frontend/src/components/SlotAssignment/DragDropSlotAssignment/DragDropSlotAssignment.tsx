@@ -364,7 +364,14 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
   const allSessionsAssigned = totalSessions > 0 && assignedCount === totalSessions;
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', p: 3 }}>
+    <Box
+      sx={{
+        height: { md: '100vh' },
+        display: 'flex',
+        flexDirection: 'column',
+        p: { xs: 1, md: 3 },
+      }}
+    >
       {/* Loading State */}
       {isLoading && (
         <Box data-testid="loading-skeleton">
@@ -375,10 +382,14 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
 
       {/* Main Layout */}
       {!isLoading && (
-        <Grid container spacing={3} sx={{ flex: 1, overflow: 'hidden' }}>
+        <Grid
+          container
+          spacing={3}
+          sx={{ flex: { md: 1 }, overflow: { xs: 'visible', md: 'hidden' } }}
+        >
           {/* Left Sidebar: Unassigned Speakers */}
           <Grid size={{ xs: 12, md: 3 }}>
-            <Paper sx={{ height: '100%', overflow: 'hidden' }}>
+            <Paper sx={{ height: { md: '100%' }, overflow: { md: 'hidden' } }}>
               <UnassignedSpeakersList
                 sessions={filteredSessions}
                 totalSessions={totalSessions}
@@ -395,7 +406,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({ 
           <Grid size={{ xs: 12, md: 6 }}>
             <Paper
               data-testid="session-timeline-grid"
-              sx={{ height: '100%', overflow: 'auto', p: 2 }}
+              sx={{ height: { md: '100%' }, overflow: 'auto', p: 2 }}
             >
               <Typography variant="h6" gutterBottom>
                 {t('slotAssignment.timeline.title')}

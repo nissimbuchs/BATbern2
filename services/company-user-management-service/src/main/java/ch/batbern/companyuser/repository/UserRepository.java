@@ -207,6 +207,7 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%'))
         ORDER BY u.lastName ASC, u.firstName ASC
         """)
     Page<User> searchUsersWithRoles(@Param("search") String search, Pageable pageable);
@@ -227,7 +228,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND :role MEMBER OF u.roles
         ORDER BY u.lastName ASC, u.firstName ASC
         """)
@@ -252,7 +254,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND u.companyId = :companyId
         ORDER BY u.lastName ASC, u.firstName ASC
         """)
@@ -278,7 +281,8 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
         WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
         OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :search, '%'))
-        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%'))
+        OR LOWER(u.companyId) LIKE LOWER(CONCAT('%', :search, '%')))
         AND :role MEMBER OF u.roles
         AND u.companyId = :companyId
         ORDER BY u.lastName ASC, u.firstName ASC

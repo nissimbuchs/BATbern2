@@ -1,6 +1,6 @@
 package ch.batbern.events.repository;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerInvitationToken;
 import ch.batbern.events.domain.SpeakerPool;

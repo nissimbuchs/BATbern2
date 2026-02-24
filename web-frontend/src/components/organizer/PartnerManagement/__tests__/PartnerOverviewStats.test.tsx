@@ -137,32 +137,6 @@ describe('PartnerOverviewStats', () => {
       expect(skeletons.length).toBeGreaterThan(0);
     });
 
-    it('should_showPlaceholder_when_engagementMetricsDeferred', () => {
-      // Arrange
-      vi.mocked(usePartnerStatistics).mockReturnValue({
-        data: {
-          totalPartners: 24,
-          activePartners: 18,
-          engagementRate: 75.5,
-          tierDistribution: {
-            STRATEGIC: 3,
-            PLATINUM: 5,
-            GOLD: 8,
-            SILVER: 6,
-            BRONZE: 2,
-          },
-        },
-        isLoading: false,
-        isError: false,
-      } as any);
-
-      // Act
-      render(<PartnerOverviewStats />);
-
-      // Assert - Should show "Coming Soon" for engagement metrics (Epic 8)
-      expect(screen.getByText(/Coming Soon/i)).toBeInTheDocument();
-    });
-
     it('should_handleEmptyStatistics_when_noData', () => {
       // Arrange
       vi.mocked(usePartnerStatistics).mockReturnValue({

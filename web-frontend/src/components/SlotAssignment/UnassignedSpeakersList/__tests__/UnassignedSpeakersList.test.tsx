@@ -221,11 +221,6 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // Actual testid is 'drag-handle' not 'grab-handle'
       expect(within(firstCard).getByTestId('drag-handle')).toBeVisible();
     });
-
-    it.skip('should_showGrabbingCursor_when_dragging', () => {
-      // TODO: Implement cursor change to 'grabbing' during drag
-      // Feature not yet implemented - cursor stays as 'grab'
-    });
   });
 
   describe('View Preferences Button', () => {
@@ -350,18 +345,6 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // Then: Shows skeleton loader
       expect(screen.getByTestId('skeleton-loader')).toBeInTheDocument();
       expect(screen.getAllByTestId('skeleton-card')).toHaveLength(3); // Shows 3 skeleton cards
-    });
-  });
-
-  describe('Accessibility', () => {
-    it.skip('should_haveProperAriaLabels_when_rendered', () => {
-      // TODO: Fix aria-label to use actual speaker displayName
-      // Currently shows "Speaker: undefined undefined" - data binding issue
-    });
-
-    it.skip('should_announceUpdates_when_listChanges', () => {
-      // TODO: Implement ARIA live region (role="status") for screen reader announcements
-      // Feature not yet implemented
     });
   });
 });

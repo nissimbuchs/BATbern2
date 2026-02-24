@@ -23,8 +23,6 @@ import {
   People as PeopleIcon,
   Edit as EditIcon,
   Visibility as PreviewIcon,
-  Email as EmailIcon,
-  CalendarMonth as TimelineIcon,
   Topic as TopicIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -32,7 +30,13 @@ import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { WorkflowProgressBar } from '@/components/organizer/EventManagement';
 import type { Event, EventDetailUI, WorkflowStep } from '@/types/event.types';
-import { isEarlyStage, getWorkflowStateLabel } from '@/utils/workflow/workflowState';
+import {
+  isEarlyStage,
+  getWorkflowStateLabel,
+  getWorkflowStepNumber,
+  getWorkflowProgress,
+  WORKFLOW_STATE_ORDER,
+} from '@/utils/workflow/workflowState';
 import { topicService } from '@/services/topicService';
 import type { Topic } from '@/types/topic.types';
 
@@ -119,15 +123,6 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
     window.open(`/events/${eventCode}`, '_blank');
   };
 
-  const handleViewTimeline = () => {
-    navigate(`/organizer/events/timeline?highlight=${eventCode}`);
-  };
-
-  const handleSendNotification = () => {
-    // TODO: Open notification modal
-    console.log('Send notification for:', eventCode);
-  };
-
   const handleSelectTopic = () => {
     navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
@@ -151,14 +146,18 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 data-testid="workflow-status-badge"
               />
               <Typography variant="body2" color="text.secondary">
-                {t('eventPage.overview.step', 'Step')} {eventUI.workflowStep || 1}/16
+                {t('eventPage.overview.step', 'Step')}{' '}
+                {getWorkflowStepNumber(event.workflowState || 'CREATED')}/
+                {WORKFLOW_STATE_ORDER.length}
               </Typography>
             </Stack>
             <WorkflowProgressBar
               workflow={{
-                currentStep: (eventUI.workflowStep || 1) as WorkflowStep,
-                totalSteps: 16,
-                completionPercentage: ((eventUI.workflowStep || 1) / 16) * 100,
+                currentStep: getWorkflowStepNumber(
+                  event.workflowState || 'CREATED'
+                ) as WorkflowStep,
+                totalSteps: WORKFLOW_STATE_ORDER.length,
+                completionPercentage: getWorkflowProgress(event.workflowState || 'CREATED'),
                 steps: [],
                 blockers: [],
               }}
@@ -206,7 +205,9 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
                 onClick={handleEditDetails}
                 data-testid="edit-event-button"
               >
-                {t('common.edit', 'Edit')}
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  {t('common.edit', 'Edit')}
+                </Box>
               </Button>
             </Stack>
             <Divider sx={{ mb: 2 }} />
@@ -396,22 +397,11 @@ export const EventOverviewTab: React.FC<EventOverviewTabProps> = ({ event, event
           </Button>
           <Button
             variant="outlined"
-            startIcon={<EmailIcon />}
-            onClick={handleSendNotification}
-            data-testid="send-notification-button"
-          >
-            {t('eventPage.overview.sendNotification', 'Send Notification')}
-          </Button>
-          <Button
-            variant="outlined"
             startIcon={<PreviewIcon />}
             onClick={handlePreviewPublic}
             data-testid="preview-public-button"
           >
             {t('eventPage.overview.previewPublic', 'Preview Public Page')}
-          </Button>
-          <Button variant="outlined" startIcon={<TimelineIcon />} onClick={handleViewTimeline}>
-            {t('eventPage.overview.viewTimeline', 'View Timeline')}
           </Button>
         </Stack>
       </Paper>

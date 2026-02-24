@@ -35,6 +35,9 @@ gitProperties {
 }
 
 dependencies {
+    // Shared test infrastructure (PostgreSQL Testcontainers base class)
+    testImplementation testFixtures(project(':shared-kernel'))
+
     // Service-specific: Caching (Caffeine in-memory cache)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
     implementation 'org.springframework.boot:spring-boot-starter-cache'

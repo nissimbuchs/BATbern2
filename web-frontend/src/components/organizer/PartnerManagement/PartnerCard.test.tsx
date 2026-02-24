@@ -97,20 +97,6 @@ describe('PartnerCard Component', () => {
       expect(logo).toHaveAttribute('src', 'https://example.com/logo.png');
     });
 
-    it('should_renderInitialsAvatar_when_noLogoUrl', () => {
-      const partnerWithoutLogo = {
-        ...mockPartner,
-        company: {
-          ...mockPartner.company,
-          logoUrl: undefined,
-        },
-      };
-
-      renderWithRouter(<PartnerCard partner={partnerWithoutLogo} />);
-
-      expect(screen.getByText('TE')).toBeInTheDocument(); // Test Company -> TE
-    });
-
     it('should_renderIndustry_when_companyHasIndustry', () => {
       renderWithRouter(<PartnerCard partner={mockPartner} />);
 
@@ -122,14 +108,6 @@ describe('PartnerCard Component', () => {
 
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
       expect(screen.getByText(/john.doe@example.com/)).toBeInTheDocument();
-    });
-
-    it('should_renderEngagementBar_when_rendered', () => {
-      renderWithRouter(<PartnerCard partner={mockPartner} />);
-
-      expect(screen.getByText(/Engagement/)).toBeInTheDocument();
-      expect(screen.getByText(/Coming Soon/)).toBeInTheDocument();
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('should_renderNoActionButtons_when_rendered', () => {

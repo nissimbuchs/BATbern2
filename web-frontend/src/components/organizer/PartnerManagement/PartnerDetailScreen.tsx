@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -8,15 +8,20 @@ import {
   AlertTitle,
   Skeleton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
   Paper,
+  BottomNavigation,
+  BottomNavigationAction,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
+import {
+  Dashboard as OverviewIcon,
+  Contacts as ContactsIcon,
+  Event as MeetingsIcon,
+  BarChart as AnalyticsIcon,
+  Note as NotesIcon,
+  Settings as SettingsIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
@@ -32,6 +37,89 @@ import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { useUserList } from '@/hooks/useUserManagement';
+import { useNavigate, useLocation } from 'react-router-dom';
+import UserCard from '@/components/organizer/UserManagement/UserCard';
+import UserTable from '@/components/organizer/UserManagement/UserTable';
+import UserPagination from '@/components/organizer/UserManagement/UserPagination';
+import type { User } from '@/types/user.types';
+
+// ─── Partner Contacts Panel ────────────────────────────────────────────────────
+
+const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }> = ({
+  companyName,
+  isMobile,
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+
+  const { data, isLoading, isError } = useUserList({
+    filters: { company: companyName },
+    pagination: { page, limit },
+  });
+
+  if (isLoading) return <Skeleton variant="rectangular" height={300} />;
+  if (isError) return <Alert severity="error">Failed to load contacts.</Alert>;
+
+  const users = data?.data ?? [];
+  const paginationData = data?.pagination;
+
+  if (users.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No partner users are assigned to this company yet.
+      </Alert>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      {isMobile ? (
+        <Stack spacing={2}>
+          {users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              onClick={(u: User) =>
+                navigate(`/organizer/users/${u.id}`, {
+                  state: { from: location.pathname, fromLabel: companyName },
+                })
+              }
+            />
+          ))}
+        </Stack>
+      ) : (
+        <UserTable
+          users={users}
+          onRowClick={(user: User) =>
+            navigate(`/organizer/users/${user.id}`, {
+              state: { from: location.pathname, fromLabel: companyName },
+            })
+          }
+          onAction={(action, user: User) => {
+            if (action === 'view')
+              navigate(`/organizer/users/${user.id}`, {
+                state: { from: location.pathname, fromLabel: companyName },
+              });
+          }}
+        />
+      )}
+      {paginationData && (
+        <UserPagination
+          page={paginationData.page}
+          totalPages={paginationData.totalPages}
+          limit={paginationData.limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      )}
+    </Box>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 interface PartnerDetailScreenProps {
   companyName?: string; // Story 8.0: provided by partner portal; organizer falls back to useParams()
@@ -46,6 +134,9 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   const resolvedCompanyName = props.companyName ?? urlCompanyName ?? '';
 
   const { t } = useTranslation('organizer');
+  const { t: tPartners } = useTranslation('partners');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const activeTab = usePartnerDetailStore((state) => state.activeTab);
   const setActiveTab = usePartnerDetailStore((state) => state.setActiveTab);
 
@@ -60,9 +151,9 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
       | 'ATTENDEE',
   };
 
-  // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state (e.g. tab=5) cannot expose
-  // PartnerSettingsTab to a PARTNER user across Zustand sessions.
-  const PARTNER_MAX_TAB = 4; // Settings (5) is not visible for PARTNER
+  // Story 8.0 H2: Clamp activeTab so stale ORGANIZER state cannot expose hidden tabs to PARTNER.
+  // Story 8.4: Notes (4) and Settings (5) are not visible for PARTNER
+  const PARTNER_MAX_TAB = 3; // Analytics (3) is the last visible tab for PARTNER
   const effectiveTab =
     currentUser.role === 'PARTNER' && activeTab > PARTNER_MAX_TAB ? 0 : activeTab;
 
@@ -90,17 +181,6 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
   // Handle tab change
   const handleTabChange = (newTab: number) => {
     setActiveTab(newTab);
-  };
-
-  // Handle status and auto-renewal updates (callbacks for Settings tab)
-  const handleUpdateStatus = (isActive: boolean) => {
-    // TODO: Implement status update mutation (Epic 8)
-    console.log('Update status:', isActive);
-  };
-
-  const handleUpdateAutoRenewal = (autoRenewal: boolean) => {
-    // TODO: Implement auto-renewal update mutation (Epic 8)
-    console.log('Update auto-renewal:', autoRenewal);
   };
 
   // Loading state
@@ -155,103 +235,87 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     );
   }
 
+  const isPartner = currentUser.role === 'PARTNER';
+
+  // Tabs visible per role — mirrors PartnerTabNavigation logic
+  const allTabs = [
+    { key: 'overview', label: tPartners('detail.tabs.overview'), icon: <OverviewIcon /> },
+    { key: 'contacts', label: tPartners('detail.tabs.contacts'), icon: <ContactsIcon /> },
+    { key: 'meetings', label: tPartners('detail.tabs.meetings'), icon: <MeetingsIcon /> },
+    { key: 'analytics', label: tPartners('detail.tabs.analytics'), icon: <AnalyticsIcon /> },
+    { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
+    { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },
+  ];
+  const visibleTabs = isPartner
+    ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes')
+    : allTabs;
+
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
-      {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
-      {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
+    <Box sx={{ pb: 8 }}>
+      <Container maxWidth="xl" sx={{ py: 4 }} data-testid="partner-detail-container">
+        {/* Breadcrumbs — hidden for PARTNER (they can only belong to one company) */}
+        {currentUser.role !== 'PARTNER' && <Breadcrumbs items={breadcrumbItems} marginBottom={2} />}
 
-      {/* Header */}
-      <PartnerDetailHeader partner={partner} role={currentUser.role} />
+        {/* Header */}
+        <PartnerDetailHeader partner={partner} role={currentUser.role} isMobile={isMobile} />
 
-      {/* Tab Navigation */}
-      <Box sx={{ mt: 3 }}>
-        <PartnerTabNavigation
-          activeTab={effectiveTab}
-          onTabChange={handleTabChange}
-          role={currentUser.role}
-        />
-      </Box>
-
-      {/* Tab Panels */}
-      <Box sx={{ mt: 3 }}>
-        {/* Overview Tab */}
-        {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
-
-        {/* Contacts Tab */}
-        {effectiveTab === 1 && (
-          <Box sx={{ my: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              {t('partners.contacts.title', 'Partner Contacts')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {t(
-                'partners.contacts.description',
-                'Users with the Partner role assigned to this company.'
-              )}
-            </Typography>
-            {!partner.contacts || partner.contacts.length === 0 ? (
-              <Alert severity="info">
-                <AlertTitle>{t('partners.contacts.empty', 'No contacts')}</AlertTitle>
-                {t(
-                  'partners.contacts.emptyDescription',
-                  'No partner users are assigned to this company yet.'
-                )}
-              </Alert>
-            ) : (
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>{t('partners.contacts.name', 'Name')}</TableCell>
-                      <TableCell>{t('partners.contacts.email', 'Email')}</TableCell>
-                      <TableCell>{t('partners.contacts.username', 'Username')}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {partner.contacts.map((contact) => (
-                      <TableRow key={contact.username}>
-                        <TableCell>
-                          {contact.firstName || contact.lastName
-                            ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
-                            : contact.username}
-                        </TableCell>
-                        <TableCell>{contact.email ?? '—'}</TableCell>
-                        <TableCell>{contact.username}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+        {/* Tab Navigation — desktop only (bottom nav always shown) */}
+        {!isMobile && (
+          <Box sx={{ mt: 3 }}>
+            <PartnerTabNavigation
+              activeTab={effectiveTab}
+              onTabChange={handleTabChange}
+              role={currentUser.role}
+            />
           </Box>
         )}
 
-        {/* Meetings Tab */}
-        {effectiveTab === 2 && (
-          <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
-        )}
+        {/* Tab Panels */}
+        <Box sx={{ mt: 3 }}>
+          {/* Overview Tab */}
+          {effectiveTab === 0 && <PartnerOverviewTab partner={partner} />}
 
-        {/* Analytics Tab */}
-        {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
+          {/* Contacts Tab */}
+          {effectiveTab === 1 && (
+            <PartnerContactsPanel companyName={partner.companyName} isMobile={isMobile} />
+          )}
 
-        {/* Notes Tab */}
-        {effectiveTab === 4 && (
-          <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
-        )}
+          {/* Meetings Tab */}
+          {effectiveTab === 2 && (
+            <PartnerMeetingsTab companyName={partner.companyName} role={currentUser.role} />
+          )}
 
-        {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
-        {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
-          <PartnerSettingsTab
-            partner={partner}
-            currentUser={currentUser}
-            onUpdateStatus={handleUpdateStatus}
-            onUpdateAutoRenewal={handleUpdateAutoRenewal}
-          />
-        )}
-      </Box>
+          {/* Analytics Tab */}
+          {effectiveTab === 3 && <PartnerAttendanceDashboard companyName={partner.companyName} />}
 
-      {/* Edit Partner Modal */}
-      <PartnerCreateEditModal />
-    </Container>
+          {/* Notes Tab — Story 8.4: hidden for PARTNER (organizer-internal notes) */}
+          {effectiveTab === 4 && currentUser.role !== 'PARTNER' && (
+            <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
+          )}
+
+          {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
+          {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
+            <PartnerSettingsTab partner={partner} currentUser={currentUser} />
+          )}
+        </Box>
+
+        {/* Edit Partner Modal */}
+        <PartnerCreateEditModal />
+      </Container>
+
+      {/* Bottom Navigation — always visible */}
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+        <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
+          {visibleTabs.map((tab, idx) => (
+            <BottomNavigationAction
+              key={tab.key}
+              value={idx}
+              icon={tab.icon}
+              sx={{ minWidth: 0, flex: 1, px: 0 }}
+            />
+          ))}
+        </BottomNavigation>
+      </Paper>
+    </Box>
   );
 };

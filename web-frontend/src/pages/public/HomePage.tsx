@@ -25,7 +25,6 @@ import { EventProgram } from '@/components/public/Event/EventProgram';
 import { VenueMap } from '@/components/public/Event/VenueMap';
 import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
-// import { TopicBadges } from '@/components/public/Event/TopicBadges'; // TODO: Uncomment when topics are added
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
@@ -184,14 +183,6 @@ const HomePage = () => {
             <EventLogistics event={event} />
           </div>
         )}
-
-        {/* Event Topics - TODO: Add when topics are implemented in backend */}
-        {/* {event.topics && event.topics.length > 0 && (
-          <div className="mt-12">
-            <h3 className="text-xl font-light text-zinc-100 mb-4">Topics</h3>
-            <TopicBadges topics={event.topics} />
-          </div>
-        )} */}
 
         {/* Event Program Timeline (Timetable) - Only show when agenda is published */}
         {showTimetable && event.sessions && event.sessions.length > 0 && (

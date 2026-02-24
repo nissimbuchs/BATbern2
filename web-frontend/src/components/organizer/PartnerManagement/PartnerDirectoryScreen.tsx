@@ -12,6 +12,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import {
@@ -43,7 +45,10 @@ import { PartnerCreateEditModal } from './PartnerCreateEditModal';
  */
 export const PartnerDirectoryScreen: React.FC = () => {
   const { t } = useTranslation('partners');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { filters, viewMode, sortBy, sortOrder, page, setViewMode, setSortBy } = usePartnerStore();
+  const effectiveViewMode = isMobile ? 'list' : viewMode;
   const { openCreateModal } = usePartnerModalStore();
 
   // Fetch partners with current filters, sort, and pagination
@@ -76,7 +81,12 @@ export const PartnerDirectoryScreen: React.FC = () => {
       <Container maxWidth="xl" data-testid="partner-directory-screen">
         {/* Header */}
         <Box sx={{ mb: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={2}
+          >
             <Typography variant="h4" component="h1">
               {t('title')}
             </Typography>
@@ -87,7 +97,9 @@ export const PartnerDirectoryScreen: React.FC = () => {
               onClick={handleAddPartner}
               data-testid="add-partner-button"
             >
-              {t('addPartner')}
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('addPartner')}
+              </Box>
             </Button>
           </Stack>
         </Box>
@@ -119,10 +131,13 @@ export const PartnerDirectoryScreen: React.FC = () => {
                 <PartnerFilters />
               </Box>
 
-              {/* Right: View Mode Toggle and Sort */}
+              {/* Right: Sort + View Mode Toggle */}
               <Stack direction="row" spacing={2} alignItems="center">
                 {/* Sort Select */}
-                <FormControl size="small" sx={{ minWidth: 200 }}>
+                <FormControl
+                  size="small"
+                  sx={{ minWidth: { sm: 200 }, flex: { xs: 1, sm: 'none' } }}
+                >
                   <InputLabel id="sort-select-label">{t('sort.label')}</InputLabel>
                   <Select
                     labelId="sort-select-label"
@@ -147,22 +162,24 @@ export const PartnerDirectoryScreen: React.FC = () => {
                   </Select>
                 </FormControl>
 
-                {/* View Mode Toggle */}
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={handleViewModeChange}
-                  aria-label={t('viewMode.label')}
-                  size="small"
-                  data-testid="view-mode-toggle"
-                >
-                  <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
-                    <GridViewIcon />
-                  </ToggleButton>
-                  <ToggleButton value="list" aria-label={t('viewMode.list')}>
-                    <ListViewIcon />
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                {/* View Mode Toggle — hidden on mobile (list view forced) */}
+                {!isMobile && (
+                  <ToggleButtonGroup
+                    value={effectiveViewMode}
+                    exclusive
+                    onChange={handleViewModeChange}
+                    aria-label={t('viewMode.label')}
+                    size="small"
+                    data-testid="view-mode-toggle"
+                  >
+                    <ToggleButton value="grid" aria-label={t('viewMode.grid')}>
+                      <GridViewIcon />
+                    </ToggleButton>
+                    <ToggleButton value="list" aria-label={t('viewMode.list')}>
+                      <ListViewIcon />
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                )}
               </Stack>
             </Stack>
           </Stack>

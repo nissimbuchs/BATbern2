@@ -51,6 +51,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle PartnerNoteNotFoundException (note not found by ID) — Story 8.4.
+     * Returns HTTP 404 Not Found
+     */
+    @ExceptionHandler(PartnerNoteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePartnerNoteNotFoundException(
+            PartnerNoteNotFoundException ex,
+            HttpServletRequest request) {
+        log.warn("Partner note not found: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
      * Handle CompanyNotFoundException (company not found via Company Service API)
      * Returns HTTP 404 Not Found
      */

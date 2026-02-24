@@ -2,21 +2,17 @@
  * CustomTaskModal Component (Story 5.5 Phase 6)
  *
  * AC22: Add/edit custom tasks modal
- * Wireframe: docs/wireframes/5.5-content-review-task-system-ux-flow.md
  *
- * Features:
- * - Form fields:
- *   - Task name (text)
- *   - Trigger state (dropdown: all event workflow states)
- *   - Due date type (radio: relative_to_event | immediate | absolute)
- *   - Days offset (number, if relative)
- *   - Assigned organizer (dropdown)
- *   - "Save as template" checkbox
- * - Validation: required fields, positive offset for "before event"
- * - Creates task linked to event OR saves as reusable template
+ * Modes:
+ * - Create mode (no existingTask): create a new ad-hoc task or template
+ * - Edit mode (existingTask provided): update existing task's notes, due date, and assignee
+ *
+ * When eventId is null (task board context), shows an event selector so the user
+ * can pick which event the ad-hoc task belongs to, OR they can check "Save as
+ * reusable template" to create a template instead.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -34,6 +30,9 @@ import {
   Stack,
   Alert,
   CircularProgress,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -42,33 +41,31 @@ import {
   type CreateTaskTemplateRequest,
   type CreateEventTaskRequest,
   type EventTaskResponse,
+  type UpdateEventTaskRequest,
 } from '@/services/taskService';
+import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
+import { useEvents } from '@/hooks/useEvents';
 
-// Event workflow states (from EventWorkflowState enum)
-const WORKFLOW_STATES = [
-  { value: 'event_draft', label: 'Event Draft' },
-  { value: 'topic_selection', label: 'Topic Selection' },
-  { value: 'speaker_brainstorming', label: 'Speaker Brainstorming' },
-  { value: 'speaker_outreach', label: 'Speaker Outreach' },
-  { value: 'agenda_published', label: 'Agenda Published' },
-  { value: 'agenda_finalized', label: 'Agenda Finalized' },
-  { value: 'event_live', label: 'Event Live' },
-  { value: 'post_event_wrap_up', label: 'Post-Event Wrap Up' },
-  { value: 'archived', label: 'Archived' },
-];
+// Event workflow states — lowercase matches what the backend stores in task_templates
+const WORKFLOW_STATE_VALUES = [
+  'topic_selection',
+  'speaker_brainstorming',
+  'speaker_outreach',
+  'agenda_published',
+  'agenda_finalized',
+  'event_live',
+  'post_event_wrap_up',
+  'archived',
+] as const;
 
-const DUE_DATE_TYPES = [
-  { value: 'immediate', label: 'Immediate' },
-  { value: 'relative_to_event', label: 'Relative to Event Date' },
-  { value: 'absolute', label: 'Absolute Date' },
-];
+const DUE_DATE_TYPE_VALUES = ['immediate', 'relative_to_event', 'absolute'] as const;
 
 interface CustomTaskModalProps {
   open: boolean;
   onClose: () => void;
-  eventId: string | null; // If null, creates template only
+  eventId: string | null; // If null, shows event selector
   organizerUsername: string;
-  existingTask?: EventTaskResponse; // For edit mode (future enhancement)
+  existingTask?: EventTaskResponse; // For edit mode
 }
 
 export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
@@ -80,6 +77,10 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const isEditMode = !!existingTask;
 
   // Form state
   const [taskName, setTaskName] = useState('');
@@ -88,10 +89,51 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
     'relative_to_event'
   );
   const [offsetDays, setOffsetDays] = useState<number>(-30);
-  const [assignedOrganizer, setAssignedOrganizer] = useState(organizerUsername);
+  const [absoluteDueDate, setAbsoluteDueDate] = useState('');
+  const [assignedOrganizer, setAssignedOrganizer] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [notes, setNotes] = useState('');
+  const [selectedEventCode, setSelectedEventCode] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch events for the event selector (only needed when no eventId provided and not edit mode)
+  const showEventSelector = !eventId && !isEditMode;
+  const { data: eventsData } = useEvents({ page: 1, limit: 100 }, undefined, undefined);
+  const events = eventsData?.data ?? [];
+
+  // Populate form when opening in edit mode
+  useEffect(() => {
+    if (open && isEditMode && existingTask) {
+      setTaskName(existingTask.taskName);
+      setTriggerState(existingTask.triggerState);
+      setAssignedOrganizer(existingTask.assignedOrganizerUsername ?? '');
+      setNotes(existingTask.notes ?? '');
+      setSaveAsTemplate(false);
+      setErrors({});
+    } else if (open && !isEditMode) {
+      // Reset to defaults for create mode
+      setTaskName('');
+      setTriggerState('topic_selection');
+      setDueDateType('relative_to_event');
+      setOffsetDays(-30);
+      setAbsoluteDueDate('');
+      setAssignedOrganizer(organizerUsername);
+      setSaveAsTemplate(false);
+      setNotes('');
+      setSelectedEventCode('');
+      setErrors({});
+    }
+  }, [open, isEditMode, existingTask, organizerUsername]);
+
+  // Update task mutation (edit mode)
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskId, request }: { taskId: string; request: UpdateEventTaskRequest }) =>
+      taskService.updateTask(taskId, request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      handleClose();
+    },
+  });
 
   // Create task template mutation
   const createTemplateMutation = useMutation({
@@ -113,14 +155,6 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
   });
 
   const handleClose = () => {
-    // Reset form
-    setTaskName('');
-    setTriggerState('topic_selection');
-    setDueDateType('relative_to_event');
-    setOffsetDays(-30);
-    setAssignedOrganizer(organizerUsername);
-    setSaveAsTemplate(false);
-    setNotes('');
     setErrors({});
     onClose();
   };
@@ -128,16 +162,20 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!taskName.trim()) {
-      newErrors.taskName = t('tasks.errors.taskNameRequired', 'Task name is required');
-    }
-
-    if (!triggerState) {
-      newErrors.triggerState = t('tasks.errors.triggerStateRequired', 'Trigger state is required');
-    }
-
-    if (dueDateType === 'relative_to_event' && offsetDays === undefined) {
-      newErrors.offsetDays = t('tasks.errors.offsetDaysRequired', 'Offset days is required');
+    if (!isEditMode) {
+      if (!taskName.trim()) {
+        newErrors.taskName = t('tasks.errors.taskNameRequired');
+      }
+      if (!triggerState) {
+        newErrors.triggerState = t('tasks.errors.triggerStateRequired');
+      }
+      if (dueDateType === 'relative_to_event' && offsetDays === undefined) {
+        newErrors.offsetDays = t('tasks.errors.offsetDaysRequired');
+      }
+      // If no eventId and not template mode, require event selection
+      if (!eventId && !saveAsTemplate && !selectedEventCode) {
+        newErrors.event = t('tasks.errors.eventRequired');
+      }
     }
 
     setErrors(newErrors);
@@ -149,7 +187,23 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
       return;
     }
 
-    if (saveAsTemplate || !eventId) {
+    if (isEditMode && existingTask) {
+      // Edit mode: patch existing task
+      const request: UpdateEventTaskRequest = {
+        notes: notes || null,
+        assignedOrganizerUsername: assignedOrganizer || null,
+      };
+      if (dueDateType === 'absolute' && absoluteDueDate) {
+        request.dueDate = new Date(absoluteDueDate).toISOString();
+      }
+      updateTaskMutation.mutate({ taskId: existingTask.id, request });
+      return;
+    }
+
+    // Create mode
+    const effectiveEventId = eventId ?? (selectedEventCode || null);
+
+    if (saveAsTemplate || !effectiveEventId) {
       // Create as template
       const request: CreateTaskTemplateRequest = {
         name: taskName,
@@ -158,159 +212,210 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
         dueDateOffsetDays: dueDateType === 'relative_to_event' ? offsetDays : undefined,
         saveAsTemplate: true,
       };
-
       createTemplateMutation.mutate(request);
     } else {
       // Create as ad-hoc task for specific event
+      let dueDate: string | undefined;
+      if (dueDateType === 'immediate') {
+        dueDate = new Date().toISOString();
+      } else if (dueDateType === 'absolute' && absoluteDueDate) {
+        dueDate = new Date(absoluteDueDate).toISOString();
+      }
+
       const request: CreateEventTaskRequest = {
         taskName,
         triggerState,
-        dueDate: dueDateType === 'immediate' ? new Date().toISOString() : undefined,
+        dueDate,
         assignedOrganizerUsername: assignedOrganizer || undefined,
         notes: notes || undefined,
       };
-
-      createAdHocTaskMutation.mutate({ eventCode: eventId, request });
+      createAdHocTaskMutation.mutate({ eventCode: effectiveEventId, request });
     }
   };
 
-  const isLoading = createTemplateMutation.isPending || createAdHocTaskMutation.isPending;
-  const error = createTemplateMutation.error || createAdHocTaskMutation.error;
+  const isLoading =
+    updateTaskMutation.isPending ||
+    createTemplateMutation.isPending ||
+    createAdHocTaskMutation.isPending;
+  const error =
+    updateTaskMutation.error || createTemplateMutation.error || createAdHocTaskMutation.error;
+
+  // Determine effective event ID for button label
+  const effectiveEventId = eventId ?? (selectedEventCode || null);
+  const isTemplateMode = !isEditMode && (saveAsTemplate || !effectiveEventId);
+
+  const submitLabel = isEditMode
+    ? t('common.saveChanges')
+    : isTemplateMode
+      ? t('tasks.createTemplate')
+      : t('tasks.createTask');
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {existingTask
-          ? t('tasks.editCustomTask', 'Edit Custom Task')
-          : t('tasks.addCustomTask', 'Add Custom Task')}
-      </DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
+      <DialogTitle>{isEditMode ? t('tasks.editTask') : t('tasks.addCustomTask')}</DialogTitle>
 
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
           {/* Error Alert */}
           {error && (
             <Alert severity="error">
-              {t('tasks.errors.createTaskFailed', 'Failed to create task')}: {error.message}
+              {isEditMode ? t('tasks.errors.updateTaskFailed') : t('tasks.errors.createTaskFailed')}
+              : {error.message}
             </Alert>
           )}
 
-          {/* Task Name */}
-          <TextField
-            label={t('tasks.taskName', 'Task Name')}
-            value={taskName}
-            onChange={(e) => setTaskName(e.target.value)}
-            error={!!errors.taskName}
-            helperText={errors.taskName}
-            required
-            fullWidth
-            placeholder={t('tasks.taskNamePlaceholder', 'e.g., Send venue confirmation email')}
-          />
-
-          {/* Trigger State */}
-          <TextField
-            select
-            label={t('tasks.triggerState', 'Trigger State')}
-            value={triggerState}
-            onChange={(e) => setTriggerState(e.target.value)}
-            error={!!errors.triggerState}
-            helperText={
-              errors.triggerState ||
-              t('tasks.triggerStateHelp', 'The event state that activates this task')
-            }
-            required
-            fullWidth
-          >
-            {WORKFLOW_STATES.map((state) => (
-              <MenuItem key={state.value} value={state.value}>
-                {state.label}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {/* Due Date Type */}
-          <FormControl component="fieldset">
-            <FormLabel component="legend">{t('tasks.dueDateType', 'Due Date Type')}</FormLabel>
-            <RadioGroup
-              value={dueDateType}
-              onChange={(e) =>
-                setDueDateType(e.target.value as 'immediate' | 'relative_to_event' | 'absolute')
-              }
-            >
-              {DUE_DATE_TYPES.map((type) => (
-                <FormControlLabel
-                  key={type.value}
-                  value={type.value}
-                  control={<Radio />}
-                  label={type.label}
-                />
-              ))}
-            </RadioGroup>
-          </FormControl>
-
-          {/* Offset Days (if relative) */}
-          {dueDateType === 'relative_to_event' && (
+          {/* Edit mode: show read-only task name */}
+          {isEditMode ? (
+            <Typography variant="subtitle1" fontWeight="bold">
+              {existingTask?.taskName}
+            </Typography>
+          ) : (
+            /* Create mode: task name field */
             <TextField
-              label={t('tasks.offsetDays', 'Offset Days')}
+              label={t('tasks.taskName')}
+              value={taskName}
+              onChange={(e) => setTaskName(e.target.value)}
+              error={!!errors.taskName}
+              helperText={errors.taskName}
+              required
+              fullWidth
+              placeholder={t('tasks.taskNamePlaceholder')}
+            />
+          )}
+
+          {/* Event Selector (create mode, no eventId prop) */}
+          {showEventSelector && (
+            <TextField
+              select
+              label={t('tasks.selectEvent')}
+              value={selectedEventCode}
+              onChange={(e) => setSelectedEventCode(e.target.value)}
+              error={!!errors.event}
+              helperText={errors.event || t('tasks.selectEventHelp')}
+              fullWidth
+            >
+              <MenuItem value="">
+                <em>{t('tasks.noEvent')}</em>
+              </MenuItem>
+              {events.map((event) => (
+                <MenuItem key={event.eventCode} value={event.eventCode}>
+                  {event.eventCode} — {event.title}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+
+          {/* Trigger State (create mode only) */}
+          {!isEditMode && (
+            <TextField
+              select
+              label={t('tasks.triggerState')}
+              value={triggerState}
+              onChange={(e) => setTriggerState(e.target.value)}
+              error={!!errors.triggerState}
+              helperText={errors.triggerState || t('tasks.triggerStateHelp')}
+              required
+              fullWidth
+            >
+              {WORKFLOW_STATE_VALUES.map((value) => (
+                <MenuItem key={value} value={value}>
+                  {t(`tasks.workflowStates.${value}`)}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+
+          {/* Due Date Type (create mode, or absolute date edit in edit mode) */}
+          {!isEditMode && (
+            <FormControl component="fieldset">
+              <FormLabel component="legend">{t('tasks.dueDateType')}</FormLabel>
+              <RadioGroup
+                value={dueDateType}
+                onChange={(e) =>
+                  setDueDateType(e.target.value as 'immediate' | 'relative_to_event' | 'absolute')
+                }
+              >
+                {DUE_DATE_TYPE_VALUES.map((value) => (
+                  <FormControlLabel
+                    key={value}
+                    value={value}
+                    control={<Radio />}
+                    label={t(`tasks.dueDateTypes.${value}`)}
+                  />
+                ))}
+              </RadioGroup>
+            </FormControl>
+          )}
+
+          {/* Offset Days (create mode, relative_to_event) */}
+          {!isEditMode && dueDateType === 'relative_to_event' && (
+            <TextField
+              label={t('tasks.offsetDays')}
               type="number"
               value={offsetDays}
               onChange={(e) => setOffsetDays(parseInt(e.target.value, 10))}
               error={!!errors.offsetDays}
-              helperText={
-                errors.offsetDays ||
-                t('tasks.offsetDaysHelp', 'Negative = before event, Positive = after event')
-              }
+              helperText={errors.offsetDays || t('tasks.offsetDaysHelp')}
               required
               fullWidth
               placeholder="-30"
             />
           )}
 
-          {/* Assigned Organizer */}
-          <TextField
-            label={t('tasks.assignedOrganizer', 'Assigned Organizer')}
+          {/* Absolute Date picker (absolute due date type) */}
+          {dueDateType === 'absolute' && (
+            <TextField
+              label={t('tasks.absoluteDueDate')}
+              type="date"
+              value={absoluteDueDate}
+              onChange={(e) => setAbsoluteDueDate(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          )}
+
+          {/* Assigned Organizer — dropdown */}
+          <OrganizerSelect
             value={assignedOrganizer}
-            onChange={(e) => setAssignedOrganizer(e.target.value)}
-            helperText={t('tasks.assignedOrganizerHelp', 'Leave empty to assign later')}
+            onChange={(val) => setAssignedOrganizer(val)}
+            includeUnassigned={true}
+            includeAllOption={false}
+            label={t('tasks.assignedOrganizer')}
             fullWidth
-            placeholder={organizerUsername}
           />
 
           {/* Notes */}
           <TextField
-            label={t('tasks.notes', 'Notes (Optional)')}
+            label={t('tasks.notes')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             multiline
             rows={3}
             fullWidth
-            placeholder={t('tasks.notesPlaceholder', 'Add any instructions or context...')}
+            placeholder={t('tasks.notesPlaceholder')}
           />
 
-          {/* Save as Template */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={saveAsTemplate}
-                onChange={(e) => setSaveAsTemplate(e.target.checked)}
-              />
-            }
-            label={t('tasks.saveAsTemplate', 'Save as reusable template')}
-          />
+          {/* Save as Template (create mode, only when no event selected or eventId) */}
+          {!isEditMode && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={saveAsTemplate}
+                  onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                />
+              }
+              label={t('tasks.saveAsTemplate')}
+            />
+          )}
         </Stack>
       </DialogContent>
 
       <DialogActions>
         <Button onClick={handleClose} disabled={isLoading}>
-          {t('common.cancel', 'Cancel')}
+          {t('common.cancel')}
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
-          {isLoading ? (
-            <CircularProgress size={20} />
-          ) : saveAsTemplate || !eventId ? (
-            t('tasks.createTemplate', 'Create Template')
-          ) : (
-            t('tasks.createTask', 'Create Task')
-          )}
+          {isLoading ? <CircularProgress size={20} /> : submitLabel}
         </Button>
       </DialogActions>
     </Dialog>

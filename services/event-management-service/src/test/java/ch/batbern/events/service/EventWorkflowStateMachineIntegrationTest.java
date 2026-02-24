@@ -1,6 +1,6 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.EventType;
 import ch.batbern.shared.exception.InvalidStateTransitionException;

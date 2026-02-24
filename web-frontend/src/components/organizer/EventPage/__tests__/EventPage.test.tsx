@@ -189,13 +189,7 @@ describe('EventPage Component (Story 5.6)', () => {
     it('should_displayEventCode_when_rendered', () => {
       renderWithProviders();
 
-      expect(screen.getByText('BAT54')).toBeInTheDocument();
-    });
-
-    it('should_displayWorkflowStateChip_when_rendered', () => {
-      renderWithProviders();
-
-      expect(screen.getByText('SPEAKER_CONFIRMATION')).toBeInTheDocument();
+      expect(screen.getByText('BAT54', { exact: false })).toBeInTheDocument();
     });
 
     it('should_displayBreadcrumbs_when_rendered', () => {

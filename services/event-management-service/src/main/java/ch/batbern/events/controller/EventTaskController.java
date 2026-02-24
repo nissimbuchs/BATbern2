@@ -7,6 +7,7 @@ import ch.batbern.events.dto.CreateEventTaskRequest;
 import ch.batbern.events.dto.CreateTasksFromTemplatesRequest;
 import ch.batbern.events.dto.EventTaskResponse;
 import ch.batbern.events.dto.ReassignTaskRequest;
+import ch.batbern.events.dto.UpdateEventTaskRequest;
 import ch.batbern.events.dto.UpdateTaskStatusRequest;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.security.SecurityContextHelper;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -298,6 +300,36 @@ public class EventTaskController {
         log.info("PUT /api/v1/tasks/{}/status - newStatus: {}", taskId, request.getStatus());
 
         EventTask task = eventTaskService.updateTaskStatus(taskId, request.getStatus());
+        String eventCode = eventRepository.findById(task.getEventId())
+                .map(Event::getEventCode)
+                .orElse(null);
+        EventTaskResponse response = EventTaskResponse.fromEntity(task, eventCode);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update task details (notes, due date, assigned organizer).
+     * Patch semantics: only provided non-null fields are updated.
+     *
+     * @param taskId task ID
+     * @param request update request (all fields optional)
+     * @return updated task
+     */
+    @PatchMapping("/api/v1/tasks/{taskId}")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<EventTaskResponse> updateTask(
+            @PathVariable UUID taskId,
+            @RequestBody UpdateEventTaskRequest request) {
+
+        log.info("PATCH /api/v1/tasks/{}", taskId);
+
+        EventTask task = eventTaskService.updateTask(
+                taskId,
+                request.getNotes(),
+                request.getDueDate(),
+                request.getAssignedOrganizerUsername()
+        );
         String eventCode = eventRepository.findById(task.getEventId())
                 .map(Event::getEventCode)
                 .orElse(null);

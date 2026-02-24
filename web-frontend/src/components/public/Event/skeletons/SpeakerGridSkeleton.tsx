@@ -6,7 +6,7 @@
  * Shows a grid of placeholder cards matching the expected speaker layout.
  */
 
-import { Skeleton } from '@/components/public/ui/ui/skeleton';
+import { Skeleton } from '@/components/public/ui/skeleton';
 
 export const SpeakerGridSkeleton = () => (
   <div className="py-12 px-4 md:px-8 bg-zinc-950">

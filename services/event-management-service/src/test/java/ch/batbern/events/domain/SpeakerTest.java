@@ -1,6 +1,6 @@
 package ch.batbern.events.domain;
 
-import ch.batbern.events.AbstractIntegrationTest;
+import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.repository.SpeakerRepository;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.Test;

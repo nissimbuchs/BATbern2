@@ -4,15 +4,17 @@
 
 This page tracks implementation status of all BATbern features. Use this to understand what's available now, what's in progress, and what's coming soon.
 
-**Last Updated**: 2026-01-25
+**Last Updated**: 2026-02-23
 
-**MVP Status**: ✅ **100% COMPLETE & PRODUCTION READY** - All 5 MVP epics (1-5) complete
+**MVP Status**: ✅ **100% COMPLETE & PRODUCTION READY** - All 5 MVP epics (1-5) complete. Epics 6 and 8 also complete.
 
 **Platform Readiness:**
 - **Epics 1-2**: 100% Complete (Foundation, Entity CRUD)
 - **Epic 3**: 100% Complete (Historical data migration tooling ready, production import pending)
 - **Epic 4**: 100% Complete (Public website, registration, archive browsing, content search)
 - **Epic 5**: 100% Complete (8/8 stories done, event workflow, speaker coordination, auto-publishing, lifecycle automation)
+- **Epic 6**: 100% Complete (Speaker self-service portal — invitations, response, materials, dashboard, reminders)
+- **Epic 8**: 100% Complete (Partner coordination — attendance analytics, topic voting, meeting coordination)
 
 **Status Definitions**:
 - `[IMPLEMENTED]` - Feature is live and available for use
@@ -106,8 +108,10 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Partner Directory | ✅ `[IMPLEMENTED]` | Tier badges, logos, contacts | [Partners](../entity-management/partners.md#directory) |
 | Contacts Management | ✅ `[IMPLEMENTED]` | Multiple contacts per partner | [Partners](../entity-management/partners.md#contacts) |
 | Meeting Coordination | ✅ `[IMPLEMENTED]` | Schedule partner logistics | [Partners](../entity-management/partners.md#meetings) |
-| Engagement Metrics | 📋 `[PLANNED]` | Q1 2025 | Meeting count, participation, ROI | [Analytics](../features/analytics.md) |
-| Partner Portal | 💡 `[BACKLOG]` | TBD | Self-service dashboard for partners |
+| Attendance Analytics | ✅ `[IMPLEMENTED]` | Partner dashboard with cost-per-attendee KPI + XLSX export | [Analytics](../features/analytics.md) |
+| Topic Voting | ✅ `[IMPLEMENTED]` | Partners suggest topics and toggle-vote | [Partners](../entity-management/partners.md) |
+| Partner Meeting Coordination | ✅ `[IMPLEMENTED]` | ICS calendar invites + meeting notes | [Partners](../entity-management/partners.md#meetings) |
+| Partner Portal | ✅ `[IMPLEMENTED]` | Self-service analytics and voting (Epic 8) | [Partners](../entity-management/partners.md) |
 
 ### Speakers
 
@@ -183,45 +187,53 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 ---
 
-## Deferred Features (Phase 2+)
+## Implemented Post-MVP Features (Phase 2)
 
-**Status**: 📦 Deferred to Phase 2+ (Post-MVP)
-
-The following features were planned but deferred to Phase 2+ to deliver MVP faster:
-
-### Epic 6: Speaker Self-Service Portal
+### Epic 6: Speaker Self-Service Portal ✅
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Automated Speaker Invitations | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Automated email invitations with unique response links |
-| Speaker Self-Service Response Portal | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Web form for speakers to respond to invitations |
-| Speaker Material Self-Submission | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Direct speaker upload of presentations |
-| Speaker Dashboard (View-Only) | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Speaker view of upcoming/past presentations |
-| Automated Deadline Reminders | 💡 `[BACKLOG]` | Epic 6 - Phase 2+ | Auto-reminders for material submission deadlines |
+| Automated Speaker Invitations | ✅ `[IMPLEMENTED]` | Magic link emails via AWS SES with unique response links |
+| Speaker Self-Service Response Portal | ✅ `[IMPLEMENTED]` | Accept/Decline via unique link, no authentication required |
+| Speaker Material Self-Submission | ✅ `[IMPLEMENTED]` | Title, abstract, CV, photo, presentation upload via S3 presigned URLs |
+| Speaker Dashboard (View-Only) | ✅ `[IMPLEMENTED]` | Upcoming/past events; WCAG 2.1 AA; i18n EN/DE |
+| Automated Deadline Reminders | ✅ `[IMPLEMENTED]` | 3-tier escalation: friendly → urgent → organizer escalation |
 
-**Current Workflow**: Organizers manually coordinate all speaker activities (Epic 5).
+### Epic 8: Partner Coordination ✅
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Partner Attendance Analytics Dashboard | ✅ `[IMPLEMENTED]` | Last 5 years table, cost-per-attendee KPI, XLSX export (Apache POI) |
+| Topic Suggestions & Voting | ✅ `[IMPLEMENTED]` | Partners suggest + toggle-vote; organizers set Selected/Declined |
+| Partner Meeting Coordination | ✅ `[IMPLEMENTED]` | RFC 5545 ICS calendar invites with agenda via AWS SES; meeting notes |
+
+---
+
+## Deferred Features (Phase 3+)
+
+**Status**: 📦 Deferred to Phase 3+ (Post-Epic 8)
 
 ### Epic 7: Attendee Experience Enhancements
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Personal Attendee Dashboard | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Bookmarks, learning progress, recommendations |
-| Content Discovery (Advanced) | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Personal content bookmarks and collections |
-| Mobile PWA | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Progressive Web App with offline capabilities |
-| Advanced User Preferences | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | Content language, experience level, formats |
-| Language & Accessibility | 💡 `[BACKLOG]` | Epic 7 - Phase 2+ | UI language, date formats, accessibility options |
+| Personal Attendee Dashboard | 💡 `[BACKLOG]` | Epic 7 - Phase 3+ | Bookmarks, learning progress, recommendations |
+| Content Discovery (Advanced) | 💡 `[BACKLOG]` | Epic 7 - Phase 3+ | Personal content bookmarks and collections |
+| Mobile PWA | 💡 `[BACKLOG]` | Epic 7 - Phase 3+ | Progressive Web App with offline capabilities |
+| Advanced User Preferences | 💡 `[BACKLOG]` | Epic 7 - Phase 3+ | Content language, experience level, formats |
+| Language & Accessibility | 💡 `[BACKLOG]` | Epic 7 - Phase 3+ | UI language, date formats, accessibility options |
 
 **Current Functionality**: Public archive browsing and registration flow operational (Epic 4).
 
-### Epic 8: Partner Analytics & Voting
+### Epic 9: Speaker Authentication & Account Integration 🔨 In Progress
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Partner Analytics Dashboard | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Employee attendance, engagement, ROI metrics |
-| Sophisticated Topic Voting | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Weighted voting based on partnership tier |
-| Automated Meeting Coordination | 💡 `[BACKLOG]` | Epic 8 - Phase 2+ | Calendar integration, RSVP tracking |
-
-**Current Functionality**: Basic partner meeting coordination operational (Epic 5 Story 5.15).
+| JWT-Based Magic Link Auth | ✅ `[IMPLEMENTED]` | Story 9.1 complete — RS256 JWT, HTTP-only cookie, session bridge to existing dashboard; backward compatible with Epic 6 tokens |
+| Auto Account Creation on Invitation Accept | 📋 `[PLANNED]` | Story 9.2 — Cognito user creation/role extension with SPEAKER role |
+| Dual Auth (Magic Link + Email/Password) | 📋 `[PLANNED]` | Story 9.3 — email/password fallback for speakers |
+| Unified Multi-Role Navigation | 📋 `[PLANNED]` | Story 9.5 — speaker + attendee portal in single session |
+| Epic 6 Token Migration Script | 📋 `[PLANNED]` | Story 9.4 — 7-day grace period migration of staging token-based users |
 
 ---
 
@@ -279,56 +291,45 @@ The following features were planned but deferred to Phase 2+ to deliver MVP fast
 
 ## Roadmap Summary
 
-### Q1 2025 (Jan - Mar)
+### Completed (2025 - Q1 2026)
 
-**Focus**: Notifications & Workflow Completion
+**✅ All delivered:**
 
-- ✅ Complete 16-Step Workflow (Steps 13, 15 finalization)
-- 🔨 In-App Notification System
-- 🔨 Email Notification Service
-- 📋 Company Hierarchy
-- 📋 Partner Engagement Metrics
+- ✅ Epics 1-6: Foundation → CRUD → Migration → Public Website → Organizer Workflows → Speaker Portal
+- ✅ Epic 8: Partner Coordination (analytics, topic voting, meeting coordination)
+- ✅ Multi-role E2E test auth (organizer / speaker / partner)
+- ✅ 4-layer test suite (shell scripts, Bruno API, Playwright UI, CDK infra)
 
-**Priority**: High - Core platform functionality
+### Q1–Q2 2026 (Next)
 
-### Q2 2025 (Apr - Jun)
+**Focus**: Epic 9 Completion + Production Launch
 
-**Focus**: Analytics & Usability
+- 🔨 Epic 9 Story 9.1: JWT magic link auth — ✅ DONE
+- 📋 Epic 9 Stories 9.2–9.5: Cognito account creation, dual auth, migration script, multi-role navigation
+- 📋 Epic 3: Production data import (2,307 historical participants, ~1 day effort)
+- 📋 Production deployment of Epics 6 and 8
 
-- 📋 Event Analytics Dashboard
-- 📋 Keyboard Shortcuts
-- 📋 Speaker Ratings & Pool
-- 📋 Recurring Events & Templates
-- 📋 Bulk User Import
-- 📋 Topic Aliases
-- 📋 PPTX/KEY Auto-Conversion
-- 📋 Multi-Factor Authentication (MFA)
+**Priority**: High — enables production go-live
 
-**Priority**: Medium - Enhanced productivity
+### Q3–Q4 2026
 
-### Q3 2025 (Jul - Sep)
+**Focus**: Attendee Experience (Epic 7)
 
-**Focus**: Advanced Features & Integrations
+- 💡 Personal attendee dashboard (bookmarks, learning progress)
+- 💡 Advanced content discovery and collections
+- 💡 Mobile PWA with offline capabilities
+- 💡 Advanced user preferences (language, accessibility)
 
-- 💡 Financial Analytics
-- 💡 Custom Keyboard Shortcuts
-- 💡 Advanced Reporting
-- 💡 Mobile App (iOS/Android)
-- 💡 Slack/Teams Integration
+**Priority**: Medium — enhances attendee engagement
 
-**Priority**: Medium - Nice-to-have enhancements
+### Future Backlog
 
-### Q4 2025 (Oct - Dec)
-
-**Focus**: Enterprise Features & Scale
-
+- 💡 Multi-Factor Authentication (MFA)
+- 💡 Company Hierarchy (parent/subsidiary)
+- 💡 Recurring Events & Templates
 - 💡 Single Sign-On (SSO)
-- 💡 Partner Portal (Self-Service)
-- 💡 User Groups & Teams
-- 💡 API Access for Integrations
-- 💡 Multi-Language Support (German)
-
-**Priority**: Low - Enterprise requirements
+- 💡 Slack/Teams Integration
+- 💡 Financial Analytics & Reporting
 
 ---
 

@@ -36,6 +36,16 @@ export default function ArchivePage() {
     return (saved as ViewMode) || 'grid';
   });
 
+  // On mobile (<1024px) always use list view regardless of stored preference
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  const effectiveViewMode: ViewMode = isMobile ? 'grid' : viewMode;
+
   // Topics state (loaded from API)
   const [topics, setTopics] = useState<Topic[]>([]);
   const [topicsLoading, setTopicsLoading] = useState(true);
@@ -183,8 +193,21 @@ export default function ArchivePage() {
           <p className="text-muted-foreground">{t('archive.description')}</p>
         </div>
 
+        {/* Filter Sheet trigger (Mobile) - above the content, full width */}
+        <div className="lg:hidden mb-4">
+          <FilterSheet
+            filters={filters}
+            topics={topics}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+            onSortChange={handleSortChange}
+            currentSort={sort}
+            loading={topicsLoading}
+          />
+        </div>
+
         <div className="flex gap-8">
-          {/* Filter Sidebar (Desktop) */}
+          {/* Filter Sidebar (Desktop only) */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <FilterSidebar
               filters={filters}
@@ -197,48 +220,37 @@ export default function ArchivePage() {
             />
           </aside>
 
-          {/* Filter Sheet (Mobile) */}
-          <div className="lg:hidden">
-            <FilterSheet
-              filters={filters}
-              topics={topics}
-              onFilterChange={handleFilterChange}
-              onClearFilters={handleClearFilters}
-              onSortChange={handleSortChange}
-              currentSort={sort}
-              loading={topicsLoading}
-            />
-          </div>
-
           {/* Main Content */}
           <main className="flex-1">
-            {/* View Toggle */}
+            {/* View Toggle (desktop only) */}
             <div className="flex justify-between items-center mb-6">
               <div className="text-sm text-zinc-400" data-testid="events-progress">
                 {!isLoading && totalCount > 0 && `${events.length} of ${totalCount} events`}
               </div>
-              <div className="flex gap-2">
-                <button
-                  data-testid="view-toggle-grid"
-                  onClick={() => handleViewModeChange('grid')}
-                  className={`px-3 py-2 rounded-md text-sm ${
-                    viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
-                  aria-label={t('archive.viewToggle.grid')}
-                >
-                  {t('archive.viewToggle.grid')}
-                </button>
-                <button
-                  data-testid="view-toggle-list"
-                  onClick={() => handleViewModeChange('list')}
-                  className={`px-3 py-2 rounded-md text-sm ${
-                    viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                  }`}
-                  aria-label={t('archive.viewToggle.list')}
-                >
-                  {t('archive.viewToggle.list')}
-                </button>
-              </div>
+              {!isMobile && (
+                <div className="flex gap-2">
+                  <button
+                    data-testid="view-toggle-grid"
+                    onClick={() => handleViewModeChange('grid')}
+                    className={`px-3 py-2 rounded-md text-sm ${
+                      viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
+                    aria-label={t('archive.viewToggle.grid')}
+                  >
+                    {t('archive.viewToggle.grid')}
+                  </button>
+                  <button
+                    data-testid="view-toggle-list"
+                    onClick={() => handleViewModeChange('list')}
+                    className={`px-3 py-2 rounded-md text-sm ${
+                      viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                    }`}
+                    aria-label={t('archive.viewToggle.list')}
+                  >
+                    {t('archive.viewToggle.list')}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Error State */}
@@ -259,7 +271,7 @@ export default function ArchivePage() {
                 ) : (
                   <div
                     className={
-                      viewMode === 'grid'
+                      effectiveViewMode === 'grid'
                         ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
                         : 'space-y-4'
                     }
@@ -273,7 +285,7 @@ export default function ArchivePage() {
                             sessions: event.sessions ?? undefined,
                           } as EventDetailUI
                         }
-                        viewMode={viewMode}
+                        viewMode={effectiveViewMode}
                       />
                     ))}
                   </div>

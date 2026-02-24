@@ -155,11 +155,6 @@ describe('PartnerDetailHeader Component', () => {
     });
   });
 
-  describe('AC1.4: Engagement Bar Placeholder', () => {
-    // Removed: engagement bar placeholder was removed post-epic-8
-    it.skip('should_showEngagementPlaceholder_when_epic8Deferred', async () => {});
-  });
-
   describe('AC1.5: Action Buttons', () => {
     // Test 1.8: should_openEditModal_when_editButtonClicked
     it('should_openEditModal_when_editButtonClicked', async () => {
@@ -174,9 +169,6 @@ describe('PartnerDetailHeader Component', () => {
       expect(mockOpenEditModal).toHaveBeenCalledWith(mockPartner);
     });
 
-    // Removed: email/meeting/export buttons were removed post-epic-8
-    it.skip('should_disableEpic8Buttons_when_rendered', async () => {});
-
     it('should_haveAddNoteButton_when_rendered', async () => {
       await act(async () => {
         renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
@@ -189,17 +181,13 @@ describe('PartnerDetailHeader Component', () => {
   });
 
   describe('AC1.6: Back Button Navigation', () => {
-    // Test 1.7: should_navigateBack_when_backButtonClicked
-    it('should_navigateBack_when_backButtonClicked', async () => {
-      const user = userEvent.setup();
+    // Back navigation is handled by PartnerDetailScreen via Breadcrumbs — not by the header
+    it('should_notRenderBackButton_because_parentHandlesNavigation', async () => {
       await act(async () => {
         renderWithProviders(<PartnerDetailHeader partner={mockPartner} />);
       });
 
-      const backButton = screen.getByRole('button', { name: /Back to Partner Directory/i });
-      await user.click(backButton);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/organizer/partners');
+      expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
     });
   });
 

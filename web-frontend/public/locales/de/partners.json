@@ -183,6 +183,30 @@
       "activePartnership": "Aktive Partnerschaft",
       "exportData": "Partnerdaten exportieren",
       "deletePartner": "Partnerdaten löschen"
+    },
+    "tabs": {
+      "overview": "Übersicht",
+      "contacts": "Kontakte",
+      "meetings": "Meetings",
+      "analytics": "Analysen",
+      "notes": "Notizen",
+      "settings": "Einstellungen"
+    },
+    "overviewTab": {
+      "title": "Partnerschaftsdetails",
+      "tier": "Partnerschaftsstufe",
+      "startDate": "Partnerschaft seit",
+      "benefits": "Leistungen",
+      "changeTier": "Stufe ändern",
+      "tierBenefits": {
+        "logoPlacement": "Logo-Platzierung auf der Website",
+        "newsletterMentions": "Newsletter-Erwähnungen",
+        "priorityAccess": "Prioritätszugang zu Events",
+        "quarterlyMeetings": "Quartalsweise strategische Meetings",
+        "roiAnalytics": "ROI-Analyse-Dashboard",
+        "accountManager": "Persönlicher Account-Manager",
+        "eventAccess": "Eventzugang"
+      }
     }
   },
   "meetings": {

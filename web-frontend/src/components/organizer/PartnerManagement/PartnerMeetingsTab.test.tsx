@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
+import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
+
+const renderWithProviders = (ui: React.ReactElement) => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+};
 import type { PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 
 // Mock the hook
@@ -41,7 +48,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByRole('heading', { name: /^meetings$/i, level: 6 })).toBeInTheDocument();
   });
@@ -65,7 +72,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText('Q1 Partnership Review')).toBeInTheDocument();
     expect(screen.getByText('Strategic Planning Session')).toBeInTheDocument();
@@ -87,47 +94,9 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/invite sent/i)).toBeInTheDocument();
-  });
-
-  // Test 5.4: should_showEpic8Message_when_fullFeaturesDeferred
-  // TODO: Enable when Epic 8 placeholder messaging is implemented
-  it.skip('should show Epic 8 message when full features deferred', () => {
-    vi.mocked(usePartnerMeetings).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as any);
-
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
-
-    expect(screen.getByText(/full meeting coordination coming in epic 8/i)).toBeInTheDocument();
-  });
-
-  // Test 5.5: should_disableScheduleButton_when_epic8Deferred
-  // TODO: Enable when schedule button is implemented
-  it.skip('should disable schedule button when Epic 8 deferred', () => {
-    vi.mocked(usePartnerMeetings).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as any);
-
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
-
-    const scheduleButton = screen.getByRole('button', { name: /schedule new meeting/i });
-    expect(scheduleButton).toBeDisabled();
-  });
-
-  // Test 5.6: should_displayMeetingMaterials_when_available
-  // Story 8.3: Meeting materials feature was removed from scope — no materials field in PartnerMeetingDTO.
-  it.skip('should display meeting materials when available — feature removed from scope (Story 8.3)', () => {
-    // Meeting materials distribution was cut from scope (see story "What was deliberately cut" section).
-    // Keeping this test as a reminder of the removed feature.
   });
 
   // Test 5.7: should_formatMeetingDate_when_displayed
@@ -143,7 +112,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     // Should display formatted date (e.g., "Mar 15, 2025")
     expect(screen.getByText(/mar 15, 2025/i)).toBeInTheDocument();
@@ -158,7 +127,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/no meetings scheduled/i)).toBeInTheDocument();
   });
@@ -172,7 +141,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
@@ -186,7 +155,7 @@ describe('PartnerMeetingsTab', () => {
       refetch: vi.fn(),
     } as any);
 
-    render(<PartnerMeetingsTab companyName={mockCompanyName} />);
+    renderWithProviders(<PartnerMeetingsTab companyName={mockCompanyName} />);
 
     expect(screen.getByText(/failed to load meetings/i)).toBeInTheDocument();
   });

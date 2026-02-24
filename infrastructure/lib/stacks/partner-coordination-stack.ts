@@ -80,7 +80,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         serviceDisplayName: 'PartnerCoordination',
         alarmTopic: props.alarmTopic,
         thresholds: {
-          memoryUtilization: 80,
+          memoryUtilization: 85, // JVM heap capped via MaxRAMPercentage; 85% gives headroom for non-heap
           oomKillCount: envName === 'production' ? 1 : 3,
           taskFailureCount: envName === 'production' ? 2 : 5,
           eventBridgePublishingFailures: envName === 'production' ? 5 : 10,

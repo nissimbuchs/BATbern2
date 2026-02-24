@@ -45,9 +45,15 @@ export function FilterSheet({
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black bg-opacity-50"
+          onClick={() => setIsOpen(false)}
+        >
           {/* Sheet */}
-          <div className="bg-white w-full max-h-[80vh] rounded-t-lg overflow-y-auto p-6">
+          <div
+            className="bg-white w-full max-h-[80vh] rounded-t-lg overflow-y-auto p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">{t('archive.filters.title')}</h2>
               <button
@@ -62,16 +68,16 @@ export function FilterSheet({
             <FilterSidebar
               filters={filters}
               topics={topics}
-              onFilterChange={(newFilters) => {
-                onFilterChange(newFilters);
+              onFilterChange={(f) => {
+                onFilterChange(f);
                 setIsOpen(false);
               }}
               onClearFilters={() => {
                 onClearFilters();
                 setIsOpen(false);
               }}
-              onSortChange={(sort) => {
-                onSortChange(sort);
+              onSortChange={(s) => {
+                onSortChange(s);
                 setIsOpen(false);
               }}
               currentSort={currentSort}

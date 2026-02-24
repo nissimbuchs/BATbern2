@@ -84,14 +84,6 @@ describe('PartnerOverviewTab', () => {
       expect(screen.getByText(/Jan 1, 2024/i)).toBeInTheDocument();
     });
 
-    it.skip('displays previous tier (TODO: requires backend implementation)', () => {
-      // Feature not yet implemented - see TODO in component
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Previous Tier/i)).toBeInTheDocument();
-      expect(screen.getByText(/🥇 GOLD/i)).toBeInTheDocument();
-    });
-
     it('displays Change Tier button', async () => {
       const user = userEvent.setup();
       renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
@@ -132,121 +124,6 @@ describe('PartnerOverviewTab', () => {
 
       expect(screen.getByText(/ROI analytics dashboard/i)).toBeInTheDocument();
       expect(screen.getByText(/Dedicated account manager/i)).toBeInTheDocument();
-    });
-  });
-
-  describe.skip('AC4.4: should_displaySwissUID_when_companyDataEnriched (TODO: backend)', () => {
-    // Company details (swissUid, taxStatus) require backend implementation
-    it('displays Swiss UID', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Swiss UID/i)).toBeInTheDocument();
-      expect(screen.getByText(/CHE-123.456.789/i)).toBeInTheDocument();
-    });
-
-    it('displays tax status', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Tax Status/i)).toBeInTheDocument();
-      expect(screen.getByText(/VAT Registered/i)).toBeInTheDocument();
-    });
-
-    it('handles missing company data gracefully', () => {
-      const partnerWithoutCompany: PartnerResponse = {
-        ...mockPartnerData,
-        company: undefined,
-      };
-
-      renderWithProviders(<PartnerOverviewTab partner={partnerWithoutCompany} />);
-
-      // Should not crash, but Swiss UID section should not be rendered
-      expect(screen.queryByText(/Swiss UID/i)).not.toBeInTheDocument();
-    });
-  });
-
-  // Engagement metrics panel removed post-epic-8 (analytics now in separate tab)
-  describe.skip('AC4.5: should_showEngagementPlaceholder_when_epic8Deferred', () => {
-    it('displays "Coming Soon - Epic 8" message', () => {});
-    it('displays placeholder score breakdown', () => {});
-    it('displays "View Full Analytics" link', () => {});
-  });
-
-  describe.skip('AC4.6: should_displayRecentActivity_when_activityLoaded (TODO: Epic 8)', () => {
-    // Recent activity features deferred to Epic 8
-    it('displays last event attendance', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Last Event/i)).toBeInTheDocument();
-      expect(screen.getByText(/Spring 25/i)).toBeInTheDocument();
-      expect(screen.getByText(/March 15, 2025/i)).toBeInTheDocument();
-    });
-
-    it('displays last event statistics', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/3 attendees/i)).toBeInTheDocument();
-      expect(screen.getByText(/5 registrations/i)).toBeInTheDocument();
-      expect(screen.getByText(/12 downloads/i)).toBeInTheDocument();
-    });
-
-    it('displays next meeting preview', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Next Meeting/i)).toBeInTheDocument();
-      expect(screen.getByText(/QUARTERLY_REVIEW/i)).toBeInTheDocument();
-      expect(screen.getByText(/Google Office Zurich/i)).toBeInTheDocument();
-      expect(screen.getByText(/Q1 Planning/i)).toBeInTheDocument();
-    });
-
-    it('handles missing last event gracefully', () => {
-      const partnerWithoutEvent: PartnerResponse = {
-        ...mockPartnerData,
-        lastEvent: undefined,
-      };
-
-      renderWithProviders(<PartnerOverviewTab partner={partnerWithoutEvent} />);
-
-      expect(screen.getByText(/No recent event/i)).toBeInTheDocument();
-    });
-
-    it('handles missing next meeting gracefully', () => {
-      const partnerWithoutMeeting: PartnerResponse = {
-        ...mockPartnerData,
-        nextMeeting: undefined,
-      };
-
-      renderWithProviders(<PartnerOverviewTab partner={partnerWithoutMeeting} />);
-
-      expect(screen.getByText(/No upcoming meeting/i)).toBeInTheDocument();
-    });
-  });
-
-  describe.skip('AC4.7: should_displayTopicVotes_when_votesLoaded (TODO: Epic 8)', () => {
-    // Topic votes features deferred to Epic 8
-    it('displays active topic votes list', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/Active Topic Votes/i)).toBeInTheDocument();
-      expect(screen.getByText(/Sustainable Architecture/i)).toBeInTheDocument();
-      expect(screen.getByText(/Digital Transformation/i)).toBeInTheDocument();
-    });
-
-    it('displays vote priorities', () => {
-      renderWithProviders(<PartnerOverviewTab partner={mockPartnerData} />);
-
-      expect(screen.getByText(/HIGH/i)).toBeInTheDocument();
-      expect(screen.getByText(/MEDIUM/i)).toBeInTheDocument();
-    });
-
-    it('handles empty votes list gracefully', () => {
-      const partnerWithoutVotes: PartnerResponse = {
-        ...mockPartnerData,
-        activeVotes: [],
-      };
-
-      renderWithProviders(<PartnerOverviewTab partner={partnerWithoutVotes} />);
-
-      expect(screen.getByText(/No active votes/i)).toBeInTheDocument();
     });
   });
 });

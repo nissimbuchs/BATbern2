@@ -6,7 +6,7 @@
  * Improves perceived performance by showing structure before content loads.
  */
 
-import { Skeleton } from '@/components/public/ui/ui/skeleton';
+import { Skeleton } from '@/components/public/ui/skeleton';
 
 export const EventHeroSkeleton = () => (
   <div className="relative min-h-[500px] bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-8 md:p-12">

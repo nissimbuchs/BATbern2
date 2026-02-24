@@ -11,15 +11,16 @@
  * - Auto-refreshes on task completion
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { List, ListItem, Typography, Box, Button, Chip, Stack, Skeleton } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { de, enUS } from 'date-fns/locale';
-import { taskService } from '@/services/taskService';
+import { taskService, type EventTaskResponse } from '@/services/taskService';
 import { TaskCard } from './TaskCard';
+import { CustomTaskModal } from './CustomTaskModal';
 
 interface TaskWidgetProps {
   organizerUsername: string;
@@ -30,6 +31,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const locale = i18n.language === 'de' ? de : enUS;
+  const [editingTask, setEditingTask] = useState<EventTaskResponse | null>(null);
 
   // Fetch critical tasks
   const {
@@ -142,6 +144,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
             task={task}
             locale={locale}
             onComplete={handleCompleteTask}
+            onEdit={(t) => setEditingTask(t)}
             showCompleteButton={true}
             showEventCode={true}
             showTriggerState={false}
@@ -163,6 +166,15 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
           {t('tasks.viewAllTasks', 'View All Tasks')}
         </Button>
       </Box>
+
+      {/* Edit Task Modal */}
+      <CustomTaskModal
+        open={editingTask !== null}
+        onClose={() => setEditingTask(null)}
+        eventId={null}
+        organizerUsername={organizerUsername}
+        existingTask={editingTask ?? undefined}
+      />
     </Box>
   );
 };

@@ -25,7 +25,9 @@
     "publicSite": "Öffentliche Webseite",
     "partnerTopics": "Partner-Themen",
     "partnerMeetings": "Partner-Meetings",
-    "topics": "Themenvorschläge"
+    "topics": "Themenvorschläge",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen"
   },
   "public": {
     "login": "Anmelden",
@@ -483,6 +485,22 @@
     },
     "detail": {
       "backToArchive": "← Zurück zum Archiv"
+    }
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "markAllAsRead": "Alle als gelesen markieren",
+    "markAsRead": "Als gelesen markieren",
+    "delete": "Löschen",
+    "reload": "Aktualisieren",
+    "viewAll": "Alle anzeigen",
+    "hideRead": "Gelesene ausblenden",
+    "empty": "Keine Benachrichtigungen",
+    "noNotifications": "Noch keine Benachrichtigungen",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "deleteConfirmation": {
+      "title": "Benachrichtigung löschen",
+      "message": "Möchten Sie diese Benachrichtigung wirklich löschen?"
     }
   }
 }

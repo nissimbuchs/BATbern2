@@ -25,7 +25,9 @@
     "publicSite": "Public Website",
     "partnerTopics": "Partner Topics",
     "partnerMeetings": "Partner Meetings",
-    "topics": "Topic Suggestions"
+    "topics": "Topic Suggestions",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "public": {
     "login": "Login",
@@ -482,6 +484,22 @@
     },
     "detail": {
       "backToArchive": "← Back to Archive"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllAsRead": "Mark all as read",
+    "markAsRead": "Mark as read",
+    "delete": "Delete",
+    "reload": "Reload",
+    "viewAll": "View All",
+    "hideRead": "Hide read",
+    "empty": "No notifications",
+    "noNotifications": "No notifications yet",
+    "lastUpdated": "Last updated",
+    "deleteConfirmation": {
+      "title": "Delete Notification",
+      "message": "Are you sure you want to delete this notification?"
     }
   }
 }
