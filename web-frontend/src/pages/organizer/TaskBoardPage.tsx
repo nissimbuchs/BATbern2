@@ -56,6 +56,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
@@ -80,11 +81,17 @@ const TaskBoardPage: React.FC = () => {
   const [completionNotes, setCompletionNotes] = useState('');
   const [activeTask, setActiveTask] = useState<EventTaskResponse | null>(null);
 
-  // Drag-and-drop sensors
+  // Drag-and-drop sensors — PointerSensor for mouse/stylus, TouchSensor for mobile
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8, // 8px movement required to activate drag
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // hold 250ms to initiate drag (vs scroll)
+        tolerance: 5, // allow 5px movement during hold without cancelling
       },
     })
   );
