@@ -94,6 +94,18 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator updated successfully",
       "moderatorUpdateError": "Failed to update moderator."
+    },
+    "speakers": {
+      "progress": "Progress",
+      "confirmed": "confirmed",
+      "thresholdMet": "Threshold met",
+      "needMore": "Need more speakers",
+      "acceptanceRate": "acceptance rate",
+      "viewMode": "View mode",
+      "kanban": "Kanban",
+      "sessions": "Sessions",
+      "addSpeakers": "Add Speakers",
+      "addToPool": "Add Speakers to Pool"
     }
   },
   "dashboard": {

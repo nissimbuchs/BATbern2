@@ -94,6 +94,18 @@
       "moderatorLabel": "Moderator",
       "moderatorUpdated": "Moderator erfolgreich aktualisiert",
       "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden."
+    },
+    "speakers": {
+      "progress": "Fortschritt",
+      "confirmed": "bestätigt",
+      "thresholdMet": "Mindestzahl erreicht",
+      "needMore": "Mehr Referenten benötigt",
+      "acceptanceRate": "Zusagerate",
+      "viewMode": "Ansichtsmodus",
+      "kanban": "Kanban",
+      "sessions": "Sessions",
+      "addSpeakers": "Referenten hinzufügen",
+      "addToPool": "Referenten zum Pool hinzufügen"
     }
   },
   "dashboard": {
