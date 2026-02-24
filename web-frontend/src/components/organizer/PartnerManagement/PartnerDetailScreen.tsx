@@ -303,8 +303,18 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         <PartnerCreateEditModal />
       </Container>
 
-      {/* Bottom Navigation — always visible */}
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+      {/* Bottom Navigation — mobile only */}
+      <Paper
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          display: { xs: 'block', md: 'none' },
+        }}
+        elevation={3}
+      >
         <BottomNavigation value={effectiveTab} onChange={(_, v) => handleTabChange(v)}>
           {visibleTabs.map((tab, idx) => (
             <BottomNavigationAction

@@ -453,8 +453,18 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         onSuccess={onBack}
       />
 
-      {/* Bottom Navigation — always visible */}
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+      {/* Bottom Navigation — mobile only */}
+      <Paper
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          display: { xs: 'block', md: 'none' },
+        }}
+        elevation={3}
+      >
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
           <BottomNavigationAction icon={<OverviewIcon />} sx={{ minWidth: 0, flex: 1 }} />
           <BottomNavigationAction icon={<UsersIcon />} sx={{ minWidth: 0, flex: 1 }} />
