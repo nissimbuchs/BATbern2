@@ -6,7 +6,6 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-  ListItemText,
   Avatar,
   IconButton,
   Stack,
@@ -60,11 +59,17 @@ const NotificationsPage: React.FC = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        spacing={2}
+        mb={3}
+      >
         <Typography variant="h4" component="h1">
           {t('notifications.title')}
         </Typography>
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
           <FormControlLabel
             control={
               <Switch
@@ -78,6 +83,7 @@ const NotificationsPage: React.FC = () => {
           {unreadIds.length > 0 && (
             <Button
               variant="outlined"
+              size="small"
               startIcon={<DoneAllIcon />}
               onClick={handleMarkAllAsRead}
               disabled={batchMarkAsReadMutation.isPending}
@@ -121,69 +127,72 @@ const NotificationsPage: React.FC = () => {
                 <React.Fragment key={notification.id}>
                   {idx > 0 && <Divider component="li" />}
                   <ListItem
+                    alignItems="flex-start"
                     sx={{
                       py: 1.5,
                       bgcolor: isUnread ? 'action.hover' : 'transparent',
                       borderLeft: isUnread ? '4px solid' : 'none',
                       borderColor: 'primary.main',
                     }}
-                    secondaryAction={
-                      <Stack direction="row" spacing={0}>
-                        {isUnread && (
-                          <Tooltip title={t('notifications.markAsRead')}>
-                            <IconButton
-                              size="small"
-                              onClick={() => markAsReadMutation.mutateAsync(notification.id)}
-                              disabled={markAsReadMutation.isPending}
-                            >
-                              <DoneAllIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        <Tooltip title={t('notifications.delete')}>
-                          <IconButton
-                            size="small"
-                            onClick={() => deleteNotificationMutation.mutateAsync(notification.id)}
-                            disabled={deleteNotificationMutation.isPending}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    }
                   >
                     <ListItemAvatar>
                       <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.dark' }}>
                         <NotificationsIcon />
                       </Avatar>
                     </ListItemAvatar>
-                    <ListItemText
-                      primaryTypographyProps={{ component: 'div' }}
-                      secondaryTypographyProps={{ component: 'div' }}
-                      primary={
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Typography variant="body2" fontWeight={isUnread ? 'bold' : 'normal'}>
-                            {notification.subject}
-                          </Typography>
-                          {notification.eventCode && (
-                            <Chip label={notification.eventCode} size="small" variant="outlined" />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      {/* Subject + chips */}
+                      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                        <Typography variant="body2" fontWeight={isUnread ? 'bold' : 'normal'}>
+                          {notification.subject}
+                        </Typography>
+                        {notification.eventCode && (
+                          <Chip label={notification.eventCode} size="small" variant="outlined" />
+                        )}
+                        {notification.priority === 'URGENT' && (
+                          <Chip label="URGENT" size="small" color="error" />
+                        )}
+                      </Stack>
+                      {/* Body */}
+                      <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                        {notification.body}
+                      </Typography>
+                      {/* Time + actions on same row */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mt={0.5}
+                      >
+                        <Typography variant="caption" color="text.secondary">
+                          {relativeTime}
+                        </Typography>
+                        <Stack direction="row" spacing={0}>
+                          {isUnread && (
+                            <Tooltip title={t('notifications.markAsRead')}>
+                              <IconButton
+                                size="small"
+                                onClick={() => markAsReadMutation.mutateAsync(notification.id)}
+                                disabled={markAsReadMutation.isPending}
+                              >
+                                <DoneAllIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           )}
-                          {notification.priority === 'URGENT' && (
-                            <Chip label="URGENT" size="small" color="error" />
-                          )}
+                          <Tooltip title={t('notifications.delete')}>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                deleteNotificationMutation.mutateAsync(notification.id)
+                              }
+                              disabled={deleteNotificationMutation.isPending}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </Stack>
-                      }
-                      secondary={
-                        <Stack spacing={0.5} mt={0.5}>
-                          <Typography variant="caption" color="text.secondary">
-                            {notification.body}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {relativeTime}
-                          </Typography>
-                        </Stack>
-                      }
-                    />
+                      </Stack>
+                    </Box>
                   </ListItem>
                 </React.Fragment>
               );
