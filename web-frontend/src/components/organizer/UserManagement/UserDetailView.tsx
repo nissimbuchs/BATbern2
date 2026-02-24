@@ -17,8 +17,18 @@ import {
   Divider,
   Stack,
   Grid,
+  Paper,
+  BottomNavigation,
+  BottomNavigationAction,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Person as OverviewIcon,
+  Event as EventIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../../../types/user.types';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
@@ -61,6 +71,8 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   canDelete = false,
 }) => {
   const { t } = useTranslation('userManagement');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [activeTab, setActiveTab] = useState(0);
 
   // Fetch company with logo if user has a company
@@ -84,7 +96,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   };
 
   return (
-    <Box sx={{ p: 3 }} data-testid="user-detail-view">
+    <Box sx={{ p: 3, pb: 8 }} data-testid="user-detail-view">
       {/* Breadcrumbs */}
       <Breadcrumbs items={[{ label: t('title'), path: '/organizer/users' }, { label: fullName }]} />
 
@@ -229,21 +241,23 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="user detail tabs">
-          <Tab
-            label={t('userDetail.tabs.overview')}
-            id="user-tab-0"
-            aria-controls="user-tabpanel-0"
-          />
-          <Tab
-            label={t('userDetail.tabs.eventsParticipated')}
-            id="user-tab-1"
-            aria-controls="user-tabpanel-1"
-          />
-        </Tabs>
-      </Box>
+      {/* Top Tabs — desktop only */}
+      {!isMobile && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label="user detail tabs">
+            <Tab
+              label={t('userDetail.tabs.overview')}
+              id="user-tab-0"
+              aria-controls="user-tabpanel-0"
+            />
+            <Tab
+              label={t('userDetail.tabs.eventsParticipated')}
+              id="user-tab-1"
+              aria-controls="user-tabpanel-1"
+            />
+          </Tabs>
+        </Box>
+      )}
 
       {/* Tab Panels */}
       <TabPanel value={activeTab} index={0}>
@@ -255,6 +269,22 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
       <TabPanel value={activeTab} index={1}>
         <EventsParticipatedTable userId={user.id} />
       </TabPanel>
+
+      {/* Bottom Navigation — always visible */}
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+        <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <BottomNavigationAction
+            label={t('userDetail.tabs.overview')}
+            icon={<OverviewIcon />}
+            sx={{ minWidth: 0, flex: 1 }}
+          />
+          <BottomNavigationAction
+            label={t('userDetail.tabs.eventsParticipated')}
+            icon={<EventIcon />}
+            sx={{ minWidth: 0, flex: 1 }}
+          />
+        </BottomNavigation>
+      </Paper>
     </Box>
   );
 };

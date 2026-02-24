@@ -16,6 +16,9 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  Paper,
+  BottomNavigation,
+  BottomNavigationAction,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
@@ -25,6 +28,8 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
+  Dashboard as OverviewIcon,
+  People as UsersIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -233,7 +238,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   }
 
   return (
-    <Box data-testid="company-detail-view" sx={{ p: { xs: 1.5, sm: 3 } }}>
+    <Box data-testid="company-detail-view" sx={{ p: { xs: 1.5, sm: 3 }, pb: 8 }}>
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -383,26 +388,23 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          aria-label="company detail tabs"
-          variant={isMobile ? 'fullWidth' : 'standard'}
-        >
-          <Tab
-            label={t('company.detail.tabs.overview')}
-            id="company-tab-0"
-            aria-controls="company-tabpanel-0"
-          />
-          <Tab
-            label={t('company.detail.tabs.users')}
-            id="company-tab-1"
-            aria-controls="company-tabpanel-1"
-          />
-        </Tabs>
-      </Box>
+      {/* Top Tabs — desktop only */}
+      {!isMobile && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs value={activeTab} onChange={handleTabChange} aria-label="company detail tabs">
+            <Tab
+              label={t('company.detail.tabs.overview')}
+              id="company-tab-0"
+              aria-controls="company-tabpanel-0"
+            />
+            <Tab
+              label={t('company.detail.tabs.users')}
+              id="company-tab-1"
+              aria-controls="company-tabpanel-1"
+            />
+          </Tabs>
+        </Box>
+      )}
 
       {/* Overview: attendance stats + speakers from this company */}
       <TabPanel value={activeTab} index={0}>
@@ -425,6 +427,22 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         onClose={() => setIsDeleteDialogOpen(false)}
         onSuccess={onBack}
       />
+
+      {/* Bottom Navigation — always visible */}
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+        <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+          <BottomNavigationAction
+            label={t('company.detail.tabs.overview')}
+            icon={<OverviewIcon />}
+            sx={{ minWidth: 0, flex: 1 }}
+          />
+          <BottomNavigationAction
+            label={t('company.detail.tabs.users')}
+            icon={<UsersIcon />}
+            sx={{ minWidth: 0, flex: 1 }}
+          />
+        </BottomNavigation>
+      </Paper>
     </Box>
   );
 };
