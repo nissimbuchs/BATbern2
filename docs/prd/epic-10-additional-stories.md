@@ -1,6 +1,6 @@
 # Epic 10: Additional Stories
 
-**Status:** 🔨 **IN PROGRESS** — Stories 10.1 and 10.2 ready for dev (2026-02-24).
+**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24).
 
 **Epic Goal**: Consolidate scattered admin configuration and tooling into coherent, discoverable interfaces. These are standalone improvements that don't belong to any prior epic's domain.
 
@@ -172,13 +172,158 @@ services/.../RegistrationEmailService.java           — DB lookup with classpat
 
 ---
 
-### Story 10.3: Migrate System Templates to Layout-Based (future)
+### Story 10.3: Task Deadline Reminder Email
+
+**Story file**: `docs/stories/archived/epic-10/10-3-task-deadline-reminder-email.md`
+**Status**: ✅ done (2026-02-24)
+**Prerequisite**: Story 10.2 (DB-backed template loading + `task-reminder-*` seeded by `EmailTemplateSeedService`)
+
+**User Story:**
+As an **organizer**, I want to receive an email reminder the day before a task I'm assigned to is due, so that I don't miss important deadlines for event-related tasks.
+
+**Scope:**
+
+**Scheduler (`TaskDeadlineReminderScheduler`):**
+- Runs daily at 8 AM Swiss time (`cron: 0 0 8 * * *`, configurable via `batbern.task-reminders.cron`)
+- ShedLock prevents duplicate execution across ECS instances (`lockAtMostFor: PT30M`)
+- Time window: `startOfTomorrow` → `endOfTomorrow` in `Europe/Zurich`
+- Dispatches `TaskReminderEmailService.sendTaskDeadlineReminder()` per matching task
+
+**Task query:**
+- `EventTaskRepository.findTasksDueForReminder(Instant from, Instant to)` — non-completed tasks (`status != completed`) with assigned organizer, due in the tomorrow window
+
+**Email service (`TaskReminderEmailService`):**
+- `@Async` — loads organizer email via `userApiClient.getUserByUsername()` (15-min cached)
+- DB template (`task-reminder-de/en`) via `emailTemplateService` with classpath fallback
+- Variables: `recipientName`, `taskName`, `eventTitle`, `eventCode`, `dueDate`, `taskNotes`, `taskBoardLink`
+- Subject DE: `"Aufgabenerinnerung: {taskName} fällig morgen"` / EN: `"Task Reminder: {taskName} due tomorrow"`
+- Email send failures are swallowed (logged only) — scheduler continues
+
+**Templates:** `task-reminder-de.html` + `task-reminder-en.html` — content fragments (no HTML wrapper; `batbern-default` layout provides shell). Auto-seeded by `EmailTemplateSeedService` into `TASK_REMINDER` category.
+
+**Key new files:**
+```
+services/event-management-service/.../service/TaskReminderEmailService.java
+services/event-management-service/.../scheduler/TaskDeadlineReminderScheduler.java
+services/event-management-service/src/main/resources/email-templates/task-reminder-de.html
+services/event-management-service/src/main/resources/email-templates/task-reminder-en.html
+services/event-management-service/.../service/TaskReminderEmailServiceTest.java
+services/event-management-service/.../scheduler/TaskDeadlineReminderSchedulerTest.java
+```
+
+**Key modified files:**
+```
+services/event-management-service/.../repository/EventTaskRepository.java — findTasksDueForReminder query
+```
+
+---
+
+### Story 10.5: Migrate System Templates to Layout-Based (future)
 
 **Story file**: TBD
 **Status**: backlog
 **Prerequisite**: Story 10.2 complete and `batbern-default` layout proven in production
 
 **Scope**: Extract the content body from each of the 22 system templates; strip the HTML shell (moved to `batbern-default`). Each template becomes content-only (`layout_key='batbern-default'`). Allows organizers to edit all 22 templates in TinyMCE. Updating the BATbern logo/footer in the layout propagates to all 22 emails automatically.
+
+*(Previously tracked as `10-3-migrate-system-templates-to-layout` in sprint-status — renumbered to 10.5 to accommodate Story 10.3 Task Reminder and Story 10.4 Blob Selector.)*
+
+---
+
+### Story 10.4: Blob Topic Selector
+
+**Story file**: `_bmad-output/implementation-artifacts/10-4-blob-topic-selector.md`
+**Spec**: `_bmad-output/implementation-artifacts/blob-topic-selector-spec.md`
+**Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-24.md`
+**Status**: ready-for-dev
+**Prerequisite**: None (independent of 10.1–10.3)
+
+**User Story:**
+As an **organizer**, I want a full-screen physics-based blob visualization for topic selection, accessible via a button on the topic management page, so that during our Teams meeting I can intuitively feel how well a proposed topic aligns with partner interests and event history — without reading a single number.
+
+**Concept:** Three types of blobs interact through D3 force simulation physics:
+- 🔵 **Blue blobs** — proposed topics, summoned by typing
+- 🟢 **Green blobs** — partner interests (up to 20, with company logos), attracted to similar blue blobs
+- ⭐ **Red star blobs** — past BATbern event topics (57 events), dormant background constellation; ignite and repel when a blue blob covers similar recent territory (within 6 events ≈ 2 years)
+- 👻 **Ghost candidates** — latent ideas from organizer backlog, partner suggestions, and AI-fetched trending topics; click to awaken as a blue blob
+
+The organizer team watches a single driver share their screen on Teams. The driver types topics, drags blobs, overrides AI-detected similarities manually, and double-clicks to accept — generating a session note attached to the event.
+
+**Scope:**
+
+**Entry Point:**
+- "Blob Selector" button added to `TopicManagementPage` (only when `eventCode` present in query params)
+- Navigates to new route `/organizer/events/:eventCode/topic-blob`
+- `TopicBacklogManager` and its existing 3 view modes are **untouched**
+
+**Full-Screen Page (`BlobTopicSelectorPage`):**
+- No sidebar/nav — full viewport SVG canvas (`100vw × 100vh`, dark navy `#0d1b2a`)
+- Fixed back button (top-left) with unsaved-changes warning dialog
+- Fixed "Fit All" + "Snap to Active" zoom controls (top-right)
+- Infinite canvas via `d3.zoom()` (scale `[0.1, 4]`)
+- 10-second scripted onboarding animation on first visit (localStorage-gated)
+
+**Physics Engine:**
+- D3 v7 force simulation (new dependency: `npm install d3 @types/d3`)
+- `forceManyBody` (repulsion) + `forceCollide` (no overlaps) + `forceLink` (partner attraction) + `forceCenter` (soft pull to center)
+- Custom forces for red star repulsion and orbit mechanics
+
+**Interaction Language:**
+1. **Summon** — type anywhere → text input → Enter → blue blob slides in from right edge
+2. **Awaken** — click ghost → becomes blue blob, physics activates
+3. **Override** — drag-merge (1.5s hold → merge halo → confirm). Red star dragged near blue blob → becomes orbiting satellite ("acknowledged warning")
+4. **Accept** — double-click blue blob → confirm dialog → writes `topicSelectionNote` to event → navigate to speakers tab
+
+**Backend (new endpoints in event-management-service):**
+- `GET /api/v1/events/{eventCode}/topic-session-data` — aggregates partner topics, past events with cluster, organizer backlog topics (from existing topics table, `status=AVAILABLE`), AI-fetched trending topics (LLM call, 1h cache, hardcoded fallback)
+- `POST /api/v1/events/{eventCode}/topic-similarity` — returns `{ cluster, similarityScore, relatedPastEventNumbers[] }`. Pre-hardcoded 7-cluster map for all 57 BATbern events; OpenAI embeddings for novel topics; keyword fallback.
+- `PATCH /api/v1/events/{eventCode}` — add `topicSelectionNote: TEXT` field (Flyway V64)
+- `BatbernTopicClusterService` — hardcoded cluster map (AI_ML, SECURITY, ARCHITECTURE, DATA, CLOUD_INFRA, MOBILE, BUSINESS_OTHER)
+
+**Existing infrastructure reused (no new CRUD):**
+- Topic backlog: existing `/api/v1/topics` (5 categories, CRUD already at `/organizer/topics`)
+- Past events: existing events table (eventNumber + title)
+- Partner topics: existing partner coordination data
+- `TopicSelectionResponse` flow: existing PATCH on event
+
+**Key new files:**
+```
+web-frontend/src/pages/organizer/BlobTopicSelectorPage.tsx
+web-frontend/src/components/BlobTopicSelector/BlobTopicSelector.tsx
+web-frontend/src/components/BlobTopicSelector/useBlobSimulation.ts
+web-frontend/src/components/BlobTopicSelector/useTopicSessionData.ts
+web-frontend/src/components/BlobTopicSelector/types.ts
+web-frontend/src/components/BlobTopicSelector/OnboardingOverlay.tsx
+web-frontend/src/components/BlobTopicSelector/AcceptTopicDialog.tsx
+web-frontend/src/services/blobTopicService.ts
+services/event-management-service/.../BatbernTopicClusterService.java
+services/event-management-service/.../TopicSimilarityController.java
+services/event-management-service/.../TopicSessionDataController.java
+services/event-management-service/.../TrendingTopicsService.java
+services/event-management-service/src/main/resources/db/migration/V64__add_topic_selection_note.sql
+```
+
+**Key modified files:**
+```
+web-frontend/src/App.tsx                            — new route /organizer/events/:eventCode/topic-blob
+web-frontend/src/pages/organizer/TopicManagementPage.tsx — add Blob Selector button
+public/locales/de/events.json + en/events.json      — navigation.blobSelector key
+public/locales/de/organizer.json + en/organizer.json — blobSelector.* keys
+docs/api/events.openapi.yml                         — topic-session-data + topic-similarity endpoints
+```
+
+**Definition of Done (Story 10.4):**
+- [ ] All 34 ACs passing with unit + integration tests (backend) and E2E test (frontend)
+- [ ] D3 v7 installed, canvas renders in Chromium at 60fps with ≤90 blobs
+- [ ] "Blob Selector" button visible on `/organizer/topics?eventCode=BATbernXX`, hidden without eventCode
+- [ ] Full-screen page has no sidebar/nav. Back button triggers warning dialog.
+- [ ] Green partner logos visible at ≥32px inside absorbed blue blobs
+- [ ] Red star repulsion correct: events within 6 of most recent are active; beyond 6 are dormant
+- [ ] Accepting a topic writes `topicSelectionNote` to event and navigates to speakers tab
+- [ ] Onboarding animation plays on first visit only (localStorage-gated)
+- [ ] i18n: `navigation.blobSelector` (events) + `blobSelector.*` keys (organizer) in de/en
+- [ ] Type-check passes, no TypeScript errors
+- [ ] OpenAPI spec updated before backend implementation (ADR-006)
 
 ---
 
