@@ -1,82 +1,42 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letzte Erinnerung: Präsentationsunterlagen - {{eventTitle}}</title>
-    <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; }
-        .email-container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 3px solid #0066cc; padding-bottom: 20px; margin-bottom: 30px; }
-        .header h1 { color: #0066cc; margin: 0; font-size: 24px; }
-        .deadline-box { background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin: 20px 0; }
-        .deadline-box h3 { margin-top: 0; color: #856404; font-size: 16px; }
-        .deadline-box.urgent { background-color: #f8d7da; border-color: #f5c6cb; }
-        .deadline-box.urgent h3 { color: #721c24; }
-        .cta-section { text-align: center; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
-        .cta-button { display: inline-block; padding: 14px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 10px; font-size: 16px; background-color: #0066cc; color: #ffffff !important; }
-        .contact-box { background-color: #e3f2fd; border-radius: 4px; padding: 15px; margin: 20px 0; }
-        .contact-box h3 { margin-top: 0; color: #0066cc; font-size: 16px; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
-        .footer a { color: #0066cc; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>Letzte Erinnerung: Präsentationsunterlagen</h1>
-        </div>
+<h2>Letzte Erinnerung: Präsentationsunterlagen</h2>
 
-        <p>Guten Tag {{speakerName}},</p>
+<p>Guten Tag {{speakerName}},</p>
 
-        <p>Dies ist unsere letzte Erinnerung bezüglich der Einreichung Ihrer Präsentationsunterlagen für das kommende Berner Architekten Treffen. Wir haben Sie bereits mehrfach kontaktiert, aber Ihre Unterlagen noch nicht erhalten.</p>
+<p>Dies ist unsere letzte Erinnerung bezüglich der Einreichung Ihrer Präsentationsunterlagen für das kommende Berner Architekten Treffen. Wir haben Sie bereits mehrfach kontaktiert, aber Ihre Unterlagen noch nicht erhalten.</p>
 
-        <p><strong>{{eventTitle}}</strong><br>
-        Datum: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong><br>
+Datum: {{eventDate}}</p>
 
-        <div class="deadline-box urgent">
-            <h3>Letzte Einreichungsfrist</h3>
-            <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-            <p style="margin-top: 10px; font-size: 14px;">Nur noch <strong>{{daysRemaining}} Tage</strong> verbleibend.</p>
-        </div>
+<div class="deadline-box urgent">
+    <h3>Letzte Einreichungsfrist</h3>
+    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
+    <p style="margin-top: 10px; font-size: 14px;">Nur noch <strong>{{daysRemaining}} Tage</strong> verbleibend.</p>
+</div>
 
-        <p><strong>Wichtig:</strong> Wir benötigen Ihre Präsentationsunterlagen, um das Eventprogramm zu finalisieren. Ohne Ihre Einreichung bis zur oben genannten Frist können wir Ihre Session nicht angemessen bewerben und müssen möglicherweise Änderungen am Programmablauf vornehmen. Falls Umstände Sie an der Einreichung hindern, teilen Sie uns dies bitte umgehend mit, damit wir Alternativen besprechen können.</p>
+<p><strong>Wichtig:</strong> Wir benötigen Ihre Präsentationsunterlagen, um das Eventprogramm zu finalisieren. Ohne Ihre Einreichung bis zur oben genannten Frist können wir Ihre Session nicht angemessen bewerben und müssen möglicherweise Änderungen am Programmablauf vornehmen. Falls Umstände Sie an der Einreichung hindern, teilen Sie uns dies bitte umgehend mit, damit wir Alternativen besprechen können.</p>
 
-        <p>Benötigte Unterlagen:</p>
-        <ul>
-            <li>Titel und Zusammenfassung Ihrer Präsentation</li>
-            <li>Referentenbiografie und Foto</li>
-            <li>Präsentationsfolien (falls verfügbar)</li>
-        </ul>
+<p>Benötigte Unterlagen:</p>
+<ul>
+    <li>Titel und Zusammenfassung Ihrer Präsentation</li>
+    <li>Referentenbiografie und Foto</li>
+    <li>Präsentationsfolien (falls verfügbar)</li>
+</ul>
 
-        <div class="cta-section">
-            <p><strong>Reichen Sie Ihre Unterlagen umgehend ein:</strong></p>
-            <a href="{{portalLink}}" class="cta-button">Zum Dashboard</a>
-        </div>
+<div class="cta-section">
+    <p><strong>Reichen Sie Ihre Unterlagen umgehend ein:</strong></p>
+    <a href="{{portalLink}}" class="cta-button">Zum Dashboard</a>
+</div>
 
-        <div class="contact-box">
-            <h3>Möchten Sie etwas besprechen?</h3>
-            <p>Falls Sie vor Herausforderungen stehen oder den Zeitplan besprechen müssen, wenden Sie sich bitte sofort an uns:</p>
-            <p>
-                <strong>{{organizerName}}</strong><br>
-                <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-            </p>
-        </div>
+<div class="contact-box">
+    <h3>Möchten Sie etwas besprechen?</h3>
+    <p>Falls Sie vor Herausforderungen stehen oder den Zeitplan besprechen müssen, wenden Sie sich bitte sofort an uns:</p>
+    <p>
+        <strong>{{organizerName}}</strong><br>
+        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
+    </p>
+</div>
 
-        <p>Wir schätzen Ihre Teilnahme und möchten sicherstellen, dass Ihre Session bestmöglich präsentiert wird.</p>
+<p>Wir schätzen Ihre Teilnahme und möchten sicherstellen, dass Ihre Session bestmöglich präsentiert wird.</p>
 
-        <p>Mit freundlichen Grüßen,<br>
-        <strong>Das BATbern Team</strong></p>
-
-        <div class="footer">
-            <p>
-                <a href="{{portalLink}}">Referenten-Portal</a>
-            </p>
-            <p>
-                Berner Architekten Treffen (BATbern)<br>
-                &copy; {{currentYear}} BATbern. Alle Rechte vorbehalten.
-            </p>
-        </div>
-    </div>
-</body>
-</html>
+<p>Mit freundlichen Grüßen,<br>
+<strong>Das BATbern Team</strong></p>

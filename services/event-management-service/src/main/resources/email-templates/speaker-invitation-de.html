@@ -1,232 +1,78 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Einladung als Referent - {{eventTitle}}</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .email-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #0066cc;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #0066cc;
-            margin: 0;
-            font-size: 24px;
-        }
-        .event-details {
-            background-color: #f8f9fa;
-            border-left: 4px solid #0066cc;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .event-details h2 {
-            margin-top: 0;
-            color: #0066cc;
-            font-size: 20px;
-        }
-        .detail-row {
-            margin: 10px 0;
-            display: flex;
-        }
-        .detail-label {
-            font-weight: bold;
-            min-width: 140px;
-            color: #555;
-        }
-        .detail-value {
-            color: #333;
-        }
-        .session-info {
-            background-color: #e8f4fd;
-            border: 1px solid #0066cc;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .session-info h3 {
-            margin-top: 0;
-            color: #0066cc;
-            font-size: 16px;
-        }
-        .cta-section {
-            text-align: center;
-            margin: 30px 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
-        .cta-button {
-            display: inline-block;
-            padding: 14px 40px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin: 10px;
-            font-size: 16px;
-        }
-        .cta-accept {
-            background-color: #28a745;
-            color: #ffffff !important;
-        }
-        .cta-accept:hover {
-            background-color: #218838;
-        }
-        .cta-decline {
-            background-color: #dc3545;
-            color: #ffffff !important;
-        }
-        .cta-decline:hover {
-            background-color: #c82333;
-        }
-        .deadline-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .deadline-box h3 {
-            margin-top: 0;
-            color: #856404;
-            font-size: 16px;
-        }
-        .contact-box {
-            background-color: #e3f2fd;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .contact-box h3 {
-            margin-top: 0;
-            color: #0066cc;
-            font-size: 16px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-        }
-        .footer a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>Einladung als Referent</h1>
-        </div>
+<h2>Einladung als Referent</h2>
 
-        <p>Guten Tag {{speakerName}},</p>
+<p>Guten Tag {{speakerName}},</p>
 
-        <p>Wir freuen uns, Sie als Referent zu unserem kommenden Berner Architekten Treffen einzuladen:</p>
+<p>Wir freuen uns, Sie als Referent zu unserem kommenden Berner Architekten Treffen einzuladen:</p>
 
-        <div class="event-details">
-            <h2>{{eventTitle}}</h2>
-            <div class="detail-row">
-                <span class="detail-label">Datum:</span>
-                <span class="detail-value">{{eventDate}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Uhrzeit:</span>
-                <span class="detail-value">{{eventTime}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Veranstaltungsort:</span>
-                <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-            </div>
-        </div>
-
-        {{#sessionTitle}}
-        <div class="session-info">
-            <h3>Vorgesehenes Thema</h3>
-            <p><strong>{{sessionTitle}}</strong></p>
-            {{#sessionDescription}}
-            <p>{{sessionDescription}}</p>
-            {{/sessionDescription}}
-        </div>
-        {{/sessionTitle}}
-
-        <p>Wir wuerden uns sehr freuen, Sie als Referenten bei unserem Event begruessen zu duerfen. Ihre Expertise und Ihr Wissen waeren eine wertvolle Bereicherung fuer unser Publikum.</p>
-
-        <div class="cta-section">
-            <p><strong>Bitte teilen Sie uns Ihre Entscheidung mit:</strong></p>
-            <a href="{{acceptLink}}" class="cta-button cta-accept">Einladung annehmen</a>
-            <a href="{{declineLink}}" class="cta-button cta-decline">Leider absagen</a>
-        </div>
-
-        <p style="font-size: 12px; color: #666; text-align: center;">
-            Falls die Buttons nicht funktionieren, kopieren Sie bitte diesen Link in Ihren Browser:<br>
-            <strong>Annehmen:</strong> <a href="{{acceptLink}}" style="color: #0066cc; word-break: break-all;">{{acceptLink}}</a>
-        </p>
-
-        <p style="text-align: center; margin-top: 15px;">
-            <a href="{{jwtMagicLink}}" style="color: #0066cc; font-size: 14px; font-weight: bold;">Zum Referenten-Portal anmelden</a>
-        </p>
-
-        <p style="text-align: center; margin-top: 10px;">
-            <a href="{{dashboardLink}}" style="color: #0066cc; font-size: 13px;">Oder direkt zum Dashboard</a>
-        </p>
-
-        {{#responseDeadline}}
-        <div class="deadline-box">
-            <h3>Bitte antworten Sie bis</h3>
-            <p style="font-size: 18px; font-weight: bold; margin: 0;">{{responseDeadline}}</p>
-            {{#contentDeadline}}
-            <p style="margin-top: 10px; font-size: 14px;">
-                Falls Sie zusagen, bitten wir Sie, Ihre Prasentationsunterlagen bis zum <strong>{{contentDeadline}}</strong> einzureichen.
-            </p>
-            {{/contentDeadline}}
-        </div>
-        {{/responseDeadline}}
-
-        <div class="contact-box">
-            <h3>Fragen?</h3>
-            <p>Bei Fragen stehen wir Ihnen gerne zur Verfuegung:</p>
-            <p>
-                <strong>{{organizerName}}</strong><br>
-                <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-            </p>
-        </div>
-
-        <p>Wir freuen uns auf Ihre Rueckmeldung!</p>
-
-        <p>Mit freundlichen Gruessen,<br>
-        <strong>Das BATbern Team</strong></p>
-
-        <div class="footer">
-            <p>
-                <a href="{{dashboardLink}}">Referenten-Dashboard</a> |
-                <a href="{{eventUrl}}">Event-Details ansehen</a> |
-                <a href="{{supportUrl}}">Support kontaktieren</a>
-            </p>
-            <p>
-                Berner Architekten Treffen (BATbern)<br>
-                &copy; {{currentYear}} BATbern. Alle Rechte vorbehalten.
-            </p>
-        </div>
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Datum:</span>
+        <span class="detail-value">{{eventDate}}</span>
     </div>
-</body>
-</html>
+    <div class="detail-row">
+        <span class="detail-label">Uhrzeit:</span>
+        <span class="detail-value">{{eventTime}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Veranstaltungsort:</span>
+        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+    </div>
+</div>
+
+{{#sessionTitle}}
+<div class="session-info">
+    <h3>Vorgesehenes Thema</h3>
+    <p><strong>{{sessionTitle}}</strong></p>
+    {{#sessionDescription}}
+    <p>{{sessionDescription}}</p>
+    {{/sessionDescription}}
+</div>
+{{/sessionTitle}}
+
+<p>Wir wuerden uns sehr freuen, Sie als Referenten bei unserem Event begruessen zu duerfen. Ihre Expertise und Ihr Wissen waeren eine wertvolle Bereicherung fuer unser Publikum.</p>
+
+<div class="cta-section">
+    <p><strong>Bitte teilen Sie uns Ihre Entscheidung mit:</strong></p>
+    <a href="{{acceptLink}}" class="cta-button cta-accept">Einladung annehmen</a>
+    <a href="{{declineLink}}" class="cta-button cta-decline">Leider absagen</a>
+</div>
+
+<p style="font-size: 12px; color: #666; text-align: center;">
+    Falls die Buttons nicht funktionieren, kopieren Sie bitte diesen Link in Ihren Browser:<br>
+    <strong>Annehmen:</strong> <a href="{{acceptLink}}" style="color: #0066cc; word-break: break-all;">{{acceptLink}}</a>
+</p>
+
+<p style="text-align: center; margin-top: 15px;">
+    <a href="{{jwtMagicLink}}" style="color: #0066cc; font-size: 14px; font-weight: bold;">Zum Referenten-Portal anmelden</a>
+</p>
+
+<p style="text-align: center; margin-top: 10px;">
+    <a href="{{dashboardLink}}" style="color: #0066cc; font-size: 13px;">Oder direkt zum Dashboard</a>
+</p>
+
+{{#responseDeadline}}
+<div class="deadline-box">
+    <h3>Bitte antworten Sie bis</h3>
+    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{responseDeadline}}</p>
+    {{#contentDeadline}}
+    <p style="margin-top: 10px; font-size: 14px;">
+        Falls Sie zusagen, bitten wir Sie, Ihre Prasentationsunterlagen bis zum <strong>{{contentDeadline}}</strong> einzureichen.
+    </p>
+    {{/contentDeadline}}
+</div>
+{{/responseDeadline}}
+
+<div class="contact-box">
+    <h3>Fragen?</h3>
+    <p>Bei Fragen stehen wir Ihnen gerne zur Verfuegung:</p>
+    <p>
+        <strong>{{organizerName}}</strong><br>
+        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
+    </p>
+</div>
+
+<p>Wir freuen uns auf Ihre Rueckmeldung!</p>
+
+<p>Mit freundlichen Gruessen,<br>
+<strong>Das BATbern Team</strong></p>

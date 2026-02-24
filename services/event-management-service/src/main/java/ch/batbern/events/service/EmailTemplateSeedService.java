@@ -68,8 +68,9 @@ public class EmailTemplateSeedService {
                 if (existed) {
                     skipped++;
                 } else {
+                    String layoutKey = parsed.isLayout() ? null : "batbern-default";
                     seedTemplate(parsed.templateKey(), parsed.locale(), parsed.isLayout(),
-                            category, null, htmlBody);
+                            category, null, htmlBody, layoutKey);
                     seeded++;
                 }
             } catch (Exception e) {
@@ -84,7 +85,7 @@ public class EmailTemplateSeedService {
      * Checks idempotency (skips if already exists) and saves the entity.
      */
     void seedTemplate(String templateKey, String locale, boolean isLayout,
-                      String category, String subject, String htmlBody) {
+                      String category, String subject, String htmlBody, String layoutKey) {
         if (emailTemplateRepository.existsByTemplateKeyAndLocale(templateKey, locale)) {
             return;
         }
@@ -96,7 +97,7 @@ public class EmailTemplateSeedService {
         template.setSubject(isLayout ? null : subject);
         template.setHtmlBody(htmlBody);
         template.setSystemTemplate(true);
-        template.setLayoutKey(null);
+        template.setLayoutKey(layoutKey);
         emailTemplateRepository.save(template);
     }
 

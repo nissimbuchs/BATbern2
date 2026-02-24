@@ -132,7 +132,7 @@ class EmailTemplateSeedServiceTest {
                 .thenReturn(true);
 
         emailTemplateSeedService.seedTemplate("speaker-invitation", "de", false, "SPEAKER",
-                null, "<html>body</html>");
+                null, "<html>body</html>", "batbern-default");
 
         verify(emailTemplateRepository, never()).save(templateCaptor.capture());
     }
@@ -144,7 +144,7 @@ class EmailTemplateSeedServiceTest {
                 .thenReturn(false);
 
         emailTemplateSeedService.seedTemplate("speaker-invitation", "de", false, "SPEAKER",
-                null, "<html>body</html>");
+                null, "<html>body</html>", "batbern-default");
 
         verify(emailTemplateRepository, times(1)).save(templateCaptor.capture());
         EmailTemplate saved = templateCaptor.getValue();
@@ -153,14 +153,14 @@ class EmailTemplateSeedServiceTest {
         assertThat(saved.isLayout()).isFalse();
         assertThat(saved.getCategory()).isEqualTo("SPEAKER");
         assertThat(saved.isSystemTemplate()).isTrue();
-        assertThat(saved.getLayoutKey()).isNull();
+        assertThat(saved.getLayoutKey()).isEqualTo("batbern-default");
     }
 
     @Test
     @DisplayName("should save layout template with isLayout=true, category=LAYOUT, subject=null")
     void should_saveLayoutTemplate_withCorrectFields() {
         emailTemplateSeedService.seedTemplate("batbern-default", "de", true, "LAYOUT",
-                null, "<html>{{content}}</html>");
+                null, "<html>{{content}}</html>", null);
 
         verify(emailTemplateRepository, times(1)).save(templateCaptor.capture());
         EmailTemplate saved = templateCaptor.getValue();

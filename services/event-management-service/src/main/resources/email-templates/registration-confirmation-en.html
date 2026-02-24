@@ -1,188 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Confirmation - {{eventTitle}}</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .email-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #0066cc;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #0066cc;
-            margin: 0;
-            font-size: 24px;
-        }
-        .event-details {
-            background-color: #f8f9fa;
-            border-left: 4px solid #0066cc;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .event-details h2 {
-            margin-top: 0;
-            color: #0066cc;
-            font-size: 20px;
-        }
-        .detail-row {
-            margin: 10px 0;
-            display: flex;
-        }
-        .detail-label {
-            font-weight: bold;
-            min-width: 120px;
-            color: #555;
-        }
-        .detail-value {
-            color: #333;
-        }
-        .registration-code {
-            background-color: #e3f2fd;
-            border: 2px dashed #0066cc;
-            padding: 15px;
-            text-align: center;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .registration-code-label {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .registration-code-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #0066cc;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-        }
-        .cta-button {
-            display: inline-block;
-            background-color: #0066cc;
-            color: #ffffff !important;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .cta-button:hover {
-            background-color: #0052a3;
-        }
-        .create-account-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .create-account-box h3 {
-            margin-top: 0;
-            color: #856404;
-            font-size: 16px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-        }
-        .footer a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>📧 Registration Received</h1>
-        </div>
+<h2>📧 Registration Received</h2>
 
-        <p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
+<p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
 
-        <p>Thank you for registering! To complete your registration, please confirm your email address for the following event:</p>
+<p>Thank you for registering! To complete your registration, please confirm your email address for the following event:</p>
 
-        <div class="event-details">
-            <h2>{{eventTitle}}</h2>
-            <div class="detail-row">
-                <span class="detail-label">Date:</span>
-                <span class="detail-value">{{eventDate}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Time:</span>
-                <span class="detail-value">{{eventTime}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Venue:</span>
-                <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-            </div>
-        </div>
-
-        <p><strong>Important:</strong> Please confirm your registration within 48 hours by clicking the button below:</p>
-
-        <div style="text-align: center;">
-            <a href="{{confirmationUrl}}" class="cta-button">✓ Confirm Registration Now</a>
-        </div>
-
-        <p style="font-size: 12px; color: #666; margin-top: 20px;">
-            If the button doesn't work, copy and paste this link into your browser:<br>
-            <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
-        </p>
-
-        <div class="create-account-box">
-            <h3>💡 Create a Free Account</h3>
-            <p>With a BATbern account, you can:</p>
-            <ul>
-                <li>Manage your registrations</li>
-                <li>Receive event updates</li>
-                <li>Access exclusive content</li>
-            </ul>
-            <a href="{{createAccountUrl}}" class="cta-button">Create Free Account Now</a>
-        </div>
-
-        <p>A calendar entry (.ics file) is attached to this email.</p>
-
-        <p>We look forward to seeing you at the event!</p>
-
-        <p>Best regards,<br>
-        <strong>The BATbern Team</strong></p>
-
-        <div class="footer">
-            <p>
-                <a href="{{eventUrl}}">View Event Details</a> |
-                <a href="{{cancellationUrl}}">Cancel Registration</a> |
-                <a href="{{supportUrl}}">Contact Support</a>
-            </p>
-            <p style="font-size: 11px; color: #999; margin-top: 10px;">
-                You can cancel your registration within 48 hours by clicking "Cancel Registration".
-            </p>
-            <p>
-                Berner Architekten Treffen (BATbern)<br>
-                © {{currentYear}} BATbern. All rights reserved.
-            </p>
-        </div>
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Date:</span>
+        <span class="detail-value">{{eventDate}}</span>
     </div>
-</body>
-</html>
+    <div class="detail-row">
+        <span class="detail-label">Time:</span>
+        <span class="detail-value">{{eventTime}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Venue:</span>
+        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+    </div>
+</div>
+
+<p><strong>Important:</strong> Please confirm your registration within 48 hours by clicking the button below:</p>
+
+<div style="text-align: center;">
+    <a href="{{confirmationUrl}}" class="cta-button">✓ Confirm Registration Now</a>
+</div>
+
+<p style="font-size: 12px; color: #666; margin-top: 20px;">
+    If the button doesn't work, copy and paste this link into your browser:<br>
+    <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
+</p>
+
+<div class="create-account-box">
+    <h3>💡 Create a Free Account</h3>
+    <p>With a BATbern account, you can:</p>
+    <ul>
+        <li>Manage your registrations</li>
+        <li>Receive event updates</li>
+        <li>Access exclusive content</li>
+    </ul>
+    <a href="{{createAccountUrl}}" class="cta-button">Create Free Account Now</a>
+</div>
+
+<p>A calendar entry (.ics file) is attached to this email.</p>
+
+<p>We look forward to seeing you at the event!</p>
+
+<p>Best regards,<br>
+<strong>The BATbern Team</strong></p>
