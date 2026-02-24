@@ -76,6 +76,9 @@ const EventManagementAdminPage = React.lazy(
 // Topic Management Page - Story 5.2
 const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManagementPage'));
 
+// Story 10.4: Blob Topic Selector — full-screen, no AuthLayout
+const BlobTopicSelectorPage = React.lazy(() => import('@pages/organizer/BlobTopicSelectorPage'));
+
 // Task Management Page - Story 5.5
 const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'));
 
@@ -401,6 +404,15 @@ function App() {
                           <AuthLayout>
                             <TopicManagementPage />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 10.4: Blob Topic Selector — full-screen, no sidebar */}
+                    <Route
+                      path="/organizer/events/:eventCode/topic-blob"
+                      element={
+                        <ProtectedRoute>
+                          <BlobTopicSelectorPage />
                         </ProtectedRoute>
                       }
                     />

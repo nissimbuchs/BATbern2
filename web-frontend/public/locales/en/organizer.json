@@ -396,5 +396,20 @@
     "completedOn": "Completed on",
     "completedBy": "Completed by",
     "noTasks": "No tasks"
+  },
+  "blobSelector": {
+    "typeTopic": "Type a topic and press Enter...",
+    "fitAll": "Fit All",
+    "snapToActive": "Snap to Active",
+    "backButton": "← Back to Topic List",
+    "unsavedWarning": "Unsaved session — all changes will be lost. Go back?",
+    "accept": {
+      "title": "Select Topic: {{topic}}",
+      "partnerAlignment": "{{count}} of 9 partners aligned",
+      "lastCovered": "Last covered: BATbern #{{num}} ({{count}} events ago)",
+      "overrideReason": "Why are we revisiting this topic? (optional)",
+      "confirm": "Select this topic",
+      "cancel": "Keep exploring"
+    }
   }
 }

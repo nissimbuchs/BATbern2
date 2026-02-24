@@ -4,7 +4,8 @@
     "createEvent": "Create Event",
     "eventTimeline": "Timeline",
     "events": "Events",
-    "topicManagement": "Topic Management"
+    "topicManagement": "Topic Management",
+    "blobSelector": "Blob Selector"
   },
   "eventPage": {
     "tabs": {

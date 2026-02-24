@@ -4,7 +4,8 @@
     "createEvent": "Neue Veranstaltung",
     "eventTimeline": "Zeitachse",
     "events": "Veranstaltungen",
-    "topicManagement": "Themen-Verwaltung"
+    "topicManagement": "Themen-Verwaltung",
+    "blobSelector": "Blob-Auswahl"
   },
   "eventPage": {
     "tabs": {

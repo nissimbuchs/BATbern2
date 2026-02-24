@@ -76,6 +76,15 @@ app:
     organizer-name: ${EMAIL_ORGANIZER_NAME:BATbern Team}
     organizer-email: ${EMAIL_ORGANIZER:events@batbern.ch}
 
+# OpenAI Configuration (Story 10.4: Topic Similarity + Trending Topics)
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  base-url: https://api.openai.com/v1
+
+# Partner Coordination Service URL (Story 10.4: cross-service call for partner topics)
+partner-service:
+  base-url: ${PARTNER_COORDINATION_SERVICE_URL:http://partner-coordination:8080}
+
 # JWT Configuration for confirmation tokens
 jwt:
   secret: ${JWT_SECRET:changeme}

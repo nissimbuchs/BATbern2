@@ -2189,4 +2189,50 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[?(@.title == 'Database Workshop')]").doesNotExist());
     }
+
+    // ============================================================================
+    // Story 10.4: PATCH event with topicSelectionNote field (AC: 34)
+    // ============================================================================
+
+    @Test
+    @DisplayName("should_patchTopicSelectionNote_when_topicSelectionNoteAndTopicCodeProvided")
+    void should_patchTopicSelectionNote_when_topicSelectionNoteAndTopicCodeProvided() throws Exception {
+        // Given
+        Event event = createTestEvent("Topic Note Test Event", "2026-04-15T09:00:00Z", "CREATED");
+        String note = "✅ Selected Topic: Platform Engineering\n   Partner alignment: Swisscom (1/9)";
+
+        String patchBody = """
+                {
+                    "topicSelectionNote": "%s",
+                    "topicCode": "platform-engineering"
+                }
+                """.formatted(note.replace("\n", "\\n"));
+
+        // When / Then — should return 200 with topicSelectionNote in response
+        mockMvc.perform(patch("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(patchBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.topicSelectionNote").value(note.replace("\\n", "\n")));
+
+        // Verify persistence
+        Event patched = eventRepository.findByEventCode(event.getEventCode()).orElseThrow();
+        assertThat(patched.getTopicSelectionNote()).isEqualTo(note.replace("\\n", "\n"));
+        assertThat(patched.getTopicCode()).isEqualTo("platform-engineering");
+    }
+
+    @Test
+    @DisplayName("should_returnTopicSelectionNote_when_eventHasNote")
+    void should_returnTopicSelectionNote_when_eventHasNote() throws Exception {
+        // Given — create event and manually set note in DB
+        Event event = createTestEvent("Note Read Test", "2026-05-15T09:00:00Z", "CREATED");
+        event.setTopicSelectionNote("Test selection note");
+        event.setTopicCode("test-topic");
+        eventRepository.save(event);
+
+        // When / Then — GET should include topicSelectionNote
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.topicSelectionNote").value("Test selection note"));
+    }
 }

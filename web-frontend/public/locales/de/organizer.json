@@ -396,5 +396,20 @@
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
     "noTasks": "Keine Aufgaben"
+  },
+  "blobSelector": {
+    "typeTopic": "Thema eingeben und Enter drücken...",
+    "fitAll": "Alle anzeigen",
+    "snapToActive": "Aktive anzeigen",
+    "backButton": "← Zurück zur Themenliste",
+    "unsavedWarning": "Nicht gespeicherte Sitzung – alle Änderungen gehen verloren. Zurück?",
+    "accept": {
+      "title": "Thema auswählen: {{topic}}",
+      "partnerAlignment": "{{count}} von 9 Partnern ausgerichtet",
+      "lastCovered": "Zuletzt behandelt: BATbern #{{num}} (vor {{count}} Veranstaltungen)",
+      "overrideReason": "Warum wird dieses Thema wiederholt? (optional)",
+      "confirm": "Dieses Thema wählen",
+      "cancel": "Weiter erkunden"
+    }
   }
 }
