@@ -31,7 +31,7 @@ const CONTENT_PLACEHOLDER = `
 /** Replace system/layout variables with sensible preview values. */
 function substitutePreviewVariables(html: string): string {
   const previewValues: Record<string, string> = {
-    logoUrl: '/BATbern_color_logo.svg',
+    logoUrl: '/BATbern_white_logo.svg',
     currentYear: String(new Date().getFullYear()),
     dashboardLink: '#',
     eventUrl: '#',

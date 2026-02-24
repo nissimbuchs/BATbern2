@@ -166,7 +166,7 @@ public class SpeakerAcceptanceEmailService {
                 Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
                 Map.entry("supportUrl", baseUrl + "/support"),
                 Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_color_logo.svg")
+                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.svg")
         );
 
         String html = emailService.replaceVariables(template, variables);
