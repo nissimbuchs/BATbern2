@@ -18,6 +18,7 @@ import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material
 import { Edit, NoteAdd } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
+import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
@@ -66,10 +67,16 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
 }) => {
   const { t } = useTranslation('partners');
   const { openEditModal } = usePartnerModalStore();
+  const { setActiveTab, setShowNoteModal } = usePartnerDetailStore();
   const isPartner = role === 'PARTNER';
 
   const handleEdit = () => {
     openEditModal(partner);
+  };
+
+  const handleAddNote = () => {
+    setActiveTab(4); // Navigate to Notes tab
+    setShowNoteModal(true);
   };
 
   const companyName = partner.company?.name || partner.companyName;
@@ -151,7 +158,12 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
               {/* Action Buttons — hidden for PARTNER role */}
               {!isPartner && (
                 <Stack direction="row" spacing={1} flexShrink={0}>
-                  <Button variant="outlined" startIcon={<NoteAdd />} size="small">
+                  <Button
+                    variant="outlined"
+                    startIcon={<NoteAdd />}
+                    size="small"
+                    onClick={handleAddNote}
+                  >
                     {!isMobile && t('detail.notesTab.addNote')}
                   </Button>
                   <Button

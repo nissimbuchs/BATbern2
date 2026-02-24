@@ -165,6 +165,42 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
             </Button>
           </>
         )}
+
+        {/* Note Modal — must be present in empty state too (showNoteModal set in store) */}
+        <Dialog open={showNoteModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+          <DialogTitle>{t('detail.notesTab.addNote')}</DialogTitle>
+          <DialogContent>
+            <Stack spacing={3} mt={1}>
+              <TextField
+                label={t('detail.notesTab.titleLabel')}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                fullWidth
+                required
+              />
+              <TextField
+                label={t('detail.notesTab.contentLabel')}
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                multiline
+                rows={8}
+                fullWidth
+                required
+                helperText={t('detail.notesTab.htmlSupported')}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseModal}>{t('modal.actions.cancel')}</Button>
+            <Button
+              variant="contained"
+              onClick={handleSaveNote}
+              disabled={!formData.title || !formData.content}
+            >
+              {t('modal.actions.save')}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     );
   }
