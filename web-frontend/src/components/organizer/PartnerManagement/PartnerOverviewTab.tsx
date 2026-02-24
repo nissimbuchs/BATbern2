@@ -8,6 +8,7 @@
 import React from 'react';
 import { Box, Card, CardContent, Typography, Button, Divider, Stack } from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
 
@@ -24,87 +25,78 @@ const TIER_EMOJIS: Record<string, string> = {
   BRONZE: '🥉',
 };
 
-// Partnership benefits by tier
-const TIER_BENEFITS: Record<string, string[]> = {
+// Tier benefits as translation key arrays
+const TIER_BENEFIT_KEYS: Record<string, string[]> = {
   STRATEGIC: [
-    'Logo placement on website',
-    'Newsletter mentions',
-    'Priority event access',
-    'Quarterly strategic meetings',
-    'ROI analytics dashboard',
-    'Dedicated account manager',
+    'logoPlacement',
+    'newsletterMentions',
+    'priorityAccess',
+    'quarterlyMeetings',
+    'roiAnalytics',
+    'accountManager',
   ],
-  PLATINUM: [
-    'Logo placement on website',
-    'Newsletter mentions',
-    'Priority event access',
-    'Quarterly strategic meetings',
-  ],
-  GOLD: ['Logo placement on website', 'Newsletter mentions', 'Priority event access'],
-  SILVER: ['Newsletter mentions', 'Event access'],
-  BRONZE: ['Event access'],
-};
-
-// Format date to "Jan 1, 2024" format
-const formatShortDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  PLATINUM: ['logoPlacement', 'newsletterMentions', 'priorityAccess', 'quarterlyMeetings'],
+  GOLD: ['logoPlacement', 'newsletterMentions', 'priorityAccess'],
+  SILVER: ['newsletterMentions', 'eventAccess'],
+  BRONZE: ['eventAccess'],
 };
 
 export const PartnerOverviewTab: React.FC<PartnerOverviewTabProps> = ({ partner }) => {
+  const { t, i18n } = useTranslation('partners');
   const { setShowEditModal } = usePartnerDetailStore();
 
   const tierEmoji = TIER_EMOJIS[partner.partnershipLevel] || '';
-  const benefits = TIER_BENEFITS[partner.partnershipLevel] || [];
+  const benefitKeys = TIER_BENEFIT_KEYS[partner.partnershipLevel] || [];
+
+  const formattedStartDate = new Date(partner.partnershipStartDate).toLocaleDateString(
+    i18n.language,
+    { year: 'numeric', month: 'short', day: 'numeric' }
+  );
 
   return (
     <Box>
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Partnership Details
+            {t('detail.overviewTab.title')}
           </Typography>
           <Divider sx={{ mb: 2 }} />
 
           <Stack spacing={2}>
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Partnership Tier
+                {t('detail.overviewTab.tier')}
               </Typography>
               <Typography variant="h6">
-                {tierEmoji} {partner.partnershipLevel}
+                {tierEmoji} {t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}
               </Typography>
             </Box>
 
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Partnership Start Date
+                {t('detail.overviewTab.startDate')}
               </Typography>
-              <Typography variant="body1">
-                {formatShortDate(partner.partnershipStartDate)}
-              </Typography>
+              <Typography variant="body1">{formattedStartDate}</Typography>
             </Box>
 
             <Box>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Benefits
+                {t('detail.overviewTab.benefits')}
               </Typography>
               <Stack spacing={1}>
-                {benefits.map((benefit, index) => (
-                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {benefitKeys.map((key) => (
+                  <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CheckCircle color="success" fontSize="small" />
-                    <Typography variant="body2">{benefit}</Typography>
+                    <Typography variant="body2">
+                      {t(`detail.overviewTab.tierBenefits.${key}`)}
+                    </Typography>
                   </Box>
                 ))}
               </Stack>
             </Box>
 
             <Button variant="outlined" onClick={() => setShowEditModal(true)} fullWidth>
-              Change Tier
+              {t('detail.overviewTab.changeTier')}
             </Button>
           </Stack>
         </CardContent>

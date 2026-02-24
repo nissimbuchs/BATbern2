@@ -191,6 +191,22 @@
       "analytics": "Analytics",
       "notes": "Notes",
       "settings": "Settings"
+    },
+    "overviewTab": {
+      "title": "Partnership Details",
+      "tier": "Partnership Tier",
+      "startDate": "Partnership Start Date",
+      "benefits": "Benefits",
+      "changeTier": "Change Tier",
+      "tierBenefits": {
+        "logoPlacement": "Logo placement on website",
+        "newsletterMentions": "Newsletter mentions",
+        "priorityAccess": "Priority event access",
+        "quarterlyMeetings": "Quarterly strategic meetings",
+        "roiAnalytics": "ROI analytics dashboard",
+        "accountManager": "Dedicated account manager",
+        "eventAccess": "Event access"
+      }
     }
   },
   "meetings": {
