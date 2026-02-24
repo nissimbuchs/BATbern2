@@ -17,6 +17,10 @@ export interface DomainServiceConfig {
   cpu: number;
   memoryLimitMiB: number;
   additionalEnvironment?: Record<string, string>;
+  /** Override auto-scaling minimum task count. Defaults to isProd ? 2 : 1. */
+  minCapacity?: number;
+  /** Override auto-scaling maximum task count. Defaults to minCapacity * 4. */
+  maxCapacity?: number;
 }
 
 export interface DomainServiceConstructProps {
@@ -266,9 +270,12 @@ export function createDomainService(
     });
 
     // Configure auto-scaling
+    const defaultMin = isProd ? 2 : 1;
+    const resolvedMin = props.serviceConfig.minCapacity ?? defaultMin;
+    const resolvedMax = props.serviceConfig.maxCapacity ?? (resolvedMin * 4);
     const scaling = service.autoScaleTaskCount({
-      minCapacity: isProd ? 2 : 1,
-      maxCapacity: (isProd ? 2 : 1) * 4,
+      minCapacity: resolvedMin,
+      maxCapacity: resolvedMax,
     });
 
     scaling.scaleOnCpuUtilization('CpuScaling', {
