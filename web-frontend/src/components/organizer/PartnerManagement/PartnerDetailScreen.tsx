@@ -38,7 +38,7 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useUserList } from '@/hooks/useUserManagement';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import UserCard from '@/components/organizer/UserManagement/UserCard';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
 import UserPagination from '@/components/organizer/UserManagement/UserPagination';
@@ -51,6 +51,7 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
   isMobile,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -81,16 +82,27 @@ const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }>
             <UserCard
               key={user.id}
               user={user}
-              onClick={(u: User) => navigate(`/organizer/users/${u.id}`)}
+              onClick={(u: User) =>
+                navigate(`/organizer/users/${u.id}`, {
+                  state: { from: location.pathname, fromLabel: companyName },
+                })
+              }
             />
           ))}
         </Stack>
       ) : (
         <UserTable
           users={users}
-          onRowClick={(user: User) => navigate(`/organizer/users/${user.id}`)}
+          onRowClick={(user: User) =>
+            navigate(`/organizer/users/${user.id}`, {
+              state: { from: location.pathname, fromLabel: companyName },
+            })
+          }
           onAction={(action, user: User) => {
-            if (action === 'view') navigate(`/organizer/users/${user.id}`);
+            if (action === 'view')
+              navigate(`/organizer/users/${user.id}`, {
+                state: { from: location.pathname, fromLabel: companyName },
+              });
           }}
         />
       )}

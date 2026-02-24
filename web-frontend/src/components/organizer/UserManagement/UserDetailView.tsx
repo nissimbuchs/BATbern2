@@ -30,6 +30,7 @@ import {
   Event as EventIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import type { User } from '../../../types/user.types';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
 import { EventsParticipatedTable } from './EventsParticipatedTable';
@@ -73,6 +74,10 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   const { t } = useTranslation('userManagement');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
+  const locationState = location.state as { from?: string; fromLabel?: string } | null;
+  const backPath = locationState?.from ?? '/organizer/users';
+  const backLabel = locationState?.fromLabel ?? t('title');
   const [activeTab, setActiveTab] = useState(0);
 
   // Fetch company with logo if user has a company
@@ -98,7 +103,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   return (
     <Box sx={{ p: 3, pb: 8 }} data-testid="user-detail-view">
       {/* Breadcrumbs */}
-      <Breadcrumbs items={[{ label: t('title'), path: '/organizer/users' }, { label: fullName }]} />
+      <Breadcrumbs items={[{ label: backLabel, path: backPath }, { label: fullName }]} />
 
       {/* Action buttons */}
       {(canEdit || canDelete) && (

@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { components } from '@/types/generated/company-api.types';
 import type { components as SpeakerComponents } from '@/types/generated/speakers-api.types';
 import type { User } from '@/types/user.types';
@@ -128,6 +128,7 @@ const CompanySpeakersPanel: React.FC<{ companyName: string }> = ({ companyName }
 
 const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [page, setPage] = useState(1);
@@ -152,16 +153,27 @@ const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) =
             <UserCard
               key={user.id}
               user={user}
-              onClick={(u: User) => navigate(`/organizer/users/${u.id}`)}
+              onClick={(u: User) =>
+                navigate(`/organizer/users/${u.id}`, {
+                  state: { from: location.pathname, fromLabel: companyName },
+                })
+              }
             />
           ))}
         </Stack>
       ) : (
         <UserTable
           users={users}
-          onRowClick={(user: User) => navigate(`/organizer/users/${user.id}`)}
+          onRowClick={(user: User) =>
+            navigate(`/organizer/users/${user.id}`, {
+              state: { from: location.pathname, fromLabel: companyName },
+            })
+          }
           onAction={(action, user: User) => {
-            if (action === 'view') navigate(`/organizer/users/${user.id}`);
+            if (action === 'view')
+              navigate(`/organizer/users/${user.id}`, {
+                state: { from: location.pathname, fromLabel: companyName },
+              });
           }}
         />
       )}
