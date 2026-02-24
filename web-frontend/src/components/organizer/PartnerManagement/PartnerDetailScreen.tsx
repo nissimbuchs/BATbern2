@@ -297,7 +297,6 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
             <BottomNavigationAction
               key={tab.label}
               value={idx}
-              label={tab.label}
               icon={tab.icon}
               sx={{ minWidth: 0, flex: 1, px: 0 }}
             />

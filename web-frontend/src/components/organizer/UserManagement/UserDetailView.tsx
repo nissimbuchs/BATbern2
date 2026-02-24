@@ -273,16 +273,8 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
       {/* Bottom Navigation — always visible */}
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-          <BottomNavigationAction
-            label={t('userDetail.tabs.overview')}
-            icon={<OverviewIcon />}
-            sx={{ minWidth: 0, flex: 1 }}
-          />
-          <BottomNavigationAction
-            label={t('userDetail.tabs.eventsParticipated')}
-            icon={<EventIcon />}
-            sx={{ minWidth: 0, flex: 1 }}
-          />
+          <BottomNavigationAction icon={<OverviewIcon />} sx={{ minWidth: 0, flex: 1 }} />
+          <BottomNavigationAction icon={<EventIcon />} sx={{ minWidth: 0, flex: 1 }} />
         </BottomNavigation>
       </Paper>
     </Box>
