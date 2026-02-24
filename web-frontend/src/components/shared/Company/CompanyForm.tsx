@@ -29,6 +29,8 @@ import {
   Box,
   Typography,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { components } from '@/types/generated/company-api.types';
@@ -110,6 +112,8 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   userCompanyId,
 }) => {
   const { t } = useTranslation('common');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [apiError, setApiError] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(initialData?.logo?.url);
   const [logoUploadId, setLogoUploadId] = useState<string | undefined>();
@@ -312,6 +316,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile}
       aria-labelledby="company-form-title"
       aria-describedby="company-form-description"
       data-testid="company-form-dialog"
