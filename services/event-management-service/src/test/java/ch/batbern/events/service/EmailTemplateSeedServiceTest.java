@@ -75,6 +75,14 @@ class EmailTemplateSeedServiceTest {
     }
 
     @Test
+    @DisplayName("should derive TASK_REMINDER category for plain 'task-reminder' key (from task-reminder-de.html)")
+    void should_deriveCategory_forPlainTaskReminderKey() {
+        // task-reminder-de.html parses to key="task-reminder" (locale stripped) — must map to TASK_REMINDER
+        String category = emailTemplateSeedService.deriveCategory("task-reminder");
+        assertThat(category).isEqualTo("TASK_REMINDER");
+    }
+
+    @Test
     @DisplayName("should return LAYOUT category for layout template keys")
     void should_deriveCategory_forLayoutKey() {
         String category = emailTemplateSeedService.deriveCategory("batbern-default");

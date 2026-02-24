@@ -1,0 +1,32 @@
+<p>Hallo {{recipientName}},</p>
+
+<p>dies ist eine Erinnerung: Eine Ihrer Aufgaben ist <strong>morgen fällig</strong>.</p>
+
+<div class="event-details">
+    <h2>Aufgabe: {{taskName}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Event:</span>
+        <span class="detail-value">{{eventTitle}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Fälligkeitsdatum:</span>
+        <span class="detail-value">{{dueDate}}</span>
+    </div>
+</div>
+
+{{#taskNotes}}
+<div class="session-info">
+    <h3>Notizen zur Aufgabe</h3>
+    <p>{{taskNotes}}</p>
+</div>
+{{/taskNotes}}
+
+<div class="cta-section">
+    <p>Öffnen Sie das Task-Board, um die Aufgabe zu bearbeiten oder als erledigt zu markieren.</p>
+    <a href="{{taskBoardLink}}" class="cta-button cta-accept">Aufgabe ansehen</a>
+</div>
+
+<div class="contact-box">
+    <h3>Fragen?</h3>
+    <p>Bei Fragen wenden Sie sich an <a href="mailto:{{organizerEmail}}">{{organizerName}}</a>.</p>
+</div>

@@ -244,7 +244,14 @@ export const EmailTemplatesTab: React.FC = () => {
                   <Typography variant="body2" fontWeight={600}>
                     {tmpl.templateKey}
                   </Typography>
-                  {tmpl.layoutKey ? (
+                  {tmpl.isSystemTemplate ? (
+                    <Chip
+                      label={t('emailTemplates.systemTemplate', 'system')}
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                    />
+                  ) : tmpl.layoutKey ? (
                     <Chip
                       label={tmpl.layoutKey}
                       size="small"
@@ -255,14 +262,6 @@ export const EmailTemplatesTab: React.FC = () => {
                     <Chip
                       label={t('emailTemplates.standalone', 'standalone')}
                       size="small"
-                      variant="outlined"
-                    />
-                  )}
-                  {tmpl.isSystemTemplate && (
-                    <Chip
-                      label={t('emailTemplates.systemTemplate', 'system')}
-                      size="small"
-                      color="warning"
                       variant="outlined"
                     />
                   )}
