@@ -67,9 +67,14 @@ export const PartnerFilters: React.FC = () => {
 
   return (
     <Box>
-      <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        mb={2}
+      >
         {/* Tier Filter Dropdown */}
-        <FormControl size="small" sx={{ minWidth: 200 }}>
+        <FormControl size="small" sx={{ minWidth: { sm: 200 } }}>
           <InputLabel id="tier-filter-label">{t('filters.tier')}</InputLabel>
           <Select
             labelId="tier-filter-label"
@@ -91,7 +96,7 @@ export const PartnerFilters: React.FC = () => {
         </FormControl>
 
         {/* Status Filter Dropdown */}
-        <FormControl size="small" sx={{ minWidth: 150 }}>
+        <FormControl size="small" sx={{ minWidth: { sm: 150 } }}>
           <InputLabel id="status-filter-label">{t('filters.status')}</InputLabel>
           <Select
             labelId="status-filter-label"
@@ -121,6 +126,7 @@ export const PartnerFilters: React.FC = () => {
           onClick={resetFilters}
           size="small"
           data-testid="reset-filters-button"
+          sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
         >
           {t('filters.reset')}
         </Button>

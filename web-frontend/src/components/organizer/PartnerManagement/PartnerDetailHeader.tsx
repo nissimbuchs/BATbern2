@@ -91,12 +91,13 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
         )}
 
         {/* Header Content */}
-        <Stack direction="row" spacing={3} alignItems="flex-start">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}
           <Box
             sx={{
-              width: 120,
-              height: 120,
+              width: { xs: 80, sm: 120 },
+              height: { xs: 80, sm: 120 },
+              flexShrink: 0,
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
@@ -108,23 +109,23 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
                 src={partner.company.logoUrl}
                 alt={companyName}
                 sx={{
-                  maxWidth: 120,
-                  maxHeight: 120,
+                  maxWidth: { xs: 80, sm: 120 },
+                  maxHeight: { xs: 80, sm: 120 },
                   objectFit: 'contain',
                 }}
               />
             ) : (
               <Box
                 sx={{
-                  width: 120,
-                  height: 120,
+                  width: { xs: 80, sm: 120 },
+                  height: { xs: 80, sm: 120 },
                   borderRadius: 1,
                   bgcolor: 'primary.main',
                   color: 'primary.contrastText',
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  fontSize: '2.5rem',
+                  fontSize: { xs: '1.75rem', sm: '2.5rem' },
                   fontWeight: 600,
                 }}
               >
@@ -133,18 +134,47 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
             )}
           </Box>
 
-          {/* Company Info */}
-          <Stack spacing={1} flex={1}>
-            {/* Company Name and Tier */}
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Typography variant="h4" component="h1">
-                {companyName}
-              </Typography>
-              <Chip
-                label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
-                color={tierColor}
-                size="medium"
-              />
+          {/* Company Info + Action Buttons */}
+          <Stack spacing={1} flex={1} width="100%">
+            {/* Company Name, Tier, and Actions row */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              justifyContent="space-between"
+            >
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                <Typography
+                  variant="h4"
+                  component="h1"
+                  sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
+                >
+                  {companyName}
+                </Typography>
+                <Chip
+                  label={`${tierEmoji} ${t(`tiers.${partner.partnershipLevel.toLowerCase()}`)}`}
+                  color={tierColor}
+                  size="medium"
+                />
+              </Stack>
+
+              {/* Action Buttons — hidden for PARTNER role */}
+              {!isPartner && (
+                <Stack direction="row" spacing={1} flexShrink={0}>
+                  <Button variant="outlined" startIcon={<NoteAdd />} size="small">
+                    {t('detail.notesTab.addNote')}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<Edit />}
+                    onClick={handleEdit}
+                    size="small"
+                    data-testid="edit-partner-button"
+                  >
+                    {t('modal.editTitle')}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
 
             {/* Company Details */}
@@ -183,24 +213,6 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({ partne
               </Stack>
             )}
           </Stack>
-
-          {/* Action Buttons — hidden for PARTNER role */}
-          {!isPartner && (
-            <Stack direction="row" spacing={1}>
-              <Button variant="outlined" startIcon={<NoteAdd />} size="small">
-                {t('detail.notesTab.addNote')}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Edit />}
-                onClick={handleEdit}
-                size="small"
-                data-testid="edit-partner-button"
-              >
-                {t('modal.editTitle')}
-              </Button>
-            </Stack>
-          )}
         </Stack>
       </Stack>
     </Paper>
