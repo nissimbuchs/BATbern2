@@ -16,6 +16,7 @@ import {
   TableRow,
   Typography,
   Paper,
+  Avatar,
   BottomNavigation,
   BottomNavigationAction,
   useTheme,
@@ -218,6 +219,36 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
                     'No partner users are assigned to this company yet.'
                   )}
                 </Alert>
+              ) : isMobile ? (
+                <Stack spacing={2}>
+                  {partner.contacts.map((contact) => {
+                    const name =
+                      contact.firstName || contact.lastName
+                        ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
+                        : contact.username;
+                    const initials = name.substring(0, 2).toUpperCase();
+                    return (
+                      <Paper key={contact.username} variant="outlined" sx={{ p: 2 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar sx={{ bgcolor: 'primary.main', flexShrink: 0 }}>
+                            {initials}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" noWrap>
+                              {name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" noWrap>
+                              {contact.email ?? '—'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                              @{contact.username}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
               ) : (
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
