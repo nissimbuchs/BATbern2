@@ -159,7 +159,7 @@ export class MicroservicesStack extends cdk.Stack {
           interval: cdk.Duration.seconds(30),
           timeout: cdk.Duration.seconds(5),
           retries: 3,
-          startPeriod: cdk.Duration.seconds(180),
+          startPeriod: cdk.Duration.seconds(300),
         },
       });
 
@@ -195,7 +195,7 @@ export class MicroservicesStack extends cdk.Stack {
         taskDefinition,
         publicLoadBalancer: false, // Internal ALB only
         desiredCount: serviceConfig.desiredCount,
-        healthCheckGracePeriod: cdk.Duration.seconds(60),
+        healthCheckGracePeriod: cdk.Duration.seconds(300),
         assignPublicIp: false,
         taskSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
