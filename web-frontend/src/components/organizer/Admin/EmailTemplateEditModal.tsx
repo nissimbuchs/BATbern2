@@ -232,7 +232,10 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
                 height: 400,
                 menubar: false,
                 plugins: 'code table lists link',
-                toolbar: 'code | blocks | bold italic underline | bullist numlist | link | table',
+                toolbar:
+                  'code | blocks | bold italic underline' +
+                  ' | alignleft aligncenter alignright' +
+                  ' | bullist numlist | outdent indent | hr | link | table',
                 entity_encoding: 'raw',
                 valid_elements: '*[*]',
                 branding: false,
