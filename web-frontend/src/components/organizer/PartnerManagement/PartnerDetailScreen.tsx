@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -8,15 +8,7 @@ import {
   AlertTitle,
   Skeleton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
   Paper,
-  Avatar,
   BottomNavigation,
   BottomNavigationAction,
   useTheme,
@@ -45,6 +37,77 @@ import { PartnerCreateEditModal } from './PartnerCreateEditModal';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
+import { useUserList } from '@/hooks/useUserManagement';
+import { useNavigate } from 'react-router-dom';
+import UserCard from '@/components/organizer/UserManagement/UserCard';
+import UserTable from '@/components/organizer/UserManagement/UserTable';
+import UserPagination from '@/components/organizer/UserManagement/UserPagination';
+import type { User } from '@/types/user.types';
+
+// ─── Partner Contacts Panel ────────────────────────────────────────────────────
+
+const PartnerContactsPanel: React.FC<{ companyName: string; isMobile: boolean }> = ({
+  companyName,
+  isMobile,
+}) => {
+  const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+
+  const { data, isLoading, isError } = useUserList({
+    filters: { company: companyName },
+    pagination: { page, limit },
+  });
+
+  if (isLoading) return <Skeleton variant="rectangular" height={300} />;
+  if (isError) return <Alert severity="error">Failed to load contacts.</Alert>;
+
+  const users = data?.data ?? [];
+  const paginationData = data?.pagination;
+
+  if (users.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No partner users are assigned to this company yet.
+      </Alert>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      {isMobile ? (
+        <Stack spacing={2}>
+          {users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              onClick={(u: User) => navigate(`/organizer/users/${u.id}`)}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <UserTable
+          users={users}
+          onRowClick={(user: User) => navigate(`/organizer/users/${user.id}`)}
+          onAction={(action, user: User) => {
+            if (action === 'view') navigate(`/organizer/users/${user.id}`);
+          }}
+        />
+      )}
+      {paginationData && (
+        <UserPagination
+          page={paginationData.page}
+          totalPages={paginationData.totalPages}
+          limit={paginationData.limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      )}
+    </Box>
+  );
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 interface PartnerDetailScreenProps {
   companyName?: string; // Story 8.0: provided by partner portal; organizer falls back to useParams()
@@ -201,81 +264,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
 
           {/* Contacts Tab */}
           {effectiveTab === 1 && (
-            <Box sx={{ my: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {t('partners.contacts.title', 'Partner Contacts')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {t(
-                  'partners.contacts.description',
-                  'Users with the Partner role assigned to this company.'
-                )}
-              </Typography>
-              {!partner.contacts || partner.contacts.length === 0 ? (
-                <Alert severity="info">
-                  <AlertTitle>{t('partners.contacts.empty', 'No contacts')}</AlertTitle>
-                  {t(
-                    'partners.contacts.emptyDescription',
-                    'No partner users are assigned to this company yet.'
-                  )}
-                </Alert>
-              ) : isMobile ? (
-                <Stack spacing={2}>
-                  {partner.contacts.map((contact) => {
-                    const name =
-                      contact.firstName || contact.lastName
-                        ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
-                        : contact.username;
-                    const initials = name.substring(0, 2).toUpperCase();
-                    return (
-                      <Paper key={contact.username} variant="outlined" sx={{ p: 2 }}>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar sx={{ bgcolor: 'primary.main', flexShrink: 0 }}>
-                            {initials}
-                          </Avatar>
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="subtitle2" noWrap>
-                              {name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" noWrap>
-                              {contact.email ?? '—'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap>
-                              @{contact.username}
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </Paper>
-                    );
-                  })}
-                </Stack>
-              ) : (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{t('partners.contacts.name', 'Name')}</TableCell>
-                        <TableCell>{t('partners.contacts.email', 'Email')}</TableCell>
-                        <TableCell>{t('partners.contacts.username', 'Username')}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {partner.contacts.map((contact) => (
-                        <TableRow key={contact.username}>
-                          <TableCell>
-                            {contact.firstName || contact.lastName
-                              ? `${contact.firstName ?? ''} ${contact.lastName ?? ''}`.trim()
-                              : contact.username}
-                          </TableCell>
-                          <TableCell>{contact.email ?? '—'}</TableCell>
-                          <TableCell>{contact.username}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </Box>
+            <PartnerContactsPanel companyName={partner.companyName} isMobile={isMobile} />
           )}
 
           {/* Meetings Tab */}
