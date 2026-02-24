@@ -878,7 +878,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       data-testid="override-workflow-validation-checkbox"
                     />
                   }
-                  label="Override workflow validation (allows any state transition)"
+                  label={t('form.overrideValidation')}
                 />
 
                 {overrideValidation && (
@@ -886,12 +886,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     fullWidth
                     multiline
                     rows={2}
-                    label="Override Reason (Optional)"
+                    label={t('form.overrideReason')}
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
-                    placeholder="Why are you overriding workflow validation?"
+                    placeholder={t('form.overrideReasonPlaceholder')}
                     sx={{ mt: 1 }}
-                    helperText="This will be logged for audit purposes"
+                    helperText={t('form.overrideReasonHelp')}
                   />
                 )}
               </Box>

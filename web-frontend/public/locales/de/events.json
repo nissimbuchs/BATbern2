@@ -181,12 +181,38 @@
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
     }
   },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Aufgaben"
+  },
   "tasks": {
     "criticalTasks": "Kritische Aufgaben",
     "noCriticalTasks": "Keine kritischen Aufgaben",
     "greatJob": "Gute Arbeit!",
     "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
-    "viewAllTasks": "Alle Aufgaben anzeigen"
+    "viewAllTasks": "Alle Aufgaben anzeigen",
+    "eventTasksDescription": "Konfigurieren Sie Aufgaben, die automatisch erstellt und aktiviert werden, wenn die Veranstaltung die Workflow-Zustände durchläuft.",
+    "defaultTemplates": "Standard-Aufgabenvorlagen",
+    "defaultTemplatesDescription": "Dies sind die Standard-Planungsaufgaben. Alle sind vorausgewählt und werden erstellt, wenn Sie die Veranstaltung speichern.",
+    "taskExists": "Aufgabe existiert",
+    "assignTo": "Zuweisen an",
+    "triggerState": "Auslöser",
+    "dueDate": "Fällig",
+    "immediate": "Sofort",
+    "days": "Tage",
+    "customTemplates": "Benutzerdefinierte Aufgabenvorlagen",
+    "customTemplatesDescription": "Diese Vorlagen wurden von Ihrem Team erstellt. Wählen Sie diejenigen aus, die Sie für diese Veranstaltung einschließen möchten.",
+    "customTasks": "Benutzerdefinierte Aufgaben",
+    "addCustomTask": "Aufgabe hinzufügen",
+    "noCustomTasks": "Noch keine benutzerdefinierten Aufgaben. Klicken Sie auf \"Aufgabe hinzufügen\", um eine zu erstellen.",
+    "trigger": "Auslöser",
+    "assignedTo": "Zugewiesen an",
+    "unassigned": "Nicht zugewiesen",
+    "editTask": "Aufgabe bearbeiten",
+    "deleteTask": "Aufgabe löschen",
+    "errors": {
+      "loadTemplatesFailed": "Aufgabenvorlagen konnten nicht geladen werden"
+    }
   },
   "form": {
     "createEvent": "Neue Veranstaltung erstellen",
@@ -238,7 +264,11 @@
     "themeImage": "Veranstaltungs-Themenbild",
     "themeImageHelp": "Laden Sie ein Themenbild für diese Veranstaltung hoch (PNG, JPEG oder SVG, max. 5MB). Empfohlene Größe: 1920x400px.",
     "themeImageAlt": "Themenbild für Veranstaltung",
-    "removeThemeImage": "Themenbild entfernen"
+    "removeThemeImage": "Themenbild entfernen",
+    "overrideValidation": "Workflow-Validierung überschreiben (erlaubt beliebige Zustandsübergänge)",
+    "overrideReason": "Begründung (Optional)",
+    "overrideReasonPlaceholder": "Warum überschreiben Sie die Workflow-Validierung?",
+    "overrideReasonHelp": "Dies wird zu Revisionszwecken protokolliert"
   },
   "eventTypes": {
     "FULL_DAY": "Ganztägig",

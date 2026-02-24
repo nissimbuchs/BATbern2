@@ -181,12 +181,38 @@
       "failedToLoadEvents": "Failed to load events"
     }
   },
+  "tabs": {
+    "info": "Info",
+    "tasks": "Tasks"
+  },
   "tasks": {
     "criticalTasks": "Critical Tasks",
     "noCriticalTasks": "No critical tasks",
     "greatJob": "Great job!",
     "errorLoadingTasks": "Failed to load tasks",
-    "viewAllTasks": "View All Tasks"
+    "viewAllTasks": "View All Tasks",
+    "eventTasksDescription": "Configure tasks that will be automatically created and activated as the event progresses through workflow states.",
+    "defaultTemplates": "Default Task Templates",
+    "defaultTemplatesDescription": "These are the standard event planning tasks. All are pre-selected and will be created when you save the event.",
+    "taskExists": "Task exists",
+    "assignTo": "Assign To",
+    "triggerState": "Trigger",
+    "dueDate": "Due",
+    "immediate": "Immediate",
+    "days": "days",
+    "customTemplates": "Custom Task Templates",
+    "customTemplatesDescription": "These templates were created by your team. Select any you want to include for this event.",
+    "customTasks": "Custom Tasks",
+    "addCustomTask": "Add Custom Task",
+    "noCustomTasks": "No custom tasks yet. Click \"Add Custom Task\" to create one.",
+    "trigger": "Trigger",
+    "assignedTo": "Assigned to",
+    "unassigned": "Unassigned",
+    "editTask": "Edit task",
+    "deleteTask": "Delete task",
+    "errors": {
+      "loadTemplatesFailed": "Failed to load task templates"
+    }
   },
   "form": {
     "createEvent": "Create New Event",
@@ -239,6 +265,10 @@
     "themeImageHelp": "Upload a theme image for this event (PNG, JPEG, or SVG, max 5MB). Recommended size: 1920x400px.",
     "themeImageAlt": "Theme image for event",
     "removeThemeImage": "Remove theme image",
+    "overrideValidation": "Override workflow validation (allows any state transition)",
+    "overrideReason": "Override Reason (Optional)",
+    "overrideReasonPlaceholder": "Why are you overriding workflow validation?",
+    "overrideReasonHelp": "This will be logged for audit purposes",
     "errors": {
       "failedToLoadEventTypes": "Failed to load event types"
     }

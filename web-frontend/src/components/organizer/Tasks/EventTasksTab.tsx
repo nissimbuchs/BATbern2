@@ -102,34 +102,22 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
   }
 
   if (isError) {
-    return (
-      <Alert severity="error">
-        {t('tasks.errors.loadTemplatesFailed', 'Failed to load task templates')}
-      </Alert>
-    );
+    return <Alert severity="error">{t('tasks.errors.loadTemplatesFailed')}</Alert>;
   }
 
   return (
     <Box>
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        {t(
-          'tasks.eventTasksDescription',
-          'Configure tasks that will be automatically created and activated as the event progresses through workflow states.'
-        )}
+        {t('tasks.eventTasksDescription')}
       </Typography>
 
       <Divider sx={{ my: 3 }} />
 
       {/* Default Templates Section */}
       <Stack spacing={2}>
-        <Typography variant="h6">
-          {t('tasks.defaultTemplates', 'Default Task Templates')}
-        </Typography>
+        <Typography variant="h6">{t('tasks.defaultTemplates')}</Typography>
         <Typography variant="body2" color="text.secondary">
-          {t(
-            'tasks.defaultTemplatesDescription',
-            'These are the standard event planning tasks. All are pre-selected and will be created when you save the event.'
-          )}
+          {t('tasks.defaultTemplatesDescription')}
         </Typography>
 
         <Paper variant="outlined" sx={{ p: 2 }}>
@@ -152,67 +140,71 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     backgroundColor: hasTaskInstance ? 'action.disabledBackground' : 'inherit',
                   }}
                 >
-                  <Stack direction="row" spacing={2} alignItems="center" width="100%">
-                    {/* Checkbox */}
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
-                          disabled={hasTaskInstance}
-                        />
-                      }
-                      label={
-                        hasTaskInstance ? (
-                          <>
-                            {template.name}
-                            <Chip
-                              label={t('tasks.taskExists', 'Task exists')}
-                              size="small"
-                              color="info"
-                              sx={{ ml: 1 }}
-                            />
-                          </>
-                        ) : (
-                          template.name
-                        )
-                      }
-                      sx={{ flex: 1 }}
-                    />
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    width="100%"
+                  >
+                    {/* Checkbox + Info icon (row on all sizes) */}
+                    <Stack direction="row" alignItems="center" sx={{ flex: 1 }}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
+                            disabled={hasTaskInstance}
+                          />
+                        }
+                        label={
+                          hasTaskInstance ? (
+                            <>
+                              {template.name}
+                              <Chip
+                                label={t('tasks.taskExists')}
+                                size="small"
+                                color="info"
+                                sx={{ ml: 1 }}
+                              />
+                            </>
+                          ) : (
+                            template.name
+                          )
+                        }
+                        sx={{ flex: 1 }}
+                      />
+                      <Tooltip
+                        title={
+                          <Stack spacing={0.5}>
+                            <Typography variant="caption">
+                              <strong>{t('tasks.triggerState')}:</strong> {template.triggerState}
+                            </Typography>
+                            <Typography variant="caption">
+                              <strong>{t('tasks.dueDate')}:</strong>{' '}
+                              {template.dueDateType === 'immediate'
+                                ? t('tasks.immediate')
+                                : `${template.dueDateOffsetDays} ${t('tasks.days')}`}
+                            </Typography>
+                          </Stack>
+                        }
+                      >
+                        <IconButton size="small">
+                          <InfoIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
 
                     {/* Assignee Dropdown */}
                     <OrganizerSelect
                       value={assignee}
                       onChange={(organizerId) => onAssigneeChange(template.id, organizerId)}
                       organizers={organizers}
-                      label={t('tasks.assignTo', 'Assign To')}
-                      sx={{ minWidth: 200 }}
+                      label={t('tasks.assignTo')}
+                      sx={{ width: { xs: '100%', sm: 200 } }}
                       disabled={!isSelected || hasTaskInstance}
                       includeUnassigned={true}
                       includeAllOption={false}
                     />
-
-                    {/* Info Icon */}
-                    <Tooltip
-                      title={
-                        <Stack spacing={0.5}>
-                          <Typography variant="caption">
-                            <strong>{t('tasks.triggerState', 'Trigger')}:</strong>{' '}
-                            {template.triggerState}
-                          </Typography>
-                          <Typography variant="caption">
-                            <strong>{t('tasks.dueDate', 'Due')}:</strong>{' '}
-                            {template.dueDateType === 'immediate'
-                              ? t('tasks.immediate', 'Immediate')
-                              : `${template.dueDateOffsetDays} ${t('tasks.days', 'days')}`}
-                          </Typography>
-                        </Stack>
-                      }
-                    >
-                      <IconButton size="small">
-                        <InfoIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
                   </Stack>
                 </ListItem>
               );
@@ -226,14 +218,9 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
         <>
           <Divider sx={{ my: 3 }} />
           <Stack spacing={2}>
-            <Typography variant="h6">
-              {t('tasks.customTemplates', 'Custom Task Templates')}
-            </Typography>
+            <Typography variant="h6">{t('tasks.customTemplates')}</Typography>
             <Typography variant="body2" color="text.secondary">
-              {t(
-                'tasks.customTemplatesDescription',
-                'These templates were created by your team. Select any you want to include for this event.'
-              )}
+              {t('tasks.customTemplatesDescription')}
             </Typography>
 
             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -256,67 +243,72 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                         backgroundColor: hasTaskInstance ? 'action.disabledBackground' : 'inherit',
                       }}
                     >
-                      <Stack direction="row" spacing={2} alignItems="center" width="100%">
-                        {/* Checkbox */}
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
-                              disabled={hasTaskInstance}
-                            />
-                          }
-                          label={
-                            hasTaskInstance ? (
-                              <>
-                                {template.name}
-                                <Chip
-                                  label={t('tasks.taskExists', 'Task exists')}
-                                  size="small"
-                                  color="info"
-                                  sx={{ ml: 1 }}
-                                />
-                              </>
-                            ) : (
-                              template.name
-                            )
-                          }
-                          sx={{ flex: 1 }}
-                        />
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1}
+                        alignItems={{ xs: 'stretch', sm: 'center' }}
+                        width="100%"
+                      >
+                        {/* Checkbox + Info icon (row on all sizes) */}
+                        <Stack direction="row" alignItems="center" sx={{ flex: 1 }}>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={isSelected}
+                                onChange={(e) => onTemplateToggle(template.id, e.target.checked)}
+                                disabled={hasTaskInstance}
+                              />
+                            }
+                            label={
+                              hasTaskInstance ? (
+                                <>
+                                  {template.name}
+                                  <Chip
+                                    label={t('tasks.taskExists')}
+                                    size="small"
+                                    color="info"
+                                    sx={{ ml: 1 }}
+                                  />
+                                </>
+                              ) : (
+                                template.name
+                              )
+                            }
+                            sx={{ flex: 1 }}
+                          />
+                          <Tooltip
+                            title={
+                              <Stack spacing={0.5}>
+                                <Typography variant="caption">
+                                  <strong>{t('tasks.triggerState')}:</strong>{' '}
+                                  {template.triggerState}
+                                </Typography>
+                                <Typography variant="caption">
+                                  <strong>{t('tasks.dueDate')}:</strong>{' '}
+                                  {template.dueDateType === 'immediate'
+                                    ? t('tasks.immediate')
+                                    : `${template.dueDateOffsetDays} ${t('tasks.days')}`}
+                                </Typography>
+                              </Stack>
+                            }
+                          >
+                            <IconButton size="small">
+                              <InfoIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
 
                         {/* Assignee Dropdown */}
                         <OrganizerSelect
                           value={assignee}
                           onChange={(organizerId) => onAssigneeChange(template.id, organizerId)}
                           organizers={organizers}
-                          label={t('tasks.assignTo', 'Assign To')}
-                          sx={{ minWidth: 200 }}
+                          label={t('tasks.assignTo')}
+                          sx={{ width: { xs: '100%', sm: 200 } }}
                           disabled={!isSelected || hasTaskInstance}
                           includeUnassigned={true}
                           includeAllOption={false}
                         />
-
-                        {/* Info Icon */}
-                        <Tooltip
-                          title={
-                            <Stack spacing={0.5}>
-                              <Typography variant="caption">
-                                <strong>{t('tasks.triggerState', 'Trigger')}:</strong>{' '}
-                                {template.triggerState}
-                              </Typography>
-                              <Typography variant="caption">
-                                <strong>{t('tasks.dueDate', 'Due')}:</strong>{' '}
-                                {template.dueDateType === 'immediate'
-                                  ? t('tasks.immediate', 'Immediate')
-                                  : `${template.dueDateOffsetDays} ${t('tasks.days', 'days')}`}
-                              </Typography>
-                            </Stack>
-                          }
-                        >
-                          <IconButton size="small">
-                            <InfoIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                       </Stack>
                     </ListItem>
                   );
@@ -332,19 +324,16 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
       {/* Custom Tasks Section */}
       <Stack spacing={2}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">{t('tasks.customTasks', 'Custom Tasks')}</Typography>
+          <Typography variant="h6">{t('tasks.customTasks')}</Typography>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddCustomTask}>
-            {t('tasks.addCustomTask', 'Add Custom Task')}
+            {t('tasks.addCustomTask')}
           </Button>
         </Stack>
 
         {customTasks.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
-              {t(
-                'tasks.noCustomTasks',
-                'No custom tasks yet. Click "Add Custom Task" to create one.'
-              )}
+              {t('tasks.noCustomTasks')}
             </Typography>
           </Paper>
         ) : (
@@ -363,14 +352,14 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     <Stack direction="row" spacing={1}>
                       <IconButton
                         edge="end"
-                        aria-label="edit"
+                        aria-label={t('tasks.editTask')}
                         onClick={() => onEditCustomTask(task)}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
                         edge="end"
-                        aria-label="delete"
+                        aria-label={t('tasks.deleteTask')}
                         onClick={() => onDeleteCustomTask(task.id)}
                       >
                         <DeleteIcon />
@@ -383,11 +372,11 @@ export const EventTasksTab: React.FC<EventTasksTabProps> = ({
                     secondary={
                       <Stack spacing={0.5} mt={0.5}>
                         <Typography variant="caption">
-                          {t('tasks.trigger', 'Trigger')}: {task.triggerState}
+                          {t('tasks.trigger')}: {task.triggerState}
                         </Typography>
                         <Typography variant="caption">
-                          {t('tasks.assignedTo', 'Assigned to')}:{' '}
-                          {task.assignedOrganizerUsername || t('tasks.unassigned', 'Unassigned')}
+                          {t('tasks.assignedTo')}:{' '}
+                          {task.assignedOrganizerUsername || t('tasks.unassigned')}
                         </Typography>
                         {task.notes && (
                           <Typography variant="caption" sx={{ fontStyle: 'italic' }}>
