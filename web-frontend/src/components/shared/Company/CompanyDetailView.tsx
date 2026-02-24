@@ -16,6 +16,8 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -180,6 +182,8 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   onRetry,
 }) => {
   const { t } = useTranslation('common');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -228,14 +232,8 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
     );
   }
 
-  const isMobile = window.innerWidth < 600;
-
   return (
-    <Box
-      data-testid="company-detail-view"
-      className={isMobile ? 'mobile-layout' : ''}
-      sx={{ p: 3 }}
-    >
+    <Box data-testid="company-detail-view" sx={{ p: { xs: 1.5, sm: 3 } }}>
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -308,7 +306,11 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
             <Grid size={{ xs: 12, sm: 9 }}>
               <Stack spacing={2}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="h4" component="h1">
+                  <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
+                  >
                     {company.displayName || company.name}
                   </Typography>
                   {company.isVerified && (
@@ -383,7 +385,12 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="company detail tabs">
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          aria-label="company detail tabs"
+          variant={isMobile ? 'fullWidth' : 'standard'}
+        >
           <Tab
             label={t('company.detail.tabs.overview')}
             id="company-tab-0"
