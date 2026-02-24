@@ -76,16 +76,25 @@ public class PartnerNoteService {
     /**
      * Partially update a note (AC4).
      * Only non-null fields in the request are applied.
+     * Verifies the note belongs to the partner identified by companyName (H1 fix).
      *
-     * @param noteId note UUID
-     * @param req    update request (all fields optional)
+     * @param companyName partner company name — ownership check
+     * @param noteId      note UUID
+     * @param req         update request (all fields optional)
      * @return updated note DTO
-     * @throws PartnerNoteNotFoundException if noteId is unknown
+     * @throws PartnerNotFoundException     if companyName is unknown
+     * @throws PartnerNoteNotFoundException if noteId is unknown or belongs to a different partner
      */
     @Transactional
-    public PartnerNoteDTO updateNote(UUID noteId, UpdateNoteRequest req) {
+    public PartnerNoteDTO updateNote(String companyName, UUID noteId, UpdateNoteRequest req) {
+        Partner partner = findPartnerOrThrow(companyName);
         PartnerNote note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new PartnerNoteNotFoundException("Note not found: " + noteId));
+
+        if (!note.getPartnerId().equals(partner.getId())) {
+            // Return 404 — do not reveal that the note exists for another partner
+            throw new PartnerNoteNotFoundException("Note not found: " + noteId);
+        }
 
         if (req.getTitle() != null) {
             note.setTitle(req.getTitle());
@@ -101,14 +110,23 @@ public class PartnerNoteService {
 
     /**
      * Delete a note (AC5).
+     * Verifies the note belongs to the partner identified by companyName (H1 fix).
      *
-     * @param noteId note UUID
-     * @throws PartnerNoteNotFoundException if noteId is unknown
+     * @param companyName partner company name — ownership check
+     * @param noteId      note UUID
+     * @throws PartnerNotFoundException     if companyName is unknown
+     * @throws PartnerNoteNotFoundException if noteId is unknown or belongs to a different partner
      */
     @Transactional
-    public void deleteNote(UUID noteId) {
+    public void deleteNote(String companyName, UUID noteId) {
+        Partner partner = findPartnerOrThrow(companyName);
         PartnerNote note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new PartnerNoteNotFoundException("Note not found: " + noteId));
+
+        if (!note.getPartnerId().equals(partner.getId())) {
+            throw new PartnerNoteNotFoundException("Note not found: " + noteId);
+        }
+
         noteRepository.delete(note);
         log.debug("Deleted partner note {}", noteId);
     }

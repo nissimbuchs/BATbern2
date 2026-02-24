@@ -183,6 +183,20 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void should_return400_when_titleExceeds500CharsOnUpdate() throws Exception {
+        String noteId = createNote(testCompanyName, "Original Title", "Original Content");
+
+        Map<String, String> update = new HashMap<>();
+        update.put("title", "x".repeat(501));
+
+        mockMvc.perform(patch(notesBase(testCompanyName) + "/" + noteId)
+                        .with(user("organizer").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void should_return404_when_noteIdUnknownOnUpdate() throws Exception {
         Map<String, String> update = new HashMap<>();
         update.put("content", "Updated content");
@@ -244,6 +258,81 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
     void should_return403_when_unauthenticatedTriesToListNotes() throws Exception {
         mockMvc.perform(get(notesBase(testCompanyName)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void should_return403_when_unauthenticatedTriesToCreateNote() throws Exception {
+        Map<String, String> req = new HashMap<>();
+        req.put("title", "Attempt");
+        req.put("content", "Unauthenticated create attempt");
+
+        mockMvc.perform(post(notesBase(testCompanyName))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void should_return403_when_unauthenticatedTriesToUpdateNote() throws Exception {
+        String noteId = createNote(testCompanyName, "Existing", "Content");
+
+        Map<String, String> update = new HashMap<>();
+        update.put("title", "Hacked");
+
+        mockMvc.perform(patch(notesBase(testCompanyName) + "/" + noteId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void should_return403_when_unauthenticatedTriesToDeleteNote() throws Exception {
+        String noteId = createNote(testCompanyName, "Existing", "Content");
+
+        mockMvc.perform(delete(notesBase(testCompanyName) + "/" + noteId))
+                .andExpect(status().isForbidden());
+    }
+
+    // ─── H1 fix: Cross-partner ownership validation ───────────────────────────
+
+    @Test
+    void should_return404_when_updatingNoteFromDifferentPartner() throws Exception {
+        // Create a second partner and a note belonging to it
+        String otherCompany = "OtherCo";
+        partnerRepository.save(Partner.builder()
+                .companyName(otherCompany)
+                .partnershipLevel(PartnershipLevel.GOLD)
+                .partnershipStartDate(LocalDate.now().minusYears(1))
+                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .build());
+        String otherNoteId = createNote(otherCompany, "OtherCo Note", "Secret content");
+
+        // Try to update OtherCo's note via testCompanyName's URL
+        Map<String, String> update = new HashMap<>();
+        update.put("title", "Cross-partner attack");
+
+        mockMvc.perform(patch(notesBase(testCompanyName) + "/" + otherNoteId)
+                        .with(user("organizer").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void should_return404_when_deletingNoteFromDifferentPartner() throws Exception {
+        String otherCompany = "OtherCo2";
+        partnerRepository.save(Partner.builder()
+                .companyName(otherCompany)
+                .partnershipLevel(PartnershipLevel.SILVER)
+                .partnershipStartDate(LocalDate.now().minusYears(1))
+                .partnershipEndDate(LocalDate.now().plusYears(1))
+                .build());
+        String otherNoteId = createNote(otherCompany, "OtherCo2 Note", "Secret content");
+
+        // Try to delete OtherCo2's note via testCompanyName's URL
+        mockMvc.perform(delete(notesBase(testCompanyName) + "/" + otherNoteId)
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isNotFound());
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

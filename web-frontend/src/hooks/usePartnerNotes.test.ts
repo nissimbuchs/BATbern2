@@ -21,11 +21,13 @@ vi.mock('@/services/api/partnerNotesApi', () => ({
 import {
   getPartnerNotes,
   createPartnerNote,
+  updatePartnerNote,
   deletePartnerNote,
 } from '@/services/api/partnerNotesApi';
 
 const mockGetPartnerNotes = vi.mocked(getPartnerNotes);
 const mockCreatePartnerNote = vi.mocked(createPartnerNote);
+const mockUpdatePartnerNote = vi.mocked(updatePartnerNote);
 const mockDeletePartnerNote = vi.mocked(deletePartnerNote);
 
 const note1 = {
@@ -144,7 +146,29 @@ describe('usePartnerNotes', () => {
     });
   });
 
-  // Test 5: should_deleteNote_when_deleteNoteCalled
+  // Test 5: should_updateNote_when_updateNoteCalled
+  it('should_updateNote_when_updateNoteCalled', async () => {
+    mockGetPartnerNotes.mockResolvedValue([note1]);
+    mockUpdatePartnerNote.mockResolvedValue({ ...note1, title: 'Updated Title' });
+
+    const { result } = renderHook(() => usePartnerNotes('GoogleZH'), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.updateNote({ noteId: 'note-1', title: 'Updated Title' });
+    });
+
+    await waitFor(() => {
+      expect(mockUpdatePartnerNote).toHaveBeenCalledWith('GoogleZH', 'note-1', {
+        title: 'Updated Title',
+      });
+    });
+  });
+
+  // Test 6: should_deleteNote_when_deleteNoteCalled
   it('should_deleteNote_when_deleteNoteCalled', async () => {
     mockGetPartnerNotes.mockResolvedValue([note1]);
     mockDeletePartnerNote.mockResolvedValue(undefined);

@@ -20,21 +20,13 @@ import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { usePartnerNotes } from '@/hooks/usePartnerNotes';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
+import type { PartnerNoteDTO } from '@/services/api/partnerNotesApi';
 
 type UserRole = 'ORGANIZER' | 'PARTNER' | 'SPEAKER' | 'ATTENDEE';
 
 interface PartnerNotesTabProps {
   companyName: string;
   role?: UserRole; // Story 8.0: read-only for PARTNER
-}
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  authorUsername: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 interface NoteFormData {
@@ -46,6 +38,8 @@ interface DeleteConfirmState {
   noteId: string;
   noteTitle: string;
 }
+
+type Note = PartnerNoteDTO;
 
 // Format date for display
 const formatDate = (dateString: string): string => {
@@ -229,22 +223,16 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
                 <Typography variant="h6" fontWeight="medium">
-                  {'title' in note ? (note as Note).title : 'Note'}
+                  {note.title}
                 </Typography>
                 {!isPartner && (
                   <Stack direction="row" spacing={1}>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleEditNote(note as Note)}
-                      aria-label="Edit"
-                    >
+                    <IconButton size="small" onClick={() => handleEditNote(note)} aria-label="Edit">
                       <Edit fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
-                      onClick={() =>
-                        handleDeleteNote(note.id, 'title' in note ? (note as Note).title : 'Note')
-                      }
+                      onClick={() => handleDeleteNote(note.id, note.title)}
                       aria-label="Delete"
                       color="error"
                     >
@@ -261,16 +249,10 @@ const PartnerNotesTab: React.FC<PartnerNotesTabProps> = ({ companyName, role }) 
 
               {/* Author and timestamp */}
               <Stack direction="row" spacing={2} alignItems="center">
-                <Chip
-                  label={'authorUsername' in note ? (note as Note).authorUsername : 'Unknown'}
-                  size="small"
-                  variant="outlined"
-                />
+                <Chip label={note.authorUsername} size="small" variant="outlined" />
                 <Typography variant="caption" color="text.secondary">
                   {formatDate(note.createdAt)}
-                  {'updatedAt' in note &&
-                    (note as Note).updatedAt !== note.createdAt &&
-                    ' (edited)'}
+                  {note.updatedAt !== note.createdAt && ' (edited)'}
                 </Typography>
               </Stack>
             </CardContent>

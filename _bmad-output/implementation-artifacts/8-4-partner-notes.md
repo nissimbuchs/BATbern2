@@ -1,6 +1,6 @@
 # Story 8.4: Partner Notes
 
-Status: review
+Status: done
 
 ## Story
 
@@ -305,6 +305,7 @@ Note: Integration test profile permits all requests (see `testFilterChain`). `@P
 **Agent:** Amelia (Dev Agent)
 **Completed:** 2026-02-23
 **Status:** All 12 tasks complete — all tests green
+**Code Review:** 2026-02-24 — 7 issues fixed (2 HIGH, 3 MEDIUM, 2 LOW)
 
 ### Implementation Summary
 

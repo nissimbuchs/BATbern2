@@ -68,20 +68,23 @@ public class PartnerNoteController {
     /**
      * PATCH /api/v1/partners/{companyName}/notes/{noteId}
      * Partial update — only provided non-null fields changed (AC4).
+     * companyName is passed to service for ownership validation (H1).
+     * @Valid enforces @Size(max=500) on title (H2).
      */
     @PatchMapping("/{noteId}")
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PartnerNoteDTO> updateNote(
             @PathVariable String companyName,
             @PathVariable UUID noteId,
-            @RequestBody UpdateNoteRequest request
+            @Valid @RequestBody UpdateNoteRequest request
     ) {
-        return ResponseEntity.ok(noteService.updateNote(noteId, request));
+        return ResponseEntity.ok(noteService.updateNote(companyName, noteId, request));
     }
 
     /**
      * DELETE /api/v1/partners/{companyName}/notes/{noteId}
      * Delete a note. Returns 204 No Content (AC5).
+     * companyName is passed to service for ownership validation (H1).
      */
     @DeleteMapping("/{noteId}")
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -89,7 +92,7 @@ public class PartnerNoteController {
             @PathVariable String companyName,
             @PathVariable UUID noteId
     ) {
-        noteService.deleteNote(noteId);
+        noteService.deleteNote(companyName, noteId);
         return ResponseEntity.noContent().build();
     }
 
