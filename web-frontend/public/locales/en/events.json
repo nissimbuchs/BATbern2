@@ -210,8 +210,45 @@
     "unassigned": "Unassigned",
     "editTask": "Edit task",
     "deleteTask": "Delete task",
+    "taskName": "Task Name",
+    "taskNamePlaceholder": "e.g., Send venue confirmation email",
+    "selectEvent": "Event (optional)",
+    "selectEventHelp": "Select an event to create a task for, or save as template",
+    "noEvent": "No event (save as template)",
+    "triggerStateHelp": "The event state that activates this task",
+    "workflowStates": {
+      "topic_selection": "Topic Selection",
+      "speaker_brainstorming": "Speaker Brainstorming",
+      "speaker_outreach": "Speaker Outreach",
+      "agenda_published": "Agenda Published",
+      "agenda_finalized": "Agenda Finalized",
+      "event_live": "Event Live",
+      "post_event_wrap_up": "Post Event Wrap-Up",
+      "archived": "Archived"
+    },
+    "dueDateType": "Due Date Type",
+    "dueDateTypes": {
+      "immediate": "Immediate (now)",
+      "relative_to_event": "Relative to event date",
+      "absolute": "Absolute date"
+    },
+    "offsetDays": "Offset Days",
+    "offsetDaysHelp": "Negative = before event, Positive = after event",
+    "absoluteDueDate": "Due Date",
+    "assignedOrganizer": "Assigned Organizer",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "Add any instructions or context...",
+    "saveAsTemplate": "Save as reusable template",
+    "createTemplate": "Create Template",
+    "createTask": "Create Task",
     "errors": {
-      "loadTemplatesFailed": "Failed to load task templates"
+      "loadTemplatesFailed": "Failed to load task templates",
+      "taskNameRequired": "Task name is required",
+      "triggerStateRequired": "Trigger state is required",
+      "offsetDaysRequired": "Offset days is required",
+      "eventRequired": "Please select an event or save as template",
+      "updateTaskFailed": "Failed to update task",
+      "createTaskFailed": "Failed to create task"
     }
   },
   "form": {

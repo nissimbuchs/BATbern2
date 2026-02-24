@@ -31,6 +31,8 @@ import {
   Alert,
   CircularProgress,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -45,22 +47,18 @@ import { OrganizerSelect } from '@/components/shared/OrganizerSelect';
 import { useEvents } from '@/hooks/useEvents';
 
 // Event workflow states — lowercase matches what the backend stores in task_templates
-const WORKFLOW_STATES = [
-  { value: 'topic_selection', label: 'Topic Selection' },
-  { value: 'speaker_brainstorming', label: 'Speaker Brainstorming' },
-  { value: 'speaker_outreach', label: 'Speaker Outreach' },
-  { value: 'agenda_published', label: 'Agenda Published' },
-  { value: 'agenda_finalized', label: 'Agenda Finalized' },
-  { value: 'event_live', label: 'Event Live' },
-  { value: 'post_event_wrap_up', label: 'Post-Event Wrap Up' },
-  { value: 'archived', label: 'Archived' },
-];
+const WORKFLOW_STATE_VALUES = [
+  'topic_selection',
+  'speaker_brainstorming',
+  'speaker_outreach',
+  'agenda_published',
+  'agenda_finalized',
+  'event_live',
+  'post_event_wrap_up',
+  'archived',
+] as const;
 
-const DUE_DATE_TYPES = [
-  { value: 'immediate', label: 'Immediate' },
-  { value: 'relative_to_event', label: 'Relative to Event Date' },
-  { value: 'absolute', label: 'Absolute Date' },
-];
+const DUE_DATE_TYPE_VALUES = ['immediate', 'relative_to_event', 'absolute'] as const;
 
 interface CustomTaskModalProps {
   open: boolean;
@@ -79,6 +77,8 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
 }) => {
   const { t } = useTranslation('events');
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const isEditMode = !!existingTask;
 
@@ -164,23 +164,17 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
 
     if (!isEditMode) {
       if (!taskName.trim()) {
-        newErrors.taskName = t('tasks.errors.taskNameRequired', 'Task name is required');
+        newErrors.taskName = t('tasks.errors.taskNameRequired');
       }
       if (!triggerState) {
-        newErrors.triggerState = t(
-          'tasks.errors.triggerStateRequired',
-          'Trigger state is required'
-        );
+        newErrors.triggerState = t('tasks.errors.triggerStateRequired');
       }
       if (dueDateType === 'relative_to_event' && offsetDays === undefined) {
-        newErrors.offsetDays = t('tasks.errors.offsetDaysRequired', 'Offset days is required');
+        newErrors.offsetDays = t('tasks.errors.offsetDaysRequired');
       }
       // If no eventId and not template mode, require event selection
       if (!eventId && !saveAsTemplate && !selectedEventCode) {
-        newErrors.event = t(
-          'tasks.errors.eventRequired',
-          'Please select an event or save as template'
-        );
+        newErrors.event = t('tasks.errors.eventRequired');
       }
     }
 
@@ -251,27 +245,21 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
   const isTemplateMode = !isEditMode && (saveAsTemplate || !effectiveEventId);
 
   const submitLabel = isEditMode
-    ? t('common.saveChanges', 'Save Changes')
+    ? t('common.saveChanges')
     : isTemplateMode
-      ? t('tasks.createTemplate', 'Create Template')
-      : t('tasks.createTask', 'Create Task');
+      ? t('tasks.createTemplate')
+      : t('tasks.createTask');
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        {isEditMode
-          ? t('tasks.editTask', 'Edit Task')
-          : t('tasks.addCustomTask', 'Add Custom Task')}
-      </DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
+      <DialogTitle>{isEditMode ? t('tasks.editTask') : t('tasks.addCustomTask')}</DialogTitle>
 
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
           {/* Error Alert */}
           {error && (
             <Alert severity="error">
-              {isEditMode
-                ? t('tasks.errors.updateTaskFailed', 'Failed to update task')
-                : t('tasks.errors.createTaskFailed', 'Failed to create task')}
+              {isEditMode ? t('tasks.errors.updateTaskFailed') : t('tasks.errors.createTaskFailed')}
               : {error.message}
             </Alert>
           )}
@@ -284,14 +272,14 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           ) : (
             /* Create mode: task name field */
             <TextField
-              label={t('tasks.taskName', 'Task Name')}
+              label={t('tasks.taskName')}
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
               error={!!errors.taskName}
               helperText={errors.taskName}
               required
               fullWidth
-              placeholder={t('tasks.taskNamePlaceholder', 'e.g., Send venue confirmation email')}
+              placeholder={t('tasks.taskNamePlaceholder')}
             />
           )}
 
@@ -299,21 +287,15 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           {showEventSelector && (
             <TextField
               select
-              label={t('tasks.selectEvent', 'Event (optional)')}
+              label={t('tasks.selectEvent')}
               value={selectedEventCode}
               onChange={(e) => setSelectedEventCode(e.target.value)}
               error={!!errors.event}
-              helperText={
-                errors.event ||
-                t(
-                  'tasks.selectEventHelp',
-                  'Select an event to create a task for, or save as template'
-                )
-              }
+              helperText={errors.event || t('tasks.selectEventHelp')}
               fullWidth
             >
               <MenuItem value="">
-                <em>{t('tasks.noEvent', 'No event (save as template)')}</em>
+                <em>{t('tasks.noEvent')}</em>
               </MenuItem>
               {events.map((event) => (
                 <MenuItem key={event.eventCode} value={event.eventCode}>
@@ -327,20 +309,17 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           {!isEditMode && (
             <TextField
               select
-              label={t('tasks.triggerState', 'Trigger State')}
+              label={t('tasks.triggerState')}
               value={triggerState}
               onChange={(e) => setTriggerState(e.target.value)}
               error={!!errors.triggerState}
-              helperText={
-                errors.triggerState ||
-                t('tasks.triggerStateHelp', 'The event state that activates this task')
-              }
+              helperText={errors.triggerState || t('tasks.triggerStateHelp')}
               required
               fullWidth
             >
-              {WORKFLOW_STATES.map((state) => (
-                <MenuItem key={state.value} value={state.value}>
-                  {state.label}
+              {WORKFLOW_STATE_VALUES.map((value) => (
+                <MenuItem key={value} value={value}>
+                  {t(`tasks.workflowStates.${value}`)}
                 </MenuItem>
               ))}
             </TextField>
@@ -349,19 +328,19 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           {/* Due Date Type (create mode, or absolute date edit in edit mode) */}
           {!isEditMode && (
             <FormControl component="fieldset">
-              <FormLabel component="legend">{t('tasks.dueDateType', 'Due Date Type')}</FormLabel>
+              <FormLabel component="legend">{t('tasks.dueDateType')}</FormLabel>
               <RadioGroup
                 value={dueDateType}
                 onChange={(e) =>
                   setDueDateType(e.target.value as 'immediate' | 'relative_to_event' | 'absolute')
                 }
               >
-                {DUE_DATE_TYPES.map((type) => (
+                {DUE_DATE_TYPE_VALUES.map((value) => (
                   <FormControlLabel
-                    key={type.value}
-                    value={type.value}
+                    key={value}
+                    value={value}
                     control={<Radio />}
-                    label={type.label}
+                    label={t(`tasks.dueDateTypes.${value}`)}
                   />
                 ))}
               </RadioGroup>
@@ -371,15 +350,12 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           {/* Offset Days (create mode, relative_to_event) */}
           {!isEditMode && dueDateType === 'relative_to_event' && (
             <TextField
-              label={t('tasks.offsetDays', 'Offset Days')}
+              label={t('tasks.offsetDays')}
               type="number"
               value={offsetDays}
               onChange={(e) => setOffsetDays(parseInt(e.target.value, 10))}
               error={!!errors.offsetDays}
-              helperText={
-                errors.offsetDays ||
-                t('tasks.offsetDaysHelp', 'Negative = before event, Positive = after event')
-              }
+              helperText={errors.offsetDays || t('tasks.offsetDaysHelp')}
               required
               fullWidth
               placeholder="-30"
@@ -389,7 +365,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
           {/* Absolute Date picker (absolute due date type) */}
           {dueDateType === 'absolute' && (
             <TextField
-              label={t('tasks.absoluteDueDate', 'Due Date')}
+              label={t('tasks.absoluteDueDate')}
               type="date"
               value={absoluteDueDate}
               onChange={(e) => setAbsoluteDueDate(e.target.value)}
@@ -404,19 +380,19 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
             onChange={(val) => setAssignedOrganizer(val)}
             includeUnassigned={true}
             includeAllOption={false}
-            label={t('tasks.assignedOrganizer', 'Assigned Organizer')}
+            label={t('tasks.assignedOrganizer')}
             fullWidth
           />
 
           {/* Notes */}
           <TextField
-            label={t('tasks.notes', 'Notes (Optional)')}
+            label={t('tasks.notes')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             multiline
             rows={3}
             fullWidth
-            placeholder={t('tasks.notesPlaceholder', 'Add any instructions or context...')}
+            placeholder={t('tasks.notesPlaceholder')}
           />
 
           {/* Save as Template (create mode, only when no event selected or eventId) */}
@@ -428,7 +404,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
                   onChange={(e) => setSaveAsTemplate(e.target.checked)}
                 />
               }
-              label={t('tasks.saveAsTemplate', 'Save as reusable template')}
+              label={t('tasks.saveAsTemplate')}
             />
           )}
         </Stack>
@@ -436,7 +412,7 @@ export const CustomTaskModal: React.FC<CustomTaskModalProps> = ({
 
       <DialogActions>
         <Button onClick={handleClose} disabled={isLoading}>
-          {t('common.cancel', 'Cancel')}
+          {t('common.cancel')}
         </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={isLoading}>
           {isLoading ? <CircularProgress size={20} /> : submitLabel}
