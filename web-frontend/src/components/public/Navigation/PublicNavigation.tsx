@@ -21,7 +21,7 @@ export const PublicNavigation = ({ topOffset = '0px' }: PublicNavigationProps) =
   const { t } = useTranslation('common');
 
   const initials = user
-    ? user.username
+    ? (user.username ?? user.email ?? '')
         .split(/[.\s_-]/)
         .map((p) => p[0] ?? '')
         .join('')
