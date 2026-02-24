@@ -42,6 +42,7 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
 import { PartnerAttendanceDashboard } from '@/components/partner/PartnerAttendanceDashboard';
 import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
+import UserCard from '@/components/organizer/UserManagement/UserCard';
 import UserPagination from '@/components/organizer/UserManagement/UserPagination';
 import apiClient from '@/services/api/apiClient';
 
@@ -127,6 +128,8 @@ const CompanySpeakersPanel: React.FC<{ companyName: string }> = ({ companyName }
 
 const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -143,13 +146,25 @@ const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) =
 
   return (
     <Box>
-      <UserTable
-        users={users}
-        onRowClick={(user: User) => navigate(`/organizer/users/${user.id}`)}
-        onAction={(action, user: User) => {
-          if (action === 'view') navigate(`/organizer/users/${user.id}`);
-        }}
-      />
+      {isMobile ? (
+        <Stack spacing={2}>
+          {users.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              onClick={(u: User) => navigate(`/organizer/users/${u.id}`)}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <UserTable
+          users={users}
+          onRowClick={(user: User) => navigate(`/organizer/users/${user.id}`)}
+          onAction={(action, user: User) => {
+            if (action === 'view') navigate(`/organizer/users/${user.id}`);
+          }}
+        />
+      )}
       {paginationData && (
         <UserPagination
           page={paginationData.page}
