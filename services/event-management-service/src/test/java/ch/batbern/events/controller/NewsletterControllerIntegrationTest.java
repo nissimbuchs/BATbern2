@@ -186,6 +186,6 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     void listSubscribers_organizer_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/newsletter/subscribers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalCount").exists());
+                .andExpect(jsonPath("$.totalActive").exists());
     }
 }

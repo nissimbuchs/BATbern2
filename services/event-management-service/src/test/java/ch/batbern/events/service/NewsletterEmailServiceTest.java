@@ -1,9 +1,13 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.repository.UserPortraitProjection;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +47,8 @@ class NewsletterEmailServiceTest {
     private NewsletterSendRepository sendRepository;
     @Mock
     private SessionRepository sessionRepository;
+    @Mock
+    private SessionUserRepository sessionUserRepository;
     @Mock
     private EventRepository eventRepository;
 
@@ -159,5 +165,114 @@ class NewsletterEmailServiceTest {
 
         assertThat(vars.get("eventDetailLink")).isEqualTo("https://batbern.ch/events/BATbern58");
         assertThat(vars.get("registrationLink")).isEqualTo("https://batbern.ch/register/BATbern58");
+    }
+
+    // ── buildVariables: currentYear ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("buildVariables: currentYear is populated")
+    void buildVariables_currentYear_populated() {
+        Map<String, String> vars = newsletterEmailService.buildVariables(testEvent, "de", false, "");
+
+        assertThat(vars.get("currentYear")).isEqualTo(String.valueOf(java.time.Year.now().getValue()));
+    }
+
+    // ── buildSpeakersSection: structural session filtering ────────────────────
+
+    @Test
+    @DisplayName("buildSpeakersSection: moderation sessions are filtered out")
+    void buildSpeakersSection_moderationFiltered() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session modSession = new Session();
+        modSession.setSessionType("moderation");
+        modSession.setTitle("Moderation Start");
+        SessionUser su = new SessionUser();
+        su.setUsername("nissim.buchs");
+        su.setSpeakerFirstName("Nissim");
+        su.setSpeakerLastName("Buchs");
+        modSession.setSessionUsers(List.of(su));
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(modSession));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("buildSpeakersSection: two speakers on same session → one row, names joined by '; '")
+    void buildSpeakersSection_twoSpeakers_oneRow() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Zero Trust at PostFinance");
+        SessionUser su1 = new SessionUser();
+        su1.setUsername("mustapha.bouaaoud");
+        su1.setSpeakerFirstName("Mustapha");
+        su1.setSpeakerLastName("Bouaaoud");
+        su1.setPresentationTitle("Zero Trust at PostFinance");
+        SessionUser su2 = new SessionUser();
+        su2.setUsername("philippe.halbeisen");
+        su2.setSpeakerFirstName("Philippe");
+        su2.setSpeakerLastName("Halbeisen");
+        session.setSessionUsers(List.of(su1, su2));
+
+        UserPortraitProjection p1 = mockPortrait("mustapha.bouaaoud", "postfinance");
+        UserPortraitProjection p2 = mockPortrait("philippe.halbeisen", "postfinance");
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserRepository.findUserPortraitsByUsernames(
+                java.util.Set.of("mustapha.bouaaoud", "philippe.halbeisen")))
+                .thenReturn(List.of(p1, p2));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("<table");
+        assertThat(result).contains("Zero Trust at PostFinance");
+        assertThat(result).contains("Mustapha Bouaaoud; Philippe Halbeisen");
+        assertThat(result).contains("postfinance");
+        // Only one data row in tbody (one session → one row)
+        assertThat(result).containsOnlyOnce("</tr></tbody>");
+    }
+
+    @Test
+    @DisplayName("buildSpeakersSection: company comes from user_profiles via companyId")
+    void buildSpeakersSection_companyFromUserProfiles() {
+        testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
+
+        Session session = new Session();
+        session.setSessionType("presentation");
+        session.setTitle("Zero Trust");
+        SessionUser su = new SessionUser();
+        su.setUsername("igor.masen");
+        su.setSpeakerFirstName("Igor");
+        su.setSpeakerLastName("Masen");
+        su.setPresentationTitle("Zero Trust at SBB");
+        session.setSessionUsers(List.of(su));
+
+        when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
+                .thenReturn(List.of(session));
+        when(sessionUserRepository.findUserPortraitsByUsernames(java.util.Set.of("igor.masen")))
+                .thenReturn(List.of(mockPortrait("igor.masen", "sbb")));
+
+        String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
+
+        assertThat(result).contains("<table");
+        assertThat(result).contains("Zero Trust at SBB");
+        assertThat(result).contains("Igor Masen");
+        assertThat(result).contains("sbb");
+    }
+
+    private UserPortraitProjection mockPortrait(String username, String companyId) {
+        return new UserPortraitProjection() {
+            public String getUsername() { return username; }
+            public String getProfilePictureUrl() { return null; }
+            public String getCompanyId() { return companyId; }
+            public String getCompanyLogoUrl() { return null; }
+        };
     }
 }

@@ -83,7 +83,7 @@ describe('EventNewsletterTab', () => {
   it('shows subscriber count when loaded', () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
-      data: { totalActive: 234 },
+      data: { totalCount: 234 },
     } as ReturnType<typeof useSubscriberCount>);
 
     renderTab();
@@ -94,7 +94,7 @@ describe('EventNewsletterTab', () => {
   it('shows empty history message when no newsletters sent', () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
-      data: { totalActive: 0 },
+      data: { totalCount: 0 },
     } as ReturnType<typeof useSubscriberCount>);
 
     vi.mocked(useNewsletterHistory).mockReturnValue({
@@ -110,7 +110,7 @@ describe('EventNewsletterTab', () => {
   it('shows send history table when history exists', () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
-      data: { totalActive: 10 },
+      data: { totalCount: 10 },
     } as ReturnType<typeof useSubscriberCount>);
 
     vi.mocked(useNewsletterHistory).mockReturnValue({
@@ -136,7 +136,7 @@ describe('EventNewsletterTab', () => {
   it('opens confirmation dialog when Send Newsletter is clicked', async () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
-      data: { totalActive: 100 },
+      data: { totalCount: 100 },
     } as ReturnType<typeof useSubscriberCount>);
 
     renderTab();
@@ -159,7 +159,7 @@ describe('EventNewsletterTab', () => {
 
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
-      data: { totalActive: 50 },
+      data: { totalCount: 50 },
     } as ReturnType<typeof useSubscriberCount>);
 
     renderTab();

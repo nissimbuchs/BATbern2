@@ -10,6 +10,8 @@ import ch.batbern.events.dto.NewsletterSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.events.repository.UserPortraitProjection;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Service for building and sending newsletter emails (Story 10.7 — AC8, AC10).
@@ -44,6 +47,9 @@ public class NewsletterEmailService {
     private static final String TEMPLATE_KEY = "newsletter-event";
     private static final String LAYOUT_KEY = "batbern-default";
 
+    /** Session types that are structural (moderation, breaks, lunch) — excluded from newsletter. */
+    private static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of("moderation", "break", "lunch");
+
     /** Workflow states where speaker section is considered published. */
     private static final Set<EventWorkflowState> SPEAKERS_VISIBLE_STATES = EnumSet.of(
             EventWorkflowState.AGENDA_PUBLISHED,
@@ -58,6 +64,7 @@ public class NewsletterEmailService {
     private final NewsletterSubscriberService subscriberService;
     private final NewsletterSendRepository sendRepository;
     private final SessionRepository sessionRepository;
+    private final SessionUserRepository sessionUserRepository;
     private final EventRepository eventRepository;
 
     @Value("${app.base-url:https://batbern.ch}")
@@ -77,7 +84,8 @@ public class NewsletterEmailService {
     public NewsletterPreviewResponse preview(Event event, boolean isReminder, String locale) {
         Map<String, String> vars = buildVariables(event, locale, isReminder, baseUrl + "/unsubscribe?token=PREVIEW");
         String contentHtml = renderContent(locale, vars);
-        String mergedHtml = emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale);
+        String mergedHtml = emailService.replaceVariables(
+                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
         String subject = buildSubject(event, isReminder, locale, vars);
         int count = (int) subscriberService.getActiveCount();
         return NewsletterPreviewResponse.builder()
@@ -126,7 +134,8 @@ public class NewsletterEmailService {
                 Map<String, String> recipientVars = new HashMap<>(baseVars);
                 recipientVars.put("unsubscribeLink", unsubscribeLink);
                 String contentHtml = renderContent(locale, recipientVars);
-                String mergedHtml = emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale);
+                String mergedHtml = emailService.replaceVariables(
+                        emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), recipientVars);
                 emailService.sendHtmlEmail(subscriber.getEmail(), subject, mergedHtml);
             } catch (Exception e) {
                 log.error("Failed to send newsletter to {}: {}", subscriber.getEmail(), e.getMessage());
@@ -163,6 +172,7 @@ public class NewsletterEmailService {
         vars.put("venueDirectionsUrl", ""); // No directions URL in current Event model — Mustache block suppressed
         vars.put("conferenceLanguage", isDe ? "Deutsch / Englisch" : "German / English");
         vars.put("speakersSection", buildSpeakersSection(event, isDe));
+        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
         vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
         vars.put("registrationLink", baseUrl + "/register/" + event.getEventCode());
         vars.put("upcomingEventsSection", buildUpcomingEventsSection(event.getId(), isDe));
@@ -209,38 +219,107 @@ public class NewsletterEmailService {
     }
 
     /**
-     * Builds the speakers section HTML when event workflow state allows it.
+     * Builds the speakers section as an HTML table when event workflow state allows it.
+     * One row per session; multiple speakers joined by "; ". Structural sessions filtered out.
+     * Company comes from user_profiles.company_id via UserPortraitProjection.
      * Returns empty string when agenda is not yet published.
      */
     String buildSpeakersSection(Event event, boolean isDe) {
         if (event.getWorkflowState() == null
                 || !SPEAKERS_VISIBLE_STATES.contains(event.getWorkflowState())) {
-            return ""; // Not yet published — Mustache conditional suppresses the block
+            return "";
         }
         List<Session> sessions = sessionRepository.findByEventIdWithSpeakers(event.getId());
         if (sessions.isEmpty()) {
             return "";
         }
+
+        // Collect all speaker usernames across content sessions
+        Set<String> usernames = sessions.stream()
+                .filter(s -> !STRUCTURAL_SESSION_TYPES.contains(s.getSessionType()))
+                .flatMap(s -> s.getSessionUsers() == null ? java.util.stream.Stream.empty()
+                        : s.getSessionUsers().stream())
+                .map(SessionUser::getUsername)
+                .filter(u -> u != null && !u.isBlank())
+                .collect(Collectors.toSet());
+
+        // Batch-load companyId from user_profiles (intentional cross-service DB join)
+        Map<String, String> usernameToCompany = usernames.isEmpty()
+                ? Map.of()
+                : sessionUserRepository.findUserPortraitsByUsernames(usernames).stream()
+                        .filter(p -> p.getCompanyId() != null)
+                        .collect(Collectors.toMap(
+                                UserPortraitProjection::getUsername,
+                                UserPortraitProjection::getCompanyId,
+                                (a, b) -> a));
+
+        String thStyle = "padding:6px 10px;text-align:left;font-size:11px;font-weight:600;"
+                + "text-transform:uppercase;letter-spacing:1px;color:#71717A;"
+                + "border-bottom:1px solid #E4E4E7;";
+        String tdStyle = "padding:8px 10px;font-size:14px;color:#3F3F46;"
+                + "border-bottom:1px solid #F4F4F5;vertical-align:top;";
+        String tdMutedStyle = "padding:8px 10px;font-size:14px;color:#71717A;"
+                + "border-bottom:1px solid #F4F4F5;vertical-align:top;";
+
         StringBuilder sb = new StringBuilder();
+        sb.append("<table style=\"border-collapse:collapse;width:100%;margin-top:8px;\">")
+                .append("<thead><tr>")
+                .append("<th style=\"").append(thStyle).append("\">")
+                .append(isDe ? "Vortrag" : "Talk").append("</th>")
+                .append("<th style=\"").append(thStyle).append("\">")
+                .append(isDe ? "Sprecher\u00b7in" : "Speaker").append("</th>")
+                .append("<th style=\"").append(thStyle).append("\">")
+                .append(isDe ? "Unternehmen" : "Company").append("</th>")
+                .append("</tr></thead><tbody>");
+
+        boolean hasRows = false;
         for (Session session : sessions) {
+            if (STRUCTURAL_SESSION_TYPES.contains(session.getSessionType())) {
+                continue;
+            }
             if (session.getSessionUsers() == null || session.getSessionUsers().isEmpty()) {
                 continue;
             }
-            String sessionTitle = session.getTitle();
-            for (SessionUser su : session.getSessionUsers()) {
-                String firstName = su.getSpeakerFirstName() != null ? su.getSpeakerFirstName() : "";
-                String lastName = su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "";
-                String speakerName = (firstName + " " + lastName).trim();
-                if (speakerName.isEmpty()) {
-                    speakerName = su.getUsername();
-                }
-                String title = su.getPresentationTitle() != null ? su.getPresentationTitle() : sessionTitle;
-                sb.append("<p style=\"margin: 0 0 8px; font-size: 14px; color: #3F3F46;\">")
-                        .append("&ldquo;").append(escapeHtml(title)).append("&rdquo;, ")
-                        .append("<strong>").append(escapeHtml(speakerName)).append("</strong>")
-                        .append("</p>");
-            }
+
+            // Collect title from first speaker's presentationTitle, fall back to session title
+            String title = session.getSessionUsers().stream()
+                    .map(SessionUser::getPresentationTitle)
+                    .filter(t -> t != null && !t.isBlank())
+                    .findFirst()
+                    .orElse(session.getTitle());
+
+            // Build "First Last; First Last" — one entry per speaker
+            String speakerNames = session.getSessionUsers().stream()
+                    .map(su -> {
+                        String fn = su.getSpeakerFirstName() != null ? su.getSpeakerFirstName() : "";
+                        String ln = su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "";
+                        String name = (fn + " " + ln).trim();
+                        return name.isBlank() ? su.getUsername() : name;
+                    })
+                    .collect(Collectors.joining("; "));
+
+            // Company: use first speaker's companyId (most sessions are single-company)
+            String company = session.getSessionUsers().stream()
+                    .map(su -> usernameToCompany.getOrDefault(su.getUsername(), ""))
+                    .filter(c -> !c.isBlank())
+                    .findFirst()
+                    .orElse("");
+
+            sb.append("<tr>")
+                    .append("<td style=\"").append(tdStyle).append("\">")
+                    .append(escapeHtml(title)).append("</td>")
+                    .append("<td style=\"").append(tdStyle).append("\"><strong>")
+                    .append(escapeHtml(speakerNames)).append("</strong></td>")
+                    .append("<td style=\"").append(tdMutedStyle).append("\">")
+                    .append(escapeHtml(company)).append("</td>")
+                    .append("</tr>");
+            hasRows = true;
         }
+
+        if (!hasRows) {
+            return "";
+        }
+        sb.append("</tbody></table>");
         return sb.toString();
     }
 

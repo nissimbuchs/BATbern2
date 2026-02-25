@@ -47,7 +47,7 @@ export interface NewsletterSendHistoryItem {
 }
 
 export interface SubscriberCountResponse {
-  totalActive: number;
+  totalCount: number;
 }
 
 /** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
