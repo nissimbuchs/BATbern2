@@ -50,6 +50,13 @@ const AppHeader = React.memo(function AppHeader({
 
   // Extract current role - handle both UserContext (role) and UserProfile (currentRole)
   const currentRole = user && ('currentRole' in user ? user.currentRole : user.role);
+  // Build the full roles array for multi-role nav support (e.g. organizer + partner)
+  const currentRoles: UserRole[] =
+    user && 'roles' in user && Array.isArray(user.roles) && user.roles.length > 0
+      ? (user.roles as UserRole[])
+      : currentRole
+        ? [currentRole as UserRole]
+        : [];
 
   const handleNotificationClick = () => {
     navigate('/organizer/notifications');
@@ -127,9 +134,9 @@ const AppHeader = React.memo(function AppHeader({
           </Box>
 
           {/* Desktop/Tablet Navigation */}
-          {!isMobile && currentRole && (
+          {!isMobile && currentRoles.length > 0 && (
             <Box sx={{ flex: 1 }}>
-              <NavigationMenu userRole={currentRole} showText={!isTablet} />
+              <NavigationMenu userRoles={currentRoles} showText={!isTablet} />
             </Box>
           )}
 
@@ -208,11 +215,11 @@ const AppHeader = React.memo(function AppHeader({
       </AppBar>
 
       {/* Mobile Drawer */}
-      {currentRole && (
+      {currentRoles.length > 0 && (
         <MobileDrawer
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          userRole={currentRole}
+          userRoles={currentRoles}
           userEmail={user.email}
         />
       )}

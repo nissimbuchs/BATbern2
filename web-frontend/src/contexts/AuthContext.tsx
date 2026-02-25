@@ -260,10 +260,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
-   * Check if user has specific role
+   * Check if user has specific role (supports multi-role users)
    */
   const hasRole = useCallback(
     (role: UserRole): boolean => {
+      const roles = state.user?.roles;
+      if (roles && roles.length > 0) return roles.includes(role);
       return state.user?.role === role;
     },
     [state.user]

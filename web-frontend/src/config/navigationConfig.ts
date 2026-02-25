@@ -214,6 +214,21 @@ export function getNavigationForRole(role: UserRole): NavigationItem[] {
 }
 
 /**
+ * Get navigation items for multiple roles, deduplicating by path.
+ * Used for users with more than one role (e.g. organizer + partner).
+ */
+export function getNavigationForRoles(roles: UserRole[]): NavigationItem[] {
+  const seen = new Set<string>();
+  return roles
+    .flatMap((role) => navigationConfig.filter((item) => item.roles.includes(role)))
+    .filter((item) => {
+      if (seen.has(item.path)) return false;
+      seen.add(item.path);
+      return true;
+    });
+}
+
+/**
  * Check if a path is active (matches current location)
  */
 export function isPathActive(path: string, currentPath: string): boolean {
