@@ -310,6 +310,13 @@ export default defineConfig({
         'src/components/organizer/Analytics/**',
         'src/hooks/useAnalytics.ts',
         'src/services/analyticsService.ts',
+        // BlobTopicSelector — complex SVG animation component, not unit-testable in JSDOM
+        'src/components/BlobTopicSelector/**',
+        // Newsletter service layer — pure HTTP wrappers tested via component integration tests
+        'src/services/newsletterService.ts',
+        'src/hooks/useNewsletter/**',
+        // React error boundary — framework code tested via E2E
+        'src/components/ErrorBoundary.tsx',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files
