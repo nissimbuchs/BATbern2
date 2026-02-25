@@ -49,6 +49,12 @@ public interface UserPortraitProjection {
     /** Company name/ID from user_profiles.company_id (CUMS). */
     String getCompanyId();
 
+    /**
+     * Human-readable company name from companies.display_name (falls back to companies.name,
+     * then company_id). Used for newsletter email rendering.
+     */
+    String getCompanyDisplayName();
+
     /** Company logo CloudFront URL from logos.cloudfront_url (CUMS). */
     String getCompanyLogoUrl();
 }

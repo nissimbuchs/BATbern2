@@ -243,14 +243,14 @@ public class NewsletterEmailService {
                 .filter(u -> u != null && !u.isBlank())
                 .collect(Collectors.toSet());
 
-        // Batch-load companyId from user_profiles (intentional cross-service DB join)
+        // Batch-load company display names from user_profiles + companies join
         Map<String, String> usernameToCompany = usernames.isEmpty()
                 ? Map.of()
                 : sessionUserRepository.findUserPortraitsByUsernames(usernames).stream()
-                        .filter(p -> p.getCompanyId() != null)
+                        .filter(p -> p.getCompanyDisplayName() != null)
                         .collect(Collectors.toMap(
                                 UserPortraitProjection::getUsername,
-                                UserPortraitProjection::getCompanyId,
+                                UserPortraitProjection::getCompanyDisplayName,
                                 (a, b) -> a));
 
         String thStyle = "padding:6px 10px;text-align:left;font-size:11px;font-weight:600;"
@@ -268,8 +268,6 @@ public class NewsletterEmailService {
                 .append(isDe ? "Vortrag" : "Talk").append("</th>")
                 .append("<th style=\"").append(thStyle).append("\">")
                 .append(isDe ? "Sprecher\u00b7in" : "Speaker").append("</th>")
-                .append("<th style=\"").append(thStyle).append("\">")
-                .append(isDe ? "Unternehmen" : "Company").append("</th>")
                 .append("</tr></thead><tbody>");
 
         boolean hasRows = false;
@@ -288,30 +286,25 @@ public class NewsletterEmailService {
                     .findFirst()
                     .orElse(session.getTitle());
 
-            // Build "First Last; First Last" — one entry per speaker
+            // Build "First Last, Company; First Last2, Company2" — one entry per speaker
             String speakerNames = session.getSessionUsers().stream()
                     .map(su -> {
                         String fn = su.getSpeakerFirstName() != null ? su.getSpeakerFirstName() : "";
                         String ln = su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "";
                         String name = (fn + " " + ln).trim();
-                        return name.isBlank() ? su.getUsername() : name;
+                        if (name.isBlank()) {
+                            name = su.getUsername();
+                        }
+                        String company = usernameToCompany.getOrDefault(su.getUsername(), "");
+                        return company.isBlank() ? name : name + ", " + company;
                     })
                     .collect(Collectors.joining("; "));
-
-            // Company: use first speaker's companyId (most sessions are single-company)
-            String company = session.getSessionUsers().stream()
-                    .map(su -> usernameToCompany.getOrDefault(su.getUsername(), ""))
-                    .filter(c -> !c.isBlank())
-                    .findFirst()
-                    .orElse("");
 
             sb.append("<tr>")
                     .append("<td style=\"").append(tdStyle).append("\">")
                     .append(escapeHtml(title)).append("</td>")
-                    .append("<td style=\"").append(tdStyle).append("\"><strong>")
-                    .append(escapeHtml(speakerNames)).append("</strong></td>")
                     .append("<td style=\"").append(tdMutedStyle).append("\">")
-                    .append(escapeHtml(company)).append("</td>")
+                    .append(escapeHtml(speakerNames)).append("</td>")
                     .append("</tr>");
             hasRows = true;
         }

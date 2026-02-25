@@ -118,11 +118,13 @@ public interface SessionUserRepository extends JpaRepository<SessionUser, UUID> 
     @Query(value = "SELECT up.username AS username, "
             + "up.profile_picture_url AS profilePictureUrl, "
             + "up.company_id AS companyId, "
+            + "COALESCE(c.display_name, c.name, up.company_id) AS companyDisplayName, "
             + "(SELECT l.cloudfront_url FROM logos l "
-            + " WHERE l.associated_entity_id = up.company_id "
+            + " WHERE l.associated_entity_id = c.id::text "
             + "   AND l.associated_entity_type = 'COMPANY' "
             + " LIMIT 1) AS companyLogoUrl "
             + "FROM user_profiles up "
+            + "LEFT JOIN companies c ON c.name = up.company_id "
             + "WHERE up.username IN :usernames",
            nativeQuery = true)
     List<UserPortraitProjection> findUserPortraitsByUsernames(

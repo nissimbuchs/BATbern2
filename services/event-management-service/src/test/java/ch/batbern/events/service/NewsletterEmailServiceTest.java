@@ -233,8 +233,8 @@ class NewsletterEmailServiceTest {
 
         assertThat(result).contains("<table");
         assertThat(result).contains("Zero Trust at PostFinance");
-        assertThat(result).contains("Mustapha Bouaaoud; Philippe Halbeisen");
-        assertThat(result).contains("postfinance");
+        // Both speakers on one row, company inline: "Name, company; Name2, company"
+        assertThat(result).contains("Mustapha Bouaaoud, postfinance; Philippe Halbeisen, postfinance");
         // Only one data row in tbody (one session → one row)
         assertThat(result).containsOnlyOnce("</tr></tbody>");
     }
@@ -269,10 +269,26 @@ class NewsletterEmailServiceTest {
 
     private UserPortraitProjection mockPortrait(String username, String companyId) {
         return new UserPortraitProjection() {
-            public String getUsername() { return username; }
-            public String getProfilePictureUrl() { return null; }
-            public String getCompanyId() { return companyId; }
-            public String getCompanyLogoUrl() { return null; }
+
+            public String getUsername() {
+                return username;
+            }
+
+            public String getProfilePictureUrl() {
+                return null;
+            }
+
+            public String getCompanyId() {
+                return companyId;
+            }
+
+            public String getCompanyDisplayName() {
+                return companyId;
+            }
+
+            public String getCompanyLogoUrl() {
+                return null;
+            }
         };
     }
 }
