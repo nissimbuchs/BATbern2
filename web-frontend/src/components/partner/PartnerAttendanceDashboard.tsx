@@ -225,7 +225,8 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
                     fontSize: 12,
                   }}
                 >
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{row.eventCode}</div>
+                  <div style={{ fontWeight: 600 }}>{row.eventCode}</div>
+                  <div style={{ marginBottom: 4, color: '#555' }}>{row.title}</div>
                   {payload.map((p) => (
                     <div key={p.dataKey as string}>
                       {p.dataKey === 'company' ? 'Your attendees' : 'Total attendees'}: {p.value}
