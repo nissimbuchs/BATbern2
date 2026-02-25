@@ -83,6 +83,7 @@ const CompaniesTab = ({ fromYear }: Props) => {
         allTimeDistribution={companiesData?.distribution ?? []}
         events={overviewData?.timeline ?? []}
         partnerCompany={partnerCompany}
+        topN={topN}
         isLoading={isLoading}
       />
     </>

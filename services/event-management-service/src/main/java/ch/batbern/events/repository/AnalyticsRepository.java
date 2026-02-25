@@ -49,10 +49,10 @@ public interface AnalyticsRepository extends JpaRepository<Event, UUID> {
     long countDistinctCompanies();
 
     /**
-     * Count total session_users rows (confirmed speaker contributions, all-time).
+     * Count total session_users rows (all speaker contributions, all-time).
      * AC2: KPI card — Total Sessions (= total speaker appearances).
      */
-    @Query("SELECT COUNT(su) FROM SessionUser su WHERE su.isConfirmed = true")
+    @Query("SELECT COUNT(su) FROM SessionUser su")
     long countTotalSessions();
 
     /**

@@ -20,7 +20,7 @@ import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AttendanceEventItem } from '@/services/analyticsService';
-import { CHART_COLORS } from './CHART_COLORS';
+import { CHART_COLORS, getCategoryColor } from './CHART_COLORS';
 import ChartCard from './ChartCard';
 import DataTable from './DataTable';
 import type { ColumnDef } from './DataTable';
@@ -112,7 +112,23 @@ const AttendeesPerEventChart = ({ data, isLoading }: Props) => {
           />
           <YAxis allowDecimals={false} />
           <Tooltip />
-          <Bar dataKey="totalAttendees" fill={CHART_COLORS.primary} name="Attendees" />
+          <Bar
+            dataKey="totalAttendees"
+            name="Attendees"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            shape={(props: any) => {
+              const { x, y, width, height, category } = props as {
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+                category: string;
+              };
+              return (
+                <rect x={x} y={y} width={width} height={height} fill={getCategoryColor(category)} />
+              );
+            }}
+          />
           <Line
             type="monotone"
             dataKey="trend"

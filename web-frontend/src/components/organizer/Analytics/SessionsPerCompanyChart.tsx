@@ -81,6 +81,7 @@ const SessionsPerCompanyChart = ({ data, topN, partnerCompany, isLoading }: Prop
           />
           <YAxis allowDecimals={false} />
           <Tooltip
+            labelFormatter={(v) => displayNameMap[v as string] ?? v}
             formatter={(value, name) => [
               value,
               name === 'sessionCount'

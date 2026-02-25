@@ -10,7 +10,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CompanyAttendanceShare, EventTimelineItem } from '@/services/analyticsService';
 import { useCompanyDistribution } from '@/hooks/useAnalytics';
@@ -31,6 +31,7 @@ interface Props {
   allTimeDistribution: CompanyAttendanceShare[];
   events: EventTimelineItem[];
   partnerCompany?: string | null;
+  topN?: number | null;
   isLoading?: boolean;
 }
 
@@ -38,6 +39,7 @@ const CompanyDistributionPieChart = ({
   allTimeDistribution,
   events,
   partnerCompany,
+  topN,
   isLoading: parentLoading,
 }: Props) => {
   const { t } = useTranslation('organizer');
@@ -45,9 +47,22 @@ const CompanyDistributionPieChart = ({
 
   const { data: eventDistData, isLoading: eventLoading } = useCompanyDistribution(selectedEvent);
 
-  const distribution: CompanyAttendanceShare[] = selectedEvent
+  const rawDistribution: CompanyAttendanceShare[] = selectedEvent
     ? (eventDistData?.distribution ?? [])
     : allTimeDistribution;
+
+  // Apply Top N filter (pin partner company even if outside top N)
+  const distribution: CompanyAttendanceShare[] = useMemo(() => {
+    if (topN == null) {
+      return rawDistribution;
+    }
+    const slice = rawDistribution.slice(0, topN);
+    if (partnerCompany && !slice.find((d) => d.companyName === partnerCompany)) {
+      const own = rawDistribution.find((d) => d.companyName === partnerCompany);
+      if (own) slice.push(own);
+    }
+    return slice;
+  }, [rawDistribution, topN, partnerCompany]);
 
   const isLoading = parentLoading || (!!selectedEvent && eventLoading);
 

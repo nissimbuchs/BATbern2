@@ -109,6 +109,7 @@ const EventCadenceTimeline = ({ data, isLoading }: Props) => {
                   }}
                 >
                   <div style={{ fontWeight: 600 }}>{d.eventCode}</div>
+                  <div>{d.title}</div>
                   <div style={{ color: '#555' }}>{d.eventDate}</div>
                   <div style={{ marginTop: 4 }}>{d.attendeeCount} attendees</div>
                 </div>
