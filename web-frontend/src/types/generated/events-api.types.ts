@@ -1709,10 +1709,195 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/newsletter/subscribe': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Subscribe to BATbern newsletter (public) */
+    post: operations['subscribeNewsletter'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/unsubscribe/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Verify unsubscribe token (public) */
+    get: operations['verifyUnsubscribeToken'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/unsubscribe': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Unsubscribe via token (public) */
+    post: operations['unsubscribeNewsletter'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/newsletter/my-subscription': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get authenticated user's subscription status */
+    get: operations['getMyNewsletterSubscription'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update authenticated user's subscription */
+    patch: operations['patchMyNewsletterSubscription'];
+    trace?: never;
+  };
+  '/newsletter/subscribers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List all subscribers (ORGANIZER) */
+    get: operations['listNewsletterSubscribers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/newsletter/send': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send newsletter to all active subscribers (ORGANIZER) */
+    post: operations['sendEventNewsletter'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/newsletter/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Preview newsletter email (ORGANIZER, no send) */
+    post: operations['previewEventNewsletter'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/newsletter/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get newsletter send history for an event (ORGANIZER) */
+    get: operations['getNewsletterHistory'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    NewsletterSubscribeRequest: {
+      /** Format: email */
+      email: string;
+      firstName?: string;
+      /**
+       * @default de
+       * @enum {string}
+       */
+      language: 'de' | 'en';
+    };
+    NewsletterUnsubscribeRequest: {
+      token: string;
+    };
+    NewsletterSubscriptionStatusResponse: {
+      subscribed: boolean;
+      email?: string;
+    };
+    NewsletterSendRequest: {
+      isReminder: boolean;
+      /** @enum {string} */
+      locale: 'de' | 'en';
+    };
+    NewsletterSendResponse: {
+      /** Format: uuid */
+      id: string;
+      /** Format: date-time */
+      sentAt: string;
+      isReminder: boolean;
+      locale: string;
+      recipientCount: number;
+      sentByUsername?: string;
+    };
+    NewsletterPreviewResponse: {
+      subject: string;
+      htmlPreview: string;
+      recipientCount: number;
+    };
+    SubscriberResponse: {
+      /** Format: uuid */
+      id: string;
+      email: string;
+      firstName?: string;
+      language?: string;
+      source?: string;
+      username?: string;
+      /** Format: date-time */
+      subscribedAt: string;
+    };
     /** @description All-time KPI totals and full event timeline (not filtered by time range) */
     AnalyticsOverviewResponse: {
       /**
@@ -1902,7 +2087,7 @@ export interface components {
        * @description Template category
        * @enum {string}
        */
-      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT' | 'NEWSLETTER';
       /** @description Email subject line (null for layout templates) */
       subject?: string | null;
       /** @description HTML body content */
@@ -1933,7 +2118,7 @@ export interface components {
        * @description Template category
        * @enum {string}
        */
-      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+      category: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT' | 'NEWSLETTER';
       /** @description Email subject (required for content templates, null for layout) */
       subject?: string | null;
       /** @description HTML body content */
@@ -6377,8 +6562,8 @@ export interface operations {
   listEmailTemplates: {
     parameters: {
       query?: {
-        /** @description Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT) */
-        category?: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT';
+        /** @description Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER) */
+        category?: 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'LAYOUT' | 'NEWSLETTER';
         /** @description Filter to layout templates only (true) or content templates only (false) */
         isLayout?: boolean;
       };
@@ -6659,6 +6844,280 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       /** @description Event not found for the given eventCode */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  subscribeNewsletter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewsletterSubscribeRequest'];
+      };
+    };
+    responses: {
+      /** @description Successfully subscribed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid email address */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description Email already actively subscribed */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  verifyUnsubscribeToken: {
+    parameters: {
+      query: {
+        token: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Token valid — returns subscriber email */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            email?: string;
+          };
+        };
+      };
+      /** @description Token not found or already unsubscribed */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  unsubscribeNewsletter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewsletterUnsubscribeRequest'];
+      };
+    };
+    responses: {
+      /** @description Successfully unsubscribed */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Token not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getMyNewsletterSubscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscription status */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSubscriptionStatusResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+    };
+  };
+  patchMyNewsletterSubscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': {
+          subscribed: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Subscription updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSubscriptionStatusResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+    };
+  };
+  listNewsletterSubscribers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscriber list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            totalCount?: number;
+            subscribers?: components['schemas']['SubscriberResponse'][];
+          };
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  sendEventNewsletter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewsletterSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Newsletter sent */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSendResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  previewEventNewsletter: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewsletterSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Preview content */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterPreviewResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getNewsletterHistory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Send history list */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NewsletterSendResponse'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found */
       404: {
         headers: {
           [name: string]: unknown;
