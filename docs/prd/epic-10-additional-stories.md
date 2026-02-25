@@ -403,4 +403,105 @@ public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
 
 ---
 
+---
+
+### Story 10.7: Newsletter Subscription & Sending
+
+**Story file**: `_bmad-output/implementation-artifacts/10-7-newsletter-subscription-and-sending.md`
+**Status**: ready-for-dev
+**Prerequisites**: Story 10.2 (Email Template Management — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category, `batbern-default` layout)
+
+**User Story:**
+As an **organizer**, I want to send event newsletters and reminder emails to subscribed community members, so that we can replace Meetup.com / Hostpoint mailing lists with a fully in-house system.
+As a **community member**, I want to subscribe without an account and unsubscribe instantly from any email link, so that I can stay informed about events without friction.
+As a **logged-in user**, I want to manage my subscription in the public account settings page, not the organizer portal.
+
+**Scope:**
+
+**Backend (event-management-service):**
+- Flyway **V67**: 3 new tables — `newsletter_subscribers` (email, username, unsubscribe_token, language, source, unsubscribed_at), `newsletter_sends`, `newsletter_recipients`
+- `NewsletterSubscriberService` — subscribe/upsert/reactivate/unsubscribe-by-token
+- `NewsletterEmailService` — build + send newsletter; loads template from DB/classpath; per-recipient unsubscribe link injection
+- `NewsletterController` — public + authenticated + organizer-only endpoints
+- Wire in `RegistrationService`: if `newsletterSubscribed=true` on registration → auto-subscribe silently
+- Two new classpath templates (content-only fragments): `newsletter-event-de.html`, `newsletter-event-en.html`
+- **Single template, dual use**: `{{reminderPrefix}}` variable is `""` for newsletter, `"Erinnerung: "` / `"Reminder: "` for reminder — no separate reminder template needed
+- Newsletter templates seeded by `EmailTemplateSeedService` under `NEWSLETTER` category; editable in admin Email Templates tab
+
+**API Endpoints:**
+```
+# Public (permitAll in EMS + API gateway)
+POST   /api/v1/newsletter/subscribe
+GET    /api/v1/newsletter/unsubscribe/verify?token=
+POST   /api/v1/newsletter/unsubscribe
+
+# Authenticated (any role)
+GET    /api/v1/newsletter/my-subscription
+PATCH  /api/v1/newsletter/my-subscription
+
+# Organizer only
+GET    /api/v1/newsletter/subscribers
+GET    /api/v1/events/{eventCode}/newsletter/history
+POST   /api/v1/events/{eventCode}/newsletter/preview
+POST   /api/v1/events/{eventCode}/newsletter/send
+```
+
+**Frontend:**
+- `NewsletterSubscribeWidget.tsx` — email input + subscribe button in **homepage footer** (shadcn Input + Button, i18n, success/409 states)
+- `UnsubscribePage.tsx` at `/unsubscribe?token={token}` — shows email to confirm, confirm button, success/error states (PublicLayout, shadcn Card)
+- `EventNewsletterTab.tsx` — new tab on EventPage: subscriber count, send history table, language selector, preview iframe, "Send Newsletter" + "Send Reminder" buttons with confirmation dialog
+- `UserSettingsTab.tsx` — Newsletter toggle in Notifications sub-tab, wired to `PATCH /my-subscription`
+- `App.tsx` — add `/unsubscribe` public route
+
+**GDPR:** Every sent email contains `{{unsubscribeLink}}` → `{baseUrl}/unsubscribe?token={subscriber.unsubscribeToken}` (unique per subscriber, never expires).
+
+**Key new files:**
+```
+services/event-management-service/src/main/resources/db/migration/V67__create_newsletter_tables.sql
+services/event-management-service/.../domain/NewsletterSubscriber.java
+services/event-management-service/.../domain/NewsletterSend.java
+services/event-management-service/.../repository/NewsletterSubscriberRepository.java
+services/event-management-service/.../repository/NewsletterSendRepository.java
+services/event-management-service/.../service/NewsletterSubscriberService.java
+services/event-management-service/.../service/NewsletterEmailService.java
+services/event-management-service/.../controller/NewsletterController.java
+services/event-management-service/src/main/resources/email-templates/newsletter-event-de.html
+services/event-management-service/src/main/resources/email-templates/newsletter-event-en.html
+web-frontend/src/services/newsletterService.ts
+web-frontend/src/hooks/useNewsletter/useNewsletter.ts
+web-frontend/src/components/public/NewsletterSubscribeWidget.tsx
+web-frontend/src/pages/public/UnsubscribePage.tsx
+web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx
+```
+
+**Key modified files:**
+```
+services/event-management-service/.../service/RegistrationService.java
+services/event-management-service/.../config/SecurityConfig.java    ← permitAll newsletter public paths
+api-gateway/.../DomainRouter.java                                    ← route /api/v1/newsletter/** → EMS
+api-gateway/.../SecurityConfig.java                                  ← same permitAll
+web-frontend/src/components/organizer/EventPage/EventPage.tsx       ← add Newsletter tab
+web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx ← newsletter toggle
+web-frontend/src/App.tsx                                             ← /unsubscribe public route
+web-frontend/src/components/public/HomePage.tsx                     ← footer subscribe widget
+web-frontend/src/i18n/en.json + de.json                             ← newsletter.* keys
+docs/api/events.openapi.yml                                          ← newsletter endpoints (FIRST)
+```
+
+**Definition of Done (Story 10.7):**
+- [ ] V67 migration runs cleanly; subscribe/unsubscribe endpoints work without auth
+- [ ] Registration with newsletter checkbox auto-subscribes (silent, no UI change)
+- [ ] Homepage footer widget subscribes anonymous users; duplicate → 409 shown inline
+- [ ] `/unsubscribe?token=valid` confirms and unsubscribes; invalid token → error state
+- [ ] `/account` Settings → Notifications shows newsletter toggle for authenticated users
+- [ ] EventPage → Newsletter tab: subscriber count, send history, preview, send/reminder buttons with confirmation
+- [ ] Every sent email contains `{{unsubscribeLink}}` footer link (GDPR)
+- [ ] Newsletter templates visible/editable in admin Email Templates tab (NEWSLETTER category)
+- [ ] OpenAPI spec committed before any backend implementation (ADR-006)
+- [ ] All tests pass: `NewsletterSubscriberServiceTest`, `NewsletterControllerIntegrationTest`, `NewsletterEmailServiceTest` + 3 frontend tests
+- [ ] Type-check passes, no TypeScript errors; Checkstyle passes
+- [ ] i18n: `newsletter.*` keys in both `en.json` and `de.json`
+
+---
+
 **END OF EPIC 10**
