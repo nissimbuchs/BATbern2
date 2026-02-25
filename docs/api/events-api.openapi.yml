@@ -56,6 +56,8 @@ tags:
     description: Watch app organizer endpoints (Epic W2)
   - name: Email Templates
     description: Email template management for organizers (Story 10.2)
+  - name: Newsletter
+    description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
 
 paths:
   /events/attendance-summary:
@@ -3687,10 +3689,10 @@ paths:
         - name: category
           in: query
           required: false
-          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT)
+          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER)
           schema:
             type: string
-            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         - name: isLayout
           in: query
           required: false
@@ -4054,8 +4056,326 @@ paths:
         '404':
           description: Event not found for the given eventCode
 
+  # ─── Newsletter (Story 10.7) ───────────────────────────────────────────────
+
+  /newsletter/subscribe:
+    post:
+      tags: [Newsletter]
+      summary: Subscribe to BATbern newsletter (public)
+      operationId: subscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribeRequest'
+      responses:
+        '200':
+          description: Successfully subscribed
+        '409':
+          description: Email already actively subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid email address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /newsletter/unsubscribe/verify:
+    get:
+      tags: [Newsletter]
+      summary: Verify unsubscribe token (public)
+      operationId: verifyUnsubscribeToken
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token valid — returns subscriber email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+        '404':
+          description: Token not found or already unsubscribed
+
+  /newsletter/unsubscribe:
+    post:
+      tags: [Newsletter]
+      summary: Unsubscribe via token (public)
+      operationId: unsubscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterUnsubscribeRequest'
+      responses:
+        '200':
+          description: Successfully unsubscribed
+        '404':
+          description: Token not found
+
+  /newsletter/my-subscription:
+    get:
+      tags: [Newsletter]
+      summary: Get authenticated user's subscription status
+      operationId: getMyNewsletterSubscription
+      responses:
+        '200':
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Newsletter]
+      summary: Update authenticated user's subscription
+      operationId: patchMyNewsletterSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscribed]
+              properties:
+                subscribed:
+                  type: boolean
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /newsletter/subscribers:
+    get:
+      tags: [Newsletter]
+      summary: List all subscribers (ORGANIZER)
+      operationId: listNewsletterSubscribers
+      responses:
+        '200':
+          description: Subscriber list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                  subscribers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/newsletter/send:
+    post:
+      tags: [Newsletter]
+      summary: Send newsletter to all active subscribers (ORGANIZER)
+      operationId: sendEventNewsletter
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Newsletter sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
+  /events/{eventCode}/newsletter/preview:
+    post:
+      tags: [Newsletter]
+      summary: Preview newsletter email (ORGANIZER, no send)
+      operationId: previewEventNewsletter
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Preview content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
+  /events/{eventCode}/newsletter/history:
+    get:
+      tags: [Newsletter]
+      summary: Get newsletter send history for an event (ORGANIZER)
+      operationId: getNewsletterHistory
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Send history list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
 components:
   schemas:
+
+    # ── Newsletter Schemas (Story 10.7) ───────────────────────────────────────
+
+    NewsletterSubscribeRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          maxLength: 100
+        language:
+          type: string
+          enum: [de, en]
+          default: de
+
+    NewsletterUnsubscribeRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    NewsletterSubscriptionStatusResponse:
+      type: object
+      required: [subscribed]
+      properties:
+        subscribed:
+          type: boolean
+        email:
+          type: string
+
+    NewsletterSendRequest:
+      type: object
+      required: [isReminder, locale]
+      properties:
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+          enum: [de, en]
+
+    NewsletterSendResponse:
+      type: object
+      required: [id, sentAt, isReminder, locale, recipientCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sentAt:
+          type: string
+          format: date-time
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+        recipientCount:
+          type: integer
+        sentByUsername:
+          type: string
+
+    NewsletterPreviewResponse:
+      type: object
+      required: [subject, htmlPreview, recipientCount]
+      properties:
+        subject:
+          type: string
+        htmlPreview:
+          type: string
+        recipientCount:
+          type: integer
+
+    SubscriberResponse:
+      type: object
+      required: [id, email, subscribedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        language:
+          type: string
+        source:
+          type: string
+        username:
+          type: string
+        subscribedAt:
+          type: string
+          format: date-time
 
     # ── Analytics Dashboard Schemas (Story 10.5) ─────────────────────────────
 
@@ -4330,7 +4650,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         subject:
           type: string
           nullable: true
@@ -4379,7 +4699,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         subject:
           type: string
           nullable: true

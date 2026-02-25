@@ -739,6 +739,29 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    /**
+     * Handle DuplicateSubscriberException (email already subscribed to newsletter)
+     * Returns HTTP 409 Conflict
+     */
+    @ExceptionHandler(DuplicateSubscriberException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateSubscriberException(
+            DuplicateSubscriberException ex,
+            HttpServletRequest request) {
+        log.warn("Duplicate newsletter subscriber: {}", ex.getMessage());
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.generate())
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(
             Exception ex,

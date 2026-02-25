@@ -124,6 +124,9 @@ const SpeakerMagicLoginPage = React.lazy(
   () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
 );
 
+// Story 10.7: Newsletter unsubscribe page
+const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -266,6 +269,9 @@ function App() {
 
                     {/* Story 9.1: Speaker Portal - JWT Magic Login */}
                     <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
+
+                    {/* Story 10.7: Newsletter unsubscribe */}
+                    <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />

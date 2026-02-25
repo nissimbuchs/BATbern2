@@ -1,6 +1,6 @@
 # Story 10.7: Newsletter Subscription & Sending
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -432,3 +432,211 @@ For organizer EventPage newsletter tab, add under `eventPage.newsletter.*`:
 
 - ✅ Story 10.2 (Email Template Management) — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category scaffold, `batbern-default` layout
 - ✅ Story 10.1 — EmailTemplates tab on `/organizer/admin` (for newsletter template editing)
+
+---
+
+## Tasks / Subtasks
+
+### Task 1: OpenAPI Spec — Add newsletter endpoints (AC11) [ADR-006: spec before code]
+- [x] 1.1 Add `Newsletter` tag to `docs/api/events-api.openapi.yml`
+- [x] 1.2 Add all newsletter endpoint paths + DTOs to OpenAPI spec
+
+### Task 2: Flyway V67 migration (AC1)
+- [x] 2.1 Create `V67__create_newsletter_tables.sql` with newsletter_subscribers, newsletter_sends, newsletter_recipients tables
+
+### Task 3: Backend entities + repositories (AC1)
+- [x] 3.1 Create `NewsletterSubscriber.java` JPA entity
+- [x] 3.2 Create `NewsletterSend.java` JPA entity
+- [x] 3.3 Create `NewsletterSubscriberRepository.java`
+- [x] 3.4 Create `NewsletterSendRepository.java`
+
+### Task 4: Backend DTOs (AC2, AC3, AC7, AC10)
+- [x] 4.1 Create `NewsletterSubscribeRequest.java`
+- [x] 4.2 Create `NewsletterUnsubscribeRequest.java`
+- [x] 4.3 Create `NewsletterSubscriptionStatusResponse.java`
+- [x] 4.4 Create `NewsletterSendRequest.java`
+- [x] 4.5 Create `NewsletterSendResponse.java`
+- [x] 4.6 Create `NewsletterPreviewResponse.java`
+- [x] 4.7 Create `SubscriberResponse.java`
+
+### Task 5: NewsletterSubscriberService (AC1, AC2, AC3, AC6, AC7)
+- [x] 5.1 subscribe() — upsert; 409 if already active; reactivate if unsubscribed
+- [x] 5.2 verifyToken() — returns email or 404
+- [x] 5.3 unsubscribe() — sets unsubscribed_at
+- [x] 5.4 getMySubscription() — lookup by username then email
+- [x] 5.5 patchMySubscription() — subscribe/unsubscribe authenticated user
+- [x] 5.6 getActiveCount() — for subscriber count display
+- [x] 5.7 findActiveSubscribers() — fetch all for bulk send
+
+### Task 6: NewsletterEmailService (AC8, AC10)
+- [x] 6.1 buildVariables(event, locale, isReminder, unsubscribeToken) — all template vars
+- [x] 6.2 buildSpeakersSection(event, locale) — conditional HTML block
+- [x] 6.3 buildUpcomingEventsSection(locale) — future events table
+- [x] 6.4 preview(event, isReminder, locale) — no send, returns subject + htmlPreview + recipientCount
+- [x] 6.5 sendNewsletter(event, isReminder, locale, sentByUsername) — per-recipient send + audit log
+
+### Task 7: NewsletterController (AC2, AC3, AC7, AC9, AC10)
+- [x] 7.1 POST /api/v1/newsletter/subscribe (permitAll)
+- [x] 7.2 GET /api/v1/newsletter/unsubscribe/verify?token= (permitAll)
+- [x] 7.3 POST /api/v1/newsletter/unsubscribe (permitAll)
+- [x] 7.4 GET /api/v1/newsletter/my-subscription (authenticated)
+- [x] 7.5 PATCH /api/v1/newsletter/my-subscription (authenticated)
+- [x] 7.6 GET /api/v1/newsletter/subscribers (ORGANIZER)
+- [x] 7.7 POST /api/v1/events/{eventCode}/newsletter/send (ORGANIZER)
+- [x] 7.8 POST /api/v1/events/{eventCode}/newsletter/preview (ORGANIZER)
+- [x] 7.9 GET /api/v1/events/{eventCode}/newsletter/history (ORGANIZER)
+
+### Task 8: EMS SecurityConfig — public newsletter paths (AC2, AC3)
+- [x] 8.1 Add permitAll for POST /api/v1/newsletter/subscribe
+- [x] 8.2 Add permitAll for GET + POST /api/v1/newsletter/unsubscribe/**
+
+### Task 9: API Gateway routing + security (AC2, AC3, AC7, AC10)
+- [x] 9.1 DomainRouter: add /api/v1/newsletter/** → event-management-service
+- [x] 9.2 Gateway SecurityConfig: same 3 public paths permitAll
+
+### Task 10: RegistrationService — wire newsletter subscribe (AC6)
+- [x] 10.1 After registration created, if newsletterSubscribed=true → call NewsletterSubscriberService.subscribe()
+  NOTE: CreateRegistrationRequest.getCommunicationPreferences() → newsletterSubscribed field
+
+### Task 11: EmailTemplateSeedService — NEWSLETTER category (AC8)
+- [x] 11.1 Add "newsletter-" prefix case to deriveCategory() → "NEWSLETTER"
+
+### Task 12: Frontend — newsletterService.ts + useNewsletter.ts (AC2, AC3, AC7, AC10)
+- [x] 12.1 Create `newsletterService.ts` with all API call functions
+- [x] 12.2 Create `useNewsletter.ts` hook with React Query queries/mutations
+
+### Task 13: Frontend — NewsletterSubscribeWidget.tsx (AC4)
+- [x] 13.1 Widget with form / success / 409 / error states + i18n
+
+### Task 14: Frontend — UnsubscribePage.tsx (AC5)
+- [x] 14.1 Token-based unsubscribe page using PublicLayout + Card + Button
+
+### Task 15: Frontend — EventNewsletterTab.tsx (AC9)
+- [x] 15.1 Subscriber count section
+- [x] 15.2 Send history table
+- [x] 15.3 Compose & send section (language select, preview iframe, send buttons, confirmation dialog)
+
+### Task 16: Frontend — Wiring (AC4, AC5, AC7, AC9)
+- [x] 16.1 HomePage.tsx: add `<NewsletterSubscribeWidget />` in footer section
+- [x] 16.2 UserSettingsTab.tsx: add Newsletter section under Notifications sub-tab (index 1)
+- [x] 16.3 EventPage.tsx: add "newsletter" tab + EventNewsletterTab
+- [x] 16.4 App.tsx: add `/unsubscribe` public route
+
+### Task 17: i18n keys (AC4, AC5, AC7, AC9)
+- [x] 17.1 Add `newsletter.*` keys to `en.json` and `de.json`
+- [x] 17.2 Add `eventPage.newsletter.*` keys to events locale files
+
+### Task 18: Backend tests — unit + integration (AC12)
+- [x] 18.1 `NewsletterSubscriberServiceTest` (unit): subscribe/upsert/reactivate/unsubscribe/verify
+- [x] 18.2 `NewsletterControllerIntegrationTest` (extends AbstractIntegrationTest): all endpoints, auth, 409
+- [x] 18.3 `NewsletterEmailServiceTest` (unit): reminderPrefix substitution, unsubscribeLink present
+
+### Task 19: Frontend tests (AC12)
+- [x] 19.1 `NewsletterSubscribeWidget.test.tsx`: success / 409 / error states
+- [x] 19.2 `UnsubscribePage.test.tsx`: verify + confirm flow, invalid token state
+- [x] 19.3 `EventNewsletterTab.test.tsx`: count display, history table, send confirmation dialog
+
+---
+
+## Dev Agent Record
+
+### Implementation Plan
+- ADR-006 compliance: OpenAPI spec first (Task 1), then backend (Tasks 2-11), then frontend (Tasks 12-19)
+- EmailTemplateSeedService auto-seeds newsletter-event-de/en from classpath on startup (idempotent); V67 inserts placeholder rows
+- Per-recipient unsubscribeLink injected at send time in NewsletterEmailService (GDPR compliance)
+- NewsletterSubscriberService.subscribe() uses DuplicateSubscriberException (@ResponseStatus CONFLICT) for 409
+- RegistrationService.createRegistration() wired to subscribe newsletter if request.getCommunicationPreferences().isNewsletterSubscribed()
+
+### Debug Log
+- Tasks 1-9 complete (session 1, 2026-02-25): OpenAPI spec, V67 migration, entities, repos, DTOs, NewsletterSubscriberService, NewsletterEmailService, NewsletterController, EMS SecurityConfig, API Gateway routing+SecurityConfig
+- Tasks 10-19 complete (session 2, 2026-02-25): all frontend + backend wiring, tests, i18n
+- See Completion Notes for bugs fixed and test results
+
+### Completion Notes
+Completed in 2 sessions (2026-02-25):
+- Session 1: Tasks 1-9 (OpenAPI spec, V67 migration, entities, repos, DTOs, services, controller, security, routing)
+- Session 2: Tasks 10-19 (frontend wiring, tests, i18n, fixes)
+
+**Bugs caught and fixed during TDD:**
+1. `EventType` enum values in `localizeEventType()` were wrong (`EVENING_BAT` → `EVENING`, etc.) — fixed by checking generated enum
+2. `toResponse()` in `NewsletterEmailService` was package-private but called from controller — made public
+3. `EventWorkflowState.AGENDA_DRAFT` doesn't exist — test used `CREATED` instead
+4. `GlobalExceptionHandler.handleGenericException(Exception.class)` was catching `DuplicateSubscriberException` before `@ResponseStatus` processed — added explicit `@ExceptionHandler(DuplicateSubscriberException.class)` returning 409
+5. Newsletter HTML templates missing `<!-- subject: ... -->` comment at line 1 — added to both newsletter-event-de.html and newsletter-event-en.html
+6. `EmailTemplateResponse.CategoryEnum` in OpenAPI spec didn't include `NEWSLETTER` — added to both `EmailTemplateResponse` and `CreateEmailTemplateRequest` schemas; regenerated OpenAPI code
+7. `NewsletterEmailService` had 9 Checkstyle violations (unused import, line length, indentation) — all fixed
+
+**Test results:**
+- `NewsletterSubscriberServiceTest`: 11/11 PASSED
+- `NewsletterEmailServiceTest`: 8/8 PASSED (+ 4 additional from AGENDA_PUBLISHED test)
+- `NewsletterControllerIntegrationTest`: 11/11 PASSED
+- `EmailTemplateSeedServiceTest`: 14/14 PASSED (after adding subject comment to templates)
+- `EmailTemplateControllerIntegrationTest`: 11/11 PASSED (after OpenAPI enum fix)
+- Checkstyle: 0 violations
+- Frontend type-check: 0 errors in newsletter files (pre-existing errors in EmailTemplateEditModal.tsx unrelated)
+
+---
+
+## File List
+
+### New files (Tasks 1-9)
+- `docs/api/events-api.openapi.yml` — added Newsletter tag, 8 paths, 6 schemas
+- `services/event-management-service/src/main/resources/db/migration/V67__create_newsletter_tables.sql`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/NewsletterSubscriber.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/NewsletterSend.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterSubscriberRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/NewsletterSendRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSubscribeRequest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterUnsubscribeRequest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSubscriptionStatusResponse.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSendRequest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterSendResponse.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/NewsletterPreviewResponse.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/dto/SubscriberResponse.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/DuplicateSubscriberException.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterSubscriberService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/NewsletterController.java`
+
+### Modified files (Tasks 8-11)
+- `services/event-management-service/src/main/java/ch/batbern/events/config/SecurityConfig.java` — added 3 newsletter permitAll rules
+- `api-gateway/src/main/java/ch/batbern/gateway/routing/DomainRouter.java` — added /api/v1/newsletter/** → EMS
+- `api-gateway/src/main/java/ch/batbern/gateway/config/SecurityConfig.java` — added 3 newsletter permitAll rules
+- `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` — wire newsletter subscribe on registration
+- `services/event-management-service/src/main/java/ch/batbern/events/service/EmailTemplateSeedService.java` — add NEWSLETTER category
+- `services/event-management-service/src/main/java/ch/batbern/events/exception/GlobalExceptionHandler.java` — explicit 409 handler for DuplicateSubscriberException
+- `services/event-management-service/src/main/resources/email-templates/newsletter-event-de.html` — added subject comment at line 1
+- `services/event-management-service/src/main/resources/email-templates/newsletter-event-en.html` — added subject comment at line 1
+- `docs/api/events-api.openapi.yml` — added NEWSLETTER to EmailTemplateResponse + CreateEmailTemplateRequest category enums
+
+### New files (Tasks 12-19)
+- `web-frontend/src/services/newsletterService.ts`
+- `web-frontend/src/hooks/useNewsletter/useNewsletter.ts`
+- `web-frontend/src/components/public/NewsletterSubscribeWidget.tsx`
+- `web-frontend/src/pages/public/UnsubscribePage.tsx`
+- `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
+- `web-frontend/src/components/public/__tests__/NewsletterSubscribeWidget.test.tsx`
+- `web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx`
+- `web-frontend/src/components/organizer/EventPage/__tests__/EventNewsletterTab.test.tsx`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterSubscriberServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterEmailServiceTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/NewsletterControllerIntegrationTest.java`
+
+### Modified files (Tasks 12-19 wiring)
+- `web-frontend/src/pages/public/HomePage.tsx` — added NewsletterSubscribeWidget in footer
+- `web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.tsx` — added Newsletter toggle in Notifications tab
+- `web-frontend/src/components/organizer/EventPage/EventPage.tsx` — added newsletter tab
+- `web-frontend/src/App.tsx` — added /unsubscribe route
+- `web-frontend/public/locales/en/events.json` — added newsletter.* and eventPage.newsletter.* keys
+- `web-frontend/public/locales/de/events.json` — added newsletter.* and eventPage.newsletter.* keys
+
+---
+
+## Change Log
+- 2026-02-25: Story picked up for development (Amelia / dev agent)
+
+---
+
+## Status
+
+in-progress

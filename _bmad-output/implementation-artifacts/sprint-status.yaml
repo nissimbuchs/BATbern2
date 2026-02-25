@@ -147,7 +147,7 @@ development_status:
   10-4-blob-topic-selector: done                            # D3 physics blob full-screen page; spec: blob-topic-selector-spec.md
   10-5-analytics-dashboard: review                          # 4-tab analytics page (Overview/Attendance/Topics/Companies); Recharts; brainstorm: 2026-02-25
   10-6-migrate-system-templates-to-layout: backlog          # extract content from 22 system templates; prereq: 10.2 (renumbered from 10-5)
-  10-7-newsletter-subscription-and-sending: ready-for-dev   # anonymous subscribe widget, token-based unsubscribe, account toggle, organizer send tab; prereq: 10.2
+  10-7-newsletter-subscription-and-sending: review            # anonymous subscribe widget, token-based unsubscribe, account toggle, organizer send tab; prereq: 10.2
   epic-10-retrospective: optional
 
   # ============================================================

@@ -15,6 +15,7 @@
       "team": "Team",
       "participants": "Teilnehmer",
       "publishing": "Veröffentlichung",
+      "newsletter": "Newsletter",
       "settings": "Einstellungen"
     },
     "tabsAriaLabel": "Veranstaltungsseiten-Navigation",
@@ -180,6 +181,27 @@
     },
     "errors": {
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} aktive Abonnenten",
+      "sendHistory": "Versandhistorie",
+      "noHistory": "Noch keine Newsletter für diese Veranstaltung versendet.",
+      "composeTitle": "Verfassen & Senden",
+      "locale": "Sprache",
+      "preview": "Vorschau",
+      "sendNewsletter": "Newsletter senden",
+      "sendReminder": "Erinnerung senden",
+      "confirmSendTitle": "Senden bestätigen",
+      "confirmSendBody": "{{type}} an {{count}} Abonnenten für Veranstaltung {{eventTitle}} senden?",
+      "sendSuccess": "Newsletter an {{count}} Empfänger gesendet.",
+      "sendError": "Senden fehlgeschlagen. Bitte versuche es erneut.",
+      "historyDate": "Datum",
+      "historyType": "Typ",
+      "historyRecipients": "Empfänger",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Erinnerung",
+      "previewTitle": "E-Mail-Vorschau"
     }
   },
   "tabs": {
@@ -956,5 +978,29 @@
     },
     "loading": "Lädt...",
     "dragInstructions": "Ziehen Sie Referenten zu Zeitfenstern, um sie zuzuweisen"
+  },
+  "newsletter": {
+    "widget": {
+      "title": "Mit BATbern auf dem Laufenden bleiben",
+      "placeholder": "deine@email.com",
+      "button": "Abonnieren",
+      "success": "Danke! Du bist jetzt angemeldet.",
+      "alreadySubscribed": "Du bist bereits angemeldet.",
+      "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "emailInvalid": "Bitte gib eine gültige E-Mail-Adresse ein."
+    },
+    "unsubscribe": {
+      "title": "BATbern-Newsletter abbestellen",
+      "loading": "Lädt…",
+      "confirmMessage": "Du bist dabei, {{email}} vom BATbern-Newsletter abzumelden.",
+      "confirmButton": "Abmeldung bestätigen",
+      "success": "Du wurdest erfolgreich abgemeldet.",
+      "resubscribeLink": "Erneut anmelden",
+      "invalidToken": "Dieser Abmeldelink ist ungültig oder wurde bereits verwendet."
+    },
+    "account": {
+      "label": "BATbern-Newsletter abonnieren",
+      "description": "Veranstaltungsankündigungen und Updates erhalten"
+    }
   }
 }
