@@ -150,7 +150,7 @@ public class NewsletterController {
                 .map(subscriberService::toResponse)
                 .toList();
         return ResponseEntity.ok(Map.of(
-                "totalCount", count,
+                "totalActive", count,
                 "subscribers", subscribers
         ));
     }

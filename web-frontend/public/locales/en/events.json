@@ -110,6 +110,27 @@
       "addToPool": "Add Speakers to Pool",
       "kanbanView": "Kanban view",
       "sessionsView": "Sessions view"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} active subscribers",
+      "sendHistory": "Send History",
+      "noHistory": "No newsletters sent for this event yet.",
+      "composeTitle": "Compose & Send",
+      "locale": "Language",
+      "preview": "Preview",
+      "sendNewsletter": "Send Newsletter",
+      "sendReminder": "Send Reminder",
+      "confirmSendTitle": "Confirm Send",
+      "confirmSendBody": "Send {{type}} to {{count}} subscribers for event «{{eventTitle}}»?",
+      "sendSuccess": "Newsletter sent to {{count}} recipients.",
+      "sendError": "Failed to send. Please try again.",
+      "historyDate": "Date",
+      "historyType": "Type",
+      "historyRecipients": "Recipients",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Reminder",
+      "previewTitle": "Email Preview"
     }
   },
   "dashboard": {
@@ -181,27 +202,6 @@
     },
     "errors": {
       "failedToLoadEvents": "Failed to load events"
-    },
-    "newsletter": {
-      "title": "Newsletter",
-      "subscriberCount": "{{count}} active subscribers",
-      "sendHistory": "Send History",
-      "noHistory": "No newsletters sent for this event yet.",
-      "composeTitle": "Compose & Send",
-      "locale": "Language",
-      "preview": "Preview",
-      "sendNewsletter": "Send Newsletter",
-      "sendReminder": "Send Reminder",
-      "confirmSendTitle": "Confirm Send",
-      "confirmSendBody": "Send {{type}} to {{count}} subscribers for event {{eventTitle}}?",
-      "sendSuccess": "Newsletter sent to {{count}} recipients.",
-      "sendError": "Failed to send. Please try again.",
-      "historyDate": "Date",
-      "historyType": "Type",
-      "historyRecipients": "Recipients",
-      "typeNewsletter": "Newsletter",
-      "typeReminder": "Reminder",
-      "previewTitle": "Email Preview"
     }
   },
   "tabs": {

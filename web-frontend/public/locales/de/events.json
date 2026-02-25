@@ -110,6 +110,27 @@
       "addToPool": "Referenten zum Pool hinzufügen",
       "kanbanView": "Kanban-Ansicht",
       "sessionsView": "Sessions-Ansicht"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} aktive Abonnenten",
+      "sendHistory": "Versandhistorie",
+      "noHistory": "Noch keine Newsletter für diese Veranstaltung versendet.",
+      "composeTitle": "Verfassen & Senden",
+      "locale": "Sprache",
+      "preview": "Vorschau",
+      "sendNewsletter": "Newsletter senden",
+      "sendReminder": "Erinnerung senden",
+      "confirmSendTitle": "Senden bestätigen",
+      "confirmSendBody": "{{type}} an {{count}} Abonnenten für Veranstaltung «{{eventTitle}}» senden?",
+      "sendSuccess": "Newsletter an {{count}} Empfänger gesendet.",
+      "sendError": "Senden fehlgeschlagen. Bitte versuche es erneut.",
+      "historyDate": "Datum",
+      "historyType": "Typ",
+      "historyRecipients": "Empfänger",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Erinnerung",
+      "previewTitle": "E-Mail-Vorschau"
     }
   },
   "dashboard": {
@@ -181,27 +202,6 @@
     },
     "errors": {
       "failedToLoadEvents": "Fehler beim Laden der Veranstaltungen"
-    },
-    "newsletter": {
-      "title": "Newsletter",
-      "subscriberCount": "{{count}} aktive Abonnenten",
-      "sendHistory": "Versandhistorie",
-      "noHistory": "Noch keine Newsletter für diese Veranstaltung versendet.",
-      "composeTitle": "Verfassen & Senden",
-      "locale": "Sprache",
-      "preview": "Vorschau",
-      "sendNewsletter": "Newsletter senden",
-      "sendReminder": "Erinnerung senden",
-      "confirmSendTitle": "Senden bestätigen",
-      "confirmSendBody": "{{type}} an {{count}} Abonnenten für Veranstaltung {{eventTitle}} senden?",
-      "sendSuccess": "Newsletter an {{count}} Empfänger gesendet.",
-      "sendError": "Senden fehlgeschlagen. Bitte versuche es erneut.",
-      "historyDate": "Datum",
-      "historyType": "Typ",
-      "historyRecipients": "Empfänger",
-      "typeNewsletter": "Newsletter",
-      "typeReminder": "Erinnerung",
-      "previewTitle": "E-Mail-Vorschau"
     }
   },
   "tabs": {
