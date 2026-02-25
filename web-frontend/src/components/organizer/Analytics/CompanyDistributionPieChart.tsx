@@ -7,13 +7,17 @@
  * otherwise uses the distribution array from the companies endpoint.
  * Partner's own company slice highlighted with accent color.
  *
- * Hover animation: uses `shape` prop (not activeShape) so the same DOM <g> element
- * persists on hover — only its CSS transform changes, enabling a smooth transition.
+ * Hover animation strategy:
+ *   - `shape` prop renders all slices (not activeShape, which remounts the node)
+ *   - activeIndexRef holds the current hover state WITHOUT changing renderSlice's reference
+ *   - renderSlice has [] deps → stable reference → Recharts never remounts sector nodes
+ *   - When hover state changes, only style.transform is patched on the existing <g> node
+ *   - CSS `transition` fires smoothly on the persistent DOM element
  */
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CompanyAttendanceShare, EventTimelineItem } from '@/services/analyticsService';
 import { useCompanyDistribution } from '@/hooks/useAnalytics';
@@ -67,7 +71,11 @@ const CompanyDistributionPieChart = ({
 }: Props) => {
   const { t } = useTranslation('organizer');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
-  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+
+  // Ref holds current hover index synchronously; state drives re-render.
+  // renderSlice closes over the ref (not state) → stable [] deps → no remount.
+  const activeIndexRef = useRef<number | undefined>(undefined);
+  const [, triggerRender] = useState(0);
 
   const { data: eventDistData, isLoading: eventLoading } = useCompanyDistribution(selectedEvent);
 
@@ -90,13 +98,24 @@ const CompanyDistributionPieChart = ({
 
   const isLoading = parentLoading || (!!selectedEvent && eventLoading);
 
+  const handleMouseEnter = useCallback((_: unknown, index: number) => {
+    activeIndexRef.current = index;
+    triggerRender((n) => n + 1);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    activeIndexRef.current = undefined;
+    triggerRender((n) => n + 1);
+  }, []);
+
   /**
-   * Custom shape renderer — called for every slice on every render.
-   * Using `shape` (not `activeShape`) keeps the same <g> DOM node alive across
-   * hover state changes, so the CSS `transition` on transform fires smoothly.
+   * Stable shape renderer — empty deps, reads activeIndexRef.current on each call.
+   * Because the reference never changes, Recharts does not remount sector elements,
+   * so the CSS transition on the <g> wrapper fires on every hover in/out.
    *
-   * Translate the active slice outward along its midpoint angle.
-   * Recharts Sector angles are in degrees: 0° = 3 o'clock, increasing counter-clockwise.
+   * Scale from chart center via the translate-scale-translate trick:
+   *   translate(cx, cy) scale(s) translate(-cx, -cy)
+   * This avoids transform-origin SVG quirks across browsers.
    */
   const renderSlice = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,18 +131,19 @@ const CompanyDistributionPieChart = ({
         index: number;
       };
 
-      const isActive = index === activeIndex;
-      const midAngleRad = ((startAngle + endAngle) / 2) * (Math.PI / 180);
-      const shift = isActive ? 10 : 0;
-      // Translate along the midpoint direction (SVG y-axis is inverted → negate sin)
-      const dx = Math.cos(midAngleRad) * shift;
-      const dy = -Math.sin(midAngleRad) * shift;
+      const isActive = index === activeIndexRef.current;
+      const scale = isActive ? 1.07 : 1;
+      // Equivalent to: transform-origin cx cy; scale(scale)
+      const transform =
+        scale !== 1
+          ? `translate(${cx}px,${cy}px) scale(${scale}) translate(${-cx}px,${-cy}px)`
+          : 'none';
 
       return (
         <g
           style={{
-            transform: `translate(${dx}px, ${dy}px)`,
-            transition: 'transform 220ms ease, filter 220ms ease',
+            transform,
+            transition: 'transform 220ms ease',
             filter: isActive ? 'url(#pie-slice-glow)' : 'none',
           }}
         >
@@ -139,7 +159,7 @@ const CompanyDistributionPieChart = ({
         </g>
       );
     },
-    [activeIndex]
+    [] // stable — reads ref, not state
   );
 
   const controls = (
@@ -182,8 +202,9 @@ const CompanyDistributionPieChart = ({
             cy="50%"
             outerRadius={130}
             shape={renderSlice}
-            onMouseEnter={(_, index) => setActiveIndex(index)}
-            onMouseLeave={() => setActiveIndex(undefined)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            isAnimationActive={false}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             label={(props: any) =>
               `${props.displayName ?? props.companyName} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`
@@ -202,7 +223,7 @@ const CompanyDistributionPieChart = ({
               />
             ))}
           </Pie>
-          <Tooltip content={<PieTooltip />} />
+          <Tooltip content={<PieTooltip />} isAnimationActive={false} />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>
