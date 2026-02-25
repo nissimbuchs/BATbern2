@@ -3,7 +3,7 @@
  *
  * Tab 3 of the Admin page.
  * - Layout Templates section (top): editable with Monaco Editor
- * - Content Templates section: filterable by category/locale, editable with Monaco Editor
+ * - Content Templates section: filterable by category/locale, editable with TinyMCE
  */
 
 import React, { useState } from 'react';
