@@ -17,6 +17,7 @@ import React from 'react';
 import { Box, Stack, Typography, Chip, Button, Link, Paper } from '@mui/material';
 import { Edit, NoteAdd } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
 import { usePartnerDetailStore } from '@/stores/partnerDetailStore';
 import type { PartnerResponse } from '@/services/api/partnerApi';
@@ -68,7 +69,14 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
   const { t } = useTranslation('partners');
   const { openEditModal } = usePartnerModalStore();
   const { setActiveTab, setShowNoteModal } = usePartnerDetailStore();
+  const navigate = useNavigate();
   const isPartner = role === 'PARTNER';
+
+  const handleCompanyClick = () => {
+    if (!isPartner) {
+      navigate(`/organizer/companies/${partner.companyName}`);
+    }
+  };
 
   const handleEdit = () => {
     openEditModal(partner);
@@ -91,6 +99,7 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="flex-start">
           {/* Logo / Avatar */}
           <Box
+            onClick={handleCompanyClick}
             sx={{
               width: { xs: 80, sm: 120 },
               height: { xs: 80, sm: 120 },
@@ -98,6 +107,9 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
+              cursor: isPartner ? 'default' : 'pointer',
+              transition: 'opacity 0.15s',
+              '&:hover': isPartner ? {} : { opacity: 0.8 },
             }}
           >
             {partner.company?.logoUrl ? (
@@ -143,8 +155,19 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                 <Typography
                   variant="h4"
-                  component="h1"
-                  sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
+                  component={isPartner ? 'h1' : 'button'}
+                  onClick={handleCompanyClick}
+                  sx={{
+                    fontSize: { xs: '1.5rem', sm: '2.125rem' },
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    font: 'inherit',
+                    color: 'inherit',
+                    cursor: isPartner ? 'default' : 'pointer',
+                    textAlign: 'left',
+                    '&:hover': isPartner ? {} : { textDecoration: 'underline' },
+                  }}
                 >
                   {companyName}
                 </Typography>
