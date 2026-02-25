@@ -6,9 +6,10 @@
  * Per-event filter dropdown: uses companies/distribution endpoint when event selected,
  * otherwise uses the distribution array from the companies endpoint.
  * Partner's own company slice highlighted with accent color.
+ * Hovered slice animates: expands outward + outer glow ring.
  */
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +36,44 @@ interface Props {
   isLoading?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const renderActiveShape = (props: any) => {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props as {
+    cx: number;
+    cy: number;
+    innerRadius: number;
+    outerRadius: number;
+    startAngle: number;
+    endAngle: number;
+    fill: string;
+  };
+  return (
+    <g filter="url(#pie-slice-glow)">
+      {/* Main slice expanded outward */}
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius + 10}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+      {/* Outer ring accent */}
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={outerRadius + 13}
+        outerRadius={outerRadius + 17}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+        opacity={0.45}
+      />
+    </g>
+  );
+};
+
 const CompanyDistributionPieChart = ({
   allTimeDistribution,
   events,
@@ -44,6 +83,7 @@ const CompanyDistributionPieChart = ({
 }: Props) => {
   const { t } = useTranslation('organizer');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
 
   const { data: eventDistData, isLoading: eventLoading } = useCompanyDistribution(selectedEvent);
 
@@ -91,8 +131,13 @@ const CompanyDistributionPieChart = ({
       isEmpty={!isLoading && distribution.length === 0}
       controls={controls}
     >
-      <ResponsiveContainer width="100%" height={350}>
+      <ResponsiveContainer width="100%" height={380}>
         <PieChart>
+          <defs>
+            <filter id="pie-slice-glow" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow dx="0" dy="0" stdDeviation="5" floodOpacity="0.5" />
+            </filter>
+          </defs>
           <Pie
             data={distribution}
             dataKey="attendeeCount"
@@ -100,6 +145,10 @@ const CompanyDistributionPieChart = ({
             cx="50%"
             cy="50%"
             outerRadius={130}
+            activeIndex={activeIndex}
+            activeShape={renderActiveShape}
+            onMouseEnter={(_, index) => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(undefined)}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             label={(props: any) =>
               `${props.displayName ?? props.companyName} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`
