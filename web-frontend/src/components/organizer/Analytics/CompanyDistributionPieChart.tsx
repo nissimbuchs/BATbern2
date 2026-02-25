@@ -6,12 +6,14 @@
  * Per-event filter dropdown: uses companies/distribution endpoint when event selected,
  * otherwise uses the distribution array from the companies endpoint.
  * Partner's own company slice highlighted with accent color.
- * Hovered slice animates: expands outward + outer glow ring.
+ *
+ * Hover animation: uses `shape` prop (not activeShape) so the same DOM <g> element
+ * persists on hover — only its CSS transform changes, enabling a smooth transition.
  */
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CompanyAttendanceShare, EventTimelineItem } from '@/services/analyticsService';
 import { useCompanyDistribution } from '@/hooks/useAnalytics';
@@ -37,40 +39,22 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const renderActiveShape = (props: any) => {
-  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props as {
-    cx: number;
-    cy: number;
-    innerRadius: number;
-    outerRadius: number;
-    startAngle: number;
-    endAngle: number;
-    fill: string;
-  };
+const PieTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload as CompanyAttendanceShare;
   return (
-    <g filter="url(#pie-slice-glow)">
-      {/* Main slice expanded outward */}
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius + 10}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-      />
-      {/* Outer ring accent */}
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={outerRadius + 13}
-        outerRadius={outerRadius + 17}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        fill={fill}
-        opacity={0.45}
-      />
-    </g>
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: 4,
+        padding: '8px 12px',
+        fontSize: 12,
+      }}
+    >
+      <div style={{ fontWeight: 600 }}>{d.displayName ?? d.companyName}</div>
+      <div style={{ marginTop: 4 }}>{d.attendeeCount} attendees</div>
+    </div>
   );
 };
 
@@ -106,6 +90,58 @@ const CompanyDistributionPieChart = ({
 
   const isLoading = parentLoading || (!!selectedEvent && eventLoading);
 
+  /**
+   * Custom shape renderer — called for every slice on every render.
+   * Using `shape` (not `activeShape`) keeps the same <g> DOM node alive across
+   * hover state changes, so the CSS `transition` on transform fires smoothly.
+   *
+   * Translate the active slice outward along its midpoint angle.
+   * Recharts Sector angles are in degrees: 0° = 3 o'clock, increasing counter-clockwise.
+   */
+  const renderSlice = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (props: any) => {
+      const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, index } = props as {
+        cx: number;
+        cy: number;
+        innerRadius: number;
+        outerRadius: number;
+        startAngle: number;
+        endAngle: number;
+        fill: string;
+        index: number;
+      };
+
+      const isActive = index === activeIndex;
+      const midAngleRad = ((startAngle + endAngle) / 2) * (Math.PI / 180);
+      const shift = isActive ? 10 : 0;
+      // Translate along the midpoint direction (SVG y-axis is inverted → negate sin)
+      const dx = Math.cos(midAngleRad) * shift;
+      const dy = -Math.sin(midAngleRad) * shift;
+
+      return (
+        <g
+          style={{
+            transform: `translate(${dx}px, ${dy}px)`,
+            transition: 'transform 220ms ease, filter 220ms ease',
+            filter: isActive ? 'url(#pie-slice-glow)' : 'none',
+          }}
+        >
+          <Sector
+            cx={cx}
+            cy={cy}
+            innerRadius={innerRadius}
+            outerRadius={outerRadius}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={fill}
+          />
+        </g>
+      );
+    },
+    [activeIndex]
+  );
+
   const controls = (
     <FormControl size="small" sx={{ minWidth: 180 }}>
       <InputLabel>{t('analytics.labels.filterByEvent')}</InputLabel>
@@ -135,7 +171,7 @@ const CompanyDistributionPieChart = ({
         <PieChart>
           <defs>
             <filter id="pie-slice-glow" x="-25%" y="-25%" width="150%" height="150%">
-              <feDropShadow dx="0" dy="0" stdDeviation="5" floodOpacity="0.5" />
+              <feDropShadow dx="0" dy="0" stdDeviation="5" floodOpacity="0.45" />
             </filter>
           </defs>
           <Pie
@@ -145,8 +181,7 @@ const CompanyDistributionPieChart = ({
             cx="50%"
             cy="50%"
             outerRadius={130}
-            activeIndex={activeIndex}
-            activeShape={renderActiveShape}
+            shape={renderSlice}
             onMouseEnter={(_, index) => setActiveIndex(index)}
             onMouseLeave={() => setActiveIndex(undefined)}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -167,7 +202,7 @@ const CompanyDistributionPieChart = ({
               />
             ))}
           </Pie>
-          <Tooltip formatter={(v, name) => [`${v} attendees`, name]} />
+          <Tooltip content={<PieTooltip />} />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>
