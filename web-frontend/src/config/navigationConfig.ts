@@ -97,7 +97,7 @@ export const navigationConfig: NavigationItem[] = [
     labelKey: 'navigation.analytics',
     path: '/organizer/analytics',
     icon: BarChart,
-    roles: ['organizer'],
+    roles: ['organizer', 'partner'],
     description: 'View event analytics',
   },
   {
