@@ -68,15 +68,15 @@ class RequestRoutingIntegrationTest {
             any(URI.class),
             any(),
             any(),
-            eq(String.class)
-        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}"));
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         // When
         String targetService = domainRouter.determineTargetService(originalRequest.getRequestURI());
         HttpServletRequest transformedRequest = requestTransformer.addUserContext(originalRequest, userContext);
         transformedRequest = requestTransformer.addRequestId(transformedRequest);
 
-        CompletableFuture<ResponseEntity<String>> routingResult =
+        CompletableFuture<ResponseEntity<byte[]>> routingResult =
             domainRouter.routeRequest(targetService, transformedRequest);
 
         // Then

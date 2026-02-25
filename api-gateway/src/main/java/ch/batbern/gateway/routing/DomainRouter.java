@@ -85,7 +85,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/sessions") // GlobalSessionController lives in EMS
                 || cleanPath.startsWith("/api/v1/e2e-test") // Story 6.3: E2E test endpoints
                 || cleanPath.startsWith("/api/v1/email-templates") // Story 10.2: Email template management
-                || cleanPath.startsWith("/api/v1/analytics")) { // Story 10.5: Analytics dashboard
+                || cleanPath.startsWith("/api/v1/analytics") // Story 10.5: Analytics dashboard
+                || cleanPath.startsWith("/api/v1/newsletter")) { // Story 10.7: Newsletter
             return "event-management-service";
         } else if (cleanPath.startsWith("/api/v1/partners")
                 || cleanPath.startsWith("/api/v1/partner-meetings")) {
@@ -154,7 +155,7 @@ public class DomainRouter {
      * Routes the incoming HTTP request to the target microservice.
      * Forwards all headers (except Host), query parameters, and request body.
      */
-    public CompletableFuture<ResponseEntity<String>> routeRequest(String targetService, HttpServletRequest request) {
+    public CompletableFuture<ResponseEntity<byte[]>> routeRequest(String targetService, HttpServletRequest request) {
         String requestUri = request.getRequestURI();
         String method = request.getMethod();
 
@@ -212,11 +213,11 @@ public class DomainRouter {
                 // Forward request to target service using URI (not String) to avoid template expansion
                 log.debug("Forwarding {} request to: {} (body: {} bytes)",
                     method, targetUri, finalRequestBody != null ? finalRequestBody.length() : 0);
-                ResponseEntity<String> response = restTemplate.exchange(
+                ResponseEntity<byte[]> response = restTemplate.exchange(
                     targetUri,
                     HttpMethod.valueOf(method),
                     entity,
-                    String.class
+                    byte[].class
                 );
 
                 log.info("Received response from {}: status={}", targetService, response.getStatusCode());
@@ -241,7 +242,7 @@ public class DomainRouter {
                 return ResponseEntity
                     .status(e.getStatusCode())
                     .headers(cleanedHeaders)
-                    .body(e.getResponseBodyAsString());
+                    .body(e.getResponseBodyAsByteArray());
 
             } catch (Exception e) {
                 // Handle unexpected errors

@@ -207,11 +207,11 @@ class DomainRouterTest {
             any(URI.class),
             any(),
             any(),
-            eq(String.class)
-        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}"));
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         // When
-        CompletableFuture<ResponseEntity<String>> response = domainRouter.routeRequest(targetService, request);
+        CompletableFuture<ResponseEntity<byte[]>> response = domainRouter.routeRequest(targetService, request);
 
         // Then
         assertThat(response).isNotNull();
@@ -325,11 +325,11 @@ class DomainRouterTest {
             uriCaptor.capture(),
             any(),
             any(),
-            eq(String.class)
-        )).thenReturn(ResponseEntity.ok("{\"data\":[]}"));
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{\"data\":[]}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         // When
-        CompletableFuture<ResponseEntity<String>> response =
+        CompletableFuture<ResponseEntity<byte[]>> response =
             domainRouter.routeRequest(targetService, request);
 
         // Then
