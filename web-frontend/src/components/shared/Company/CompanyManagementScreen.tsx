@@ -22,18 +22,12 @@ import {
   useTheme,
   useMediaQuery,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  ViewModule as GridIcon,
-  ViewList as ListIcon,
-  UploadFile as UploadFileIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { CompanyList } from '@/components/shared/Company/CompanyList';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
-import { CompanyBatchImportModal } from '@/components/shared/Company/CompanyBatchImportModal';
 import CompanyPagination from '@/components/shared/Company/CompanyPagination';
 import {
   useCreateCompany,
@@ -91,7 +85,6 @@ const CompanyManagementScreen: React.FC = () => {
   const effectiveViewMode = isMobile ? 'list' : viewMode;
   const [filters, setFilters] = useState<CompanyFiltersType>({});
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [pagination, setPagination] = useState({ page: 1, limit: 20 });
 
@@ -199,18 +192,6 @@ const CompanyManagementScreen: React.FC = () => {
                   </ToggleButtonGroup>
                 )}
 
-                {/* Batch Import Button */}
-                <Button
-                  variant="outlined"
-                  startIcon={<UploadFileIcon />}
-                  onClick={() => setIsBatchImportOpen(true)}
-                  aria-label={t('company.batchImport.button')}
-                >
-                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                    {t('company.batchImport.button')}
-                  </Box>
-                </Button>
-
                 {/* Create Button */}
                 <Button
                   variant="contained"
@@ -293,12 +274,6 @@ const CompanyManagementScreen: React.FC = () => {
             userRole="organizer"
           />
         )}
-
-        {/* Batch Import Modal */}
-        <CompanyBatchImportModal
-          open={isBatchImportOpen}
-          onClose={() => setIsBatchImportOpen(false)}
-        />
       </Container>
     </Box>
   );

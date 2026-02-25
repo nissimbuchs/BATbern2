@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Service for sending registration confirmation emails.
@@ -39,6 +41,7 @@ public class RegistrationEmailService {
 
     private final EmailService emailService;
     private final IcsCalendarService icsCalendarService;
+    private final EmailTemplateService emailTemplateService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -83,7 +86,7 @@ public class RegistrationEmailService {
             ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
 
             // Load email template (i18n)
-            String htmlBody = loadEmailTemplate(emailLocale, registration, userProfile, event,
+            EmailContent content = loadEmailTemplate(emailLocale, registration, userProfile, event,
                 eventDateTime, confirmationToken, cancellationToken);
 
             // Generate calendar file (.ics)
@@ -96,14 +99,10 @@ public class RegistrationEmailService {
                     "text/calendar; charset=utf-8; method=REQUEST"
             );
 
-            String subject = emailLocale.getLanguage().equals("de")
-                    ? "Registrierungsbestätigung - " + event.getTitle()
-                    : "Registration Confirmation - " + event.getTitle();
-
             emailService.sendHtmlEmailWithAttachments(
                     userProfile.getEmail(),
-                    subject,
-                    htmlBody,
+                    content.subject(),
+                    content.html(),
                     List.of(calendarAttachment)
             );
 
@@ -115,49 +114,75 @@ public class RegistrationEmailService {
         }
     }
 
+    private record EmailContent(String html, String subject) {}
+
     /**
      * Load and populate email template with user/event data.
      */
-    private String loadEmailTemplate(Locale locale, Registration registration,
+    private EmailContent loadEmailTemplate(Locale locale, Registration registration,
         UserResponse userProfile, Event event, ZonedDateTime eventDateTime,
         String confirmationToken, String cancellationToken) {
+        String localeStr = locale.getLanguage().equals("de") ? "de" : "en";
+        String templateName = localeStr.equals("de")
+                ? "email-templates/registration-confirmation-de.html"
+                : "email-templates/registration-confirmation-en.html";
+
+        // Story 10.2: DB-first template loading
+        String template = loadHtmlContent("registration-confirmation", localeStr, templateName);
+
+        // Prepare template variables
+        // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
+        // Anonymous Cancellation Flow: Include cancellation link in email
+        Map<String, String> variables = Map.ofEntries(
+                Map.entry("attendeeFirstName", userProfile.getFirstName()),
+                Map.entry("attendeeLastName", userProfile.getLastName()),
+                Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
+                Map.entry("eventTitle", event.getTitle()),
+                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
+                Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
+                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
+                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
+                Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
+                    + "/confirm-registration?token=" + confirmationToken),
+                Map.entry("cancellationUrl", baseUrl + "/events/" + event.getEventCode()
+                    + "/cancel-registration?token=" + cancellationToken),
+                Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
+                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
+                Map.entry("supportUrl", baseUrl + "/support"),
+                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.svg")
+        );
+
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? "Registrierungsbestätigung - " + event.getTitle()
+                        : "Registration Confirmation - " + event.getTitle());
+        return new EmailContent(html, subject);
+    }
+
+    /**
+     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
+     * Story 10.2 AC1: DB-first template loading.
+     */
+    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
+        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
+        if (dbTemplate.isPresent()) {
+            String contentHtml = dbTemplate.get().getHtmlBody();
+            String layoutKey = dbTemplate.get().getLayoutKey();
+            if (layoutKey != null) {
+                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
+            }
+            return contentHtml;
+        }
+        // Classpath fallback
         try {
-            // Determine template file based on locale
-            String templateName = locale.getLanguage().equals("de")
-                    ? "email-templates/registration-confirmation-de.html"
-                    : "email-templates/registration-confirmation-en.html";
-
-            ClassPathResource resource = new ClassPathResource(templateName);
-            String template = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-
-            // Prepare template variables
-            // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
-            // Anonymous Cancellation Flow: Include cancellation link in email
-            Map<String, String> variables = Map.ofEntries(
-                    Map.entry("attendeeFirstName", userProfile.getFirstName()),
-                    Map.entry("attendeeLastName", userProfile.getLastName()),
-                    Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
-                    Map.entry("eventTitle", event.getTitle()),
-                    Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                    Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
-                    Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                    Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
-                        + "/confirm-registration?token=" + confirmationToken),
-                    Map.entry("cancellationUrl", baseUrl + "/events/" + event.getEventCode()
-                        + "/cancel-registration?token=" + cancellationToken),
-                    Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
-                    Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                    Map.entry("supportUrl", baseUrl + "/support"),
-                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue()))
-            );
-
-            // Replace template variables
-            return emailService.replaceVariables(template, variables);
-
+            ClassPathResource resource = new ClassPathResource(classpathFallback);
+            return resource.getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            log.error("Failed to load email template for locale: {}", locale, e);
-            throw new RuntimeException("Failed to load email template", e);
+            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
+            return "";
         }
     }
 

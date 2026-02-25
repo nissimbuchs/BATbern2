@@ -17,6 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HelpIcon from '@mui/icons-material/Help';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { UserContext } from '../../../types/auth';
 import { updateUserPreferences } from '../../../services/api/userApi';
 
@@ -55,6 +56,11 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
     } catch (error) {
       console.error('[UserMenuDropdown] Navigation error:', error);
     }
+    onClose();
+  };
+
+  const handleAdministrationClick = () => {
+    navigate('/organizer/admin');
     onClose();
   };
 
@@ -132,6 +138,20 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
         </ListItemIcon>
         <ListItemText>{t('menu.profile')}</ListItemText>
       </MenuItem>
+
+      {/* Administration Menu Item - organizer only (Story 10.1) */}
+      {user.role === 'organizer' && (
+        <MenuItem
+          onClick={handleAdministrationClick}
+          role="menuitem"
+          data-testid="administration-link"
+        >
+          <ListItemIcon>
+            <AdminPanelSettingsIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>{t('menu.administration')}</ListItemText>
+        </MenuItem>
+      )}
 
       {/* Settings Menu Item */}
       <MenuItem onClick={handleSettingsClick} role="menuitem">

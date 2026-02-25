@@ -48,6 +48,10 @@ public class SessionMaterial {
     @JoinColumn(name = "session_id", nullable = false)
     private Session session;
 
+    /** Direct read of the FK column — avoids triggering the lazy proxy when grouping by session. */
+    @Column(name = "session_id", insertable = false, updatable = false, columnDefinition = "UUID")
+    private UUID sessionId;
+
     @Column(name = "upload_id", unique = true, nullable = false, length = 100)
     private String uploadId;  // From Generic Upload Service (ADR-002)
 

@@ -54,6 +54,8 @@ tags:
     description: Speaker outreach tracking and history (Story 5.3)
   - name: Watch
     description: Watch app organizer endpoints (Epic W2)
+  - name: Email Templates
+    description: Email template management for organizers (Story 10.2)
 
 paths:
   /events/attendance-summary:
@@ -3668,8 +3670,327 @@ paths:
       security:
         - BearerAuth: []
 
+  # ── Email Templates (Story 10.2) ──────────────────────────────────────────
+
+  /email-templates:
+    get:
+      tags:
+        - Email Templates
+      summary: List email templates
+      description: |
+        Returns all email templates with optional filtering by category and layout flag.
+
+        **Story**: 10.2 - Email Template Management
+        **Authorization**: ORGANIZER role required.
+      operationId: listEmailTemplates
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT)
+          schema:
+            type: string
+            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+        - name: isLayout
+          in: query
+          required: false
+          description: Filter to layout templates only (true) or content templates only (false)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of email templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailTemplateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+      security:
+        - BearerAuth: []
+
+    post:
+      tags:
+        - Email Templates
+      summary: Create a custom email template
+      description: |
+        Creates a new custom (non-system) email template.
+
+        **Story**: 10.2 - Email Template Management
+        **Authorization**: ORGANIZER role required.
+      operationId: createEmailTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmailTemplateRequest'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Template with this key and locale already exists
+      security:
+        - BearerAuth: []
+
+  /email-templates/{templateKey}/{locale}:
+    get:
+      tags:
+        - Email Templates
+      summary: Get a single email template
+      description: |
+        Returns a single email template by key and locale.
+
+        **Story**: 10.2 - Email Template Management
+        **Authorization**: ORGANIZER role required.
+      operationId: getEmailTemplate
+      parameters:
+        - name: templateKey
+          in: path
+          required: true
+          description: Template key (e.g. speaker-invitation, batbern-default)
+          schema:
+            type: string
+        - name: locale
+          in: path
+          required: true
+          description: Locale (de or en)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+    put:
+      tags:
+        - Email Templates
+      summary: Update an email template
+      description: |
+        Updates subject, htmlBody and/or layoutKey of an existing template.
+
+        **Story**: 10.2 - Email Template Management
+        **Authorization**: ORGANIZER role required.
+      operationId: updateEmailTemplate
+      parameters:
+        - name: templateKey
+          in: path
+          required: true
+          description: Template key
+          schema:
+            type: string
+        - name: locale
+          in: path
+          required: true
+          description: Locale (de or en)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEmailTemplateRequest'
+      responses:
+        '200':
+          description: Template updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailTemplateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
+    delete:
+      tags:
+        - Email Templates
+      summary: Delete a custom email template
+      description: |
+        Deletes a custom (non-system) email template. Returns 400 for system or layout templates.
+
+        **Story**: 10.2 - Email Template Management
+        **Authorization**: ORGANIZER role required.
+      operationId: deleteEmailTemplate
+      parameters:
+        - name: templateKey
+          in: path
+          required: true
+          description: Template key
+          schema:
+            type: string
+        - name: locale
+          in: path
+          required: true
+          description: Locale (de or en)
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Template deleted
+        '400':
+          description: Cannot delete system or layout templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      security:
+        - BearerAuth: []
+
 components:
   schemas:
+
+    # ── Email Template Schemas (Story 10.2) ──────────────────────────────────
+
+    EmailTemplateResponse:
+      type: object
+      description: Email template with full content and metadata
+      required:
+        - templateKey
+        - locale
+        - category
+        - htmlBody
+        - isLayout
+        - isSystemTemplate
+        - updatedAt
+      properties:
+        templateKey:
+          type: string
+          description: Template identifier key (e.g. speaker-invitation, batbern-default)
+        locale:
+          type: string
+          description: Locale code (de or en)
+        category:
+          type: string
+          description: Template category
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+        subject:
+          type: string
+          nullable: true
+          description: Email subject line (null for layout templates)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: HTML body content
+        variables:
+          type: object
+          nullable: true
+          description: Available template variables (JSONB)
+          additionalProperties: true
+        isLayout:
+          type: boolean
+          description: True if this is a layout (shell) template
+        layoutKey:
+          type: string
+          nullable: true
+          description: Key of the layout template to use (null for standalone or layout templates)
+        isSystemTemplate:
+          type: boolean
+          description: True if this is a built-in system template (cannot be deleted)
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    CreateEmailTemplateRequest:
+      type: object
+      description: Request to create a custom email template
+      required:
+        - templateKey
+        - locale
+        - category
+        - htmlBody
+      properties:
+        templateKey:
+          type: string
+          description: Unique template key
+          maxLength: 100
+        locale:
+          type: string
+          description: Locale code (de or en)
+          maxLength: 5
+        category:
+          type: string
+          description: Template category
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+        subject:
+          type: string
+          nullable: true
+          description: Email subject (required for content templates, null for layout)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: HTML body content
+        variables:
+          type: object
+          nullable: true
+          description: Available template variables
+          additionalProperties: true
+        isLayout:
+          type: boolean
+          description: Whether this is a layout template
+          default: false
+        layoutKey:
+          type: string
+          nullable: true
+          description: Layout template key to use (e.g. batbern-default)
+          maxLength: 100
+
+    UpdateEmailTemplateRequest:
+      type: object
+      description: Request to update an existing email template
+      properties:
+        subject:
+          type: string
+          nullable: true
+          description: Updated subject line (null for layout templates)
+          maxLength: 500
+        htmlBody:
+          type: string
+          description: Updated HTML body
+        layoutKey:
+          type: string
+          nullable: true
+          description: Updated layout key (null = standalone)
+          maxLength: 100
 
     # ── Partner Analytics Schemas (Story 8.1) ────────────────────────────────
 
@@ -4378,6 +4699,13 @@ components:
           format: uri
           description: Speaker's profile picture URL (from User entity)
           example: https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg
+        companyLogoUrl:
+          type: string
+          format: uri
+          description: |
+            Company logo CloudFront URL (cross-service DB join: logos table).
+            Populated on archive list responses to avoid a separate useCompany API call.
+          example: https://cdn.batbern.ch/logos/2025/companies/sbb/logo.jpeg
         bio:
           type: string
           description: Speaker's biography (from User entity)

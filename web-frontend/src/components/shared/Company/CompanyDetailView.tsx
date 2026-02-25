@@ -39,7 +39,6 @@ import type { components as SpeakerComponents } from '@/types/generated/speakers
 import type { User } from '@/types/user.types';
 import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
-import { PartnerAttendanceDashboard } from '@/components/partner/PartnerAttendanceDashboard';
 import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
 import UserCard from '@/components/organizer/UserManagement/UserCard';
@@ -218,6 +217,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -433,9 +433,8 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         </Box>
       )}
 
-      {/* Overview: attendance stats + speakers from this company */}
+      {/* Overview: speakers from this company */}
       <TabPanel value={activeTab} index={0}>
-        <PartnerAttendanceDashboard companyName={company.name} />
         <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
           Speakers
         </Typography>
@@ -455,8 +454,18 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         onSuccess={onBack}
       />
 
-      {/* Bottom Navigation — always visible */}
-      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1100 }} elevation={3}>
+      {/* Bottom Navigation — mobile only */}
+      <Paper
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1100,
+          display: { xs: 'block', md: 'none' },
+        }}
+        elevation={3}
+      >
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
           <BottomNavigationAction icon={<OverviewIcon />} sx={{ minWidth: 0, flex: 1 }} />
           <BottomNavigationAction icon={<UsersIcon />} sx={{ minWidth: 0, flex: 1 }} />

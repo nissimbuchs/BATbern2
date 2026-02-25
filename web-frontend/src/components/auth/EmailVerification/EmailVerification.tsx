@@ -1,15 +1,16 @@
 /**
  * EmailVerification Component
  * Story 1.2.4: Email Verification Flow
- * Allows users to verify their email with a 6-digit code
+ * Primary flow: user clicks the verification link from their email.
+ * Fallback: manual 6-digit code entry (collapsed by default).
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, Typography, Button, Alert, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Alert, CircularProgress, Collapse } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { CheckCircle } from '@mui/icons-material';
+import { CheckCircle, Email as EmailIcon } from '@mui/icons-material';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { useEmailVerification, useResendVerification } from '@/hooks/useEmailVerification';
 
@@ -22,6 +23,7 @@ export const EmailVerification: React.FC = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   const hasAutoVerifiedRef = React.useRef(false);
 
   const email = searchParams.get('email') || '';
@@ -119,15 +121,20 @@ export const EmailVerification: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 500, mx: 'auto', mt: 8 }}>
-      <Typography variant="h4" align="center" gutterBottom>
-        {t('verify.title')}
-      </Typography>
-      <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 1 }}>
-        {t('verify.subtitle')}
-      </Typography>
-      <Typography variant="h6" align="center" sx={{ mb: 3 }}>
-        {email}
-      </Typography>
+      {/* Primary: check-your-email messaging */}
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <EmailIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
+        <Typography variant="h4" gutterBottom>
+          {t('verify.title')}
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+          {t('verify.subtitle')}
+        </Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          {email}
+        </Typography>
+        <Typography variant="body1">{t('verify.instruction')}</Typography>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -135,37 +142,51 @@ export const EmailVerification: React.FC = () => {
         </Alert>
       )}
 
-      <Typography variant="body2" align="center" sx={{ mb: 2 }}>
-        {t('verify.codeLabel')}
-      </Typography>
-
-      <CodeInput
-        length={6}
-        onComplete={handleVerification}
-        onCodeChange={setCode}
-        error={!!error}
-      />
-
-      <Button
-        variant="contained"
-        fullWidth
-        size="large"
-        onClick={() => handleVerification(code)}
-        disabled={code.length !== 6 || isLoading}
-        sx={{ mt: 3, mb: 2 }}
-      >
-        {isLoading ? <CircularProgress size={24} /> : t('verify.submitButton')}
-      </Button>
-
-      <Box sx={{ textAlign: 'center', mt: 3 }}>
-        <Button onClick={handleResend} disabled={resendCooldown > 0} sx={{ mt: 1 }}>
+      {/* Resend */}
+      <Box sx={{ textAlign: 'center', mb: 3 }}>
+        <Button onClick={handleResend} disabled={resendCooldown > 0} variant="outlined" fullWidth>
           {resendCooldown > 0
             ? t('verify.resendCooldown', { seconds: resendCooldown })
             : t('verify.resendLink')}
         </Button>
       </Box>
 
-      <Alert severity="info" sx={{ mt: 3 }}>
+      {/* Fallback: manual code entry */}
+      <Box sx={{ textAlign: 'center' }}>
+        <Button
+          size="small"
+          onClick={() => setShowManualEntry((v) => !v)}
+          sx={{ color: 'text.secondary' }}
+        >
+          {showManualEntry ? t('verify.manualHide') : t('verify.manualToggle')}
+        </Button>
+      </Box>
+
+      <Collapse in={showManualEntry} unmountOnExit>
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" align="center" sx={{ mb: 2 }}>
+            {t('verify.codeLabel')}
+          </Typography>
+          <CodeInput
+            length={6}
+            onComplete={handleVerification}
+            onCodeChange={setCode}
+            error={!!error}
+          />
+          <Button
+            variant="contained"
+            fullWidth
+            size="large"
+            onClick={() => handleVerification(code)}
+            disabled={code.length !== 6 || isLoading}
+            sx={{ mt: 3 }}
+          >
+            {isLoading ? <CircularProgress size={24} /> : t('verify.submitButton')}
+          </Button>
+        </Box>
+      </Collapse>
+
+      <Alert severity="info" sx={{ mt: 4 }}>
         <Typography variant="body2">{t('verify.expirationNotice')}</Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
           {t('verify.checkSpam')}

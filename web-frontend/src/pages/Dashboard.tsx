@@ -24,7 +24,7 @@ const Dashboard: React.FC = () => {
     } else if (user?.role === 'speaker') {
       navigate('/speaker/dashboard', { replace: true });
     } else if (user?.role === 'attendee') {
-      navigate('/attendee/events', { replace: true });
+      navigate('/attendee', { replace: true });
     }
   }, [user, navigate]);
 

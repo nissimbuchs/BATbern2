@@ -1,82 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Final Reminder: Content Submission - {{eventTitle}}</title>
-    <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; }
-        .email-container { background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .header { text-align: center; border-bottom: 3px solid #0066cc; padding-bottom: 20px; margin-bottom: 30px; }
-        .header h1 { color: #0066cc; margin: 0; font-size: 24px; }
-        .deadline-box { background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin: 20px 0; }
-        .deadline-box h3 { margin-top: 0; color: #856404; font-size: 16px; }
-        .deadline-box.urgent { background-color: #f8d7da; border-color: #f5c6cb; }
-        .deadline-box.urgent h3 { color: #721c24; }
-        .cta-section { text-align: center; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
-        .cta-button { display: inline-block; padding: 14px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 10px; font-size: 16px; background-color: #0066cc; color: #ffffff !important; }
-        .contact-box { background-color: #e3f2fd; border-radius: 4px; padding: 15px; margin: 20px 0; }
-        .contact-box h3 { margin-top: 0; color: #0066cc; font-size: 16px; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
-        .footer a { color: #0066cc; text-decoration: none; }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>Final Reminder: Presentation Materials</h1>
-        </div>
+<!-- subject: Final Reminder: Presentation Materials - {{eventTitle}} -->
+<h2>Final Reminder: Presentation Materials</h2>
 
-        <p>Dear {{speakerName}},</p>
+<p>Dear {{speakerName}},</p>
 
-        <p>This is our final reminder regarding the submission of your presentation materials for the upcoming Berner Architekten Treffen. We have contacted you previously but have not yet received your content.</p>
+<p>This is our final reminder regarding the submission of your presentation materials for the upcoming Berner Architekten Treffen. We have contacted you previously but have not yet received your content.</p>
 
-        <p><strong>{{eventTitle}}</strong><br>
-        Date: {{eventDate}}</p>
+<p><strong>{{eventTitle}}</strong><br>
+Date: {{eventDate}}</p>
 
-        <div class="deadline-box urgent">
-            <h3>Final Content Deadline</h3>
-            <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
-            <p style="margin-top: 10px; font-size: 14px;">Only <strong>{{daysRemaining}} days</strong> remaining.</p>
-        </div>
+<div class="deadline-box urgent">
+    <h3>Final Content Deadline</h3>
+    <p style="font-size: 18px; font-weight: bold; margin: 0;">{{deadline}}</p>
+    <p style="margin-top: 10px; font-size: 14px;">Only <strong>{{daysRemaining}} days</strong> remaining.</p>
+</div>
 
-        <p><strong>Important:</strong> We need your presentation materials to finalize the event program. Without your submission by the deadline above, we will be unable to properly promote your session and may need to make changes to the program schedule. If circumstances prevent you from submitting your materials, please let us know immediately so we can discuss alternatives.</p>
+<p><strong>Important:</strong> We need your presentation materials to finalize the event program. Without your submission by the deadline above, we will be unable to properly promote your session and may need to make changes to the program schedule. If circumstances prevent you from submitting your materials, please let us know immediately so we can discuss alternatives.</p>
 
-        <p>Required materials:</p>
-        <ul>
-            <li>Presentation title and abstract</li>
-            <li>Speaker biography and photo</li>
-            <li>Presentation slides (if available)</li>
-        </ul>
+<p>Required materials:</p>
+<ul>
+    <li>Presentation title and abstract</li>
+    <li>Speaker biography and photo</li>
+    <li>Presentation slides (if available)</li>
+</ul>
 
-        <div class="cta-section">
-            <p><strong>Submit your materials immediately:</strong></p>
-            <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
-        </div>
+<div class="cta-section">
+    <p><strong>Submit your materials immediately:</strong></p>
+    <a href="{{portalLink}}" class="cta-button">View Your Dashboard</a>
+</div>
 
-        <div class="contact-box">
-            <h3>Need to Discuss?</h3>
-            <p>If you are facing any challenges or need to discuss the timeline, please reach out to us right away:</p>
-            <p>
-                <strong>{{organizerName}}</strong><br>
-                <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
-            </p>
-        </div>
+<div class="contact-box">
+    <h3>Need to Discuss?</h3>
+    <p>If you are facing any challenges or need to discuss the timeline, please reach out to us right away:</p>
+    <p>
+        <strong>{{organizerName}}</strong><br>
+        <a href="mailto:{{organizerEmail}}">{{organizerEmail}}</a>
+    </p>
+</div>
 
-        <p>We value your participation and want to ensure your session is presented in the best possible way.</p>
+<p>We value your participation and want to ensure your session is presented in the best possible way.</p>
 
-        <p>Best regards,<br>
-        <strong>The BATbern Team</strong></p>
-
-        <div class="footer">
-            <p>
-                <a href="{{portalLink}}">Speaker Portal</a>
-            </p>
-            <p>
-                Berner Architekten Treffen (BATbern)<br>
-                &copy; {{currentYear}} BATbern. All rights reserved.
-            </p>
-        </div>
-    </div>
-</body>
-</html>
+<p>Best regards,<br>
+<strong>The BATbern Team</strong></p>

@@ -1,0 +1,11 @@
+-- V65: Delete all system email templates so they are re-seeded on next application startup.
+--
+-- Background: templates were originally seeded as standalone full-HTML documents
+-- (with DOCTYPE, head, body, and own footer). They have since been rewritten as
+-- content fragments (no HTML wrapper, no footer) that compose with the layout template.
+-- Because the seed service is idempotent (insert only), the old records were never
+-- replaced. Deleting them here forces EmailTemplateSeedService (@PostConstruct) to
+-- re-insert all templates from the updated HTML files on the next startup.
+--
+-- Custom (non-system) templates are preserved.
+DELETE FROM email_templates WHERE is_system_template = true;

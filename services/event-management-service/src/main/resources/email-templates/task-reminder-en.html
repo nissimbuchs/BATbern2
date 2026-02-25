@@ -1,0 +1,33 @@
+<!-- subject: Task Reminder: {{taskName}} due tomorrow -->
+<p>Hello {{recipientName}},</p>
+
+<p>this is a reminder: one of your tasks is <strong>due tomorrow</strong>.</p>
+
+<div class="event-details">
+    <h2>Task: {{taskName}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Event:</span>
+        <span class="detail-value">{{eventTitle}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Due date:</span>
+        <span class="detail-value">{{dueDate}}</span>
+    </div>
+</div>
+
+{{#taskNotes}}
+<div class="session-info">
+    <h3>Task Notes</h3>
+    <p>{{taskNotes}}</p>
+</div>
+{{/taskNotes}}
+
+<div class="cta-section">
+    <p>Open the task board to work on the task or mark it as completed.</p>
+    <a href="{{taskBoardLink}}" class="cta-button cta-accept">View Task</a>
+</div>
+
+<div class="contact-box">
+    <h3>Questions?</h3>
+    <p>For any questions, contact <a href="mailto:{{organizerEmail}}">{{organizerName}}</a>.</p>
+</div>

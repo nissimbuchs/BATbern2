@@ -28,6 +28,15 @@ public interface SessionMaterialsRepository extends JpaRepository<SessionMateria
     List<SessionMaterial> findBySession_Id(UUID sessionId);
 
     /**
+     * Batch-load materials for multiple sessions in one query.
+     * Used by EventController.buildBatchExpandedResponses() to avoid N+1 material queries.
+     *
+     * @param sessionIds Collection of session UUIDs
+     * @return List of materials for all given sessions
+     */
+    List<SessionMaterial> findBySessionIdIn(java.util.Collection<UUID> sessionIds);
+
+    /**
      * Find all materials for a session, ordered by creation time ascending
      * Uses idx_session_materials_session_id index
      *

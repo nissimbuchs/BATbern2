@@ -2,8 +2,11 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.EventTask;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -76,4 +79,16 @@ public interface EventTaskRepository extends JpaRepository<EventTask, UUID> {
      * @return true if tasks exist
      */
     boolean existsByEventIdAndTriggerState(UUID eventId, String triggerState);
+
+    /**
+     * Find tasks due within a time window that are not completed and have an assigned organizer.
+     * Used by the deadline reminder scheduler (Story 10.3) to find tasks due "tomorrow".
+     *
+     * @param from start of the window (inclusive)
+     * @param to end of the window (exclusive)
+     * @return list of tasks due in the window, not completed, with an assignee
+     */
+    @Query("SELECT t FROM EventTask t WHERE t.dueDate >= :from AND t.dueDate < :to "
+            + "AND t.status != 'completed' AND t.assignedOrganizerUsername IS NOT NULL")
+    List<EventTask> findTasksDueForReminder(@Param("from") Instant from, @Param("to") Instant to);
 }

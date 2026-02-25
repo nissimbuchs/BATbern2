@@ -11,31 +11,20 @@
 
 import React from 'react';
 import { Paper, Typography, Button, Stack } from '@mui/material';
-import {
-  Add as AddIcon,
-  Settings as SettingsIcon,
-  UploadFile as UploadFileIcon,
-  Topic as TopicIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, Settings as SettingsIcon, Topic as TopicIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 interface QuickActionsProps {
   onNewEvent?: () => void;
-  onBatchImport?: () => void;
-  onBatchImportSessions?: () => void;
 }
 
-export const QuickActions: React.FC<QuickActionsProps> = ({
-  onNewEvent,
-  onBatchImport,
-  onBatchImportSessions,
-}) => {
+export const QuickActions: React.FC<QuickActionsProps> = ({ onNewEvent }) => {
   const { t } = useTranslation('events');
   const navigate = useNavigate();
 
   const handleEventTypesClick = () => {
-    navigate('/organizer/event-types');
+    navigate('/organizer/admin?tab=0');
   };
 
   const handleManageTopicsClick = () => {
@@ -71,30 +60,6 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           data-testid="event-types-button"
         >
           {t('dashboard.actions.eventTypes')}
-        </Button>
-
-        {/* Batch Import Button */}
-        <Button
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
-          fullWidth
-          onClick={onBatchImport}
-          aria-label="Import historical events"
-          data-testid="batch-import-button"
-        >
-          {t('common:event.batchImport.button')}
-        </Button>
-
-        {/* Session Batch Import Button */}
-        <Button
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
-          fullWidth
-          onClick={onBatchImportSessions}
-          aria-label="Import historical sessions"
-          data-testid="session-batch-import-button"
-        >
-          {t('common:session.batchImport.button')}
         </Button>
 
         {/* Manage Topics Button */}

@@ -1,188 +1,51 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrierungsbestätigung - {{eventTitle}}</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .email-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #0066cc;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .header h1 {
-            color: #0066cc;
-            margin: 0;
-            font-size: 24px;
-        }
-        .event-details {
-            background-color: #f8f9fa;
-            border-left: 4px solid #0066cc;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .event-details h2 {
-            margin-top: 0;
-            color: #0066cc;
-            font-size: 20px;
-        }
-        .detail-row {
-            margin: 10px 0;
-            display: flex;
-        }
-        .detail-label {
-            font-weight: bold;
-            min-width: 120px;
-            color: #555;
-        }
-        .detail-value {
-            color: #333;
-        }
-        .registration-code {
-            background-color: #e3f2fd;
-            border: 2px dashed #0066cc;
-            padding: 15px;
-            text-align: center;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        .registration-code-label {
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        .registration-code-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #0066cc;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 2px;
-        }
-        .cta-button {
-            display: inline-block;
-            background-color: #0066cc;
-            color: #ffffff !important;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .cta-button:hover {
-            background-color: #0052a3;
-        }
-        .create-account-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 4px;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .create-account-box h3 {
-            margin-top: 0;
-            color: #856404;
-            font-size: 16px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-        }
-        .footer a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="header">
-            <h1>📧 Registrierung eingegangen</h1>
-        </div>
+<!-- subject: Registrierungsbestätigung - {{eventTitle}} -->
+<h2>📧 Registrierung eingegangen</h2>
 
-        <p>Hallo {{attendeeFirstName}} {{attendeeLastName}},</p>
+<p>Hallo {{attendeeFirstName}} {{attendeeLastName}},</p>
 
-        <p>Vielen Dank für Ihre Anmeldung! Um Ihre Registrierung abzuschliessen, bestätigen Sie bitte Ihre E-Mail-Adresse für das folgende Event:</p>
+<p>Vielen Dank für Ihre Anmeldung! Um Ihre Registrierung abzuschliessen, bestätigen Sie bitte Ihre E-Mail-Adresse für das folgende Event:</p>
 
-        <div class="event-details">
-            <h2>{{eventTitle}}</h2>
-            <div class="detail-row">
-                <span class="detail-label">Datum:</span>
-                <span class="detail-value">{{eventDate}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Uhrzeit:</span>
-                <span class="detail-value">{{eventTime}}</span>
-            </div>
-            <div class="detail-row">
-                <span class="detail-label">Veranstaltungsort:</span>
-                <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
-            </div>
-        </div>
-
-        <p><strong>Wichtig:</strong> Bitte bestätigen Sie Ihre Registrierung innerhalb von 48 Stunden, indem Sie auf den folgenden Button klicken:</p>
-
-        <div style="text-align: center;">
-            <a href="{{confirmationUrl}}" class="cta-button">✓ Registrierung jetzt bestätigen</a>
-        </div>
-
-        <p style="font-size: 12px; color: #666; margin-top: 20px;">
-            Falls der Button nicht funktioniert, kopieren Sie bitte diesen Link in Ihren Browser:<br>
-            <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
-        </p>
-
-        <div class="create-account-box">
-            <h3>💡 Erstellen Sie ein kostenloses Konto</h3>
-            <p>Mit einem BATbern-Konto können Sie:</p>
-            <ul>
-                <li>Ihre Registrierungen verwalten</li>
-                <li>Event-Updates erhalten</li>
-                <li>Auf exklusive Inhalte zugreifen</li>
-            </ul>
-            <a href="{{createAccountUrl}}" class="cta-button">Jetzt kostenloses Konto erstellen</a>
-        </div>
-
-        <p>Ein Kalendereintrag (.ics Datei) ist dieser E-Mail als Anhang beigefügt.</p>
-
-        <p>Wir freuen uns darauf, Sie am Event zu sehen!</p>
-
-        <p>Mit freundlichen Grüssen,<br>
-        <strong>Das BATbern Team</strong></p>
-
-        <div class="footer">
-            <p>
-                <a href="{{eventUrl}}">Event-Details ansehen</a> |
-                <a href="{{cancellationUrl}}">Registrierung stornieren</a> |
-                <a href="{{supportUrl}}">Support kontaktieren</a>
-            </p>
-            <p style="font-size: 11px; color: #999; margin-top: 10px;">
-                Sie können Ihre Registrierung innerhalb von 48 Stunden durch Klick auf "Registrierung stornieren" rückgängig machen.
-            </p>
-            <p>
-                Berner Architekten Treffen (BATbern)<br>
-                © {{currentYear}} BATbern. Alle Rechte vorbehalten.
-            </p>
-        </div>
+<div class="event-details">
+    <h2>{{eventTitle}}</h2>
+    <div class="detail-row">
+        <span class="detail-label">Datum:</span>
+        <span class="detail-value">{{eventDate}}</span>
     </div>
-</body>
-</html>
+    <div class="detail-row">
+        <span class="detail-label">Uhrzeit:</span>
+        <span class="detail-value">{{eventTime}}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Veranstaltungsort:</span>
+        <span class="detail-value">{{venueName}}<br>{{venueAddress}}</span>
+    </div>
+</div>
+
+<p><strong>Wichtig:</strong> Bitte bestätigen Sie Ihre Registrierung innerhalb von 48 Stunden, indem Sie auf den folgenden Button klicken:</p>
+
+<div style="text-align: center;">
+    <a href="{{confirmationUrl}}" class="cta-button">✓ Registrierung jetzt bestätigen</a>
+</div>
+
+<p style="font-size: 12px; color: #666; margin-top: 20px;">
+    Falls der Button nicht funktioniert, kopieren Sie bitte diesen Link in Ihren Browser:<br>
+    <a href="{{confirmationUrl}}" style="color: #0066cc; word-break: break-all;">{{confirmationUrl}}</a>
+</p>
+
+<div class="create-account-box">
+    <h3>💡 Erstellen Sie ein kostenloses Konto</h3>
+    <p>Mit einem BATbern-Konto können Sie:</p>
+    <ul>
+        <li>Ihre Registrierungen verwalten</li>
+        <li>Event-Updates erhalten</li>
+        <li>Auf exklusive Inhalte zugreifen</li>
+    </ul>
+    <a href="{{createAccountUrl}}" class="cta-button">Jetzt kostenloses Konto erstellen</a>
+</div>
+
+<p>Ein Kalendereintrag (.ics Datei) ist dieser E-Mail als Anhang beigefügt.</p>
+
+<p>Wir freuen uns darauf, Sie am Event zu sehen!</p>
+
+<p>Mit freundlichen Grüssen,<br>
+<strong>Das BATbern Team</strong></p>

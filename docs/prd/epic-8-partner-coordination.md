@@ -1,6 +1,6 @@
 # Epic 8: Partner Coordination
 
-**Status:** 🔨 **IN PROGRESS** — Stories 8.0–8.3 complete. Story 8.4 (Partner Notes) added 2026-02-23.
+**Status:** ✅ **COMPLETE** — Stories 8.0–8.4 done (deployed to staging 2026-02-22; Story 8.4 Partner Notes added 2026-02-23)
 
 **Simplified (2026-02-21):** Epic 8 was originally scoped with QuickSight, Microsoft Graph, materialized views, and tier-based voting. These were cut as massively over-engineered for a community of ~5–10 partners and ~3 events/year. The three stories below reflect what was actually decided and built.
 
