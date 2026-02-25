@@ -13,15 +13,17 @@ import { AppBar, Box, Toolbar, IconButton, Badge, Avatar, Tooltip } from '@mui/m
 import { Menu, Notifications, TaskAlt } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
 import { MobileDrawer } from './MobileDrawer';
+import { RoleSelector } from './RoleSelector';
 import UserMenuDropdown from './UserMenuDropdown';
 import { useUIStore } from '@/stores/uiStore';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useAuth } from '@/hooks/useAuth';
+import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { UserProfile } from '@/types/user';
 import type { NotificationsResponse } from '@/types/notification';
-import type { UserContext } from '@/types/auth';
+import type { UserContext, UserRole } from '@/types/auth';
 
 interface AppHeaderProps {
   user?: UserProfile;
@@ -57,6 +59,10 @@ const AppHeader = React.memo(function AppHeader({
       : currentRole
         ? [currentRole as UserRole]
         : [];
+
+  // For multi-role users: which portal is currently active in the nav
+  const [activeRole, setActiveRole] = useActiveRole(currentRoles);
+  const navRoles = currentRoles.length > 1 ? [activeRole] : currentRoles;
 
   const handleNotificationClick = () => {
     navigate('/organizer/notifications');
@@ -133,10 +139,15 @@ const AppHeader = React.memo(function AppHeader({
             />
           </Box>
 
+          {/* Role selector chips — only for multi-role users, desktop/tablet only */}
+          {!isMobile && currentRoles.length > 1 && (
+            <RoleSelector roles={currentRoles} activeRole={activeRole} onChange={setActiveRole} />
+          )}
+
           {/* Desktop/Tablet Navigation */}
-          {!isMobile && currentRoles.length > 0 && (
+          {!isMobile && navRoles.length > 0 && (
             <Box sx={{ flex: 1 }}>
-              <NavigationMenu userRoles={currentRoles} showText={!isTablet} />
+              <NavigationMenu userRoles={navRoles} showText={!isTablet} />
             </Box>
           )}
 
@@ -219,8 +230,11 @@ const AppHeader = React.memo(function AppHeader({
         <MobileDrawer
           open={mobileDrawerOpen}
           onClose={() => setMobileDrawerOpen(false)}
-          userRoles={currentRoles}
+          userRoles={navRoles}
           userEmail={user.email}
+          allRoles={currentRoles.length > 1 ? currentRoles : undefined}
+          activeRole={currentRoles.length > 1 ? activeRole : undefined}
+          onRoleChange={currentRoles.length > 1 ? setActiveRole : undefined}
         />
       )}
 
