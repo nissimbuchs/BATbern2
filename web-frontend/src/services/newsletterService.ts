@@ -52,26 +52,26 @@ export interface SubscriberCountResponse {
 
 /** Subscribe an email to the newsletter (no auth required). Returns 409 if already subscribed. */
 export async function subscribe(request: NewsletterSubscribeRequest): Promise<void> {
-  await apiClient.post('/api/v1/newsletter/subscribe', request);
+  await apiClient.post('/newsletter/subscribe', request);
 }
 
 /** Verify an unsubscribe token — returns email if valid, throws 404 if not. */
 export async function verifyUnsubscribeToken(token: string): Promise<{ email: string }> {
   const response = await apiClient.get<{ email: string }>(
-    `/api/v1/newsletter/unsubscribe/verify?token=${encodeURIComponent(token)}`
+    `/newsletter/unsubscribe/verify?token=${encodeURIComponent(token)}`
   );
   return response.data;
 }
 
 /** Unsubscribe using token (no auth required). Throws 404 if token not found. */
 export async function unsubscribeByToken(token: string): Promise<void> {
-  await apiClient.post('/api/v1/newsletter/unsubscribe', { token });
+  await apiClient.post('/newsletter/unsubscribe', { token });
 }
 
 /** Get newsletter subscription status for the authenticated user. */
 export async function getMySubscription(): Promise<NewsletterSubscriptionStatusResponse> {
   const response = await apiClient.get<NewsletterSubscriptionStatusResponse>(
-    '/api/v1/newsletter/my-subscription'
+    '/newsletter/my-subscription'
   );
   return response.data;
 }
@@ -81,7 +81,7 @@ export async function patchMySubscription(
   subscribed: boolean
 ): Promise<NewsletterSubscriptionStatusResponse> {
   const response = await apiClient.patch<NewsletterSubscriptionStatusResponse>(
-    '/api/v1/newsletter/my-subscription',
+    '/newsletter/my-subscription',
     { subscribed }
   );
   return response.data;
@@ -89,7 +89,7 @@ export async function patchMySubscription(
 
 /** Get total active subscriber count (ORGANIZER only). */
 export async function getSubscriberCount(): Promise<SubscriberCountResponse> {
-  const response = await apiClient.get<SubscriberCountResponse>('/api/v1/newsletter/subscribers');
+  const response = await apiClient.get<SubscriberCountResponse>('/newsletter/subscribers');
   return response.data;
 }
 
@@ -98,7 +98,7 @@ export async function getNewsletterHistory(
   eventCode: string
 ): Promise<NewsletterSendHistoryItem[]> {
   const response = await apiClient.get<NewsletterSendHistoryItem[]>(
-    `/api/v1/events/${encodeURIComponent(eventCode)}/newsletter/history`
+    `/events/${encodeURIComponent(eventCode)}/newsletter/history`
   );
   return response.data;
 }
@@ -109,7 +109,7 @@ export async function previewNewsletter(
   request: NewsletterSendRequest
 ): Promise<NewsletterPreviewResponse> {
   const response = await apiClient.post<NewsletterPreviewResponse>(
-    `/api/v1/events/${encodeURIComponent(eventCode)}/newsletter/preview`,
+    `/events/${encodeURIComponent(eventCode)}/newsletter/preview`,
     request
   );
   return response.data;
@@ -121,7 +121,7 @@ export async function sendNewsletter(
   request: NewsletterSendRequest
 ): Promise<NewsletterSendResponse> {
   const response = await apiClient.post<NewsletterSendResponse>(
-    `/api/v1/events/${encodeURIComponent(eventCode)}/newsletter/send`,
+    `/events/${encodeURIComponent(eventCode)}/newsletter/send`,
     request
   );
   return response.data;

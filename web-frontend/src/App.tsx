@@ -127,6 +127,9 @@ const SpeakerMagicLoginPage = React.lazy(
 // Story 10.7: Newsletter unsubscribe page
 const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
+// Dev tool: local email inbox (no auth, no layout)
+const DevEmailInboxPage = React.lazy(() => import('@pages/dev/DevEmailInboxPage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -272,6 +275,9 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Dev tool: local email inbox — no auth, no layout */}
+                    <Route path="/dev/emails" element={<DevEmailInboxPage />} />
 
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />

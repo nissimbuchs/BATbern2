@@ -28,15 +28,15 @@ public class AwsSesConfig {
     private String awsProfile;
 
     /**
-     * AWS SES Client for production, staging, and local development.
-     * Local development uses AWS dev account in sandbox mode.
+     * AWS SES Client for production and staging only.
+     * Local development uses no SesClient — EmailService captures emails in-memory via LocalEmailCapture.
      * Uses DefaultCredentialsProvider which supports:
      * - IAM roles (production/staging ECS tasks)
      * - Named profiles (local development)
      * - Environment variables
      */
     @Bean
-    @Profile("!test")
+    @Profile("!test & !local")
     public SesClient sesClient() {
         log.info("Initializing AWS SES client for region: {}, profile: {}",
                 awsRegion, awsProfile != null ? awsProfile : "default");

@@ -1,7 +1,7 @@
 package ch.batbern.shared.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -43,11 +43,19 @@ import jakarta.mail.internet.MimeMultipart;
  * Story 2.2a Task B12: Registration confirmation emails
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
 
-    private final SesClient sesClient;
+    /**
+     * Optional — present only in production/staging (bean defined in AwsSesConfig).
+     * Null in local and test environments: EmailService falls back to LocalEmailCapture or logging.
+     */
+    @Autowired(required = false)
+    private SesClient sesClient;
+
+    /** Optional — present only on 'local' Spring profile. Null in test/production. */
+    @Autowired(required = false)
+    private LocalEmailCapture localEmailCapture;
 
     @Value("${app.email.from:noreply@batbern.ch}")
     private String fromEmail;
@@ -64,10 +72,14 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlBody) {
-        // In test/local environments without SES, just log the email
+        // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
-            log.info("Would send email to: {}, subject: {}", to, subject);
+            if (localEmailCapture != null) {
+                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, List.of());
+            } else {
+                log.info("Would send email to: {}, subject: {}", to, subject);
+            }
             return;
         }
 
@@ -109,11 +121,18 @@ public class EmailService {
             String htmlBody,
             List<EmailAttachment> attachments
     ) {
-        // In test/local environments without SES, just log the email
+        // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
-            log.info("Would send email with {} attachment(s) to: {}, subject: {}",
-                    attachments.size(), to, subject);
+            if (localEmailCapture != null) {
+                List<CapturedEmail.AttachmentInfo> attachmentInfos = attachments.stream()
+                    .map(a -> new CapturedEmail.AttachmentInfo(a.filename(), a.mimeType(), a.content().length))
+                    .toList();
+                localEmailCapture.capture(to, subject, htmlBody, fromEmail, fromName, attachmentInfos);
+            } else {
+                log.info("Would send email with {} attachment(s) to: {}, subject: {}",
+                        attachments.size(), to, subject);
+            }
             return;
         }
 

@@ -121,7 +121,11 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                         '**/client/**/dto/**',
                         '**/*Application.class',
                         '**/*Config.class',
-                        '**/*Configuration.class'
+                        '**/*Configuration.class',
+                        // Email system — excluded from coverage
+                        '**/Newsletter*.class',
+                        '**/DevEmailController.class',
+                        '**/DuplicateSubscriberException.class'
                     ])
                 }))
             }
@@ -147,7 +151,11 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
                         '**/client/**/dto/**',
                         '**/*Application.class',
                         '**/*Config.class',
-                        '**/*Configuration.class'
+                        '**/*Configuration.class',
+                        // Email system — excluded from coverage
+                        '**/Newsletter*.class',
+                        '**/DevEmailController.class',
+                        '**/DuplicateSubscriberException.class'
                     ])
                 }))
             }
