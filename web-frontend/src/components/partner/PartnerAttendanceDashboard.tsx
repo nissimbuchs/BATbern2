@@ -177,6 +177,7 @@ export const PartnerAttendanceDashboard: React.FC<Props> = ({ companyName }) => 
 
 interface SummaryRow {
   eventCode: string;
+  eventTitle: string;
   eventDate: string;
   companyAttendees: number;
   totalAttendees: number;
@@ -189,6 +190,7 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
         .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
         .map((s) => ({
           eventCode: s.eventCode,
+          title: s.eventTitle || s.eventCode,
           company: s.companyAttendees,
           total: s.totalAttendees,
         })),
@@ -201,7 +203,7 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
         <ComposedChart data={rows} margin={{ top: 4, right: 40, left: 0, bottom: 56 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
-            dataKey="eventCode"
+            dataKey="title"
             angle={-45}
             textAnchor="end"
             interval={0}
@@ -209,10 +211,29 @@ const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) =>
           />
           <YAxis allowDecimals={false} />
           <Tooltip
-            formatter={(value, name) => [
-              value,
-              name === 'company' ? 'Your attendees' : 'Total attendees',
-            ]}
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const row = payload[0].payload as any;
+              return (
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    padding: '8px 12px',
+                    fontSize: 12,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{row.eventCode}</div>
+                  {payload.map((p) => (
+                    <div key={p.dataKey as string}>
+                      {p.dataKey === 'company' ? 'Your attendees' : 'Total attendees'}: {p.value}
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
           />
           <Bar dataKey="company" name="company" fill={CHART_COLORS.partner} />
           <Line

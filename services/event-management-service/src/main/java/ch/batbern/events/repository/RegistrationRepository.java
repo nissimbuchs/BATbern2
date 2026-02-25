@@ -148,6 +148,7 @@ public interface RegistrationRepository
     @Query("""
         SELECT new ch.batbern.events.dto.AttendanceSummaryDTO(
             e.eventCode,
+            e.title,
             e.date,
             COUNT(r.id),
             SUM(CASE WHEN r.attendeeCompanyId = :companyId THEN 1L ELSE 0L END)
@@ -155,7 +156,7 @@ public interface RegistrationRepository
         FROM Event e
         LEFT JOIN Registration r ON r.eventId = e.id AND r.status IN ('confirmed', 'attended')
         WHERE e.date >= :fromDate
-        GROUP BY e.id, e.eventCode, e.date
+        GROUP BY e.id, e.eventCode, e.title, e.date
         ORDER BY e.date DESC
         """)
     List<AttendanceSummaryDTO> findAttendanceSummary(

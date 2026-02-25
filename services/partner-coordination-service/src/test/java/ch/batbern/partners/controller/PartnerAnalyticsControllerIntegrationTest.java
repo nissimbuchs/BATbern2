@@ -88,8 +88,8 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_returnDashboard_when_partnerRequestsOwnCompany() throws Exception {
         List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
-            new AttendanceSummaryDTO("BATbern56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
+            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
+            new AttendanceSummaryDTO("BATbern56", "BATbern 56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
         );
         when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), anyInt()))
             .thenReturn(summaries);
@@ -116,7 +116,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_returnDashboard_when_organizerRequestsAnyCompany() throws Exception {
         List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", Instant.parse("2024-06-01T00:00:00Z"), 100, 5)
+            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 5)
         );
         when(eventManagementClient.getAttendanceSummary(eq("MicrosoftZH"), anyInt()))
             .thenReturn(summaries);
@@ -133,7 +133,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_passFromYearToClient_when_fromYearParamProvided() throws Exception {
         List<AttendanceSummaryDTO> recent = List.of(
-            new AttendanceSummaryDTO("BATbern57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
+            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
         );
         when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), eq(2020)))
             .thenReturn(recent);
@@ -153,8 +153,8 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
         // partnership_cost = 10000, total company attendees = 10+8 = 18
         // cost per attendee = 10000 / 18 ≈ 555.56
         List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
-            new AttendanceSummaryDTO("BATbern56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
+            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
+            new AttendanceSummaryDTO("BATbern56", "BATbern 56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
         );
         when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), anyInt()))
             .thenReturn(summaries);
@@ -183,7 +183,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_returnXlsx_when_exportRequested() throws Exception {
         List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
+            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
         );
         when(eventManagementClient.getAttendanceSummary(anyString(), anyInt()))
             .thenReturn(summaries);

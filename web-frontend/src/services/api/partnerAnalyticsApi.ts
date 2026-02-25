@@ -12,6 +12,7 @@ import apiClient from '@/services/api/apiClient';
 
 export interface AttendanceSummaryRecord {
   eventCode: string;
+  eventTitle: string;
   eventDate: string; // ISO-8601 date-time
   totalAttendees: number;
   companyAttendees: number;
