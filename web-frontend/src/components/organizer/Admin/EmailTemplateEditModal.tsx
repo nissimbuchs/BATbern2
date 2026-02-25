@@ -7,12 +7,11 @@
  *
  * Two editor modes:
  * - Layout mode (isLayoutMode=true): Monaco Editor, no subject field
- * - Content mode (isLayoutMode=false): TinyMCE WYSIWYG, subject field, layoutKey selector
+ * - Content mode (isLayoutMode=false): Monaco HTML editor, subject field, layoutKey selector
  */
 
 import React, { useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Editor as TinyMCEEditor } from '@tinymce/tinymce-react';
 import {
   Alert,
   Box,
@@ -207,42 +206,22 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
           </Alert>
         )}
 
-        {/* Editor */}
-        {isLayoutMode ? (
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <Editor
-              height="500px"
-              language="html"
-              value={htmlBody}
-              onChange={(val) => setHtmlBody(val ?? '')}
-              options={{
-                wordWrap: 'on',
-                minimap: { enabled: false },
-                fontSize: 13,
-              }}
-            />
-          </Box>
-        ) : (
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
-            <TinyMCEEditor
-              apiKey="vfen2deuuzo9vxkqtwegdhngiujb74mu2pb3l5fg9o31ekvf"
-              value={htmlBody}
-              onEditorChange={(val) => setHtmlBody(val)}
-              init={{
-                height: 400,
-                menubar: false,
-                plugins: 'code table lists link',
-                toolbar:
-                  'code | blocks | bold italic underline' +
-                  ' | alignleft aligncenter alignright' +
-                  ' | bullist numlist | outdent indent | hr | link | table',
-                entity_encoding: 'raw',
-                valid_elements: '*[*]',
-                branding: false,
-              }}
-            />
-          </Box>
-        )}
+        {/* Editor — Monaco for all templates (layout + content).
+            TinyMCE was removed: its API key is domain-locked, causing a
+            broken textarea on staging, and it mangles Mustache variables. */}
+        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Editor
+            height={isLayoutMode ? '500px' : '400px'}
+            language="html"
+            value={htmlBody}
+            onChange={(val) => setHtmlBody(val ?? '')}
+            options={{
+              wordWrap: 'on',
+              minimap: { enabled: false },
+              fontSize: 13,
+            }}
+          />
+        </Box>
 
         {/* Layout key + variable chips (content mode only) */}
         {!isLayoutMode && (
