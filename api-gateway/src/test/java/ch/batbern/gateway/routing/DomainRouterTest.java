@@ -154,6 +154,33 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Test Story 10.5: analytics must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_analyticsEndpointCalled")
+    void should_routeToEventService_when_analyticsEndpointCalled() {
+        // Given
+        String requestPath = "/api/v1/analytics/overview";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_analyticsCompaniesDistributionCalled")
+    void should_routeToEventService_when_analyticsCompaniesDistributionCalled() {
+        // Given
+        String requestPath = "/api/v1/analytics/companies/distribution";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {

@@ -1,6 +1,6 @@
 # Story 10.5: Analytics Dashboard
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -68,68 +68,58 @@ so that during partner meetings I can showcase community growth, speaker contrib
 
 ## Tasks / Subtasks
 
-- [ ] Task 1 — OpenAPI spec (AC7)
-  - [ ] Add 5 analytics endpoints to `docs/api/events.openapi.yml`
-  - [ ] Define response schemas: `AnalyticsOverviewResponse`, `AnalyticsAttendanceResponse`, `AnalyticsTopicsResponse`, `AnalyticsCompaniesResponse`, `CompanyDistributionResponse`
-  - [ ] Commit spec before any implementation begins
+- [x] Task 1 — OpenAPI spec (AC7)
+  - [x] Add 5 analytics endpoints to `docs/api/events-api.openapi.yml`
+  - [x] Define response schemas: `AnalyticsOverviewResponse`, `AnalyticsAttendanceResponse`, `AnalyticsTopicsResponse`, `AnalyticsCompaniesResponse`, `CompanyDistributionResponse` + 4 item schemas
+  - [x] Commit spec before any implementation begins
 
-- [ ] Task 2 — Backend: Analytics repository queries (AC6)
-  - [ ] Add `AnalyticsRepository` interface (or extend existing repos) with native/JPQL queries
-  - [ ] Overview query: total events, total registrations (confirmed/attended), distinct companies, total session_users count (= total speaker contributions)
-  - [ ] Timeline query: all events with date, eventNumber, title, category (join Event→Topic on topicCode), attendee count
-  - [ ] Attendance query: per-event totals + returning/new (see dev notes for algorithm)
-  - [ ] Topics query: GROUP BY category for event count; GROUP BY topicCode for scatter data (join Event→Topic)
-  - [ ] Companies query: attendance by year+company (GROUP BY YEAR(date), attendeeCompanyId); sessions per company (native SQL: session_users JOIN sessions JOIN user_profiles GROUP BY company_id — see Dev Notes); overall distribution (GROUP BY attendeeCompanyId)
-  - [ ] Distribution per-event query: GROUP BY attendeeCompanyId WHERE eventCode = :code
+- [x] Task 2 — Backend: Analytics repository queries (AC6)
+  - [x] Add `AnalyticsRepository` interface with native/JPQL queries
+  - [x] Overview query: total events, total registrations (confirmed/attended), distinct companies, total session_users count
+  - [x] Timeline query: all events with date, eventNumber, title, category (join Event→Topic), attendee count
+  - [x] Attendance query: per-event totals + all-attendances-for-returning/new algorithm
+  - [x] Topics query: GROUP BY category for event count; native SQL scatter data (topic → events → avg attendees)
+  - [x] Companies query: attendance by year+company (native SQL); sessions per company (native SQL: session_users → user_profiles ARCH BREAK); distribution (GROUP BY attendeeCompanyId)
+  - [x] Distribution per-event query: GROUP BY attendeeCompanyId WHERE eventCode = :code
 
-- [ ] Task 3 — Backend: Service + Controller + DTOs (AC6)
-  - [ ] `AnalyticsService.java` — orchestrates repository calls
-  - [ ] `AnalyticsController.java` — 5 GET endpoints; `@PreAuthorize` ORGANIZER or PARTNER
-  - [ ] DTO records: match OpenAPI spec schemas
-  - [ ] Integration tests (TDD — tests first): `AnalyticsControllerIntegrationTest extends AbstractIntegrationTest`
+- [x] Task 3 — Backend: Service + Controller + DTOs (AC6)
+  - [x] `AnalyticsService.java` — orchestrates repository calls, returning/new algorithm
+  - [x] `AnalyticsController.java` — 5 GET endpoints; `@PreAuthorize` ORGANIZER or PARTNER
+  - [x] DTOs: generated from OpenAPI spec via OpenAPI Generator (`ch.batbern.events.dto.generated`)
+  - [x] Integration tests (TDD — tests written first): `AnalyticsControllerIntegrationTest extends AbstractIntegrationTest`
+  - [x] All 18 integration tests passing — fixed via: V100 user_profiles stub migration, JdbcTemplate setUp() inserts, hasItem() matcher fix
 
-- [ ] Task 4 — Frontend: Service layer (AC1)
-  - [ ] `web-frontend/src/services/analyticsService.ts` — 5 typed async functions wrapping `apiClient`
-  - [ ] TypeScript types matching backend DTOs
+- [x] Task 4 — Frontend: Service layer (AC1)
+  - [x] `web-frontend/src/services/analyticsService.ts` — 5 typed async functions wrapping `apiClient`
+  - [x] TypeScript types re-exported from generated events-api.types.ts
 
-- [ ] Task 5 — Frontend: Hooks (AC1)
-  - [ ] `web-frontend/src/hooks/useAnalytics.ts` — 5 hooks using React Query; key patterns: `['analytics', 'overview']`, `['analytics', 'attendance', fromYear]`, etc.
+- [x] Task 5 — Frontend: Hooks (AC1)
+  - [x] `web-frontend/src/hooks/useAnalytics.ts` — 5 hooks using React Query
 
-- [ ] Task 6 — Frontend: Shared chart components (AC8, AC9)
-  - [ ] `ChartCard.tsx` — wrapper: title, chart slot, `▼ Show data table` toggle (MUI `Collapse`), `DataTable` component
-  - [ ] `DataTable.tsx` — sortable MUI Table with typed column defs
-  - [ ] `EmptyChartState.tsx` — consistent empty state (icon + message)
-  - [ ] `CHART_COLORS` constant (see Dev Notes for values)
+- [x] Task 6 — Frontend: Shared chart components (AC8, AC9)
+  - [x] `ChartCard.tsx`, `DataTable.tsx`, `EmptyChartState.tsx`, `CHART_COLORS.ts`
 
-- [ ] Task 7 — Frontend: Overview tab (AC2)
-  - [ ] `KpiCard.tsx` — stat display with label + number + icon
-  - [ ] `EventCadenceTimeline.tsx` — Recharts `BarChart` (vertical bars per event, X=date, colored by category)
-  - [ ] `OverviewTab.tsx` — 4 KPI cards + timeline chart
+- [x] Task 7 — Frontend: Overview tab (AC2)
+  - [x] `KpiCard.tsx`, `EventCadenceTimeline.tsx`, `OverviewTab.tsx`
 
-- [ ] Task 8 — Frontend: Attendance tab (AC3)
-  - [ ] `AttendeesPerEventChart.tsx` — Recharts `ComposedChart` with `Bar` + `Line` trend; label toggle buttons
-  - [ ] `ReturningVsNewChart.tsx` — stacked `BarChart`
-  - [ ] `AttendanceTab.tsx` — renders both charts in `ChartCard` wrappers
+- [x] Task 8 — Frontend: Attendance tab (AC3)
+  - [x] `AttendeesPerEventChart.tsx`, `ReturningVsNewChart.tsx`, `AttendanceTab.tsx`
 
-- [ ] Task 9 — Frontend: Topics tab (AC4)
-  - [ ] `EventsPerCategoryChart.tsx` — horizontal `BarChart`
-  - [ ] `TopicScatterChart.tsx` — Recharts `ScatterChart`
-  - [ ] `TopicsTab.tsx`
+- [x] Task 9 — Frontend: Topics tab (AC4)
+  - [x] `EventsPerCategoryChart.tsx`, `TopicScatterChart.tsx`, `TopicsTab.tsx`
 
-- [ ] Task 10 — Frontend: Companies tab (AC5)
-  - [ ] `CompanyAttendanceOverTimeChart.tsx` — stacked `BarChart` by year; partner company pinned
-  - [ ] `SessionsPerCompanyChart.tsx` — `BarChart` with label inside bar for unique speakers
-  - [ ] `CompanyDistributionPieChart.tsx` — `PieChart` + per-event filter dropdown
-  - [ ] `CompaniesTab.tsx` — Top N toggle state; partner highlight logic; all 3 charts
+- [x] Task 10 — Frontend: Companies tab (AC5)
+  - [x] `CompanyAttendanceOverTimeChart.tsx`, `SessionsPerCompanyChart.tsx`
+  - [x] `CompanyDistributionPieChart.tsx`, `CompaniesTab.tsx`
 
-- [ ] Task 11 — Frontend: Page assembly + i18n (AC1, AC10)
-  - [ ] Replace stub `OrganizerAnalyticsPage.tsx` with full tab layout
-  - [ ] Global time range selector (top-right, MUI `ToggleButtonGroup`)
-  - [ ] i18n keys in `en/organizer.json` + `de/organizer.json` under `analytics.*` namespace
+- [x] Task 11 — Frontend: Page assembly + i18n (AC1, AC10)
+  - [x] Replace stub `OrganizerAnalyticsPage.tsx` with full tab layout
+  - [x] Global time range selector (top-right, MUI `ToggleButtonGroup`)
+  - [x] i18n keys in `en/organizer.json` + `de/organizer.json` under `analytics.*` namespace
 
-- [ ] Task 12 — Tests
-  - [ ] Backend: `AnalyticsControllerIntegrationTest` — TDD, Testcontainers PostgreSQL
-  - [ ] Frontend: unit tests for `ChartCard`, `EmptyChartState`, `DataTable`
+- [x] Task 12 — Tests
+  - [x] Backend: `AnalyticsControllerIntegrationTest` — 18/18 passing
+  - [x] Frontend: unit tests for `ChartCard` (10 tests), `EmptyChartState` (3 tests), `DataTable` (6 tests) — 19/19 passing
 
 ## Dev Notes
 
@@ -556,6 +546,64 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+**Session 1 (2026-02-25) — Backend in progress:**
+- Task 1 ✅: 5 endpoints + 9 schemas added to `docs/api/events-api.openapi.yml`
+- Task 2 ✅: `AnalyticsRepository.java` with all JPQL + native SQL queries. Key issue fixed: PostgreSQL cannot infer NULL parameter type for `:fromDate IS NULL OR e.date >= :fromDate` — solution: always pass non-null Instant (use `Instant.EPOCH` for "all-time")
+- Task 3 in progress: `AnalyticsService.java`, `AnalyticsController.java` written; integration tests written; 14/18 tests still failing due to `Instant.EPOCH` fix in service not yet verified
+- Categories in DB `topics` table: `technical`, `management`, `soft_skills`, `industry_trends`, `tools_platforms` (NOT ARCHITECTURE/SECURITY etc. — story's CHART_COLORS are frontend-only mappings)
+- `AnalyticsController` is standalone `@RestController` (does NOT implement `AnalyticsApi` — avoids conflict with `EventController` which already handles `getAttendanceSummary` and `getEventAnalytics`)
+
 ### Completion Notes List
 
+**Session 2 (2026-02-25) — Tasks 3-10 complete:**
+- Task 3: Fixed 4 integration test failures. Root cause: `user_profiles` table missing in EMS Testcontainers. Fix: V100 test-only migration creates stub table; setUp() inserts speaker profiles via JdbcTemplate; `hasItem(greaterThan(0))` for JSONPath array assertions.
+- Tasks 4-5: `analyticsService.ts` (5 service functions) + `useAnalytics.ts` (5 React Query hooks). Types re-exported from generated `events-api.types.ts`.
+- Tasks 6-10: All chart components created in `web-frontend/src/components/organizer/Analytics/`. Partner highlight via `user.companyName` (confirmed field name). `ChartCard` uses `BATbernLoader` per spec. Collapsible `DataTable` with MUI `Collapse`.
+
+**Session 3 (2026-02-25) — Tasks 11-12 complete — STORY DONE:**
+- Task 11: `OrganizerAnalyticsPage.tsx` stub replaced with 4-tab layout + global time range selector (ToggleButtonGroup, top-right, hidden on Overview tab). i18n keys added under `analytics.*` in both `en/organizer.json` and `de/organizer.json`.
+- Task 12: 19/19 unit tests passing — `ChartCard` (10), `EmptyChartState` (3), `DataTable` (6). Fixed MUI Collapse unmountOnExit race using `waitFor()` (known pattern from MEMORY.md).
+- TypeScript fixes: removed unused `Box` imports (AttendeesPerEventChart, CompanyDistributionPieChart), fixed `UserRole` comparison to lowercase `'partner'`, fixed `ColumnDef<Row>` type mismatches by removing `as unknown as Record<string,unknown>[]` casts, used `props: any` for Recharts shape/label callbacks where types are too narrow.
+- Full frontend test suite: 3650 passing, 2 pre-existing failures in PartnerDetailScreen (unrelated to analytics).
+
 ### File List
+
+**Backend:**
+- `docs/api/events-api.openapi.yml` — 5 new analytics paths + 9 new schemas
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/AnalyticsRepository.java` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/AnalyticsService.java` (NEW)
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/AnalyticsController.java` (NEW)
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/AnalyticsControllerIntegrationTest.java` (NEW)
+- `services/event-management-service/src/test/resources/application-test.properties` (updated: added `classpath:db/testmigration`)
+- `services/event-management-service/src/test/resources/db/testmigration/V100__create_user_profiles_stub.sql` (NEW)
+- `web-frontend/src/types/generated/events-api.types.ts` (regenerated — analytics types added)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (updated: 10-5 → in-progress)
+
+**Frontend (Tasks 4-10):**
+- `web-frontend/src/services/analyticsService.ts` (NEW)
+- `web-frontend/src/hooks/useAnalytics.ts` (NEW)
+- `web-frontend/src/components/organizer/Analytics/CHART_COLORS.ts` (NEW)
+- `web-frontend/src/components/organizer/Analytics/EmptyChartState.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/DataTable.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/ChartCard.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/KpiCard.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/EventCadenceTimeline.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/OverviewTab.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/AttendeesPerEventChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/ReturningVsNewChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/AttendanceTab.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/EventsPerCategoryChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/TopicScatterChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/TopicsTab.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/CompanyAttendanceOverTimeChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/SessionsPerCompanyChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/CompanyDistributionPieChart.tsx` (NEW)
+- `web-frontend/src/components/organizer/Analytics/CompaniesTab.tsx` (NEW)
+
+**Frontend (Tasks 11-12):**
+- `web-frontend/src/pages/organizer/OrganizerAnalyticsPage.tsx` (REPLACED — stub → full page)
+- `web-frontend/public/locales/en/organizer.json` (updated — analytics.* keys added)
+- `web-frontend/public/locales/de/organizer.json` (updated — analytics.* keys added DE)
+- `web-frontend/src/components/organizer/Analytics/ChartCard.test.tsx` (NEW — 10 tests)
+- `web-frontend/src/components/organizer/Analytics/EmptyChartState.test.tsx` (NEW — 3 tests)
+- `web-frontend/src/components/organizer/Analytics/DataTable.test.tsx` (NEW — 6 tests)
