@@ -218,18 +218,6 @@ services/event-management-service/.../repository/EventTaskRepository.java — fi
 
 ---
 
-### Story 10.5: Migrate System Templates to Layout-Based (future)
-
-**Story file**: TBD
-**Status**: backlog
-**Prerequisite**: Story 10.2 complete and `batbern-default` layout proven in production
-
-**Scope**: Extract the content body from each of the 22 system templates; strip the HTML shell (moved to `batbern-default`). Each template becomes content-only (`layout_key='batbern-default'`). Allows organizers to edit all 22 templates in TinyMCE. Updating the BATbern logo/footer in the layout propagates to all 22 emails automatically.
-
-*(Previously tracked as `10-3-migrate-system-templates-to-layout` in sprint-status — renumbered to 10.5 to accommodate Story 10.3 Task Reminder and Story 10.4 Blob Selector.)*
-
----
-
 ### Story 10.4: Blob Topic Selector
 
 **Story file**: `_bmad-output/implementation-artifacts/10-4-blob-topic-selector.md`
@@ -324,6 +312,94 @@ docs/api/events.openapi.yml                         — topic-session-data + top
 - [ ] i18n: `navigation.blobSelector` (events) + `blobSelector.*` keys (organizer) in de/en
 - [ ] Type-check passes, no TypeScript errors
 - [ ] OpenAPI spec updated before backend implementation (ADR-006)
+
+---
+
+### Story 10.5: Analytics Dashboard
+
+**Story file**: `_bmad-output/implementation-artifacts/10-5-analytics-dashboard.md`
+**Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-25.md`
+**Status**: ready-for-dev
+**Prerequisite**: None (independent — no backend changes conflict with other stories)
+
+**User Story:**
+As an **organizer or partner**, I want a dedicated Analytics page with rich, tabbed visualizations of BATbern event statistics, so that during partner meetings I can showcase community growth, speaker contributions, and company engagement with live, data-driven charts.
+
+**Scope:**
+
+**Page Shell:**
+- Route `/organizer/analytics` already exists (stub page to replace)
+- 4 tabs: **Overview** (default) · **Attendance** · **Topics** · **Companies**
+- Global time range filter: All Time / Last 5 Years / Last 2 Years (top-right, cascades to all time-sensitive charts)
+- Chart library: Recharts (already installed `^3.5.0`)
+- Color palette: BATbern brand colors (from `theme.ts`)
+- Per-chart layout: chart on top + `▼ Show data table` collapsible MUI Table
+
+**Tab 1 — Overview:**
+- 4 KPI cards: Total Events · Total Attendees · Companies Represented · Total Sessions (all-time, not time-filtered)
+- Event cadence timeline: all events as colored bars on a time axis; colored by topic category; always shows all events
+
+**Tab 2 — Attendance:**
+- Attendees per event: `ComposedChart` (bars + trend line); label toggle (title/category/both)
+- Returning vs. New attendees per event: stacked bar chart (warm=returning, cool=new)
+
+**Tab 3 — Topics:**
+- Events per category: horizontal bar chart
+- Topic popularity vs. attendee count: scatter plot (X=event count, Y=avg attendees per event on topic)
+
+**Tab 4 — Companies:**
+- Partner's own company (from `user.company`) auto-highlighted and pinned in all three charts
+- Top N toggle: 5 / 10 / All (default 10); own company always shown
+- Attendees per company over time: stacked bar by year
+- Sessions per company: bar chart with unique speaker count label
+- Attendee distribution per company: pie chart with per-event filter dropdown
+
+**Backend — New `AnalyticsController` in event-management-service:**
+- `GET /api/v1/analytics/overview` — KPI totals + timeline data
+- `GET /api/v1/analytics/attendance?fromYear={year}` — per-event attendance with returning/new breakdown
+- `GET /api/v1/analytics/topics?fromYear={year}` — events per category + topic scatter data
+- `GET /api/v1/analytics/companies?fromYear={year}` — company attendance over time, sessions, distribution
+- `GET /api/v1/analytics/companies/distribution?eventCode={code}` — distribution for a single event
+- ORGANIZER + PARTNER roles; aggregate data only (no individual names)
+
+**Key data model:**
+- `Registration.attendeeCompanyId` — denormalized company name (indexed), used for all company-level attendance analytics
+- `SpeakerPool.company` — denormalized company name for session counting
+- `Event.topicCode → Topic.category` join for category-based charts
+
+**Key new files:**
+```
+web-frontend/src/pages/organizer/OrganizerAnalyticsPage.tsx          ← REPLACE stub
+web-frontend/src/components/organizer/Analytics/                      ← new folder
+  ChartCard.tsx, DataTable.tsx, EmptyChartState.tsx, KpiCard.tsx
+  CHART_COLORS.ts, OverviewTab.tsx, EventCadenceTimeline.tsx
+  AttendanceTab.tsx, AttendeesPerEventChart.tsx, ReturningVsNewChart.tsx
+  TopicsTab.tsx, EventsPerCategoryChart.tsx, TopicScatterChart.tsx
+  CompaniesTab.tsx, CompanyAttendanceOverTimeChart.tsx
+  SessionsPerCompanyChart.tsx, CompanyDistributionPieChart.tsx
+web-frontend/src/services/analyticsService.ts
+web-frontend/src/hooks/useAnalytics.ts
+services/event-management-service/.../controller/AnalyticsController.java
+services/event-management-service/.../service/AnalyticsService.java
+services/event-management-service/.../repository/AnalyticsRepository.java
+```
+
+**Key modified files:**
+```
+docs/api/events.openapi.yml                              — analytics endpoints (FIRST — ADR-006)
+public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
+```
+
+**Definition of Done (Story 10.5):**
+- [ ] OpenAPI spec committed before any backend implementation
+- [ ] TDD: integration tests written first (`AnalyticsControllerIntegrationTest`)
+- [ ] All 10 ACs implemented
+- [ ] Recharts renders at 60fps with full dataset (~58 events)
+- [ ] Partner auto-highlight works when logged in as PARTNER role
+- [ ] Empty states shown for each chart when no data in selected time range
+- [ ] Data tables collapsible per chart, sortable by column header
+- [ ] i18n: `analytics.*` keys in both `en/` and `de/` organizer files
+- [ ] Type-check passes, no TypeScript errors
 
 ---
 
