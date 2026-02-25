@@ -93,16 +93,30 @@ so that I have control over my email preferences in one place.
   - `email-templates/newsletter-event-de.html`
   - `email-templates/newsletter-event-en.html`
 - Both are **content-only fragments** (no HTML shell — `batbern-default` layout provides the wrapper)
+- Both are **already authored** — they faithfully reproduce the existing BATbern Meetup newsletter structure (intro text, event details table, speakers section, registration link, upcoming events table, notes, closing, unsubscribe footer)
 - Both are seeded into the DB by `EmailTemplateSeedService` under category `NEWSLETTER`
 - DB subject pattern: `"{{reminderPrefix}}{{eventTitle}} — BATbern"` (DE) / `"{{reminderPrefix}}{{eventTitle}} — BATbern"` (EN)
-- Template variables supported:
-  - `{{reminderPrefix}}` — `""` for newsletter, `"Erinnerung: "` / `"Reminder: "` for reminder
-  - `{{eventTitle}}`, `{{eventDate}}`, `{{eventTime}}`, `{{venue}}`, `{{topic}}`
-  - `{{speakersSection}}` — rendered HTML list of confirmed speakers (omitted/empty when not yet published)
-  - `{{registrationLink}}` — `{baseUrl}/register/{eventCode}`
-  - `{{unsubscribeLink}}` — unique per recipient: `{baseUrl}/unsubscribe?token={subscriber.unsubscribeToken}`
-  - `{{preferencesLink}}` — `{baseUrl}/account`
-- Every rendered email MUST contain a visible "Unsubscribe" link in the footer (GDPR requirement)
+- Template variables — all resolved by `NewsletterEmailService` before sending:
+
+  | Variable | Description | Example |
+  |----------|-------------|---------|
+  | `{{reminderPrefix}}` | Empty for newsletter; localized "Reminder: " prefix for reminders | `""` / `"Erinnerung: "` |
+  | `{{eventNumber}}` | Event sequence number | `"58"` |
+  | `{{eventType}}` | Event format, localized | `"Abend-BAT"` / `"Evening BAT"` |
+  | `{{eventTitle}}` | Event topic/title | `"AI in der Software Entwicklung"` |
+  | `{{eventDate}}` | Formatted date | `"Freitag, 6. März 2026"` |
+  | `{{eventTime}}` | Time range | `"16.00 – 18.30 Uhr"` |
+  | `{{venue}}` | Venue name and city | `"Forum, Zentrum Paul Klee, Bern"` |
+  | `{{venueDirectionsUrl}}` | Optional directions URL (Mustache conditional `{{#venueDirectionsUrl}}...{{/venueDirectionsUrl}}`) | `"https://maps.google.com/..."` or empty |
+  | `{{speakersSection}}` | Optional HTML block (see Dev Notes for format); empty string if agenda not yet published | `<p>Mit folgenden Beiträgen:</p><ul>...` |
+  | `{{eventDetailLink}}` | Full URL to event page | `{baseUrl}/events/BATbern58` |
+  | `{{conferenceLanguage}}` | Spoken language(s) | `"Deutsch und Englisch"` |
+  | `{{registrationLink}}` | Registration URL (replaces old Meetup link) | `{baseUrl}/register/BATbern58` |
+  | `{{upcomingEventsSection}}` | Optional HTML table of future events (see Dev Notes); empty string if none | `<p>BAT-Termine:...` |
+  | `{{unsubscribeLink}}` | **Per-recipient** unsubscribe URL — **REQUIRED** (GDPR) | `{baseUrl}/unsubscribe?token={uuid}` |
+  | `{{preferencesLink}}` | Link to account settings | `{baseUrl}/account` |
+
+- Every rendered email MUST contain a visible "Unsubscribe" link (already in the template footer)
 - Newsletter templates are visible/editable in the Email Templates admin tab (Story 10.2) under the `NEWSLETTER` category
 
 ### AC9 — Newsletter tab on EventPage (organizer)
@@ -251,25 +265,51 @@ services/event-management-service/src/main/java/ch/batbern/events/
 | ShedLock (if scheduler added later) | `config/ShedLockConfig.java` |
 | Public API route pattern | `DomainRouter.java` → add `/api/v1/newsletter/**` → event-management-service |
 
-### Newsletter template design (content fragment)
+### Newsletter template files (already authored)
 
-The templates are content-only (no HTML shell). The `batbern-default` layout provides header/footer/CSS. Template body should contain:
+Both templates are already written and committed to the classpath. They faithfully reproduce the existing BATbern Meetup newsletter design:
 
-```html
-<h2>{{reminderPrefix}}{{eventTitle}}</h2>
-<p><strong>📅 {{eventDate}}</strong> um {{eventTime}} Uhr | 📍 {{venue}}</p>
-<p><strong>Thema:</strong> {{topic}}</p>
-
-{{speakersSection}}
-
-<p><a href="{{registrationLink}}" class="cta-button">Jetzt anmelden</a></p>
-
-<p style="font-size: 12px; color: #999;">
-  Sie erhalten diese E-Mail, weil Sie den BATbern-Newsletter abonniert haben.<br>
-  <a href="{{unsubscribeLink}}">Newsletter abbestellen</a> |
-  <a href="{{preferencesLink}}">Einstellungen verwalten</a>
-</p>
 ```
+services/event-management-service/src/main/resources/email-templates/
+  newsletter-event-de.html   ← DONE (matches existing newsletter, German)
+  newsletter-event-en.html   ← DONE (matches existing newsletter, English)
+```
+
+**Structure** (same in both locales):
+1. "BAT-Newsletter" intro paragraph (who we are, why you receive this)
+2. Event announcement: "Das {{eventNumber}}. Berner Architekten-Treffen findet als {{eventType}} wie folgt statt" with a bordered table: Datum / Thema / Ort (with optional Anfahrt link)
+3. `{{speakersSection}}` — speaker bullet list (conditional, empty if not published)
+4. Apéro note + event detail link + conference language
+5. Registration section (Anmeldung) with `{{registrationLink}}`
+6. `{{upcomingEventsSection}}` — upcoming dates table (conditional)
+7. Notes section (Hinweise): in-person, Slideshare link
+8. Closing: "Wir freuen uns auf deine Teilnahme. Das Organisationskomitee"
+9. GDPR unsubscribe footer: `{{unsubscribeLink}}` + `{{preferencesLink}}`
+
+**`{{speakersSection}}` format** — built by `NewsletterEmailService` when event has published speakers:
+```html
+<p><strong>Mit folgenden Beiträgen:</strong></p>
+<ul>
+  <li>"Session Title 1", <strong>Speaker Name</strong>, Company</li>
+  <li>"Session Title 2", <strong>Speaker Name</strong>, Company</li>
+</ul>
+```
+Empty string `""` when agenda is not yet published (no section rendered).
+
+**`{{upcomingEventsSection}}` format** — built from future confirmed events in the DB:
+```html
+<p><strong>BAT-Termine:</strong><br>
+Damit du dir bereits die Termine der nächsten Treffen reservieren kannst:</p>
+<table style="border-collapse:collapse;width:100%;margin:8px 0 16px;">
+  <tr>
+    <td style="padding:6px 12px;border:1px solid #ccc;">BATbern59</td>
+    <td style="padding:6px 12px;border:1px solid #ccc;">Freitag, 19.06.2026</td>
+    <td style="padding:6px 12px;border:1px solid #ccc;font-style:italic;">Thema noch offen</td>
+    <td style="padding:6px 12px;border:1px solid #ccc;">Ganztages-BAT</td>
+  </tr>
+</table>
+```
+Empty string `""` when no future events exist.
 
 ### Frontend files
 

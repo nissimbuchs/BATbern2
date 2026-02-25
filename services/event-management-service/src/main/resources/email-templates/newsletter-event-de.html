@@ -1,0 +1,97 @@
+<!-- newsletter-event-de.html -->
+<!-- Content-only fragment. Injected into layout-batbern-default-de at {{content}}. -->
+<!-- Do NOT add a full HTML wrapper here. -->
+<!--
+  Variables (all resolved by NewsletterEmailService):
+    {{reminderPrefix}}         — "" for newsletter | "Erinnerung: " for reminder
+    {{eventNumber}}            — e.g. "58"
+    {{eventType}}              — "Abend-BAT" | "Ganztages-BAT" | "BAT"
+    {{eventDate}}              — e.g. "Freitag, 6. März 2026"
+    {{eventTime}}              — e.g. "16.00 – 18.30 Uhr"
+    {{eventTitle}}             — e.g. "AI in der Software Entwicklung"
+    {{venue}}                  — e.g. "Forum, Zentrum Paul Klee, Bern"
+    {{venueDirectionsUrl}}     — optional Google Maps / directions URL (may be empty)
+    {{speakersSection}}        — optional HTML block built by backend (see below); empty string if not yet published
+    {{eventDetailLink}}        — e.g. "https://berner-architekten-treffen.ch/events/BATbern58"
+    {{conferenceLanguage}}     — e.g. "Deutsch und Englisch" | "Deutsch"
+    {{registrationLink}}       — e.g. "https://berner-architekten-treffen.ch/register/BATbern58"
+    {{upcomingEventsSection}}  — optional HTML block built by backend; empty string if no future events
+    {{unsubscribeLink}}        — per-recipient unsubscribe URL (REQUIRED — GDPR)
+    {{preferencesLink}}        — e.g. "https://berner-architekten-treffen.ch/account"
+
+  {{speakersSection}} format (built by NewsletterEmailService when agenda is published):
+    <p><strong>Mit folgenden Beiträgen:</strong></p>
+    <ul>
+      <li>"Session Title", <strong>Speaker Name</strong>, Company</li>
+      ...
+    </ul>
+
+  {{upcomingEventsSection}} format (built by NewsletterEmailService from future confirmed events):
+    <p><strong>BAT-Termine:</strong><br>
+    Damit du dir bereits die Termine der nächsten Treffen reservieren kannst:</p>
+    <table style="border-collapse:collapse;width:100%;margin:8px 0 16px;">
+      <tr>
+        <td style="padding:6px 12px;border:1px solid #ccc;">BATbern59</td>
+        <td style="padding:6px 12px;border:1px solid #ccc;">Freitag, 19.06.2026</td>
+        <td style="padding:6px 12px;border:1px solid #ccc;font-style:italic;">Thema noch offen</td>
+        <td style="padding:6px 12px;border:1px solid #ccc;">Ganztages-BAT</td>
+      </tr>
+    </table>
+-->
+
+<p><strong>BAT-Newsletter</strong><br>
+Willkommen beim Newsletter für das Berner Architekten Treffen BATbern.<br>
+Als ehemaliger Teilnehmer oder Interessent wurdest du von uns in den Verteiler für den BAT-Newsletter aufgenommen.
+Wir werden über den Newsletter über die geplanten Veranstaltungen und Themen informieren.
+</p>
+
+<p>{{reminderPrefix}}Das <strong>{{eventNumber}}. Berner Architekten-Treffen findet als {{eventType}}</strong> wie folgt statt</p>
+
+<table style="border-collapse: collapse; margin: 12px auto 20px; width: 75%;">
+    <tr>
+        <td style="padding: 7px 16px; border: 1px solid #ccc; font-weight: bold; white-space: nowrap; color: #555;">Datum:</td>
+        <td style="padding: 7px 16px; border: 1px solid #ccc;"><strong>{{eventDate}}, {{eventTime}}</strong>, anschliessend Apéro</td>
+    </tr>
+    <tr>
+        <td style="padding: 7px 16px; border: 1px solid #ccc; font-weight: bold; white-space: nowrap; color: #555;">Thema:</td>
+        <td style="padding: 7px 16px; border: 1px solid #ccc;"><strong>{{eventTitle}}</strong></td>
+    </tr>
+    <tr>
+        <td style="padding: 7px 16px; border: 1px solid #ccc; font-weight: bold; white-space: nowrap; color: #555;">Ort:</td>
+        <td style="padding: 7px 16px; border: 1px solid #ccc;">{{venue}}{{#venueDirectionsUrl}} (<a href="{{venueDirectionsUrl}}" style="color: #0066cc;">Anfahrt</a>){{/venueDirectionsUrl}}</td>
+    </tr>
+</table>
+
+{{speakersSection}}
+
+<p>Anschliessend besteht während des Apéros eine gute Möglichkeit zum Austausch von Ideen und Eindrücken.</p>
+
+<p>Die vollständigen Angaben befinden sich hier:
+<a href="{{eventDetailLink}}" style="color: #0066cc;">{{eventDetailLink}}</a></p>
+
+<p>Die Konferenzsprache ist <strong>{{conferenceLanguage}}</strong>.</p>
+
+<p><strong>Anmeldung</strong><br>
+Die Teilnehmerzahl ist beschränkt. Die Teilnahme ist dank unseren Partnern kostenlos.<br>
+Die Ausschreibung und Anmeldung erfolgt über:
+<a href="{{registrationLink}}" style="color: #0066cc;">{{registrationLink}}</a></p>
+
+{{upcomingEventsSection}}
+
+<p><strong>Hinweise:</strong></p>
+<ul>
+    <li>Die Veranstaltung findet vor Ort statt, es sind keine Einschränkungen notwendig</li>
+    <li>Die Unterlagen der neueren Veranstaltungen befinden sich auf
+        <a href="https://www.slideshare.net/batbern/presentations" style="color: #0066cc;">Slideshare</a></li>
+</ul>
+
+<p>Wir freuen uns auf deine Teilnahme.<br>
+<strong>Das Organisationskomitee</strong></p>
+
+<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0 16px;">
+<p style="font-size: 12px; color: #888; text-align: center; margin: 0;">
+    Du erhältst diese E-Mail, weil du den BATbern-Newsletter abonniert hast.<br>
+    <a href="{{unsubscribeLink}}" style="color: #888;">Newsletter abbestellen</a>
+    &nbsp;|&nbsp;
+    <a href="{{preferencesLink}}" style="color: #888;">Einstellungen verwalten</a>
+</p>
