@@ -185,11 +185,13 @@ interface SummaryRow {
 const Chart1PerEvent: React.FC<{ summaries: SummaryRow[] }> = ({ summaries }) => {
   const rows = useMemo(
     () =>
-      summaries.map((s) => ({
-        eventCode: s.eventCode,
-        company: s.companyAttendees,
-        total: s.totalAttendees,
-      })),
+      [...summaries]
+        .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
+        .map((s) => ({
+          eventCode: s.eventCode,
+          company: s.companyAttendees,
+          total: s.totalAttendees,
+        })),
     [summaries]
   );
 
