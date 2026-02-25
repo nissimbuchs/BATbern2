@@ -359,7 +359,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           '/account',
         ],
         speaker: ['/dashboard', '/profile', '/events', '/materials', '/speaker', '/account'],
-        partner: ['/dashboard', '/profile', '/analytics', '/organizer/analytics', '/events', '/partner', '/account'],
+        partner: [
+          '/dashboard',
+          '/profile',
+          '/analytics',
+          '/organizer/analytics',
+          '/events',
+          '/partner',
+          '/account',
+        ],
         attendee: ['/dashboard', '/events', '/content', '/search', '/attendee', '/account'],
       };
 

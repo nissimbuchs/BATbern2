@@ -4062,7 +4062,7 @@ components:
     AnalyticsOverviewResponse:
       type: object
       description: All-time KPI totals and full event timeline (not filtered by time range)
-      required: [totalEvents, totalAttendees, companiesRepresented, totalSessions, timeline]
+      required: [totalEvents, totalAttendees, companiesRepresented, totalSessions, totalSpeakers, timeline]
       properties:
         totalEvents:
           type: integer
@@ -4080,6 +4080,10 @@ components:
           type: integer
           description: Total speaker session contributions (rows in session_users)
           example: 312
+        totalSpeakers:
+          type: integer
+          description: Total distinct confirmed speakers across all events
+          example: 213
         timeline:
           type: array
           description: All events ordered chronologically for the cadence timeline chart
@@ -4241,7 +4245,12 @@ components:
           example: 2024
         companyName:
           type: string
-          example: "GoogleZH"
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
         attendeeCount:
           type: integer
           example: 12
@@ -4253,7 +4262,12 @@ components:
       properties:
         companyName:
           type: string
-          example: "GoogleZH"
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
         sessionCount:
           type: integer
           description: Total confirmed speaker session appearances
@@ -4270,7 +4284,12 @@ components:
       properties:
         companyName:
           type: string
-          example: "GoogleZH"
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
         attendeeCount:
           type: integer
           example: 67

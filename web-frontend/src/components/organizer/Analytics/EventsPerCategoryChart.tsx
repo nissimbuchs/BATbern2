@@ -41,30 +41,17 @@ const EventsPerCategoryChart = ({ data, isLoading }: Props) => {
       title={t('analytics.charts.eventsPerCategory')}
       isLoading={isLoading}
       isEmpty={!isLoading && data.length === 0}
-      dataTable={
-        <DataTable
-          columns={columns}
-          rows={data}
-          rowKey="category"
-        />
-      }
+      dataTable={<DataTable columns={columns} rows={data} rowKey="category" />}
     >
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart
-          layout="vertical"
-          data={data}
-          margin={{ top: 4, right: 32, left: 80, bottom: 4 }}
-        >
+        <BarChart layout="vertical" data={data} margin={{ top: 4, right: 32, left: 80, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis type="number" allowDecimals={false} />
           <YAxis type="category" dataKey="category" width={80} tick={{ fontSize: 12 }} />
           <Tooltip />
           <Bar dataKey="eventCount" name="Events">
             {data.map((entry) => (
-              <Cell
-                key={entry.category}
-                fill={getCategoryColor(entry.category)}
-              />
+              <Cell key={entry.category} fill={getCategoryColor(entry.category)} />
             ))}
           </Bar>
         </BarChart>

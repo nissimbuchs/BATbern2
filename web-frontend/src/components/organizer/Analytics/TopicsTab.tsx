@@ -16,14 +16,8 @@ const TopicsTab = ({ fromYear }: Props) => {
 
   return (
     <>
-      <EventsPerCategoryChart
-        data={data?.eventsPerCategory ?? []}
-        isLoading={isLoading}
-      />
-      <TopicScatterChart
-        data={data?.topicScatter ?? []}
-        isLoading={isLoading}
-      />
+      <EventsPerCategoryChart data={data?.eventsPerCategory ?? []} isLoading={isLoading} />
+      <TopicScatterChart data={data?.topicScatter ?? []} isLoading={isLoading} />
     </>
   );
 };

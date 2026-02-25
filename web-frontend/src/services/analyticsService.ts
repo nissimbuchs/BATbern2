@@ -12,29 +12,22 @@ import type { components } from '@/types/generated/events-api.types';
 
 // ─── Re-export generated types for consumer convenience ───────────────────────
 
-export type AnalyticsOverviewResponse =
-  components['schemas']['AnalyticsOverviewResponse'];
+export type AnalyticsOverviewResponse = components['schemas']['AnalyticsOverviewResponse'];
 export type EventTimelineItem = components['schemas']['EventTimelineItem'];
 
-export type AnalyticsAttendanceResponse =
-  components['schemas']['AnalyticsAttendanceResponse'];
+export type AnalyticsAttendanceResponse = components['schemas']['AnalyticsAttendanceResponse'];
 export type AttendanceEventItem = components['schemas']['AttendanceEventItem'];
 
-export type AnalyticsTopicsResponse =
-  components['schemas']['AnalyticsTopicsResponse'];
+export type AnalyticsTopicsResponse = components['schemas']['AnalyticsTopicsResponse'];
 export type CategoryEventCount = components['schemas']['CategoryEventCount'];
 export type TopicScatterItem = components['schemas']['TopicScatterItem'];
 
-export type AnalyticsCompaniesResponse =
-  components['schemas']['AnalyticsCompaniesResponse'];
-export type CompanyYearAttendanceItem =
-  components['schemas']['CompanyYearAttendanceItem'];
+export type AnalyticsCompaniesResponse = components['schemas']['AnalyticsCompaniesResponse'];
+export type CompanyYearAttendanceItem = components['schemas']['CompanyYearAttendanceItem'];
 export type CompanySessionItem = components['schemas']['CompanySessionItem'];
-export type CompanyAttendanceShare =
-  components['schemas']['CompanyAttendanceShare'];
+export type CompanyAttendanceShare = components['schemas']['CompanyAttendanceShare'];
 
-export type CompanyDistributionResponse =
-  components['schemas']['CompanyDistributionResponse'];
+export type CompanyDistributionResponse = components['schemas']['CompanyDistributionResponse'];
 
 // ─── Service functions ────────────────────────────────────────────────────────
 
@@ -43,12 +36,10 @@ export type CompanyDistributionResponse =
  * All-time KPI totals and event cadence timeline. Not filtered by time range.
  * AC2, AC6.
  */
-export const getAnalyticsOverview =
-  async (): Promise<AnalyticsOverviewResponse> => {
-    const response =
-      await apiClient.get<AnalyticsOverviewResponse>('/analytics/overview');
-    return response.data;
-  };
+export const getAnalyticsOverview = async (): Promise<AnalyticsOverviewResponse> => {
+  const response = await apiClient.get<AnalyticsOverviewResponse>('/analytics/overview');
+  return response.data;
+};
 
 /**
  * GET /api/v1/analytics/attendance?fromYear={year}
@@ -61,10 +52,9 @@ export const getAnalyticsAttendance = async (
   fromYear?: number
 ): Promise<AnalyticsAttendanceResponse> => {
   const params = fromYear !== undefined ? { fromYear } : {};
-  const response = await apiClient.get<AnalyticsAttendanceResponse>(
-    '/analytics/attendance',
-    { params }
-  );
+  const response = await apiClient.get<AnalyticsAttendanceResponse>('/analytics/attendance', {
+    params,
+  });
   return response.data;
 };
 
@@ -75,14 +65,9 @@ export const getAnalyticsAttendance = async (
  *
  * @param fromYear - Optional year filter (inclusive); undefined = all-time
  */
-export const getAnalyticsTopics = async (
-  fromYear?: number
-): Promise<AnalyticsTopicsResponse> => {
+export const getAnalyticsTopics = async (fromYear?: number): Promise<AnalyticsTopicsResponse> => {
   const params = fromYear !== undefined ? { fromYear } : {};
-  const response = await apiClient.get<AnalyticsTopicsResponse>(
-    '/analytics/topics',
-    { params }
-  );
+  const response = await apiClient.get<AnalyticsTopicsResponse>('/analytics/topics', { params });
   return response.data;
 };
 
@@ -97,10 +82,9 @@ export const getAnalyticsCompanies = async (
   fromYear?: number
 ): Promise<AnalyticsCompaniesResponse> => {
   const params = fromYear !== undefined ? { fromYear } : {};
-  const response = await apiClient.get<AnalyticsCompaniesResponse>(
-    '/analytics/companies',
-    { params }
-  );
+  const response = await apiClient.get<AnalyticsCompaniesResponse>('/analytics/companies', {
+    params,
+  });
   return response.data;
 };
 

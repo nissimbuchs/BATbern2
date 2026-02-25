@@ -1735,6 +1735,11 @@ export interface components {
        * @example 312
        */
       totalSessions: number;
+      /**
+       * @description Total distinct confirmed speakers across all events
+       * @example 213
+       */
+      totalSpeakers: number;
       /** @description All events ordered chronologically for the cadence timeline chart */
       timeline: components['schemas']['EventTimelineItem'][];
     };
@@ -1839,15 +1844,25 @@ export interface components {
     CompanyYearAttendanceItem: {
       /** @example 2024 */
       year: number;
-      /** @example GoogleZH */
+      /** @example sbb */
       companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
       /** @example 12 */
       attendeeCount: number;
     };
     /** @description Speaker session count and unique speaker count for a company */
     CompanySessionItem: {
-      /** @example GoogleZH */
+      /** @example sbb */
       companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
       /**
        * @description Total confirmed speaker session appearances
        * @example 8
@@ -1861,8 +1876,13 @@ export interface components {
     };
     /** @description A company's total attendee count (used in pie/distribution charts) */
     CompanyAttendanceShare: {
-      /** @example GoogleZH */
+      /** @example sbb */
       companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
       /** @example 67 */
       attendeeCount: number;
     };

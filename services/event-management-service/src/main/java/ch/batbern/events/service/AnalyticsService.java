@@ -59,6 +59,7 @@ public class AnalyticsService {
         long totalAttendees = analyticsRepository.countTotalAttendees();
         long companies = analyticsRepository.countDistinctCompanies();
         long totalSessions = analyticsRepository.countTotalSessions();
+        long totalSpeakers = analyticsRepository.countTotalSpeakers();
 
         List<Object[]> timelineRows = analyticsRepository.findAllEventsForTimeline();
         List<EventTimelineItem> timeline = timelineRows.stream()
@@ -94,6 +95,7 @@ public class AnalyticsService {
                 (int) totalAttendees,
                 (int) companies,
                 (int) totalSessions,
+                (int) totalSpeakers,
                 enrichedTimeline);
     }
 
@@ -211,22 +213,25 @@ public class AnalyticsService {
                 .map(row -> new CompanyYearAttendanceItem()
                         .year(toInt(row[0]))
                         .companyName((String) row[1])
-                        .attendeeCount(toLong(row[2]).intValue()))
+                        .displayName((String) row[2])
+                        .attendeeCount(toLong(row[3]).intValue()))
                 .toList();
 
         List<Object[]> sessionRows = analyticsRepository.findSessionsPerCompany(fromDate);
         List<CompanySessionItem> sessionsPerCompany = sessionRows.stream()
                 .map(row -> new CompanySessionItem()
                         .companyName((String) row[0])
-                        .sessionCount(toLong(row[1]).intValue())
-                        .uniqueSpeakers(toLong(row[2]).intValue()))
+                        .displayName((String) row[1])
+                        .sessionCount(toLong(row[2]).intValue())
+                        .uniqueSpeakers(toLong(row[3]).intValue()))
                 .toList();
 
         List<Object[]> distRows = analyticsRepository.findCompanyDistribution(fromDate);
         List<CompanyAttendanceShare> distribution = distRows.stream()
                 .map(row -> new CompanyAttendanceShare()
                         .companyName((String) row[0])
-                        .attendeeCount(toLong(row[1]).intValue()))
+                        .displayName((String) row[1])
+                        .attendeeCount(toLong(row[2]).intValue()))
                 .toList();
 
         return new AnalyticsCompaniesResponse()
@@ -248,7 +253,8 @@ public class AnalyticsService {
         List<CompanyAttendanceShare> distribution = rows.stream()
                 .map(row -> new CompanyAttendanceShare()
                         .companyName((String) row[0])
-                        .attendeeCount(toLong(row[1]).intValue()))
+                        .displayName((String) row[1])
+                        .attendeeCount(toLong(row[2]).intValue()))
                 .toList();
 
         return new CompanyDistributionResponse()

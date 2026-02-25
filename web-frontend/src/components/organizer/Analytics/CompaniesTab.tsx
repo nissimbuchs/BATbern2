@@ -25,8 +25,7 @@ const CompaniesTab = ({ fromYear }: Props) => {
   const { user } = useAuth();
   const [topNOption, setTopNOption] = useState<TopNOption>('10');
 
-  const partnerCompany =
-    user?.role === 'partner' ? (user.companyName ?? null) : null;
+  const partnerCompany = user?.role === 'partner' ? (user.companyName ?? null) : null;
 
   const topN: number | null = topNOption === 'all' ? null : Number(topNOption);
 

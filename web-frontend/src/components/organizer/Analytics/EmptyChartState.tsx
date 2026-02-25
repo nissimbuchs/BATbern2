@@ -14,10 +14,7 @@ interface EmptyChartStateProps {
   height?: number;
 }
 
-const EmptyChartState = ({
-  message,
-  height = 350,
-}: EmptyChartStateProps) => {
+const EmptyChartState = ({ message, height = 350 }: EmptyChartStateProps) => {
   const { t } = useTranslation('organizer');
   return (
     <Box

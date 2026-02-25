@@ -38,21 +38,19 @@ interface Props {
   isLoading?: boolean;
 }
 
-const CompanyAttendanceOverTimeChart = ({
-  data,
-  topN,
-  partnerCompany,
-  isLoading,
-}: Props) => {
+const CompanyAttendanceOverTimeChart = ({ data, topN, partnerCompany, isLoading }: Props) => {
   const { t } = useTranslation('organizer');
 
-  const { years, companies, pivoted } = useMemo(() => {
+  const { years, companies, pivoted, displayNames } = useMemo(() => {
     const yearSet = new Set<number>();
     const companyCount: Record<string, number> = {};
+    const displayNameMap: Record<string, string> = {};
     for (const row of data) {
       yearSet.add(row.year);
-      companyCount[row.companyName] =
-        (companyCount[row.companyName] ?? 0) + row.attendeeCount;
+      companyCount[row.companyName] = (companyCount[row.companyName] ?? 0) + row.attendeeCount;
+      if (row.displayName) {
+        displayNameMap[row.companyName] = row.displayName;
+      }
     }
     let sorted = Object.entries(companyCount)
       .sort(([, a], [, b]) => b - a)
@@ -70,15 +68,18 @@ const CompanyAttendanceOverTimeChart = ({
     const pivotedRows = yearsSorted.map((year) => {
       const row: Record<string, number | string> = { year: String(year) };
       for (const company of sorted) {
-        const match = data.find(
-          (d) => d.year === year && d.companyName === company
-        );
+        const match = data.find((d) => d.year === year && d.companyName === company);
         row[company] = match?.attendeeCount ?? 0;
       }
       return row;
     });
 
-    return { years: yearsSorted, companies: sorted, pivoted: pivotedRows };
+    return {
+      years: yearsSorted,
+      companies: sorted,
+      pivoted: pivotedRows,
+      displayNames: displayNameMap,
+    };
   }, [data, topN, partnerCompany]);
 
   return (
@@ -98,6 +99,7 @@ const CompanyAttendanceOverTimeChart = ({
             <Bar
               key={company}
               dataKey={company}
+              name={displayNames[company] ?? company}
               stackId="a"
               fill={
                 company === partnerCompany

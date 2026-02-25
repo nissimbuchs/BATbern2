@@ -6,7 +6,16 @@
  * Each bar is colored by topic category. Not filtered by the global time range — always all-time.
  */
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useTranslation } from 'react-i18next';
 import type { EventTimelineItem } from '@/services/analyticsService';
 import { getCategoryColor } from './CHART_COLORS';
@@ -38,6 +47,17 @@ const EventCadenceTimeline = ({ data, isLoading }: Props) => {
     attendeeCount: item.attendeeCount,
   }));
 
+  // Compute titles where the year changes — used for year-boundary reference lines
+  const yearBoundaryTitles: string[] = [];
+  let lastYear = '';
+  for (const row of rows) {
+    const year = row.eventDate.slice(0, 4);
+    if (year !== lastYear && lastYear !== '') {
+      yearBoundaryTitles.push(row.title);
+    }
+    lastYear = year;
+  }
+
   const columns: ColumnDef<Row>[] = [
     { key: 'eventCode', label: t('analytics.kpi.totalEvents') },
     { key: 'title', label: 'Title' },
@@ -55,9 +75,18 @@ const EventCadenceTimeline = ({ data, isLoading }: Props) => {
     >
       <ResponsiveContainer width="100%" height={350}>
         <BarChart data={rows} margin={{ top: 4, right: 16, left: 0, bottom: 48 }}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          {yearBoundaryTitles.map((title) => (
+            <ReferenceLine
+              key={title}
+              x={title}
+              stroke="#aaa"
+              strokeWidth={1.5}
+              strokeDasharray="4 2"
+            />
+          ))}
           <XAxis
-            dataKey="eventCode"
+            dataKey="title"
             angle={-45}
             textAnchor="end"
             interval={0}
@@ -65,8 +94,26 @@ const EventCadenceTimeline = ({ data, isLoading }: Props) => {
           />
           <YAxis allowDecimals={false} />
           <Tooltip
-            formatter={(value, _name, entry) => [`${value} attendees`, entry.payload.title]}
-            labelFormatter={(label) => `Event: ${label}`}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            content={(props: any) => {
+              if (!props.active || !props.payload?.length) return null;
+              const d = props.payload[0].payload as Row;
+              return (
+                <div
+                  style={{
+                    background: '#fff',
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    padding: '6px 10px',
+                    fontSize: 12,
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>{d.eventCode}</div>
+                  <div style={{ color: '#555' }}>{d.eventDate}</div>
+                  <div style={{ marginTop: 4 }}>{d.attendeeCount} attendees</div>
+                </div>
+              );
+            }}
           />
           <Bar
             dataKey="attendeeCount"

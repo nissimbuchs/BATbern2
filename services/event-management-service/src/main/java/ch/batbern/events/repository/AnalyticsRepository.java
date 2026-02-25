@@ -56,6 +56,13 @@ public interface AnalyticsRepository extends JpaRepository<Event, UUID> {
     long countTotalSessions();
 
     /**
+     * Count distinct confirmed speakers across all events (all-time).
+     * AC2: KPI card — Total Speakers.
+     */
+    @Query(value = "SELECT COUNT(DISTINCT su.username) FROM session_users su", nativeQuery = true)
+    long countTotalSpeakers();
+
+    /**
      * All events with topic category for the cadence timeline (all-time, not filtered).
      * Returns: [eventId, eventCode, eventNumber, title, date, category]
      * Uses LEFT JOIN on Topic so events without a topic still appear (category = null).
@@ -155,19 +162,21 @@ public interface AnalyticsRepository extends JpaRepository<Event, UUID> {
     /**
      * Attendee count per company per year (for stacked-bar chart).
      * Pass Instant.EPOCH for all-time data.
-     * Returns: [year, companyName, attendeeCount]
+     * Returns: [year, companyName, displayName, attendeeCount]
      * AC5: Attendance by company over time.
      */
     @Query(value = """
         SELECT EXTRACT(YEAR FROM e.event_date)::int AS year,
                r.attendee_company_id AS companyName,
+               c.display_name AS displayName,
                COUNT(r.id) AS attendeeCount
         FROM registrations r
         JOIN events e ON r.event_id = e.id
+        LEFT JOIN companies c ON c.name = r.attendee_company_id
         WHERE r.status IN ('confirmed', 'attended')
           AND r.attendee_company_id IS NOT NULL
           AND e.event_date >= :fromDate
-        GROUP BY EXTRACT(YEAR FROM e.event_date), r.attendee_company_id
+        GROUP BY EXTRACT(YEAR FROM e.event_date), r.attendee_company_id, c.display_name
         ORDER BY year ASC, attendeeCount DESC
         """, nativeQuery = true)
     List<Object[]> findAttendanceByYearAndCompany(@Param("fromDate") Instant fromDate);
@@ -177,19 +186,21 @@ public interface AnalyticsRepository extends JpaRepository<Event, UUID> {
      * INTENTIONAL ARCHITECTURE BREAK: joins user_profiles from company-user-management-service.
      * Both services share the same PostgreSQL database.
      * Pass Instant.EPOCH for all-time data.
-     * Returns: [companyName, sessionCount, uniqueSpeakers]
+     * Returns: [companyName, displayName, sessionCount, uniqueSpeakers]
      * AC5: Sessions per company chart.
      */
     @Query(value = """
         SELECT up.company_id AS companyName,
+               c.display_name AS displayName,
                COUNT(su.id) AS sessionCount,
                COUNT(DISTINCT su.username) AS uniqueSpeakers
         FROM session_users su
         JOIN sessions s ON su.session_id = s.id
         JOIN user_profiles up ON su.username = up.username
         JOIN events e ON s.event_id = e.id
+        LEFT JOIN companies c ON c.name = up.company_id
         WHERE e.event_date >= :fromDate
-        GROUP BY up.company_id
+        GROUP BY up.company_id, c.display_name
         ORDER BY sessionCount DESC
         """, nativeQuery = true)
     List<Object[]> findSessionsPerCompany(@Param("fromDate") Instant fromDate);
@@ -197,35 +208,41 @@ public interface AnalyticsRepository extends JpaRepository<Event, UUID> {
     /**
      * All-time attendee distribution per company (for pie chart default view).
      * Pass Instant.EPOCH for all-time data.
-     * Returns: [companyName, attendeeCount]
+     * Returns: [companyName, displayName, attendeeCount]
      * AC5: Attendee distribution pie chart (no event filter).
      */
-    @Query("""
-        SELECT r.attendeeCompanyId, COUNT(r.id)
-        FROM Registration r
-        JOIN Event e ON r.eventId = e.id
+    @Query(value = """
+        SELECT r.attendee_company_id AS companyName,
+               c.display_name AS displayName,
+               COUNT(r.id) AS attendeeCount
+        FROM registrations r
+        JOIN events e ON r.event_id = e.id
+        LEFT JOIN companies c ON c.name = r.attendee_company_id
         WHERE r.status IN ('confirmed', 'attended')
-          AND r.attendeeCompanyId IS NOT NULL
-          AND e.date >= :fromDate
-        GROUP BY r.attendeeCompanyId
-        ORDER BY COUNT(r.id) DESC
-        """)
+          AND r.attendee_company_id IS NOT NULL
+          AND e.event_date >= :fromDate
+        GROUP BY r.attendee_company_id, c.display_name
+        ORDER BY attendeeCount DESC
+        """, nativeQuery = true)
     List<Object[]> findCompanyDistribution(@Param("fromDate") Instant fromDate);
 
     /**
      * Attendee distribution for a single event (for pie chart per-event filter).
-     * Returns: [companyName, attendeeCount]
+     * Returns: [companyName, displayName, attendeeCount]
      * AC5: Per-event distribution via GET /analytics/companies/distribution?eventCode=...
      */
-    @Query("""
-        SELECT r.attendeeCompanyId, COUNT(r.id)
-        FROM Registration r
-        JOIN Event e ON r.eventId = e.id
+    @Query(value = """
+        SELECT r.attendee_company_id AS companyName,
+               c.display_name AS displayName,
+               COUNT(r.id) AS attendeeCount
+        FROM registrations r
+        JOIN events e ON r.event_id = e.id
+        LEFT JOIN companies c ON c.name = r.attendee_company_id
         WHERE r.status IN ('confirmed', 'attended')
-          AND r.attendeeCompanyId IS NOT NULL
-          AND e.eventCode = :eventCode
-        GROUP BY r.attendeeCompanyId
-        ORDER BY COUNT(r.id) DESC
-        """)
+          AND r.attendee_company_id IS NOT NULL
+          AND e.event_code = :eventCode
+        GROUP BY r.attendee_company_id, c.display_name
+        ORDER BY attendeeCount DESC
+        """, nativeQuery = true)
     List<Object[]> findCompanyDistributionByEvent(@Param("eventCode") String eventCode);
 }

@@ -25,6 +25,19 @@ import ChartCard from './ChartCard';
 import DataTable from './DataTable';
 import type { ColumnDef } from './DataTable';
 
+const ROLLING_WINDOW = 8;
+
+/** Centered rolling average with a window of ROLLING_WINDOW events. */
+function rollingAverage(values: number[], window: number): (number | null)[] {
+  const half = Math.floor(window / 2);
+  return values.map((_, i) => {
+    const start = Math.max(0, i - half);
+    const end = Math.min(values.length - 1, i + half);
+    const slice = values.slice(start, end + 1);
+    return Math.round(slice.reduce((s, v) => s + v, 0) / slice.length);
+  });
+}
+
 type LabelMode = 'title' | 'category' | 'both';
 
 interface Props {
@@ -32,14 +45,20 @@ interface Props {
   isLoading?: boolean;
 }
 
-type Row = AttendanceEventItem & { label: string };
+type Row = AttendanceEventItem & { label: string; trend: number | null };
 
 const AttendeesPerEventChart = ({ data, isLoading }: Props) => {
   const { t } = useTranslation('organizer');
   const [labelMode, setLabelMode] = useState<LabelMode>('title');
 
-  const rows: Row[] = data.map((item) => ({
+  const trendValues = rollingAverage(
+    data.map((d) => d.totalAttendees),
+    ROLLING_WINDOW
+  );
+
+  const rows: Row[] = data.map((item, i) => ({
     ...item,
+    trend: trendValues[i],
     label:
       labelMode === 'title'
         ? item.title
@@ -67,15 +86,9 @@ const AttendeesPerEventChart = ({ data, isLoading }: Props) => {
       }}
       size="small"
     >
-      <ToggleButton value="title">
-        {t('analytics.labels.labelToggle.title')}
-      </ToggleButton>
-      <ToggleButton value="category">
-        {t('analytics.labels.labelToggle.category')}
-      </ToggleButton>
-      <ToggleButton value="both">
-        {t('analytics.labels.labelToggle.both')}
-      </ToggleButton>
+      <ToggleButton value="title">{t('analytics.labels.labelToggle.title')}</ToggleButton>
+      <ToggleButton value="category">{t('analytics.labels.labelToggle.category')}</ToggleButton>
+      <ToggleButton value="both">{t('analytics.labels.labelToggle.both')}</ToggleButton>
     </ToggleButtonGroup>
   );
 
@@ -102,10 +115,11 @@ const AttendeesPerEventChart = ({ data, isLoading }: Props) => {
           <Bar dataKey="totalAttendees" fill={CHART_COLORS.primary} name="Attendees" />
           <Line
             type="monotone"
-            dataKey="totalAttendees"
+            dataKey="trend"
             stroke={CHART_COLORS.dark}
             dot={false}
             name="Trend"
+            strokeWidth={2}
           />
         </ComposedChart>
       </ResponsiveContainer>

@@ -27,19 +27,21 @@ interface Props {
   isLoading?: boolean;
 }
 
-type Row = { eventCode: string; returning: number; new: number };
+type Row = { eventCode: string; title: string; returning: number; new: number };
 
 const ReturningVsNewChart = ({ data, isLoading }: Props) => {
   const { t } = useTranslation('organizer');
 
   const rows: Row[] = data.map((item) => ({
     eventCode: item.eventCode,
+    title: item.title,
     returning: item.returningAttendees,
     new: item.newAttendees,
   }));
 
   const columns: ColumnDef<Row>[] = [
     { key: 'eventCode', label: 'Event' },
+    { key: 'title', label: 'Title' },
     { key: 'returning', label: t('analytics.labels.returning'), align: 'right' },
     { key: 'new', label: t('analytics.labels.new'), align: 'right' },
   ];
@@ -51,11 +53,11 @@ const ReturningVsNewChart = ({ data, isLoading }: Props) => {
       isEmpty={!isLoading && rows.length === 0}
       dataTable={<DataTable columns={columns} rows={rows} rowKey="eventCode" />}
     >
-      <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={rows} margin={{ top: 4, right: 16, left: 0, bottom: 48 }}>
+      <ResponsiveContainer width="100%" height={380}>
+        <BarChart data={rows} margin={{ top: 4, right: 16, left: 0, bottom: 60 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
-            dataKey="eventCode"
+            dataKey="title"
             angle={-45}
             textAnchor="end"
             interval={0}
@@ -63,7 +65,7 @@ const ReturningVsNewChart = ({ data, isLoading }: Props) => {
           />
           <YAxis allowDecimals={false} />
           <Tooltip />
-          <Legend />
+          <Legend verticalAlign="top" wrapperStyle={{ paddingBottom: 8 }} />
           <Bar
             dataKey="returning"
             name={t('analytics.labels.returning')}

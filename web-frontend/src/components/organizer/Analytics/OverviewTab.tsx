@@ -9,6 +9,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import EventIcon from '@mui/icons-material/Event';
 import MicIcon from '@mui/icons-material/Mic';
 import PeopleIcon from '@mui/icons-material/People';
+import PersonIcon from '@mui/icons-material/Person';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useAnalyticsOverview } from '@/hooks/useAnalytics';
@@ -54,6 +55,12 @@ const OverviewTab = () => {
           value={data?.totalSessions ?? 0}
           icon={MicIcon}
           color="#9B59B6"
+        />
+        <KpiCard
+          label={t('analytics.kpi.totalSpeakers')}
+          value={data?.totalSpeakers ?? 0}
+          icon={PersonIcon}
+          color="#E67E22"
         />
       </Box>
 

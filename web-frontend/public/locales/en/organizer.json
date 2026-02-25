@@ -414,7 +414,8 @@
       "totalEvents": "Total Events",
       "totalAttendees": "Total Attendees",
       "companiesRepresented": "Companies",
-      "totalSessions": "Speaker Sessions"
+      "totalSessions": "Total Sessions",
+      "totalSpeakers": "Total Speakers"
     },
     "charts": {
       "eventCadenceTimeline": "Event History",

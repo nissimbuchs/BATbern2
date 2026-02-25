@@ -32,12 +32,7 @@ interface Props {
   isLoading?: boolean;
 }
 
-const SessionsPerCompanyChart = ({
-  data,
-  topN,
-  partnerCompany,
-  isLoading,
-}: Props) => {
+const SessionsPerCompanyChart = ({ data, topN, partnerCompany, isLoading }: Props) => {
   const { t } = useTranslation('organizer');
 
   const filtered = useMemo(() => {
@@ -45,10 +40,7 @@ const SessionsPerCompanyChart = ({
       return data;
     }
     const slice = data.slice(0, topN);
-    if (
-      partnerCompany &&
-      !slice.find((d) => d.companyName === partnerCompany)
-    ) {
+    if (partnerCompany && !slice.find((d) => d.companyName === partnerCompany)) {
       const own = data.find((d) => d.companyName === partnerCompany);
       if (own) {
         slice.push(own);
@@ -57,8 +49,14 @@ const SessionsPerCompanyChart = ({
     return slice;
   }, [data, topN, partnerCompany]);
 
+  // Build a map for XAxis tick formatting
+  const displayNameMap = useMemo(
+    () => Object.fromEntries(filtered.map((d) => [d.companyName, d.displayName ?? d.companyName])),
+    [filtered]
+  );
+
   const columns: ColumnDef<CompanySessionItem>[] = [
-    { key: 'companyName', label: 'Company' },
+    { key: 'displayName', label: 'Company' },
     { key: 'sessionCount', label: t('analytics.labels.sessions'), align: 'right' },
     { key: 'uniqueSpeakers', label: t('analytics.labels.speakers'), align: 'right' },
   ];
@@ -68,22 +66,14 @@ const SessionsPerCompanyChart = ({
       title={t('analytics.charts.sessionsPerCompany')}
       isLoading={isLoading}
       isEmpty={!isLoading && filtered.length === 0}
-      dataTable={
-        <DataTable
-          columns={columns}
-          rows={filtered}
-          rowKey="companyName"
-        />
-      }
+      dataTable={<DataTable columns={columns} rows={filtered} rowKey="companyName" />}
     >
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart
-          data={filtered}
-          margin={{ top: 24, right: 16, left: 0, bottom: 64 }}
-        >
+        <BarChart data={filtered} margin={{ top: 24, right: 16, left: 0, bottom: 64 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="companyName"
+            tickFormatter={(v) => displayNameMap[v] ?? v}
             angle={-45}
             textAnchor="end"
             interval={0}
@@ -108,9 +98,7 @@ const SessionsPerCompanyChart = ({
               <Cell
                 key={entry.companyName}
                 fill={
-                  entry.companyName === partnerCompany
-                    ? CHART_COLORS.partner
-                    : CHART_COLORS.primary
+                  entry.companyName === partnerCompany ? CHART_COLORS.partner : CHART_COLORS.primary
                 }
               />
             ))}

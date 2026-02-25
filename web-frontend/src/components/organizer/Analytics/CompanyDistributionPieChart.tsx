@@ -8,7 +8,7 @@
  * Partner's own company slice highlighted with accent color.
  */
 
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -81,13 +81,13 @@ const CompanyDistributionPieChart = ({
           <Pie
             data={distribution}
             dataKey="attendeeCount"
-            nameKey="companyName"
+            nameKey="displayName"
             cx="50%"
             cy="50%"
             outerRadius={130}
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             label={(props: any) =>
-              `${props.companyName} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`
+              `${props.displayName ?? props.companyName} ${(Number(props.percent ?? 0) * 100).toFixed(0)}%`
             }
           >
             {distribution.map((entry, idx) => (
@@ -104,7 +104,6 @@ const CompanyDistributionPieChart = ({
             ))}
           </Pie>
           <Tooltip formatter={(v, name) => [`${v} attendees`, name]} />
-          <Legend />
         </PieChart>
       </ResponsiveContainer>
     </ChartCard>

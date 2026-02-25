@@ -12,15 +12,7 @@
 
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Collapse,
-  Divider,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Card, CardContent, Collapse, Divider, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
@@ -66,12 +58,7 @@ const ChartCard = ({
         </Box>
 
         {isLoading ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            height={chartHeight}
-          >
+          <Box display="flex" justifyContent="center" alignItems="center" height={chartHeight}>
             <BATbernLoader size={48} speed="normal" />
           </Box>
         ) : isEmpty ? (

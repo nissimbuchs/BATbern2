@@ -26,16 +26,12 @@ describe('EmptyChartState', () => {
 
   it('shows default no-data message from i18n key', () => {
     render(<EmptyChartState />);
-    expect(
-      screen.getByText('No data available for this period')
-    ).toBeInTheDocument();
+    expect(screen.getByText('No data available for this period')).toBeInTheDocument();
   });
 
   it('shows a custom message when provided', () => {
     render(<EmptyChartState message="No events found" />);
     expect(screen.getByText('No events found')).toBeInTheDocument();
-    expect(
-      screen.queryByText('No data available for this period')
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('No data available for this period')).not.toBeInTheDocument();
   });
 });

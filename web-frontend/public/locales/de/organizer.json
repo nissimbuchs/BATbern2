@@ -414,7 +414,8 @@
       "totalEvents": "Veranstaltungen",
       "totalAttendees": "Teilnehmende",
       "companiesRepresented": "Unternehmen",
-      "totalSessions": "Speaker-Sessions"
+      "totalSessions": "Gesamt-Sessions",
+      "totalSpeakers": "Referenten gesamt"
     },
     "charts": {
       "eventCadenceTimeline": "Veranstaltungshistorie",
