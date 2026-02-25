@@ -138,6 +138,11 @@ public class SecurityConfig {
                 // Story 6.3: E2E test token generation (dev/test profiles only, controller is @Profile protected)
                 .requestMatchers("/api/v1/e2e-test/**").permitAll()
 
+                // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
+                .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
                 // All other requests require authentication
                 // AWS API Gateway validates JWT; Spring Security parses it for @PreAuthorize
                 .anyRequest().authenticated()

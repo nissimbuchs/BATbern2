@@ -17,6 +17,7 @@ import {
   Radio,
   FormGroup,
   Checkbox,
+  Switch,
   Divider,
   Link,
   Alert,
@@ -26,6 +27,7 @@ import {
   useUpdateUserPreferences,
   useUpdateUserSettings,
 } from '@/hooks/useUserAccount/useUserAccount';
+import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 interface UserSettingsTabProps {
   email?: string;
@@ -45,6 +47,46 @@ function TabPanel(props: TabPanelProps) {
     <div role="tabpanel" hidden={value !== index} {...other}>
       {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
+  );
+}
+
+/** Newsletter subscription toggle section for authenticated users (Story 10.7 — AC7). */
+function NewsletterSection() {
+  const { data: status, isLoading } = useMySubscription();
+  const patchMutation = usePatchMySubscription();
+
+  function handleToggle(checked: boolean) {
+    patchMutation.mutate(checked);
+  }
+
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <Box>
+      <Typography variant="subtitle1" gutterBottom>
+        Newsletter
+      </Typography>
+      <FormControlLabel
+        control={
+          <Switch
+            checked={status?.subscribed ?? false}
+            onChange={(e) => handleToggle(e.target.checked)}
+            disabled={patchMutation.isPending}
+            data-testid="newsletter-subscribe-toggle"
+          />
+        }
+        label={
+          <Box>
+            <Typography variant="body2">Subscribe to BATbern newsletter</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Receive event announcements and updates
+            </Typography>
+          </Box>
+        }
+      />
+    </Box>
   );
 }
 
@@ -275,6 +317,11 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({ email, preferences, s
           >
             Save Notification Settings
           </Button>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* Newsletter section (Story 10.7 — AC7) */}
+          <NewsletterSection />
         </Paper>
       </TabPanel>
 

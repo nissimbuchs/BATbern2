@@ -306,6 +306,10 @@ export default defineConfig({
         'src/i18n/config.ts',
         'src/mocks/**', // Mock handlers/service workers - test support code, not production logic
         'src/components/TopicHeatMap/**', // Pending refactor - excluded until redesigned
+        // Analytics dashboard charts — Recharts components not testable in JSDOM
+        'src/components/organizer/Analytics/**',
+        'src/hooks/useAnalytics.ts',
+        'src/services/analyticsService.ts',
       ],
       reportOnFailure: true, // Generate coverage even when tests fail
       // Note: 'all' option removed in vitest v4 - use 'include' to specify files

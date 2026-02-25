@@ -76,6 +76,9 @@ const EventManagementAdminPage = React.lazy(
 // Topic Management Page - Story 5.2
 const TopicManagementPage = React.lazy(() => import('@pages/organizer/TopicManagementPage'));
 
+// Story 10.4: Blob Topic Selector — full-screen, no AuthLayout
+const BlobTopicSelectorPage = React.lazy(() => import('@pages/organizer/BlobTopicSelectorPage'));
+
 // Task Management Page - Story 5.5
 const TaskBoardPage = React.lazy(() => import('@pages/organizer/TaskBoardPage'));
 
@@ -120,6 +123,9 @@ const SpeakerDashboardPage = React.lazy(() => import('@pages/speaker-portal/Spea
 const SpeakerMagicLoginPage = React.lazy(
   () => import('@pages/speaker-portal/SpeakerMagicLoginPage')
 );
+
+// Story 10.7: Newsletter unsubscribe page
+const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage'));
 
 // Loading fallback component for Suspense
 const PageLoader = () => (
@@ -264,6 +270,9 @@ function App() {
                     {/* Story 9.1: Speaker Portal - JWT Magic Login */}
                     <Route path="/speaker-portal/magic-login" element={<SpeakerMagicLoginPage />} />
 
+                    {/* Story 10.7: Newsletter unsubscribe */}
+                    <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/support" element={<SupportPage />} />
@@ -401,6 +410,15 @@ function App() {
                           <AuthLayout>
                             <TopicManagementPage />
                           </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Story 10.4: Blob Topic Selector — full-screen, no sidebar */}
+                    <Route
+                      path="/organizer/events/:eventCode/topic-blob"
+                      element={
+                        <ProtectedRoute>
+                          <BlobTopicSelectorPage />
                         </ProtectedRoute>
                       }
                     />

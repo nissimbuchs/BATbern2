@@ -137,6 +137,10 @@ public class Event {
     @Column(name = "topic_code", length = 100)
     private String topicCode;
 
+    // Story 10.4: Topic selection note — recorded when organizer accepts a topic via blob selector
+    @Column(name = "topic_selection_note", columnDefinition = "TEXT")
+    private String topicSelectionNote;
+
     @Column(name = "current_published_phase", length = 50)
     private String currentPublishedPhase; // none, topic, speakers, agenda
 

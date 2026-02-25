@@ -12,10 +12,7 @@ import {
   Alert,
   Stack,
   Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
+  AvatarGroup,
   Paper,
   BottomNavigation,
   BottomNavigationAction,
@@ -28,14 +25,15 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Business as BusinessIcon,
-  Dashboard as OverviewIcon,
   People as UsersIcon,
+  RecordVoiceOver as SpeakersIcon,
+  Slideshow as SessionsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
+import apiClient from '@/services/api/apiClient';
 import type { components } from '@/types/generated/company-api.types';
-import type { components as SpeakerComponents } from '@/types/generated/speakers-api.types';
 import type { User } from '@/types/user.types';
 import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
@@ -43,10 +41,8 @@ import { useUserList } from '@/hooks/useUserManagement';
 import UserTable from '@/components/organizer/UserManagement/UserTable';
 import UserCard from '@/components/organizer/UserManagement/UserCard';
 import UserPagination from '@/components/organizer/UserManagement/UserPagination';
-import apiClient from '@/services/api/apiClient';
 
 type CompanyDetail = components['schemas']['CompanyResponse'];
-type SpeakerResponse = SpeakerComponents['schemas']['SpeakerResponse'];
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,69 +63,14 @@ function TabPanel({ children, value, index }: TabPanelProps) {
   );
 }
 
-// ─── Company Speakers Panel ────────────────────────────────────────────────────
-
-const CompanySpeakersPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['speakers', 'byCompany', companyName],
-    queryFn: async () => {
-      const res = await apiClient.get<{ speakers: SpeakerResponse[] }>('/speakers', {
-        params: { companyName, limit: 100 },
-      });
-      return res.data.speakers ?? [];
-    },
-    enabled: !!companyName,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (isLoading) return <Skeleton variant="rectangular" height={200} />;
-  if (isError) return <Alert severity="error">Failed to load speakers.</Alert>;
-  if (!data?.length) {
-    return (
-      <Card>
-        <CardContent sx={{ textAlign: 'center', py: 4 }}>
-          <Typography color="text.secondary">No speakers from this company yet.</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <List>
-        {data.map((speaker, i) => (
-          <ListItem key={speaker.username ?? i} divider={i < data.length - 1}>
-            <ListItemAvatar>
-              <Avatar src={speaker.profilePictureUrl ?? undefined} alt={speaker.firstName}>
-                {!speaker.profilePictureUrl &&
-                  `${speaker.firstName?.charAt(0) ?? ''}${speaker.lastName?.charAt(0) ?? ''}`}
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={`${speaker.firstName ?? ''} ${speaker.lastName ?? ''}`.trim()}
-              secondary={
-                <span>
-                  {speaker.expertiseAreas?.join(', ') || speaker.bio?.substring(0, 80) || ''}
-                </span>
-              }
-            />
-            {speaker.workflowState && (
-              <Chip label={speaker.workflowState} size="small" variant="outlined" />
-            )}
-          </ListItem>
-        ))}
-      </List>
-    </Card>
-  );
-};
-
 // ─── Company Users Panel ───────────────────────────────────────────────────────
 
-const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
+const CompanyUsersPanel: React.FC<{ companyName: string; isMobile: boolean }> = ({
+  companyName,
+  isMobile,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -144,8 +85,16 @@ const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) =
   const users = data?.data ?? [];
   const paginationData = data?.pagination;
 
+  if (users.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No users associated with this company yet.
+      </Alert>
+    );
+  }
+
   return (
-    <Box>
+    <Box sx={{ mt: 2 }}>
       {isMobile ? (
         <Stack spacing={2}>
           {users.map((user) => (
@@ -189,6 +138,221 @@ const CompanyUsersPanel: React.FC<{ companyName: string }> = ({ companyName }) =
   );
 };
 
+// ─── Company Speakers Panel ────────────────────────────────────────────────────
+
+const CompanySpeakersPanel: React.FC<{ companyName: string; isMobile: boolean }> = ({
+  companyName,
+  isMobile,
+}) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+
+  const { data, isLoading, isError } = useUserList({
+    filters: { role: ['SPEAKER'], company: companyName },
+    pagination: { page, limit },
+    enabled: !!companyName,
+  });
+
+  if (isLoading) return <Skeleton variant="rectangular" height={300} />;
+  if (isError) return <Alert severity="error">Failed to load speakers.</Alert>;
+
+  const speakers = data?.data ?? [];
+  const paginationData = data?.pagination;
+
+  if (speakers.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No speakers from this company yet.
+      </Alert>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      {isMobile ? (
+        <Stack spacing={2}>
+          {speakers.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              onClick={(u: User) =>
+                navigate(`/organizer/users/${u.id}`, {
+                  state: { from: location.pathname, fromLabel: companyName },
+                })
+              }
+            />
+          ))}
+        </Stack>
+      ) : (
+        <UserTable
+          users={speakers}
+          onRowClick={(user: User) =>
+            navigate(`/organizer/users/${user.id}`, {
+              state: { from: location.pathname, fromLabel: companyName },
+            })
+          }
+          onAction={(action, user: User) => {
+            if (action === 'view')
+              navigate(`/organizer/users/${user.id}`, {
+                state: { from: location.pathname, fromLabel: companyName },
+              });
+          }}
+        />
+      )}
+      {paginationData && (
+        <UserPagination
+          page={paginationData.page}
+          totalPages={paginationData.totalPages}
+          limit={paginationData.limit}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+        />
+      )}
+    </Box>
+  );
+};
+
+// ─── Company Sessions Panel ────────────────────────────────────────────────────
+
+interface SessionSpeaker {
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  profilePictureUrl?: string;
+}
+
+interface CompanySession {
+  sessionSlug: string;
+  eventCode: string;
+  eventTitle?: string;
+  eventDate?: string;
+  title: string;
+  sessionType?: string;
+  startTime?: string;
+  room?: string;
+  speakers: SessionSpeaker[];
+}
+
+const CompanySessionsPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
+  const navigate = useNavigate();
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['sessions', 'byCompany', companyName],
+    queryFn: async () => {
+      const res = await apiClient.get<{ data: CompanySession[] }>('/sessions', {
+        params: { companyName, limit: 50 },
+      });
+      return res.data.data ?? [];
+    },
+    enabled: !!companyName,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) return <Skeleton variant="rectangular" height={300} />;
+  if (isError) return <Alert severity="error">Failed to load sessions.</Alert>;
+  if (!data?.length) {
+    return (
+      <Alert severity="info" sx={{ mt: 2 }}>
+        No sessions from this company yet.
+      </Alert>
+    );
+  }
+
+  return (
+    <Stack spacing={2} sx={{ mt: 2 }}>
+      {data.map((session) => {
+        const companySpeakers = session.speakers.filter((s) => s.company === companyName);
+        const otherSpeakers = session.speakers.filter((s) => s.company !== companyName);
+        const allSpeakers = [...companySpeakers, ...otherSpeakers];
+        const eventLabel = session.eventTitle
+          ? `${session.eventCode} · ${session.eventTitle}`
+          : session.eventCode;
+        const dateLabel = session.eventDate
+          ? new Date(session.eventDate).toLocaleDateString('de-CH', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : null;
+
+        return (
+          <Card
+            key={`${session.eventCode}-${session.sessionSlug}`}
+            variant="outlined"
+            onClick={() => navigate(`/events/${session.eventCode}`)}
+            sx={{
+              cursor: 'pointer',
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+              '&:hover': { borderColor: 'primary.main', boxShadow: 2 },
+            }}
+          >
+            <CardContent>
+              <Stack spacing={1}>
+                {/* Event badge */}
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <Chip label={eventLabel} size="small" color="primary" variant="outlined" />
+                  {dateLabel && (
+                    <Typography variant="caption" color="text.secondary">
+                      {dateLabel}
+                    </Typography>
+                  )}
+                  {session.room && (
+                    <Typography variant="caption" color="text.secondary">
+                      · {session.room}
+                    </Typography>
+                  )}
+                </Stack>
+
+                {/* Session title */}
+                <Typography variant="subtitle1" fontWeight="medium">
+                  {session.title}
+                </Typography>
+
+                {/* Speakers */}
+                {allSpeakers.length > 0 && (
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                    <AvatarGroup
+                      max={6}
+                      sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}
+                    >
+                      {allSpeakers.map((speaker) => (
+                        <Avatar
+                          key={speaker.username}
+                          src={speaker.profilePictureUrl ?? undefined}
+                          alt={speaker.firstName}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            fontSize: '0.75rem',
+                            border: speaker.company === companyName ? '2px solid' : undefined,
+                            borderColor:
+                              speaker.company === companyName ? 'primary.main' : undefined,
+                          }}
+                        >
+                          {`${speaker.firstName?.charAt(0) ?? ''}${speaker.lastName?.charAt(0) ?? ''}`}
+                        </Avatar>
+                      ))}
+                    </AvatarGroup>
+                    <Typography variant="caption" color="text.secondary">
+                      {allSpeakers
+                        .map((s) => `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim())
+                        .filter(Boolean)
+                        .join(', ')}
+                    </Typography>
+                  </Stack>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </Stack>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 interface CompanyDetailViewProps {
@@ -217,7 +381,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -420,30 +583,29 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs value={activeTab} onChange={handleTabChange} aria-label="company detail tabs">
             <Tab
-              label={t('company.detail.tabs.overview')}
+              label={t('company.detail.tabs.users')}
               id="company-tab-0"
               aria-controls="company-tabpanel-0"
             />
-            <Tab
-              label={t('company.detail.tabs.users')}
-              id="company-tab-1"
-              aria-controls="company-tabpanel-1"
-            />
+            <Tab label="Speakers" id="company-tab-1" aria-controls="company-tabpanel-1" />
+            <Tab label="Sessions" id="company-tab-2" aria-controls="company-tabpanel-2" />
           </Tabs>
         </Box>
       )}
 
-      {/* Overview: speakers from this company */}
+      {/* Users: all users associated with this company */}
       <TabPanel value={activeTab} index={0}>
-        <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-          Speakers
-        </Typography>
-        <CompanySpeakersPanel companyName={company.name} />
+        <CompanyUsersPanel companyName={company.name} isMobile={isMobile} />
       </TabPanel>
 
-      {/* Users: all users associated with this company */}
+      {/* Speakers: users with role SPEAKER from this company */}
       <TabPanel value={activeTab} index={1}>
-        <CompanyUsersPanel companyName={company.name} />
+        <CompanySpeakersPanel companyName={company.name} isMobile={isMobile} />
+      </TabPanel>
+
+      {/* Sessions: sessions where a speaker from this company participated */}
+      <TabPanel value={activeTab} index={2}>
+        <CompanySessionsPanel companyName={company.name} />
       </TabPanel>
 
       {/* Delete Confirmation Dialog */}
@@ -467,8 +629,9 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         elevation={3}
       >
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-          <BottomNavigationAction icon={<OverviewIcon />} sx={{ minWidth: 0, flex: 1 }} />
           <BottomNavigationAction icon={<UsersIcon />} sx={{ minWidth: 0, flex: 1 }} />
+          <BottomNavigationAction icon={<SpeakersIcon />} sx={{ minWidth: 0, flex: 1 }} />
+          <BottomNavigationAction icon={<SessionsIcon />} sx={{ minWidth: 0, flex: 1 }} />
         </BottomNavigation>
       </Paper>
     </Box>

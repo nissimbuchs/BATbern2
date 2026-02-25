@@ -1581,10 +1581,317 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/analytics/overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get analytics overview (KPI totals + event timeline)
+     * @description Returns all-time KPI totals and the full event history timeline.
+     *     Neither KPIs nor timeline are filtered by time range — they always show all-time data.
+     *
+     *     **Story**: 10.5 - Analytics Dashboard (AC2, AC6)
+     *
+     *     **Authorization**: ORGANIZER or PARTNER role required.
+     *     Returns aggregate data only — no individual attendee data.
+     */
+    get: operations['getAnalyticsOverview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/analytics/attendance': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get per-event attendance with returning/new breakdown
+     * @description Returns attendance data per event including returning vs. new attendee breakdown.
+     *     Uses in-memory Java algorithm for returning/new classification (see Dev Notes).
+     *
+     *     **Story**: 10.5 - Analytics Dashboard (AC3, AC6)
+     *
+     *     **Authorization**: ORGANIZER or PARTNER role required.
+     */
+    get: operations['getAnalyticsAttendance'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/analytics/topics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get topic analytics (events per category + scatter data)
+     * @description Returns two datasets: events grouped by category for the bar chart,
+     *     and per-topic scatter data (event count vs. avg attendees).
+     *
+     *     **Story**: 10.5 - Analytics Dashboard (AC4, AC6)
+     *
+     *     **Authorization**: ORGANIZER or PARTNER role required.
+     */
+    get: operations['getAnalyticsTopics'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/analytics/companies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get company analytics (attendance over time, sessions per company, distribution)
+     * @description Returns three datasets for the Companies tab:
+     *     - Flat year+company attendance for stacked-bar chart (frontend groups by year)
+     *     - Sessions and unique speakers per company
+     *     - All-time attendee distribution (for default pie chart view)
+     *
+     *     **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+     *
+     *     **Authorization**: ORGANIZER or PARTNER role required.
+     */
+    get: operations['getAnalyticsCompanies'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/analytics/companies/distribution': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get attendee company distribution for a single event
+     * @description Returns the per-company attendee breakdown for a specific event.
+     *     Used by the Companies tab pie chart when the user selects an event from the dropdown.
+     *
+     *     **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+     *
+     *     **Authorization**: ORGANIZER or PARTNER role required.
+     */
+    get: operations['getCompanyDistribution'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description All-time KPI totals and full event timeline (not filtered by time range) */
+    AnalyticsOverviewResponse: {
+      /**
+       * @description Total number of events held
+       * @example 58
+       */
+      totalEvents: number;
+      /**
+       * @description Total confirmed/attended registrations across all events
+       * @example 3240
+       */
+      totalAttendees: number;
+      /**
+       * @description Number of distinct companies that have attended at least one event
+       * @example 145
+       */
+      companiesRepresented: number;
+      /**
+       * @description Total speaker session contributions (rows in session_users)
+       * @example 312
+       */
+      totalSessions: number;
+      /**
+       * @description Total distinct confirmed speakers across all events
+       * @example 213
+       */
+      totalSpeakers: number;
+      /** @description All events ordered chronologically for the cadence timeline chart */
+      timeline: components['schemas']['EventTimelineItem'][];
+    };
+    /** @description Single event entry in the cadence timeline */
+    EventTimelineItem: {
+      /** @example BATbern57 */
+      eventCode: string;
+      /** @example 57 */
+      eventNumber: number;
+      /** @example Architecture Patterns in Practice */
+      title: string;
+      /**
+       * Format: date-time
+       * @example 2024-06-01T00:00:00Z
+       */
+      eventDate: string;
+      /**
+       * @description Topic category; null if no topic assigned
+       * @example ARCHITECTURE
+       */
+      category?: string | null;
+      /** @example 78 */
+      attendeeCount: number;
+    };
+    /** @description Per-event attendance with returning/new attendee breakdown */
+    AnalyticsAttendanceResponse: {
+      /** @description Events ordered chronologically */
+      events: components['schemas']['AttendanceEventItem'][];
+    };
+    /** @description Attendance data for a single event */
+    AttendanceEventItem: {
+      /** @example BATbern57 */
+      eventCode: string;
+      /** @example 57 */
+      eventNumber: number;
+      /** @example Architecture Patterns in Practice */
+      title: string;
+      /**
+       * Format: date-time
+       * @example 2024-06-01T00:00:00Z
+       */
+      eventDate: string;
+      /** @example ARCHITECTURE */
+      category?: string | null;
+      /** @example 78 */
+      totalAttendees: number;
+      /**
+       * @description Attendees who have attended at least one previous event
+       * @example 45
+       */
+      returningAttendees: number;
+      /**
+       * @description First-time attendees at this event
+       * @example 33
+       */
+      newAttendees: number;
+    };
+    /** @description Topic analytics — events per category and topic scatter data */
+    AnalyticsTopicsResponse: {
+      /** @description Event count grouped by topic category, sorted descending */
+      eventsPerCategory: components['schemas']['CategoryEventCount'][];
+      /** @description Per-topic scatter data (event count vs avg attendees) */
+      topicScatter: components['schemas']['TopicScatterItem'][];
+    };
+    /** @description Number of events for a given topic category */
+    CategoryEventCount: {
+      /** @example ARCHITECTURE */
+      category: string;
+      /** @example 18 */
+      eventCount: number;
+    };
+    /** @description Topic data point for the scatter chart */
+    TopicScatterItem: {
+      /** @example ARCH-DDD */
+      topicCode: string;
+      /** @example Domain-Driven Design */
+      topicTitle: string;
+      /** @example ARCHITECTURE */
+      category: string;
+      /**
+       * @description Number of events held on this topic
+       * @example 4
+       */
+      eventCount: number;
+      /**
+       * Format: double
+       * @description Average attendee count across events with this topic
+       * @example 82.5
+       */
+      avgAttendees: number;
+    };
+    /** @description Company analytics — attendance over time, sessions, and distribution */
+    AnalyticsCompaniesResponse: {
+      /** @description Flat list of year+company attendance records; frontend groups by year for stacked chart */
+      attendanceOverTime: components['schemas']['CompanyYearAttendanceItem'][];
+      /** @description Sessions and unique speakers per company, sorted descending by sessionCount */
+      sessionsPerCompany: components['schemas']['CompanySessionItem'][];
+      /** @description All-time attendee share per company (respects fromYear filter) */
+      distribution: components['schemas']['CompanyAttendanceShare'][];
+    };
+    /** @description Attendee count for a specific company in a specific year */
+    CompanyYearAttendanceItem: {
+      /** @example 2024 */
+      year: number;
+      /** @example sbb */
+      companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
+      /** @example 12 */
+      attendeeCount: number;
+    };
+    /** @description Speaker session count and unique speaker count for a company */
+    CompanySessionItem: {
+      /** @example sbb */
+      companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
+      /**
+       * @description Total confirmed speaker session appearances
+       * @example 8
+       */
+      sessionCount: number;
+      /**
+       * @description Number of distinct speakers from this company
+       * @example 5
+       */
+      uniqueSpeakers: number;
+    };
+    /** @description A company's total attendee count (used in pie/distribution charts) */
+    CompanyAttendanceShare: {
+      /** @example sbb */
+      companyName: string;
+      /**
+       * @description Human-readable company name from the companies table
+       * @example SBB AG
+       */
+      displayName?: string | null;
+      /** @example 67 */
+      attendeeCount: number;
+    };
+    /** @description Per-event company attendee distribution (for pie chart event filter) */
+    CompanyDistributionResponse: {
+      /** @example BATbern57 */
+      eventCode: string;
+      distribution: components['schemas']['CompanyAttendanceShare'][];
+    };
     /** @description Email template with full content and metadata */
     EmailTemplateResponse: {
       /** @description Template identifier key (e.g. speaker-invitation, batbern-default) */
@@ -6222,6 +6529,142 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
+    };
+  };
+  getAnalyticsOverview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Analytics overview data */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnalyticsOverviewResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAnalyticsAttendance: {
+    parameters: {
+      query?: {
+        /** @description Earliest year to include (inclusive). Omit for all-time data. */
+        fromYear?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Per-event attendance data */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnalyticsAttendanceResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAnalyticsTopics: {
+    parameters: {
+      query?: {
+        /** @description Earliest year to include (inclusive). Omit for all-time data. */
+        fromYear?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Topic analytics data */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnalyticsTopicsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getAnalyticsCompanies: {
+    parameters: {
+      query?: {
+        /** @description Earliest year to include (inclusive). Omit for all-time data. */
+        fromYear?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Company analytics data */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnalyticsCompaniesResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+    };
+  };
+  getCompanyDistribution: {
+    parameters: {
+      query: {
+        /** @description Event code to scope the distribution query */
+        eventCode: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Per-event company distribution */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyDistributionResponse'];
+        };
+      };
+      /** @description Missing or invalid eventCode parameter */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Event not found for the given eventCode */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
 }

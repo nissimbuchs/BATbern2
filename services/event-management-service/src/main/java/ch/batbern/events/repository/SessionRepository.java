@@ -7,6 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -141,6 +144,37 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
             @Param("eventCode") String eventCode,
             @Param("sessionSlug") String sessionSlug
     );
+
+    /**
+     * Find sessions where at least one speaker belongs to the given company.
+     * Joins session_users with user_profiles (shared table) to filter by company_id.
+     * Used by GlobalSessionController for company detail page Sessions tab.
+     *
+     * @param companyName Company name (ADR-003 meaningful ID = company_id in user_profiles)
+     * @param pageable Pagination + sort
+     * @return Page of sessions
+     */
+    @Query(value = """
+        SELECT s.* FROM sessions s
+        WHERE s.id IN (
+            SELECT DISTINCT su.session_id FROM session_users su
+            JOIN user_profiles up ON up.username = su.username
+            WHERE up.company_id = :companyName
+        )
+        ORDER BY s.start_time DESC NULLS LAST
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM sessions s
+        WHERE s.id IN (
+            SELECT DISTINCT su.session_id FROM session_users su
+            JOIN user_profiles up ON up.username = su.username
+            WHERE up.company_id = :companyName
+        )
+        """,
+        nativeQuery = true)
+    Page<Session> findSessionsByCompanyName(
+            @Param("companyName") String companyName,
+            Pageable pageable);
 
     /**
      * Count all sessions for a specific event

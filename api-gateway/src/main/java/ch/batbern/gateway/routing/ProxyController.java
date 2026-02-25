@@ -34,7 +34,7 @@ public class ProxyController {
         RequestMethod.PATCH,
         RequestMethod.HEAD
     })
-    public CompletableFuture<ResponseEntity<String>> proxyRequest(HttpServletRequest request) {
+    public CompletableFuture<ResponseEntity<byte[]>> proxyRequest(HttpServletRequest request) {
         String requestPath = request.getRequestURI();
 
         log.debug("Proxying request: {} {}", request.getMethod(), requestPath);

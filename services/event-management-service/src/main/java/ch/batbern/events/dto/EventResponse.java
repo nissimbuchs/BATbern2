@@ -43,6 +43,7 @@ public class EventResponse {
     private String themeImageUploadId;
     private String eventType;
     private String topicCode;
+    private String topicSelectionNote;
     private String workflowState;
     private String currentPublishedPhase;
 

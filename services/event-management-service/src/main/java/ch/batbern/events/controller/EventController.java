@@ -1400,6 +1400,14 @@ public class EventController {
         if (request.getWorkflowState() != null) {
             event.setWorkflowState(request.getWorkflowState());
         }
+        // Story 10.4: Set topicCode directly via PATCH (blob selector accept flow)
+        if (request.getTopicCode() != null) {
+            event.setTopicCode(request.getTopicCode());
+        }
+        // Story 10.4: Record selection note from blob selector session
+        if (request.getTopicSelectionNote() != null) {
+            event.setTopicSelectionNote(request.getTopicSelectionNote());
+        }
     }
 
     /**

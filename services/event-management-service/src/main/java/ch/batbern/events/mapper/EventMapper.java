@@ -62,6 +62,7 @@ public class EventMapper {
                 .themeImageUploadId(entity.getThemeImageUploadId())
                 .eventType(entity.getEventType() != null ? entity.getEventType().getValue() : null)
                 .topicCode(entity.getTopicCode())
+                .topicSelectionNote(entity.getTopicSelectionNote())
                 .workflowState(entity.getWorkflowState() != null ? entity.getWorkflowState().name() : null)
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
@@ -103,6 +104,7 @@ public class EventMapper {
                 .themeImageUploadId(entity.getThemeImageUploadId())
                 .eventType(entity.getEventType() != null ? entity.getEventType().getValue() : null)
                 .topicCode(entity.getTopicCode())
+                .topicSelectionNote(entity.getTopicSelectionNote())
                 .workflowState(entity.getWorkflowState() != null ? entity.getWorkflowState().name() : null)
                 .currentPublishedPhase(entity.getCurrentPublishedPhase() != null
                         ? entity.getCurrentPublishedPhase().toUpperCase() : null)
@@ -233,6 +235,12 @@ public class EventMapper {
         }
         if (request.getWorkflowState() != null) {
             entity.setWorkflowState(request.getWorkflowState());
+        }
+        if (request.getTopicCode() != null) {
+            entity.setTopicCode(request.getTopicCode());
+        }
+        if (request.getTopicSelectionNote() != null) {
+            entity.setTopicSelectionNote(request.getTopicSelectionNote());
         }
     }
 

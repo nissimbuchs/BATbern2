@@ -4,7 +4,8 @@
     "createEvent": "Create Event",
     "eventTimeline": "Timeline",
     "events": "Events",
-    "topicManagement": "Topic Management"
+    "topicManagement": "Topic Management",
+    "blobSelector": "Blob Selector"
   },
   "eventPage": {
     "tabs": {
@@ -14,6 +15,7 @@
       "team": "Team",
       "participants": "Participants",
       "publishing": "Publishing",
+      "newsletter": "Newsletter",
       "settings": "Settings"
     },
     "tabsAriaLabel": "Event page navigation",
@@ -179,6 +181,27 @@
     },
     "errors": {
       "failedToLoadEvents": "Failed to load events"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "subscriberCount": "{{count}} active subscribers",
+      "sendHistory": "Send History",
+      "noHistory": "No newsletters sent for this event yet.",
+      "composeTitle": "Compose & Send",
+      "locale": "Language",
+      "preview": "Preview",
+      "sendNewsletter": "Send Newsletter",
+      "sendReminder": "Send Reminder",
+      "confirmSendTitle": "Confirm Send",
+      "confirmSendBody": "Send {{type}} to {{count}} subscribers for event {{eventTitle}}?",
+      "sendSuccess": "Newsletter sent to {{count}} recipients.",
+      "sendError": "Failed to send. Please try again.",
+      "historyDate": "Date",
+      "historyType": "Type",
+      "historyRecipients": "Recipients",
+      "typeNewsletter": "Newsletter",
+      "typeReminder": "Reminder",
+      "previewTitle": "Email Preview"
     }
   },
   "tabs": {
@@ -965,5 +988,29 @@
     },
     "loading": "Loading...",
     "dragInstructions": "Drag speakers to time slots to assign"
+  },
+  "newsletter": {
+    "widget": {
+      "title": "Stay updated with BATbern",
+      "placeholder": "your@email.com",
+      "button": "Subscribe",
+      "success": "Thank you! You are now subscribed.",
+      "alreadySubscribed": "You are already subscribed.",
+      "error": "Something went wrong. Please try again.",
+      "emailInvalid": "Please enter a valid email address."
+    },
+    "unsubscribe": {
+      "title": "Unsubscribe from BATbern Newsletter",
+      "loading": "Loading…",
+      "confirmMessage": "You are about to unsubscribe {{email}} from BATbern newsletters.",
+      "confirmButton": "Confirm Unsubscribe",
+      "success": "You have been successfully unsubscribed.",
+      "resubscribeLink": "Subscribe again",
+      "invalidToken": "This unsubscribe link is invalid or has already been used."
+    },
+    "account": {
+      "label": "Subscribe to BATbern newsletter",
+      "description": "Receive event announcements and updates"
+    }
   }
 }

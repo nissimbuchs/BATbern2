@@ -396,5 +396,73 @@
     "completedOn": "Completed on",
     "completedBy": "Completed by",
     "noTasks": "No tasks"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "timeRange": {
+      "all": "All Time",
+      "5y": "Last 5 Years",
+      "2y": "Last 2 Years"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "attendance": "Attendance",
+      "topics": "Topics",
+      "companies": "Companies"
+    },
+    "kpi": {
+      "totalEvents": "Total Events",
+      "totalAttendees": "Total Attendees",
+      "companiesRepresented": "Companies",
+      "totalSessions": "Total Sessions",
+      "totalSpeakers": "Total Speakers"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Event History",
+      "attendeesPerEvent": "Attendees per Event",
+      "returningVsNew": "Returning vs. New Attendees",
+      "eventsPerCategory": "Events per Category",
+      "topicPopularity": "Topic Popularity",
+      "attendanceOverTime": "Attendance by Company over Time",
+      "sessionsPerCompany": "Sessions per Company",
+      "attendeeDistribution": "Attendee Distribution by Company"
+    },
+    "labels": {
+      "returning": "Returning",
+      "new": "New",
+      "showDataTable": "Show data table",
+      "hideDataTable": "Hide data table",
+      "noData": "No data available for this period",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "All"
+      },
+      "labelToggle": {
+        "title": "Title",
+        "category": "Category",
+        "both": "Both"
+      },
+      "filterByEvent": "Filter by event",
+      "allEvents": "All events",
+      "sessions": "sessions",
+      "speakers": "speakers",
+      "yourCompany": "Your Company"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Type a topic and press Enter...",
+    "fitAll": "Fit All",
+    "snapToActive": "Snap to Active",
+    "backButton": "← Back to Topic List",
+    "unsavedWarning": "Unsaved session — all changes will be lost. Go back?",
+    "accept": {
+      "title": "Select Topic: {{topic}}",
+      "partnerAlignment": "{{count}} of 9 partners aligned",
+      "lastCovered": "Last covered: BATbern #{{num}} ({{count}} events ago)",
+      "overrideReason": "Why are we revisiting this topic? (optional)",
+      "confirm": "Select this topic",
+      "cancel": "Keep exploring"
+    }
   }
 }

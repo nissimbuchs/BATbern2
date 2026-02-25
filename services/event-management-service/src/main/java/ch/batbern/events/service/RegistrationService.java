@@ -11,6 +11,7 @@ import ch.batbern.events.dto.generated.FailedRegistration;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
+import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class RegistrationService {
     private final UserApiClient userApiClient;
     @SuppressWarnings("unused") // Story 2.2a Task B12 - Will be used when email confirmation is implemented
     private final RegistrationEmailService registrationEmailService;
+    private final NewsletterSubscriberService newsletterSubscriberService;
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -135,6 +137,19 @@ public class RegistrationService {
         Registration saved = registrationRepository.save(registration);
         log.info("Created registration: {} for user: {} at event: {}",
                 registrationCode, username, eventCode);
+
+        // Story 10.7 (AC6): Auto-subscribe to newsletter if opted in during registration
+        if (request.getCommunicationPreferences() != null
+                && Boolean.TRUE.equals(request.getCommunicationPreferences().getNewsletterSubscribed())) {
+            try {
+                newsletterSubscriberService.subscribe(
+                        request.getEmail(), request.getFirstName(), "de", "registration", username);
+                log.info("Auto-subscribed {} to newsletter via registration", request.getEmail());
+            } catch (DuplicateSubscriberException e) {
+                // Already subscribed — silently ignore (AC6)
+                log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
+            }
+        }
 
         // Story 4.1.5c: Email sending moved to EventController (needs JWT token)
         // Email will be sent after token generation in controller layer

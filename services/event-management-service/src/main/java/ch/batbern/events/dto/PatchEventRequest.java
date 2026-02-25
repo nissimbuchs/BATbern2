@@ -54,4 +54,10 @@ public class PatchEventRequest {
     private String eventType;
 
     private EventWorkflowState workflowState;
+
+    // Story 10.4: Set topic code directly (bypasses workflow state machine — for blob selector accept flow)
+    private String topicCode;
+
+    // Story 10.4: Record selection rationale from blob selector session
+    private String topicSelectionNote;
 }

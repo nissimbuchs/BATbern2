@@ -396,5 +396,73 @@
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
     "noTasks": "Keine Aufgaben"
+  },
+  "analytics": {
+    "title": "Analysen",
+    "timeRange": {
+      "all": "Alle Zeit",
+      "5y": "Letzte 5 Jahre",
+      "2y": "Letzte 2 Jahre"
+    },
+    "tabs": {
+      "overview": "Übersicht",
+      "attendance": "Teilnahme",
+      "topics": "Themen",
+      "companies": "Unternehmen"
+    },
+    "kpi": {
+      "totalEvents": "Veranstaltungen",
+      "totalAttendees": "Teilnehmende",
+      "companiesRepresented": "Unternehmen",
+      "totalSessions": "Gesamt-Sessions",
+      "totalSpeakers": "Referenten gesamt"
+    },
+    "charts": {
+      "eventCadenceTimeline": "Veranstaltungshistorie",
+      "attendeesPerEvent": "Teilnehmende pro Veranstaltung",
+      "returningVsNew": "Wiederkehrende vs. Neue Teilnehmende",
+      "eventsPerCategory": "Veranstaltungen pro Kategorie",
+      "topicPopularity": "Themen-Beliebtheit",
+      "attendanceOverTime": "Teilnahme nach Unternehmen über die Zeit",
+      "sessionsPerCompany": "Sessions pro Unternehmen",
+      "attendeeDistribution": "Teilnehmende-Verteilung nach Unternehmen"
+    },
+    "labels": {
+      "returning": "Wiederkehrend",
+      "new": "Neu",
+      "showDataTable": "Datentabelle einblenden",
+      "hideDataTable": "Datentabelle ausblenden",
+      "noData": "Keine Daten für diesen Zeitraum verfügbar",
+      "topN": {
+        "top5": "Top 5",
+        "top10": "Top 10",
+        "all": "Alle"
+      },
+      "labelToggle": {
+        "title": "Titel",
+        "category": "Kategorie",
+        "both": "Beides"
+      },
+      "filterByEvent": "Nach Veranstaltung filtern",
+      "allEvents": "Alle Veranstaltungen",
+      "sessions": "Sessions",
+      "speakers": "Speaker",
+      "yourCompany": "Ihr Unternehmen"
+    }
+  },
+  "blobSelector": {
+    "typeTopic": "Thema eingeben und Enter drücken...",
+    "fitAll": "Alle anzeigen",
+    "snapToActive": "Aktive anzeigen",
+    "backButton": "← Zurück zur Themenliste",
+    "unsavedWarning": "Nicht gespeicherte Sitzung – alle Änderungen gehen verloren. Zurück?",
+    "accept": {
+      "title": "Thema auswählen: {{topic}}",
+      "partnerAlignment": "{{count}} von 9 Partnern ausgerichtet",
+      "lastCovered": "Zuletzt behandelt: BATbern #{{num}} (vor {{count}} Veranstaltungen)",
+      "overrideReason": "Warum wird dieses Thema wiederholt? (optional)",
+      "confirm": "Dieses Thema wählen",
+      "cancel": "Weiter erkunden"
+    }
   }
 }
