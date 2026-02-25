@@ -143,6 +143,7 @@ function handler(event) {
           contentSecurityPolicy:
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+            "worker-src blob:; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio; " +
