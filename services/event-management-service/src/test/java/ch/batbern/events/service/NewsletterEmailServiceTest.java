@@ -2,12 +2,10 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.domain.SessionUser;
+import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SessionUserRepository;
-import ch.batbern.events.repository.UserPortraitProjection;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -48,7 +47,7 @@ class NewsletterEmailServiceTest {
     @Mock
     private SessionRepository sessionRepository;
     @Mock
-    private SessionUserRepository sessionUserRepository;
+    private SessionUserService sessionUserService;
     @Mock
     private EventRepository eventRepository;
 
@@ -187,11 +186,6 @@ class NewsletterEmailServiceTest {
         Session modSession = new Session();
         modSession.setSessionType("moderation");
         modSession.setTitle("Moderation Start");
-        SessionUser su = new SessionUser();
-        su.setUsername("nissim.buchs");
-        su.setSpeakerFirstName("Nissim");
-        su.setSpeakerLastName("Buchs");
-        modSession.setSessionUsers(List.of(su));
 
         when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
                 .thenReturn(List.of(modSession));
@@ -209,25 +203,25 @@ class NewsletterEmailServiceTest {
         Session session = new Session();
         session.setSessionType("presentation");
         session.setTitle("Zero Trust at PostFinance");
-        SessionUser su1 = new SessionUser();
-        su1.setUsername("mustapha.bouaaoud");
-        su1.setSpeakerFirstName("Mustapha");
-        su1.setSpeakerLastName("Bouaaoud");
-        su1.setPresentationTitle("Zero Trust at PostFinance");
-        SessionUser su2 = new SessionUser();
-        su2.setUsername("philippe.halbeisen");
-        su2.setSpeakerFirstName("Philippe");
-        su2.setSpeakerLastName("Halbeisen");
-        session.setSessionUsers(List.of(su1, su2));
 
-        UserPortraitProjection p1 = mockPortrait("mustapha.bouaaoud", "postfinance");
-        UserPortraitProjection p2 = mockPortrait("philippe.halbeisen", "postfinance");
+        SessionSpeakerResponse sp1 = SessionSpeakerResponse.builder()
+                .username("mustapha.bouaaoud")
+                .firstName("Mustapha")
+                .lastName("Bouaaoud")
+                .company("postfinance")
+                .presentationTitle("Zero Trust at PostFinance")
+                .build();
+        SessionSpeakerResponse sp2 = SessionSpeakerResponse.builder()
+                .username("philippe.halbeisen")
+                .firstName("Philippe")
+                .lastName("Halbeisen")
+                .company("postfinance")
+                .build();
 
         when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
                 .thenReturn(List.of(session));
-        when(sessionUserRepository.findUserPortraitsByUsernames(
-                java.util.Set.of("mustapha.bouaaoud", "philippe.halbeisen")))
-                .thenReturn(List.of(p1, p2));
+        when(sessionUserService.getSessionSpeakers(any()))
+                .thenReturn(List.of(sp1, sp2));
 
         String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
 
@@ -240,24 +234,26 @@ class NewsletterEmailServiceTest {
     }
 
     @Test
-    @DisplayName("buildSpeakersSection: company comes from user_profiles via companyId")
+    @DisplayName("buildSpeakersSection: company comes from SessionUserService enrichment")
     void buildSpeakersSection_companyFromUserProfiles() {
         testEvent.setWorkflowState(ch.batbern.shared.types.EventWorkflowState.AGENDA_PUBLISHED);
 
         Session session = new Session();
         session.setSessionType("presentation");
         session.setTitle("Zero Trust");
-        SessionUser su = new SessionUser();
-        su.setUsername("igor.masen");
-        su.setSpeakerFirstName("Igor");
-        su.setSpeakerLastName("Masen");
-        su.setPresentationTitle("Zero Trust at SBB");
-        session.setSessionUsers(List.of(su));
+
+        SessionSpeakerResponse sp = SessionSpeakerResponse.builder()
+                .username("igor.masen")
+                .firstName("Igor")
+                .lastName("Masen")
+                .company("sbb")
+                .presentationTitle("Zero Trust at SBB")
+                .build();
 
         when(sessionRepository.findByEventIdWithSpeakers(testEvent.getId()))
                 .thenReturn(List.of(session));
-        when(sessionUserRepository.findUserPortraitsByUsernames(java.util.Set.of("igor.masen")))
-                .thenReturn(List.of(mockPortrait("igor.masen", "sbb")));
+        when(sessionUserService.getSessionSpeakers(any()))
+                .thenReturn(List.of(sp));
 
         String result = newsletterEmailService.buildSpeakersSection(testEvent, true);
 
@@ -267,28 +263,4 @@ class NewsletterEmailServiceTest {
         assertThat(result).contains("sbb");
     }
 
-    private UserPortraitProjection mockPortrait(String username, String companyId) {
-        return new UserPortraitProjection() {
-
-            public String getUsername() {
-                return username;
-            }
-
-            public String getProfilePictureUrl() {
-                return null;
-            }
-
-            public String getCompanyId() {
-                return companyId;
-            }
-
-            public String getCompanyDisplayName() {
-                return companyId;
-            }
-
-            public String getCompanyLogoUrl() {
-                return null;
-            }
-        };
-    }
 }

@@ -4,14 +4,12 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.dto.NewsletterPreviewResponse;
 import ch.batbern.events.dto.NewsletterSendResponse;
+import ch.batbern.events.dto.SessionSpeakerResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SessionUserRepository;
-import ch.batbern.events.repository.UserPortraitProjection;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +62,7 @@ public class NewsletterEmailService {
     private final NewsletterSubscriberService subscriberService;
     private final NewsletterSendRepository sendRepository;
     private final SessionRepository sessionRepository;
-    private final SessionUserRepository sessionUserRepository;
+    private final SessionUserService sessionUserService;
     private final EventRepository eventRepository;
 
     @Value("${app.base-url:https://batbern.ch}")
@@ -221,7 +219,7 @@ public class NewsletterEmailService {
     /**
      * Builds the speakers section as an HTML table when event workflow state allows it.
      * One row per session; multiple speakers joined by "; ". Structural sessions filtered out.
-     * Company comes from user_profiles.company_id via UserPortraitProjection.
+     * Speaker names and company come from SessionUserService (enriched via user-management-service).
      * Returns empty string when agenda is not yet published.
      */
     String buildSpeakersSection(Event event, boolean isDe) {
@@ -233,25 +231,6 @@ public class NewsletterEmailService {
         if (sessions.isEmpty()) {
             return "";
         }
-
-        // Collect all speaker usernames across content sessions
-        Set<String> usernames = sessions.stream()
-                .filter(s -> !STRUCTURAL_SESSION_TYPES.contains(s.getSessionType()))
-                .flatMap(s -> s.getSessionUsers() == null ? java.util.stream.Stream.empty()
-                        : s.getSessionUsers().stream())
-                .map(SessionUser::getUsername)
-                .filter(u -> u != null && !u.isBlank())
-                .collect(Collectors.toSet());
-
-        // Batch-load company display names from user_profiles + companies join
-        Map<String, String> usernameToCompany = usernames.isEmpty()
-                ? Map.of()
-                : sessionUserRepository.findUserPortraitsByUsernames(usernames).stream()
-                        .filter(p -> p.getCompanyDisplayName() != null)
-                        .collect(Collectors.toMap(
-                                UserPortraitProjection::getUsername,
-                                UserPortraitProjection::getCompanyDisplayName,
-                                (a, b) -> a));
 
         String thStyle = "padding:6px 10px;text-align:left;font-size:11px;font-weight:600;"
                 + "text-transform:uppercase;letter-spacing:1px;color:#71717A;"
@@ -275,27 +254,32 @@ public class NewsletterEmailService {
             if (STRUCTURAL_SESSION_TYPES.contains(session.getSessionType())) {
                 continue;
             }
-            if (session.getSessionUsers() == null || session.getSessionUsers().isEmpty()) {
+
+            // Use SessionUserService to get enriched speaker data (firstName/lastName/company
+            // fetched from company-user-management-service — same path as the event detail API).
+            List<SessionSpeakerResponse> speakers =
+                    sessionUserService.getSessionSpeakers(session.getId());
+            if (speakers.isEmpty()) {
                 continue;
             }
 
             // Collect title from first speaker's presentationTitle, fall back to session title
-            String title = session.getSessionUsers().stream()
-                    .map(SessionUser::getPresentationTitle)
+            String title = speakers.stream()
+                    .map(SessionSpeakerResponse::getPresentationTitle)
                     .filter(t -> t != null && !t.isBlank())
                     .findFirst()
                     .orElse(session.getTitle());
 
             // Build "First Last, Company; First Last2, Company2" — one entry per speaker
-            String speakerNames = session.getSessionUsers().stream()
-                    .map(su -> {
-                        String fn = su.getSpeakerFirstName() != null ? su.getSpeakerFirstName() : "";
-                        String ln = su.getSpeakerLastName() != null ? su.getSpeakerLastName() : "";
+            String speakerNames = speakers.stream()
+                    .map(sp -> {
+                        String fn = sp.getFirstName() != null ? sp.getFirstName() : "";
+                        String ln = sp.getLastName() != null ? sp.getLastName() : "";
                         String name = (fn + " " + ln).trim();
                         if (name.isBlank()) {
-                            name = su.getUsername();
+                            name = sp.getUsername();
                         }
-                        String company = usernameToCompany.getOrDefault(su.getUsername(), "");
+                        String company = sp.getCompany() != null ? sp.getCompany().trim() : "";
                         return company.isBlank() ? name : name + ", " + company;
                     })
                     .collect(Collectors.joining("; "));
