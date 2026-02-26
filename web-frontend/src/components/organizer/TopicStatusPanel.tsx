@@ -12,8 +12,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
-  Chip,
   Container,
   IconButton,
   MenuItem,
@@ -33,6 +31,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import CompanyLogo from '@/components/shared/Company/CompanyLogo';
@@ -49,14 +48,6 @@ import {
 
 type SortKey = 'title' | 'suggestedByCompany' | 'voteCount';
 type SortDir = 'asc' | 'desc';
-
-// ─── Status helpers ───────────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<string, 'default' | 'success' | 'error'> = {
-  PROPOSED: 'default',
-  SELECTED: 'success',
-  DECLINED: 'error',
-};
 
 // ─── Per-row local state ──────────────────────────────────────────────────────
 
@@ -270,10 +261,6 @@ const TopicStatusPanel: React.FC = () => {
             <TableBody>
               {sortedTopics.map((topic) => {
                 const row = getRowStateById(topic.id, topics);
-                const statusKey = topic.status.toLowerCase() as
-                  | 'proposed'
-                  | 'selected'
-                  | 'declined';
                 return (
                   <TableRow key={topic.id} hover data-testid={`organizer-topic-row-${topic.id}`}>
                     {/* Title + description */}
@@ -301,28 +288,21 @@ const TopicStatusPanel: React.FC = () => {
                     {/* Vote count */}
                     <TableCell align="right">{topic.voteCount}</TableCell>
 
-                    {/* Status chip + select */}
+                    {/* Status select */}
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={t(`portal.topics.status.${statusKey}`)}
-                          color={STATUS_COLOR[topic.status]}
-                          size="small"
-                        />
-                        <Select
-                          size="small"
-                          value={row.status}
-                          onChange={(e) =>
-                            setRowField(topic.id, 'status', e.target.value as RowState['status'])
-                          }
-                          sx={{ minWidth: 120 }}
-                          data-testid={`status-select-${topic.id}`}
-                        >
-                          <MenuItem value="PROPOSED">{t('portal.topics.status.proposed')}</MenuItem>
-                          <MenuItem value="SELECTED">{t('portal.topics.status.selected')}</MenuItem>
-                          <MenuItem value="DECLINED">{t('portal.topics.status.declined')}</MenuItem>
-                        </Select>
-                      </Box>
+                      <Select
+                        size="small"
+                        value={row.status}
+                        onChange={(e) =>
+                          setRowField(topic.id, 'status', e.target.value as RowState['status'])
+                        }
+                        sx={{ minWidth: 120 }}
+                        data-testid={`status-select-${topic.id}`}
+                      >
+                        <MenuItem value="PROPOSED">{t('portal.topics.status.proposed')}</MenuItem>
+                        <MenuItem value="SELECTED">{t('portal.topics.status.selected')}</MenuItem>
+                        <MenuItem value="DECLINED">{t('portal.topics.status.declined')}</MenuItem>
+                      </Select>
                     </TableCell>
 
                     {/* Planned event */}
@@ -349,17 +329,19 @@ const TopicStatusPanel: React.FC = () => {
                           gap: 0.5,
                         }}
                       >
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() => handleSave(topic.id)}
-                          disabled={row.saving || row.status === 'PROPOSED'}
-                          data-testid={`save-status-${topic.id}`}
-                        >
-                          {row.saving
-                            ? t('portal.topics.organizer.saving')
-                            : t('portal.topics.organizer.save')}
-                        </Button>
+                        <Tooltip title={t('portal.topics.organizer.save')}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleSave(topic.id)}
+                              disabled={row.saving || row.status === 'PROPOSED'}
+                              data-testid={`save-status-${topic.id}`}
+                            >
+                              <SaveIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                         <Tooltip title={t('portal.topics.edit')}>
                           <IconButton
                             size="small"
