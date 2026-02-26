@@ -54,8 +54,8 @@ During Teams calls, BATbern organizers discuss what topic to pick for the next e
 
 ### Red Star Blobs — Past Events
 16. 57+ past event blobs render as SVG star polygons (bumpy, spiky outline) in dormant state (`opacity: 0.15`, no forces). They form a faint background constellation.
-17. When a blue blob is summoned, red stars with matching cluster AND within 6 event-numbers of the most recent event ignite: `opacity → 1.0`, SVG glow filter applied, custom repulsion force added.
-18. Repulsion strength = `Math.max(0, 1 - ((mostRecentEventNum - pastEventNum) / 6)) * 150`. Events exactly 6 numbers ago = neutral. Each red star shows event number + short topic label.
+17. When a blue blob is summoned, red stars with matching cluster AND within 12 event-numbers of the most recent event ignite: fly into the blue blob and are absorbed as small swimming red star polygons; the blue blob shrinks by 2× company-logo size per absorbed star.
+18. Window = 12 event-numbers (~3 years at BATbern cadence). Each red star shows event number in white.
 
 ### Ghost Candidates
 19. Three ghost types render as semi-transparent drifting blobs on load:
@@ -172,7 +172,7 @@ During Teams calls, BATbern organizers discuss what topic to pick for the next e
 
 ### Task 11: Frontend — Red star blobs (AC: 16–18) ✅ DONE
 - [x] 11.1 Red stars rendered as SVG `<polygon>` (5-point star), dormant opacity `0.15`
-- [x] 11.2 On similarity response: activate red stars in `relatedPastEventNumbers` within 6 events of max
+- [x] 11.2 On similarity response: activate red stars in `relatedPastEventNumbers` within 12 events of max
 - [x] 11.3 Active: `opacity → 1.0`, SVG feGaussianBlur red glow filter, custom repulsion force in tick; event number label rendered
 
 ### Task 12: Frontend — Ghost candidates (AC: 19–21) ✅ DONE

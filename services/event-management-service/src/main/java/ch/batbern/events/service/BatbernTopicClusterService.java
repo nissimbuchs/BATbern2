@@ -48,29 +48,45 @@ public class BatbernTopicClusterService {
             Map.entry(22, MOBILE), Map.entry(26, MOBILE)
     );
 
-    // Keywords per cluster (checked case-insensitively against topic text)
+    // Keywords per cluster (checked case-insensitively against topic text).
+    // Includes German aliases so that German-language partner topic titles classify correctly.
     private static final Map<BatbernCluster, List<String>> CLUSTER_KEYWORDS = Map.of(
             AI_ML, List.of(
+                    // English
                     "ai", "artificial intelligence", "machine learning", "ml", "deep learning",
-                    "neural", "llm", "gpt", "nlp", "generative", "mlops", "agentic", "agents"
+                    "neural", "llm", "gpt", "nlp", "generative", "mlops", "agentic", "agents",
+                    // German
+                    "ki", "künstliche intelligenz", "maschinelles lernen"
             ),
             SECURITY, List.of(
+                    // English
                     "security", "cybersecurity", "zero trust", "auth", "iam", "siem",
-                    "vulnerability", "penetration", "pentest", "cyber", "devsecops", "soc"
+                    "vulnerability", "penetration", "pentest", "cyber", "devsecops", "soc",
+                    // German
+                    "sicherheit", "krypto", "kryptografie", "authentifizierung", "zero-trust"
             ),
             ARCHITECTURE, List.of(
+                    // English
                     "architecture", "microservices", "domain-driven", "ddd", "api design",
                     "event sourcing", "cqrs", "modular monolith", "hexagonal", "clean architecture",
-                    "design patterns", "service mesh"
+                    "design patterns", "service mesh",
+                    // German
+                    "architektur", "mikroservices"
             ),
             DATA, List.of(
+                    // English
                     "data", "analytics", "pipeline", "warehouse", "lakehouse", "kafka",
-                    "spark", "sql", "nosql", "database", "dbt", "etl", "elt", "streaming"
+                    "spark", "sql", "nosql", "database", "dbt", "etl", "elt", "streaming",
+                    // German
+                    "daten", "analytik", "analytisch"
             ),
             CLOUD_INFRA, List.of(
+                    // English
                     "cloud", "kubernetes", "k8s", "docker", "container", "devops",
                     "infrastructure", "iac", "terraform", "finops", "sre", "platform engineering",
-                    "gitops", "ci/cd", "observability"
+                    "gitops", "ci/cd", "observability",
+                    // German
+                    "infrastruktur"
             ),
             MOBILE, List.of(
                     "mobile", "ios", "android", "flutter", "react native", "swift",

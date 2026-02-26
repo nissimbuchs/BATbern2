@@ -125,6 +125,46 @@ vi.mock('@aws-amplify/ui-react', () => ({
   Authenticator: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+// Mock Tone.js — BlobTopicSelector uses it for sound effects.
+// jsdom has no Web Audio API; this prevents "AudioContext is not defined" errors
+// in any test that imports from the BlobTopicSelector directory tree.
+vi.mock('tone', () => {
+  const makeNode = () => ({
+    connect: vi.fn().mockReturnThis(),
+    toDestination: vi.fn().mockReturnThis(),
+    dispose: vi.fn(),
+  });
+  const makeSynth = () => ({
+    ...makeNode(),
+    volume: { value: 0, rampTo: vi.fn() },
+    triggerAttack: vi.fn(),
+    triggerRelease: vi.fn(),
+    triggerAttackRelease: vi.fn(),
+    releaseAll: vi.fn(),
+    frequency: {
+      value: 440,
+      setValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
+    },
+  });
+  return {
+    start: vi.fn().mockResolvedValue(undefined),
+    now: vi.fn().mockReturnValue(0),
+    getDestination: vi.fn().mockReturnValue({ mute: false }),
+    PolySynth: vi.fn().mockImplementation(() => makeSynth()),
+    Synth: vi.fn().mockImplementation(() => makeSynth()),
+    NoiseSynth: vi.fn().mockImplementation(() => makeSynth()),
+    PluckSynth: vi
+      .fn()
+      .mockImplementation(() => ({ ...makeNode(), triggerAttack: vi.fn(), volume: { value: 0 } })),
+    FMSynth: vi.fn().mockImplementation(() => makeSynth()),
+    MembraneSynth: vi.fn().mockImplementation(() => makeSynth()),
+    MetalSynth: vi.fn().mockImplementation(() => makeSynth()),
+    Reverb: vi.fn().mockImplementation(() => makeNode()),
+    Filter: vi.fn().mockImplementation(() => makeNode()),
+  };
+});
+
 // Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
 // These are expected in test environment where we mock XHR/fetch
 vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {

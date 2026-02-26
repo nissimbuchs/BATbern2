@@ -114,8 +114,8 @@ test.describe('Blob Topic Selector Page (AC: 3-7)', () => {
     // They may appear after session data loads
     await page.waitForTimeout(1000); // Allow session data fetch
 
-    const fitAllBtn = page.getByRole('button', { name: /fit all/i });
-    const snapBtn = page.getByRole('button', { name: /snap to active/i });
+    const fitAllBtn = page.getByTestId('fit-all-button');
+    const snapBtn = page.getByTestId('snap-to-active-button');
 
     // They're rendered only when BlobTopicSelector mounts (data loaded)
     // If API fails they won't show — check for graceful degradation

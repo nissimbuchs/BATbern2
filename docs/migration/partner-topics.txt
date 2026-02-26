@@ -1,0 +1,72 @@
+
+iscejpd peter.andres
+	• KI: Automatisierungen, Effizienzgewinne
+	• Roadmap der Produktentwicklung
+		○ Rollen der MA wird sich ändern
+	• Digitale Souveränität
+		○ Hybride Cloudstrategie, RZ-Strategie des Bundes
+	• Quanten- und Post-Quanten-Krypto
+	• Föderation
+	
+bkw hansjakob.gfeller
+	• Architektur-Governance etablieren
+		○ Dezentrale Org., wieviel zentrale Architektur braucht es?
+	• Finanzielle Transparenz
+	• AI-Themen
+		○ Datenarchitektur / -governance ist noch nicht bereit
+	• Veränderung im Energiemarkt
+		○ Dekarbonisierung
+	• IT/OT-Konvergenz und Digitale Souveränität
+		○ sehr wichtige Themen
+	• Wie integrieren wir Citizenship Development
+
+aity achim.trabold
+	• RZ-Strategie
+		○ Eigenes RZ soll bestehen bleiben
+	• Cloud-Readiness
+		○ wird vorangetrieben
+	• Security
+		○ muss auf 1st Line umgebaut werden
+
+post peter.egli
+	• Cloud Migration
+		○ Wird intensiviert -> Ziel: in drei Jahren aus den eigenen RZ raus
+	• Zero Trust
+		○ parallel zur Cloud Migration
+	• FinOps
+	• Post-Quanten-Krypto
+	• AI: Agentic, Architektur, Governance
+		○ Datenmanagement mit AI
+	• Architektur-KPIs
+	• Business-Architektur-Modellierung
+
+sbb ramzi.hamouda
+	• Security: Zerotrust
+		○ IAM, föderated identities, asset inventare 
+	• Impact AI für SW Engineers
+		○ Was ist mit Dev Spirit?
+
+mobiliar andreas.gruetter
+	• Neue Business Plattform
+	• Cloud Transformation
+	• KI Skalierung
+
+swisscom malek.ait
+	• Agentic AI - Governance, Security
+		○ PoC bis Mitte 2026
+	• SwisscomGPT
+		○ Zukunft oder will man keine interne Lösung mehr weiterentwickeln
+	• One Data Platform
+		○ Enabler für AI
+	• Datenprodukte
+		○ klares Onboarding definiert auf Basis von Data Mesh
+
+postfinance michael.held
+	• Kosten/Standardisierung
+		○ nach drei Jahren Freiheit für die Bereiche
+	• Operationelle Resilienz
+		○ Regulator
+	• AI Datenlayer
+	• Analytische und operative Daten
+	• Architektursteuerung
+		○ im agilen Setup mit Guardrails, Verallgemeinerung von Good Practises

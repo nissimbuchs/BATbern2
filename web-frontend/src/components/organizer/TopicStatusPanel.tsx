@@ -3,37 +3,53 @@
  * Story 8.2: AC4, AC5, AC7 — Task 9
  *
  * Organizer view of partner topic suggestions.
- * Same list as TopicListPage but with status dropdown + planned-event text input per row.
+ * Sortable table with company logos, edit/delete for any topic, and
+ * status dropdown + planned-event text input per row.
  * Only rendered for ORGANIZER role.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
-  Button,
-  Chip,
   Container,
+  IconButton,
   MenuItem,
+  Paper,
   Select,
   Skeleton,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getTopics, updateTopicStatus, type TopicDTO } from '@/services/api/partnerTopicsApi';
+import CompanyLogo from '@/components/shared/Company/CompanyLogo';
+import { TopicSuggestionForm } from '@/components/partner/TopicSuggestionForm';
+import {
+  deleteTopic,
+  getTopics,
+  updateTopic,
+  updateTopicStatus,
+  type TopicDTO,
+} from '@/services/api/partnerTopicsApi';
 
-const STATUS_COLOR: Record<string, 'default' | 'success' | 'error'> = {
-  PROPOSED: 'default',
-  SELECTED: 'success',
-  DECLINED: 'error',
-};
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type SortKey = 'title' | 'suggestedByCompany' | 'voteCount';
+type SortDir = 'asc' | 'desc';
+
+// ─── Per-row local state ──────────────────────────────────────────────────────
 
 interface RowState {
   status: 'PROPOSED' | 'SELECTED' | 'DECLINED';
@@ -41,9 +57,30 @@ interface RowState {
   saving: boolean;
 }
 
+// ─── Sorting helper ───────────────────────────────────────────────────────────
+
+function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] {
+  return [...topics].sort((a, b) => {
+    let cmp = 0;
+    if (key === 'voteCount') {
+      cmp = a.voteCount - b.voteCount;
+    } else {
+      cmp = (a[key] ?? '').localeCompare(b[key] ?? '');
+    }
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 const TopicStatusPanel: React.FC = () => {
   const { t } = useTranslation('partners');
   const queryClient = useQueryClient();
+  const [sortKey, setSortKey] = useState<SortKey>('voteCount');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [editingTopic, setEditingTopic] = useState<TopicDTO | null>(null);
+
+  // ─── Query ─────────────────────────────────────────────────────────────────
 
   const {
     data: topics,
@@ -55,8 +92,36 @@ const TopicStatusPanel: React.FC = () => {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Per-row local state for status + plannedEvent edits
+  // ─── Sorted data ───────────────────────────────────────────────────────────
+
+  const sortedTopics = useMemo(
+    () => (topics ? sortTopics(topics, sortKey, sortDir) : []),
+    [topics, sortKey, sortDir]
+  );
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'voteCount' ? 'desc' : 'asc');
+    }
+  };
+
+  // ─── Per-row local state ───────────────────────────────────────────────────
+
   const [rowStates, setRowStates] = useState<Record<string, RowState>>({});
+
+  const getRowStateById = (id: string, tList?: TopicDTO[]): RowState => {
+    const topic = (tList ?? []).find((t) => t.id === id);
+    return (
+      rowStates[id] ?? {
+        status: (topic?.status ?? 'PROPOSED') as RowState['status'],
+        plannedEvent: topic?.plannedEvent ?? '',
+        saving: false,
+      }
+    );
+  };
 
   const setRowField = <K extends keyof RowState>(topicId: string, field: K, value: RowState[K]) => {
     setRowStates((prev) => ({
@@ -65,18 +130,9 @@ const TopicStatusPanel: React.FC = () => {
     }));
   };
 
-  const getRowStateById = (id: string, tList?: TopicDTO[]): RowState => {
-    const topic = (tList ?? []).find((t) => t.id === id);
-    return (
-      rowStates[id] ?? {
-        status: topic?.status ?? 'PROPOSED',
-        plannedEvent: topic?.plannedEvent ?? '',
-        saving: false,
-      }
-    );
-  };
+  // ─── Status update mutation ────────────────────────────────────────────────
 
-  const updateMutation = useMutation({
+  const statusMutation = useMutation({
     mutationFn: ({
       topicId,
       status,
@@ -93,10 +149,10 @@ const TopicStatusPanel: React.FC = () => {
 
   const handleSave = async (topicId: string) => {
     const row = getRowStateById(topicId, topics);
-    if (row.status === 'PROPOSED') return; // organizer can only set SELECTED or DECLINED
+    if (row.status === 'PROPOSED') return;
     setRowField(topicId, 'saving', true);
     try {
-      await updateMutation.mutateAsync({
+      await statusMutation.mutateAsync({
         topicId,
         status: row.status as 'SELECTED' | 'DECLINED',
         plannedEvent: row.plannedEvent || undefined,
@@ -105,6 +161,32 @@ const TopicStatusPanel: React.FC = () => {
       setRowField(topicId, 'saving', false);
     }
   };
+
+  // ─── Edit mutation ─────────────────────────────────────────────────────────
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, title, description }: { id: string; title: string; description: string }) =>
+      updateTopic(id, { title, description }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
+    },
+  });
+
+  const handleEdit = async (title: string, description: string) => {
+    if (!editingTopic) return;
+    await editMutation.mutateAsync({ id: editingTopic.id, title, description });
+  };
+
+  // ─── Delete mutation ───────────────────────────────────────────────────────
+
+  const deleteMutation = useMutation({
+    mutationFn: (topicId: string) => deleteTopic(topicId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
+    },
+  });
+
+  // ─── Loading state ─────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -123,6 +205,8 @@ const TopicStatusPanel: React.FC = () => {
     );
   }
 
+  // ─── Main render ───────────────────────────────────────────────────────────
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }} data-testid="topic-status-panel">
       <Typography variant="h5" sx={{ mb: 3 }}>
@@ -132,88 +216,171 @@ const TopicStatusPanel: React.FC = () => {
       {!topics || topics.length === 0 ? (
         <Typography color="text.secondary">{t('portal.topics.empty')}</Typography>
       ) : (
-        <Table size="small" data-testid="organizer-topics-table">
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('portal.topics.organizer.col.title')}</TableCell>
-              <TableCell>{t('portal.topics.organizer.col.company')}</TableCell>
-              <TableCell align="right">{t('portal.topics.organizer.col.votes')}</TableCell>
-              <TableCell>{t('portal.topics.organizer.status')}</TableCell>
-              <TableCell>{t('portal.topics.organizer.plannedEvent')}</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {topics.map((topic) => {
-              const row = getRowStateById(topic.id, topics);
-              const statusKey = topic.status.toLowerCase() as 'proposed' | 'selected' | 'declined';
-              return (
-                <TableRow key={topic.id} data-testid={`organizer-topic-row-${topic.id}`}>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {topic.title}
-                    </Typography>
-                    {topic.description && (
-                      <Typography variant="caption" color="text.secondary">
-                        {topic.description}
+        <TableContainer component={Paper} variant="outlined" data-testid="organizer-topics-table">
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, width: '30%' }}>
+                  <TableSortLabel
+                    active={sortKey === 'title'}
+                    direction={sortKey === 'title' ? sortDir : 'asc'}
+                    onClick={() => handleSort('title')}
+                  >
+                    {t('portal.topics.organizer.col.title')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '15%' }}>
+                  <TableSortLabel
+                    active={sortKey === 'suggestedByCompany'}
+                    direction={sortKey === 'suggestedByCompany' ? sortDir : 'asc'}
+                    onClick={() => handleSort('suggestedByCompany')}
+                  >
+                    {t('portal.topics.organizer.col.company')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '6%' }} align="right">
+                  <TableSortLabel
+                    active={sortKey === 'voteCount'}
+                    direction={sortKey === 'voteCount' ? sortDir : 'desc'}
+                    onClick={() => handleSort('voteCount')}
+                  >
+                    {t('portal.topics.organizer.col.votes')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '18%' }}>
+                  {t('portal.topics.organizer.status')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '16%' }}>
+                  {t('portal.topics.organizer.plannedEvent')}
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '15%' }} align="right">
+                  {t('portal.topics.organizer.col.actions')}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sortedTopics.map((topic) => {
+                const row = getRowStateById(topic.id, topics);
+                return (
+                  <TableRow key={topic.id} hover data-testid={`organizer-topic-row-${topic.id}`}>
+                    {/* Title + description */}
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {topic.title}
                       </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>{topic.suggestedByCompany}</TableCell>
-                  <TableCell align="right">{topic.voteCount}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={t(`portal.topics.status.${statusKey}`)}
-                        color={STATUS_COLOR[topic.status]}
-                        size="small"
+                      {topic.description && (
+                        <Typography variant="caption" color="text.secondary">
+                          {topic.description}
+                        </Typography>
+                      )}
+                    </TableCell>
+
+                    {/* Company logo */}
+                    <TableCell>
+                      <CompanyLogo
+                        companyName={topic.suggestedByCompany}
+                        variant="full"
+                        maxWidth={80}
+                        maxHeight={40}
                       />
+                    </TableCell>
+
+                    {/* Vote count */}
+                    <TableCell align="right">{topic.voteCount}</TableCell>
+
+                    {/* Status select */}
+                    <TableCell>
                       <Select
                         size="small"
                         value={row.status}
                         onChange={(e) =>
                           setRowField(topic.id, 'status', e.target.value as RowState['status'])
                         }
-                        sx={{ minWidth: 130 }}
+                        sx={{ minWidth: 120 }}
                         data-testid={`status-select-${topic.id}`}
                       >
                         <MenuItem value="PROPOSED">{t('portal.topics.status.proposed')}</MenuItem>
                         <MenuItem value="SELECTED">{t('portal.topics.status.selected')}</MenuItem>
                         <MenuItem value="DECLINED">{t('portal.topics.status.declined')}</MenuItem>
                       </Select>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {row.status === 'SELECTED' && (
-                      <TextField
-                        size="small"
-                        placeholder="e.g. BATbern58"
-                        value={row.plannedEvent}
-                        onChange={(e) => setRowField(topic.id, 'plannedEvent', e.target.value)}
-                        inputProps={{ maxLength: 100 }}
-                        data-testid={`planned-event-${topic.id}`}
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={() => handleSave(topic.id)}
-                      disabled={row.saving || row.status === 'PROPOSED'}
-                      data-testid={`save-status-${topic.id}`}
-                    >
-                      {row.saving
-                        ? t('portal.topics.organizer.saving')
-                        : t('portal.topics.organizer.save')}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+
+                    {/* Planned event */}
+                    <TableCell>
+                      {row.status === 'SELECTED' && (
+                        <TextField
+                          size="small"
+                          placeholder="e.g. BATbern58"
+                          value={row.plannedEvent}
+                          onChange={(e) => setRowField(topic.id, 'plannedEvent', e.target.value)}
+                          inputProps={{ maxLength: 100 }}
+                          data-testid={`planned-event-${topic.id}`}
+                        />
+                      )}
+                    </TableCell>
+
+                    {/* Actions: save + edit + delete */}
+                    <TableCell align="right">
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          gap: 0.5,
+                        }}
+                      >
+                        <Tooltip title={t('portal.topics.organizer.save')}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleSave(topic.id)}
+                              disabled={row.saving || row.status === 'PROPOSED'}
+                              data-testid={`save-status-${topic.id}`}
+                            >
+                              <SaveIcon fontSize="small" />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        <Tooltip title={t('portal.topics.edit')}>
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditingTopic(topic)}
+                            data-testid={`edit-topic-${topic.id}`}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title={t('portal.topics.delete')}>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => deleteMutation.mutate(topic.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`delete-topic-${topic.id}`}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
+
+      {/* Edit dialog */}
+      <TopicSuggestionForm
+        open={editingTopic !== null}
+        onClose={() => setEditingTopic(null)}
+        onSubmit={handleEdit}
+        initialTitle={editingTopic?.title ?? ''}
+        initialDescription={editingTopic?.description ?? ''}
+        editMode
+      />
     </Container>
   );
 };

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -26,7 +27,7 @@ import {
   Add as AddIcon,
   ViewModule as HeatMapIcon,
   ViewList as ListIcon,
-  ViewKanban as BoardIcon,
+  BubbleChart as BubbleChartIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
@@ -42,7 +43,15 @@ import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPane
 import { MultiTopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic, TopicFilters } from '@/types/topic.types';
 
-type ViewMode = 'heatMap' | 'list' | 'board';
+// Blob-shaped wobble animation for the BlobSelector navigation button
+const blobWobble = keyframes`
+  0%, 100% { border-radius: 60% 40% 55% 45% / 45% 50% 50% 55%; }
+  25%       { border-radius: 50% 50% 40% 60% / 55% 45% 45% 55%; }
+  50%       { border-radius: 40% 60% 55% 45% / 50% 55% 50% 45%; }
+  75%       { border-radius: 55% 45% 45% 55% / 40% 60% 55% 45%; }
+`;
+
+type ViewMode = 'heatMap' | 'list';
 
 export interface TopicBacklogManagerProps {
   eventCode?: string; // Optional: if provided, enables topic selection for event
@@ -203,20 +212,51 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
             <ListIcon sx={{ mr: 0.5 }} />
             {t('topicBacklog.viewMode.list', 'List')}
           </ToggleButton>
-          <ToggleButton value="board" aria-label={t('topicBacklog.viewMode.board', 'Board')}>
-            <BoardIcon sx={{ mr: 0.5 }} />
-            {t('topicBacklog.viewMode.board', 'Board')}
-          </ToggleButton>
         </ToggleButtonGroup>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
-          data-testid="new-topic-button"
-        >
-          {t('topicBacklog.createNew', 'Create New Topic')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {eventCode && (
+            <Box
+              component="button"
+              onClick={() => navigate(`/organizer/events/${eventCode}/topic-blob`)}
+              data-testid="blob-selector-button"
+              sx={{
+                animation: `${blobWobble} 4s ease-in-out infinite`,
+                borderRadius: '60% 40% 55% 45% / 45% 50% 50% 55%',
+                background: 'linear-gradient(135deg, #0d1b3e 0%, #1565c0 100%)',
+                color: '#fff',
+                border: '1px solid rgba(100,181,246,0.45)',
+                px: 3,
+                py: 1.1,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                fontFamily: 'inherit',
+                boxShadow: '0 0 14px rgba(66,165,245,0.4), inset 0 0 10px rgba(255,255,255,0.05)',
+                transition: 'box-shadow 0.25s, filter 0.25s',
+                '&:hover': {
+                  boxShadow: '0 0 24px rgba(66,165,245,0.7), inset 0 0 16px rgba(255,255,255,0.08)',
+                  filter: 'brightness(1.15)',
+                },
+                '&:active': { filter: 'brightness(0.88)' },
+              }}
+            >
+              <BubbleChartIcon sx={{ fontSize: '1.2rem' }} />
+              {t('navigation.blobSelector', 'Blob Selector')}
+            </Box>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateModalOpen(true)}
+            data-testid="new-topic-button"
+          >
+            {t('topicBacklog.createNew', 'Create New Topic')}
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
@@ -271,23 +311,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                     pagination={data.pagination}
                     onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
                   />
-                </Paper>
-              )}
-
-              {/* Board View (placeholder) */}
-              {viewMode === 'board' && (
-                <Paper
-                  sx={{
-                    p: 3,
-                    height: '70vh',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    {t('topicBacklog.viewMode.boardComingSoon', 'Board view coming soon...')}
-                  </Typography>
                 </Paper>
               )}
             </>
