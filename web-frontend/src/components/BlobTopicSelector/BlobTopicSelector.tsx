@@ -272,9 +272,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             if (dist < green.r + blue.r - 10) {
               green.absorbed = true;
               if (!blue.absorbedLogos.some((l) => l.companyName === green.companyName)) {
+                // Assign a random orbit position so logos scatter inside the blue blob
                 blue.absorbedLogos.push({
                   companyName: green.companyName,
                   logoUrl: green.logoUrl,
+                  orbitAngle: Math.random() * Math.PI * 2,
+                  orbitRadius: blue.r * (0.2 + Math.random() * 0.45),
+                  orbitSpeed: (0.004 + Math.random() * 0.008) * (Math.random() < 0.5 ? 1 : -1),
                 });
               }
             }
@@ -289,8 +293,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
     );
 
-    // Update absorbed green opacity
-    g.selectAll<SVGCircleElement, GreenBlobNode>('.green-blob').attr('opacity', (d) =>
+    // Hide entire green blob group (circle + logo + label) when absorbed
+    // Previously only the circle was hidden, leaving the logo floating at its position
+    g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group').attr('opacity', (d) =>
       d.absorbed ? 0 : 1
     );
 
@@ -320,25 +325,65 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       }
     });
 
-    // Update absorbed logos inside blue blobs
+    // Update absorbed logos inside blue blobs — scattered orbit positions
     g.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group').each(function (d) {
       const grp = d3.select(this);
       const logos = grp
         .selectAll<SVGImageElement, AbsorbedLogo>('.absorbed-logo')
         .data(d.absorbedLogos, (l) => l.companyName);
 
+      // Enter: add new logo images with click-to-eject handler
       logos
         .enter()
         .append('image')
         .attr('class', 'absorbed-logo')
         .attr('width', 24)
         .attr('height', 24)
-        .merge(logos)
         .attr('href', (l) => l.logoUrl)
-        .attr('x', (_, i) => -12 + (i % 3) * 16 - (Math.min(d.absorbedLogos.length, 3) - 1) * 8)
-        .attr('y', (_, i) => -12 + Math.floor(i / 3) * 16);
+        .style('cursor', 'pointer')
+        .on('click', (event, logo) => {
+          event.stopPropagation();
+          // Remove logo from blue blob
+          d.absorbedLogos = d.absorbedLogos.filter((l) => l.companyName !== logo.companyName);
+          // Find the green node and restore it
+          const green = nodesRef.current.find(
+            (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
+          ) as GreenBlobNode | undefined;
+          if (green) {
+            green.absorbed = false;
+            green.bestSimilarity = undefined;
+            green.linkedBlobId = undefined;
+            // Eject in the direction of the logo's current orbit angle
+            const ejectDist = d.r + green.r + 15;
+            green.x = (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle);
+            green.y = (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle);
+            green.vx = Math.cos(logo.orbitAngle) * 3;
+            green.vy = Math.sin(logo.orbitAngle) * 3;
+            green.fx = null;
+            green.fy = null;
+            linksRef.current = linksRef.current.filter((l) => {
+              const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
+              return src !== green.id;
+            });
+            (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
+              linksRef.current
+            );
+          }
+          simRef.current?.alpha(0.2).restart();
+        });
 
       logos.exit().remove();
+
+      // Every tick: advance orbit angle and reposition all logos
+      grp.selectAll<SVGImageElement, AbsorbedLogo>('.absorbed-logo').each(function (l) {
+        l.orbitAngle += l.orbitSpeed;
+        d3.select(this)
+          .attr('x', l.orbitRadius * Math.cos(l.orbitAngle) - 12)
+          .attr('y', l.orbitRadius * Math.sin(l.orbitAngle) - 12);
+      });
+
+      // Raise topic-name text above logos so it's never hidden
+      grp.select('text').raise();
     });
   }, []);
 
@@ -494,7 +539,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     d3
       .drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
-        if (!event.active) simRef.current?.alphaTarget(0.3).restart();
+        // Don't reheat sim on drag — freezes other nodes so the user can aim
+        if (!event.active) simRef.current?.alphaTarget(0);
         d.fx = d.x;
         d.fy = d.y;
       })

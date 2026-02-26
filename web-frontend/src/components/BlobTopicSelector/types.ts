@@ -41,6 +41,10 @@ export interface TopicSimilarityResponse {
 export interface AbsorbedLogo {
   companyName: string;
   logoUrl: string;
+  /** Orbit state — set on absorption, updated every tick */
+  orbitAngle: number;
+  orbitRadius: number;
+  orbitSpeed: number;
 }
 
 export interface BlueBlobNode extends d3.SimulationNodeDatum {
