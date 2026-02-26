@@ -154,6 +154,18 @@ describe('SessionSpeakersTab', () => {
     const setPrimaryButton = screen.getByTitle('Set Primary');
     await user.click(setPrimaryButton); // Set Jane Smith as primary
 
+    // Previous primary (John Doe) is demoted to CO_SPEAKER
+    expect(mockRemoveMutateAsync).toHaveBeenCalledWith({
+      eventCode: 'BATbern99',
+      sessionSlug: 'cloud-talk',
+      username: 'john.doe',
+    });
+    expect(mockAssignMutateAsync).toHaveBeenCalledWith({
+      eventCode: 'BATbern99',
+      sessionSlug: 'cloud-talk',
+      request: { username: 'john.doe', speakerRole: 'CO_SPEAKER' },
+    });
+    // New primary (Jane Smith) is promoted
     expect(mockRemoveMutateAsync).toHaveBeenCalledWith({
       eventCode: 'BATbern99',
       sessionSlug: 'cloud-talk',
@@ -216,8 +228,8 @@ describe('SessionSpeakersTab', () => {
     await user.click(screen.getByRole('button', { name: 'Add Speaker' }));
 
     await waitFor(() => {
-      // After success, the selected user preview is gone (form cleared)
-      expect(screen.queryByTestId('user-avatar')).not.toBeInTheDocument();
+      // After success, the selected user preview (Jane Doe) is gone (form cleared)
+      expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument();
     });
   });
 });

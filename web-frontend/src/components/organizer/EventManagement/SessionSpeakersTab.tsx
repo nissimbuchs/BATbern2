@@ -178,13 +178,17 @@ export const SessionSpeakersTab: React.FC<SessionSpeakersTabProps> = ({ session 
       });
       setLocalSpeakers((prev) => [...prev, newSpeaker]);
 
-      // Grant SPEAKER role if not already present
-      const existingRoles = (selectedUser.roles ?? []) as Role[];
-      if (!existingRoles.includes('SPEAKER')) {
-        await updateUserRoles(selectedUser.id, [...existingRoles, 'SPEAKER']);
-      }
-
+      // Clear form immediately — role grant is non-fatal
+      const userToGrant = selectedUser;
       setSelectedUser(null);
+
+      // Grant SPEAKER role if not already present (fire-and-forget, non-fatal)
+      const existingRoles = (userToGrant.roles ?? []) as Role[];
+      if (!existingRoles.includes('SPEAKER')) {
+        updateUserRoles(userToGrant.id, [...existingRoles, 'SPEAKER']).catch((err) => {
+          console.error('Failed to grant SPEAKER role:', err);
+        });
+      }
     } catch (err) {
       setAddError(
         err instanceof Error
