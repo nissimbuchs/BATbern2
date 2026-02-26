@@ -10,14 +10,17 @@ import java.time.temporal.ChronoUnit;
  * Service for calculating topic staleness scores (Story 5.2 AC6).
  *
  * Staleness Score (0-100):
- * - 100 = safe to reuse (>12 months since last use or never used)
+ * - 100 = safe to reuse (>24 months since last use or never used)
  * - 0 = too recent (just used)
- * - Formula: min(100, (monthsSinceLastUse / 12) * 100)
+ * - Formula: min(100, (monthsSinceLastUse / 24) * 100)
+ *
+ * Window is 24 months because BATbern runs only 3 events per year;
+ * a 12-month window only covered ~3 events, while 2 years covers ~6.
  *
  * Color-coded freshness zones (AC3):
- * - Red (<50): Too recent to reuse
- * - Yellow (50-83): Caution zone
- * - Green (>83): Safe to reuse
+ * - Red (<50):   Too recent — used within last 12 months
+ * - Yellow (50-83): Caution — used 12-20 months ago
+ * - Green (>83): Safe to reuse — used more than 20 months ago
  */
 @Service
 public class StalenessScoreService {
@@ -39,12 +42,12 @@ public class StalenessScoreService {
         // Calculate months since last use
         long monthsSinceLastUse = ChronoUnit.MONTHS.between(lastUsedDate, LocalDateTime.now());
 
-        // Apply formula: min(100, (months / 12) * 100)
+        // Apply formula: min(100, (months / 24) * 100)
         // Cast to double for precise calculation, then round to int
-        double stalenessDouble = ((double) monthsSinceLastUse / 12.0) * 100.0;
+        double stalenessDouble = ((double) monthsSinceLastUse / 24.0) * 100.0;
         int staleness = (int) Math.round(stalenessDouble);
 
-        // Cap at 100 (topics >12 months old are maximally stale)
+        // Cap at 100 (topics >24 months old are maximally stale)
         return Math.min(100, Math.max(0, staleness));
     }
 

@@ -103,9 +103,9 @@
       "selectButton": "Für Veranstaltung auswählen",
       "selecting": "Wird ausgewählt...",
       "overrideButton": "Warnung überschreiben",
-      "statusGreen": "Sicher wiederzuverwenden - zuletzt vor über 12 Monaten verwendet",
-      "statusYellow": "Mit Vorsicht verwenden - vor 6-12 Monaten zuletzt verwendet",
-      "statusRed": "Zu aktuell - innerhalb von 6 Monaten verwendet, hohes Duplikationsrisiko",
+      "statusGreen": "Sicher wiederzuverwenden - zuletzt vor über 20 Monaten verwendet",
+      "statusYellow": "Mit Vorsicht verwenden - vor 12-20 Monaten zuletzt verwendet",
+      "statusRed": "Zu aktuell - innerhalb von 12 Monaten verwendet, hohes Duplikationsrisiko",
       "similarityWarning": "{{count}} ähnliche Themen erkannt (>70% Ähnlichkeit)"
     },
     "viewMode": {
