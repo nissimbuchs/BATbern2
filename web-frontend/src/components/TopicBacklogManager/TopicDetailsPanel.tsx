@@ -107,7 +107,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         severity: 'success' as const,
         message: t(
           'topicBacklog.details.statusGreen',
-          'Safe to reuse - last used over 12 months ago'
+          'Safe to reuse - last used over 20 months ago'
         ),
       };
     } else if (score >= 50) {
@@ -115,7 +115,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         severity: 'warning' as const,
         message: t(
           'topicBacklog.details.statusYellow',
-          'Use with caution - last used 6-12 months ago'
+          'Use with caution - last used 12-20 months ago'
         ),
       };
     } else {
@@ -123,7 +123,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
         severity: 'error' as const,
         message: t(
           'topicBacklog.details.statusRed',
-          'Too recent - last used within 6 months, high duplication risk'
+          'Too recent - last used within 12 months, high duplication risk'
         ),
       };
     }

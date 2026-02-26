@@ -43,6 +43,7 @@ import { AxiosError } from 'axios';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
+import { SessionSpeakersTab } from './SessionSpeakersTab';
 
 // Helper function to get file type icon based on mime type
 const getFileTypeIcon = (mimeType: string | undefined): React.ReactNode => {
@@ -70,7 +71,7 @@ interface SessionEditModalProps {
   session: SessionUI | null;
   eventDate: string; // ISO 8601 date for time conversion
   onSave: (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
-  initialTab?: number; // 0 = Details (default), 1 = Materials (Story 5.9 - AC2)
+  initialTab?: number; // 0 = Details (default), 1 = Materials, 2 = Speakers
 }
 
 export interface SessionUpdateData {
@@ -451,6 +452,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="Session edit tabs">
           <Tab label={t('sessionEdit.tabs.details', 'Details')} />
           <Tab label={t('sessionEdit.tabs.materials', 'Materials')} />
+          <Tab label={t('sessionEdit.tabs.speakers', 'Speakers')} />
         </Tabs>
       </Box>
 
@@ -557,6 +559,9 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
             )}
           </Box>
         )}
+
+        {/* Speakers Tab */}
+        {activeTab === 2 && <SessionSpeakersTab session={session} />}
 
         {/* Materials Tab (Story 5.9) */}
         {activeTab === 1 && (

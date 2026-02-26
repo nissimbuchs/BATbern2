@@ -98,6 +98,7 @@
     "sockjs-client": "^1.6.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
+    "tone": "^15.1.22",
     "web-vitals": "^5.1.0",
     "workbox-window": "^7.3.0",
     "zod": "^4.1.12",

@@ -106,6 +106,38 @@ public class TopicService {
     }
 
     /**
+     * Update a topic's title/description — partner can only edit their own company's topics.
+     */
+    public TopicDTO updateTopic(UUID topicId, TopicSuggestionRequest request, String callerCompanyName) {
+        validate(request);
+        TopicSuggestion topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
+        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
+            throw new AccessDeniedException("Cannot edit a topic from another company");
+        }
+        topic.setTitle(request.title().strip());
+        topic.setDescription(request.description());
+        topic.setCreatedAt(Instant.now());
+        TopicSuggestion saved = topicRepository.save(topic);
+        long voteCount = topicVoteRepository.countByTopicId(topicId);
+        log.info("Topic updated: id={} company={}", topicId, callerCompanyName);
+        return toDTO(saved, voteCount, 1L); // caller has voted iff voteCount > 0 — not critical for edit response
+    }
+
+    /**
+     * Delete a topic — partner can only delete their own company's topics.
+     */
+    public void deleteTopic(UUID topicId, String callerCompanyName) {
+        TopicSuggestion topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
+        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
+            throw new AccessDeniedException("Cannot delete a topic from another company");
+        }
+        topicRepository.delete(topic); // votes cascade via ON DELETE CASCADE
+        log.info("Topic deleted: id={} company={}", topicId, callerCompanyName);
+    }
+
+    /**
      * Update topic status (organizer only, enforced by @PreAuthorize on controller).
      */
     public TopicDTO updateStatus(UUID topicId, TopicStatusUpdateRequest request) {

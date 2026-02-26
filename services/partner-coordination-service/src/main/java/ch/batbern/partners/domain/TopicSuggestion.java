@@ -60,6 +60,6 @@ public class TopicSuggestion {
     private String plannedEvent;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

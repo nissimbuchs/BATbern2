@@ -1,6 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.repository.TopicUsageHistoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -10,41 +12,60 @@ import java.time.temporal.ChronoUnit;
  * Service for calculating topic staleness scores (Story 5.2 AC6).
  *
  * Staleness Score (0-100):
- * - 100 = safe to reuse (>12 months since last use or never used)
+ * - 100 = safe to reuse (>24 months since last use or never used)
  * - 0 = too recent (just used)
- * - Formula: min(100, (monthsSinceLastUse / 12) * 100)
+ * - Formula: min(100, (monthsSinceLastUse / 24) * 100)
+ *
+ * Window is 24 months because BATbern runs only 3 events per year;
+ * a 12-month window only covered ~3 events, while 2 years covers ~6.
  *
  * Color-coded freshness zones (AC3):
- * - Red (<50): Too recent to reuse
- * - Yellow (50-83): Caution zone
- * - Green (>83): Safe to reuse
+ * - Red (<50):   Too recent — used within last 12 months
+ * - Yellow (50-83): Caution — used 12-20 months ago
+ * - Green (>83): Safe to reuse — used more than 20 months ago
+ *
+ * Last-used date is always derived from topic_usage_history (the authoritative
+ * source) rather than the denormalized last_used_date column on the topics table,
+ * which can become stale or incorrect over time.
  */
 @Service
+@RequiredArgsConstructor
 public class StalenessScoreService {
 
+    private final TopicUsageHistoryRepository topicUsageHistoryRepository;
+
     /**
-     * Calculate staleness score for a topic.
+     * Calculate staleness score for a topic by querying the live usage history.
      *
      * @param topic Topic to calculate staleness for
      * @return Staleness score (0-100)
      */
     public int calculateStaleness(Topic topic) {
-        LocalDateTime lastUsedDate = topic.getLastUsedDate();
+        LocalDateTime lastUsedDate = topicUsageHistoryRepository
+                .findMaxUsedDateByTopicId(topic.getId())
+                .orElse(null);
+        return calculateStaleness(lastUsedDate);
+    }
 
-        // Never used topics have maximum staleness (safe to use)
+    /**
+     * Calculate staleness score from a known last-used date.
+     * Exposed for unit testing without database access.
+     *
+     * @param lastUsedDate Date of last use, or null if never used
+     * @return Staleness score (0-100)
+     */
+    public int calculateStaleness(LocalDateTime lastUsedDate) {
         if (lastUsedDate == null) {
             return 100;
         }
 
-        // Calculate months since last use
         long monthsSinceLastUse = ChronoUnit.MONTHS.between(lastUsedDate, LocalDateTime.now());
 
-        // Apply formula: min(100, (months / 12) * 100)
-        // Cast to double for precise calculation, then round to int
-        double stalenessDouble = ((double) monthsSinceLastUse / 12.0) * 100.0;
+        // Apply formula: min(100, (months / 24) * 100)
+        double stalenessDouble = ((double) monthsSinceLastUse / 24.0) * 100.0;
         int staleness = (int) Math.round(stalenessDouble);
 
-        // Cap at 100 (topics >12 months old are maximally stale)
+        // Cap at 100 (topics >24 months old are maximally stale)
         return Math.min(100, Math.max(0, staleness));
     }
 

@@ -103,9 +103,9 @@
       "selectButton": "Select for Event",
       "selecting": "Selecting...",
       "overrideButton": "Override Warning",
-      "statusGreen": "Safe to reuse - last used over 12 months ago",
-      "statusYellow": "Use with caution - last used 6-12 months ago",
-      "statusRed": "Too recent - last used within 6 months, high duplication risk",
+      "statusGreen": "Safe to reuse - last used over 20 months ago",
+      "statusYellow": "Use with caution - last used 12-20 months ago",
+      "statusRed": "Too recent - last used within 12 months, high duplication risk",
       "similarityWarning": "{{count}} similar topics detected (>70% similarity)"
     },
     "viewMode": {
@@ -462,7 +462,8 @@
       "lastCovered": "Last covered: BATbern #{{num}} ({{count}} events ago)",
       "overrideReason": "Why are we revisiting this topic? (optional)",
       "confirm": "Select this topic",
-      "cancel": "Keep exploring"
+      "cancel": "Keep exploring",
+      "saveError": "Failed to save topic selection. Please try again."
     }
   }
 }

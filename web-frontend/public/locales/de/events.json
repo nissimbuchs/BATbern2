@@ -847,7 +847,28 @@
     "durationLabel": "Dauer (Minuten)",
     "tabs": {
       "details": "Details",
-      "materials": "Materialien"
+      "materials": "Materialien",
+      "speakers": "Referenten"
+    },
+    "speakers": {
+      "title": "Session-Referenten",
+      "noSpeakers": "Noch keine Referenten zugewiesen",
+      "addSpeaker": "Referent hinzufügen",
+      "searchUser": "Benutzer suchen",
+      "createNewUser": "+ Neuen Benutzer erstellen",
+      "roleLabel": "Referentenrolle",
+      "setPrimary": "Als Hauptreferent setzen",
+      "remove": "Entfernen",
+      "confirmed": "Bestätigt",
+      "userRequired": "Bitte wählen Sie einen Benutzer aus",
+      "addError": "Referent konnte nicht hinzugefügt werden",
+      "removeError": "Referent konnte nicht entfernt werden",
+      "roles": {
+        "PRIMARY_SPEAKER": "Hauptreferent",
+        "CO_SPEAKER": "Co-Referent",
+        "MODERATOR": "Moderator",
+        "PANELIST": "Panelist"
+      }
     },
     "materials": {
       "uploadTitle": "Session-Materialien hochladen",

@@ -21,14 +21,32 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSubmit: (title: string, description: string) => Promise<void>;
+  initialTitle?: string;
+  initialDescription?: string;
+  editMode?: boolean;
 }
 
-export const TopicSuggestionForm: React.FC<Props> = ({ open, onClose, onSubmit }) => {
+export const TopicSuggestionForm: React.FC<Props> = ({
+  open,
+  onClose,
+  onSubmit,
+  initialTitle = '',
+  initialDescription = '',
+  editMode = false,
+}) => {
   const { t } = useTranslation('partners');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
   const [submitting, setSubmitting] = useState(false);
   const [titleError, setTitleError] = useState('');
+
+  React.useEffect(() => {
+    if (open) {
+      setTitle(initialTitle);
+      setDescription(initialDescription);
+      setTitleError('');
+    }
+  }, [open, initialTitle, initialDescription]);
 
   const handleClose = () => {
     setTitle('');
@@ -54,7 +72,9 @@ export const TopicSuggestionForm: React.FC<Props> = ({ open, onClose, onSubmit }
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t('portal.topics.form.dialogTitle')}</DialogTitle>
+      <DialogTitle>
+        {editMode ? t('portal.topics.form.editDialogTitle') : t('portal.topics.form.dialogTitle')}
+      </DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
@@ -91,7 +111,7 @@ export const TopicSuggestionForm: React.FC<Props> = ({ open, onClose, onSubmit }
           disabled={submitting}
           data-testid="topic-form-submit"
         >
-          {t('portal.topics.form.submit')}
+          {editMode ? t('portal.topics.form.update') : t('portal.topics.form.submit')}
         </Button>
       </DialogActions>
     </Dialog>

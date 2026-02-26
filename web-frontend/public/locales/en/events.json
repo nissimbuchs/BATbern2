@@ -857,7 +857,29 @@
     "durationLabel": "Duration (minutes)",
     "tabs": {
       "details": "Details",
-      "materials": "Materials"
+      "materials": "Materials",
+      "speakers": "Speakers"
+    },
+    "speakers": {
+      "title": "Session Speakers",
+      "noSpeakers": "No speakers assigned yet",
+      "addSpeaker": "Add Speaker",
+      "searchUser": "Search User",
+      "createNewUser": "+ Create New User",
+      "roleLabel": "Speaker Role",
+      "setPrimary": "Set Primary",
+      "remove": "Remove",
+      "confirmed": "Confirmed",
+      "userRequired": "Please select a user",
+      "addError": "Failed to add speaker",
+      "removeError": "Failed to remove speaker",
+      "setPrimaryError": "Failed to set primary speaker",
+      "roles": {
+        "PRIMARY_SPEAKER": "Primary Speaker",
+        "CO_SPEAKER": "Co-Speaker",
+        "MODERATOR": "Moderator",
+        "PANELIST": "Panelist"
+      }
     },
     "materials": {
       "uploadTitle": "Upload Session Materials",

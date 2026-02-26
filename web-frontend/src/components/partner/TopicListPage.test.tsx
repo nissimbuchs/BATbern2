@@ -12,6 +12,10 @@ import * as topicsApi from '@/services/api/partnerTopicsApi';
 
 vi.mock('@/services/api/partnerTopicsApi');
 
+vi.mock('@/hooks/useAuth/useAuth', () => ({
+  useAuth: () => ({ user: { username: 'testpartner', role: 'partner', companyName: 'GoogleZH' } }),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {

@@ -70,7 +70,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           // Resolve companyName for partner users if not in JWT via GET /partners/me
           let resolvedCompanyName = user.companyName;
-          if (user.role === 'partner' && !resolvedCompanyName) {
+          const isPartner = user.role === 'partner' || user.roles?.includes('partner');
+          if (isPartner && !resolvedCompanyName) {
             resolvedCompanyName = await resolvePartnerCompanyName();
           }
 
@@ -129,7 +130,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Resolve companyName for partner users if not in JWT via GET /partners/me
         let signedInUser = result.user;
-        if (signedInUser.role === 'partner' && !signedInUser.companyName) {
+        const isPartner =
+          signedInUser.role === 'partner' || signedInUser.roles?.includes('partner');
+        if (isPartner && !signedInUser.companyName) {
           const resolved = await resolvePartnerCompanyName();
           if (resolved) {
             signedInUser = { ...signedInUser, companyName: resolved };

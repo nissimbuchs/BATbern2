@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -69,4 +71,15 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
         """)
     List<TopicUsageHistoryWithEventDetails> findUsageHistoryWithEventDetailsByTopicIds(
             @Param("topicIds") List<UUID> topicIds);
+
+    /**
+     * Find the most recent usage date for a topic.
+     * Used as the authoritative source for staleness calculation —
+     * avoids relying on the denormalized last_used_date column on topics.
+     *
+     * @param topicId UUID of the topic
+     * @return Most recent usedDate, or empty if never used
+     */
+    @Query("SELECT MAX(h.usedDate) FROM TopicUsageHistory h WHERE h.topicId = :topicId")
+    Optional<LocalDateTime> findMaxUsedDateByTopicId(@Param("topicId") UUID topicId);
 }

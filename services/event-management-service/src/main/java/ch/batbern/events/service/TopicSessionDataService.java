@@ -50,7 +50,7 @@ public class TopicSessionDataService {
 
         List<TopicSessionDataResponse.PartnerTopicGroup> partnerTopics = fetchPartnerTopics();
         List<TopicSessionDataResponse.PastEventEntry> pastEvents = fetchPastEvents();
-        List<String> organizerBacklog = fetchOrganizerBacklog();
+        List<TopicSessionDataResponse.BacklogItem> organizerBacklog = fetchOrganizerBacklog();
         List<String> trendingTopics = fetchTrendingTopics();
 
         return TopicSessionDataResponse.builder()
@@ -66,11 +66,21 @@ public class TopicSessionDataService {
     private List<TopicSessionDataResponse.PartnerTopicGroup> fetchPartnerTopics() {
         try {
             return partnerApiClient.getPartnerTopics().stream()
-                    .map(g -> TopicSessionDataResponse.PartnerTopicGroup.builder()
-                            .companyName(g.companyName())
-                            .logoUrl(g.logoUrl())
-                            .topics(g.topics())
-                            .build())
+                    .map(g -> {
+                        List<TopicSessionDataResponse.TopicEntry> entries = g.topics().stream()
+                                .map(t -> TopicSessionDataResponse.TopicEntry.builder()
+                                        .title(t.title())
+                                        .cluster(clusterService.matchCluster(t.title()).name())
+                                        .voteCount(t.voteCount())
+                                        .createdAt(t.createdAt())
+                                        .build())
+                                .toList();
+                        return TopicSessionDataResponse.PartnerTopicGroup.builder()
+                                .companyName(g.companyName())
+                                .logoUrl(g.logoUrl())
+                                .topics(entries)
+                                .build();
+                    })
                     .toList();
         } catch (Exception e) {
             log.warn("Failed to fetch partner topics: {}", e.getMessage());
@@ -95,13 +105,18 @@ public class TopicSessionDataService {
         }
     }
 
-    private List<String> fetchOrganizerBacklog() {
+    private List<TopicSessionDataResponse.BacklogItem> fetchOrganizerBacklog() {
         try {
             List<Topic> available = topicRepository.findByStalenessScoreGreaterThanEqual(
                     AVAILABLE_STALENESS_THRESHOLD);
             return available.stream()
-                    .map(Topic::getTitle)
                     .limit(BACKLOG_LIMIT)
+                    .map(t -> TopicSessionDataResponse.BacklogItem.builder()
+                            .title(t.getTitle())
+                            .topicCode(t.getTopicCode())
+                            .stalenessScore(t.getStalenessScore() != null
+                                    ? t.getStalenessScore() : AVAILABLE_STALENESS_THRESHOLD)
+                            .build())
                     .toList();
         } catch (Exception e) {
             log.warn("Failed to fetch organizer backlog: {}", e.getMessage());

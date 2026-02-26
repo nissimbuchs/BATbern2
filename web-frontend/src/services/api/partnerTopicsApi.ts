@@ -56,6 +56,20 @@ export const removeVote = async (topicId: string): Promise<void> => {
   await apiClient.delete(`/partners/topics/${topicId}/vote`);
 };
 
+/** Update a topic's title/description — own company's topics only (PARTNER). */
+export const updateTopic = async (
+  topicId: string,
+  req: TopicSuggestionRequest
+): Promise<TopicDTO> => {
+  const response = await apiClient.patch<TopicDTO>(`/partners/topics/${topicId}`, req);
+  return response.data;
+};
+
+/** Delete a topic — own company's topics only (PARTNER). */
+export const deleteTopic = async (topicId: string): Promise<void> => {
+  await apiClient.delete(`/partners/topics/${topicId}`);
+};
+
 /** Update topic status (ORGANIZER only). */
 export const updateTopicStatus = async (
   topicId: string,

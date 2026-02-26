@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasItem;
@@ -51,7 +52,9 @@ public class TopicSessionDataControllerIntegrationTest extends AbstractIntegrati
     @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
     void should_return200_with_sessionData_when_organizer() throws Exception {
         when(partnerApiClient.getPartnerTopics()).thenReturn(List.of(
-                new PartnerApiClient.PartnerTopicGroup("Swisscom", null, List.of("AI in Operations"))
+                new PartnerApiClient.PartnerTopicGroup("Swisscom", null, List.of(
+                        new PartnerApiClient.PartnerTopicItem("AI in Operations", 2, Instant.parse("2026-02-01T10:00:00Z"))
+                ))
         ));
         when(trendingTopicsService.getTrendingTopics()).thenReturn(
                 List.of("AI Agents", "Platform Engineering")
@@ -61,7 +64,9 @@ public class TopicSessionDataControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.partnerTopics").isArray())
                 .andExpect(jsonPath("$.partnerTopics[0].companyName").value("Swisscom"))
-                .andExpect(jsonPath("$.partnerTopics[0].topics[0]").value("AI in Operations"))
+                .andExpect(jsonPath("$.partnerTopics[0].topics[0].title").value("AI in Operations"))
+                .andExpect(jsonPath("$.partnerTopics[0].topics[0].cluster").value("AI_ML"))
+                .andExpect(jsonPath("$.partnerTopics[0].topics[0].voteCount").value(2))
                 .andExpect(jsonPath("$.pastEvents").isArray())
                 .andExpect(jsonPath("$.organizerBacklog").isArray())
                 .andExpect(jsonPath("$.trendingTopics").isArray())
