@@ -9,8 +9,15 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { Alert, Box, Button, Snackbar, TextField, Typography } from '@mui/material';
-import { ChevronLeft, ChevronRight, FitScreen, MyLocation } from '@mui/icons-material';
+import { Alert, Box, Button, IconButton, Snackbar, TextField, Typography } from '@mui/material';
+import {
+  ChevronLeft,
+  ChevronRight,
+  FitScreen,
+  MyLocation,
+  VolumeOff,
+  VolumeUp,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -29,6 +36,7 @@ import type {
 import { blobTopicService } from '@/services/blobTopicService';
 import { topicService } from '@/services/topicService';
 import AcceptTopicDialog from './AcceptTopicDialog';
+import { useBlobSounds } from './useBlobSounds';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -228,6 +236,14 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     new Set(['ghost-backlog', 'ghost-partner', 'ghost-trend'])
   );
 
+  // ─── SOUND EFFECTS ────────────────────────────────────────────────────────
+  const sounds = useBlobSounds();
+  /** Stable ref so D3 event handlers (captured once) always call the latest sounds. */
+  const soundsRef = useRef(sounds);
+  useEffect(() => {
+    soundsRef.current = sounds;
+  }, [sounds]);
+
   const hasOrbitingRed = nodesRef.current.some(
     (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === acceptBlob?.id
   );
@@ -321,7 +337,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       .force('charge', d3.forceManyBody<SimNode>().strength(-30))
       .force(
         'collide',
-        d3.forceCollide<SimNode>().radius((d) => d.r + 5)
+        // Red stars have zero collision radius — they are viruses that pass through defences.
+        // Giving them a non-zero radius caused absorbed-but-fading stars (fixed near the blob)
+        // to block subsequent stars from reaching the absorption threshold.
+        d3.forceCollide<SimNode>().radius((d) => (d.type === 'red-star' ? 0 : d.r + 5))
       )
       .force('center', d3.forceCenter<SimNode>(w / 2, h / 2).strength(0.01))
       .force(
@@ -459,7 +478,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         type: 'red-star',
         eventNumber: evt.eventNumber,
         topicName: evt.topicName,
-        r: 28,
+        r: 42,
         isActive: false,
         rotationAngle: Math.random() * 360,
         rotationSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.6),
@@ -548,6 +567,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const absorbRedStarIntoBlue = useCallback(
     (red: RedStarNode, blue: BlueBlobNode) => {
       if (red.absorbed) return; // guard against double-call from concurrent ticks
+      soundsRef.current.playSting();
       red.absorbed = true;
       red.attractedToBlueId = undefined;
       red.isActive = false;
@@ -751,7 +771,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         // triggers before the collide force can push the blue blob away.
         absorbRedStarIntoBlueFnRef.current(red, blue);
       } else {
-        const pull = 12; // px/tick² — must be high to overcome velocityDecay(0.65)
+        const pull = 4; // px/tick² — slow dramatic approach; terminal v ≈ 2 px/tick at decay 0.65
         red.vx = (red.vx ?? 0) + (dx / dist) * pull;
         red.vy = (red.vy ?? 0) + (dy / dist) * pull;
       }
@@ -975,6 +995,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             const blobId = (d as BlueBlobNode).id;
             const nowSelected = selectedBlobIdRef.current !== blobId;
             selectedBlobIdRef.current = nowSelected ? blobId : null;
+            if (nowSelected) soundsRef.current.playKling();
             // Apply immediately — don't wait for the next simulation tick
             const groupEl = d3.select(event.currentTarget as SVGGElement);
             groupEl
@@ -1195,6 +1216,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             }, 400);
 
             green.absorbed = true;
+            soundsRef.current.playSlosh();
             if (!blueTarget.absorbedLogos.some((l) => l.companyName === green.companyName)) {
               blueTarget.absorbedLogos.push({
                 companyName: green.companyName,
@@ -1306,6 +1328,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
    * `target` grows and absorbs all logos from `dragged`.
    */
   const mergeBlobs = (dragged: SimNode, target: SimNode) => {
+    soundsRef.current.playFlop();
     const vanishing = dragged as BlueBlobNode;
     const surviving = target as BlueBlobNode;
 
@@ -1635,6 +1658,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
       // Delete or Backspace — fade out the selected blue blob, then remove it
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedBlobIdRef.current) {
+        soundsRef.current.playShutdown();
         e.preventDefault();
         const idToRemove = selectedBlobIdRef.current;
         // Keep selectedBlobIdRef set so the ring stays visible during fade-out
@@ -1904,6 +1928,22 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           gap: 1,
         }}
       >
+        <IconButton
+          data-testid="sound-toggle-button"
+          aria-label={sounds.isMuted ? 'Enable sound effects' : 'Disable sound effects'}
+          onClick={sounds.toggleMute}
+          size="small"
+          sx={{
+            color: sounds.isMuted ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.9)',
+            bgcolor: 'rgba(255,255,255,0.08)',
+            border: `1px solid ${sounds.isMuted ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.3)'}`,
+            borderRadius: 1,
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.16)' },
+            transition: 'all 0.2s',
+          }}
+        >
+          {sounds.isMuted ? <VolumeOff fontSize="small" /> : <VolumeUp fontSize="small" />}
+        </IconButton>
         <Button
           data-testid="fit-all-button"
           variant="contained"
