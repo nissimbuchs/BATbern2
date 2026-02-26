@@ -9,7 +9,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { Box, Button, TextField } from '@mui/material';
+import { Alert, Box, Button, Snackbar, TextField } from '@mui/material';
 import { FitScreen, MyLocation } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -71,6 +71,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const [blueBlobIds, setBlueBlobIds] = useState<string[]>([]);
   const [acceptBlob, setAcceptBlob] = useState<BlueBlobNode | null>(null);
   const [mostRecentEventNum, setMostRecentEventNum] = useState(0);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   const hasOrbitingRed = nodesRef.current.some(
     (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === acceptBlob?.id
@@ -656,6 +657,11 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       if (n.type !== 'green') return;
       const green = n as GreenBlobNode;
 
+      // Only re-route this green if the new blue is at least as attractive (P1 fix)
+      if (strength < (green.bestSimilarity ?? 0)) return;
+
+      green.bestSimilarity = strength;
+
       // Remove old link from this green
       linksRef.current = linksRef.current.filter((l) => {
         const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
@@ -693,11 +699,52 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         e.preventDefault();
         const lastId = blueBlobIds[blueBlobIds.length - 1];
         if (lastId) {
+          const removedBlob = nodesRef.current.find((n) => n.id === lastId) as
+            | BlueBlobNode
+            | undefined;
+          const removedRelated = removedBlob?.relatedPastEventNumbers ?? [];
+
           nodesRef.current = nodesRef.current.filter((n) => n.id !== lastId);
           linksRef.current = linksRef.current.filter((l) => {
             const tgt = typeof l.target === 'string' ? l.target : (l.target as SimNode).id;
             return tgt !== lastId;
           });
+
+          // Reset green best-similarity for greens that were linked to the removed blue (P3)
+          nodesRef.current.forEach((n) => {
+            if (n.type === 'green') {
+              const green = n as GreenBlobNode;
+              if (green.linkedBlobId === lastId) {
+                green.bestSimilarity = undefined;
+                green.linkedBlobId = undefined;
+              }
+            }
+          });
+
+          // Deactivate red stars whose only activator was the removed blue (P3)
+          if (removedRelated.length > 0) {
+            const stillActivated = new Set<number>();
+            nodesRef.current
+              .filter((n) => n.type === 'blue')
+              .forEach((b) => {
+                (b as BlueBlobNode).relatedPastEventNumbers?.forEach((num) =>
+                  stillActivated.add(num)
+                );
+              });
+            nodesRef.current.forEach((n) => {
+              if (n.type === 'red-star') {
+                const red = n as RedStarNode;
+                if (
+                  removedRelated.includes(red.eventNumber) &&
+                  !stillActivated.has(red.eventNumber)
+                ) {
+                  red.isActive = false;
+                  red.orbiting = undefined;
+                }
+              }
+            });
+          }
+
           setBlueBlobIds((ids) => ids.slice(0, -1));
           renderAll();
         }
@@ -810,12 +857,16 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       try {
         await blobTopicService.acceptTopic(eventCode, topicCode, note);
         navigate(`/organizer/events/${eventCode}?tab=speakers`);
-      } catch (err) {
-        console.error('[BlobTopicSelector] Failed to accept topic', err);
+      } catch {
+        setAcceptError(
+          t('blobSelector.accept.saveError', {
+            defaultValue: 'Failed to save topic selection. Please try again.',
+          })
+        );
       }
       setAcceptBlob(null);
     },
-    [eventCode, navigate]
+    [eventCode, navigate, t]
   );
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -849,6 +900,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         }}
       >
         <Button
+          data-testid="fit-all-button"
           variant="contained"
           size="small"
           startIcon={<FitScreen />}
@@ -862,6 +914,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           {t('blobSelector.fitAll', { defaultValue: 'Fit All' })}
         </Button>
         <Button
+          data-testid="snap-to-active-button"
           variant="contained"
           size="small"
           startIcon={<MyLocation />}
@@ -928,9 +981,24 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         blob={acceptBlob}
         hasOrbitingRed={hasOrbitingRed}
         mostRecentEventNumber={mostRecentEventNum}
+        competingCandidates={nodesRef.current
+          .filter((n) => n.type === 'blue' && n.id !== acceptBlob?.id)
+          .map((n) => (n as BlueBlobNode).name)}
         onConfirm={handleAcceptConfirm}
         onCancel={() => setAcceptBlob(null)}
       />
+
+      {/* Accept failure feedback (P4) */}
+      <Snackbar
+        open={acceptError !== null}
+        autoHideDuration={4000}
+        onClose={() => setAcceptError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setAcceptError(null)}>
+          {acceptError}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

@@ -63,6 +63,8 @@ export interface GreenBlobNode extends d3.SimulationNodeDatum {
   r: number;
   absorbed: boolean;
   linkedBlobId?: string;
+  /** Highest similarity score seen so far — used to prefer the best-matching blue blob */
+  bestSimilarity?: number;
 }
 
 export interface GhostNode extends d3.SimulationNodeDatum {

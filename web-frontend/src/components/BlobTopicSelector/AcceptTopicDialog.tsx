@@ -24,6 +24,8 @@ interface AcceptTopicDialogProps {
   blob: BlueBlobNode | null;
   hasOrbitingRed: boolean;
   mostRecentEventNumber: number;
+  /** Names of other blue blobs present at decision time — included in session note (spec AC25) */
+  competingCandidates: string[];
   onConfirm: (topicCode: string, note: string) => void;
   onCancel: () => void;
 }
@@ -33,6 +35,7 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
   blob,
   hasOrbitingRed,
   mostRecentEventNumber,
+  competingCandidates,
   onConfirm,
   onCancel,
 }) => {
@@ -43,7 +46,13 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
     if (!blob) return;
     const lastEventNum = blob.relatedPastEventNumbers?.[0];
     const eventsAgo = lastEventNum != null ? mostRecentEventNumber - lastEventNum : null;
-    const note = buildNote(blob, overrideReason, lastEventNum ?? null, eventsAgo);
+    const note = buildNote(
+      blob,
+      overrideReason,
+      lastEventNum ?? null,
+      eventsAgo,
+      competingCandidates
+    );
     onConfirm(blob.name, note);
     setOverrideReason('');
   };
@@ -57,7 +66,8 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
     b: BlueBlobNode,
     reason: string,
     lastEventNum: number | null,
-    eventsAgo: number | null
+    eventsAgo: number | null,
+    competitors: string[]
   ): string => {
     const lines: string[] = [
       `✅ Selected Topic: ${b.name}`,
@@ -71,6 +81,9 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
     }
     if (reason) {
       lines.push(`   Override reason: ${reason}`);
+    }
+    if (competitors.length > 0) {
+      lines.push(`   Competing candidates: ${competitors.join(', ')}`);
     }
     return lines.join('\n');
   };

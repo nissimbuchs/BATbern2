@@ -462,7 +462,8 @@
       "lastCovered": "Zuletzt behandelt: BATbern #{{num}} (vor {{count}} Veranstaltungen)",
       "overrideReason": "Warum wird dieses Thema wiederholt? (optional)",
       "confirm": "Dieses Thema wählen",
-      "cancel": "Weiter erkunden"
+      "cancel": "Weiter erkunden",
+      "saveError": "Themenauswahl konnte nicht gespeichert werden. Bitte erneut versuchen."
     }
   }
 }
