@@ -332,8 +332,10 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
-        // Safety check: prevent deletion if topic has been used
-        if (topic.getUsageCount() > 0 || topic.getLastUsedDate() != null) {
+        // Safety check: prevent deletion if topic has been used (check usage history, not the
+        // denormalized lastUsedDate which may be stale)
+        boolean hasUsageHistory = !topicUsageHistoryRepository.findByTopicId(topicId).isEmpty();
+        if (topic.getUsageCount() > 0 || hasUsageHistory) {
             throw new IllegalStateException(
                 "Cannot delete topic that has been used in events. "
                 + "Topic has been used " + topic.getUsageCount() + " time(s)."
@@ -355,8 +357,10 @@ public class TopicService {
         Topic topic = topicRepository.findByTopicCode(topicCode)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
-        // Safety check: prevent deletion if topic has been used
-        if (topic.getUsageCount() > 0 || topic.getLastUsedDate() != null) {
+        // Safety check: prevent deletion if topic has been used (check usage history, not the
+        // denormalized lastUsedDate which may be stale)
+        boolean hasUsageHistory = !topicUsageHistoryRepository.findByTopicId(topic.getId()).isEmpty();
+        if (topic.getUsageCount() > 0 || hasUsageHistory) {
             throw new IllegalStateException(
                 "Cannot delete topic that has been used in events. "
                 + "Topic has been used " + topic.getUsageCount() + " time(s)."
@@ -375,6 +379,12 @@ public class TopicService {
     public Topic updateTopicStaleness(UUID topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
+
+        // Sync lastUsedDate from usage history (authoritative source)
+        LocalDateTime lastUsed = topicUsageHistoryRepository
+                .findMaxUsedDateByTopicId(topicId)
+                .orElse(null);
+        topic.setLastUsedDate(lastUsed);
 
         int newStaleness = stalenessScoreService.calculateStaleness(topic);
         topic.setStalenessScore(newStaleness);
@@ -444,9 +454,8 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
-        topic.setLastUsedDate(LocalDateTime.now());
         topic.setUsageCount(topic.getUsageCount() + 1);
-        topic.setStalenessScore(0); // Reset staleness to 0 when used
+        // lastUsedDate and staleness are derived live from topic_usage_history; no need to set here
 
         return topicRepository.save(topic);
     }
@@ -643,10 +652,8 @@ public class TopicService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
-        // Convert Instant to LocalDateTime in system timezone
-        topic.setLastUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneId.systemDefault()));
         topic.setUsageCount(topic.getUsageCount() + 1);
-        topic.setStalenessScore(0); // Reset staleness to 0 when used
+        // lastUsedDate and staleness are derived live from topic_usage_history; no need to set here
 
         return topicRepository.save(topic);
     }

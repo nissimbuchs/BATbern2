@@ -1,12 +1,13 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.Topic;
+import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for StalenessScoreService (Story 5.2 AC6).
@@ -17,7 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * - Formula: min(100, (monthsSinceLastUse / 24) * 100)
  * Window extended to 24 months because BATbern runs only 3 events/year.
  *
- * TDD RED PHASE: These tests should FAIL until StalenessScoreService is implemented.
+ * Tests use the date-based overload calculateStaleness(LocalDateTime) so no
+ * database is needed for these pure-logic unit tests.
  */
 class StalenessScoreServiceTest {
 
@@ -25,7 +27,9 @@ class StalenessScoreServiceTest {
 
     @BeforeEach
     void setUp() {
-        stalenessScoreService = new StalenessScoreService();
+        // Repository only needed for the Topic-based overload; unit tests use the date overload
+        TopicUsageHistoryRepository repo = mock(TopicUsageHistoryRepository.class);
+        stalenessScoreService = new StalenessScoreService(repo);
     }
 
     // ==================== AC6 Tests: Staleness Score Calculation ====================
@@ -38,11 +42,10 @@ class StalenessScoreServiceTest {
     @Test
     void should_return100_when_topicNotUsedOver24Months() {
         // Given: Topic last used 30 months ago
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(30));
+        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(30);
 
         // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        int staleness = stalenessScoreService.calculateStaleness(lastUsed);
 
         // Then: Score is 100 (capped at maximum)
         assertThat(staleness).isEqualTo(100);
@@ -56,11 +59,10 @@ class StalenessScoreServiceTest {
     @Test
     void should_return0_when_topicUsedRecently() {
         // Given: Topic used today
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now());
+        LocalDateTime lastUsed = LocalDateTime.now();
 
         // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        int staleness = stalenessScoreService.calculateStaleness(lastUsed);
 
         // Then: Score is 0 (too recent)
         assertThat(staleness).isEqualTo(0);
@@ -74,11 +76,10 @@ class StalenessScoreServiceTest {
     @Test
     void should_return50_when_topicUsed12MonthsAgo() {
         // Given: Topic last used 12 months ago
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(12));
+        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(12);
 
         // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        int staleness = stalenessScoreService.calculateStaleness(lastUsed);
 
         // Then: Score is approximately 50 (±1 for rounding)
         assertThat(staleness).isBetween(49, 51);
@@ -91,12 +92,8 @@ class StalenessScoreServiceTest {
      */
     @Test
     void should_return100_when_topicNeverUsed() {
-        // Given: Topic never used (lastUsedDate is null)
-        Topic topic = new Topic();
-        topic.setLastUsedDate(null);
-
-        // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        // When: Calculate staleness with null (never used)
+        int staleness = stalenessScoreService.calculateStaleness((LocalDateTime) null);
 
         // Then: Score is 100 (safe to use)
         assertThat(staleness).isEqualTo(100);
@@ -127,12 +124,8 @@ class StalenessScoreServiceTest {
      */
     @Test
     void should_identifyRedZone_when_staleness0To49() {
-        // Given: Topic with low staleness (recently used)
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(3));
-
-        // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        // Given: 3 months ago → (3/24)*100 = 12 → red zone
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(3));
 
         // Then: Staleness in red zone (<50)
         assertThat(staleness).isLessThan(50);
@@ -144,12 +137,8 @@ class StalenessScoreServiceTest {
      */
     @Test
     void should_identifyYellowZone_when_staleness50To83() {
-        // Given: Topic with moderate staleness (15 months → 62%)
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(15));
-
-        // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        // Given: 15 months ago → (15/24)*100 = 62 → yellow zone
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(15));
 
         // Then: Staleness in yellow zone (50-83)
         assertThat(staleness).isBetween(50, 83);
@@ -161,12 +150,8 @@ class StalenessScoreServiceTest {
      */
     @Test
     void should_identifyGreenZone_when_stalenessOver83() {
-        // Given: Topic with high staleness (22 months → 92%)
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(22));
-
-        // When: Calculate staleness
-        int staleness = stalenessScoreService.calculateStaleness(topic);
+        // Given: 22 months ago → (22/24)*100 = 92 → green zone
+        int staleness = stalenessScoreService.calculateStaleness(LocalDateTime.now().minusMonths(22));
 
         // Then: Staleness in green zone (>83)
         assertThat(staleness).isGreaterThan(83);
@@ -175,11 +160,8 @@ class StalenessScoreServiceTest {
     // ==================== Helper Methods ====================
 
     private void assertStaleness(int monthsAgo, int expectedStaleness) {
-        Topic topic = new Topic();
-        topic.setLastUsedDate(LocalDateTime.now().minusMonths(monthsAgo));
-
-        int actual = stalenessScoreService.calculateStaleness(topic);
-
+        LocalDateTime lastUsed = LocalDateTime.now().minusMonths(monthsAgo);
+        int actual = stalenessScoreService.calculateStaleness(lastUsed);
         // Allow ±2 tolerance for rounding differences
         assertThat(actual).isBetween(expectedStaleness - 2, expectedStaleness + 2);
     }

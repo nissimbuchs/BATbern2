@@ -1,6 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Topic;
+import ch.batbern.events.repository.TopicUsageHistoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,29 +23,45 @@ import java.time.temporal.ChronoUnit;
  * - Red (<50):   Too recent — used within last 12 months
  * - Yellow (50-83): Caution — used 12-20 months ago
  * - Green (>83): Safe to reuse — used more than 20 months ago
+ *
+ * Last-used date is always derived from topic_usage_history (the authoritative
+ * source) rather than the denormalized last_used_date column on the topics table,
+ * which can become stale or incorrect over time.
  */
 @Service
+@RequiredArgsConstructor
 public class StalenessScoreService {
 
+    private final TopicUsageHistoryRepository topicUsageHistoryRepository;
+
     /**
-     * Calculate staleness score for a topic.
+     * Calculate staleness score for a topic by querying the live usage history.
      *
      * @param topic Topic to calculate staleness for
      * @return Staleness score (0-100)
      */
     public int calculateStaleness(Topic topic) {
-        LocalDateTime lastUsedDate = topic.getLastUsedDate();
+        LocalDateTime lastUsedDate = topicUsageHistoryRepository
+                .findMaxUsedDateByTopicId(topic.getId())
+                .orElse(null);
+        return calculateStaleness(lastUsedDate);
+    }
 
-        // Never used topics have maximum staleness (safe to use)
+    /**
+     * Calculate staleness score from a known last-used date.
+     * Exposed for unit testing without database access.
+     *
+     * @param lastUsedDate Date of last use, or null if never used
+     * @return Staleness score (0-100)
+     */
+    public int calculateStaleness(LocalDateTime lastUsedDate) {
         if (lastUsedDate == null) {
             return 100;
         }
 
-        // Calculate months since last use
         long monthsSinceLastUse = ChronoUnit.MONTHS.between(lastUsedDate, LocalDateTime.now());
 
         // Apply formula: min(100, (months / 24) * 100)
-        // Cast to double for precise calculation, then round to int
         double stalenessDouble = ((double) monthsSinceLastUse / 24.0) * 100.0;
         int staleness = (int) Math.round(stalenessDouble);
 
