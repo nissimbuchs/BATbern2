@@ -245,7 +245,7 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
               }}
             >
               <BubbleChartIcon sx={{ fontSize: '1.2rem' }} />
-              {t('navigation.blobSelector', { defaultValue: 'Blob Selector', ns: 'events' })}
+              {t('navigation.blobSelector', 'Blob Selector')}
             </Box>
           )}
           <Button
