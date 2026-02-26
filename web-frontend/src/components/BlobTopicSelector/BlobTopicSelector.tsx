@@ -86,6 +86,40 @@ function starPointsRelative(outer: number, inner: number, numPoints: number): st
   return pts.join(' ');
 }
 
+/**
+ * Generate an organic gelée blob path string centred at (0,0).
+ *
+ * 8 Catmull-Rom control points are placed on a circle of radius `r`.
+ * Each point's radius is perturbed by a small sinusoidal offset so the
+ * outline wobbles like jelly.  `phase` is advanced by 0.018 rad/tick in
+ * the D3 simulation loop, producing smooth continuous motion with no
+ * extra requestAnimationFrame loop.
+ *
+ * Amplitude = 8% of r → noticeable but not cartoonish.
+ * Stagger factor 0.9 rad between neighbours → asymmetric, organic shape.
+ */
+function blobPath(r: number, phase: number): string {
+  const N = 8;
+  // Two-layer animation, both at the same per-blob frequency so each blob
+  // has its own clearly independent rhythm (driven by wobbleSpeed):
+  //   breathe  — uniform in/out pulse:               ±6% of r
+  //   wobble   — per-vertex deformation (staggered):  ±12% of r
+  const breathe = r * 0.06 * Math.sin(phase);
+  const wobbleAmp = r * 0.12;
+  const pts: [number, number][] = Array.from({ length: N }, (_, i) => {
+    const theta = (2 * Math.PI * i) / N;
+    const localR = r + breathe + wobbleAmp * Math.sin(phase + i * 0.9);
+    return [localR * Math.cos(theta), localR * Math.sin(theta)];
+  });
+  // d3.line with curveCatmullRomClosed produces a smooth closed curve through the 8 points.
+  const gen = d3
+    .line<[number, number]>()
+    .x((p) => p[0])
+    .y((p) => p[1])
+    .curve(d3.curveCatmullRomClosed.alpha(0.5));
+  return gen(pts) ?? '';
+}
+
 /** Pixels added to a blue blob's radius per absorbed company logo. */
 const GROW_PER_LOGO = 6;
 /** Pixels removed from a blue blob's radius per absorbed red star (= 2 × company logo penalty). */
@@ -163,8 +197,6 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const fadingGreenIds = useRef<Set<string>>(new Set());
   /** ID of the currently selected blue blob — shown with a yellow ring; Delete/Backspace removes it */
   const selectedBlobIdRef = useRef<string | null>(null);
-  /** Incremented every tick to animate the selection ring's marching-ants dash pattern */
-  const ringDashOffsetRef = useRef(0);
   /** Which ghost types are currently visible — read by the tick handler without stale closure */
   const visibleGhostTypesRef = useRef<Set<string>>(
     new Set(['ghost-backlog', 'ghost-partner', 'ghost-trend'])
@@ -188,6 +220,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       id: string;
       name: string;
       companies: { name: string; score: number | null; reason: string | null }[];
+      pastEvents: { eventNumber: number; topicName: string }[];
     }[]
   >([]);
   const [panelOpen, setPanelOpen] = useState(true);
@@ -222,8 +255,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             ?.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group')
             .filter((d) => d.id === selectedBlobIdRef.current)
             .each(function () {
-              d3.select(this).select('circle:first-child').attr('filter', null);
-              d3.select(this).select('.selection-ring').attr('opacity', 0);
+              d3.select(this).select('path.blob-shape').attr('filter', null);
             });
           selectedBlobIdRef.current = null;
         }
@@ -398,6 +430,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         topicName: partner.topics[0]?.title ?? '',
         r: 45,
         absorbed: false,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.007 + Math.random() * 0.04,
         clusterAttractions: computeClusterAttractions(partner.topics),
         topicsByCluster: computeTopicsByCluster(partner.topics),
         linkedBlobsByCluster: {},
@@ -427,6 +461,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         topicName: evt.topicName,
         r: 28,
         isActive: false,
+        rotationAngle: Math.random() * 360,
+        rotationSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.6),
         x: 100 + Math.random() * (w - 200),
         y: 100 + Math.random() * (h - 200),
       } as RedStarNode);
@@ -448,7 +484,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
    * Recompute a blue blob's radius from its current absorbed-logo count and
    * smoothly animate the SVG circle to the new size.
    */
-  const resizeBlue = useCallback((blue: BlueBlobNode, duration: number) => {
+  const resizeBlue = useCallback((blue: BlueBlobNode) => {
     // Minimum = half the blob's natural radius (keeps label and orbiting items inside).
     // baseR is always ≥ 40, so minimum is always ≥ 20 — in practice ≥ 20–50 depending on name length.
     const minR = Math.round(blue.baseR * 0.5);
@@ -461,13 +497,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           blue.absorbedRedStars.length * SHRINK_PER_RED_STAR
       )
     );
-    gRef.current
-      ?.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group')
-      .filter((d) => d.id === blue.id)
-      .select('circle')
-      .transition()
-      .duration(duration)
-      .attr('r', blue.r);
+    // Blob shape is a gelée path updated every tick — no explicit SVG update needed here.
     // Wake the simulation so collide force reacts to the new radius
     simRef.current?.alpha(0.15).restart();
   }, []);
@@ -498,6 +528,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
               const reason = matchingTopics.length > 0 ? matchingTopics.join(', ') : null;
               return { name: l.companyName, score, reason };
             }),
+            pastEvents: blue.absorbedRedStars.map((r) => ({
+              eventNumber: r.eventNumber,
+              topicName: r.topicName,
+            })),
           };
         })
     );
@@ -538,8 +572,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           orbitAngle: Math.random() * Math.PI * 2,
           orbitRadius: Math.max(10, Math.min(22, blue.r * 0.28)),
           orbitSpeed: (0.004 + Math.random() * 0.005) * (Math.random() < 0.5 ? 1 : -1),
+          rotationAngle: Math.random() * 360,
+          rotationSpeed: (Math.random() < 0.5 ? 1 : -1) * (0.3 + Math.random() * 0.7),
         });
-        resizeBlue(blue, 900);
+        resizeBlue(blue);
       }
       syncTreeSummary();
     },
@@ -630,6 +666,23 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
     );
 
+    // Advance gelée wobble for blue and green blobs — each blob has its own phase offset
+    // so they pulsate independently.  0.018 rad/tick ≈ one full wobble cycle every ~6 seconds.
+    g.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group').each(function (d) {
+      d.wobblePhase += d.wobbleSpeed;
+      d3.select(this)
+        .select<SVGPathElement>('path.blob-shape')
+        .attr('d', blobPath(d.r, d.wobblePhase));
+    });
+    g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
+      .filter((d) => !d.absorbed)
+      .each(function (d) {
+        d.wobblePhase += d.wobbleSpeed;
+        d3.select(this)
+          .select<SVGPathElement>('path.blob-shape')
+          .attr('d', blobPath(d.r, d.wobblePhase));
+      });
+
     // Ghost visibility — show/hide based on toggle state (opacity 0 = hidden but orbit continues)
     g.selectAll<SVGGElement, SimNode>('.ghost-group')
       .attr('opacity', (d) => (visibleGhostTypesRef.current.has(d.type) ? 1 : 0))
@@ -660,18 +713,22 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .text(lines.length >= 2 ? lines[1] : '');
       });
 
-    // Update red star opacity, glow, and size (skip polygon points while grow animation runs)
+    // Update red star virus body — rotation, opacity, glow, and size
     g.selectAll<SVGGElement, RedStarNode>('.red-star-group').each(function (d) {
       const grp = d3.select(this);
-      // Only snap polygon points when not mid-animation
+      // Advance slow spin; each star has its own speed and direction
+      d.rotationAngle += d.rotationSpeed;
+      const virusBody = grp.select<SVGGElement>('.virus-body');
+      virusBody.attr('transform', `rotate(${d.rotationAngle})`);
+      // Only snap polygon points and core radius when not mid-animation
       if (!growingRedIds.current.has(d.id)) {
         const visR = d.isActive ? d.r : d.r * 0.3;
-        grp
+        virusBody
           .select<SVGPolygonElement>('polygon')
           .attr('points', starPointsRelative(visR, visR * 0.42, 5));
+        virusBody.select<SVGCircleElement>('.virus-core').attr('r', visR * 0.65);
       }
-      grp
-        .select<SVGPolygonElement>('polygon')
+      virusBody
         .attr('opacity', d.isActive ? 1.0 : 0.15)
         .attr('filter', d.isActive ? 'url(#red-glow)' : null);
       grp.select<SVGTextElement>('text').attr('font-size', d.isActive ? '11px' : '5px');
@@ -726,7 +783,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             .attr('opacity', 0)
             .on('end', () => {
               d.absorbedLogos = d.absorbedLogos.filter((l) => l.companyName !== logo.companyName);
-              resizeBlue(d as BlueBlobNode, 1200);
+              resizeBlue(d as BlueBlobNode);
               syncTreeSummary();
               const green = nodesRef.current.find(
                 (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
@@ -786,13 +843,19 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         .attr('class', 'absorbed-red-star-group')
         .attr('opacity', 0)
         .call((entered) => {
-          entered
-            .append('polygon')
+          // .absorbed-virus-body rotates each tick; spikes + core circle inside
+          const vb = entered.append('g').attr('class', 'absorbed-virus-body');
+          vb.append('polygon')
             .attr('points', starPointsRelative(7, 7 * 0.42, 5))
             .attr('fill', '#e53935')
             .attr('stroke', '#ff6b6b')
             .attr('stroke-width', 0.8)
             .attr('filter', 'url(#red-glow)');
+          vb.append('circle')
+            .attr('class', 'virus-core')
+            .attr('r', 7 * 0.65)
+            .attr('fill', '#e53935');
+          // Number label stays outside the rotating group
           entered
             .append('text')
             .attr('text-anchor', 'middle')
@@ -810,34 +873,30 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
       absorbedRedStarSel.exit().remove();
 
-      // Advance orbit each tick
+      // Advance orbit and spin each tick
       grp.selectAll<SVGGElement, AbsorbedRedStar>('.absorbed-red-star-group').each(function (r) {
         r.orbitAngle += r.orbitSpeed;
-        d3.select(this).attr(
+        r.rotationAngle += r.rotationSpeed;
+        const self = d3.select(this);
+        self.attr(
           'transform',
           `translate(${r.orbitRadius * Math.cos(r.orbitAngle)},${r.orbitRadius * Math.sin(r.orbitAngle)})`
         );
+        self
+          .select<SVGGElement>('.absorbed-virus-body')
+          .attr('transform', `rotate(${r.rotationAngle})`);
       });
 
       // Raise topic-name text above logos and red stars so it's never hidden
       grp.select('text').raise();
     });
 
-    // Animate selection ring — marching ants dashoffset + gold halo on main circle
-    ringDashOffsetRef.current -= 0.5;
+    // Gold halo on selected blue blob
     g.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group').each(function (d) {
       const isSelected = d.id === selectedBlobIdRef.current;
-      const grp = d3.select(this);
-      // Apply gold halo filter to the blob's main circle when selected
-      grp
-        .select<SVGCircleElement>('circle:first-child')
+      d3.select(this)
+        .select<SVGPathElement>('path.blob-shape')
         .attr('filter', isSelected ? 'url(#gold-glow)' : null);
-      // Dashed ring
-      grp
-        .select<SVGCircleElement>('.selection-ring')
-        .attr('r', d.r + 8)
-        .attr('opacity', isSelected ? 1 : 0)
-        .attr('stroke-dashoffset', isSelected ? ringDashOffsetRef.current : 0);
     });
   }, []);
 
@@ -889,8 +948,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         const blue = node as BlueBlobNode;
         group.attr('class', 'node-group blue-blob-group');
         group
-          .append('circle')
-          .attr('r', blue.r)
+          .append('path')
+          .attr('class', 'blob-shape')
+          .attr('d', blobPath(blue.r, blue.wobblePhase))
           .attr('fill', '#1976d2')
           .attr('opacity', 0)
           .transition()
@@ -908,17 +968,6 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           14,
           6.5
         );
-        // Selection ring — dashed gold ring; halo glow applied via filter on the main circle in tick
-        group
-          .append('circle')
-          .attr('class', 'selection-ring')
-          .attr('r', blue.r + 8)
-          .attr('fill', 'none')
-          .attr('stroke', '#ffd700')
-          .attr('stroke-width', 5)
-          .attr('stroke-dasharray', '10 5')
-          .attr('opacity', 0)
-          .attr('pointer-events', 'none');
         group
           .style('cursor', 'pointer')
           .on('click', (event, d) => {
@@ -929,11 +978,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             // Apply immediately — don't wait for the next simulation tick
             const groupEl = d3.select(event.currentTarget as SVGGElement);
             groupEl
-              .select<SVGCircleElement>('circle:first-child')
+              .select<SVGPathElement>('path.blob-shape')
               .attr('filter', nowSelected ? 'url(#gold-glow)' : null);
-            groupEl
-              .select<SVGCircleElement>('.selection-ring')
-              .attr('opacity', nowSelected ? 1 : 0);
           })
           .on('dblclick', (_, d) => {
             setAcceptBlob(d as BlueBlobNode);
@@ -944,9 +990,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         const green = node as GreenBlobNode;
         group.attr('class', 'node-group green-blob-group');
         group
-          .append('circle')
-          .attr('class', 'green-blob')
-          .attr('r', green.r)
+          .append('path')
+          .attr('class', 'blob-shape green-blob')
+          .attr('d', blobPath(green.r, green.wobblePhase))
           .attr('fill', '#2e7d32');
         if (green.logoUrl) {
           group
@@ -994,6 +1040,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         group.attr('class', 'node-group ghost-group');
         group
           .append('circle')
+          .attr('class', 'blob-shape')
           .attr('r', ghost.r)
           .attr('fill', fillColor)
           .attr('opacity', fillOpacity);
@@ -1041,12 +1088,25 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         const red = node as RedStarNode;
         group.attr('class', 'node-group red-star-group');
         const visR = red.isActive ? red.r : red.r * 0.3;
-        group
-          .append('polygon')
-          .attr('points', starPointsRelative(visR, visR * 0.42, 5))
-          .attr('fill', '#f44336')
+        // .virus-body rotates each tick; contains spikes (polygon) + core circle on top.
+        // Overlaying a circle (r = 65% of outer) covers the star's concave inner regions,
+        // leaving only the pointed spike tips exposed — classic virus silhouette.
+        const virusBody = group
+          .append('g')
+          .attr('class', 'virus-body')
+          .attr('transform', `rotate(${red.rotationAngle})`)
           .attr('opacity', red.isActive ? 1.0 : 0.15)
           .attr('filter', red.isActive ? 'url(#red-glow)' : null);
+        virusBody
+          .append('polygon')
+          .attr('points', starPointsRelative(visR, visR * 0.42, 5))
+          .attr('fill', '#f44336');
+        virusBody
+          .append('circle')
+          .attr('class', 'virus-core')
+          .attr('r', visR * 0.65)
+          .attr('fill', '#f44336');
+        // Text label stays outside .virus-body so it never rotates
         group
           .append('text')
           .attr('text-anchor', 'middle')
@@ -1143,7 +1203,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
                 orbitRadius: blueTarget.r * (0.2 + Math.random() * 0.45),
                 orbitSpeed: (0.0013 + Math.random() * 0.0027) * (Math.random() < 0.5 ? 1 : -1),
               });
-              resizeBlue(blueTarget, 1500);
+              resizeBlue(blueTarget);
             }
             // Pin the green blob at its drop position so physics doesn't move it during fade
             green.fx = green.x ?? 0;
@@ -1223,7 +1283,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       gRef.current
         .selectAll<SVGGElement, SimNode>('.node-group')
         .filter((d) => mergeHaloNodesRef.current.has(d.id))
-        .select<SVGCircleElement>('circle')
+        .select<SVGPathElement | SVGCircleElement>('.blob-shape')
         .attr('stroke', 'rgba(255,255,255,0.9)')
         .attr('stroke-width', 4);
     } else {
@@ -1234,7 +1294,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const clearMergeHalos = () => {
     if (gRef.current) {
       gRef.current
-        .selectAll<SVGCircleElement, SimNode>('.node-group circle')
+        .selectAll<SVGPathElement | SVGCircleElement, SimNode>('.node-group .blob-shape')
         .attr('stroke', null)
         .attr('stroke-width', null);
     }
@@ -1272,7 +1332,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     });
 
     // Resize the surviving blob over 600ms (logos add, red stars subtract)
-    resizeBlue(surviving, 600);
+    resizeBlue(surviving);
     surviving.fx = null;
     surviving.fy = null;
 
@@ -1326,6 +1386,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         topicCode,
         x,
         y,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.007 + Math.random() * 0.04,
         absorbedLogos: [],
         absorbedRedStars: [],
       };
@@ -1428,15 +1490,22 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
         // Brief flare to signal ignition before the star starts flying
         growingRedIds.current.add(red.id);
-        gRef.current
+        const redGrp = gRef.current
           ?.selectAll<SVGGElement, RedStarNode>('.red-star-group')
-          .filter((d) => d.id === red.id)
-          .select<SVGPolygonElement>('polygon')
+          .filter((d) => d.id === red.id);
+        redGrp
+          ?.select<SVGPolygonElement>('polygon')
           .transition()
           .duration(500)
           .ease(d3.easeCubicOut)
           .attr('points', starPointsRelative(30, 30 * 0.42, 5))
           .on('end', () => growingRedIds.current.delete(red.id));
+        redGrp
+          ?.select<SVGCircleElement>('.virus-core')
+          .transition()
+          .duration(500)
+          .ease(d3.easeCubicOut)
+          .attr('r', 30 * 0.65);
       }
     });
   };
@@ -2088,6 +2157,44 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
                           )}
                         </Box>
                       ))
+                    )}
+
+                    {/* Absorbed past events (red stars) */}
+                    {topic.pastEvents.length > 0 && (
+                      <Box sx={{ mt: 0.5 }}>
+                        {topic.pastEvents.map((evt) => (
+                          <Box key={evt.eventNumber} sx={{ pl: 1.5, py: '2px' }}>
+                            {/* BATbern ID row */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography
+                                sx={{
+                                  color: 'rgba(244,67,54,0.7)',
+                                  fontSize: 8,
+                                  lineHeight: 1,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                └
+                              </Typography>
+                              <Typography sx={{ color: '#f44336', fontSize: 10, fontWeight: 600 }}>
+                                BATbern #{evt.eventNumber}
+                              </Typography>
+                            </Box>
+                            {/* Actual event topic title — indented below, like company reason */}
+                            <Typography
+                              sx={{
+                                color: 'rgba(244,67,54,0.75)',
+                                fontSize: 9,
+                                pl: 1.5,
+                                fontStyle: 'italic',
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {evt.topicName}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
                     )}
                   </Box>
                 ))

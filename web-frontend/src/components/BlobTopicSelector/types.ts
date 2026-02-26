@@ -74,6 +74,9 @@ export interface AbsorbedRedStar {
   orbitAngle: number;
   orbitRadius: number;
   orbitSpeed: number;
+  /** Slow virus spin (degrees per tick, positive or negative). */
+  rotationAngle: number;
+  rotationSpeed: number;
 }
 
 export interface BlueBlobNode extends d3.SimulationNodeDatum {
@@ -83,6 +86,10 @@ export interface BlueBlobNode extends d3.SimulationNodeDatum {
   r: number;
   /** Original radius derived from topic-name length; r grows with absorbed logos. */
   baseR: number;
+  /** Phase (radians) for sinusoidal gelée wobble; advanced each D3 tick. */
+  wobblePhase: number;
+  /** Advance rate for wobblePhase per tick — randomized so blobs never sync. */
+  wobbleSpeed: number;
   /**
    * Set when the blob was spawned from an organizer backlog ghost.
    * Absence means the topic is free-form and must be created before selecting for the event.
@@ -103,6 +110,10 @@ export interface GreenBlobNode extends d3.SimulationNodeDatum {
   topicName: string;
   r: number;
   absorbed: boolean;
+  /** Phase (radians) for sinusoidal gelée wobble; advanced each D3 tick. */
+  wobblePhase: number;
+  /** Advance rate for wobblePhase per tick — randomized so blobs never sync. */
+  wobbleSpeed: number;
   /**
    * Precomputed per-cluster attraction strengths (0–1).
    * Built once at node creation from the company's topic submissions.
@@ -149,6 +160,10 @@ export interface RedStarNode extends d3.SimulationNodeDatum {
   absorbed?: boolean;
   orbiting?: string;
   orbitAngle?: number;
+  /** Current rotation angle in degrees — drives the slow virus spin. */
+  rotationAngle: number;
+  /** Rotation speed in degrees per tick; positive = clockwise, negative = counter-clockwise. */
+  rotationSpeed: number;
 }
 
 export type SimNode = BlueBlobNode | GreenBlobNode | GhostNode | RedStarNode;
