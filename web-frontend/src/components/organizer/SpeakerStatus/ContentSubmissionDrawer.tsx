@@ -30,13 +30,13 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
-import { searchUsers } from '@/services/api/userManagementApi';
+import { searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import UserCreateEditModal from '@/components/organizer/UserManagement/UserCreateEditModal';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { SubmitContentRequest } from '@/services/speakerContentService';
-import type { UserSearchResponse, User } from '@/types/user.types';
+import type { UserSearchResponse, User, Role } from '@/types/user.types';
 
 interface ContentSubmissionDrawerProps {
   open: boolean;
@@ -155,9 +155,20 @@ export const ContentSubmissionDrawer: React.FC<ContentSubmissionDrawerProps> = (
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm() || !selectedUser) {
       return;
+    }
+
+    // Grant SPEAKER role if not already present
+    const existingRoles = (selectedUser.roles ?? []) as Role[];
+    if (!existingRoles.includes('SPEAKER')) {
+      try {
+        await updateUserRoles(selectedUser.id, [...existingRoles, 'SPEAKER']);
+      } catch (error) {
+        console.error('Failed to grant SPEAKER role:', error);
+        // Non-fatal: proceed with content submission regardless
+      }
     }
 
     submitContentMutation.mutate({

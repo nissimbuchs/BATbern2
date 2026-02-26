@@ -8,7 +8,7 @@
 
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
-import type { Session, SessionMaterial } from '@/types/event.types';
+import type { Session, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 
 // API base path for session endpoints
 const SESSION_API_PATH = '/events';
@@ -17,6 +17,11 @@ export interface SessionUpdateRequest {
   title?: string;
   description?: string;
   durationMinutes?: number;
+}
+
+export interface AssignSpeakerRequest {
+  username: string;
+  speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
 }
 
 export interface MaterialUploadItem {
@@ -142,6 +147,63 @@ class SessionApiClient {
   async deleteSession(eventCode: string, sessionSlug: string): Promise<void> {
     try {
       await apiClient.delete(`${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}`);
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Assign a speaker to a session
+   *
+   * POST /api/v1/events/{eventCode}/sessions/{sessionSlug}/speakers
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param request - Speaker assignment request (username + speakerRole)
+   * @returns Created session speaker
+   */
+  async assignSpeaker(
+    eventCode: string,
+    sessionSlug: string,
+    request: AssignSpeakerRequest
+  ): Promise<SessionSpeaker> {
+    try {
+      const response = await apiClient.post<SessionSpeaker>(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/speakers`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      if (
+        error instanceof AxiosError &&
+        (error.response?.status === 401 || error.response?.status === 403)
+      ) {
+        throw error;
+      }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Remove a speaker from a session
+   *
+   * DELETE /api/v1/events/{eventCode}/sessions/{sessionSlug}/speakers/{username}
+   *
+   * @param eventCode - Event code (e.g., "BATbern142")
+   * @param sessionSlug - Session slug identifier
+   * @param username - Speaker username to remove
+   */
+  async removeSpeaker(eventCode: string, sessionSlug: string, username: string): Promise<void> {
+    try {
+      await apiClient.delete(
+        `${SESSION_API_PATH}/${eventCode}/sessions/${sessionSlug}/speakers/${username}`
+      );
     } catch (error) {
       if (
         error instanceof AxiosError &&

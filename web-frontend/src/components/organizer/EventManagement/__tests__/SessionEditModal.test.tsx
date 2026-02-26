@@ -17,6 +17,11 @@ import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
 
+// Mock SessionSpeakersTab to isolate SessionEditModal tests
+vi.mock('../SessionSpeakersTab', () => ({
+  SessionSpeakersTab: () => <div data-testid="session-speakers-tab">No speakers assigned yet</div>,
+}));
+
 // Mock i18n
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -753,5 +758,46 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     // Should display uploaded materials
     expect(screen.getByText('presentation.pptx')).toBeInTheDocument();
     expect(screen.getByText('document.pdf')).toBeInTheDocument();
+  });
+});
+
+describe('SessionEditModal - Speakers Tab', () => {
+  const mockSession: SessionUI = {
+    sessionSlug: 'test-session',
+    eventCode: 'BATbern99',
+    title: 'Test Session',
+    language: 'de',
+    speakers: [],
+  };
+
+  it('should_showSpeakersTab_when_tabsRendered', () => {
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('tab', { name: /speakers/i })).toBeInTheDocument();
+  });
+
+  it('should_openSpeakersTab_when_initialTabIs2', () => {
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={mockSession}
+        eventDate="2024-12-15"
+        onSave={vi.fn()}
+        initialTab={2}
+      />
+    );
+
+    const speakersTab = screen.getByRole('tab', { name: /speakers/i });
+    expect(speakersTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('No speakers assigned yet')).toBeInTheDocument();
   });
 });
