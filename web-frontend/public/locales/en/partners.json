@@ -293,6 +293,8 @@
       "suggest": "Suggest a Topic",
       "vote": "Vote",
       "unvote": "Remove Vote",
+      "edit": "Edit",
+      "delete": "Delete",
       "status": {
         "proposed": "Proposed",
         "selected": "Selected",
@@ -306,7 +308,9 @@
         "submit": "Submit",
         "titleRequired": "Title is required (at least 5 characters)",
         "descriptionHint": "Optional, max 500 characters",
-        "dialogTitle": "Suggest a New Topic"
+        "dialogTitle": "Suggest a New Topic",
+        "editDialogTitle": "Edit Topic",
+        "update": "Update"
       },
       "organizer": {
         "title": "Partner Topic Suggestions",

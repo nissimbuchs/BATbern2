@@ -293,6 +293,8 @@
       "suggest": "Thema vorschlagen",
       "vote": "Abstimmen",
       "unvote": "Stimme entfernen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
       "status": {
         "proposed": "Vorgeschlagen",
         "selected": "Ausgewählt",
@@ -306,7 +308,9 @@
         "submit": "Einreichen",
         "titleRequired": "Titel ist erforderlich (mindestens 5 Zeichen)",
         "descriptionHint": "Optional, max. 500 Zeichen",
-        "dialogTitle": "Neues Thema vorschlagen"
+        "dialogTitle": "Neues Thema vorschlagen",
+        "editDialogTitle": "Thema bearbeiten",
+        "update": "Aktualisieren"
       },
       "organizer": {
         "title": "Partner-Themenvorschläge",

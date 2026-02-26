@@ -98,6 +98,36 @@ public class TopicController {
     }
 
     /**
+     * PATCH /api/v1/partners/topics/{topicId}
+     * Edit topic title/description — only the submitting company may edit.
+     */
+    @PatchMapping("/{topicId}")
+    @PreAuthorize("hasRole('PARTNER')")
+    @Timed("partner.topics.update")
+    public ResponseEntity<TopicDTO> updateTopic(
+            @PathVariable UUID topicId,
+            @RequestBody TopicSuggestionRequest request) {
+        String companyName = resolveCallerCompanyName();
+        log.info("PATCH /partners/topics/{} company={}", topicId, companyName);
+        TopicDTO dto = topicService.updateTopic(topicId, request, companyName);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * DELETE /api/v1/partners/topics/{topicId}
+     * Delete topic — only the submitting company may delete.
+     */
+    @DeleteMapping("/{topicId}")
+    @PreAuthorize("hasRole('PARTNER')")
+    @Timed("partner.topics.delete")
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID topicId) {
+        String companyName = resolveCallerCompanyName();
+        log.info("DELETE /partners/topics/{} company={}", topicId, companyName);
+        topicService.deleteTopic(topicId, companyName);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * PATCH /api/v1/partners/topics/{topicId}/status
      * AC4: organizer sets topic status (SELECTED or DECLINED).
      */

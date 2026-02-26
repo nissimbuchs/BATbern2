@@ -14,21 +14,28 @@ import {
   Button,
   Chip,
   Container,
+  IconButton,
   List,
   ListItem,
   Skeleton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth/useAuth';
 import { TopicSuggestionForm } from './TopicSuggestionForm';
 import {
   castVote,
+  deleteTopic,
   getTopics,
   removeVote,
   suggestTopic,
+  updateTopic,
   type TopicDTO,
 } from '@/services/api/partnerTopicsApi';
 
@@ -45,7 +52,9 @@ const STATUS_COLOR: Record<string, 'default' | 'success' | 'error'> = {
 const TopicListPage: React.FC = () => {
   const { t } = useTranslation('partners');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
+  const [editingTopic, setEditingTopic] = useState<TopicDTO | null>(null);
 
   // ─── Query ─────────────────────────────────────────────────────────────────
 
@@ -68,6 +77,30 @@ const TopicListPage: React.FC = () => {
       void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
     },
   });
+
+  // ─── Edit / Delete mutations ───────────────────────────────────────────────
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, title, description }: { id: string; title: string; description: string }) =>
+      updateTopic(id, { title, description }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (topicId: string) => deleteTopic(topicId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['partnerTopics'] });
+    },
+  });
+
+  const handleEdit = async (title: string, description: string) => {
+    if (!editingTopic) {
+      return;
+    }
+    await editMutation.mutateAsync({ id: editingTopic.id, title, description });
+  };
 
   // ─── Vote mutations (optimistic) ───────────────────────────────────────────
 
@@ -214,6 +247,32 @@ const TopicListPage: React.FC = () => {
                   </Typography>
                 </Box>
 
+                {/* Edit / Delete buttons — own company's topics only */}
+                {topic.suggestedByCompany === user?.companyName && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Tooltip title={t('portal.topics.edit')}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditingTopic(topic)}
+                        data-testid={`edit-topic-${topic.id}`}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t('portal.topics.delete')}>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => deleteMutation.mutate(topic.id)}
+                        disabled={deleteMutation.isPending}
+                        data-testid={`delete-topic-${topic.id}`}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                )}
+
                 {/* Vote button */}
                 <Box
                   sx={{
@@ -256,6 +315,16 @@ const TopicListPage: React.FC = () => {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleSuggest}
+      />
+
+      {/* Edit form dialog */}
+      <TopicSuggestionForm
+        open={editingTopic !== null}
+        onClose={() => setEditingTopic(null)}
+        onSubmit={handleEdit}
+        initialTitle={editingTopic?.title ?? ''}
+        initialDescription={editingTopic?.description ?? ''}
+        editMode
       />
     </Container>
   );
