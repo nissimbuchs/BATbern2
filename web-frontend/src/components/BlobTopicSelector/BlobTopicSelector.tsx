@@ -162,6 +162,12 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const selectedBlobIdRef = useRef<string | null>(null);
   /** Incremented every tick to animate the selection ring's marching-ants dash pattern */
   const ringDashOffsetRef = useRef(0);
+  /** Which ghost types are currently visible — read by the tick handler without stale closure */
+  const visibleGhostTypesRef = useRef<Set<string>>(
+    new Set(['ghost-backlog', 'ghost-partner', 'ghost-trend'])
+  );
+  /** Red star IDs currently mid-growth animation — tick handler skips polygon points for these */
+  const growingRedIds = useRef<Set<string>>(new Set());
 
   // React state — only for UI elements that need re-renders
   const [showInput, setShowInput] = useState(false);
@@ -178,6 +184,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     }[]
   >([]);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [visibleGhostTypes, setVisibleGhostTypes] = useState<Set<string>>(
+    new Set(['ghost-backlog', 'ghost-partner', 'ghost-trend'])
+  );
 
   const hasOrbitingRed = nodesRef.current.some(
     (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === acceptBlob?.id
@@ -353,14 +362,16 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     // Partner ghosts + green blobs
     sessionData.partnerTopics.slice(0, 20).forEach((partner, pi) => {
-      // Ghost for each partner topic (up to 3) — topics are now objects, use .title
+      // Ghost for each partner topic (up to 3) — radius scaled by vote count (more votes = bigger)
       partner.topics.slice(0, 3).forEach((topic, ti) => {
         const orb = makeGhostOrbit();
+        const r = Math.max(28, Math.min(55, 28 + topic.voteCount * 4));
         newNodes.push({
           id: `ghost-partner-${pi}-${ti}`,
           type: 'ghost-partner',
           name: topic.title,
-          r: 35,
+          companyName: partner.companyName,
+          r,
           ...orb,
         } as GhostNode);
       });
@@ -468,6 +479,18 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     );
   }, []);
 
+  // ─── GHOST VISIBILITY TOGGLE ──────────────────────────────────────────────
+
+  const toggleGhostType = useCallback((type: string) => {
+    setVisibleGhostTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      visibleGhostTypesRef.current = next;
+      return next;
+    });
+  }, []);
+
   // ─── TICK HANDLER (D3 mutates DOM directly) ───────────────────────────────
 
   const tickHandler = useCallback((g: d3.Selection<SVGGElement, unknown, null, undefined>) => {
@@ -489,6 +512,26 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       ghost.ghostOrbitAngle += ghost.ghostOrbitSpeed;
       ghost.fx = cx + ghost.ghostOrbitRadius * Math.cos(ghost.ghostOrbitAngle);
       ghost.fy = cy + ghost.ghostOrbitRadius * Math.sin(ghost.ghostOrbitAngle);
+    });
+
+    // Custom green attraction — alpha-independent so blobs keep moving until absorbed,
+    // regardless of how cool the simulation has become.
+    nodesRef.current.forEach((node) => {
+      if (node.type !== 'green') return;
+      const green = node as GreenBlobNode;
+      if (green.absorbed || green.fx != null) return;
+      Object.entries(green.linkedBlobsByCluster).forEach(([cluster, blueBlobId]) => {
+        const blue = nodesRef.current.find((b) => b.id === blueBlobId) as BlueBlobNode | undefined;
+        if (!blue) return;
+        const dx = (blue.x ?? 0) - (green.x ?? 0);
+        const dy = (blue.y ?? 0) - (green.y ?? 0);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 1) return;
+        const strength = green.clusterAttractions[cluster] ?? 0.1;
+        const pull = strength * 1.2; // px/tick² — tunable speed
+        green.vx = (green.vx ?? 0) + (dx / dist) * pull;
+        green.vy = (green.vy ?? 0) + (dy / dist) * pull;
+      });
     });
 
     nodesRef.current.forEach((node) => {
@@ -517,6 +560,11 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
     );
 
+    // Ghost visibility — show/hide based on toggle state (opacity 0 = hidden but orbit continues)
+    g.selectAll<SVGGElement, SimNode>('.ghost-group')
+      .attr('opacity', (d) => (visibleGhostTypesRef.current.has(d.type) ? 1 : 0))
+      .attr('pointer-events', (d) => (visibleGhostTypesRef.current.has(d.type) ? 'auto' : 'none'));
+
     // Hide entire green blob group — skip nodes currently in a fade transition
     g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
       .filter((d) => !fadingGreenIds.current.has(d.id))
@@ -542,11 +590,22 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .text(lines.length >= 2 ? lines[1] : '');
       });
 
-    // Update red star opacity + glow
-    g.selectAll<SVGGElement, RedStarNode>('.red-star-group')
-      .select<SVGPolygonElement>('polygon')
-      .attr('opacity', (d) => (d.isActive ? 1.0 : 0.15))
-      .attr('filter', (d) => (d.isActive ? 'url(#red-glow)' : null));
+    // Update red star opacity, glow, and size (skip polygon points while grow animation runs)
+    g.selectAll<SVGGElement, RedStarNode>('.red-star-group').each(function (d) {
+      const grp = d3.select(this);
+      // Only snap polygon points when not mid-animation
+      if (!growingRedIds.current.has(d.id)) {
+        const visR = d.isActive ? d.r : d.r * 0.3;
+        grp
+          .select<SVGPolygonElement>('polygon')
+          .attr('points', starPointsRelative(visR, visR * 0.42, 5));
+      }
+      grp
+        .select<SVGPolygonElement>('polygon')
+        .attr('opacity', d.isActive ? 1.0 : 0.15)
+        .attr('filter', d.isActive ? 'url(#red-glow)' : null);
+      grp.select<SVGTextElement>('text').attr('font-size', d.isActive ? '11px' : '5px');
+    });
 
     // Red repulsion from blue blobs when active
     nodesRef.current.forEach((node) => {
@@ -833,6 +892,21 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           11,
           5
         );
+        // Company name — shown only on ghost-partner nodes, small, below the topic text
+        if (node.type === 'ghost-partner' && ghost.companyName) {
+          group
+            .append('text')
+            .attr('text-anchor', 'middle')
+            .attr('y', ghost.r * 0.55)
+            .attr('fill', 'rgba(255,255,255,0.45)')
+            .attr('font-size', '7px')
+            .attr('pointer-events', 'none')
+            .text(
+              ghost.companyName.length > 12
+                ? ghost.companyName.slice(0, 11) + '…'
+                : ghost.companyName
+            );
+        }
         group
           .style('cursor', 'pointer')
           .on('click', (_, d) => {
@@ -849,18 +923,19 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       case 'red-star': {
         const red = node as RedStarNode;
         group.attr('class', 'node-group red-star-group');
+        const visR = red.isActive ? red.r : red.r * 0.3;
         group
           .append('polygon')
-          .attr('points', starPointsRelative(red.r, red.r * 0.42, 5))
+          .attr('points', starPointsRelative(visR, visR * 0.42, 5))
           .attr('fill', '#f44336')
           .attr('opacity', red.isActive ? 1.0 : 0.15)
           .attr('filter', red.isActive ? 'url(#red-glow)' : null);
         group
           .append('text')
           .attr('text-anchor', 'middle')
-          .attr('dy', red.r + 14)
-          .attr('fill', 'rgba(255,120,120,0.8)')
-          .attr('font-size', '9px')
+          .attr('dy', '0.35em')
+          .attr('fill', 'rgba(255,120,120,0.9)')
+          .attr('font-size', red.isActive ? '9px' : '5px')
           .attr('pointer-events', 'none')
           .text(`#${red.eventNumber}`);
         break;
@@ -1133,7 +1208,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           // Activate matching red stars
           activateRedStars(sim.relatedPastEventNumbers);
 
-          simRef.current?.alpha(0.3).restart();
+          simRef.current?.alpha(0.1).restart();
         })
         .catch(() => {
           // Similarity is optional — ignore failures
@@ -1175,8 +1250,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         });
       }
 
-      // Add link toward this blue blob for this cluster
-      linksRef.current.push({ source: green.id, target: blueBlobId, strength });
+      // Add link toward this blue blob for this cluster.
+      // Scale strength down so attraction is a slow drift, not a jump (D3 link strength 1.0
+      // satisfies the constraint almost instantly — 0.15 makes it drift over many ticks).
+      linksRef.current.push({ source: green.id, target: blueBlobId, strength: strength * 0.1 });
       green.linkedBlobsByCluster[blueCluster] = blueBlobId;
     });
 
@@ -1190,8 +1267,25 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     nodesRef.current.forEach((n) => {
       if (n.type !== 'red-star') return;
       const red = n as RedStarNode;
-      if (relatedEventNumbers.includes(red.eventNumber) && maxEvt - red.eventNumber <= 6) {
+      if (
+        relatedEventNumbers.includes(red.eventNumber) &&
+        maxEvt - red.eventNumber <= 6 &&
+        !red.isActive
+      ) {
         red.isActive = true;
+        red.r = 55; // larger collision + orbit radius for active stars
+
+        // Animate polygon growth from current dormant size to full active size over 2.5s
+        growingRedIds.current.add(red.id);
+        gRef.current
+          ?.selectAll<SVGGElement, RedStarNode>('.red-star-group')
+          .filter((d) => d.id === red.id)
+          .select<SVGPolygonElement>('polygon')
+          .transition()
+          .duration(2500)
+          .ease(d3.easeCubicOut)
+          .attr('points', starPointsRelative(55, 55 * 0.42, 5))
+          .on('end', () => growingRedIds.current.delete(red.id));
       }
     });
   };
@@ -1446,10 +1540,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           topicCode = created.topicCode;
         }
 
-        // Select the topic for this event (sets event.topicCode)
-        await topicService.selectTopicForEvent(eventCode, { topicCode, justification: note });
-        // Store the structured session note separately
-        await blobTopicService.acceptTopic(eventCode, note);
+        // PATCH sets both topicCode + topicSelectionNote in one call — no state machine restriction
+        await blobTopicService.acceptTopic(eventCode, topicCode, note);
 
         navigate(`/organizer/events/${eventCode}?tab=speakers`);
       } catch {
@@ -1487,6 +1579,87 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         data-testid="blob-canvas"
         style={{ width: '100vw', height: '100vh', display: 'block', overflow: 'hidden' }}
       />
+
+      {/* Ghost visibility toggles — top center */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          display: 'flex',
+          gap: 0.5,
+        }}
+      >
+        {[
+          {
+            type: 'ghost-backlog' as const,
+            label: 'Organizer',
+            dotColor: 'rgba(255,255,255,0.85)',
+            activeBg: 'rgba(255,255,255,0.12)',
+            activeBorder: 'rgba(255,255,255,0.35)',
+            activeColor: 'rgba(255,255,255,0.9)',
+            hoverBg: 'rgba(255,255,255,0.20)',
+          },
+          {
+            type: 'ghost-partner' as const,
+            label: 'Companies',
+            dotColor: 'rgba(144,238,144,0.9)',
+            activeBg: 'rgba(144,238,144,0.15)',
+            activeBorder: 'rgba(144,238,144,0.40)',
+            activeColor: 'rgba(144,238,144,0.95)',
+            hoverBg: 'rgba(144,238,144,0.22)',
+          },
+          {
+            type: 'ghost-trend' as const,
+            label: 'Trending',
+            dotColor: 'rgba(255,215,0,0.9)',
+            activeBg: 'rgba(255,215,0,0.15)',
+            activeBorder: 'rgba(255,215,0,0.40)',
+            activeColor: 'rgba(255,215,0,0.95)',
+            hoverBg: 'rgba(255,215,0,0.22)',
+          },
+        ].map(({ type, label, dotColor, activeBg, activeBorder, activeColor, hoverBg }) => {
+          const active = visibleGhostTypes.has(type);
+          return (
+            <Button
+              key={type}
+              size="small"
+              onClick={() => toggleGhostType(type)}
+              sx={{
+                bgcolor: active ? activeBg : 'rgba(255,255,255,0.04)',
+                color: active ? activeColor : 'rgba(255,255,255,0.3)',
+                border: `1px solid ${active ? activeBorder : 'rgba(255,255,255,0.12)'}`,
+                fontSize: '11px',
+                textTransform: 'none',
+                minWidth: 0,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 2,
+                backdropFilter: 'blur(4px)',
+                transition: 'all 0.2s',
+                '&:hover': { bgcolor: active ? hoverBg : 'rgba(255,255,255,0.08)' },
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  bgcolor: active ? dotColor : 'rgba(255,255,255,0.2)',
+                  mr: 0.75,
+                  display: 'inline-block',
+                  flexShrink: 0,
+                  transition: 'background-color 0.2s',
+                }}
+              />
+              {label}
+            </Button>
+          );
+        })}
+      </Box>
 
       {/* Fixed top-right controls */}
       <Box

@@ -25,8 +25,9 @@ export const blobTopicService = {
     return response.data;
   },
 
-  acceptTopic: async (eventCode: string, note: string): Promise<void> => {
+  acceptTopic: async (eventCode: string, topicCode: string, note: string): Promise<void> => {
     await apiClient.patch(`/events/${eventCode}`, {
+      topicCode,
       topicSelectionNote: note,
     });
   },

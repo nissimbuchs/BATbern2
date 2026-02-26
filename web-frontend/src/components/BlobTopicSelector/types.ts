@@ -122,6 +122,8 @@ export interface GhostNode extends d3.SimulationNodeDatum {
   ghostOrbitSpeed: number;
   /** Present only for ghost-backlog nodes — the existing topic's stable code. */
   topicCode?: string;
+  /** Present only for ghost-partner nodes — the company that submitted this topic. */
+  companyName?: string;
 }
 
 export interface RedStarNode extends d3.SimulationNodeDatum {
