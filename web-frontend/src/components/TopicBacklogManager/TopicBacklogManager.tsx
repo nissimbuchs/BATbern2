@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -41,6 +42,14 @@ import { CreateTopicModal } from './CreateTopicModal';
 import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel';
 import { MultiTopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic, TopicFilters } from '@/types/topic.types';
+
+// Blob-shaped wobble animation for the BlobSelector navigation button
+const blobWobble = keyframes`
+  0%, 100% { border-radius: 60% 40% 55% 45% / 45% 50% 50% 55%; }
+  25%       { border-radius: 50% 50% 40% 60% / 55% 45% 45% 55%; }
+  50%       { border-radius: 40% 60% 55% 45% / 50% 55% 50% 45%; }
+  75%       { border-radius: 55% 45% 45% 55% / 40% 60% 55% 45%; }
+`;
 
 type ViewMode = 'heatMap' | 'list';
 
@@ -207,14 +216,37 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
 
         <Box sx={{ display: 'flex', gap: 1 }}>
           {eventCode && (
-            <Button
-              variant="outlined"
-              startIcon={<BubbleChartIcon />}
+            <Box
+              component="button"
               onClick={() => navigate(`/organizer/events/${eventCode}/topic-blob`)}
               data-testid="blob-selector-button"
+              sx={{
+                animation: `${blobWobble} 4s ease-in-out infinite`,
+                borderRadius: '60% 40% 55% 45% / 45% 50% 50% 55%',
+                background: 'linear-gradient(135deg, #0d1b3e 0%, #1565c0 100%)',
+                color: '#fff',
+                border: '1px solid rgba(100,181,246,0.45)',
+                px: 3,
+                py: 1.1,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                fontFamily: 'inherit',
+                boxShadow: '0 0 14px rgba(66,165,245,0.4), inset 0 0 10px rgba(255,255,255,0.05)',
+                transition: 'box-shadow 0.25s, filter 0.25s',
+                '&:hover': {
+                  boxShadow: '0 0 24px rgba(66,165,245,0.7), inset 0 0 16px rgba(255,255,255,0.08)',
+                  filter: 'brightness(1.15)',
+                },
+                '&:active': { filter: 'brightness(0.88)' },
+              }}
             >
+              <BubbleChartIcon sx={{ fontSize: '1.2rem' }} />
               {t('navigation.blobSelector', { defaultValue: 'Blob Selector', ns: 'events' })}
-            </Button>
+            </Box>
           )}
           <Button
             variant="contained"
