@@ -67,6 +67,15 @@ export interface AbsorbedLogo {
   orbitSpeed: number;
 }
 
+export interface AbsorbedRedStar {
+  eventNumber: number;
+  topicName: string;
+  /** Orbit state — set on absorption, updated every tick */
+  orbitAngle: number;
+  orbitRadius: number;
+  orbitSpeed: number;
+}
+
 export interface BlueBlobNode extends d3.SimulationNodeDatum {
   id: string;
   type: 'blue';
@@ -83,6 +92,7 @@ export interface BlueBlobNode extends d3.SimulationNodeDatum {
   similarityScore?: number;
   relatedPastEventNumbers?: number[];
   absorbedLogos: AbsorbedLogo[];
+  absorbedRedStars: AbsorbedRedStar[];
 }
 
 export interface GreenBlobNode extends d3.SimulationNodeDatum {
@@ -133,6 +143,10 @@ export interface RedStarNode extends d3.SimulationNodeDatum {
   topicName: string;
   r: number;
   isActive: boolean;
+  /** Set when auto-ignited: the blue blob ID this star is flying toward for absorption. */
+  attractedToBlueId?: string;
+  /** True once this red star has been absorbed into a blue blob. */
+  absorbed?: boolean;
   orbiting?: string;
   orbitAngle?: number;
 }

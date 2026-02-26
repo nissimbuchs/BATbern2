@@ -21,6 +21,7 @@ import type {
   GhostNode,
   RedStarNode,
   AbsorbedLogo,
+  AbsorbedRedStar,
   TopicSessionData,
   TopicSimilarityResponse,
   PartnerTopicItem,
@@ -87,6 +88,8 @@ function starPointsRelative(outer: number, inner: number, numPoints: number): st
 
 /** Pixels added to a blue blob's radius per absorbed company logo. */
 const GROW_PER_LOGO = 6;
+/** Pixels removed from a blue blob's radius per absorbed red star (= 2 × company logo penalty). */
+const SHRINK_PER_RED_STAR = 2 * GROW_PER_LOGO;
 
 /**
  * Compute per-cluster forceLink attraction strengths for a partner company
@@ -168,6 +171,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   );
   /** Red star IDs currently mid-growth animation — tick handler skips polygon points for these */
   const growingRedIds = useRef<Set<string>>(new Set());
+  /** Stable ref so the D3 tick handler (captured once at mount) can call the latest absorb fn. */
+  const absorbRedStarIntoBlueFnRef = useRef<(red: RedStarNode, blue: BlueBlobNode) => void>(
+    () => {}
+  );
 
   // React state — only for UI elements that need re-renders
   const [showInput, setShowInput] = useState(false);
@@ -314,7 +321,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    const maxEventNum = sessionData.pastEvents.reduce((max, e) => Math.max(max, e.eventNumber), 0);
+    // Derive the recency anchor from the current event being planned (URL param), not the DB max.
+    // Using the DB max is wrong when test/future events (e.g., BATbern73) exist — they push all
+    // historical events out of the 6-event recency window and prevent red stars from igniting.
+    const codeNum = parseInt(eventCode.replace(/\D/g, ''), 10);
+    const maxEventNum = isNaN(codeNum)
+      ? sessionData.pastEvents.reduce((max, e) => Math.max(max, e.eventNumber), 0)
+      : codeNum;
     mostRecentEventNumRef.current = maxEventNum;
     setMostRecentEventNum(maxEventNum);
 
@@ -436,7 +449,18 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
    * smoothly animate the SVG circle to the new size.
    */
   const resizeBlue = useCallback((blue: BlueBlobNode, duration: number) => {
-    blue.r = Math.min(140, blue.baseR + blue.absorbedLogos.length * GROW_PER_LOGO);
+    // Minimum = half the blob's natural radius (keeps label and orbiting items inside).
+    // baseR is always ≥ 40, so minimum is always ≥ 20 — in practice ≥ 20–50 depending on name length.
+    const minR = Math.round(blue.baseR * 0.5);
+    blue.r = Math.max(
+      minR,
+      Math.min(
+        140,
+        blue.baseR +
+          blue.absorbedLogos.length * GROW_PER_LOGO -
+          blue.absorbedRedStars.length * SHRINK_PER_RED_STAR
+      )
+    );
     gRef.current
       ?.selectAll<SVGGElement, BlueBlobNode>('.blue-blob-group')
       .filter((d) => d.id === blue.id)
@@ -479,6 +503,54 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     );
   }, []);
 
+  // ─── RED STAR ABSORPTION ──────────────────────────────────────────────────
+
+  /**
+   * Absorb an ignited red star into a blue blob.
+   * - Fades the flying red star out on the canvas.
+   * - Adds an AbsorbedRedStar entry to the blue blob (rendered as a small swimming star polygon).
+   * - Shrinks the blue blob by SHRINK_PER_RED_STAR to signal "this topic has recent history".
+   */
+  const absorbRedStarIntoBlue = useCallback(
+    (red: RedStarNode, blue: BlueBlobNode) => {
+      if (red.absorbed) return; // guard against double-call from concurrent ticks
+      red.absorbed = true;
+      red.attractedToBlueId = undefined;
+      red.isActive = false;
+      red.fx = red.x ?? 0;
+      red.fy = red.y ?? 0;
+      // Fade the flying star out
+      gRef.current
+        ?.selectAll<SVGGElement, RedStarNode>('.red-star-group')
+        .filter((d) => d.id === red.id)
+        .transition()
+        .duration(500)
+        .attr('opacity', 0)
+        .on('end', () => {
+          red.fx = null;
+          red.fy = null;
+        });
+      // Add swimming red star inside the blue blob
+      if (!blue.absorbedRedStars.some((r) => r.eventNumber === red.eventNumber)) {
+        blue.absorbedRedStars.push({
+          eventNumber: red.eventNumber,
+          topicName: red.topicName,
+          orbitAngle: Math.random() * Math.PI * 2,
+          orbitRadius: Math.max(10, Math.min(22, blue.r * 0.28)),
+          orbitSpeed: (0.004 + Math.random() * 0.005) * (Math.random() < 0.5 ? 1 : -1),
+        });
+        resizeBlue(blue, 900);
+      }
+      syncTreeSummary();
+    },
+    [resizeBlue, syncTreeSummary]
+  );
+
+  // Keep the stable ref in sync so the D3 tick handler (captured at mount) always calls latest.
+  useEffect(() => {
+    absorbRedStarIntoBlueFnRef.current = absorbRedStarIntoBlue;
+  }, [absorbRedStarIntoBlue]);
+
   // ─── GHOST VISIBILITY TOGGLE ──────────────────────────────────────────────
 
   const toggleGhostType = useCallback((type: string) => {
@@ -494,8 +566,6 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   // ─── TICK HANDLER (D3 mutates DOM directly) ───────────────────────────────
 
   const tickHandler = useCallback((g: d3.Selection<SVGGElement, unknown, null, undefined>) => {
-    const maxEvt = mostRecentEventNumRef.current;
-
     // Ghost orbit — advance each ghost's angle and pin it to the orbit path via fx/fy.
     // Skips the currently-dragged node so the user has full position control.
     const cx = window.innerWidth / 2;
@@ -607,23 +677,26 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       grp.select<SVGTextElement>('text').attr('font-size', d.isActive ? '11px' : '5px');
     });
 
-    // Red repulsion from blue blobs when active
+    // Red star attraction — ignited stars fly toward their target blue blob and get absorbed
     nodesRef.current.forEach((node) => {
-      if (node.type === 'red-star') {
-        const red = node as RedStarNode;
-        if (red.isActive && !red.orbiting) {
-          const strength = Math.max(0, 1 - (maxEvt - red.eventNumber) / 6) * 150;
-          nodesRef.current.forEach((n2) => {
-            if (n2.type !== 'blue') return;
-            const dx = (red.x ?? 0) - (n2.x ?? 0);
-            const dy = (red.y ?? 0) - (n2.y ?? 0);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > 0) {
-              red.vx = (red.vx ?? 0) + (dx / dist) * (strength / 500);
-              red.vy = (red.vy ?? 0) + (dy / dist) * (strength / 500);
-            }
-          });
-        }
+      if (node.type !== 'red-star') return;
+      const red = node as RedStarNode;
+      if (!red.attractedToBlueId || red.absorbed || red.orbiting) return;
+      const blue = nodesRef.current.find((n) => n.id === red.attractedToBlueId) as
+        | BlueBlobNode
+        | undefined;
+      if (!blue) return;
+      const dx = (blue.x ?? 0) - (red.x ?? 0);
+      const dy = (blue.y ?? 0) - (red.y ?? 0);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < red.r + blue.r + 12) {
+        // +12 clears the forceCollide padding (radius + 5 per node = +10 total) so absorption
+        // triggers before the collide force can push the blue blob away.
+        absorbRedStarIntoBlueFnRef.current(red, blue);
+      } else {
+        const pull = 12; // px/tick² — must be high to overcome velocityDecay(0.65)
+        red.vx = (red.vx ?? 0) + (dx / dist) * pull;
+        red.vy = (red.vy ?? 0) + (dy / dist) * pull;
       }
     });
 
@@ -702,7 +775,51 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .attr('y', l.orbitRadius * Math.sin(l.orbitAngle) - 12);
       });
 
-      // Raise topic-name text above logos so it's never hidden
+      // Absorbed red stars — small red star polygons swimming inside the blue blob
+      const absorbedRedStarSel = grp
+        .selectAll<SVGGElement, AbsorbedRedStar>('.absorbed-red-star-group')
+        .data(d.absorbedRedStars, (r) => String(r.eventNumber));
+
+      absorbedRedStarSel
+        .enter()
+        .append('g')
+        .attr('class', 'absorbed-red-star-group')
+        .attr('opacity', 0)
+        .call((entered) => {
+          entered
+            .append('polygon')
+            .attr('points', starPointsRelative(7, 7 * 0.42, 5))
+            .attr('fill', '#e53935')
+            .attr('stroke', '#ff6b6b')
+            .attr('stroke-width', 0.8)
+            .attr('filter', 'url(#red-glow)');
+          entered
+            .append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('y', 0)
+            .attr('font-size', '5px')
+            .attr('font-weight', 'bold')
+            .attr('fill', '#ffffff')
+            .attr('pointer-events', 'none')
+            .text((r) => String(r.eventNumber));
+        })
+        .transition()
+        .duration(700)
+        .attr('opacity', 1);
+
+      absorbedRedStarSel.exit().remove();
+
+      // Advance orbit each tick
+      grp.selectAll<SVGGElement, AbsorbedRedStar>('.absorbed-red-star-group').each(function (r) {
+        r.orbitAngle += r.orbitSpeed;
+        d3.select(this).attr(
+          'transform',
+          `translate(${r.orbitRadius * Math.cos(r.orbitAngle)},${r.orbitRadius * Math.sin(r.orbitAngle)})`
+        );
+      });
+
+      // Raise topic-name text above logos and red stars so it's never hidden
       grp.select('text').raise();
     });
 
@@ -1002,6 +1119,21 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             return Math.sqrt(dx * dx + dy * dy) < green.r + n.r;
           }) as BlueBlobNode | undefined;
           if (blueTarget) {
+            // Re-pin the blue blob — the frozen-nodes release above already cleared its fx/fy,
+            // so without this it gets flung by the physics restart inside resizeBlue.
+            blueTarget.fx = blueTarget.x ?? 0;
+            blueTarget.fy = blueTarget.y ?? 0;
+            blueTarget.vx = 0;
+            blueTarget.vy = 0;
+            setTimeout(() => {
+              // Zero velocities again at release — D3 accumulates forces into vx/vy every tick
+              // even while the node is pinned, so they'd cause a jump without this clear.
+              blueTarget.vx = 0;
+              blueTarget.vy = 0;
+              blueTarget.fx = null;
+              blueTarget.fy = null;
+            }, 400);
+
             green.absorbed = true;
             if (!blueTarget.absorbedLogos.some((l) => l.companyName === green.companyName)) {
               blueTarget.absorbedLogos.push({
@@ -1128,7 +1260,18 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       }
     });
 
-    // Grow the surviving blob over 600ms
+    // Transfer absorbed red stars from the vanishing blob to the surviving blob
+    vanishing.absorbedRedStars.forEach((rs) => {
+      if (!surviving.absorbedRedStars.some((r) => r.eventNumber === rs.eventNumber)) {
+        surviving.absorbedRedStars.push({
+          ...rs,
+          orbitAngle: Math.random() * Math.PI * 2,
+          orbitRadius: Math.max(10, Math.min(22, surviving.r * 0.28)),
+        });
+      }
+    });
+
+    // Resize the surviving blob over 600ms (logos add, red stars subtract)
     resizeBlue(surviving, 600);
     surviving.fx = null;
     surviving.fy = null;
@@ -1184,6 +1327,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         x,
         y,
         absorbedLogos: [],
+        absorbedRedStars: [],
       };
 
       nodesRef.current = [...nodesRef.current, blue];
@@ -1206,7 +1350,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           updateGreenLinks(id, sim.cluster);
 
           // Activate matching red stars
-          activateRedStars(sim.relatedPastEventNumbers);
+          activateRedStars(sim.relatedPastEventNumbers, id);
 
           simRef.current?.alpha(0.1).restart();
         })
@@ -1262,29 +1406,36 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     );
   };
 
-  const activateRedStars = (relatedEventNumbers: number[]) => {
+  /**
+   * Ignite red stars matching the given past event numbers and set them flying toward blueId.
+   * Instead of repelling, ignited stars are attracted to the blue blob and absorbed on contact,
+   * then swim inside it as small red star polygons (shrinking the blob to signal "recent topic").
+   */
+  const activateRedStars = (relatedEventNumbers: number[], blueId: string) => {
     const maxEvt = mostRecentEventNumRef.current;
     nodesRef.current.forEach((n) => {
       if (n.type !== 'red-star') return;
       const red = n as RedStarNode;
       if (
         relatedEventNumbers.includes(red.eventNumber) &&
-        maxEvt - red.eventNumber <= 6 &&
-        !red.isActive
+        maxEvt - red.eventNumber <= 12 &&
+        !red.isActive &&
+        !red.absorbed
       ) {
         red.isActive = true;
-        red.r = 55; // larger collision + orbit radius for active stars
+        red.attractedToBlueId = blueId;
+        red.r = 30; // slightly larger than dormant while flying in
 
-        // Animate polygon growth from current dormant size to full active size over 2.5s
+        // Brief flare to signal ignition before the star starts flying
         growingRedIds.current.add(red.id);
         gRef.current
           ?.selectAll<SVGGElement, RedStarNode>('.red-star-group')
           .filter((d) => d.id === red.id)
           .select<SVGPolygonElement>('polygon')
           .transition()
-          .duration(2500)
+          .duration(500)
           .ease(d3.easeCubicOut)
-          .attr('points', starPointsRelative(55, 55 * 0.42, 5))
+          .attr('points', starPointsRelative(30, 30 * 0.42, 5))
           .on('end', () => growingRedIds.current.delete(red.id));
       }
     });
@@ -1359,10 +1510,22 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             if (removedRelated.includes(red.eventNumber) && !stillActivated.has(red.eventNumber)) {
               red.isActive = false;
               red.orbiting = undefined;
+              red.attractedToBlueId = undefined;
             }
           }
         });
       }
+
+      // Release any red stars still flying toward the removed blue blob
+      nodesRef.current.forEach((n) => {
+        if (n.type !== 'red-star') return;
+        const red = n as RedStarNode;
+        if (red.attractedToBlueId === targetId) {
+          red.attractedToBlueId = undefined;
+          red.isActive = false;
+          red.r = 28;
+        }
+      });
 
       setBlueBlobIds((ids) => ids.filter((id) => id !== targetId));
       syncTreeSummary();
