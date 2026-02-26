@@ -295,6 +295,11 @@
       "unvote": "Stimme entfernen",
       "edit": "Bearbeiten",
       "delete": "Löschen",
+      "col": {
+        "topic": "Thema",
+        "company": "Unternehmen",
+        "actions": "Aktionen"
+      },
       "status": {
         "proposed": "Vorgeschlagen",
         "selected": "Ausgewählt",
@@ -317,7 +322,8 @@
         "col": {
           "title": "Titel",
           "company": "Unternehmen",
-          "votes": "Abstimmungen"
+          "votes": "Abstimmungen",
+          "actions": "Aktionen"
         },
         "status": "Status",
         "plannedEvent": "Geplante Veranstaltung",

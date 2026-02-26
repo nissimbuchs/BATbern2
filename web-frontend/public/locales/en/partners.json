@@ -295,6 +295,11 @@
       "unvote": "Remove Vote",
       "edit": "Edit",
       "delete": "Delete",
+      "col": {
+        "topic": "Topic",
+        "company": "Company",
+        "actions": "Actions"
+      },
       "status": {
         "proposed": "Proposed",
         "selected": "Selected",
@@ -317,7 +322,8 @@
         "col": {
           "title": "Title",
           "company": "Company",
-          "votes": "Votes"
+          "votes": "Votes",
+          "actions": "Actions"
         },
         "status": "Status",
         "plannedEvent": "Planned Event",

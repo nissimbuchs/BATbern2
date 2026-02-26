@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -102,12 +103,13 @@ public class TopicController {
      * Edit topic title/description — only the submitting company may edit.
      */
     @PatchMapping("/{topicId}")
-    @PreAuthorize("hasRole('PARTNER')")
+    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
     @Timed("partner.topics.update")
     public ResponseEntity<TopicDTO> updateTopic(
             @PathVariable UUID topicId,
-            @RequestBody TopicSuggestionRequest request) {
-        String companyName = resolveCallerCompanyName();
+            @RequestBody TopicSuggestionRequest request,
+            Authentication authentication) {
+        String companyName = isOrganizer(authentication) ? null : resolveCallerCompanyName();
         log.info("PATCH /partners/topics/{} company={}", topicId, companyName);
         TopicDTO dto = topicService.updateTopic(topicId, request, companyName);
         return ResponseEntity.ok(dto);
@@ -115,13 +117,13 @@ public class TopicController {
 
     /**
      * DELETE /api/v1/partners/topics/{topicId}
-     * Delete topic — only the submitting company may delete.
+     * Delete topic — partner may only delete own company's; organizer may delete any.
      */
     @DeleteMapping("/{topicId}")
-    @PreAuthorize("hasRole('PARTNER')")
+    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
     @Timed("partner.topics.delete")
-    public ResponseEntity<Void> deleteTopic(@PathVariable UUID topicId) {
-        String companyName = resolveCallerCompanyName();
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID topicId, Authentication authentication) {
+        String companyName = isOrganizer(authentication) ? null : resolveCallerCompanyName();
         log.info("DELETE /partners/topics/{} company={}", topicId, companyName);
         topicService.deleteTopic(topicId, companyName);
         return ResponseEntity.noContent().build();
@@ -147,6 +149,12 @@ public class TopicController {
     /** Returns the caller's company name, or null if they have no partner company (organizer). */
     private String resolveCallerCompanyNameOrNull() {
         return topicService.resolveCallerCompanyNameOrNull();
+    }
+
+    /** Returns true if the authenticated caller holds the ORGANIZER role. */
+    private boolean isOrganizer(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ORGANIZER"));
     }
 
     /** Returns the caller's company name; throws AccessDeniedException if not found. */

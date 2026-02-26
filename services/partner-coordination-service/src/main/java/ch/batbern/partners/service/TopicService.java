@@ -112,7 +112,7 @@ public class TopicService {
         validate(request);
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
-        if (!topic.getCompanyName().equals(callerCompanyName)) {
+        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
             throw new AccessDeniedException("Cannot edit a topic from another company");
         }
         topic.setTitle(request.title().strip());
@@ -129,7 +129,7 @@ public class TopicService {
     public void deleteTopic(UUID topicId, String callerCompanyName) {
         TopicSuggestion topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found: " + topicId));
-        if (!topic.getCompanyName().equals(callerCompanyName)) {
+        if (callerCompanyName != null && !topic.getCompanyName().equals(callerCompanyName)) {
             throw new AccessDeniedException("Cannot delete a topic from another company");
         }
         topicRepository.delete(topic); // votes cascade via ON DELETE CASCADE
