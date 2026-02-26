@@ -103,7 +103,7 @@ describe('App Routing Integration - Partner Detail Screen', () => {
 
     // Should render partner detail screen
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /GoogleZH/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /GoogleZH/i })).toBeInTheDocument();
     });
   });
 

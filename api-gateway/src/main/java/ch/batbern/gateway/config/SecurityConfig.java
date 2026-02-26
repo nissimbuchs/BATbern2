@@ -245,6 +245,11 @@ public class SecurityConfig {
                         // Story 6.3: E2E test endpoints (controller only active in dev/test profiles)
                         .requestMatchers("/api/v1/e2e-test/**").permitAll()
 
+                        // Story 10.7: Newsletter public endpoints (subscribe + token-based unsubscribe)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/subscribe").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/newsletter/unsubscribe/verify").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/newsletter/unsubscribe").permitAll()
+
                         // W2.2: Watch pairing — unauthenticated (Watch has no JWT yet; exchanges pairing code for JWT)
                         .requestMatchers(HttpMethod.POST, "/api/v1/watch/pair").permitAll()
                         // W2.2: Watch JWT auth — unauthenticated (exchanges pairing token for JWT; must be permit-all)

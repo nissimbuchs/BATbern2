@@ -22,8 +22,8 @@ class EmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Create EmailService without SES client (null is acceptable for template tests)
-        emailService = new EmailService(null);
+        // EmailService uses @Autowired(required=false) for SesClient — safe to instantiate directly
+        emailService = new EmailService();
     }
 
     @Nested

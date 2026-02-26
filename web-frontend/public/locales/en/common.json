@@ -525,7 +525,8 @@
     "categories": {
       "SPEAKER": "Speakers",
       "REGISTRATION": "Registration",
-      "TASK_REMINDER": "Task Reminders"
+      "TASK_REMINDER": "Task Reminders",
+      "NEWSLETTER": "Newsletter"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",

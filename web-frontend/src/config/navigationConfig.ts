@@ -97,7 +97,7 @@ export const navigationConfig: NavigationItem[] = [
     labelKey: 'navigation.analytics',
     path: '/organizer/analytics',
     icon: BarChart,
-    roles: ['organizer'],
+    roles: ['organizer', 'partner'],
     description: 'View event analytics',
   },
   {
@@ -211,6 +211,21 @@ export const navigationConfig: NavigationItem[] = [
  */
 export function getNavigationForRole(role: UserRole): NavigationItem[] {
   return navigationConfig.filter((item) => item.roles.includes(role));
+}
+
+/**
+ * Get navigation items for multiple roles, deduplicating by path.
+ * Used for users with more than one role (e.g. organizer + partner).
+ */
+export function getNavigationForRoles(roles: UserRole[]): NavigationItem[] {
+  const seen = new Set<string>();
+  return roles
+    .flatMap((role) => navigationConfig.filter((item) => item.roles.includes(role)))
+    .filter((item) => {
+      if (seen.has(item.path)) return false;
+      seen.add(item.path);
+      return true;
+    });
 }
 
 /**

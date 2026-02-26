@@ -227,7 +227,7 @@ export const EmailTemplateEditModal: React.FC<Props> = ({ template, isLayoutMode
             <TinyMCEEditor
               apiKey="vfen2deuuzo9vxkqtwegdhngiujb74mu2pb3l5fg9o31ekvf"
               value={htmlBody}
-              onEditorChange={(val) => setHtmlBody(val)}
+              onEditorChange={(val: string) => setHtmlBody(val)}
               init={{
                 height: 400,
                 menubar: false,

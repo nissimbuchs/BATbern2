@@ -48,22 +48,24 @@ public class PartnerAttendanceExportService {
 
         try (SXSSFWorkbook workbook = new SXSSFWorkbook(100)) {
             Sheet sheet = workbook.createSheet("Attendance - " + companyName);
-            sheet.setColumnWidth(0, 5000); // Event
-            sheet.setColumnWidth(1, 4000); // Date
-            sheet.setColumnWidth(2, 4500); // Your Attendees
-            sheet.setColumnWidth(3, 4500); // Total Attendees
-            sheet.setColumnWidth(4, 3500); // Percentage
+            sheet.setColumnWidth(0, 3500); // Event Code
+            sheet.setColumnWidth(1, 7000); // Event Title
+            sheet.setColumnWidth(2, 4000); // Date
+            sheet.setColumnWidth(3, 4500); // Your Attendees
+            sheet.setColumnWidth(4, 4500); // Total Attendees
+            sheet.setColumnWidth(5, 3500); // Percentage
 
             CellStyle headerStyle = buildHeaderStyle(workbook);
             CellStyle footerStyle = buildFooterStyle(workbook);
 
             // Header row
             Row header = sheet.createRow(0);
-            writeCell(header, 0, "Event", headerStyle);
-            writeCell(header, 1, "Date", headerStyle);
-            writeCell(header, 2, "Your Attendees", headerStyle);
-            writeCell(header, 3, "Total Attendees", headerStyle);
-            writeCell(header, 4, "Percentage (%)", headerStyle);
+            writeCell(header, 0, "Event Code", headerStyle);
+            writeCell(header, 1, "Event Title", headerStyle);
+            writeCell(header, 2, "Date", headerStyle);
+            writeCell(header, 3, "Your Attendees", headerStyle);
+            writeCell(header, 4, "Total Attendees", headerStyle);
+            writeCell(header, 5, "Percentage (%)", headerStyle);
 
             // Data rows
             List<AttendanceSummaryDTO> summaries = dashboard.attendanceSummary();
@@ -79,10 +81,11 @@ public class PartnerAttendanceExportService {
                     : 0.0;
 
                 writeCell(row, 0, s.eventCode(), null);
-                writeCell(row, 1, DATE_FORMATTER.format(s.eventDate()), null);
-                writeNumericCell(row, 2, s.companyAttendees());
-                writeNumericCell(row, 3, s.totalAttendees());
-                writeCell(row, 4, String.format("%.1f%%", percentage), null);
+                writeCell(row, 1, s.eventTitle() != null ? s.eventTitle() : "", null);
+                writeCell(row, 2, DATE_FORMATTER.format(s.eventDate()), null);
+                writeNumericCell(row, 3, s.companyAttendees());
+                writeNumericCell(row, 4, s.totalAttendees());
+                writeCell(row, 5, String.format("%.1f%%", percentage), null);
 
                 totalCompanyAttendees += s.companyAttendees();
                 totalAttendees += s.totalAttendees();
@@ -93,13 +96,14 @@ public class PartnerAttendanceExportService {
             Row footerRow = sheet.createRow(footerIdx);
             writeCell(footerRow, 0, "TOTAL", footerStyle);
             writeCell(footerRow, 1, "", footerStyle);
-            writeNumericCellStyled(footerRow, 2, totalCompanyAttendees, footerStyle);
-            writeNumericCellStyled(footerRow, 3, totalAttendees, footerStyle);
+            writeCell(footerRow, 2, "", footerStyle);
+            writeNumericCellStyled(footerRow, 3, totalCompanyAttendees, footerStyle);
+            writeNumericCellStyled(footerRow, 4, totalAttendees, footerStyle);
 
             double overallPct = totalAttendees > 0
                 ? (double) totalCompanyAttendees / totalAttendees * 100.0
                 : 0.0;
-            writeCell(footerRow, 4, String.format("%.1f%%", overallPct), footerStyle);
+            writeCell(footerRow, 5, String.format("%.1f%%", overallPct), footerStyle);
 
             // Cost per attendee row
             if (dashboard.costPerAttendee() != null) {

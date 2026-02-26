@@ -17,13 +17,7 @@ vi.mock('react-i18next', () => ({
         'publishing.controls.publishPhase': params?.phase ? `Publish ${params.phase}` : 'Publish',
         'publishing.controls.published': params?.phase ? `${params.phase} Published` : 'Published',
         'publishing.controls.publishing': 'Publishing',
-        'publishing.controls.schedulePublish': 'Schedule Publish',
-        'publishing.controls.previewNewsletter': 'Preview Newsletter',
         'publishing.controls.validationErrors': 'Validation Errors',
-        'publishing.controls.scheduleDialog.title': 'Schedule Auto-Publish',
-        'publishing.controls.scheduleDialog.confirm': 'Confirm Schedule',
-        'publishing.controls.scheduleDialog.cancel': 'Cancel',
-        'publishing.controls.scheduleDialog.selectDate': 'Select date and time',
         'publishing.controls.accessibility.publishingMode': 'Publishing Mode',
         'publishing.controls.accessibility.notifySubscribers': 'Notify subscribers when publishing',
         'publishing.controls.accessibility.publishingPhase': `Publishing ${params?.phase || 'phase'}`,
@@ -46,11 +40,9 @@ vi.mock('@/hooks/usePublishing/usePublishing');
 const mockUsePublishing = {
   publishPhase: vi.fn(),
   unpublishPhase: vi.fn(),
-  scheduleAutoPublish: vi.fn(),
   cancelAutoPublish: vi.fn(),
   isPublishing: false,
   isUnpublishing: false,
-  isScheduling: false,
   publishError: null,
   validationErrors: [],
   preview: null,
@@ -239,78 +231,6 @@ describe('PublishingControls', () => {
           mode: 'progressive',
           notifySubscribers: false,
         });
-      });
-    });
-  });
-
-  describe('Schedule Publish', () => {
-    it('should render schedule publish button', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      expect(screen.getByRole('button', { name: /schedule publish/i })).toBeInTheDocument();
-    });
-
-    it('should open date-time picker when schedule button clicked', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const scheduleButton = screen.getByRole('button', { name: /schedule publish/i });
-      fireEvent.click(scheduleButton);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('schedule-datetime-picker')).toBeInTheDocument();
-      });
-    });
-
-    it('should call scheduleAutoPublish with selected date', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const scheduleButton = screen.getByRole('button', { name: /schedule publish/i });
-      fireEvent.click(scheduleButton);
-
-      await waitFor(() => {
-        const datePicker = screen.getByTestId('schedule-datetime-picker');
-        fireEvent.change(datePicker, { target: { value: '2025-04-15T08:00' } });
-      });
-
-      const confirmButton = screen.getByRole('button', { name: /confirm schedule/i });
-      fireEvent.click(confirmButton);
-
-      await waitFor(() => {
-        expect(mockUsePublishing.scheduleAutoPublish).toHaveBeenCalledWith('speakers', {
-          scheduledDate: expect.stringContaining('2025-04-15'),
-          notifySubscribers: true,
-        });
-      });
-    });
-
-    it('should disable schedule button when scheduling in progress', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        isScheduling: true,
-      });
-
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const scheduleButton = screen.getByRole('button', { name: /schedule publish/i });
-      expect(scheduleButton).toBeDisabled();
-    });
-  });
-
-  describe('Preview Newsletter Button', () => {
-    it('should render preview newsletter button', () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      expect(screen.getByRole('button', { name: /preview newsletter/i })).toBeInTheDocument();
-    });
-
-    it('should open newsletter preview modal when button clicked', async () => {
-      render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);
-
-      const previewButton = screen.getByRole('button', { name: /preview newsletter/i });
-      fireEvent.click(previewButton);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('newsletter-preview-modal')).toBeInTheDocument();
       });
     });
   });

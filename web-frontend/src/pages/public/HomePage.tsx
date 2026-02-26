@@ -27,6 +27,7 @@ import { SocialSharing } from '@/components/public/Event/SocialSharing';
 import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
+import { NewsletterSubscribeWidget } from '@/components/public/NewsletterSubscribeWidget';
 import { useCurrentEvent } from '@/hooks/useCurrentEvent';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
@@ -224,6 +225,11 @@ const HomePage = () => {
         {/* Testimonials Section */}
         <div className="mt-16 pb-12">
           <TestimonialSection />
+        </div>
+
+        {/* Newsletter Subscribe Widget — footer */}
+        <div className="border-t pt-4 pb-8">
+          <NewsletterSubscribeWidget />
         </div>
       </div>
     </PublicLayout>

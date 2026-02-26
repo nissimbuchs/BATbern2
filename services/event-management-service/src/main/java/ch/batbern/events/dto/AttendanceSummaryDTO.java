@@ -11,6 +11,7 @@ import java.time.Instant;
  */
 public record AttendanceSummaryDTO(
         String eventCode,
+        String eventTitle,
         Instant eventDate,
         long totalAttendees,
         long companyAttendees

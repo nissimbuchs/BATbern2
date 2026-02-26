@@ -56,6 +56,8 @@ tags:
     description: Watch app organizer endpoints (Epic W2)
   - name: Email Templates
     description: Email template management for organizers (Story 10.2)
+  - name: Newsletter
+    description: Newsletter subscription, unsubscribe, and sending (Story 10.7)
 
 paths:
   /events/attendance-summary:
@@ -3687,10 +3689,10 @@ paths:
         - name: category
           in: query
           required: false
-          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT)
+          description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER)
           schema:
             type: string
-            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+            enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         - name: isLayout
           in: query
           required: false
@@ -3875,8 +3877,755 @@ paths:
       security:
         - BearerAuth: []
 
+  # ── Analytics Dashboard Endpoints (Story 10.5) ───────────────────────────────
+
+  /analytics/overview:
+    get:
+      tags:
+        - Analytics
+      summary: Get analytics overview (KPI totals + event timeline)
+      description: |
+        Returns all-time KPI totals and the full event history timeline.
+        Neither KPIs nor timeline are filtered by time range — they always show all-time data.
+
+        **Story**: 10.5 - Analytics Dashboard (AC2, AC6)
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+        Returns aggregate data only — no individual attendee data.
+      operationId: getAnalyticsOverview
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Analytics overview data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsOverviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /analytics/attendance:
+    get:
+      tags:
+        - Analytics
+      summary: Get per-event attendance with returning/new breakdown
+      description: |
+        Returns attendance data per event including returning vs. new attendee breakdown.
+        Uses in-memory Java algorithm for returning/new classification (see Dev Notes).
+
+        **Story**: 10.5 - Analytics Dashboard (AC3, AC6)
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+      operationId: getAnalyticsAttendance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            example: 2020
+          description: "Earliest year to include (inclusive). Omit for all-time data."
+      responses:
+        '200':
+          description: Per-event attendance data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsAttendanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /analytics/topics:
+    get:
+      tags:
+        - Analytics
+      summary: Get topic analytics (events per category + scatter data)
+      description: |
+        Returns two datasets: events grouped by category for the bar chart,
+        and per-topic scatter data (event count vs. avg attendees).
+
+        **Story**: 10.5 - Analytics Dashboard (AC4, AC6)
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+      operationId: getAnalyticsTopics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            example: 2020
+          description: "Earliest year to include (inclusive). Omit for all-time data."
+      responses:
+        '200':
+          description: Topic analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsTopicsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /analytics/companies:
+    get:
+      tags:
+        - Analytics
+      summary: Get company analytics (attendance over time, sessions per company, distribution)
+      description: |
+        Returns three datasets for the Companies tab:
+        - Flat year+company attendance for stacked-bar chart (frontend groups by year)
+        - Sessions and unique speakers per company
+        - All-time attendee distribution (for default pie chart view)
+
+        **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+      operationId: getAnalyticsCompanies
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: fromYear
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            example: 2020
+          description: "Earliest year to include (inclusive). Omit for all-time data."
+      responses:
+        '200':
+          description: Company analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsCompaniesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /analytics/companies/distribution:
+    get:
+      tags:
+        - Analytics
+      summary: Get attendee company distribution for a single event
+      description: |
+        Returns the per-company attendee breakdown for a specific event.
+        Used by the Companies tab pie chart when the user selects an event from the dropdown.
+
+        **Story**: 10.5 - Analytics Dashboard (AC5, AC6)
+
+        **Authorization**: ORGANIZER or PARTNER role required.
+      operationId: getCompanyDistribution
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventCode
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "BATbern57"
+          description: "Event code to scope the distribution query"
+      responses:
+        '200':
+          description: Per-event company distribution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyDistributionResponse'
+        '400':
+          description: Missing or invalid eventCode parameter
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found for the given eventCode
+
+  # ─── Newsletter (Story 10.7) ───────────────────────────────────────────────
+
+  /newsletter/subscribe:
+    post:
+      tags: [Newsletter]
+      summary: Subscribe to BATbern newsletter (public)
+      operationId: subscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribeRequest'
+      responses:
+        '200':
+          description: Successfully subscribed
+        '409':
+          description: Email already actively subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid email address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /newsletter/unsubscribe/verify:
+    get:
+      tags: [Newsletter]
+      summary: Verify unsubscribe token (public)
+      operationId: verifyUnsubscribeToken
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Token valid — returns subscriber email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+        '404':
+          description: Token not found or already unsubscribed
+
+  /newsletter/unsubscribe:
+    post:
+      tags: [Newsletter]
+      summary: Unsubscribe via token (public)
+      operationId: unsubscribeNewsletter
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterUnsubscribeRequest'
+      responses:
+        '200':
+          description: Successfully unsubscribed
+        '404':
+          description: Token not found
+
+  /newsletter/my-subscription:
+    get:
+      tags: [Newsletter]
+      summary: Get authenticated user's subscription status
+      operationId: getMyNewsletterSubscription
+      responses:
+        '200':
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Newsletter]
+      summary: Update authenticated user's subscription
+      operationId: patchMyNewsletterSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscribed]
+              properties:
+                subscribed:
+                  type: boolean
+      responses:
+        '200':
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /newsletter/subscribers:
+    get:
+      tags: [Newsletter]
+      summary: List all subscribers (ORGANIZER)
+      operationId: listNewsletterSubscribers
+      responses:
+        '200':
+          description: Subscriber list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalCount:
+                    type: integer
+                  subscribers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriberResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /events/{eventCode}/newsletter/send:
+    post:
+      tags: [Newsletter]
+      summary: Send newsletter to all active subscribers (ORGANIZER)
+      operationId: sendEventNewsletter
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Newsletter sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
+  /events/{eventCode}/newsletter/preview:
+    post:
+      tags: [Newsletter]
+      summary: Preview newsletter email (ORGANIZER, no send)
+      operationId: previewEventNewsletter
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSendRequest'
+      responses:
+        '200':
+          description: Preview content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterPreviewResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
+  /events/{eventCode}/newsletter/history:
+    get:
+      tags: [Newsletter]
+      summary: Get newsletter send history for an event (ORGANIZER)
+      operationId: getNewsletterHistory
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Send history list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NewsletterSendResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Event not found
+
 components:
   schemas:
+
+    # ── Newsletter Schemas (Story 10.7) ───────────────────────────────────────
+
+    NewsletterSubscribeRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+          maxLength: 100
+        language:
+          type: string
+          enum: [de, en]
+          default: de
+
+    NewsletterUnsubscribeRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    NewsletterSubscriptionStatusResponse:
+      type: object
+      required: [subscribed]
+      properties:
+        subscribed:
+          type: boolean
+        email:
+          type: string
+
+    NewsletterSendRequest:
+      type: object
+      required: [isReminder, locale]
+      properties:
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+          enum: [de, en]
+
+    NewsletterSendResponse:
+      type: object
+      required: [id, sentAt, isReminder, locale, recipientCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sentAt:
+          type: string
+          format: date-time
+        isReminder:
+          type: boolean
+        locale:
+          type: string
+        recipientCount:
+          type: integer
+        sentByUsername:
+          type: string
+
+    NewsletterPreviewResponse:
+      type: object
+      required: [subject, htmlPreview, recipientCount]
+      properties:
+        subject:
+          type: string
+        htmlPreview:
+          type: string
+        recipientCount:
+          type: integer
+
+    SubscriberResponse:
+      type: object
+      required: [id, email, subscribedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        language:
+          type: string
+        source:
+          type: string
+        username:
+          type: string
+        subscribedAt:
+          type: string
+          format: date-time
+
+    # ── Analytics Dashboard Schemas (Story 10.5) ─────────────────────────────
+
+    AnalyticsOverviewResponse:
+      type: object
+      description: All-time KPI totals and full event timeline (not filtered by time range)
+      required: [totalEvents, totalAttendees, companiesRepresented, totalSessions, totalSpeakers, timeline]
+      properties:
+        totalEvents:
+          type: integer
+          description: Total number of events held
+          example: 58
+        totalAttendees:
+          type: integer
+          description: Total confirmed/attended registrations across all events
+          example: 3240
+        companiesRepresented:
+          type: integer
+          description: Number of distinct companies that have attended at least one event
+          example: 145
+        totalSessions:
+          type: integer
+          description: Total speaker session contributions (rows in session_users)
+          example: 312
+        totalSpeakers:
+          type: integer
+          description: Total distinct confirmed speakers across all events
+          example: 213
+        timeline:
+          type: array
+          description: All events ordered chronologically for the cadence timeline chart
+          items:
+            $ref: '#/components/schemas/EventTimelineItem'
+
+    EventTimelineItem:
+      type: object
+      description: Single event entry in the cadence timeline
+      required: [eventCode, eventNumber, title, eventDate, attendeeCount]
+      properties:
+        eventCode:
+          type: string
+          example: "BATbern57"
+        eventNumber:
+          type: integer
+          example: 57
+        title:
+          type: string
+          example: "Architecture Patterns in Practice"
+        eventDate:
+          type: string
+          format: date-time
+          example: "2024-06-01T00:00:00Z"
+        category:
+          type: string
+          nullable: true
+          description: Topic category; null if no topic assigned
+          example: "ARCHITECTURE"
+        attendeeCount:
+          type: integer
+          example: 78
+
+    AnalyticsAttendanceResponse:
+      type: object
+      description: Per-event attendance with returning/new attendee breakdown
+      required: [events]
+      properties:
+        events:
+          type: array
+          description: Events ordered chronologically
+          items:
+            $ref: '#/components/schemas/AttendanceEventItem'
+
+    AttendanceEventItem:
+      type: object
+      description: Attendance data for a single event
+      required: [eventCode, eventNumber, title, eventDate, totalAttendees, returningAttendees, newAttendees]
+      properties:
+        eventCode:
+          type: string
+          example: "BATbern57"
+        eventNumber:
+          type: integer
+          example: 57
+        title:
+          type: string
+          example: "Architecture Patterns in Practice"
+        eventDate:
+          type: string
+          format: date-time
+          example: "2024-06-01T00:00:00Z"
+        category:
+          type: string
+          nullable: true
+          example: "ARCHITECTURE"
+        totalAttendees:
+          type: integer
+          example: 78
+        returningAttendees:
+          type: integer
+          description: Attendees who have attended at least one previous event
+          example: 45
+        newAttendees:
+          type: integer
+          description: First-time attendees at this event
+          example: 33
+
+    AnalyticsTopicsResponse:
+      type: object
+      description: Topic analytics — events per category and topic scatter data
+      required: [eventsPerCategory, topicScatter]
+      properties:
+        eventsPerCategory:
+          type: array
+          description: Event count grouped by topic category, sorted descending
+          items:
+            $ref: '#/components/schemas/CategoryEventCount'
+        topicScatter:
+          type: array
+          description: Per-topic scatter data (event count vs avg attendees)
+          items:
+            $ref: '#/components/schemas/TopicScatterItem'
+
+    CategoryEventCount:
+      type: object
+      description: Number of events for a given topic category
+      required: [category, eventCount]
+      properties:
+        category:
+          type: string
+          example: "ARCHITECTURE"
+        eventCount:
+          type: integer
+          example: 18
+
+    TopicScatterItem:
+      type: object
+      description: Topic data point for the scatter chart
+      required: [topicCode, topicTitle, category, eventCount, avgAttendees]
+      properties:
+        topicCode:
+          type: string
+          example: "ARCH-DDD"
+        topicTitle:
+          type: string
+          example: "Domain-Driven Design"
+        category:
+          type: string
+          example: "ARCHITECTURE"
+        eventCount:
+          type: integer
+          description: Number of events held on this topic
+          example: 4
+        avgAttendees:
+          type: number
+          format: double
+          description: Average attendee count across events with this topic
+          example: 82.5
+
+    AnalyticsCompaniesResponse:
+      type: object
+      description: Company analytics — attendance over time, sessions, and distribution
+      required: [attendanceOverTime, sessionsPerCompany, distribution]
+      properties:
+        attendanceOverTime:
+          type: array
+          description: Flat list of year+company attendance records; frontend groups by year for stacked chart
+          items:
+            $ref: '#/components/schemas/CompanyYearAttendanceItem'
+        sessionsPerCompany:
+          type: array
+          description: Sessions and unique speakers per company, sorted descending by sessionCount
+          items:
+            $ref: '#/components/schemas/CompanySessionItem'
+        distribution:
+          type: array
+          description: All-time attendee share per company (respects fromYear filter)
+          items:
+            $ref: '#/components/schemas/CompanyAttendanceShare'
+
+    CompanyYearAttendanceItem:
+      type: object
+      description: Attendee count for a specific company in a specific year
+      required: [year, companyName, attendeeCount]
+      properties:
+        year:
+          type: integer
+          example: 2024
+        companyName:
+          type: string
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
+        attendeeCount:
+          type: integer
+          example: 12
+
+    CompanySessionItem:
+      type: object
+      description: Speaker session count and unique speaker count for a company
+      required: [companyName, sessionCount, uniqueSpeakers]
+      properties:
+        companyName:
+          type: string
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
+        sessionCount:
+          type: integer
+          description: Total confirmed speaker session appearances
+          example: 8
+        uniqueSpeakers:
+          type: integer
+          description: Number of distinct speakers from this company
+          example: 5
+
+    CompanyAttendanceShare:
+      type: object
+      description: A company's total attendee count (used in pie/distribution charts)
+      required: [companyName, attendeeCount]
+      properties:
+        companyName:
+          type: string
+          example: "sbb"
+        displayName:
+          type: string
+          nullable: true
+          description: Human-readable company name from the companies table
+          example: "SBB AG"
+        attendeeCount:
+          type: integer
+          example: 67
+
+    CompanyDistributionResponse:
+      type: object
+      description: Per-event company attendee distribution (for pie chart event filter)
+      required: [eventCode, distribution]
+      properties:
+        eventCode:
+          type: string
+          example: "BATbern57"
+        distribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompanyAttendanceShare'
 
     # ── Email Template Schemas (Story 10.2) ──────────────────────────────────
 
@@ -3901,7 +4650,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         subject:
           type: string
           nullable: true
@@ -3950,7 +4699,7 @@ components:
         category:
           type: string
           description: Template category
-          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT]
+          enum: [SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER]
         subject:
           type: string
           nullable: true

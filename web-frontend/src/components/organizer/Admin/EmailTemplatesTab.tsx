@@ -43,7 +43,7 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { EmailTemplateEditModal } from './EmailTemplateEditModal';
 import { EmailTemplatePreviewModal } from './EmailTemplatePreviewModal';
 
-type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER';
+type Category = 'SPEAKER' | 'REGISTRATION' | 'TASK_REMINDER' | 'NEWSLETTER';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -218,6 +218,9 @@ export const EmailTemplatesTab: React.FC = () => {
           </ToggleButton>
           <ToggleButton value="TASK_REMINDER">
             {t('emailTemplates.categories.TASK_REMINDER', 'Task Reminders')}
+          </ToggleButton>
+          <ToggleButton value="NEWSLETTER">
+            {t('emailTemplates.categories.NEWSLETTER', 'Newsletter')}
           </ToggleButton>
         </ToggleButtonGroup>
 

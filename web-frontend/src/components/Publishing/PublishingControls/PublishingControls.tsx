@@ -9,11 +9,6 @@ import {
   Radio,
   RadioGroup,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Typography,
   CircularProgress,
   Stack,
@@ -21,8 +16,6 @@ import {
 } from '@mui/material';
 import {
   Error as ErrorIcon,
-  Schedule as ScheduleIcon,
-  Email as EmailIcon,
   CheckCircle as CheckIcon,
   Topic as TopicIcon,
   People as PeopleIcon,
@@ -40,18 +33,13 @@ export interface PublishingControlsProps {
 
 export const PublishingControls: React.FC<PublishingControlsProps> = ({
   eventCode,
-  currentPhase,
   validationErrors = [],
 }) => {
   const { t } = useTranslation('events');
-  const { publishPhase, scheduleAutoPublish, isPublishing, isScheduling, publishingStatus } =
-    usePublishing(eventCode);
+  const { publishPhase, isPublishing, publishingStatus } = usePublishing(eventCode);
 
   const [publishingMode, setPublishingMode] = useState<PublishingMode>('progressive');
   const [notifySubscribers, setNotifySubscribers] = useState(true);
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [showNewsletterPreview, setShowNewsletterPreview] = useState(false);
-  const [scheduledDate, setScheduledDate] = useState('');
   const [isAnnouncingPublish, setIsAnnouncingPublish] = useState(false);
   const [publishingPhase, setPublishingPhase] = useState<PublishingPhase | null>(null);
 
@@ -137,15 +125,6 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
       setIsAnnouncingPublish(false);
       setPublishingPhase(null);
     }, 100);
-  };
-
-  const handleScheduleConfirm = async () => {
-    await scheduleAutoPublish(currentPhase, {
-      scheduledDate,
-      notifySubscribers,
-    });
-    setShowScheduleDialog(false);
-    setScheduledDate('');
   };
 
   const getPhaseIcon = (phase: PublishingPhase) => {
@@ -286,82 +265,6 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           );
         })}
       </Stack>
-
-      {/* Secondary Actions */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <Button
-          variant="outlined"
-          startIcon={<ScheduleIcon />}
-          onClick={() => setShowScheduleDialog(true)}
-          disabled={isScheduling}
-        >
-          {t('publishing.controls.schedulePublish')}
-        </Button>
-
-        <Button
-          variant="outlined"
-          startIcon={<EmailIcon />}
-          onClick={() => setShowNewsletterPreview(true)}
-        >
-          {t('publishing.controls.previewNewsletter')}
-        </Button>
-      </Box>
-
-      {/* Schedule Publish Dialog */}
-      <Dialog open={showScheduleDialog} onClose={() => setShowScheduleDialog(false)}>
-        <DialogTitle>{t('publishing.controls.scheduleDialog.title')}</DialogTitle>
-        <DialogContent>
-          <TextField
-            inputProps={{ 'data-testid': 'schedule-datetime-picker' }}
-            label={t('publishing.controls.scheduleDialog.dateLabel')}
-            type="datetime-local"
-            value={scheduledDate}
-            onChange={(e) => setScheduledDate(e.target.value)}
-            fullWidth
-            sx={{ mt: 2 }}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowScheduleDialog(false)}>
-            {t('publishing.controls.scheduleDialog.cancel')}
-          </Button>
-          <Button onClick={handleScheduleConfirm} variant="contained">
-            {t('publishing.controls.scheduleDialog.confirm')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Newsletter Preview Modal */}
-      <Dialog
-        open={showNewsletterPreview}
-        onClose={() => setShowNewsletterPreview(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>{t('publishing.controls.newsletterDialog.title')}</DialogTitle>
-        <DialogContent data-testid="newsletter-preview-modal">
-          <Typography variant="h6" gutterBottom>
-            {t('publishing.controls.newsletterDialog.subject', {
-              phase: currentPhase,
-              eventCode,
-            })}
-          </Typography>
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-            <Typography variant="body1">
-              {t('publishing.controls.newsletterDialog.contentPreview', { phase: currentPhase })}
-            </Typography>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowNewsletterPreview(false)}>
-            {t('publishing.controls.newsletterDialog.close')}
-          </Button>
-          <Button variant="contained">{t('publishing.controls.newsletterDialog.sendTest')}</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

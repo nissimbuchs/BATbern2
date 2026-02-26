@@ -47,7 +47,7 @@ describe('NavigationMenu Component', () => {
 
   describe('Organizer Navigation', () => {
     test('should_renderOrganizerMenuItems_when_roleIsOrganizer', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       // Organizer should see full menu: Events, Speakers, Partners, Analytics
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
@@ -57,21 +57,21 @@ describe('NavigationMenu Component', () => {
     });
 
     test('should_linkToEventsManagement_when_eventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const eventsLink = screen.getAllByText(/events/i)[0].closest('a');
       expect(eventsLink).toHaveAttribute('href', '/organizer/events');
     });
 
     test('should_linkToSpeakersManagement_when_speakersClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
       expect(speakersLink).toHaveAttribute('href', '/organizer/speakers');
     });
 
     test('should_showPartnersDropdown_when_partnersClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       // Partners is now a dropdown group button (queried by testid to avoid JSDOM block-in-inline issues)
       const partnersButton = screen.getByTestId('nav-group-organizer-partners');
@@ -87,7 +87,7 @@ describe('NavigationMenu Component', () => {
 
   describe('Speaker Navigation', () => {
     test('should_renderSpeakerMenuItems_when_roleIsSpeaker', () => {
-      renderWithRouter(<NavigationMenu userRole="speaker" />);
+      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
 
       // Speaker should see: Dashboard, My Events, My Content, Profile
       expect(screen.getAllByText(/dashboard/i)[0]).toBeInTheDocument();
@@ -97,14 +97,14 @@ describe('NavigationMenu Component', () => {
     });
 
     test('should_notShowPartnersMenu_when_roleIsSpeaker', () => {
-      renderWithRouter(<NavigationMenu userRole="speaker" />);
+      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
 
       // Speaker should NOT see Partners menu
       expect(screen.queryByText(/^partners$/i)).not.toBeInTheDocument();
     });
 
     test('should_linkToMyEvents_when_myEventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="speaker" />);
+      renderWithRouter(<NavigationMenu userRoles={['speaker']} />);
 
       const myEventsLink = screen.getAllByText(/my events/i)[0].closest('a');
       expect(myEventsLink).toHaveAttribute('href', '/speaker/events');
@@ -113,7 +113,7 @@ describe('NavigationMenu Component', () => {
 
   describe('Partner Navigation', () => {
     test('should_renderPartnerMenuItems_when_roleIsPartner', () => {
-      renderWithRouter(<NavigationMenu userRole="partner" />);
+      renderWithRouter(<NavigationMenu userRoles={['partner']} />);
 
       // Partner should see: My Company, Topics, and public site
       expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
@@ -121,14 +121,14 @@ describe('NavigationMenu Component', () => {
     });
 
     test('should_notShowSpeakersMenu_when_roleIsPartner', () => {
-      renderWithRouter(<NavigationMenu userRole="partner" />);
+      renderWithRouter(<NavigationMenu userRoles={['partner']} />);
 
       // Partner should NOT see Speakers menu
       expect(screen.queryByText(/speakers/i)).not.toBeInTheDocument();
     });
 
     test('should_linkToPartnerTopics_when_topicsClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="partner" />);
+      renderWithRouter(<NavigationMenu userRoles={['partner']} />);
 
       const topicsLink = screen.getAllByText(/topics/i)[0].closest('a');
       expect(topicsLink).toHaveAttribute('href', '/partners/topics');
@@ -137,7 +137,7 @@ describe('NavigationMenu Component', () => {
 
   describe('Attendee Navigation', () => {
     test('should_renderAttendeeMenuItems_when_roleIsAttendee', () => {
-      renderWithRouter(<NavigationMenu userRole="attendee" />);
+      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
 
       // Attendee should see: Events, Speakers, My Registrations
       expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
@@ -146,14 +146,14 @@ describe('NavigationMenu Component', () => {
     });
 
     test('should_notShowAnalytics_when_roleIsAttendee', () => {
-      renderWithRouter(<NavigationMenu userRole="attendee" />);
+      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
 
       // Attendee should NOT see Analytics menu
       expect(screen.queryByText(/analytics/i)).not.toBeInTheDocument();
     });
 
     test('should_linkToEventsList_when_eventsClicked', () => {
-      renderWithRouter(<NavigationMenu userRole="attendee" />);
+      renderWithRouter(<NavigationMenu userRoles={['attendee']} />);
 
       const eventsLink = screen.getAllByText(/events/i)[0].closest('a');
       expect(eventsLink).toHaveAttribute('href', '/attendee/events');
@@ -165,7 +165,7 @@ describe('NavigationMenu Component', () => {
       // Mock current location
       window.history.pushState({}, '', '/organizer/events');
 
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const eventsLink = screen.getAllByText(/events/i)[0].closest('a');
       expect(eventsLink).toHaveClass(/active|selected/i);
@@ -175,7 +175,7 @@ describe('NavigationMenu Component', () => {
       // Mock current location
       window.history.pushState({}, '', '/organizer/events');
 
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const speakersLink = screen.getAllByText(/speakers/i)[0].closest('a');
       expect(speakersLink).not.toHaveClass(/active|selected/i);
@@ -184,23 +184,44 @@ describe('NavigationMenu Component', () => {
 
   describe('Accessibility', () => {
     test('should_haveProperAriaLabels_when_rendered', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const navigation = screen.getByRole('navigation');
       expect(navigation).toHaveAttribute('aria-label', 'main navigation');
     });
 
     test('should_supportKeyboardNavigation_when_rendered', () => {
-      renderWithRouter(<NavigationMenu userRole="organizer" />);
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       const firstLink = screen.getAllByText(/events/i)[0].closest('a');
       expect(firstLink).toHaveAttribute('tabindex', '0');
     });
   });
 
+  describe('Multi-Role Navigation', () => {
+    test('should_showBothOrganizerAndPartnerItems_when_rolesIncludeBoth', () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} />);
+
+      // Organizer items present
+      expect(screen.getAllByText(/events/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/speakers/i)[0]).toBeInTheDocument();
+      // Partner items also present
+      expect(screen.getAllByText(/my company/i)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/topics/i)[0]).toBeInTheDocument();
+    });
+
+    test('should_deduplicatePublicSite_when_multipleRolesHaveSameItem', () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer', 'partner']} />);
+
+      // "Public Site" nav item exists for both organizer and partner — should appear only once
+      const publicLinks = screen.queryAllByRole('link', { name: /public site/i });
+      expect(publicLinks.length).toBeLessThanOrEqual(1);
+    });
+  });
+
   describe('Icons', () => {
     test('should_displayIconsForMenuItems_when_rendered', () => {
-      const { container } = renderWithRouter(<NavigationMenu userRole="organizer" />);
+      const { container } = renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
 
       // Should have Material-UI icons for each menu item
       const icons = container.querySelectorAll('svg');

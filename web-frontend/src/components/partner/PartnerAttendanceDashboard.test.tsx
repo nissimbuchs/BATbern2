@@ -49,12 +49,14 @@ const mockData: analyticsApi.PartnerDashboardData = {
   attendanceSummary: [
     {
       eventCode: 'BATbern57',
+      eventTitle: 'BATbern Architecture Night',
       eventDate: '2024-06-01T00:00:00Z',
       totalAttendees: 100,
       companyAttendees: 10,
     },
     {
       eventCode: 'BATbern56',
+      eventTitle: 'BATbern Cloud Summit',
       eventDate: '2023-06-01T00:00:00Z',
       totalAttendees: 80,
       companyAttendees: 8,
@@ -83,15 +85,16 @@ describe('PartnerAttendanceDashboard', () => {
     vi.mocked(analyticsApi.getAttendanceDashboard).mockResolvedValue(mockData);
   });
 
-  it('renders table with mocked data (AC1)', async () => {
+  it('renders charts with mocked data (AC1)', async () => {
     renderDashboard();
 
     await waitFor(() => {
       expect(screen.getByTestId('attendance-dashboard')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('BATbern57')).toBeInTheDocument();
-    expect(screen.getByText('BATbern56')).toBeInTheDocument();
+    // KPI cards are always rendered when data is present
+    expect(screen.getByTestId('kpi-attendance-rate')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-cost-per-attendee')).toBeInTheDocument();
   });
 
   it('shows loading skeleton while fetching (AC7)', () => {
@@ -180,11 +183,11 @@ describe('PartnerAttendanceDashboard', () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('Attendance Dashboard')).toBeInTheDocument();
+      expect(screen.getByTestId('attendance-dashboard')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Your Attendees')).toBeInTheDocument();
-    expect(screen.getByText('Total Attendees')).toBeInTheDocument();
+    expect(screen.getByText('Avg. Attendance Rate')).toBeInTheDocument();
+    expect(screen.getByText('Cost Per Attendee')).toBeInTheDocument();
     expect(screen.getByText('Last 5 Years')).toBeInTheDocument();
     expect(screen.getByText('All History')).toBeInTheDocument();
   });

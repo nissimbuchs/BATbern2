@@ -526,7 +526,8 @@
     "categories": {
       "SPEAKER": "Referenten-E-Mails",
       "REGISTRATION": "Registrierungs-E-Mails",
-      "TASK_REMINDER": "Aufgaben-Erinnerungen"
+      "TASK_REMINDER": "Aufgaben-Erinnerungen",
+      "NEWSLETTER": "Newsletter"
     },
     "layoutKey": "Layout",
     "standalone": "Kein Layout (eigenständig)",

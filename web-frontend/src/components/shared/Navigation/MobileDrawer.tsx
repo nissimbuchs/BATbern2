@@ -20,16 +20,29 @@ import {
 } from '@mui/material';
 import { Close, Logout } from '@mui/icons-material';
 import { NavigationMenu } from './NavigationMenu';
+import { RoleSelector } from './RoleSelector';
 import type { UserRole } from '@/types/auth';
 
 interface MobileDrawerProps {
   open: boolean;
   onClose: () => void;
-  userRole: UserRole;
+  userRoles: UserRole[];
   userEmail?: string;
+  /** Only provided for multi-role users */
+  allRoles?: UserRole[];
+  activeRole?: UserRole;
+  onRoleChange?: (role: UserRole) => void;
 }
 
-export function MobileDrawer({ open, onClose, userRole, userEmail }: MobileDrawerProps) {
+export function MobileDrawer({
+  open,
+  onClose,
+  userRoles,
+  userEmail,
+  allRoles,
+  activeRole,
+  onRoleChange,
+}: MobileDrawerProps) {
   const handleLogout = () => {
     // Logout will be handled by parent component
     onClose();
@@ -90,9 +103,19 @@ export function MobileDrawer({ open, onClose, userRole, userEmail }: MobileDrawe
           </>
         )}
 
+        {/* Role selector — only for multi-role users */}
+        {allRoles && allRoles.length > 1 && activeRole && onRoleChange && (
+          <>
+            <Box sx={{ px: 2, py: 1.5, display: 'flex', justifyContent: 'center' }}>
+              <RoleSelector roles={allRoles} activeRole={activeRole} onChange={onRoleChange} />
+            </Box>
+            <Divider />
+          </>
+        )}
+
         {/* Navigation Menu */}
         <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-          <NavigationMenu userRole={userRole} onItemClick={onClose} variant="vertical" />
+          <NavigationMenu userRoles={userRoles} onItemClick={onClose} variant="vertical" />
         </Box>
 
         <Divider />

@@ -158,6 +158,9 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("task-reminder")) {
             return "TASK_REMINDER";
         }
+        if (templateKey.startsWith("newsletter-")) {
+            return "NEWSLETTER";
+        }
         return "LAYOUT";
     }
 

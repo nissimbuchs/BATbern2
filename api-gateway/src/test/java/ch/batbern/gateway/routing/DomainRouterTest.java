@@ -154,6 +154,33 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Test Story 10.5: analytics must route to event-management-service
+    @Test
+    @DisplayName("should_routeToEventService_when_analyticsEndpointCalled")
+    void should_routeToEventService_when_analyticsEndpointCalled() {
+        // Given
+        String requestPath = "/api/v1/analytics/overview";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_routeToEventService_when_analyticsCompaniesDistributionCalled")
+    void should_routeToEventService_when_analyticsCompaniesDistributionCalled() {
+        // Given
+        String requestPath = "/api/v1/analytics/companies/distribution";
+
+        // When
+        String targetService = domainRouter.determineTargetService(requestPath);
+
+        // Then
+        assertThat(targetService).isEqualTo("event-management-service");
+    }
+
     @Test
     @DisplayName("should_throwRoutingException_when_unknownPathProvided")
     void should_throwRoutingException_when_unknownPathProvided() {
@@ -180,11 +207,11 @@ class DomainRouterTest {
             any(URI.class),
             any(),
             any(),
-            eq(String.class)
-        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}"));
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{\"status\":\"success\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         // When
-        CompletableFuture<ResponseEntity<String>> response = domainRouter.routeRequest(targetService, request);
+        CompletableFuture<ResponseEntity<byte[]>> response = domainRouter.routeRequest(targetService, request);
 
         // Then
         assertThat(response).isNotNull();
@@ -298,11 +325,11 @@ class DomainRouterTest {
             uriCaptor.capture(),
             any(),
             any(),
-            eq(String.class)
-        )).thenReturn(ResponseEntity.ok("{\"data\":[]}"));
+            eq(byte[].class)
+        )).thenReturn(ResponseEntity.ok("{\"data\":[]}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         // When
-        CompletableFuture<ResponseEntity<String>> response =
+        CompletableFuture<ResponseEntity<byte[]>> response =
             domainRouter.routeRequest(targetService, request);
 
         // Then

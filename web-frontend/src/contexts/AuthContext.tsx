@@ -260,10 +260,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
-   * Check if user has specific role
+   * Check if user has specific role (supports multi-role users)
    */
   const hasRole = useCallback(
     (role: UserRole): boolean => {
+      const roles = state.user?.roles;
+      if (roles && roles.length > 0) return roles.includes(role);
       return state.user?.role === role;
     },
     [state.user]
@@ -359,7 +361,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           '/account',
         ],
         speaker: ['/dashboard', '/profile', '/events', '/materials', '/speaker', '/account'],
-        partner: ['/dashboard', '/profile', '/analytics', '/events', '/partner', '/account'],
+        partner: [
+          '/dashboard',
+          '/profile',
+          '/analytics',
+          '/organizer/analytics',
+          '/events',
+          '/partner',
+          '/account',
+        ],
         attendee: ['/dashboard', '/events', '/content', '/search', '/attendee', '/account'],
       };
 

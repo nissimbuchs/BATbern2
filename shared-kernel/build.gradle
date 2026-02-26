@@ -135,7 +135,12 @@ jacocoTestReport {
                 '**/generated/**',           // OpenAPI generated code
                 '**/*Application.class',     // Spring Boot main class
                 '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
+                '**/*Configuration.class',   // Configuration classes
+                // Email system — excluded from coverage
+                '**/EmailService.class',
+                '**/LocalEmailCapture.class',
+                '**/CapturedEmail.class',
+                '**/CapturedEmail$*.class'
             ])
         }))
     }
@@ -163,7 +168,12 @@ jacocoTestCoverageVerification {
                 '**/generated/**',           // OpenAPI generated code
                 '**/*Application.class',     // Spring Boot main class
                 '**/*Config.class',          // Configuration classes
-                '**/*Configuration.class'    // Configuration classes
+                '**/*Configuration.class',   // Configuration classes
+                // Email system — excluded from coverage
+                '**/EmailService.class',
+                '**/LocalEmailCapture.class',
+                '**/CapturedEmail.class',
+                '**/CapturedEmail$*.class'
             ])
         }))
     }

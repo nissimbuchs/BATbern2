@@ -35,6 +35,7 @@ import {
   PersonAdd as ParticipantsIcon,
   Publish as PublishIcon,
   Settings as SettingsIcon,
+  EmailOutlined as NewsletterIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -49,6 +50,7 @@ import { EventVenueTab } from './EventVenueTab';
 import EventParticipantsTab from './EventParticipantsTab';
 import { EventPublishingTab } from './EventPublishingTab';
 import { EventSettingsTab } from './EventSettingsTab';
+import { EventNewsletterTab } from './EventNewsletterTab';
 import { EventForm } from '@/components/organizer/EventManagement';
 
 // Tab configuration
@@ -58,6 +60,7 @@ const TABS = [
   { id: 'venue', labelKey: 'eventPage.tabs.venue', icon: <VenueIcon /> },
   { id: 'participants', labelKey: 'eventPage.tabs.participants', icon: <ParticipantsIcon /> },
   { id: 'publishing', labelKey: 'eventPage.tabs.publishing', icon: <PublishIcon /> },
+  { id: 'newsletter', labelKey: 'eventPage.tabs.newsletter', icon: <NewsletterIcon /> },
   { id: 'settings', labelKey: 'eventPage.tabs.settings', icon: <SettingsIcon /> },
 ] as const;
 
@@ -181,6 +184,8 @@ export const EventPage: React.FC = () => {
         return <EventParticipantsTab event={event} />;
       case 'publishing':
         return <EventPublishingTab event={event} eventCode={eventCode!} />;
+      case 'newsletter':
+        return <EventNewsletterTab eventCode={eventCode!} eventTitle={event.title || ''} />;
       case 'settings':
         return <EventSettingsTab event={event} eventCode={eventCode!} />;
       default:

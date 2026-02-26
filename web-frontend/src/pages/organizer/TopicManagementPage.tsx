@@ -6,9 +6,10 @@
  */
 
 import React, { useMemo } from 'react';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import { BubbleChart as BubbleChartIcon } from '@mui/icons-material';
 import { TopicBacklogManager } from '@/components/TopicBacklogManager';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs';
 import type { BreadcrumbItem } from '@/components/shared/Breadcrumbs';
@@ -24,6 +25,7 @@ const TopicManagementPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const eventCode = searchParams.get('eventCode');
   const { t } = useTranslation('events');
+  const navigate = useNavigate();
 
   // Fetch event data if eventCode is provided
   const { data: event } = useEvent(eventCode || undefined);
@@ -48,17 +50,25 @@ const TopicManagementPage: React.FC = () => {
     ];
   }, [eventCode, event?.title, t]);
 
-  console.log('[TopicManagementPage] Rendering', {
-    eventCode,
-    searchParamsKeys: Array.from(searchParams.keys()),
-    fullUrl: window.location.href,
-  });
-
   return (
     <Box>
       <Box sx={{ py: 3, px: 3 }}>
         {/* Breadcrumbs */}
         <Breadcrumbs items={breadcrumbItems} marginBottom={2} />
+
+        {/* Blob Selector button — only when eventCode is present (AC: 1) */}
+        {eventCode && (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<BubbleChartIcon />}
+              onClick={() => navigate(`/organizer/events/${eventCode}/topic-blob`)}
+              data-testid="blob-selector-button"
+            >
+              {t('navigation.blobSelector', 'Blob Selector')}
+            </Button>
+          </Box>
+        )}
       </Box>
 
       <TopicBacklogManager eventCode={eventCode || undefined} />

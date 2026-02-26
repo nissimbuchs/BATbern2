@@ -141,6 +141,29 @@ PGPASSWORD=devpass123 psql -h localhost -p 5432 -U postgres -d batbern_developme
 docker compose -f docker-compose-dev.yml down -v
 ```
 
+### Local Email Inbox (Dev)
+
+When running locally, emails are **not sent via AWS SES** — they are captured in-memory and viewable via a built-in dev inbox. No extra containers needed.
+
+```bash
+# View captured emails (JSON list — EMS)
+curl http://localhost:8002/dev/emails | jq .
+
+# View captured emails from partner service
+curl http://localhost:8004/dev/emails | jq .
+
+# Preview a specific email as rendered HTML in browser
+open http://localhost:8002/dev/emails/<id>/preview
+
+# Or use the React inbox UI (two-panel, select email to preview HTML)
+open http://localhost:8100/dev/emails
+
+# Clear all captured emails
+curl -X DELETE http://localhost:8002/dev/emails
+```
+
+**How it works:** `EmailService` (shared-kernel) detects `sesClient == null` on the `local` Spring profile and routes emails to `LocalEmailCapture` (in-memory ring buffer, max 200). `DevEmailController` (`@Profile("local")`) exposes them at `/dev/emails`. The endpoint is not registered in staging/production.
+
 ## Build Commands
 
 The platform includes a unified build system using **Makefile** that orchestrates both Java/Gradle and Node.js/npm projects.

@@ -24,19 +24,19 @@ import {
 import { ExpandLess, ExpandMore, ArrowDropDown } from '@mui/icons-material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { getNavigationForRole, isPathActive } from '@/config/navigationConfig';
+import { getNavigationForRoles, isPathActive } from '@/config/navigationConfig';
 import type { NavigationItem } from '@/config/navigationConfig';
 import type { UserRole } from '@/types/auth';
 
 interface NavigationMenuProps {
-  userRole: UserRole;
+  userRoles: UserRole[];
   onItemClick?: () => void;
   showText?: boolean;
   variant?: 'horizontal' | 'vertical';
 }
 
 export const NavigationMenu = React.memo(function NavigationMenu({
-  userRole,
+  userRoles,
   onItemClick,
   showText = true,
   variant = 'horizontal',
@@ -44,7 +44,7 @@ export const NavigationMenu = React.memo(function NavigationMenu({
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const navigationItems = getNavigationForRole(userRole);
+  const navigationItems = getNavigationForRoles(userRoles);
 
   // Horizontal: track which group's popover menu is open
   const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
