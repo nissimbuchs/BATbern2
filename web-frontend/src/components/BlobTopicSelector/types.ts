@@ -34,10 +34,21 @@ export interface PastEventEntry {
   cluster: string;
 }
 
+export interface BacklogItem {
+  title: string;
+  /** Stable slug identifier — present for all backlog topics from the organizer's topic table. */
+  topicCode: string;
+  /**
+   * Staleness score 0–100 (all backlog items >= 83).
+   * Used to size ghost blobs: higher = more overdue = bigger.
+   */
+  stalenessScore: number;
+}
+
 export interface TopicSessionData {
   partnerTopics: PartnerTopicEntry[];
   pastEvents: PastEventEntry[];
-  organizerBacklog: string[];
+  organizerBacklog: BacklogItem[];
   trendingTopics: string[];
 }
 
@@ -61,6 +72,13 @@ export interface BlueBlobNode extends d3.SimulationNodeDatum {
   type: 'blue';
   name: string;
   r: number;
+  /** Original radius derived from topic-name length; r grows with absorbed logos. */
+  baseR: number;
+  /**
+   * Set when the blob was spawned from an organizer backlog ghost.
+   * Absence means the topic is free-form and must be created before selecting for the event.
+   */
+  topicCode?: string;
   cluster?: string;
   similarityScore?: number;
   relatedPastEventNumbers?: number[];
@@ -86,6 +104,11 @@ export interface GreenBlobNode extends d3.SimulationNodeDatum {
    * A green can simultaneously link to multiple blue blobs (one per cluster).
    */
   linkedBlobsByCluster: Record<string, string>;
+  /**
+   * Topic titles submitted by this partner, keyed by cluster.
+   * Used to show the attraction reason in the topic tree panel.
+   */
+  topicsByCluster: Record<string, string[]>;
 }
 
 export interface GhostNode extends d3.SimulationNodeDatum {
@@ -97,6 +120,8 @@ export interface GhostNode extends d3.SimulationNodeDatum {
   ghostOrbitAngle: number;
   ghostOrbitRadius: number;
   ghostOrbitSpeed: number;
+  /** Present only for ghost-backlog nodes — the existing topic's stable code. */
+  topicCode?: string;
 }
 
 export interface RedStarNode extends d3.SimulationNodeDatum {

@@ -26,7 +26,7 @@ import {
   Add as AddIcon,
   ViewModule as HeatMapIcon,
   ViewList as ListIcon,
-  ViewKanban as BoardIcon,
+  BubbleChart as BubbleChartIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
@@ -42,7 +42,7 @@ import { SpeakerBrainstormingPanel } from '@/components/SpeakerBrainstormingPane
 import { MultiTopicHeatMap } from '@/components/TopicHeatMap';
 import type { Topic, TopicFilters } from '@/types/topic.types';
 
-type ViewMode = 'heatMap' | 'list' | 'board';
+type ViewMode = 'heatMap' | 'list';
 
 export interface TopicBacklogManagerProps {
   eventCode?: string; // Optional: if provided, enables topic selection for event
@@ -203,20 +203,28 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
             <ListIcon sx={{ mr: 0.5 }} />
             {t('topicBacklog.viewMode.list', 'List')}
           </ToggleButton>
-          <ToggleButton value="board" aria-label={t('topicBacklog.viewMode.board', 'Board')}>
-            <BoardIcon sx={{ mr: 0.5 }} />
-            {t('topicBacklog.viewMode.board', 'Board')}
-          </ToggleButton>
         </ToggleButtonGroup>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateModalOpen(true)}
-          data-testid="new-topic-button"
-        >
-          {t('topicBacklog.createNew', 'Create New Topic')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {eventCode && (
+            <Button
+              variant="outlined"
+              startIcon={<BubbleChartIcon />}
+              onClick={() => navigate(`/organizer/events/${eventCode}/topic-blob`)}
+              data-testid="blob-selector-button"
+            >
+              {t('navigation.blobSelector', { defaultValue: 'Blob Selector', ns: 'events' })}
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateModalOpen(true)}
+            data-testid="new-topic-button"
+          >
+            {t('topicBacklog.createNew', 'Create New Topic')}
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
@@ -271,23 +279,6 @@ export const TopicBacklogManager: React.FC<TopicBacklogManagerProps> = ({
                     pagination={data.pagination}
                     onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
                   />
-                </Paper>
-              )}
-
-              {/* Board View (placeholder) */}
-              {viewMode === 'board' && (
-                <Paper
-                  sx={{
-                    p: 3,
-                    height: '70vh',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    {t('topicBacklog.viewMode.boardComingSoon', 'Board view coming soon...')}
-                  </Typography>
                 </Paper>
               )}
             </>

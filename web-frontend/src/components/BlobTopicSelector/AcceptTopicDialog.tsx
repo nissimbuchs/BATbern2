@@ -15,9 +15,18 @@ import {
   Box,
   Avatar,
   Typography,
+  MenuItem,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { BlueBlobNode } from './types';
+
+const TOPIC_CATEGORIES = [
+  { value: 'technical', label: 'Technical' },
+  { value: 'management', label: 'Management' },
+  { value: 'soft_skills', label: 'Soft Skills' },
+  { value: 'industry_trends', label: 'Industry Trends' },
+  { value: 'tools_platforms', label: 'Tools & Platforms' },
+];
 
 interface AcceptTopicDialogProps {
   open: boolean;
@@ -26,7 +35,7 @@ interface AcceptTopicDialogProps {
   mostRecentEventNumber: number;
   /** Names of other blue blobs present at decision time — included in session note (spec AC25) */
   competingCandidates: string[];
-  onConfirm: (topicCode: string, note: string) => void;
+  onConfirm: (note: string, newTopicFields?: { description: string; category: string }) => void;
   onCancel: () => void;
 }
 
@@ -41,6 +50,10 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
 }) => {
   const { t } = useTranslation('organizer');
   const [overrideReason, setOverrideReason] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('technical');
+
+  const isNewTopic = !blob?.topicCode;
 
   const handleConfirm = () => {
     if (!blob) return;
@@ -53,12 +66,16 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
       eventsAgo,
       competingCandidates
     );
-    onConfirm(blob.name, note);
+    onConfirm(note, isNewTopic ? { description, category } : undefined);
     setOverrideReason('');
+    setDescription('');
+    setCategory('technical');
   };
 
   const handleCancel = () => {
     setOverrideReason('');
+    setDescription('');
+    setCategory('technical');
     onCancel();
   };
 
@@ -129,6 +146,38 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
             })}
           </Typography>
         )}
+        {isNewTopic && (
+          <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Typography variant="body2" color="text.secondary">
+              This is a new topic — it will be added to the topic backlog.
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              label="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              variant="outlined"
+              size="small"
+            />
+            <TextField
+              select
+              fullWidth
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              variant="outlined"
+              size="small"
+            >
+              {TOPIC_CATEGORIES.map((c) => (
+                <MenuItem key={c.value} value={c.value}>
+                  {c.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        )}
         {hasOrbitingRed && (
           <TextField
             fullWidth
@@ -141,7 +190,7 @@ const AcceptTopicDialog: React.FC<AcceptTopicDialogProps> = ({
             onChange={(e) => setOverrideReason(e.target.value)}
             variant="outlined"
             size="small"
-            sx={{ mt: 1 }}
+            sx={{ mt: 1.5 }}
           />
         )}
       </DialogContent>

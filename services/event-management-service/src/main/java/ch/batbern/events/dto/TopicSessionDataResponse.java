@@ -35,9 +35,10 @@ public class TopicSessionDataResponse {
 
     /**
      * Available topics from the organizer's backlog (existing topics table, status=AVAILABLE).
-     * Used to create white ghost blobs on the canvas.
+     * Each item carries both the display title and the stable topicCode, so the frontend can
+     * distinguish existing topics (pre-created) from free-form typed topics.
      */
-    private List<String> organizerBacklog;
+    private List<BacklogItem> organizerBacklog;
 
     /**
      * AI-generated trending IT topics.
@@ -71,6 +72,22 @@ public class TopicSessionDataResponse {
         private int voteCount;
         /** When the topic was first submitted; used as recency proxy for attraction strength. */
         private Instant createdAt;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BacklogItem {
+        /** Display title of the topic. */
+        private String title;
+        /** Stable slug identifier (e.g. "cloud-native-security-2024"). */
+        private String topicCode;
+        /**
+         * Staleness score (0–100). All backlog items are >= 83 (AVAILABLE threshold).
+         * Used by the frontend to size the ghost blob: higher = more overdue = bigger.
+         */
+        private int stalenessScore;
     }
 
     @Data

@@ -50,7 +50,7 @@ public class TopicSessionDataService {
 
         List<TopicSessionDataResponse.PartnerTopicGroup> partnerTopics = fetchPartnerTopics();
         List<TopicSessionDataResponse.PastEventEntry> pastEvents = fetchPastEvents();
-        List<String> organizerBacklog = fetchOrganizerBacklog();
+        List<TopicSessionDataResponse.BacklogItem> organizerBacklog = fetchOrganizerBacklog();
         List<String> trendingTopics = fetchTrendingTopics();
 
         return TopicSessionDataResponse.builder()
@@ -105,13 +105,18 @@ public class TopicSessionDataService {
         }
     }
 
-    private List<String> fetchOrganizerBacklog() {
+    private List<TopicSessionDataResponse.BacklogItem> fetchOrganizerBacklog() {
         try {
             List<Topic> available = topicRepository.findByStalenessScoreGreaterThanEqual(
                     AVAILABLE_STALENESS_THRESHOLD);
             return available.stream()
-                    .map(Topic::getTitle)
                     .limit(BACKLOG_LIMIT)
+                    .map(t -> TopicSessionDataResponse.BacklogItem.builder()
+                            .title(t.getTitle())
+                            .topicCode(t.getTopicCode())
+                            .stalenessScore(t.getStalenessScore() != null
+                                    ? t.getStalenessScore() : AVAILABLE_STALENESS_THRESHOLD)
+                            .build())
                     .toList();
         } catch (Exception e) {
             log.warn("Failed to fetch organizer backlog: {}", e.getMessage());
