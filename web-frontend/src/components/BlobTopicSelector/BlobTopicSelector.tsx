@@ -64,6 +64,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const proximityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mergeHaloNodesRef = useRef<Set<string>>(new Set());
   const hoveredGhostRef = useRef<GhostNode | null>(null);
+  /** IDs of nodes frozen during a drag so other blobs don't scatter */
+  const frozenNodeIdsRef = useRef<Set<string>>(new Set());
 
   // React state — only for UI elements that need re-renders
   const [showInput, setShowInput] = useState(false);
@@ -539,10 +541,19 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     d3
       .drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
-        // Don't reheat sim on drag — freezes other nodes so the user can aim
-        if (!event.active) simRef.current?.alphaTarget(0);
+        if (!event.active) simRef.current?.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
+        // Freeze every other node (that isn't already pinned, e.g. orbiting red stars)
+        // so the canvas holds still while the user aims
+        frozenNodeIdsRef.current.clear();
+        nodesRef.current.forEach((n) => {
+          if (n.id !== d.id && n.fx == null) {
+            n.fx = n.x ?? 0;
+            n.fy = n.y ?? 0;
+            frozenNodeIdsRef.current.add(n.id);
+          }
+        });
       })
       .on('drag', (event, d) => {
         d.fx = event.x;
@@ -556,6 +567,15 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       })
       .on('end', (event, d) => {
         if (!event.active) simRef.current?.alphaTarget(0);
+        // Release all nodes frozen during this drag
+        frozenNodeIdsRef.current.forEach((id) => {
+          const node = nodesRef.current.find((n) => n.id === id);
+          if (node) {
+            node.fx = null;
+            node.fy = null;
+          }
+        });
+        frozenNodeIdsRef.current.clear();
 
         const nearby = findNearbyCompatible(d, 30);
         if (nearby) {
