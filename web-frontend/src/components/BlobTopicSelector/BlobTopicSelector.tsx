@@ -66,6 +66,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const hoveredGhostRef = useRef<GhostNode | null>(null);
   /** IDs of nodes frozen during a drag so other blobs don't scatter */
   const frozenNodeIdsRef = useRef<Set<string>>(new Set());
+  /** ID of the node currently being dragged — ghost orbit skips this node */
+  const draggingNodeIdRef = useRef<string | null>(null);
 
   // React state — only for UI elements that need re-renders
   const [showInput, setShowInput] = useState(false);
@@ -135,6 +137,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .id((d) => d.id)
           .strength((l) => (l as SimLink & { strength: number }).strength ?? 0)
       )
+      .alphaMin(0) // keep tick loop alive for ghost orbit animation
       .on('tick', () => {
         if (!gRef.current) return;
         tickHandler(gRef.current);
@@ -161,15 +164,36 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     const newNodes: SimNode[] = [];
 
+    // Golden-angle phyllotaxis layout for ghost nodes — maximally dispersed initial positions.
+    // Each ghost also gets an orbit radius + speed so it drifts around the canvas center.
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ≈ 137.5° in radians
+    const cx = w / 2;
+    const cy = h / 2;
+    let ghostOrbitIdx = 0;
+    const makeGhostOrbit = () => {
+      const i = ghostOrbitIdx++;
+      const angle = i * GOLDEN_ANGLE;
+      const ring = Math.floor(i / 10); // 10 ghosts per ring
+      const radius = 180 + ring * 100;
+      const speed = (0.0025 + (i % 9) * 0.0004) * (i % 2 === 0 ? 1 : -1); // alternate CW/CCW
+      return {
+        ghostOrbitAngle: angle,
+        ghostOrbitRadius: radius,
+        ghostOrbitSpeed: speed,
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle),
+      };
+    };
+
     // Backlog ghosts (white, 0.25 opacity)
     sessionData.organizerBacklog.forEach((title, i) => {
+      const orb = makeGhostOrbit();
       newNodes.push({
         id: `ghost-backlog-${i}`,
         type: 'ghost-backlog',
         name: title,
         r: 35,
-        x: 100 + Math.random() * (w - 200),
-        y: 100 + Math.random() * (h - 200),
+        ...orb,
       } as GhostNode);
     });
 
@@ -177,13 +201,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     sessionData.partnerTopics.slice(0, 20).forEach((partner, pi) => {
       // Ghost for each partner topic (up to 3)
       partner.topics.slice(0, 3).forEach((topic, ti) => {
+        const orb = makeGhostOrbit();
         newNodes.push({
           id: `ghost-partner-${pi}-${ti}`,
           type: 'ghost-partner',
           name: topic,
           r: 35,
-          x: 100 + Math.random() * (w - 200),
-          y: 100 + Math.random() * (h - 200),
+          ...orb,
         } as GhostNode);
       });
 
@@ -203,13 +227,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     // Trend ghosts (gold shimmer)
     sessionData.trendingTopics.forEach((topic, i) => {
+      const orb = makeGhostOrbit();
       newNodes.push({
         id: `ghost-trend-${i}`,
         type: 'ghost-trend',
         name: topic,
         r: 30,
-        x: 100 + Math.random() * (w - 200),
-        y: 100 + Math.random() * (h - 200),
+        ...orb,
       } as GhostNode);
     });
 
@@ -241,6 +265,24 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
   const tickHandler = useCallback((g: d3.Selection<SVGGElement, unknown, null, undefined>) => {
     const maxEvt = mostRecentEventNumRef.current;
+
+    // Ghost orbit — advance each ghost's angle and pin it to the orbit path via fx/fy.
+    // Skips the currently-dragged node so the user has full position control.
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    nodesRef.current.forEach((node) => {
+      if (
+        node.type !== 'ghost-backlog' &&
+        node.type !== 'ghost-partner' &&
+        node.type !== 'ghost-trend'
+      )
+        return;
+      if (node.id === draggingNodeIdRef.current) return;
+      const ghost = node as GhostNode;
+      ghost.ghostOrbitAngle += ghost.ghostOrbitSpeed;
+      ghost.fx = cx + ghost.ghostOrbitRadius * Math.cos(ghost.ghostOrbitAngle);
+      ghost.fy = cy + ghost.ghostOrbitRadius * Math.sin(ghost.ghostOrbitAngle);
+    });
 
     nodesRef.current.forEach((node) => {
       // Orbit: red stars orbiting blue blobs
@@ -544,6 +586,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         if (!event.active) simRef.current?.alphaTarget(0.3).restart();
         d.fx = d.x;
         d.fy = d.y;
+        draggingNodeIdRef.current = d.id;
         // Freeze every other node (that isn't already pinned, e.g. orbiting red stars)
         // so the canvas holds still while the user aims
         frozenNodeIdsRef.current.clear();
@@ -567,6 +610,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       })
       .on('end', (event, d) => {
         if (!event.active) simRef.current?.alphaTarget(0);
+        draggingNodeIdRef.current = null;
         // Release all nodes frozen during this drag
         frozenNodeIdsRef.current.forEach((id) => {
           const node = nodesRef.current.find((n) => n.id === id);

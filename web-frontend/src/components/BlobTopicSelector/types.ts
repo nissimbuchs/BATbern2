@@ -76,6 +76,10 @@ export interface GhostNode extends d3.SimulationNodeDatum {
   type: 'ghost-backlog' | 'ghost-partner' | 'ghost-trend';
   name: string;
   r: number;
+  /** Ghost orbit state — updated every tick while node is a ghost */
+  ghostOrbitAngle: number;
+  ghostOrbitRadius: number;
+  ghostOrbitSpeed: number;
 }
 
 export interface RedStarNode extends d3.SimulationNodeDatum {
