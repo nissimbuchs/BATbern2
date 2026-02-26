@@ -66,11 +66,21 @@ public class TopicSessionDataService {
     private List<TopicSessionDataResponse.PartnerTopicGroup> fetchPartnerTopics() {
         try {
             return partnerApiClient.getPartnerTopics().stream()
-                    .map(g -> TopicSessionDataResponse.PartnerTopicGroup.builder()
-                            .companyName(g.companyName())
-                            .logoUrl(g.logoUrl())
-                            .topics(g.topics())
-                            .build())
+                    .map(g -> {
+                        List<TopicSessionDataResponse.TopicEntry> entries = g.topics().stream()
+                                .map(t -> TopicSessionDataResponse.TopicEntry.builder()
+                                        .title(t.title())
+                                        .cluster(clusterService.matchCluster(t.title()).name())
+                                        .voteCount(t.voteCount())
+                                        .createdAt(t.createdAt())
+                                        .build())
+                                .toList();
+                        return TopicSessionDataResponse.PartnerTopicGroup.builder()
+                                .companyName(g.companyName())
+                                .logoUrl(g.logoUrl())
+                                .topics(entries)
+                                .build();
+                    })
                     .toList();
         } catch (Exception e) {
             log.warn("Failed to fetch partner topics: {}", e.getMessage());

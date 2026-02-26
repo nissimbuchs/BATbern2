@@ -9,8 +9,8 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { Alert, Box, Button, Snackbar, TextField } from '@mui/material';
-import { FitScreen, MyLocation } from '@mui/icons-material';
+import { Alert, Box, Button, Snackbar, TextField, Typography } from '@mui/material';
+import { ChevronLeft, ChevronRight, FitScreen, MyLocation } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type {
@@ -23,6 +23,7 @@ import type {
   AbsorbedLogo,
   TopicSessionData,
   TopicSimilarityResponse,
+  PartnerTopicItem,
 } from './types';
 import { blobTopicService } from '@/services/blobTopicService';
 import AcceptTopicDialog from './AcceptTopicDialog';
@@ -32,6 +33,46 @@ import AcceptTopicDialog from './AcceptTopicDialog';
 let _nodeCounter = 0;
 const mkId = () => `node-${++_nodeCounter}`;
 
+/**
+ * Wrap text inside an SVG <text> element using <tspan> lines.
+ * Lines are centered vertically around the element's y=0.
+ * @param maxWidthPx  - available width in pixels
+ * @param lineHeightPx - vertical distance between lines
+ * @param charWidthPx  - estimated width per character (font-size dependent)
+ */
+function wrapSvgText(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  textEl: d3.Selection<SVGTextElement, any, any, any>,
+  text: string,
+  maxWidthPx: number,
+  lineHeightPx: number,
+  charWidthPx: number
+): void {
+  textEl.text('');
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length * charWidthPx > maxWidthPx && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  // Vertically center the block: first tspan offset to top of block, rest step down
+  const totalHeight = (lines.length - 1) * lineHeightPx;
+  lines.forEach((line, i) => {
+    textEl
+      .append('tspan')
+      .attr('x', 0)
+      .attr('dy', i === 0 ? -totalHeight / 2 : lineHeightPx)
+      .text(line);
+  });
+}
+
 function starPointsRelative(outer: number, inner: number, numPoints: number): string {
   const pts: string[] = [];
   for (let i = 0; i < numPoints * 2; i++) {
@@ -40,6 +81,37 @@ function starPointsRelative(outer: number, inner: number, numPoints: number): st
     pts.push(`${r * Math.cos(angle)},${r * Math.sin(angle)}`);
   }
   return pts.join(' ');
+}
+
+/**
+ * Compute per-cluster forceLink attraction strengths for a partner company
+ * from their list of submitted topic suggestions.
+ *
+ * Strength formula per cluster:
+ *   rawStrength = Σ (1 + voteCount) × recencyDecay(createdAt)
+ *   recencyDecay = max(0.2, 1.0 - ageMonths × 0.05)   ← linear, floor 0.2 at ~16 months
+ *   normalizedStrength = min(1.0, rawStrength / 3.0)
+ *
+ * BUSINESS_OTHER topics are excluded — they carry no cluster signal.
+ * Clusters with a computed strength below 0.05 are also excluded to avoid spurious links.
+ */
+function computeClusterAttractions(topics: PartnerTopicItem[]): Record<string, number> {
+  const now = Date.now();
+  const raw: Record<string, number> = {};
+
+  for (const t of topics) {
+    if (t.cluster === 'BUSINESS_OTHER') continue;
+    const ageMonths = (now - new Date(t.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30);
+    const recency = Math.max(0.2, 1.0 - ageMonths * 0.05);
+    raw[t.cluster] = (raw[t.cluster] ?? 0) + (1 + t.voteCount) * recency;
+  }
+
+  const result: Record<string, number> = {};
+  for (const [cluster, val] of Object.entries(raw)) {
+    const normalized = Math.min(1.0, val / 3.0);
+    if (normalized >= 0.05) result[cluster] = normalized;
+  }
+  return result;
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -68,6 +140,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const frozenNodeIdsRef = useRef<Set<string>>(new Set());
   /** ID of the node currently being dragged — ghost orbit skips this node */
   const draggingNodeIdRef = useRef<string | null>(null);
+  /** Green nodes currently in a fade transition — tick handler skips opacity updates for these */
+  const fadingGreenIds = useRef<Set<string>>(new Set());
 
   // React state — only for UI elements that need re-renders
   const [showInput, setShowInput] = useState(false);
@@ -76,6 +150,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const [acceptBlob, setAcceptBlob] = useState<BlueBlobNode | null>(null);
   const [mostRecentEventNum, setMostRecentEventNum] = useState(0);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [treeSummary, setTreeSummary] = useState<
+    { id: string; name: string; companies: string[] }[]
+  >([]);
+  const [panelOpen, setPanelOpen] = useState(true);
 
   const hasOrbitingRed = nodesRef.current.some(
     (n) => n.type === 'red-star' && (n as RedStarNode).orbiting === acceptBlob?.id
@@ -137,6 +215,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .id((d) => d.id)
           .strength((l) => (l as SimLink & { strength: number }).strength ?? 0)
       )
+      .velocityDecay(0.65) // higher friction → blobs slow down much faster (default 0.4)
       .alphaMin(0) // keep tick loop alive for ghost orbit animation
       .on('tick', () => {
         if (!gRef.current) return;
@@ -174,8 +253,8 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       const i = ghostOrbitIdx++;
       const angle = i * GOLDEN_ANGLE;
       const ring = Math.floor(i / 10); // 10 ghosts per ring
-      const radius = 180 + ring * 100;
-      const speed = (0.0025 + (i % 9) * 0.0004) * (i % 2 === 0 ? 1 : -1); // alternate CW/CCW
+      const radius = 320 + ring * 120;
+      const speed = ((0.0025 + (i % 9) * 0.0004) / 3) * (i % 2 === 0 ? 1 : -1); // alternate CW/CCW
       return {
         ghostOrbitAngle: angle,
         ghostOrbitRadius: radius,
@@ -199,13 +278,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
     // Partner ghosts + green blobs
     sessionData.partnerTopics.slice(0, 20).forEach((partner, pi) => {
-      // Ghost for each partner topic (up to 3)
+      // Ghost for each partner topic (up to 3) — topics are now objects, use .title
       partner.topics.slice(0, 3).forEach((topic, ti) => {
         const orb = makeGhostOrbit();
         newNodes.push({
           id: `ghost-partner-${pi}-${ti}`,
           type: 'ghost-partner',
-          name: topic,
+          name: topic.title,
           r: 35,
           ...orb,
         } as GhostNode);
@@ -217,9 +296,11 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         type: 'green',
         companyName: partner.companyName,
         logoUrl: partner.logoUrl,
-        topicName: partner.topics[0] ?? '',
+        topicName: partner.topics[0]?.title ?? '',
         r: 45,
         absorbed: false,
+        clusterAttractions: computeClusterAttractions(partner.topics),
+        linkedBlobsByCluster: {},
         x: 100 + Math.random() * (w - 200),
         y: 100 + Math.random() * (h - 200),
       } as GreenBlobNode);
@@ -261,6 +342,24 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     renderAll();
   }, [sessionData]);
 
+  // ─── TREE PANEL SYNC ──────────────────────────────────────────────────────
+
+  /** Snapshot the current blue-blob → absorbed-companies tree into React state */
+  const syncTreeSummary = useCallback(() => {
+    setTreeSummary(
+      nodesRef.current
+        .filter((n) => n.type === 'blue')
+        .map((n) => {
+          const blue = n as BlueBlobNode;
+          return {
+            id: blue.id,
+            name: blue.name,
+            companies: blue.absorbedLogos.map((l) => l.companyName),
+          };
+        })
+    );
+  }, []);
+
   // ─── TICK HANDLER (D3 mutates DOM directly) ───────────────────────────────
 
   const tickHandler = useCallback((g: d3.Selection<SVGGElement, unknown, null, undefined>) => {
@@ -293,40 +392,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             | BlueBlobNode
             | undefined;
           if (blue) {
-            red.orbitAngle = (red.orbitAngle ?? 0) + 0.02;
+            red.orbitAngle = (red.orbitAngle ?? 0) + 0.007;
             const orbitRadius = blue.r + red.r + 20;
             red.x = (blue.x ?? 0) + orbitRadius * Math.cos(red.orbitAngle);
             red.y = (blue.y ?? 0) + orbitRadius * Math.sin(red.orbitAngle);
             red.fx = red.x;
             red.fy = red.y;
           }
-        }
-      }
-
-      // Absorption: green blobs absorbed by nearby blue blobs
-      if (node.type === 'green') {
-        const green = node as GreenBlobNode;
-        if (!green.absorbed) {
-          nodesRef.current.forEach((n2) => {
-            if (n2.type !== 'blue') return;
-            const blue = n2 as BlueBlobNode;
-            const dx = (green.x ?? 0) - (blue.x ?? 0);
-            const dy = (green.y ?? 0) - (blue.y ?? 0);
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < green.r + blue.r - 10) {
-              green.absorbed = true;
-              if (!blue.absorbedLogos.some((l) => l.companyName === green.companyName)) {
-                // Assign a random orbit position so logos scatter inside the blue blob
-                blue.absorbedLogos.push({
-                  companyName: green.companyName,
-                  logoUrl: green.logoUrl,
-                  orbitAngle: Math.random() * Math.PI * 2,
-                  orbitRadius: blue.r * (0.2 + Math.random() * 0.45),
-                  orbitSpeed: (0.004 + Math.random() * 0.008) * (Math.random() < 0.5 ? 1 : -1),
-                });
-              }
-            }
-          });
         }
       }
     });
@@ -337,11 +409,10 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       (d) => `translate(${d.x ?? 0},${d.y ?? 0})`
     );
 
-    // Hide entire green blob group (circle + logo + label) when absorbed
-    // Previously only the circle was hidden, leaving the logo floating at its position
-    g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group').attr('opacity', (d) =>
-      d.absorbed ? 0 : 1
-    );
+    // Hide entire green blob group — skip nodes currently in a fade transition
+    g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
+      .filter((d) => !fadingGreenIds.current.has(d.id))
+      .attr('opacity', (d) => (d.absorbed ? 0 : 1));
 
     // Update red star opacity + glow
     g.selectAll<SVGGElement, RedStarNode>('.red-star-group')
@@ -376,45 +447,62 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         .selectAll<SVGImageElement, AbsorbedLogo>('.absorbed-logo')
         .data(d.absorbedLogos, (l) => l.companyName);
 
-      // Enter: add new logo images with click-to-eject handler
-      logos
+      // Enter: add new logo images with click-to-eject handler; fade in on appear
+      const enteredLogos = logos
         .enter()
         .append('image')
         .attr('class', 'absorbed-logo')
         .attr('width', 24)
         .attr('height', 24)
         .attr('href', (l) => l.logoUrl)
+        .attr('opacity', 0) // start invisible; transition below fades in
         .style('cursor', 'pointer')
         .on('click', (event, logo) => {
           event.stopPropagation();
-          // Remove logo from blue blob
-          d.absorbedLogos = d.absorbedLogos.filter((l) => l.companyName !== logo.companyName);
-          // Find the green node and restore it
-          const green = nodesRef.current.find(
-            (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
-          ) as GreenBlobNode | undefined;
-          if (green) {
-            green.absorbed = false;
-            green.bestSimilarity = undefined;
-            green.linkedBlobId = undefined;
-            // Eject in the direction of the logo's current orbit angle
-            const ejectDist = d.r + green.r + 15;
-            green.x = (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle);
-            green.y = (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle);
-            green.vx = Math.cos(logo.orbitAngle) * 3;
-            green.vy = Math.sin(logo.orbitAngle) * 3;
-            green.fx = null;
-            green.fy = null;
-            linksRef.current = linksRef.current.filter((l) => {
-              const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
-              return src !== green.id;
+          // Fade out the logo, then restore the green blob with a matching fade-in
+          d3.select(event.currentTarget as SVGImageElement)
+            .transition()
+            .duration(1200)
+            .attr('opacity', 0)
+            .on('end', () => {
+              d.absorbedLogos = d.absorbedLogos.filter((l) => l.companyName !== logo.companyName);
+              syncTreeSummary();
+              const green = nodesRef.current.find(
+                (n) => n.type === 'green' && (n as GreenBlobNode).companyName === logo.companyName
+              ) as GreenBlobNode | undefined;
+              if (green) {
+                green.absorbed = false;
+                green.linkedBlobsByCluster = {};
+                const ejectDist = d.r + green.r + 15;
+                green.x = (d.x ?? 0) + ejectDist * Math.cos(logo.orbitAngle);
+                green.y = (d.y ?? 0) + ejectDist * Math.sin(logo.orbitAngle);
+                green.vx = Math.cos(logo.orbitAngle) * 3;
+                green.vy = Math.sin(logo.orbitAngle) * 3;
+                green.fx = null;
+                green.fy = null;
+                linksRef.current = linksRef.current.filter((l) => {
+                  const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
+                  return src !== green.id;
+                });
+                (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
+                  linksRef.current
+                );
+                // Fade in the restored green blob
+                fadingGreenIds.current.add(green.id);
+                gRef.current
+                  ?.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
+                  .filter((gd) => gd.id === green.id)
+                  .attr('opacity', 0)
+                  .transition()
+                  .duration(1200)
+                  .attr('opacity', 1)
+                  .on('end', () => fadingGreenIds.current.delete(green.id));
+              }
+              simRef.current?.alpha(0.2).restart();
             });
-            (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
-              linksRef.current
-            );
-          }
-          simRef.current?.alpha(0.2).restart();
         });
+      // Logo fade-in: newly absorbed logos appear with a soft transition
+      enteredLogos.transition().duration(1500).attr('opacity', 1);
 
       logos.exit().remove();
 
@@ -458,6 +546,9 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       buildDragBehavior() as d3.DragBehavior<SVGGElement, SimNode, SimNode | d3.SubjectPosition>
     );
 
+    // Green company blobs must always render above topic/ghost blobs
+    g.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group').raise();
+
     if (simRef.current) {
       simRef.current.nodes(nodesRef.current);
       (simRef.current.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
@@ -483,14 +574,18 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .transition()
           .duration(400)
           .attr('opacity', 1);
-        group
-          .append('text')
-          .attr('text-anchor', 'middle')
-          .attr('dy', '0.35em')
-          .attr('fill', 'white')
-          .attr('font-size', '12px')
-          .attr('pointer-events', 'none')
-          .text(blue.name);
+        wrapSvgText(
+          group
+            .append('text')
+            .attr('text-anchor', 'middle')
+            .attr('fill', 'white')
+            .attr('font-size', '12px')
+            .attr('pointer-events', 'none'),
+          blue.name,
+          blue.r * 1.6,
+          14,
+          6.5
+        );
         group.style('cursor', 'pointer').on('dblclick', (_, d) => {
           setAcceptBlob(d as BlueBlobNode);
         });
@@ -534,14 +629,18 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           .attr('r', ghost.r)
           .attr('fill', fillColor)
           .attr('opacity', fillOpacity);
-        group
-          .append('text')
-          .attr('text-anchor', 'middle')
-          .attr('dy', '0.35em')
-          .attr('fill', 'rgba(255,255,255,0.7)')
-          .attr('font-size', '9px')
-          .attr('pointer-events', 'none')
-          .text(ghost.name.length > 18 ? ghost.name.slice(0, 16) + '…' : ghost.name);
+        wrapSvgText(
+          group
+            .append('text')
+            .attr('text-anchor', 'middle')
+            .attr('fill', 'rgba(255,255,255,0.7)')
+            .attr('font-size', '9px')
+            .attr('pointer-events', 'none'),
+          ghost.name,
+          ghost.r * 1.6,
+          11,
+          5
+        );
         group
           .style('cursor', 'pointer')
           .on('click', (_, d) => {
@@ -587,6 +686,11 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         d.fx = d.x;
         d.fy = d.y;
         draggingNodeIdRef.current = d.id;
+        // Raise the dragged element so it's always visible above all others
+        gRef.current
+          ?.selectAll<SVGGElement, SimNode>('.node-group')
+          .filter((nd) => nd.id === d.id)
+          .raise();
         // Freeze every other node (that isn't already pinned, e.g. orbiting red stars)
         // so the canvas holds still while the user aims
         frozenNodeIdsRef.current.clear();
@@ -620,6 +724,47 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           }
         });
         frozenNodeIdsRef.current.clear();
+
+        // Green drag-drop absorption — only triggers on explicit release over a blue blob
+        if (d.type === 'green' && !(d as GreenBlobNode).absorbed) {
+          const green = d as GreenBlobNode;
+          const blueTarget = nodesRef.current.find((n) => {
+            if (n.type !== 'blue') return false;
+            const dx = (green.x ?? 0) - (n.x ?? 0);
+            const dy = (green.y ?? 0) - (n.y ?? 0);
+            return Math.sqrt(dx * dx + dy * dy) < green.r + n.r;
+          }) as BlueBlobNode | undefined;
+          if (blueTarget) {
+            green.absorbed = true;
+            if (!blueTarget.absorbedLogos.some((l) => l.companyName === green.companyName)) {
+              blueTarget.absorbedLogos.push({
+                companyName: green.companyName,
+                logoUrl: green.logoUrl,
+                orbitAngle: Math.random() * Math.PI * 2,
+                orbitRadius: blueTarget.r * (0.2 + Math.random() * 0.45),
+                orbitSpeed: (0.0013 + Math.random() * 0.0027) * (Math.random() < 0.5 ? 1 : -1),
+              });
+            }
+            // Pin the green blob at its drop position so physics doesn't move it during fade
+            green.fx = green.x ?? 0;
+            green.fy = green.y ?? 0;
+            fadingGreenIds.current.add(green.id);
+            gRef.current
+              ?.selectAll<SVGGElement, GreenBlobNode>('.green-blob-group')
+              .filter((gd) => gd.id === green.id)
+              .transition()
+              .duration(1500)
+              .attr('opacity', 0)
+              .on('end', () => {
+                fadingGreenIds.current.delete(green.id);
+                green.fx = null;
+                green.fy = null;
+              });
+            syncTreeSummary();
+            clearMergeHalos();
+            return;
+          }
+        }
 
         const nearby = findNearbyCompatible(d, 30);
         if (nearby) {
@@ -701,6 +846,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         (typeof l.source === 'string' ? l.source : (l.source as SimNode).id) !== smaller.id
     );
     setBlueBlobIds((ids) => ids.filter((id) => id !== smaller.id));
+    syncTreeSummary();
 
     larger.fx = null;
     larger.fy = null;
@@ -712,6 +858,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const spawnBlueFromGhost = useCallback((ghost: GhostNode) => {
     nodesRef.current = nodesRef.current.filter((n) => n.id !== ghost.id);
     addBlueBlobAt(ghost.name, ghost.x ?? window.innerWidth / 2, ghost.y ?? window.innerHeight / 2);
+    syncTreeSummary();
   }, []);
 
   // ─── ADD BLUE BLOB ────────────────────────────────────────────────────────
@@ -732,6 +879,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
 
       nodesRef.current = [...nodesRef.current, blue];
       setBlueBlobIds((ids) => [...ids, id]);
+      syncTreeSummary();
       renderAll();
 
       // Async similarity call — fires after blob spawns
@@ -746,7 +894,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           node.relatedPastEventNumbers = sim.relatedPastEventNumbers;
 
           // Update forceLink strengths for green → blue
-          updateGreenLinks(id, sim.similarityScore);
+          updateGreenLinks(id, sim.cluster);
 
           // Activate matching red stars
           activateRedStars(sim.relatedPastEventNumbers);
@@ -762,25 +910,40 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
     [eventCode]
   );
 
-  const updateGreenLinks = (blueBlobId: string, strength: number) => {
+  /**
+   * Wire green blobs toward a newly spawned blue blob.
+   *
+   * Each green can hold one forceLink per cluster simultaneously (multi-link).
+   * When a new blue appears for cluster X, every green that has submitted topics
+   * in cluster X gets a link with strength = clusterAttractions[X].
+   * If the green was already linked to an older blue for the same cluster,
+   * that link is replaced (only one blue per cluster per green at a time).
+   *
+   * BUSINESS_OTHER blue blobs attract nobody — they represent unclassified topics.
+   */
+  const updateGreenLinks = (blueBlobId: string, blueCluster: string) => {
+    if (blueCluster === 'BUSINESS_OTHER') return;
+
     nodesRef.current.forEach((n) => {
       if (n.type !== 'green') return;
       const green = n as GreenBlobNode;
 
-      // Only re-route this green if the new blue is at least as attractive (P1 fix)
-      if (strength < (green.bestSimilarity ?? 0)) return;
+      const strength = green.clusterAttractions[blueCluster] ?? 0;
+      if (strength < 0.05) return;
 
-      green.bestSimilarity = strength;
+      // Remove existing link for this cluster (replaced by the new blue)
+      const oldBlueid = green.linkedBlobsByCluster[blueCluster];
+      if (oldBlueid) {
+        linksRef.current = linksRef.current.filter((l) => {
+          const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
+          const tgt = typeof l.target === 'string' ? l.target : (l.target as SimNode).id;
+          return !(src === green.id && tgt === oldBlueid);
+        });
+      }
 
-      // Remove old link from this green
-      linksRef.current = linksRef.current.filter((l) => {
-        const src = typeof l.source === 'string' ? l.source : (l.source as SimNode).id;
-        return src !== green.id;
-      });
-
-      // Add new link toward this blue blob
+      // Add link toward this blue blob for this cluster
       linksRef.current.push({ source: green.id, target: blueBlobId, strength });
-      green.linkedBlobId = blueBlobId;
+      green.linkedBlobsByCluster[blueCluster] = blueBlobId;
     });
 
     (simRef.current?.force('link') as d3.ForceLink<SimNode, SimLink> | null)?.links(
@@ -820,13 +983,14 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
             return tgt !== lastId;
           });
 
-          // Reset green best-similarity for greens that were linked to the removed blue (P3)
+          // Clear linkedBlobsByCluster entries pointing at the removed blue
           nodesRef.current.forEach((n) => {
             if (n.type === 'green') {
               const green = n as GreenBlobNode;
-              if (green.linkedBlobId === lastId) {
-                green.bestSimilarity = undefined;
-                green.linkedBlobId = undefined;
+              for (const cluster of Object.keys(green.linkedBlobsByCluster)) {
+                if (green.linkedBlobsByCluster[cluster] === lastId) {
+                  delete green.linkedBlobsByCluster[cluster];
+                }
               }
             }
           });
@@ -856,6 +1020,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           }
 
           setBlueBlobIds((ids) => ids.slice(0, -1));
+          syncTreeSummary();
           renderAll();
         }
         return;
@@ -988,7 +1153,12 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           0%, 100% { transform: scale(0.95); }
           50% { transform: scale(1.05); }
         }
-        .ghost-group { animation: blobPulse 3s ease-in-out infinite; }
+        /* Apply pulse to the circle only — animating the group overrides D3's translate attribute */
+        .ghost-group circle {
+          animation: blobPulse 3s ease-in-out infinite;
+          transform-box: fill-box;
+          transform-origin: center;
+        }
       `}</style>
 
       {/* Full-viewport SVG canvas — D3 renders everything inside */}
@@ -1109,6 +1279,138 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
           {acceptError}
         </Alert>
       </Snackbar>
+
+      {/* Topic tree panel — floating card hovering over canvas, right side */}
+      <Box
+        sx={{
+          position: 'fixed',
+          right: 16,
+          top: 60,
+          bottom: 16,
+          display: 'flex',
+          flexDirection: 'row',
+          zIndex: 1000,
+          borderRadius: 2,
+          overflow: 'hidden',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
+          pointerEvents: 'none', // let canvas remain interactive by default
+        }}
+      >
+        {/* Toggle strip — always visible */}
+        <Box
+          sx={{
+            width: 24,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'rgba(25,118,210,0.25)',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            '&:hover': { bgcolor: 'rgba(25,118,210,0.4)' },
+            transition: 'background-color 0.2s',
+          }}
+          onClick={() => setPanelOpen((v) => !v)}
+        >
+          {panelOpen ? (
+            <ChevronRight sx={{ color: 'rgba(255,255,255,0.65)', fontSize: 16 }} />
+          ) : (
+            <ChevronLeft sx={{ color: 'rgba(255,255,255,0.65)', fontSize: 16 }} />
+          )}
+        </Box>
+
+        {/* Content — slides in/out */}
+        <Box
+          sx={{
+            width: panelOpen ? 220 : 0,
+            transition: 'width 0.25s ease',
+            overflow: 'hidden',
+            bgcolor: 'rgba(13,27,42,0.95)',
+            pointerEvents: 'auto',
+          }}
+        >
+          <Box sx={{ width: 220, height: '100%', overflowY: 'auto', p: 1.5 }}>
+            <Typography
+              sx={{
+                color: 'rgba(255,255,255,0.35)',
+                fontSize: 9,
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                display: 'block',
+                mb: 1.5,
+              }}
+            >
+              Topics
+            </Typography>
+
+            {treeSummary.length === 0 ? (
+              <Typography
+                sx={{ color: 'rgba(255,255,255,0.25)', fontSize: 10, fontStyle: 'italic' }}
+              >
+                No topics yet
+              </Typography>
+            ) : (
+              treeSummary.map((topic) => (
+                <Box key={topic.id} sx={{ mb: 1.5 }}>
+                  {/* Topic root node */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.75, mb: 0.5 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        bgcolor: '#1976d2',
+                        flexShrink: 0,
+                        mt: '3px',
+                      }}
+                    />
+                    <Typography
+                      sx={{ color: 'white', fontWeight: 600, fontSize: 11, lineHeight: 1.3 }}
+                    >
+                      {topic.name}
+                    </Typography>
+                  </Box>
+
+                  {/* Absorbed company children */}
+                  {topic.companies.length === 0 ? (
+                    <Typography
+                      sx={{
+                        color: 'rgba(255,255,255,0.25)',
+                        pl: 2,
+                        fontSize: 10,
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      no partners
+                    </Typography>
+                  ) : (
+                    topic.companies.map((company) => (
+                      <Box
+                        key={company}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5, pl: 1.5, py: '2px' }}
+                      >
+                        <Typography
+                          sx={{
+                            color: 'rgba(255,255,255,0.2)',
+                            fontSize: 8,
+                            lineHeight: 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          └
+                        </Typography>
+                        <Typography sx={{ color: 'rgba(144,238,144,0.85)', fontSize: 10 }}>
+                          {company}
+                        </Typography>
+                      </Box>
+                    ))
+                  )}
+                </Box>
+              ))
+            )}
+          </Box>
+        </Box>
+      </Box>
     </>
   );
 };

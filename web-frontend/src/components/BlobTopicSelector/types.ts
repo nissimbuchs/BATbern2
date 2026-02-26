@@ -13,10 +13,19 @@ export type BlobType =
   | 'ghost-trend'
   | 'red-star';
 
+export interface PartnerTopicItem {
+  title: string;
+  /** BatbernCluster name — e.g. "AI_ML", "SECURITY", "BUSINESS_OTHER" */
+  cluster: string;
+  voteCount: number;
+  /** ISO instant string — used as recency proxy for attraction strength */
+  createdAt: string;
+}
+
 export interface PartnerTopicEntry {
   companyName: string;
   logoUrl: string;
-  topics: string[];
+  topics: PartnerTopicItem[];
 }
 
 export interface PastEventEntry {
@@ -66,9 +75,17 @@ export interface GreenBlobNode extends d3.SimulationNodeDatum {
   topicName: string;
   r: number;
   absorbed: boolean;
-  linkedBlobId?: string;
-  /** Highest similarity score seen so far — used to prefer the best-matching blue blob */
-  bestSimilarity?: number;
+  /**
+   * Precomputed per-cluster attraction strengths (0–1).
+   * Built once at node creation from the company's topic submissions.
+   * Key = BatbernCluster name; absent key = no attraction to that cluster.
+   */
+  clusterAttractions: Record<string, number>;
+  /**
+   * Active forceLink per cluster: clusterName → blueBlobId currently linked.
+   * A green can simultaneously link to multiple blue blobs (one per cluster).
+   */
+  linkedBlobsByCluster: Record<string, string>;
 }
 
 export interface GhostNode extends d3.SimulationNodeDatum {

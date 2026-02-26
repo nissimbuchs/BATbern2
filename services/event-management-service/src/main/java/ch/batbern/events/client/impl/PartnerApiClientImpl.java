@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,22 +45,28 @@ public class PartnerApiClientImpl implements PartnerApiClient {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            ResponseEntity<List<PartnerTopicItem>> response = restTemplate.exchange(
+            ResponseEntity<List<PartnerServiceTopicItem>> response = restTemplate.exchange(
                     partnerServiceBaseUrl + "/api/v1/partners/topics",
                     HttpMethod.GET,
                     request,
-                    new ParameterizedTypeReference<List<PartnerTopicItem>>() {});
+                    new ParameterizedTypeReference<List<PartnerServiceTopicItem>>() {});
 
-            List<PartnerTopicItem> items = response.getBody();
+            List<PartnerServiceTopicItem> items = response.getBody();
             if (items == null || items.isEmpty()) {
                 return List.of();
             }
 
-            // Group by company name; preserve insertion order within each group
-            Map<String, List<String>> byCompany = items.stream()
+            // Group by company name; preserve insertion order within each group.
+            // Retain voteCount and createdAt so TopicSessionDataService can compute attraction strengths.
+            Map<String, List<PartnerApiClient.PartnerTopicItem>> byCompany = items.stream()
                     .collect(Collectors.groupingBy(
                             item -> item.suggestedByCompany() != null ? item.suggestedByCompany() : "Unknown",
-                            Collectors.mapping(PartnerTopicItem::title, Collectors.toList())
+                            Collectors.mapping(
+                                    item -> new PartnerApiClient.PartnerTopicItem(
+                                            item.title(),
+                                            item.voteCount() != null ? item.voteCount() : 0,
+                                            item.createdAt() != null ? item.createdAt() : Instant.EPOCH),
+                                    Collectors.toList())
                     ));
 
             // Fetch company logos in a second call (company.logoUrl lives on the partner entity)
@@ -124,7 +131,8 @@ public class PartnerApiClientImpl implements PartnerApiClient {
 
     /** Local DTO matching the partner service's TopicDTO structure. */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record PartnerTopicItem(String title, String suggestedByCompany) {}
+    private record PartnerServiceTopicItem(String title, String suggestedByCompany,
+                                           Integer voteCount, Instant createdAt) {}
 
     /** Minimal projection of PartnerListResponse — only fields needed for logo lookup. */
     @JsonIgnoreProperties(ignoreUnknown = true)

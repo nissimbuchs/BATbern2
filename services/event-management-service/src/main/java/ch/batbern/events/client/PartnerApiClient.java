@@ -1,5 +1,6 @@
 package ch.batbern.events.client;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -16,11 +17,20 @@ public interface PartnerApiClient {
     List<PartnerTopicGroup> getPartnerTopics();
 
     /**
-     * Partner topic group — one entry per company with their suggested topic titles.
+     * Partner topic group — one entry per company with their suggested topics (rich objects).
      *
      * @param companyName the partner company name
      * @param logoUrl     company logo URL (may be null if unavailable)
-     * @param topics      list of topic titles suggested by this company
+     * @param topics      list of topic items (title, voteCount, createdAt) suggested by this company
      */
-    record PartnerTopicGroup(String companyName, String logoUrl, List<String> topics) {}
+    record PartnerTopicGroup(String companyName, String logoUrl, List<PartnerTopicItem> topics) {}
+
+    /**
+     * A single partner topic suggestion with vote and recency data for attraction-strength calculation.
+     *
+     * @param title     topic title (free-form text, may be German or English)
+     * @param voteCount number of partner votes cast on this topic
+     * @param createdAt when the topic was first submitted (used as recency proxy)
+     */
+    record PartnerTopicItem(String title, int voteCount, Instant createdAt) {}
 }

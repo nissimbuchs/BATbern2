@@ -117,6 +117,7 @@ public class TopicService {
         }
         topic.setTitle(request.title().strip());
         topic.setDescription(request.description());
+        topic.setCreatedAt(Instant.now());
         TopicSuggestion saved = topicRepository.save(topic);
         long voteCount = topicVoteRepository.countByTopicId(topicId);
         log.info("Topic updated: id={} company={}", topicId, callerCompanyName);

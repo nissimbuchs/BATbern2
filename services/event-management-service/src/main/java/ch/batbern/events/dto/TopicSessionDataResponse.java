@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -21,6 +22,8 @@ public class TopicSessionDataResponse {
     /**
      * Partner topics grouped by company.
      * Used to create green blobs (partner interests) on the canvas.
+     * Each topic carries cluster classification, vote count, and creation date
+     * so the frontend can compute per-cluster attraction strengths.
      */
     private List<PartnerTopicGroup> partnerTopics;
 
@@ -52,7 +55,22 @@ public class TopicSessionDataResponse {
         private String companyName;
         /** Company logo URL; may be null when not available. */
         private String logoUrl;
-        private List<String> topics;
+        /** Topic suggestions from this company, each enriched with cluster, vote count, and date. */
+        private List<TopicEntry> topics;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class TopicEntry {
+        private String title;
+        /** BatbernCluster.name() — cluster this topic was classified into. */
+        private String cluster;
+        /** Number of partner votes cast on this topic suggestion. */
+        private int voteCount;
+        /** When the topic was first submitted; used as recency proxy for attraction strength. */
+        private Instant createdAt;
     }
 
     @Data
