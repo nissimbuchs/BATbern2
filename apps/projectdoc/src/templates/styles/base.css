@@ -83,6 +83,14 @@
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 350ms ease;
+
+  /* Gray Scale — dark-theme calibrated */
+  --gray-50:  #1e2530;   /* Subtle surface — slightly lighter than page bg */
+  --gray-400: #52596b;   /* Medium gray — badge and pill backgrounds */
+  --gray-600: #3c4455;   /* Slightly darker — hover states */
+  --gray-700: #2e3547;   /* Dark — button backgrounds */
+  --gray-800: #1c2235;   /* Very dark — code header background */
+  --gray-900: #0f1218;   /* Deepest dark — code block body */
 }
 
 /* Reset and Base Styles */

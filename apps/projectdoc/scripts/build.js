@@ -439,8 +439,8 @@ class DocumentationBuilder {
 
     // Copy highlight.js CSS
     const { fileURLToPath } = await import('url');
-    const hljsStylePath = fileURLToPath(import.meta.resolve('highlight.js/styles/github.css'));
-    const hljsCSS = `/* Highlight.js GitHub Theme */
+    const hljsStylePath = fileURLToPath(import.meta.resolve('highlight.js/styles/github-dark.css'));
+    const hljsCSS = `/* Highlight.js GitHub Dark Theme */
 ${await fs.readFile(hljsStylePath, 'utf8')}`;
     await fs.writeFile(path.join(outputPath, 'styles/highlight.css'), hljsCSS);
 
