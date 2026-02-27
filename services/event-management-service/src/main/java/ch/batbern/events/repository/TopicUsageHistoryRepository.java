@@ -101,6 +101,7 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
      */
     interface TopicMaxUsedDateProjection {
         UUID getTopicId();
+
         LocalDateTime getMaxUsedDate();
     }
 }

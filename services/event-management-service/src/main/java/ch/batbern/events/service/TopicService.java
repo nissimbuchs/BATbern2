@@ -96,11 +96,14 @@ public class TopicService {
             final int minStaleness;
             final int maxStaleness;
             if (status.equalsIgnoreCase("available")) {
-                minStaleness = 70; maxStaleness = 100;
+                minStaleness = 70;
+                maxStaleness = 100;
             } else if (status.equalsIgnoreCase("caution")) {
-                minStaleness = 40; maxStaleness = 69;
+                minStaleness = 40;
+                maxStaleness = 69;
             } else { // unavailable
-                minStaleness = 0; maxStaleness = 39;
+                minStaleness = 0;
+                maxStaleness = 39;
             }
 
             List<Topic> filtered = all.stream()
