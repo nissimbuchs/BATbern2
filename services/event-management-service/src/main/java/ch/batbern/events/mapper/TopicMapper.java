@@ -35,15 +35,16 @@ public class TopicMapper {
 
     /**
      * Convert Topic entity to Topic DTO (generated from OpenAPI).
-     * Staleness and lastUsedDate are computed live by the caller (not stored on entity).
+     * Staleness, lastUsedDate, and usageCount are all computed live by the caller.
      *
-     * @param entity      the Topic entity
-     * @param staleness   live-computed staleness score (0-100)
+     * @param entity       the Topic entity
+     * @param staleness    live-computed staleness score (0-100)
      * @param lastUsedDate live-computed last-used date from topic_usage_history (nullable)
+     * @param usageCount   live-computed count of usage history records
      * @return the generated Topic DTO
      */
     public ch.batbern.events.dto.generated.topics.Topic toDto(
-            Topic entity, int staleness, java.time.LocalDateTime lastUsedDate) {
+            Topic entity, int staleness, java.time.LocalDateTime lastUsedDate, int usageCount) {
         if (entity == null) {
             return null;
         }
@@ -55,7 +56,7 @@ public class TopicMapper {
         dto.setCategory(entity.getCategory());
         dto.setCreatedDate(toOffsetDateTime(entity.getCreatedDate()));
         dto.setLastUsedDate(toOffsetDateTime(lastUsedDate));
-        dto.setUsageCount(entity.getUsageCount());
+        dto.setUsageCount(usageCount);
         dto.setStalenessScore(staleness);
 
         // Delegate business logic to TopicService (static utility methods)
@@ -79,14 +80,17 @@ public class TopicMapper {
      * @param similarityScoreDtos pre-converted similarity score DTOs
      * @param staleness           live-computed staleness score
      * @param lastUsedDate        live-computed last-used date (nullable)
+     * @param usageCount          live-computed usage count
      * @return the generated Topic DTO with similarity scores
      */
     public ch.batbern.events.dto.generated.topics.Topic toDtoWithSimilarityScores(
             Topic entity,
             List<SimilarityScore> similarityScoreDtos,
             int staleness,
-            java.time.LocalDateTime lastUsedDate) {
-        ch.batbern.events.dto.generated.topics.Topic dto = toDto(entity, staleness, lastUsedDate);
+            java.time.LocalDateTime lastUsedDate,
+            int usageCount) {
+        ch.batbern.events.dto.generated.topics.Topic dto =
+                toDto(entity, staleness, lastUsedDate, usageCount);
         if (dto != null && similarityScoreDtos != null) {
             dto.setSimilarityScores(similarityScoreDtos);
         }
@@ -95,20 +99,23 @@ public class TopicMapper {
 
     /**
      * Convert Topic entity to Topic DTO with usage history.
-     * Staleness and lastUsedDate are computed from the history list — no extra DB query.
+     * Staleness, lastUsedDate, and usageCount are all computed from the already-fetched history.
      *
-     * @param entity          the Topic entity
-     * @param usageHistoryDtos the usage history DTOs (used to derive staleness)
+     * @param entity           the Topic entity
+     * @param usageHistoryDtos the usage history DTOs
      * @param staleness        pre-computed staleness (caller computed from history)
      * @param lastUsedDate     pre-computed last-used date (caller computed from history)
+     * @param usageCount       pre-computed usage count (= history list size)
      * @return the generated Topic DTO with usage history
      */
     public ch.batbern.events.dto.generated.topics.Topic toDtoWithUsageHistory(
             Topic entity,
             List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> usageHistoryDtos,
             int staleness,
-            java.time.LocalDateTime lastUsedDate) {
-        ch.batbern.events.dto.generated.topics.Topic dto = toDto(entity, staleness, lastUsedDate);
+            java.time.LocalDateTime lastUsedDate,
+            int usageCount) {
+        ch.batbern.events.dto.generated.topics.Topic dto =
+                toDto(entity, staleness, lastUsedDate, usageCount);
         if (dto != null && usageHistoryDtos != null) {
             dto.setUsageHistory(usageHistoryDtos);
         }

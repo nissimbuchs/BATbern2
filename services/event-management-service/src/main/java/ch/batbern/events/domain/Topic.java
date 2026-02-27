@@ -54,9 +54,6 @@ public class Topic {
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
-    @Column(name = "usage_count")
-    private Integer usageCount = 0;
-
     @Column(name = "partner_influence_score")
     private Double partnerInfluenceScore;
 
@@ -162,14 +159,6 @@ public class Topic {
 
     public void setCreatedDate(LocalDateTime createdDate) {
         this.createdDate = createdDate;
-    }
-
-    public Integer getUsageCount() {
-        return usageCount;
-    }
-
-    public void setUsageCount(Integer usageCount) {
-        this.usageCount = usageCount;
     }
 
     public Double getPartnerInfluenceScore() {

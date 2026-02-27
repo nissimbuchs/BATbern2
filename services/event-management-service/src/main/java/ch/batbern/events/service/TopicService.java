@@ -271,7 +271,6 @@ public class TopicService {
         topic.setDescription(description);
         topic.setCategory(category);
         topic.setCreatedDate(LocalDateTime.now());
-        topic.setUsageCount(0);
         topic.setActive(true);
 
         Topic savedTopic = topicRepository.save(topic);
@@ -340,19 +339,16 @@ public class TopicService {
      *
      * @param topicId Topic ID
      * @throws IllegalArgumentException if topic not found
-     * @throws IllegalStateException if topic has been used (usageCount > 0 or lastUsedDate != null)
+     * @throws IllegalStateException if topic has usage history records
      */
     public void deleteTopic(UUID topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
 
-        // Safety check: prevent deletion if topic has been used (check usage history, not the
-        // denormalized lastUsedDate which may be stale)
         boolean hasUsageHistory = !topicUsageHistoryRepository.findByTopicId(topicId).isEmpty();
-        if (topic.getUsageCount() > 0 || hasUsageHistory) {
+        if (hasUsageHistory) {
             throw new IllegalStateException(
-                "Cannot delete topic that has been used in events. "
-                + "Topic has been used " + topic.getUsageCount() + " time(s)."
+                "Cannot delete topic that has been used in events."
             );
         }
 
@@ -365,39 +361,20 @@ public class TopicService {
      *
      * @param topicCode Topic code (slug-format)
      * @throws IllegalArgumentException if topic not found
-     * @throws IllegalStateException if topic has been used
+     * @throws IllegalStateException if topic has usage history records
      */
     public void deleteTopicByCode(String topicCode) {
         Topic topic = topicRepository.findByTopicCode(topicCode)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
 
-        // Safety check: prevent deletion if topic has been used (check usage history, not the
-        // denormalized lastUsedDate which may be stale)
         boolean hasUsageHistory = !topicUsageHistoryRepository.findByTopicId(topic.getId()).isEmpty();
-        if (topic.getUsageCount() > 0 || hasUsageHistory) {
+        if (hasUsageHistory) {
             throw new IllegalStateException(
-                "Cannot delete topic that has been used in events. "
-                + "Topic has been used " + topic.getUsageCount() + " time(s)."
+                "Cannot delete topic that has been used in events."
             );
         }
 
         topicRepository.delete(topic);
-    }
-
-    /**
-     * Mark topic as used (updates lastUsedDate and usageCount).
-     *
-     * @param topicId Topic ID
-     * @return Updated topic
-     */
-    public Topic markTopicAsUsed(UUID topicId) {
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
-
-        topic.setUsageCount(topic.getUsageCount() + 1);
-        // lastUsedDate and staleness are derived live from topic_usage_history; no need to set here
-
-        return topicRepository.save(topic);
     }
 
     /**
@@ -572,30 +549,10 @@ public class TopicService {
         updatedEvent.setUpdatedBy(organizerUsername);
         Event savedEvent = eventRepository.save(updatedEvent);
 
-        // Mark topic as used with event date (Story 5.2a - Fix #4)
-        markTopicAsUsed(topic.getId(), savedEvent.getDate());
-
-        // Create usage history record for heatmap visualization (GitHub Issue #379)
+        // Create usage history record (single source of truth for usage count + staleness)
         createUsageHistoryRecord(topic.getId(), savedEvent.getId(), savedEvent.getDate());
 
         return savedEvent;
-    }
-
-    /**
-     * Mark topic as used with specific date (overloaded for backward compatibility).
-     *
-     * @param topicId Topic ID
-     * @param eventDate Event date to set as lastUsedDate
-     * @return Updated topic
-     */
-    public Topic markTopicAsUsed(UUID topicId, java.time.Instant eventDate) {
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
-
-        topic.setUsageCount(topic.getUsageCount() + 1);
-        // lastUsedDate and staleness are derived live from topic_usage_history; no need to set here
-
-        return topicRepository.save(topic);
     }
 
     /**
@@ -692,11 +649,14 @@ public class TopicService {
                 .map(topic -> {
                     LocalDateTime lastUsed = maxDateByTopicId.get(topic.getId());
                     int staleness = stalenessScoreService.calculateStaleness(lastUsed);
+                    List<ch.batbern.events.dto.generated.topics.TopicUsageHistory> historyDtos =
+                            historyByTopicId.getOrDefault(topic.getId(), List.of());
                     return topicMapper.toDtoWithUsageHistory(
                             topic,
-                            historyByTopicId.getOrDefault(topic.getId(), List.of()),
+                            historyDtos,
                             staleness,
-                            lastUsed
+                            lastUsed,
+                            historyDtos.size()
                     );
                 })
                 .collect(Collectors.toList());

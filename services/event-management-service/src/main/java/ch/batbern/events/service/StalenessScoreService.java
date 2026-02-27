@@ -38,27 +38,27 @@ public class StalenessScoreService {
     private final TopicUsageHistoryRepository topicUsageHistoryRepository;
 
     /**
-     * Holds the computed staleness and last-used date for a topic.
+     * Holds the live-computed staleness, last-used date, and usage count for a topic.
+     * All three are derived from topic_usage_history — no stored columns needed.
      */
-    public record StalenessData(int staleness, LocalDateTime lastUsedDate) {
-        public static final StalenessData NEVER_USED = new StalenessData(100, null);
+    public record StalenessData(int staleness, LocalDateTime lastUsedDate, int usageCount) {
+        public static final StalenessData NEVER_USED = new StalenessData(100, null, 0);
     }
 
     /**
      * Calculate staleness score for a single topic by querying the live usage history.
+     * Reuses the batch query with a single-element list to avoid duplicate logic.
      *
      * @param topic Topic to calculate staleness for
-     * @return StalenessData (score + lastUsedDate)
+     * @return StalenessData (score + lastUsedDate + usageCount)
      */
     public StalenessData computeStalenessData(Topic topic) {
-        LocalDateTime lastUsedDate = topicUsageHistoryRepository
-                .findMaxUsedDateByTopicId(topic.getId())
-                .orElse(null);
-        return new StalenessData(calculateStaleness(lastUsedDate), lastUsedDate);
+        Map<UUID, StalenessData> result = computeStalenessDataBatch(List.of(topic));
+        return result.getOrDefault(topic.getId(), StalenessData.NEVER_USED);
     }
 
     /**
-     * Batch-compute staleness for a list of topics in a single query.
+     * Batch-compute staleness and usage count for a list of topics in a single query.
      *
      * @param topics Topics to compute staleness for
      * @return Map of topicId → StalenessData
@@ -70,19 +70,27 @@ public class StalenessScoreService {
 
         List<UUID> topicIds = topics.stream().map(Topic::getId).collect(Collectors.toList());
 
-        Map<UUID, LocalDateTime> maxDateByTopicId = topicUsageHistoryRepository
-                .findMaxUsedDatesByTopicIds(topicIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        TopicUsageHistoryRepository.TopicMaxUsedDateProjection::getTopicId,
-                        TopicUsageHistoryRepository.TopicMaxUsedDateProjection::getMaxUsedDate
-                ));
+        Map<UUID, TopicUsageHistoryRepository.TopicMaxUsedDateProjection> projByTopicId =
+                topicUsageHistoryRepository
+                        .findMaxUsedDatesByTopicIds(topicIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                TopicUsageHistoryRepository.TopicMaxUsedDateProjection::getTopicId,
+                                p -> p
+                        ));
 
         return topics.stream().collect(Collectors.toMap(
                 Topic::getId,
                 t -> {
-                    LocalDateTime lastUsed = maxDateByTopicId.get(t.getId());
-                    return new StalenessData(calculateStaleness(lastUsed), lastUsed);
+                    TopicUsageHistoryRepository.TopicMaxUsedDateProjection proj =
+                            projByTopicId.get(t.getId());
+                    if (proj == null) {
+                        return StalenessData.NEVER_USED;
+                    }
+                    LocalDateTime lastUsed = proj.getMaxUsedDate();
+                    int usageCount = proj.getUsageCount() == null ? 0
+                            : proj.getUsageCount().intValue();
+                    return new StalenessData(calculateStaleness(lastUsed), lastUsed, usageCount);
                 }
         ));
     }

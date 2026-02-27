@@ -420,7 +420,6 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         topic.setTitle(title);
         topic.setDescription("Test description for " + title);
         topic.setCategory(category);
-        topic.setUsageCount(0);
         topic.setActive(true);
         topic.setCreatedDate(LocalDateTime.now());
         return topicRepository.save(topic);

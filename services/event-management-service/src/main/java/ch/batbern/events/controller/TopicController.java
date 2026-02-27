@@ -105,9 +105,11 @@ public class TopicController {
         boolean includeHistory = include != null && include.contains("history");
         boolean includeSimilarity = include != null && include.contains("similarity");
 
-        // Staleness sort is handled in-memory; pass null sort to DB for that case
+        // Staleness and usageCount sorts are handled in-memory; pass null sort to DB for those
         boolean sortByStaleness = sort != null && sort.contains("stalenessScore");
-        Pageable pageable = createPageable(page - 1, limit, sortByStaleness ? null : sort);
+        boolean sortByUsageCount = sort != null && sort.contains("usageCount");
+        boolean inMemorySort = sortByStaleness || sortByUsageCount;
+        Pageable pageable = createPageable(page - 1, limit, inMemorySort ? null : sort);
 
         Page<Topic> topicPage = topicService.getAllTopics(category, status, pageable);
 
@@ -130,17 +132,19 @@ public class TopicController {
         Map<UUID, StalenessScoreService.StalenessData> stalenessMap =
                 stalenessScoreService.computeStalenessDataBatch(topics);
 
-        // Apply in-memory staleness sort if requested
+        // Apply in-memory sort if requested (staleness or usageCount)
         List<Topic> sortedTopics = topics;
-        if (sortByStaleness) {
+        if (inMemorySort) {
             boolean desc = sort == null || !sort.endsWith("asc");
             sortedTopics = topics.stream()
                     .sorted((a, b) -> {
-                        int sa = stalenessMap.getOrDefault(a.getId(),
-                                StalenessScoreService.StalenessData.NEVER_USED).staleness();
-                        int sb = stalenessMap.getOrDefault(b.getId(),
-                                StalenessScoreService.StalenessData.NEVER_USED).staleness();
-                        return desc ? Integer.compare(sb, sa) : Integer.compare(sa, sb);
+                        StalenessScoreService.StalenessData sda = stalenessMap.getOrDefault(
+                                a.getId(), StalenessScoreService.StalenessData.NEVER_USED);
+                        StalenessScoreService.StalenessData sdb = stalenessMap.getOrDefault(
+                                b.getId(), StalenessScoreService.StalenessData.NEVER_USED);
+                        int va = sortByUsageCount ? sda.usageCount() : sda.staleness();
+                        int vb = sortByUsageCount ? sdb.usageCount() : sdb.staleness();
+                        return desc ? Integer.compare(vb, va) : Integer.compare(va, vb);
                     })
                     .collect(Collectors.toList());
         }
@@ -158,7 +162,8 @@ public class TopicController {
                         var similarityScores = topicService.convertSimilarityScoresToDtos(
                                 topic.getSimilarityScores());
                         return topicMapper.toDtoWithSimilarityScores(
-                                topic, similarityScores, sd.staleness(), sd.lastUsedDate());
+                                topic, similarityScores, sd.staleness(), sd.lastUsedDate(),
+                                sd.usageCount());
                     })
                     .collect(Collectors.toList());
         } else {
@@ -166,7 +171,8 @@ public class TopicController {
                     .map(topic -> {
                         var sd = stalenessMap.getOrDefault(topic.getId(),
                                 StalenessScoreService.StalenessData.NEVER_USED);
-                        return topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate());
+                        return topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate(),
+                                sd.usageCount());
                     })
                     .collect(Collectors.toList());
         }
@@ -232,9 +238,9 @@ public class TopicController {
         if (includeSimilarity) {
             var similarityScores = topicService.convertSimilarityScoresToDtos(topic.getSimilarityScores());
             dto = topicMapper.toDtoWithSimilarityScores(
-                    topic, similarityScores, sd.staleness(), sd.lastUsedDate());
+                    topic, similarityScores, sd.staleness(), sd.lastUsedDate(), sd.usageCount());
         } else {
-            dto = topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate());
+            dto = topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate(), sd.usageCount());
         }
 
         return ResponseEntity.ok(dto);
@@ -252,9 +258,9 @@ public class TopicController {
                 request.getDescription(),
                 request.getCategory()
         );
-        // New topic has no usage history → staleness = 100
+        // New topic has no usage history → staleness = 100, usageCount = 0
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(topicMapper.toDto(topic, 100, null));
+                .body(topicMapper.toDto(topic, 100, null, 0));
     }
 
     /**
@@ -273,7 +279,8 @@ public class TopicController {
                 request.getCategory()
         );
         StalenessScoreService.StalenessData sd = stalenessScoreService.computeStalenessData(topic);
-        return ResponseEntity.ok(topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate()));
+        return ResponseEntity.ok(topicMapper.toDto(topic, sd.staleness(), sd.lastUsedDate(),
+                sd.usageCount()));
     }
 
     /**
@@ -301,7 +308,7 @@ public class TopicController {
                 .map(t -> {
                     var sd = stalenessMap.getOrDefault(t.getId(),
                             StalenessScoreService.StalenessData.NEVER_USED);
-                    return topicMapper.toDto(t, sd.staleness(), sd.lastUsedDate());
+                    return topicMapper.toDto(t, sd.staleness(), sd.lastUsedDate(), sd.usageCount());
                 })
                 .collect(Collectors.toList());
 
