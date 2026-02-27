@@ -8,15 +8,15 @@
       "type": "text",
       "x": 40,
       "y": 20,
-      "width": 680,
-      "height": 36,
+      "width": 405.9117736816406,
+      "height": 32.5,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -25,12 +25,20 @@
       "containerId": null,
       "text": "CI/CD Pipeline — Fully Automated",
       "fontSize": 26,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "left",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "CI/CD Pipeline — Fully Automated"
+      "originalText": "CI/CD Pipeline — Fully Automated",
+      "version": 17,
+      "versionNonce": 1407236598,
+      "index": "a0",
+      "isDeleted": false,
+      "seed": 1506528682,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-lane-dev-header",
@@ -45,7 +53,7 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-dev-header"
@@ -61,7 +69,15 @@
           "id": "text-lane-dev-header"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 13,
+      "versionNonce": 1591872310,
+      "index": "a1",
+      "isDeleted": false,
+      "seed": 1662552170,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-lane-dev-header",
@@ -76,7 +92,7 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-dev-header"
@@ -87,12 +103,20 @@
       "containerId": "shape-lane-dev-header",
       "text": "💻  Developer Machine",
       "fontSize": 16,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "💻  Developer Machine"
+      "originalText": "💻  Developer Machine",
+      "version": 15,
+      "versionNonce": 942093430,
+      "index": "a2",
+      "isDeleted": false,
+      "seed": 8383274,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-lane-github-header",
@@ -107,7 +131,7 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-github-header"
@@ -123,7 +147,15 @@
           "id": "text-lane-github-header"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 13,
+      "versionNonce": 427111862,
+      "index": "a3",
+      "isDeleted": false,
+      "seed": 678229482,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-lane-github-header",
@@ -138,7 +170,7 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-github-header"
@@ -149,12 +181,20 @@
       "containerId": "shape-lane-github-header",
       "text": "🐙  GitHub Actions",
       "fontSize": 16,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "🐙  GitHub Actions"
+      "originalText": "🐙  GitHub Actions",
+      "version": 15,
+      "versionNonce": 1005653750,
+      "index": "a4",
+      "isDeleted": false,
+      "seed": 1273669802,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-lane-aws-header",
@@ -169,7 +209,7 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-aws-header"
@@ -185,7 +225,15 @@
           "id": "text-lane-aws-header"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 13,
+      "versionNonce": 1814020150,
+      "index": "a5",
+      "isDeleted": false,
+      "seed": 44303210,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-lane-aws-header",
@@ -200,7 +248,7 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-lane-aws-header"
@@ -211,12 +259,20 @@
       "containerId": "shape-lane-aws-header",
       "text": "☁️  AWS Staging",
       "fontSize": 16,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
       "lineHeight": 1.25,
-      "originalText": "☁️  AWS Staging"
+      "originalText": "☁️  AWS Staging",
+      "version": 15,
+      "versionNonce": 501631350,
+      "index": "a6",
+      "isDeleted": false,
+      "seed": 920913450,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-box-commit",
@@ -231,7 +287,7 @@
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-commit"
@@ -245,24 +301,36 @@
         {
           "type": "text",
           "id": "text-box-commit"
+        },
+        {
+          "id": "arrow-commit-to-push",
+          "type": "arrow"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 13,
+      "versionNonce": 9022134,
+      "index": "a7",
+      "isDeleted": false,
+      "seed": 1368764650,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-box-commit",
       "type": "text",
       "x": 60,
-      "y": 173,
+      "y": 165,
       "width": 380,
-      "height": 84,
+      "height": 100,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-commit"
@@ -272,28 +340,36 @@
       "boundElements": [],
       "containerId": "shape-box-commit",
       "text": "git commit → pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format",
-      "fontSize": 12,
-      "fontFamily": 3,
+      "fontSize": 16,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
-      "lineHeight": 1.4,
-      "originalText": "git commit → pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format"
+      "lineHeight": 1.25,
+      "originalText": "git commit → pre-commit hook\n\nESLint + Prettier (TypeScript)\nCheckstyle (Java)\nConventional commit format",
+      "version": 18,
+      "versionNonce": 313451510,
+      "index": "a8",
+      "isDeleted": false,
+      "seed": 1715733418,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "arrow-commit-to-push",
       "type": "arrow",
-      "x": 250,
-      "y": 280,
+      "x": 250.038,
+      "y": 286,
       "width": 0,
-      "height": 40,
+      "height": 28,
       "angle": 0,
       "strokeColor": "#3b82f6",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -304,13 +380,19 @@
       "containerId": null,
       "startBinding": {
         "elementId": "shape-box-commit",
-        "focus": 0,
-        "gap": 6
+        "mode": "orbit",
+        "fixedPoint": [
+          0.5001,
+          0.5001
+        ]
       },
       "endBinding": {
         "elementId": "shape-box-push",
-        "focus": 0,
-        "gap": 6
+        "mode": "orbit",
+        "fixedPoint": [
+          0.5001,
+          0.5001
+        ]
       },
       "startArrowhead": null,
       "endArrowhead": "arrow",
@@ -321,9 +403,18 @@
         ],
         [
           0,
-          40
+          28
         ]
-      ]
+      ],
+      "version": 14,
+      "versionNonce": 911930678,
+      "index": "a9",
+      "isDeleted": false,
+      "seed": 1595539050,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false,
+      "moveMidPointsWithElement": false
     },
     {
       "id": "shape-box-push",
@@ -331,14 +422,14 @@
       "x": 60,
       "y": 320,
       "width": 380,
-      "height": 160,
+      "height": 212,
       "angle": 0,
       "strokeColor": "#3b82f6",
       "backgroundColor": "#0d1b3e",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-push"
@@ -354,26 +445,38 @@
           "id": "text-box-push"
         },
         {
-          "type": "arrow",
-          "id": "arrow-dev-to-github"
+          "id": "arrow-commit-to-push",
+          "type": "arrow"
+        },
+        {
+          "id": "arrow-dev-to-github",
+          "type": "arrow"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 14,
+      "versionNonce": 1156767350,
+      "index": "aA",
+      "isDeleted": false,
+      "seed": 685941034,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-box-push",
       "type": "text",
       "x": 60,
-      "y": 324.4,
+      "y": 336,
       "width": 380,
-      "height": 151.2,
+      "height": 180,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-push"
@@ -383,28 +486,36 @@
       "boundElements": [],
       "containerId": "shape-box-push",
       "text": "git push → pre-push hook\n\nSmart change detection\nshared-kernel changed? → test ALL\ndocs/infra only? → SKIP tests\nsingle service? → test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage",
-      "fontSize": 12,
-      "fontFamily": 3,
+      "fontSize": 16,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
-      "lineHeight": 1.4,
-      "originalText": "git push → pre-push hook\n\nSmart change detection\nshared-kernel changed? → test ALL\ndocs/infra only? → SKIP tests\nsingle service? → test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage"
+      "lineHeight": 1.25,
+      "originalText": "git push → pre-push hook\n\nSmart change detection\nshared-kernel changed? → test ALL\ndocs/infra only? → SKIP tests\nsingle service? → test that service\n\nJava: Testcontainers + JaCoCo\nFrontend: Vitest coverage",
+      "version": 18,
+      "versionNonce": 591110070,
+      "index": "aB",
+      "isDeleted": false,
+      "seed": 1594420202,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-box-pipeline",
       "type": "rectangle",
-      "x": 580,
+      "x": 559.4429924584538,
       "y": 150,
-      "width": 380,
-      "height": 330,
+      "width": 420.5800668352601,
+      "height": 382.94921875,
       "angle": 0,
       "strokeColor": "#3b82f6",
       "backgroundColor": "#0d1b3e",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-pipeline"
@@ -420,26 +531,38 @@
           "id": "text-box-pipeline"
         },
         {
-          "type": "arrow",
-          "id": "arrow-github-to-aws"
+          "id": "arrow-dev-to-github",
+          "type": "arrow"
+        },
+        {
+          "id": "arrow-github-to-aws",
+          "type": "arrow"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 81,
+      "versionNonce": 1431976182,
+      "index": "aC",
+      "isDeleted": false,
+      "seed": 2006441642,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-box-pipeline",
       "type": "text",
-      "x": 580,
-      "y": 197.4,
-      "width": 380,
-      "height": 235.2,
+      "x": 564.4429924584538,
+      "y": 175.4561619400289,
+      "width": 331.875,
+      "height": 332.0368948699422,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-pipeline"
@@ -448,29 +571,37 @@
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-pipeline",
-      "text": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci → lint → test → build\nStage 4: SonarCloud multi-module\nStage 5: ▶ deploy-staging.yml",
-      "fontSize": 12,
-      "fontFamily": 3,
-      "textAlign": "center",
+      "text": "    Build Pipeline\n        (.github/workflows/build.yml)\n    \n    Stage 1a: frontend\n          npm ci → lint → test → build\n    Stage 1b: shared-kernel check\n    Stage 2: 6 services (PARALLEL)\n          api-gateway\n          event-management\n          speaker-coordination\n          partner-coordination\n          attendee-experience\n          company-user-management\n    Stage 3: SonarCloud multi-module\n    Stage 4: ▶ deploy-staging.yml",
+      "fontSize": 17.708634393063583,
+      "fontFamily": 6,
+      "textAlign": "left",
       "verticalAlign": "middle",
       "autoResize": false,
-      "lineHeight": 1.4,
-      "originalText": "Build Pipeline (.github/workflows/build.yml)\n\nStage 1: shared-kernel check\nStage 2: 6 services (PARALLEL)\n  api-gateway\n  event-management\n  speaker-coordination\n  partner-coordination\n  attendee-experience\n  company-user-management\nStage 3: frontend\n  npm ci → lint → test → build\nStage 4: SonarCloud multi-module\nStage 5: ▶ deploy-staging.yml"
+      "lineHeight": 1.25,
+      "originalText": "    Build Pipeline\n        (.github/workflows/build.yml)\n    \n    Stage 1a: frontend\n          npm ci → lint → test → build\n    Stage 1b: shared-kernel check\n    Stage 2: 6 services (PARALLEL)\n          api-gateway\n          event-management\n          speaker-coordination\n          partner-coordination\n          attendee-experience\n          company-user-management\n    Stage 3: SonarCloud multi-module\n    Stage 4: ▶ deploy-staging.yml",
+      "version": 264,
+      "versionNonce": 1639722794,
+      "index": "aD",
+      "isDeleted": false,
+      "seed": 1866103146,
+      "updated": 1772192722903,
+      "link": null,
+      "locked": false
     },
     {
       "id": "shape-box-deploy",
       "type": "rectangle",
-      "x": 1100,
-      "y": 150,
-      "width": 380,
-      "height": 330,
+      "x": 1091.957147696477,
+      "y": 149.87890625,
+      "width": 396.32007960704607,
+      "height": 384.84765625,
       "angle": 0,
       "strokeColor": "#f59e0b",
       "backgroundColor": "#2b1e08",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-deploy"
@@ -484,24 +615,36 @@
         {
           "type": "text",
           "id": "text-box-deploy"
+        },
+        {
+          "id": "arrow-github-to-aws",
+          "type": "arrow"
         }
       ],
-      "containerId": null
+      "containerId": null,
+      "version": 79,
+      "versionNonce": 2058042422,
+      "index": "aE",
+      "isDeleted": false,
+      "seed": 1966849066,
+      "updated": 1772192754794,
+      "link": null,
+      "locked": false
     },
     {
       "id": "text-box-deploy",
       "type": "text",
-      "x": 1100,
-      "y": 180.60000000000002,
-      "width": 380,
-      "height": 268.79999999999995,
+      "x": 1148.40234375,
+      "y": 175.43112190887535,
+      "width": 283.4296875,
+      "height": 333.7432249322493,
       "angle": 0,
       "strokeColor": "#ffffff",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [
         "group-box-deploy"
@@ -510,29 +653,37 @@
       "roundness": null,
       "boundElements": [],
       "containerId": "shape-box-deploy",
-      "text": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n→ 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check ✅",
-      "fontSize": 12,
-      "fontFamily": 3,
+      "text": "Deploy Pipeline\ndeploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\n\nECR push\n→ eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check\n→ bruno/e2e tests",
+      "fontSize": 16.687161246612465,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "middle",
       "autoResize": false,
-      "lineHeight": 1.4,
-      "originalText": "deploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\ntag: {sha:7}-staging.{run}\n\nECR push\n→ 188701360969.dkr.ecr\n   eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check ✅"
+      "lineHeight": 1.25,
+      "originalText": "Deploy Pipeline\ndeploy-staging.yml\n\nChange detection\n(infra / frontend / services)\n\nDocker build ARM64\n\nECR push\n→ eu-central-1.amazonaws.com\n\nCDK diff + deploy\n\nECS rolling deploy\n→ health check\n→ bruno/e2e tests",
+      "version": 272,
+      "versionNonce": 1527183274,
+      "index": "aF",
+      "isDeleted": false,
+      "seed": 394700522,
+      "updated": 1772192891785,
+      "link": null,
+      "locked": false
     },
     {
       "id": "arrow-dev-to-github",
       "type": "arrow",
-      "x": 440,
-      "y": 400,
-      "width": 140,
-      "height": 0,
+      "x": 445.99999999999994,
+      "y": 456.68471247699273,
+      "width": 107.44299245845383,
+      "height": 8.26835958274205,
       "angle": 0,
       "strokeColor": "#3b82f6",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -543,13 +694,19 @@
       "containerId": null,
       "startBinding": {
         "elementId": "shape-box-push",
-        "focus": 0,
-        "gap": 8
+        "mode": "orbit",
+        "fixedPoint": [
+          0.6897174568127762,
+          0.6897174568127766
+        ]
       },
       "endBinding": {
         "elementId": "shape-box-pipeline",
-        "focus": 0,
-        "gap": 8
+        "mode": "orbit",
+        "fixedPoint": [
+          0.24243777953585782,
+          0.7575622204641418
+        ]
       },
       "startArrowhead": null,
       "endArrowhead": "arrow",
@@ -559,25 +716,34 @@
           0
         ],
         [
-          140,
-          0
+          107.44299245845383,
+          -8.26835958274205
         ]
-      ]
+      ],
+      "version": 14,
+      "versionNonce": 1630735862,
+      "index": "aG",
+      "isDeleted": false,
+      "seed": 1856387498,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false,
+      "moveMidPointsWithElement": false
     },
     {
       "id": "text-label-dev-to-github",
       "type": "text",
       "x": 460,
       "y": 380,
-      "width": 100,
-      "height": 16,
+      "width": 60.49989318847656,
+      "height": 12.5,
       "angle": 0,
       "strokeColor": "#94a3b8",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -586,27 +752,35 @@
       "containerId": null,
       "text": "triggers build",
       "fontSize": 10,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "triggers build"
+      "originalText": "triggers build",
+      "version": 17,
+      "versionNonce": 919199542,
+      "index": "aH",
+      "isDeleted": false,
+      "seed": 1237677162,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     },
     {
       "id": "arrow-github-to-aws",
       "type": "arrow",
-      "x": 960,
-      "y": 315,
-      "width": 140,
-      "height": 0,
+      "x": 986.0230592937138,
+      "y": 341.8571158548548,
+      "width": 99.93408840276322,
+      "height": 0.15906955058903804,
       "angle": 0,
       "strokeColor": "#f59e0b",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 2,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -617,13 +791,19 @@
       "containerId": null,
       "startBinding": {
         "elementId": "shape-box-pipeline",
-        "focus": 0,
-        "gap": 8
+        "mode": "orbit",
+        "fixedPoint": [
+          0.5001,
+          0.5001
+        ]
       },
       "endBinding": {
         "elementId": "shape-box-deploy",
-        "focus": 0,
-        "gap": 8
+        "mode": "orbit",
+        "fixedPoint": [
+          0.5001,
+          0.5001
+        ]
       },
       "startArrowhead": null,
       "endArrowhead": "arrow",
@@ -633,25 +813,34 @@
           0
         ],
         [
-          140,
-          0
+          99.93408840276322,
+          0.15906955058903804
         ]
-      ]
+      ],
+      "version": 82,
+      "versionNonce": 1197876918,
+      "index": "aI",
+      "isDeleted": false,
+      "seed": 1521440554,
+      "updated": 1772192754795,
+      "link": null,
+      "locked": false,
+      "moveMidPointsWithElement": false
     },
     {
       "id": "text-label-github-to-aws",
       "type": "text",
       "x": 978,
-      "y": 295,
-      "width": 104,
-      "height": 16,
+      "y": 306,
+      "width": 68.5098876953125,
+      "height": 12.5,
       "angle": 0,
       "strokeColor": "#94a3b8",
       "backgroundColor": "transparent",
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "solid",
-      "roughness": 0,
+      "roughness": 2,
       "opacity": 100,
       "groupIds": [],
       "frameId": null,
@@ -660,22 +849,28 @@
       "containerId": null,
       "text": "triggers deploy",
       "fontSize": 10,
-      "fontFamily": 3,
+      "fontFamily": 6,
       "textAlign": "center",
       "verticalAlign": "top",
       "autoResize": true,
       "lineHeight": 1.25,
-      "originalText": "triggers deploy"
+      "originalText": "triggers deploy",
+      "version": 28,
+      "versionNonce": 276302262,
+      "index": "aJ",
+      "isDeleted": false,
+      "seed": 1640948202,
+      "updated": 1772187420326,
+      "link": null,
+      "locked": false
     }
   ],
   "appState": {
-    "viewBackgroundColor": "#0f1117",
-    "theme": "dark",
     "gridSize": 20,
-    "currentItemRoughness": 0,
-    "currentItemStrokeStyle": "solid",
-    "currentItemFontFamily": 3,
-    "currentItemFillStyle": "solid"
+    "gridStep": 5,
+    "gridModeEnabled": false,
+    "viewBackgroundColor": "#0f1117",
+    "lockedMultiSelections": {}
   },
   "files": {}
 }

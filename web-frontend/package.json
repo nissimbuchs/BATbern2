@@ -165,5 +165,8 @@
     "test-exclude": "^7.0.1"
   },
   "_comment_overrides": "Force test-exclude@7+ to eliminate deprecated glob@7.2.3/inflight@1.0.6. workbox-build still uses old glob - waiting for upstream update",
-  "_comment_build": "Build verified 2025-10-08 - TypeScript compilation successful"
+  "_comment_build": "Build verified 2025-10-08 - TypeScript compilation successful",
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-x64": "^4.53.3"
+  }
 }
