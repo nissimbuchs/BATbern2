@@ -63,9 +63,13 @@ public class TopicService {
     /**
      * Get all topics with optional category and status filters, with pagination support.
      *
+     * Status filter ("available" / "caution" / "unavailable") is evaluated in-memory
+     * against live staleness computed from topic_usage_history. With ≤50 topics this
+     * is negligible; a DB subquery would add complexity with no real benefit.
+     *
      * @param category Optional category filter
      * @param status Optional status filter:
-     *               - "active"/"inactive" for active flag (legacy)
+     *               - "active"/"inactive" for active flag
      *               - "available" for staleness >= 70 (green zone)
      *               - "caution" for staleness 40-69 (yellow zone)
      *               - "unavailable" for staleness < 40 (red zone)
@@ -74,24 +78,44 @@ public class TopicService {
      */
     @Transactional(readOnly = true)
     public Page<Topic> getAllTopics(String category, String status, Pageable pageable) {
-        // Check if status is staleness-based filter (Story 5.2a - Fix #5)
-        if (status != null && !status.isBlank()) {
+        // Staleness-based status filter: compute in memory
+        if (status != null && !status.isBlank()
+                && (status.equalsIgnoreCase("available")
+                    || status.equalsIgnoreCase("caution")
+                    || status.equalsIgnoreCase("unavailable"))) {
+
+            // Fetch all topics by category (no pagination — staleness filter is in-memory)
+            List<Topic> all = topicRepository.findByFilters(
+                    category, null, org.springframework.data.domain.Pageable.unpaged()).getContent();
+
+            // Batch-compute staleness in one query
+            java.util.Map<UUID, StalenessScoreService.StalenessData> stalenessMap =
+                    stalenessScoreService.computeStalenessDataBatch(all);
+
+            // Filter by staleness zone
+            final int minStaleness;
+            final int maxStaleness;
             if (status.equalsIgnoreCase("available")) {
-                // Green zone: staleness >= 70 (safe to use)
-                return topicRepository.findByCategoryAndStalenessRange(
-                    category, 70, 100, pageable
-                );
+                minStaleness = 70; maxStaleness = 100;
             } else if (status.equalsIgnoreCase("caution")) {
-                // Yellow zone: staleness 40-69 (use with caution)
-                return topicRepository.findByCategoryAndStalenessRange(
-                    category, 40, 69, pageable
-                );
-            } else if (status.equalsIgnoreCase("unavailable")) {
-                // Red zone: staleness < 40 (too recent)
-                return topicRepository.findByCategoryAndStalenessRange(
-                    category, 0, 39, pageable
-                );
+                minStaleness = 40; maxStaleness = 69;
+            } else { // unavailable
+                minStaleness = 0; maxStaleness = 39;
             }
+
+            List<Topic> filtered = all.stream()
+                    .filter(t -> {
+                        int s = stalenessMap.getOrDefault(t.getId(),
+                                StalenessScoreService.StalenessData.NEVER_USED).staleness();
+                        return s >= minStaleness && s <= maxStaleness;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+
+            // Manual pagination
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), filtered.size());
+            List<Topic> page = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+            return new org.springframework.data.domain.PageImpl<>(page, pageable, filtered.size());
         }
 
         // Legacy: Convert status string to Boolean for active flag
@@ -104,7 +128,6 @@ public class TopicService {
             }
         }
 
-        // Use repository method with database-level filtering and pagination
         return topicRepository.findByFilters(category, active, pageable);
     }
 
@@ -120,17 +143,6 @@ public class TopicService {
             return topicRepository.findByCategory(category);
         }
         return topicRepository.findAllActive();
-    }
-
-    /**
-     * Get topics with staleness score above threshold.
-     *
-     * @param threshold Minimum staleness score (0-100)
-     * @return List of topics meeting threshold
-     */
-    @Transactional(readOnly = true)
-    public List<Topic> getTopicsByStalenessThreshold(int threshold) {
-        return topicRepository.findByStalenessScoreGreaterThanEqual(threshold);
     }
 
     /**
@@ -257,7 +269,6 @@ public class TopicService {
         topic.setCategory(category);
         topic.setCreatedDate(LocalDateTime.now());
         topic.setUsageCount(0);
-        topic.setStalenessScore(100); // New topics have max staleness (safe to use)
         topic.setActive(true);
 
         Topic savedTopic = topicRepository.save(topic);
@@ -368,80 +379,6 @@ public class TopicService {
         }
 
         topicRepository.delete(topic);
-    }
-
-    /**
-     * Update topic staleness score.
-     *
-     * @param topicId Topic ID
-     * @return Updated topic
-     */
-    public Topic updateTopicStaleness(UUID topicId) {
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
-
-        // Sync lastUsedDate from usage history (authoritative source)
-        LocalDateTime lastUsed = topicUsageHistoryRepository
-                .findMaxUsedDateByTopicId(topicId)
-                .orElse(null);
-        topic.setLastUsedDate(lastUsed);
-
-        int newStaleness = stalenessScoreService.calculateStaleness(topic);
-        topic.setStalenessScore(newStaleness);
-
-        return topicRepository.save(topic);
-    }
-
-    /**
-     * Override staleness score with justification (AC7) - by ID.
-     *
-     * @param topicId Topic ID
-     * @param overrideStaleness New staleness score
-     * @param justification Justification for override
-     * @return Updated topic
-     */
-    public Topic overrideStaleness(UUID topicId, int overrideStaleness, String justification) {
-        if (overrideStaleness < 0 || overrideStaleness > 100) {
-            throw new IllegalArgumentException("Staleness score must be between 0 and 100");
-        }
-
-        if (justification == null || justification.isBlank()) {
-            throw new IllegalArgumentException("Justification is required for staleness override");
-        }
-
-        Topic topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicId));
-
-        topic.setStalenessScore(overrideStaleness);
-        // Note: In a full implementation, we'd track the override in an audit log
-        // For now, we're just updating the score
-
-        return topicRepository.save(topic);
-    }
-
-    /**
-     * Override staleness score with justification (AC7) - by code (ADR-003).
-     *
-     * @param topicCode Topic code (slug-format)
-     * @param overrideStaleness New staleness score
-     * @param justification Justification for override
-     * @return Updated topic
-     */
-    public Topic overrideStalenessByCode(String topicCode, int overrideStaleness, String justification) {
-        if (overrideStaleness < 0 || overrideStaleness > 100) {
-            throw new IllegalArgumentException("Staleness score must be between 0 and 100");
-        }
-
-        if (justification == null || justification.isBlank()) {
-            throw new IllegalArgumentException("Justification is required for staleness override");
-        }
-
-        Topic topic = topicRepository.findByTopicCode(topicCode)
-                .orElseThrow(() -> new IllegalArgumentException("Topic not found: " + topicCode));
-
-        topic.setStalenessScore(overrideStaleness);
-
-        return topicRepository.save(topic);
     }
 
     /**
@@ -734,12 +671,31 @@ public class TopicService {
                                 )
                         ));
 
-        // Convert to generated DTOs using mapper and attach usage history
+        // Build a map of topicId → max usedDate from the already-fetched history (zero extra queries)
+        java.util.Map<UUID, LocalDateTime> maxDateByTopicId = allHistories.stream()
+                .filter(h -> h.getUsedDate() != null)
+                .collect(Collectors.groupingBy(
+                        ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getTopicId,
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy(java.util.Comparator.comparing(
+                                        ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getUsedDate)),
+                                opt -> opt.map(ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getUsedDate)
+                                         .orElse(null)
+                        )
+                ));
+
+        // Convert to generated DTOs using mapper and attach usage history + computed staleness
         return topics.stream()
-                .map(topic -> topicMapper.toDtoWithUsageHistory(
-                        topic,
-                        historyByTopicId.getOrDefault(topic.getId(), List.of())
-                ))
+                .map(topic -> {
+                    LocalDateTime lastUsed = maxDateByTopicId.get(topic.getId());
+                    int staleness = stalenessScoreService.calculateStaleness(lastUsed);
+                    return topicMapper.toDtoWithUsageHistory(
+                            topic,
+                            historyByTopicId.getOrDefault(topic.getId(), List.of()),
+                            staleness,
+                            lastUsed
+                    );
+                })
                 .collect(Collectors.toList());
     }
 

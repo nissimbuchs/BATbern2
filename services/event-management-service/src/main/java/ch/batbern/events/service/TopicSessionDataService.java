@@ -35,6 +35,7 @@ public class TopicSessionDataService {
     private final PartnerApiClient partnerApiClient;
     private final BatbernTopicClusterService clusterService;
     private final TrendingTopicsService trendingTopicsService;
+    private final StalenessScoreService stalenessScoreService;
     private final EventRepository eventRepository;
     private final TopicRepository topicRepository;
 
@@ -107,15 +108,20 @@ public class TopicSessionDataService {
 
     private List<TopicSessionDataResponse.BacklogItem> fetchOrganizerBacklog() {
         try {
-            List<Topic> available = topicRepository.findByStalenessScoreGreaterThanEqual(
-                    AVAILABLE_STALENESS_THRESHOLD);
-            return available.stream()
+            List<Topic> allActive = topicRepository.findAllActive();
+            java.util.Map<java.util.UUID, StalenessScoreService.StalenessData> stalenessMap =
+                    stalenessScoreService.computeStalenessDataBatch(allActive);
+            return allActive.stream()
+                    .filter(t -> stalenessMap.getOrDefault(
+                            t.getId(), StalenessScoreService.StalenessData.NEVER_USED)
+                            .staleness() >= AVAILABLE_STALENESS_THRESHOLD)
                     .limit(BACKLOG_LIMIT)
                     .map(t -> TopicSessionDataResponse.BacklogItem.builder()
                             .title(t.getTitle())
                             .topicCode(t.getTopicCode())
-                            .stalenessScore(t.getStalenessScore() != null
-                                    ? t.getStalenessScore() : AVAILABLE_STALENESS_THRESHOLD)
+                            .stalenessScore(stalenessMap.getOrDefault(
+                                    t.getId(), StalenessScoreService.StalenessData.NEVER_USED)
+                                    .staleness())
                             .build())
                     .toList();
         } catch (Exception e) {

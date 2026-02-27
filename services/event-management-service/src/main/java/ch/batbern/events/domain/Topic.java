@@ -54,23 +54,8 @@ public class Topic {
     @Column(name = "created_date")
     private LocalDateTime createdDate;
 
-    @Column(name = "last_used_date")
-    private LocalDateTime lastUsedDate;
-
     @Column(name = "usage_count")
     private Integer usageCount = 0;
-
-    /**
-     * Staleness score (0-100):
-     * - 100 = safe to reuse (>12 months since last use)
-     * - 0 = too recent (just used)
-     * - Formula: min(100, (monthsSinceLastUse / 12) * 100)
-     */
-    @Column(name = "staleness_score")
-    private Integer stalenessScore = 100;
-
-    @Column(name = "calculated_wait_period")
-    private Integer calculatedWaitPeriod;
 
     @Column(name = "partner_influence_score")
     private Double partnerInfluenceScore;
@@ -179,36 +164,12 @@ public class Topic {
         this.createdDate = createdDate;
     }
 
-    public LocalDateTime getLastUsedDate() {
-        return lastUsedDate;
-    }
-
-    public void setLastUsedDate(LocalDateTime lastUsedDate) {
-        this.lastUsedDate = lastUsedDate;
-    }
-
     public Integer getUsageCount() {
         return usageCount;
     }
 
     public void setUsageCount(Integer usageCount) {
         this.usageCount = usageCount;
-    }
-
-    public Integer getStalenessScore() {
-        return stalenessScore;
-    }
-
-    public void setStalenessScore(Integer stalenessScore) {
-        this.stalenessScore = stalenessScore;
-    }
-
-    public Integer getCalculatedWaitPeriod() {
-        return calculatedWaitPeriod;
-    }
-
-    public void setCalculatedWaitPeriod(Integer calculatedWaitPeriod) {
-        this.calculatedWaitPeriod = calculatedWaitPeriod;
     }
 
     public Double getPartnerInfluenceScore() {

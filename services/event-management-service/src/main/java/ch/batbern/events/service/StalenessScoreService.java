@@ -7,6 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for calculating topic staleness scores (Story 5.2 AC6).
@@ -24,9 +28,8 @@ import java.time.temporal.ChronoUnit;
  * - Yellow (50-83): Caution — used 12-20 months ago
  * - Green (>83): Safe to reuse — used more than 20 months ago
  *
- * Last-used date is always derived from topic_usage_history (the authoritative
- * source) rather than the denormalized last_used_date column on the topics table,
- * which can become stale or incorrect over time.
+ * Staleness is always derived from topic_usage_history (the authoritative source).
+ * The topics table no longer stores last_used_date or staleness_score.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,21 +38,58 @@ public class StalenessScoreService {
     private final TopicUsageHistoryRepository topicUsageHistoryRepository;
 
     /**
-     * Calculate staleness score for a topic by querying the live usage history.
+     * Holds the computed staleness and last-used date for a topic.
+     */
+    public record StalenessData(int staleness, LocalDateTime lastUsedDate) {
+        public static final StalenessData NEVER_USED = new StalenessData(100, null);
+    }
+
+    /**
+     * Calculate staleness score for a single topic by querying the live usage history.
      *
      * @param topic Topic to calculate staleness for
-     * @return Staleness score (0-100)
+     * @return StalenessData (score + lastUsedDate)
      */
-    public int calculateStaleness(Topic topic) {
+    public StalenessData computeStalenessData(Topic topic) {
         LocalDateTime lastUsedDate = topicUsageHistoryRepository
                 .findMaxUsedDateByTopicId(topic.getId())
                 .orElse(null);
-        return calculateStaleness(lastUsedDate);
+        return new StalenessData(calculateStaleness(lastUsedDate), lastUsedDate);
+    }
+
+    /**
+     * Batch-compute staleness for a list of topics in a single query.
+     *
+     * @param topics Topics to compute staleness for
+     * @return Map of topicId → StalenessData
+     */
+    public Map<UUID, StalenessData> computeStalenessDataBatch(List<Topic> topics) {
+        if (topics.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UUID> topicIds = topics.stream().map(Topic::getId).collect(Collectors.toList());
+
+        Map<UUID, LocalDateTime> maxDateByTopicId = topicUsageHistoryRepository
+                .findMaxUsedDatesByTopicIds(topicIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        TopicUsageHistoryRepository.TopicMaxUsedDateProjection::getTopicId,
+                        TopicUsageHistoryRepository.TopicMaxUsedDateProjection::getMaxUsedDate
+                ));
+
+        return topics.stream().collect(Collectors.toMap(
+                Topic::getId,
+                t -> {
+                    LocalDateTime lastUsed = maxDateByTopicId.get(t.getId());
+                    return new StalenessData(calculateStaleness(lastUsed), lastUsed);
+                }
+        ));
     }
 
     /**
      * Calculate staleness score from a known last-used date.
-     * Exposed for unit testing without database access.
+     * Pure calculation — no database access.
      *
      * @param lastUsedDate Date of last use, or null if never used
      * @return Staleness score (0-100)

@@ -74,12 +74,33 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
 
     /**
      * Find the most recent usage date for a topic.
-     * Used as the authoritative source for staleness calculation —
-     * avoids relying on the denormalized last_used_date column on topics.
+     * Authoritative source for staleness calculation.
      *
      * @param topicId UUID of the topic
      * @return Most recent usedDate, or empty if never used
      */
     @Query("SELECT MAX(h.usedDate) FROM TopicUsageHistory h WHERE h.topicId = :topicId")
     Optional<LocalDateTime> findMaxUsedDateByTopicId(@Param("topicId") UUID topicId);
+
+    /**
+     * Batch-fetch most recent usage date per topic.
+     * Used for efficient staleness computation across multiple topics (single query).
+     * Topics with no usage history are absent from the result — treat as null (never used).
+     *
+     * @param topicIds List of topic UUIDs
+     * @return List of (topicId, maxUsedDate) projections
+     */
+    @Query("SELECT h.topicId as topicId, MAX(h.usedDate) as maxUsedDate "
+            + "FROM TopicUsageHistory h "
+            + "WHERE h.topicId IN :topicIds "
+            + "GROUP BY h.topicId")
+    List<TopicMaxUsedDateProjection> findMaxUsedDatesByTopicIds(@Param("topicIds") List<UUID> topicIds);
+
+    /**
+     * Projection for batch max-date query.
+     */
+    interface TopicMaxUsedDateProjection {
+        UUID getTopicId();
+        LocalDateTime getMaxUsedDate();
+    }
 }

@@ -48,26 +48,18 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
     Optional<Topic> findByTitleIgnoreCase(String title);
 
     /**
-     * Find all active topics.
+     * Find all active topics ordered by creation date.
      * Used for topic backlog display (AC1).
      */
-    @Query("SELECT t FROM Topic t WHERE t.active = true ORDER BY t.stalenessScore DESC")
+    @Query("SELECT t FROM Topic t WHERE t.active = true ORDER BY t.createdAt DESC")
     List<Topic> findAllActive();
 
     /**
      * Find topics by category.
      * Used for category filtering (AC1).
      */
-    @Query("SELECT t FROM Topic t WHERE t.category = :category AND t.active = true ORDER BY t.stalenessScore DESC")
+    @Query("SELECT t FROM Topic t WHERE t.category = :category AND t.active = true ORDER BY t.createdAt DESC")
     List<Topic> findByCategory(@Param("category") String category);
-
-    /**
-     * Find topics with staleness score above threshold.
-     * Used for filtering safe-to-use topics (AC6).
-     */
-    @Query("SELECT t FROM Topic t WHERE t.stalenessScore >= :threshold "
-            + "AND t.active = true ORDER BY t.stalenessScore DESC")
-    List<Topic> findByStalenessScoreGreaterThanEqual(@Param("threshold") Integer threshold);
 
     /**
      * Find all topics for similarity calculation.
@@ -93,23 +85,4 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
             @Param("active") Boolean active,
             Pageable pageable);
 
-    /**
-     * Find topics by category and staleness score range (Story 5.2a - Fix #5).
-     * Used for status-based filtering (available/caution/unavailable).
-     * Shows all topics regardless of active status (partners can add topics for future use).
-     *
-     * @param category Optional category filter (null to skip)
-     * @param minStaleness Minimum staleness score (inclusive)
-     * @param maxStaleness Maximum staleness score (inclusive)
-     * @param pageable Pagination and sort parameters
-     * @return Page of topics matching filters
-     */
-    @Query("SELECT t FROM Topic t WHERE "
-            + "(:category IS NULL OR t.category = :category) "
-            + "AND t.stalenessScore BETWEEN :minStaleness AND :maxStaleness")
-    Page<Topic> findByCategoryAndStalenessRange(
-            @Param("category") String category,
-            @Param("minStaleness") Integer minStaleness,
-            @Param("maxStaleness") Integer maxStaleness,
-            Pageable pageable);
 }

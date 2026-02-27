@@ -247,49 +247,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /topics/{topicCode}/override-staleness:
-    put:
-      tags:
-        - Topic Analysis
-      summary: Override staleness score
-      description: |
-        Manually override the staleness score with justification.
-
-        **Acceptance Criteria**: AC7 (Story 5.2)
-
-        Requires ORGANIZER role.
-      operationId: overrideStaleness
-      parameters:
-        - name: topicCode
-          in: path
-          required: true
-          description: Topic code (slug-format identifier)
-          schema:
-            type: string
-            pattern: '^[a-z0-9-]+$'
-            example: 'cloud-native-security-2024'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OverrideStalenessRequest'
-      responses:
-        '200':
-          description: Staleness score overridden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Topic'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
   /topics/{topicCode}/similar:
     get:
       tags:
@@ -356,31 +313,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /topics/recalculate-staleness:
-    post:
-      tags:
-        - Topic Analysis
-      summary: Recalculate staleness scores
-      description: |
-        Recalculate staleness scores for all topics.
-
-        **Authorization**: ORGANIZER role required
-      operationId: recalculateStaleness
-      responses:
-        '200':
-          description: Recalculation completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: 'Staleness scores recalculated for 42 topics'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
 
   /topics/calculate-similarities:
     post:
@@ -671,23 +603,6 @@ components:
           example: 'Security'
         # Note: keywords and relatedTopics were removed during field reconciliation
         # (not implemented in current backend). Can be re-added when feature is implemented.
-
-    OverrideStalenessRequest:
-      type: object
-      required:
-        - stalenessScore
-        - justification
-      properties:
-        stalenessScore:
-          type: integer
-          minimum: 0
-          maximum: 100
-          description: New staleness score
-          example: 80
-        justification:
-          type: string
-          description: Reason for overriding the score
-          example: 'Topic remains highly relevant due to recent industry developments'
 
     SelectTopicForEventRequest:
       type: object
