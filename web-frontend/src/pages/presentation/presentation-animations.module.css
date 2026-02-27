@@ -1,0 +1,71 @@
+/*
+ * presentation-animations.module.css
+ * Story 10.8b: Shared CSS animations for BreakSlide and AperoSlide
+ *
+ * BATbern "~" spinner, coffee steam lines, and floating beans.
+ */
+
+/* ---- BATbern "~" spinner (ACs #11, #14) ---- */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 3s linear infinite;
+  font-size: 4rem;
+  color: var(--bat-blue, #4f9cf9);
+  user-select: none;
+}
+
+/* ---- Coffee steam lines (AC #12) ---- */
+
+@keyframes steam {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(0) scaleX(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-12px) scaleX(1.2);
+  }
+}
+
+.steamLine {
+  animation: steam 2s ease-in-out infinite;
+}
+
+.steamLine:nth-child(2) {
+  animation-delay: 0.4s;
+}
+
+.steamLine:nth-child(3) {
+  animation-delay: 0.8s;
+}
+
+/* ---- Floating coffee beans (AC #13) ---- */
+
+@keyframes floatBean {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-60px) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+.coffeeBean {
+  animation: floatBean linear infinite;
+  position: absolute;
+  font-size: 1.2rem;
+  pointer-events: none;
+}

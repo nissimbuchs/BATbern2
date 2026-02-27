@@ -1,13 +1,15 @@
 /**
  * TopicBackground
  * Story 10.8a: Moderator Presentation Page — Functional
+ * Story 10.8b: Ken Burns zoom animation (AC #8)
  *
- * Full-bleed static background image with dark overlay.
- * Ken Burns zoom animation is deferred to Story 10.8b.
+ * Full-bleed background image with dark overlay.
+ * Ken Burns: scale 1.0 → 1.06 → 1.0, 30-second loop, continuous.
  *
- * ACs: #33–36
+ * ACs: #33–36, #8
  */
 import { type JSX } from 'react';
+import { motion } from 'framer-motion';
 
 interface TopicBackgroundProps {
   imageUrl?: string | null;
@@ -25,11 +27,13 @@ export function TopicBackground({ imageUrl }: TopicBackgroundProps): JSX.Element
         overflow: 'hidden',
       }}
     >
-      {/* Background image — no animation in 10.8a */}
-      <img
+      {/* Background image — Ken Burns zoom (AC #8) */}
+      <motion.img
         src={src}
         alt=""
         aria-hidden="true"
+        animate={{ scale: [1.0, 1.06, 1.0] }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute',
           inset: 0,

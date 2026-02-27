@@ -1,0 +1,26 @@
+/*
+ * PresentationPage CSS Module
+ * Story 10.8b: Moderator Presentation Page — Animations
+ *
+ * FLIP agenda container positions.
+ * CRITICAL: CSS transforms must live HERE (not in `animate` prop) for Framer Motion FLIP to work.
+ * Framer Motion captures getBoundingClientRect() before/after class switch, then animates between.
+ */
+
+/* Center-stage: agenda preview / recap — full agenda list centered on viewport */
+.agendaCenterStage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* Sidebar: session slides — compact agenda pinned to left edge */
+.agendaSidebar {
+  position: absolute;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}

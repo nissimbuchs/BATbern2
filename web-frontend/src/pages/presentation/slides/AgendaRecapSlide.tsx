@@ -1,24 +1,14 @@
 /**
  * AgendaRecapSlide
  * Story 10.8a: Moderator Presentation Page — Functional
+ * Story 10.8b: AgendaView moved to page-level motion.div for FLIP animation (ACs #1-4)
  *
- * AC #14: AgendaView with completedSessions = pre-break session slugs.
- * Pre-break sessions are greyed with ✓, post-break sessions lit.
+ * AC #14: AgendaView with completedSessions — rendered by the page-level AgendaView.
+ * This slide renders only the "Agenda" heading; the list is owned by PresentationPage.
  */
 import { type JSX } from 'react';
 
-import { AgendaView } from '../AgendaView';
-import type { PresentationSession } from '@/services/presentationService';
-
-interface AgendaRecapSlideProps {
-  sessions: PresentationSession[];
-  completedSessionSlugs: string[];
-}
-
-export function AgendaRecapSlide({
-  sessions,
-  completedSessionSlugs,
-}: AgendaRecapSlideProps): JSX.Element {
+export function AgendaRecapSlide(): JSX.Element {
   return (
     <div
       style={{
@@ -27,8 +17,9 @@ export function AgendaRecapSlide({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         height: '100vh',
+        paddingTop: '12vh',
         color: '#ffffff',
       }}
     >
@@ -36,18 +27,11 @@ export function AgendaRecapSlide({
         style={{
           fontSize: '3rem',
           fontWeight: 700,
-          marginBottom: '2rem',
           color: '#4f9cf9',
         }}
       >
         Agenda
       </h2>
-
-      <AgendaView
-        sessions={sessions}
-        completedSessionSlugs={completedSessionSlugs}
-        layout="center"
-      />
     </div>
   );
 }

@@ -1,11 +1,13 @@
 /**
  * AperoSlide
  * Story 10.8a: Moderator Presentation Page — Functional
+ * Story 10.8b: BATbern "~" spinner reusing shared CSS @keyframes (AC #14)
  *
  * AC #16: Closing visual with BATbern "~" text centered.
- * No spinner animation — added in Story 10.8b.
+ * AC #14: Spinner uses same CSS @keyframes as BreakSlide, 3s loop.
  */
 import { type JSX } from 'react';
+import animStyles from '../presentation-animations.module.css';
 
 export function AperoSlide(): JSX.Element {
   return (
@@ -23,16 +25,11 @@ export function AperoSlide(): JSX.Element {
         padding: '3rem',
       }}
     >
-      {/* BATbern tilde symbol — closing visual */}
+      {/* BATbern "~" spinner (AC #14) — same @keyframes as BreakSlide */}
       <div
-        style={{
-          fontSize: '10rem',
-          fontWeight: 800,
-          color: '#4f9cf9',
-          lineHeight: 1,
-          marginBottom: '2rem',
-          userSelect: 'none',
-        }}
+        className={animStyles.spinner}
+        style={{ fontSize: '10rem', marginBottom: '2rem' }}
+        aria-hidden="true"
       >
         ~
       </div>

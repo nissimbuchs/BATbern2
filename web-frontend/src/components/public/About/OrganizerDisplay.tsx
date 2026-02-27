@@ -79,7 +79,10 @@ export const OrganizerDisplay = ({
 
         {/* Company Logo - Right aligned */}
         {companyName && (
-          <div className="max-h-20 flex items-center justify-center flex-shrink-0 p-1">
+          <div
+            className="max-h-20 flex items-center justify-center flex-shrink-0 p-1"
+            style={{ maxWidth: '120px' }}
+          >
             {logoUrl ? (
               <img
                 src={logoUrl}

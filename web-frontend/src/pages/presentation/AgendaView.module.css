@@ -16,10 +16,7 @@
 }
 
 .sidebar {
-  position: absolute;
-  left: 2rem;
-  top: 50%;
-  transform: translateY(-50%);
+  /* Positioning is handled by the parent motion.div (.agendaSidebar) in PresentationPage.module.css */
   /* Wide enough for wrapped titles without being too prominent */
   width: 280px;
   font-size: 0.82rem;

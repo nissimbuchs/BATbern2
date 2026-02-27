@@ -165,6 +165,41 @@ vi.mock('tone', () => {
   };
 });
 
+// Mock framer-motion — renders motion.* as plain HTML elements in JSDOM.
+// AnimatePresence renders children immediately (no animation timing in tests).
+vi.mock('framer-motion', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require('react');
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const forwardMotion = (tag: string) =>
+    React.forwardRef(
+      (
+        {
+          children,
+          layout: _layout,
+          variants: _variants,
+          custom: _custom,
+          initial: _initial,
+          animate: _animate,
+          exit: _exit,
+          transition: _transition,
+          ...rest
+        }: Record<string, unknown>,
+        ref: unknown
+      ) => React.createElement(tag, { ...rest, ref }, children)
+    );
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+  const motion = new Proxy({}, { get: (_target, prop: string) => forwardMotion(prop) });
+  return {
+    motion,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+    useAnimation: () => ({ start: vi.fn(), stop: vi.fn() }),
+    useMotionValue: (init: unknown) => ({ get: () => init, set: vi.fn() }),
+    useTransform: () => ({ get: vi.fn() }),
+  };
+});
+
 // Suppress JSDOM errors for CORS preflight requests to S3 and Network errors
 // These are expected in test environment where we mock XHR/fetch
 vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
