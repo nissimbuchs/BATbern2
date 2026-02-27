@@ -32,7 +32,40 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// Mock hooks for event/user data
+vi.mock('@/hooks/useEvents', () => ({
+  useEvent: vi.fn().mockReturnValue({ data: undefined }),
+  useEvents: vi.fn().mockReturnValue({ data: undefined }),
+}));
+
+vi.mock('@/hooks/useUserManagement/useUserList', () => ({
+  useUserList: vi.fn().mockReturnValue({ data: undefined }),
+}));
+
 // Mock child components for isolated testing
+vi.mock('./CreateTopicModal', () => ({
+  CreateTopicModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div data-testid="create-topic-modal">
+        <button onClick={onClose}>Close Modal</button>
+      </div>
+    ) : null,
+}));
+
+vi.mock('@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel', () => ({
+  SpeakerBrainstormingPanel: ({ onContinue }: { onContinue: () => void }) => (
+    <div data-testid="speaker-brainstorming-panel">
+      <button onClick={onContinue}>Continue to Speakers</button>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/TopicHeatMap', () => ({
+  MultiTopicHeatMap: ({ onTopicSelect }: { onTopicSelect: (t: unknown) => void }) => (
+    <div data-testid="multi-topic-heatmap" onClick={() => onTopicSelect({})} />
+  ),
+}));
+
 vi.mock('./TopicFilterPanel', () => ({
   TopicFilterPanel: ({ onFilterChange }: { onFilterChange: (filters: unknown) => void }) => (
     <div data-testid="topic-filter-panel">
@@ -339,5 +372,121 @@ describe('TopicBacklogManager', () => {
 
     expect(screen.getByTestId('topic-list')).toBeInTheDocument();
     expect(screen.queryByText(/Cloud Native/i)).not.toBeInTheDocument();
+  });
+
+  it('should show blob selector button when eventCode is provided', () => {
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent({ eventCode: 'BATbern56' });
+
+    expect(screen.getByTestId('blob-selector-button')).toBeInTheDocument();
+  });
+
+  it('should not show blob selector button when eventCode is not provided', () => {
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent();
+
+    expect(screen.queryByTestId('blob-selector-button')).not.toBeInTheDocument();
+  });
+
+  it('should show new topic button', () => {
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent();
+
+    expect(screen.getByTestId('new-topic-button')).toBeInTheDocument();
+  });
+
+  it('should open create topic modal when new topic button is clicked', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent();
+
+    await user.click(screen.getByTestId('new-topic-button'));
+
+    expect(screen.getByTestId('create-topic-modal')).toBeInTheDocument();
+  });
+
+  it('should switch to heatmap view when heatmap toggle is clicked', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent();
+
+    // Default is list view
+    expect(screen.getByTestId('topic-list')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('view-mode-heatmap'));
+
+    expect(screen.getByTestId('multi-topic-heatmap')).toBeInTheDocument();
+    expect(screen.queryByTestId('topic-list')).not.toBeInTheDocument();
+  });
+
+  it('should switch back to list view from heatmap', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent();
+
+    await user.click(screen.getByTestId('view-mode-heatmap'));
+    await user.click(screen.getByTestId('view-mode-list'));
+
+    expect(screen.getByTestId('topic-list')).toBeInTheDocument();
+    expect(screen.queryByTestId('multi-topic-heatmap')).not.toBeInTheDocument();
+  });
+
+  it('should show speaker brainstorming panel after topic confirmed with eventCode', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
+      data: mockTopicListResponse,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as ReturnType<typeof useTopicsHook.useTopics>);
+
+    renderComponent({ eventCode: 'BATbern56' });
+
+    // Select a topic
+    await user.click(screen.getByTestId('topic-topic-123'));
+
+    // Confirm the topic selection
+    const confirmButton = await screen.findByText('Select for Event');
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('speaker-brainstorming-panel')).toBeInTheDocument();
+    });
   });
 });

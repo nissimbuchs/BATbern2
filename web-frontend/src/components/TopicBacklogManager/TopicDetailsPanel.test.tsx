@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TopicDetailsPanel } from './TopicDetailsPanel';
@@ -25,6 +25,12 @@ vi.mock('@/hooks/useTopics', () => ({
   useSimilarTopics: vi.fn(() => ({ data: [], isLoading: false })),
   useSelectTopicForEvent: vi.fn(),
   useTopicUsageHistory: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('@/services/topicService', () => ({
+  topicService: {
+    deleteTopic: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 const mockTopic: Topic = {
@@ -113,6 +119,82 @@ describe('TopicDetailsPanel', () => {
   it('should not show selection button when eventCode is not provided', () => {
     renderWithProviders(<TopicDetailsPanel topic={mockTopic} />);
     expect(screen.queryByRole('button', { name: /Select for Event/i })).not.toBeInTheDocument();
+  });
+
+  it('should call onEditTopic when edit button is clicked', async () => {
+    const user = userEvent.setup();
+    const onEditTopic = vi.fn();
+    renderWithProviders(<TopicDetailsPanel topic={mockTopic} onEditTopic={onEditTopic} />);
+
+    await user.click(screen.getByRole('button', { name: /Edit Topic/i }));
+    expect(onEditTopic).toHaveBeenCalledWith(mockTopic);
+  });
+
+  it('should show delete button when topic has never been used (usageCount=0)', () => {
+    const unusedTopic = { ...mockTopic, usageCount: 0 };
+    renderWithProviders(<TopicDetailsPanel topic={unusedTopic} />);
+    expect(screen.getByRole('button', { name: /Delete Topic/i })).toBeInTheDocument();
+  });
+
+  it('should not show delete button when topic has been used', () => {
+    const usedTopic = { ...mockTopic, usageCount: 3 };
+    renderWithProviders(<TopicDetailsPanel topic={usedTopic} />);
+    expect(screen.queryByRole('button', { name: /Delete Topic/i })).not.toBeInTheDocument();
+  });
+
+  it('should open delete dialog when delete button is clicked', async () => {
+    const user = userEvent.setup();
+    const unusedTopic = { ...mockTopic, usageCount: 0 };
+    renderWithProviders(<TopicDetailsPanel topic={unusedTopic} />);
+
+    await user.click(screen.getByRole('button', { name: /Delete Topic/i }));
+
+    expect(screen.getByText(/Are you sure you want to delete/i)).toBeInTheDocument();
+  });
+
+  it('should call deleteTopic when delete is confirmed in dialog', async () => {
+    const { topicService } = await import('@/services/topicService');
+    const user = userEvent.setup();
+    const unusedTopic = { ...mockTopic, usageCount: 0 };
+    renderWithProviders(<TopicDetailsPanel topic={unusedTopic} />);
+
+    await user.click(screen.getByRole('button', { name: /Delete Topic/i }));
+    // Click the confirm delete button in the dialog
+    const confirmButtons = screen.getAllByRole('button', { name: /Delete Topic/i });
+    // The second one is in the dialog
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(topicService.deleteTopic).toHaveBeenCalledWith('topic-123');
+    });
+  });
+
+  it('should show override button when staleness is low and eventCode is provided', () => {
+    const lowStalenessTopic = { ...mockTopic, stalenessScore: 30, colorZone: 'red' as const };
+    renderWithProviders(
+      <TopicDetailsPanel topic={lowStalenessTopic} eventCode="BATbern56" onTopicConfirm={vi.fn()} />
+    );
+    expect(screen.getByRole('button', { name: /Override Warning/i })).toBeInTheDocument();
+  });
+
+  it('should not show override button when staleness is high', () => {
+    // mockTopic has stalenessScore: 85 which is >= 50
+    renderWithProviders(
+      <TopicDetailsPanel topic={mockTopic} eventCode="BATbern56" onTopicConfirm={vi.fn()} />
+    );
+    expect(screen.queryByRole('button', { name: /Override Warning/i })).not.toBeInTheDocument();
+  });
+
+  it('should open override dialog when override button is clicked', async () => {
+    const user = userEvent.setup();
+    const lowStalenessTopic = { ...mockTopic, stalenessScore: 30, colorZone: 'red' as const };
+    renderWithProviders(
+      <TopicDetailsPanel topic={lowStalenessTopic} eventCode="BATbern56" onTopicConfirm={vi.fn()} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /Override Warning/i }));
+
+    expect(screen.getByText(/Override Staleness Warning/i)).toBeInTheDocument();
   });
 
   it('should display similar topics warning when similarity is high', () => {
