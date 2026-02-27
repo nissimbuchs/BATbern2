@@ -95,12 +95,10 @@ export function usePresentationSections(
       const preBreak = speakerSessions.filter(
         (s) => s.startTime && new Date(s.startTime) < new Date(breakSession.startTime!)
       );
-      // Post-break speaker sections
+      // Post-break speaker sections — use endTime boundary (consistent with getFirstPostBreakSession)
+      const breakBoundary = breakSession.endTime ?? breakSession.startTime!;
       const postBreak = speakerSessions.filter(
-        (s) =>
-          !s.startTime ||
-          !breakSession.startTime ||
-          new Date(s.startTime) >= new Date(breakSession.startTime)
+        (s) => s.startTime && new Date(s.startTime) > new Date(breakBoundary)
       );
 
       preBreak.forEach((s) => {

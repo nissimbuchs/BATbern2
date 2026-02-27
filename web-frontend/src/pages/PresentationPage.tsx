@@ -11,6 +11,7 @@
 
 import React, { type JSX, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import { usePresentationData } from '@/hooks/usePresentationData';
 import {
@@ -48,6 +49,7 @@ type NavDirection = 'forward' | 'back';
 
 export function PresentationPage(): JSX.Element {
   const { eventCode } = useParams<{ eventCode: string }>();
+  const { t } = useTranslation();
 
   const { data, isLoading, isInitialLoadError, refetch } = usePresentationData(eventCode ?? '');
   const sections = usePresentationSections(data.event, data.sessions);
@@ -110,6 +112,7 @@ export function PresentationPage(): JSX.Element {
 
   // -- Error state (AC #42) --
   if (isInitialLoadError || !data.event) {
+    const hashtag = eventCode ? `#${eventCode}` : '';
     return (
       <div style={fullscreenStyle('#0a0d14')}>
         <div style={{ textAlign: 'center', color: '#ffffff', maxWidth: '600px' }}>
@@ -118,16 +121,25 @@ export function PresentationPage(): JSX.Element {
               fontSize: '3rem',
               fontWeight: 800,
               color: '#4f9cf9',
-              marginBottom: '1rem',
+              marginBottom: '0.5rem',
             }}
           >
             BATbern
           </div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-            Event konnte nicht geladen werden
-          </h1>
+          {hashtag && (
+            <div
+              style={{
+                fontSize: '1.5rem',
+                color: 'rgba(255,255,255,0.5)',
+                marginBottom: '1.5rem',
+              }}
+            >
+              {hashtag}
+            </div>
+          )}
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{t('presentation.errorTitle')}</h1>
           <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.6)', marginBottom: '2rem' }}>
-            Bitte überprüfe die Netzwerkverbindung und versuche es erneut.
+            {t('presentation.errorMessage')}
           </p>
           <button
             onClick={refetch}
@@ -141,7 +153,7 @@ export function PresentationPage(): JSX.Element {
               cursor: 'pointer',
             }}
           >
-            Erneut versuchen
+            {t('presentation.retryButton')}
           </button>
         </div>
       </div>

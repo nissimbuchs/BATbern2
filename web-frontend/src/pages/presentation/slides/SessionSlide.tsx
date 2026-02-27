@@ -53,7 +53,7 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
       {speakers.length === 0 ? null : speakers.length === 1 ? (
         <SpeakerCard speaker={speakers[0]} />
       ) : (
-        <TwoSpeakerCard speakers={speakers.slice(0, 2)} />
+        <TwoSpeakerCard speakers={speakers} />
       )}
     </div>
   );

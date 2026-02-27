@@ -122,7 +122,21 @@ describe('PresentationPage', () => {
     mockUsePresentationSections.mockReturnValue([]);
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /versuchen/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    });
+  });
+
+  test('error screen shows event hashtag (AC #42)', async () => {
+    mockUsePresentationData.mockReturnValue({
+      data: { event: null, sessions: [], organizers: [], upcomingEvents: [], settings: null },
+      isLoading: false,
+      isInitialLoadError: true,
+      refetch: vi.fn(),
+    });
+    mockUsePresentationSections.mockReturnValue([]);
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText('#BATbern57')).toBeInTheDocument();
     });
   });
 
@@ -136,17 +150,19 @@ describe('PresentationPage', () => {
     });
     mockUsePresentationSections.mockReturnValue([]);
     renderPage();
-    await waitFor(() => screen.getByRole('button', { name: /versuchen/i }));
-    fireEvent.click(screen.getByRole('button', { name: /versuchen/i }));
+    await waitFor(() => screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
     expect(refetch).toHaveBeenCalledOnce();
   });
 
-  test('ArrowRight advances to next section without crashing', async () => {
+  test('ArrowRight advances to About section (AC #2)', async () => {
     renderPage();
     await waitFor(() => screen.getByText(/#BATbern57/i));
     // Pressing ArrowRight from welcome (index 0) should advance to about (index 1)
     fireEvent.keyDown(document.body, { key: 'ArrowRight' });
-    // No crash expected; component should still be mounted
-    expect(screen.queryByText(/Laden/i)).not.toBeInTheDocument();
+    // AboutSlide renders the aboutText from mock settings
+    await waitFor(() => {
+      expect(screen.getByText('BATbern ist...')).toBeInTheDocument();
+    });
   });
 });

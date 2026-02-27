@@ -322,10 +322,18 @@ _No blocking issues._
 - **Type fixes**: Added `import { type JSX } from 'react'` to all presentation component files; fixed `CommitteeSlide` (`username` → `id`, `company` → `company?.name`); fixed `SpeakerCard` (`profilePhoto` → `profilePictureUrl`); fixed `SectionDots` prop (`total` → `count`).
 - **All 3755 frontend tests pass — zero regressions.**
 - **Remaining**: Manual QA at 1920×1080 and 2560×1440 (font sizes, no horizontal scroll).
+- **Code review fixes (Amelia, 2026-02-27)**:
+  - H1 (AC #18 sidebar): **intentional design decision** — sidebar hidden on break/recap by design; comment updated in `PresentationPage.tsx:157`
+  - H2 (AC #42 error screen): wired `useTranslation()` for i18n keys; added `#BATbernXX` hashtag to error screen; updated tests to English assertions + added hashtag assertion
+  - H3 (post-break filter): fixed `usePresentationSections.ts` to use `breakSession.endTime ?? startTime` boundary (consistent with `getFirstPostBreakSession`); eliminates silent post-break bucketing of timeless sessions
+  - M1 (3+ speakers): removed `.slice(0, 2)` from `SessionSlide.tsx` — `TwoSpeakerCard` renders all passed speakers
+  - M2/M3: added missing `companies-api.openapi.yml`, `EventPage.tsx`, `company-api.types.ts` to File List
+  - M4 (weak test): replaced non-assertive ArrowRight test with one that verifies About section content renders
 
 ### File List
 
 **New files:**
+- `docs/api/companies-api.openapi.yml` — new OpenAPI spec for CUMS (ADR-006, contract-first)
 - `web-frontend/src/pages/presentation/slides/BreakSlide.tsx`
 - `web-frontend/src/pages/presentation/slides/AgendaRecapSlide.tsx`
 - `web-frontend/src/pages/presentation/slides/UpcomingEventsSlide.tsx`
@@ -354,3 +362,5 @@ _No blocking issues._
 - `web-frontend/src/pages/presentation/slides/CommitteeSlide.tsx` — fix JSX import + `username` → `id` + `company` → `company?.name`
 - `web-frontend/src/pages/presentation/slides/SessionSlide.tsx` — fix JSX import
 - `web-frontend/src/pages/presentation/slides/TopicRevealSlide.tsx` — fix JSX import
+- `web-frontend/src/components/organizer/EventPage/EventPage.tsx` — untracked change in story commits (verify scope)
+- `web-frontend/src/types/generated/company-api.types.ts` — regenerated from companies-api.openapi.yml
