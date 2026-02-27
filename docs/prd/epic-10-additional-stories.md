@@ -504,4 +504,81 @@ docs/api/events.openapi.yml                                          ← newslet
 
 ---
 
+### Story 10.8a: Moderator Presentation Page — Functional
+
+**Story file**: `_bmad-output/implementation-artifacts/10-8a-moderator-presentation-page.md`
+**Status**: ready-for-dev
+**Prerequisite**: None (independent — uses existing public event APIs)
+
+**User Story:**
+As an **event moderator**, I want to open a single fullscreen webpage on the projector laptop and navigate through the evening using my presentation remote, so that I can guide the audience through the BATbern event without ever touching PowerPoint — and the content is always live from the platform.
+
+**Scope**: Full functional presenter page — all sections, navigation, break flow, sidebar, 60s poll, error handling, backend settings API. No Framer Motion. Animations and polish delivered in Story 10.8b.
+
+**Route & Entry Point:**
+- New public route `/present/:eventCode` — no authentication required
+- All data sourced from existing public APIs
+
+**Section Flow (dynamically generated from event data):**
+
+| Section | Type | Content |
+|---------|------|---------|
+| 1 | Welcome | BATbern logo, hashtag `#BATbernXX`, topic title, date, venue |
+| 2 | About BATbern | Admin-configurable Verein purpose text + partner count |
+| 3 | Committee | All active organizer photo cards (no stagger in this story) |
+| 4 | Topic Reveal | Topic title large + image emphasis |
+| 5 | Agenda Preview | Full agenda centered, all sessions neutral/upcoming |
+| 6…N | Speaker Sessions | One section per `PRESENTATION/KEYNOTE/WORKSHOP/PANEL_DISCUSSION` session |
+| (Break) | Break | "Pause" + resume time; inserted if break/lunch session exists |
+| (Recap) | Agenda Recap | Pre-break sessions greyed (✓), post-break sessions lit |
+| N+1 | Upcoming Events | Next 3 future BATbern events |
+| N+2 | Apéro | Closing visual with BATbern `~` text |
+
+**New Backend:**
+```
+GET  /api/v1/public/settings/presentation     → { aboutText, partnerCount }  (public)
+PUT  /api/v1/settings/presentation            (organizer auth required)
+```
+Single-row `presentation_settings` table — Flyway **V10** in company-user-management-service.
+
+**Definition of Done (Story 10.8a):**
+- [ ] OpenAPI spec committed before implementation (ADR-006); `PresentationSettingsControllerIntegrationTest` written first (TDD)
+- [ ] Route `/present/BATbernXX` loads without authentication; Welcome section renders
+- [ ] All 42 ACs pass
+- [ ] Break flow: `→` navigates pre-break → Break → Recap → post-break
+- [ ] B-key overlay shows/hides BreakSlide without changing section index
+- [ ] 60-second poll updates sidebar times; error screen on initial load failure
+- [ ] Renders at 1920×1080 and 2560×1440; no horizontal scrollbar; font sizes meet legibility spec
+- [ ] Type-check passes; Checkstyle passes; no Framer Motion dependency
+
+---
+
+### Story 10.8b: Moderator Presentation Page — Animations
+
+**Story file**: `_bmad-output/implementation-artifacts/10-8b-moderator-presentation-page-animations.md`
+**Status**: ready-for-dev
+**Prerequisite**: Story 10.8a complete and deployed
+
+**User Story:**
+As an **event moderator**, I want the presentation page to have polished, fluid animations, so that the audience experience feels dynamic and professional — not like a static slide deck.
+
+**Scope**: Framer Motion animation layer added on top of Story 10.8a. No new data, routing, or business logic. All changes are additive.
+
+- **FLIP animation**: Agenda transitions center↔sidebar via Framer Motion `layout` prop (ACs #1–4)
+- **Section spring transitions**: Directional `AnimatePresence` between sections (ACs #5–7)
+- **Ken Burns**: Topic background `scale 1.0 → 1.06`, 30s loop via `motion.img` (AC #8)
+- **BlankOverlay fade**: AnimatePresence 0.3s fade on B-key (AC #9)
+- **Committee stagger**: Cards fly-in with `delay: index × 0.12s` (AC #10)
+- **BreakSlide animations**: `~` spinner, coffee cup + steam, floating beans (ACs #11–13)
+- **AperoSlide spinner**: `~` CSS @keyframes rotation (AC #14)
+
+**Definition of Done (Story 10.8b):**
+- [ ] `framer-motion` in `package.json`; `npm run build` clean
+- [ ] All 14 animation ACs pass; all 10.8a ACs continue to pass (no regression)
+- [ ] FLIP: agenda animates center→sidebar at §5→§6; reverses on backward nav
+- [ ] Ken Burns plays on topic image; BlankOverlay fades; committee cards stagger; break/apéro animations visible
+- [ ] Type-check passes; no console errors
+
+---
+
 **END OF EPIC 10**
