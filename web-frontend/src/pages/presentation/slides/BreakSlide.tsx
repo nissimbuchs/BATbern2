@@ -14,6 +14,7 @@ import { type JSX } from 'react';
 
 import { format } from 'date-fns';
 import type { PresentationSession } from '@/services/presentationService';
+import { BATbernLoader } from '@/components/shared/BATbernLoader';
 import animStyles from '../presentation-animations.module.css';
 
 interface BreakSlideProps {
@@ -80,9 +81,9 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
         </span>
       ))}
 
-      {/* BATbern "~" spinner (AC #11) */}
-      <div className={animStyles.spinner} style={{ marginBottom: '1.5rem' }} aria-hidden="true">
-        ~
+      {/* BATbern spinner (AC #11) */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <BATbernLoader size={80} speed="slow" />
       </div>
 
       <h1
@@ -142,7 +143,7 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
           </span>
         </div>
         {/* Coffee cup */}
-        <div style={{ fontSize: '3rem' }}>☕</div>
+        <div style={{ fontSize: '8rem' }}>☕</div>
       </div>
     </div>
   );

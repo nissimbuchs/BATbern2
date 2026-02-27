@@ -9,29 +9,6 @@
 import { type JSX } from 'react';
 
 export function AgendaPreviewSlide(): JSX.Element {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        height: '100vh',
-        paddingTop: '12vh',
-        color: '#ffffff',
-      }}
-    >
-      <h2
-        style={{
-          fontSize: '3rem',
-          fontWeight: 700,
-          color: '#4f9cf9',
-        }}
-      >
-        Agenda
-      </h2>
-    </div>
-  );
+  // Heading + list are rendered by the page-level AgendaView (layoutId="agenda-view").
+  return <div />;
 }

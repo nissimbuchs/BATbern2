@@ -2,11 +2,19 @@
  * PresentationPage
  * Story 10.8a: Moderator Presentation Page — Functional
  * Story 10.8b: Framer Motion animation layer
- *   - FLIP agenda ↔ sidebar (ACs #1-4) via motion.div layout
+ *   - FLIP agenda ↔ sidebar (ACs #1-4) via layoutId on conditionally-rendered elements
  *   - Section spring transitions (ACs #5-7) via AnimatePresence mode="wait"
  *
+ * FLIP strategy: Two conditional motion.div elements share layoutId="agenda-view".
+ * When center-stage unmounts and sidebar mounts (or vice versa), Framer detects the
+ * same layoutId appearing at a new position and performs the FLIP.
+ *
+ * WHY NOT `layout` on a single always-mounted element:
+ *   Framer Motion's `layout` sets inline `transform` which overwrites CSS
+ *   `transform: translate(-50%, -50%)` centering → element appears in wrong position.
+ *   Using `layoutId` with flexbox wrappers avoids all transform composition conflicts.
+ *
  * Route owner for /present/:eventCode.
- * Manages section state, keyboard navigation, layout orchestration.
  * Public — no authentication required.
  *
  * ACs: all (orchestration)
@@ -39,18 +47,23 @@ import { AgendaRecapSlide } from './presentation/slides/AgendaRecapSlide';
 import { UpcomingEventsSlide } from './presentation/slides/UpcomingEventsSlide';
 import { AperoSlide } from './presentation/slides/AperoSlide';
 import type { PresentationSection } from '@/hooks/usePresentationSections';
-import styles from './PresentationPage.module.css';
 
 // --------------------------------------------------------------------------
-// Slide variants for directional spring transition (ACs #5-7)
+// Animation constants
 // --------------------------------------------------------------------------
 
+/** Spring used for FLIP agenda ↔ sidebar (ACs #1-4) */
+const AGENDA_FLIP_SPRING = { type: 'spring' as const, stiffness: 100, damping: 22, mass: 1 };
+
+/** Width of the center-stage AgendaView — shared by both layouts so FLIP only animates position */
+const AGENDA_CENTER_WIDTH = 'min(1100px, 88vw)';
+
+/** Slide enter/exit variants for directional spring (ACs #5-7) */
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
   center: { x: 0, opacity: 1 },
   exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0 }),
 };
-
 const slideTransition = { type: 'spring' as const, stiffness: 120, damping: 20 };
 
 // --------------------------------------------------------------------------
@@ -66,7 +79,7 @@ export function PresentationPage(): JSX.Element {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isBlankActive, setIsBlankActive] = useState(false);
-  // direction: +1 = forward, -1 = back (used for slide spring ACs #5-7)
+  // direction: +1 = forward, -1 = back (drives directional slide spring, ACs #5-7)
   const [direction, setDirection] = useState<number>(1);
 
   const goNext = useCallback(() => {
@@ -172,34 +185,23 @@ export function PresentationPage(): JSX.Element {
 
   const currentSection: PresentationSection | undefined = sections[currentIndex];
 
-  // Derived values for slides that need cross-section data
+  // Derived values for cross-section data
   const preBreakSlugs = getPreBreakSessionSlugs(data.sessions);
   const firstPostBreakSession = getFirstPostBreakSession(data.sessions);
 
-  // --- FLIP agenda layout derivation (ACs #1-4, #17-22) ---
-  // 'sidebar'     → session slides (compact left-pinned list)
-  // 'center'      → agenda-preview / agenda-recap (full center list)
-  const agendaLayout: 'center' | 'sidebar' =
-    currentSection?.type === 'session' ? 'sidebar' : 'center';
-
-  // Agenda visible for session, agenda-preview, agenda-recap (hidden for all others)
-  const showAgenda =
-    currentSection?.type === 'session' ||
-    currentSection?.type === 'agenda-preview' ||
-    currentSection?.type === 'agenda-recap';
-
-  // completedSessionSlugs only relevant for recap
-  const completedSessionSlugsForAgenda =
-    currentSection?.type === 'agenda-recap' ? preBreakSlugs : undefined;
+  // Section type flags
+  const isSession = currentSection?.type === 'session';
+  const isAgendaCenter =
+    currentSection?.type === 'agenda-preview' || currentSection?.type === 'agenda-recap';
 
   // Current session slug for sidebar highlight (AC #19)
-  const currentSessionSlug =
-    currentSection?.type === 'session'
-      ? (currentSection.session?.sessionSlug ?? undefined)
-      : undefined;
+  const currentSessionSlug = isSession
+    ? (currentSection.session?.sessionSlug ?? undefined)
+    : undefined;
 
-  // paddingLeft shifts slide content right when sidebar is visible (AC #17)
-  const showSidebar = currentSection?.type === 'session';
+  // completedSessionSlugs only for agenda-recap (AC #14)
+  const completedSessionSlugsForAgenda =
+    currentSection?.type === 'agenda-recap' ? preBreakSlugs : undefined;
 
   return (
     <div
@@ -213,35 +215,125 @@ export function PresentationPage(): JSX.Element {
       }}
     >
       {/* Persistent full-bleed background with Ken Burns zoom (ACs #33-36, #8) */}
-      <TopicBackground imageUrl={data.event?.topic?.imageUrl} />
+      <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
 
-      {/* FLIP agenda — always mounted, never unmounted (ACs #1-4, #17-22)
-          Framer Motion `layout` captures bounding box before/after class switch → FLIP.
-          CRITICAL: CSS transforms live in PresentationPage.module.css, NOT in `animate` prop. */}
-      <motion.div
-        layout
-        className={agendaLayout === 'sidebar' ? styles.agendaSidebar : styles.agendaCenterStage}
-        style={{ visibility: showAgenda ? 'visible' : 'hidden' }}
-        transition={{ type: 'spring', stiffness: 100, damping: 22, mass: 1 }}
-      >
-        <AgendaView
-          sessions={data.sessions}
-          completedSessionSlugs={completedSessionSlugsForAgenda}
-          currentSessionSlug={currentSessionSlug}
-          layout={agendaLayout}
-        />
-      </motion.div>
+      {/* ----------------------------------------------------------------
+          Agenda heading — separate from the FLIP element so its height
+          doesn't affect the FLIP rect measurement. Lives in its own
+          AnimatePresence so it can slide in/out with the section direction
+          while the FLIP list animates independently. (ACs #1-4, #11, #14)
+          ---------------------------------------------------------------- */}
+      <AnimatePresence custom={direction}>
+        {isAgendaCenter && (
+          <motion.div
+            key="agenda-heading"
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={slideTransition}
+            style={{
+              position: 'fixed',
+              zIndex: 3,
+              top: 'calc(50vh - 13rem)',
+              left: 0,
+              right: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: '3rem',
+                fontWeight: 700,
+                color: '#4f9cf9',
+              }}
+            >
+              Agenda
+            </h2>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Current section slide — shifted right when sidebar visible (AC #17) */}
+      {/* ----------------------------------------------------------------
+          FLIP agenda — center-stage (agenda-preview / agenda-recap)
+          Simple centering wrapper — heading is a separate element above.
+          ---------------------------------------------------------------- */}
+      {isAgendaCenter && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+          }}
+        >
+          <motion.div
+            layoutId="agenda-view"
+            data-testid="agenda-flip-container"
+            data-layout="center"
+            transition={AGENDA_FLIP_SPRING}
+            style={{ pointerEvents: 'auto', width: AGENDA_CENTER_WIDTH }}
+          >
+            <AgendaView
+              sessions={data.sessions}
+              completedSessionSlugs={completedSessionSlugsForAgenda}
+              layout="center"
+            />
+          </motion.div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------
+          FLIP agenda — sidebar (session slides)
+          Flexbox wrapper pins to left edge, centers vertically. (ACs #1-4, #17-22)
+          ---------------------------------------------------------------- */}
+      {isSession && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 2,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: '2rem',
+          }}
+        >
+          <motion.div
+            layoutId="agenda-view"
+            data-testid="agenda-flip-container"
+            data-layout="sidebar"
+            transition={AGENDA_FLIP_SPRING}
+            style={{ width: AGENDA_CENTER_WIDTH }}
+            animate={{ width: '280px' }}
+          >
+            <AgendaView
+              sessions={data.sessions}
+              currentSessionSlug={currentSessionSlug}
+              layout="sidebar"
+            />
+          </motion.div>
+        </div>
+      )}
+
+      {/* Current section slide — shifted right when sidebar is visible (AC #17) */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          paddingLeft: showSidebar ? '320px' : 0,
+          paddingLeft: isSession ? '320px' : 0,
           boxSizing: 'border-box',
         }}
       >
-        {/* Section spring transitions (ACs #5-7) */}
+        {/* Section spring transitions — directional (ACs #5-7) */}
         <AnimatePresence mode="wait" custom={direction}>
           {currentSection && (
             <motion.div
@@ -270,7 +362,7 @@ export function PresentationPage(): JSX.Element {
       {/* B-key break overlay — AnimatePresence fade 0.3s (ACs #9, #23-24, #29) */}
       <BlankOverlay isActive={isBlankActive}>
         <div style={{ position: 'fixed', inset: 0, background: '#0a0d14' }}>
-          <TopicBackground imageUrl={data.event?.topic?.imageUrl} />
+          <TopicBackground imageUrl={data.event?.themeImageUrl ?? undefined} />
           <BreakSlide firstPostBreakSession={firstPostBreakSession} />
         </div>
       </BlankOverlay>
@@ -312,7 +404,7 @@ function SectionRenderer({
       return data.event ? <TopicRevealSlide event={data.event} /> : null;
 
     case 'agenda-preview':
-      // AgendaView is rendered by the page-level FLIP motion.div — this slide renders heading only
+      // AgendaView rendered by page-level layoutId="agenda-view" — slide shows heading only
       return <AgendaPreviewSlide />;
 
     case 'session':
@@ -322,7 +414,7 @@ function SectionRenderer({
       return <BreakSlide firstPostBreakSession={firstPostBreakSession} />;
 
     case 'agenda-recap':
-      // AgendaView is rendered by the page-level FLIP motion.div — this slide renders heading only
+      // AgendaView rendered by page-level layoutId="agenda-view" — slide shows heading only
       return <AgendaRecapSlide />;
 
     case 'upcoming-events':

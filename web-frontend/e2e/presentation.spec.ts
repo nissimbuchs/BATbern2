@@ -50,12 +50,13 @@ test.describe('Moderator Presentation Page', () => {
     // (sidebar appears from §6 onward — session slides)
     // Press once more to enter first session slide
     await page.keyboard.press('ArrowRight');
-    await page.waitForTimeout(200);
+    // Wait for FLIP spring animation to complete (~350ms at stiffness 100, damping 22)
+    await page.waitForTimeout(500);
 
-    // Check sidebar is visible: AgendaView in sidebar layout has CSS class 'sidebar'
-    // or we can check that the agenda view element is present in sidebar position
-    const agendaSidebar = page.locator('[class*="sidebar"]');
-    await expect(agendaSidebar).toBeVisible({ timeout: 5_000 });
+    // Story 10.8b: verify FLIP animation completed — agenda container is in sidebar layout
+    const agendaContainer = page.locator('[data-testid="agenda-flip-container"]');
+    await expect(agendaContainer).toBeVisible({ timeout: 5_000 });
+    await expect(agendaContainer).toHaveAttribute('data-layout', 'sidebar');
   });
 
   test('no horizontal scrollbar at 1920×1080 (AC #41)', async ({ page }) => {

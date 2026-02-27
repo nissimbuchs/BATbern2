@@ -9,16 +9,14 @@
  */
 
 .center {
-  /* Use most of the screen on big pages (agenda preview / recap) */
-  width: min(1100px, 88vw);
-  margin: 0 auto;
+  /* Width is controlled by the parent motion.div in PresentationPage */
+  width: 100%;
   font-size: 1.4rem;
 }
 
 .sidebar {
-  /* Positioning is handled by the parent motion.div (.agendaSidebar) in PresentationPage.module.css */
-  /* Wide enough for wrapped titles without being too prominent */
-  width: 280px;
+  /* Width is animated by the parent motion.div in PresentationPage (wide → 280px FLIP) */
+  width: 100%;
   font-size: 0.82rem;
   opacity: 0.85;
 }

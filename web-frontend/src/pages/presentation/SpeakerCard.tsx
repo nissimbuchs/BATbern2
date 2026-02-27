@@ -9,6 +9,7 @@
 import { type JSX } from 'react';
 
 import type { components } from '@/types/generated/events-api.types';
+import { useCompany } from '@/hooks/useCompany/useCompany';
 
 type SessionSpeaker = components['schemas']['SessionSpeaker'];
 
@@ -19,6 +20,12 @@ interface SpeakerCardProps {
 export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
   const fullName =
     [speaker.firstName, speaker.lastName].filter(Boolean).join(' ') || speaker.username || '';
+
+  // Use pre-loaded logo when available; fall back to useCompany fetch by company name.
+  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : (speaker.company ?? ''), {
+    expand: ['logo'],
+  });
+  const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 
   return (
     <div
@@ -65,7 +72,9 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         )}
       </div>
 
-      <div>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}
+      >
         <p
           style={{
             margin: 0,
@@ -76,16 +85,16 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         >
           {fullName}
         </p>
-        {speaker.company && (
-          <p
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt={speaker.company ?? ''}
             style={{
-              margin: '0.25rem 0 0',
-              fontSize: '1.25rem',
-              color: 'rgba(255,255,255,0.7)',
+              height: '48px',
+              maxWidth: '180px',
+              objectFit: 'contain',
             }}
-          >
-            {speaker.company}
-          </p>
+          />
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@
  * AC #14: Spinner uses same CSS @keyframes as BreakSlide, 3s loop.
  */
 import { type JSX } from 'react';
-import animStyles from '../presentation-animations.module.css';
+import { BATbernLoader } from '@/components/shared/BATbernLoader';
 
 export function AperoSlide(): JSX.Element {
   return (
@@ -25,13 +25,9 @@ export function AperoSlide(): JSX.Element {
         padding: '3rem',
       }}
     >
-      {/* BATbern "~" spinner (AC #14) — same @keyframes as BreakSlide */}
-      <div
-        className={animStyles.spinner}
-        style={{ fontSize: '10rem', marginBottom: '2rem' }}
-        aria-hidden="true"
-      >
-        ~
+      {/* BATbern spinner (AC #14) */}
+      <div style={{ marginBottom: '2rem' }}>
+        <BATbernLoader size={120} speed="slow" />
       </div>
 
       <div

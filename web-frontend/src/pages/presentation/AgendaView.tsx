@@ -85,7 +85,6 @@ export function AgendaView({
           <div key={s.sessionSlug} className={rowClass}>
             <span className={styles.sessionTime}>{formatTime(s.startTime)}</span>
             <span className={styles.sessionTitle}>{s.title}</span>
-            {isCompleted && <span className={styles.checkmark}>✓</span>}
           </div>
         );
       })}
