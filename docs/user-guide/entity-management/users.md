@@ -67,17 +67,19 @@ BATbern supports 4 distinct roles:
 
 <span style="background: #9B59B6; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">PARTNER</span>
 
-**Partner portal access** - Manage partner profile and coordinate with event organizers.
+**Partner portal access** - View sponsorship analytics, participate in topic selection, and receive meeting coordination.
 
 **Permissions**:
-- ✅ View and edit own partner profile
-- ✅ View events where partner is involved
-- ✅ Schedule meetings with attendees
-- ✅ Access attendee lists (GDPR-compliant)
-- ❌ Cannot access entity management
-- ❌ Cannot access workflow
+- ✅ View attendance analytics for own company (event participation, cost-per-attendee)
+- ✅ Export attendance data to XLSX
+- ✅ Suggest topics for future events
+- ✅ Vote on proposed topics (one vote per topic)
+- ✅ Receive meeting calendar invites (.ics) for Spring/Autumn partner meetings
+- ❌ Cannot view other partners' data
+- ❌ Cannot access entity management or organizer tools
+- ❌ Cannot access event workflow
 
-**Typical Users**: Sponsoring companies, collaborating organizations
+**Typical Users**: Sponsoring companies and collaborating organizations (Diamond through Bronze tier)
 
 ## Creating a User
 

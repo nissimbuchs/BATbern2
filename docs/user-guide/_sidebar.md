@@ -16,14 +16,26 @@
   * [Partners](entity-management/partners.md)
   * [Speakers](entity-management/speakers.md)
 
-* 🔄 16-Step Workflow
+* 🤝 Partner Portal
+  * [Overview](partner-portal/README.md)
+  * [Attendance Analytics](partner-portal/analytics.md)
+  * [Topic Voting](partner-portal/topic-voting.md)
+  * [Meeting Coordination](partner-portal/meetings.md)
+
+* 🎤 Speaker Portal
+  * [Overview](speaker-portal/README.md)
+  * [Invitation & Response](speaker-portal/invitation-response.md)
+  * [Content Submission](speaker-portal/content-submission.md)
+  * [Speaker Dashboard](speaker-portal/dashboard.md)
+
+* 🔄 Workflow System
   * [Overview](workflow/README.md)
-  * [Phase A: Setup (Steps 1-3)](workflow/phase-a-setup.md)
-  * [Phase B: Outreach (Steps 4-6)](workflow/phase-b-outreach.md)
-  * [Phase C: Quality (Steps 7-8)](workflow/phase-c-quality.md)
-  * [Phase D: Assignment (Steps 9-10)](workflow/phase-d-assignment.md)
-  * [Phase E: Publishing (Steps 11-12)](workflow/phase-e-publishing.md)
-  * [Phase F: Communication (Steps 13-16)](workflow/phase-f-communication.md)
+  * [Phase A: Setup](workflow/phase-a-setup.md)
+  * [Phase B: Outreach](workflow/phase-b-outreach.md)
+  * [Phase C: Quality Review](workflow/phase-c-quality.md)
+  * [Phase D: Slot Assignment & Publishing](workflow/phase-d-assignment.md)
+  * [Phase E: Archival](workflow/phase-e-publishing.md)
+  * [Phase F: Task Management](workflow/phase-f-communication.md)
 
 * ✨ Advanced Features
   * [Overview](features/README.md)
@@ -31,6 +43,13 @@
   * [Notification System](features/notifications.md)
   * [File Uploads](features/file-uploads.md)
   * [Analytics & Reporting](features/analytics.md)
+
+* ⚙️ Administration
+  * [Overview](administration/README.md)
+  * [Event Types](administration/event-types.md)
+  * [Import Data](administration/import-data.md)
+  * [Task Templates](administration/task-templates.md)
+  * [Email Templates](administration/email-templates.md)
 
 * 🔧 Troubleshooting
   * [Overview](troubleshooting/README.md)

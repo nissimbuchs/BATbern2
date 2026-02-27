@@ -1,4 +1,4 @@
-# Phase A: Setup (Steps 1-3)
+# Phase A: Setup
 
 > Define event structure, select topics, and identify speaker candidates
 

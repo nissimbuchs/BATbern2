@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v1.2.0
-**Last Updated**: 2026-02-23
+**Current Version**: v1.2.1
+**Last Updated**: 2026-02-27
 
 ---
 
@@ -28,23 +28,46 @@ Each release includes:
 
 ## Upcoming Releases
 
-### v1.3.0 - Speaker Authentication Unification `[PLANNED Q2 2026]`
+### v1.3.0 - Speaker Authentication Unification + Admin Tools `[PLANNED Q2 2026]`
 
 **Target Date**: Q2 2026
-**Type**: Minor Release (Epic 9 — Stories 9.2–9.5)
+**Type**: Minor Release (Epic 9 Stories 9.2–9.5 + Epic 10 completion)
 
 **Already Delivered (v1.2.x)**:
 - ✅ Story 9.1: JWT magic link authentication — RS256 signed, HTTP-only cookie, backward compatible with Epic 6 tokens
+- ✅ Epic 10 (partial): Admin page with Event Types, Import Data, Task Templates, and Email Templates tabs (in progress)
 
-**Remaining Planned Features**:
+**Remaining Planned Features — Epic 9**:
 - 📋 Story 9.2: Auto-create/extend Cognito accounts on invitation acceptance (SPEAKER role assignment)
 - 📋 Story 9.3: Dual auth — magic link + email/password for speakers
 - 📋 Story 9.4: Migration script for Epic 6 staging token-based users (7-day grace period)
 - 📋 Story 9.5: Unified multi-role navigation (speaker + attendee portal in single session)
 
+**Remaining Planned Features — Epic 10 Admin Tools**:
+- 📋 Story 10.1: Admin page shell — Event Types + Import Data tabs finalization
+- 📋 Story 10.2: Email Templates admin (TinyMCE WYSIWYG for content templates; Monaco for layout templates)
+- 📋 Story 10.3: Automated task scheduler integration (trigger reminders by due date/state)
+
 ---
 
 ## v1.2.x - Current Release
+
+### v1.2.1 - Speaker JWT Magic Link Authentication `[2026-02-23]`
+
+**Type**: Patch Release (Epic 9, Story 9.1)
+
+**New Features**:
+- ✅ JWT-based magic link authentication for speakers — RS256 signed tokens, HTTP-only cookie, 30-day reusable sessions
+- ✅ Speaker portal auto-login on link click (no username/password required)
+- ✅ Organizer-controlled invitation emails trigger JWT generation per speaker/event
+- ✅ Backward compatible with Epic 6 staging token system
+
+**Architecture**:
+- JWT signed with private RSA key (RS256); public key exposed at `/api/v1/speaker-auth/jwks.json`
+- Token audience: `batbern-speaker-portal`; issued by `batbern-speaker-coordination`
+- Magic links reusable within 30-day session window; new token issued on next invite
+
+---
 
 ### v1.2.0 - Partner Coordination Complete `[2026-02-22]`
 
@@ -380,11 +403,12 @@ Each release includes:
 
 ### Future Deprecations (Planned)
 
-**v1.2.0** (Planned Q3 2025):
-- **Email Template V1** - Will be replaced with V2 (WYSIWYG editor)
+**v1.3.0** (In Progress — Epic 10, Story 10.2):
+- **Email Template V1** - Being replaced with V2 (TinyMCE WYSIWYG for content templates; Monaco editor for layout templates)
   - Current: Plain text with placeholders
-  - Replacement: Rich HTML editor with drag-and-drop
-  - Migration: Auto-convert templates to new format
+  - Replacement: Rich HTML editor (content templates) + full HTML shell editor (layout templates)
+  - Status: Email Templates admin tab active in v1.2.x (in progress); full release in v1.3.0
+  - Migration: Existing templates remain editable; custom templates receive full CRUD in V2
 
 ---
 
@@ -422,7 +446,8 @@ Each release includes:
 
 | Version | Status | Support End Date |
 |---------|--------|------------------|
-| v1.2.x | **Current** | Until v1.3.0 release |
+| v1.2.1 | **Current** | Until v1.3.0 release |
+| v1.2.0 | Security fixes only | Until v1.3.0 release |
 | v1.1.x | Security fixes only | 2026-05-01 |
 | v0.9.x | Unsupported | Ended 2026-01-01 |
 | v0.8.x and earlier | Unsupported | Ended 2025-06-01 |

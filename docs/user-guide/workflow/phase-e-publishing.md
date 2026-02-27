@@ -152,6 +152,14 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 - Uses event.eventDate and event.eventTime for transition triggers
 - Handles timezone correctly (all times stored as UTC)
 
+### CDN Delivery (CloudFront)
+
+Published content is served through **AWS CloudFront CDN** for low-latency delivery:
+
+- Speaker photos, presentation materials, and event assets are stored in S3 and delivered via CloudFront (< 50 ms typical latency)
+- Cache invalidation is triggered automatically when new content is published — on the auto-publish schedule and on manual publish
+- Changes to speaker profiles or the agenda reach the public website within seconds of the publish job completing
+
 ### Archival Best Practices
 
 **When to Archive**:
@@ -223,17 +231,13 @@ Once finalized, the 14-day auto-publish countdown begins:
 
 </div>
 
-## Future Enhancements
+## Progressive Publishing
 
-The following features are planned for future releases:
-
-## Step 11: Progressive Publishing (Manual Control)
-
-<span class="feature-status planned">Planned</span>
+The auto-publishing schedule (speakers at 30 days, agenda at 14 days) handles the standard release timeline automatically. The controls below allow organizers to publish earlier or override the default schedule for special cases.
 
 ### Purpose
 
-Manually control publishing timing for special cases where automated 30/14-day schedule doesn't fit.
+Control publishing timing when the automated 30/14-day schedule doesn't fit — for example, publishing speakers sooner to build anticipation, or delaying if late-breaking changes are expected.
 
 ### Manual Publishing Options
 
@@ -357,7 +361,7 @@ Track B: Martin Fischer - Heritage Reuse
 
 Complete schedule with time slots appears on event page.
 
-Event state: SLOTS_ASSIGNED → **PUBLISHED**
+Event state: SLOT_ASSIGNMENT → **AGENDA_PUBLISHED**
 </div>
 
 ### Website Preview
@@ -419,7 +423,7 @@ Schedule
 
 ### Publishing Notifications
 
-<span class="feature-status planned">Planned</span>
+Stakeholder communication at each publishing stage is handled through the **Task System** — the newsletter task templates (Newsletter: Topic, Newsletter: Speakers, Newsletter: Final) are automatically created at the relevant event state transitions and assigned to organizers for action. See [Task Templates](../administration/task-templates.md) for configuration.
 
 Notify stakeholders at each stage:
 
@@ -443,9 +447,7 @@ Notify stakeholders at each stage:
 - Downloadable PDF agenda
 - Mobile app update (if available)
 
-## Step 12: Finalization with Dropout Handling
-
-<span class="feature-status planned">Planned</span>
+## Dropout Handling
 
 ### Purpose
 
@@ -456,7 +458,7 @@ Lock the final agenda while managing any last-minute speaker withdrawals.
 - ✅ All speakers reconfirmed within 1 week of event
 - ✅ Dropout procedures executed (if needed)
 - ✅ Agenda finalized and locked
-- ✅ Event state = **FINALIZED**
+- ✅ Event state = **AGENDA_FINALIZED**
 
 ### Reconfirmation Process
 
@@ -625,9 +627,9 @@ Lock agenda? After locking:
 
 Click **Lock Agenda**
 
-Event state: PUBLISHED → **FINALIZED**
+Event state: AGENDA_PUBLISHED → **AGENDA_FINALIZED**
 
-Phase E complete! ✅ Ready for Phase F (Execution)
+Phase E complete! ✅ The event will automatically transition to EVENT_LIVE when the event day arrives.
 </div>
 
 ### Dropout Communication

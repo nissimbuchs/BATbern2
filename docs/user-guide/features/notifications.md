@@ -1,4 +1,4 @@
-# Notification System `[PLANNED]`
+# Notification System
 
 ## Overview
 
@@ -10,7 +10,61 @@ The BATbern notification system keeps organizers informed about important workfl
 
 The system is designed to reduce manual monitoring while preventing information overload through intelligent prioritization and customizable preferences.
 
-> **Note**: This feature is currently in planning stages. The documentation below describes the intended functionality. Check [Feature Status](../appendix/feature-status.md) for implementation timeline.
+## Implementation Status
+
+| Channel | Status | Details |
+|---------|--------|---------|
+| Transactional Email | ✅ `[IMPLEMENTED]` | Speaker invitations, deadline reminders, registration confirmations, partner calendar invites |
+| In-App Notification Center | 🔨 `[IN PROGRESS]` | Notification feed with mark-as-read, delete, and full-page view |
+| Notification Preferences & Rules | 📋 `[PLANNED]` | Per-event settings, quiet hours, digest scheduling, escalation configuration |
+
+---
+
+## Implemented: Email Notifications
+
+The following emails are sent automatically by the platform today.
+
+### Speaker Invitation Emails (Epic 6)
+
+Sent when an organizer invites a speaker to an event. The email contains a **magic link** that allows the speaker to accept or decline without creating an account. See [Speaker Portal: Invitation & Response](../speaker-portal/invitation-response.md) for the full flow.
+
+### Speaker Deadline Reminder Emails (Epic 6)
+
+Three-tier escalation triggered automatically before the content submission deadline:
+
+| Timing | Tone | Action |
+|--------|------|--------|
+| 1 month before | Friendly reminder | Links to submission portal |
+| 2 weeks before | Moderate urgency | Emphasises deadline date |
+| 3 days before | Urgent | If still no action, organizer is notified for follow-up |
+
+### Registration Confirmation Emails (Epic 4)
+
+Sent automatically when an attendee completes event registration. Includes event details and a QR code for day-of check-in.
+
+### Partner Calendar Invites (Epic 8)
+
+RFC 5545 `.ics` calendar invites delivered via email to partners. Each file contains two `VEVENT` entries: the spring/autumn partner lunch and the BATbern event itself. See [Partner Portal: Meeting Coordination](../partner-portal/meetings.md).
+
+### Task Deadline Reminders (Epic 5)
+
+Organizers receive email reminders for tasks approaching their due dates. Timing is controlled by the task template's trigger configuration (e.g., 1 day before deadline). See [Task System](../workflow/task-system.md).
+
+---
+
+## In Progress: In-App Notification Center
+
+The organizer dashboard includes a notification center accessible from the navigation bar. Current functionality:
+
+- Notification feed with unread indicators
+- Mark individual notifications as read
+- Delete notifications
+- **View All** link to the full Notifications page
+- DE/EN i18n support
+
+Full real-time push alerts, priority levels, escalation chains, and per-category preference rules are under active development.
+
+---
 
 ## When to Use This Feature
 

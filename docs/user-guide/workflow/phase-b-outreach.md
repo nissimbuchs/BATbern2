@@ -1,4 +1,4 @@
-# Phase B: Outreach (Steps 4-6)
+# Phase B: Outreach
 
 > Engage speakers, track responses, and collect presentation content
 

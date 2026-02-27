@@ -1,12 +1,14 @@
 # Partner Management
 
-> Coordinate partner relationships and event collaboration
+> Coordinate partner relationships, analytics, topic input, and meeting coordination
 
 <span class="feature-status implemented">Implemented</span>
 
 ## Overview
 
 Partners are organizations that collaborate with BATbern through sponsorship, resource sharing, or strategic partnerships. Partners receive benefits like event presence, networking opportunities, and brand visibility.
+
+**Partner Portal (Epic 8)**: Partners log in to a self-service portal where they can view their [attendance analytics](../partner-portal/analytics.md), participate in [topic voting](../partner-portal/topic-voting.md), and receive [meeting calendar invites](../partner-portal/meetings.md). See the [Partner Portal documentation →](../partner-portal/README.md) for the partner-facing experience.
 
 ## Partner Tiers
 
@@ -278,9 +280,9 @@ Track meeting status throughout the event:
 
 ### Meeting Notes
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
-After meetings, organizers can add notes:
+After meetings, organizers can add notes (visible to organisers only — not shown to partners):
 
 ```
 Meeting Notes (2025-03-15)
@@ -303,11 +305,19 @@ Next Steps:
 - Finalize booth setup by March 25
 ```
 
-## Engagement Metrics
+## Attendance Analytics
+
+<span class="feature-status implemented">Implemented</span> — Epic 8.1
+
+Track partner attendance across all BATbern events. Organisers can view attendance data for any partner from the **Analytics** tab on the partner detail page. Partners see only their own company's data via the [Partner Portal](../partner-portal/analytics.md).
+
+The analytics view shows event-by-event attendance (your company's attendees vs. total), a time period toggle (Last 5 years / Full history), a cost-per-attendee metric, and an XLSX export.
+
+## Engagement Metrics (Legacy)
 
 <span class="feature-status planned">Planned</span>
 
-Track partner engagement over time:
+Historical summary metrics (total events sponsored, total contribution, speaking sessions, booth attendance) are planned for a future release. Current analytics are covered by the Attendance Analytics section above.
 
 ### Metrics Dashboard
 
@@ -335,7 +345,7 @@ Partnership History
 
 ## Partner Benefits Tracking
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status planned">Planned</span> — Phase 3
 
 Track delivery of tier benefits:
 
@@ -446,7 +456,7 @@ tier:GOLD,PLATINUM
 
 ## Export & Report
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status planned">Planned</span> — Phase 3
 
 ### Export Partner List
 
@@ -500,6 +510,34 @@ Booths: 21
 - Confirm partner record is active (not draft)
 - Clear browser cache
 - Check file format (PNG, JPG, SVG only)
+
+## Topic Voting (Organiser View)
+
+<span class="feature-status implemented">Implemented</span> — Epic 8.2
+
+Organisers can review all partner topic suggestions and update their status:
+
+- **Browse** all proposed topics with vote counts from the **Topics** section in partner navigation
+- **Set status** to Selected, Declined, or leave as Proposed
+- **Add a "Planned for" note** (e.g., "BATbern 57") when selecting a topic so partners know when to expect it
+- **Suggest topics** on behalf of a partner company
+
+Partners do all of the above from the [Topic Voting portal page →](../partner-portal/topic-voting.md).
+
+## Partner Notes
+
+<span class="feature-status implemented">Implemented</span> — Epic 8.4
+
+Organisers can keep private notes about each partner relationship on the **Notes** tab of the partner detail page.
+
+**Key details**:
+- Notes are **completely hidden from partners** — the Notes tab is not visible when logged in with the PARTNER role
+- Each note has a **title** and **content** (free text)
+- The **author** (organiser username) is captured automatically from the login session
+- Notes are sorted by creation date (newest first)
+- Full CRUD: create, edit, and delete notes
+
+This is intended for internal context such as renewal discussions, relationship history, and open action items that organisers want to track but should not be shared with the partner.
 
 ## Related Topics
 

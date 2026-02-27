@@ -1,12 +1,16 @@
 # Speaker Management
 
-> Manage speaker profiles and session assignments
+> Manage speaker profiles, session assignments, and self-service portal invitations
 
-<span class="feature-status in-progress">In Progress</span>
+<span class="feature-status implemented">Implemented</span>
 
 ## Overview
 
 Speakers are architecture professionals who present at BATbern conferences. Each speaker has a profile containing biographical information, expertise areas, and contact details. Speakers progress through defined status states from initial identification through confirmed participation.
+
+**Self-Service Portal**: Invited speakers can accept/decline invitations, submit content, and track their engagements through the [Speaker Self-Service Portal](../speaker-portal/README.md) — no password required. Organisers can also manage all of this directly from this screen (hybrid workflow).
+
+**Authentication (Epic 9.1)**: Speaker portal links use JWT-based magic links (RS256, 30-day expiry, HTTP-only cookie) for secure, password-free access.
 
 ## Speaker Profiles
 
@@ -152,9 +156,9 @@ See [Workflow System Documentation](../workflow/README.md) for complete details 
 
 ## Content Collection
 
-<span class="feature-status in-progress">In Progress</span>
+<span class="feature-status implemented">Implemented</span>
 
-Speakers submit presentation content during **Phase B: Outreach**.
+Speakers submit presentation content during **Phase B: Outreach**. Content can be submitted by the speaker via the [self-service portal](../speaker-portal/content-submission.md) or by the organiser on the speaker's behalf (hybrid workflow).
 
 ### Content Requirements
 
@@ -251,7 +255,7 @@ Status: confirmed (auto-confirmed)
 
 ### Outreach Templates
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 Pre-built email templates for common communications:
 
@@ -298,7 +302,7 @@ See [Phase B: Outreach](../workflow/phase-b-outreach.md) for outreach management
 
 ## Session Assignment
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 Confirmed speakers are assigned to event time slots during **Phase D: Assignment**.
 
@@ -333,7 +337,7 @@ See [Phase D: Assignment](../workflow/phase-d-assignment.md) for details.
 
 ## Speaker Directory
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 Public-facing speaker directory showcases confirmed speakers.
 
@@ -404,7 +408,7 @@ Click **Save Changes** to persist updates.
 
 ## Handling Speaker Dropouts
 
-<span class="feature-status planned">Planned</span>
+<span class="feature-status implemented">Implemented</span>
 
 If a speaker withdraws participation:
 
@@ -513,6 +517,28 @@ topic:Sustainable Building
 - If no alternatives, may need to mark as withdrew
 - Communicate changes promptly
 - Update published agenda if event already in AGENDA_PUBLISHED state
+
+## Speaker Self-Service Portal
+
+<span class="feature-status implemented">Implemented</span> — Epic 6
+
+Invited speakers can manage their own participation through the [Speaker Self-Service Portal](../speaker-portal/README.md) without logging in:
+
+- **Accept or decline** invitations via email magic link
+- **Submit presentation content** (title, abstract, file) through a guided wizard
+- **View the speaker dashboard** — upcoming engagements, deadlines, organiser contact, past events
+
+**How organisers trigger portal access:**
+
+1. Add the speaker to the event's speaker pool (Phase A: Setup)
+2. Click **Send Invitation** on the speaker's Phase B Kanban card
+3. The system generates a magic link and sends the invitation email automatically
+
+**Hybrid workflow**: Organisers can always manage content and status on behalf of speakers directly from this screen — the portal supplements but does not replace organiser control.
+
+**Automated deadline reminders** are sent at 14 days, 7 days, and 3 days before the content deadline. Each reminder email includes a fresh dashboard link.
+
+See the [Speaker Portal documentation →](../speaker-portal/README.md) for the full speaker-facing experience.
 
 ## Related Topics
 

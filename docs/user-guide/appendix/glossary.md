@@ -11,6 +11,9 @@ Comprehensive glossary of terms used throughout the BATbern platform. Terms are 
 - [Partners & Sponsors](#partners--sponsors)
 - [Content & Topics](#content--topics)
 - [Technical Terms](#technical-terms)
+- [Portals](#portals)
+- [Abbreviations & Acronyms](#abbreviations--acronyms)
+- [Swiss-Specific Terms](#swiss-specific-terms)
 
 ---
 
@@ -78,7 +81,12 @@ User with ORGANIZER role who plans and manages events. Has full system access in
 Individual who presents at events. May or may not have platform user account.
 
 **With Account**: Can log in to upload materials, view schedule, update bio
-**Without Account**: Organizers manage all data on their behalf
+**Without Account**: Organizers manage all data on their behalf; speaker self-service available via magic link
+
+See also: [Speaker Portal](#speaker-portal), [Magic Link](#magic-link)
+
+### Partner
+Organization collaborating with or sponsoring BATbern events. Partners can log in to view their own attendance analytics, vote on session topics, and access meeting coordination. See [Partner Portal](#partner-portal).
 
 ### Attendee
 Individual who registers for and attends events. May have platform account for:
@@ -110,6 +118,14 @@ BATbern uses **3 independent workflow systems** that operate in parallel:
    - TODO → IN_PROGRESS → COMPLETED/CANCELLED
 
 See [Workflow Documentation](../workflow/) for complete details on how these systems interact.
+
+### Progressive Publishing
+Staged release of event content to the public website, managed automatically:
+1. **Speaker names** auto-published 30 days before event
+2. **Full agenda** (sessions + slots) auto-published 14 days before event
+3. Organizers can override and publish manually at any point
+
+Triggered by the `AGENDA_FINALIZED` state; run by a scheduled job in the event-management-service.
 
 ### Phase
 Conceptual grouping of workflow activities for documentation purposes:
@@ -194,12 +210,21 @@ Individual associated with partner organization. Roles:
 - **Billing Contact** - Handles invoicing and payments
 - **Event Contact** - Coordinates event-specific logistics
 
+### Cost-per-Attendee
+Key performance metric in the Partner Analytics Dashboard. Calculated as:
+
+```
+Cost-per-Attendee = Total Partnership Cost ÷ Total Company Attendees
+```
+
+Partners see this metric across all historical events. Helps partners evaluate the ROI of their BATbern sponsorship relative to employee engagement.
+
 ### Engagement Metric
 Measurement of partner interaction with BATbern platform:
 - **Meeting Count** - Number of coordination meetings
-- **Event Participation** - Events where partner had booth/presence
+- **Event Participation** - Events where partner had company attendees
 - **Sponsorship Value** - Total financial contribution
-- **ROI Score** - Calculated return on investment
+- **Cost-per-Attendee** - Partnership cost divided by total employee attendees
 
 ---
 
@@ -231,11 +256,16 @@ Materials associated with a session or speaker:
 - **Speaker Bio** (professional background)
 - **Headshot** (speaker photo)
 
+### Topic Staleness Score
+Computed metric indicating how long since a topic was last presented. Used in the Topic Heat Map to highlight topics that haven't appeared recently and may be due for revisiting.
+
+**Calculation**: Based on recency and frequency of past use — a topic presented 5 years ago with no repeats scores higher than one presented last year.
+
 ### Content Collection
 Phase of workflow (Step 6) where speakers upload presentation materials. Deadline-driven with reminders and escalations.
 
 ### Quality Review
-Phase of workflow (Steps 7-8) where organizers evaluate speaker content against standards:
+Phase C of the organizer workflow where organizers evaluate speaker content against standards:
 - **Technical Accuracy** - Content is factually correct
 - **Relevance** - Aligns with event theme and audience
 - **Quality** - Professional, well-structured, engaging
@@ -244,6 +274,37 @@ Phase of workflow (Steps 7-8) where organizers evaluate speaker content against 
 ---
 
 ## Technical Terms
+
+### Magic Link
+Passwordless authentication URL emailed to speakers. Clicking the link automatically logs the speaker into their portal without requiring a username or password.
+
+**Properties**:
+- **Format**: JWT (JSON Web Token), RS256-signed
+- **Duration**: 30-day reusable session
+- **Scope**: Speaker-specific; grants access to own events only
+- **Issuer**: `batbern-speaker-coordination` service
+- **Cookie**: HTTP-only, secure; not accessible to JavaScript
+
+**Flow**: Organizer sends invitation → email contains magic link → speaker clicks → JWT issued → speaker authenticated → redirected to portal
+
+### ICS / Calendar Invite (RFC 5545)
+Standard iCalendar file format (`.ics`) for calendar invitations, defined by RFC 5545. BATbern generates ICS files for partner meeting coordination.
+
+**Each ICS file contains**:
+- `VEVENT` for the partner coordination meeting (date, time, location, agenda)
+- `VEVENT` for the linked BATbern event (if scheduled)
+
+**Delivery**: Sent asynchronously via AWS SES to all partner contacts on record. Compatible with all major calendar clients (Outlook, Google Calendar, Apple Calendar).
+
+### Layout Template
+HTML email shell defining the brand frame around email content (header, footer, logo, typography, colors). Edited via Monaco (code editor) by administrators. Changes affect all emails that reference the template.
+
+See also: [Content Template](#content-template)
+
+### Content Template
+Per-email WYSIWYG template defining the body text for a specific notification (e.g., "Speaker Invitation", "Registration Confirmation"). Edited via TinyMCE rich-text editor. 24 system templates seeded on startup; custom templates support full CRUD.
+
+See also: [Layout Template](#layout-template)
 
 ### Presigned URL
 Time-limited, permission-scoped URL for direct file uploads to AWS S3. Provides:
@@ -275,9 +336,16 @@ Process of verifying user identity. BATbern uses AWS Cognito for:
 
 ### Authorization / Permissions
 Rules determining what actions a user can perform. Based on:
-- **Role** (ORGANIZER, ADMIN, SPEAKER, ATTENDEE)
+- **Role** (ORGANIZER, ADMIN, SPEAKER, PARTNER, ATTENDEE)
 - **Ownership** (assigned to specific event)
 - **Resource** (which entities/features can be accessed)
+
+**Role summary**:
+- `ORGANIZER` — full platform access; manages all events, entities, and workflows
+- `ADMIN` — user and company management; cannot create events
+- `SPEAKER` — own portal only: respond to invitations, submit materials, view schedule
+- `PARTNER` — own company data only: attendance analytics, topic voting, meeting coordination
+- `ATTENDEE` — registration, materials download (post-event)
 
 ### Session / Session Token
 Cryptographic token proving user is authenticated. Properties:
@@ -360,6 +428,39 @@ Quick reference for all workflow states:
 
 ---
 
+---
+
+## Portals
+
+### Speaker Portal
+Self-service web interface for speakers, accessible via [Magic Link](#magic-link). Speakers do not need a platform account.
+
+**Capabilities**:
+- Accept or decline speaking invitations
+- Submit presentation materials (title, abstract, CV, photo, slides)
+- View upcoming and past speaking engagements
+- Track material submission status and deadlines
+
+**Access**: `https://www.batbern.ch/speaker/` + magic link token
+**Languages**: English and German (i18n)
+**Accessibility**: WCAG 2.1 AA compliant
+
+See [Speaker Portal documentation](../speaker-portal/README.md) for full details.
+
+### Partner Portal
+Web interface for partner company users, accessible with standard Cognito login (PARTNER role).
+
+**Capabilities**:
+- Attendance Analytics Dashboard (per-event employee attendance + XLSX export)
+- Topic Voting (suggest and vote for session topics)
+- Meeting Coordination (access meeting details, receive ICS calendar invites)
+
+**Scope**: Partners see only their own company's data.
+
+See [Partner Portal documentation](../partner-portal/README.md) for full details.
+
+---
+
 ## Abbreviations & Acronyms
 
 | Abbreviation | Full Term | Context |
@@ -378,7 +479,8 @@ Quick reference for all workflow states:
 | **DDD** | Domain-Driven Design | Software architecture pattern |
 | **E2E** | End-to-End | Full workflow testing |
 | **GDPR** | General Data Protection Regulation | Privacy compliance |
-| **JWT** | JSON Web Token | Authentication token format |
+| **ICS** | iCalendar | Calendar invite file format (RFC 5545) |
+| **JWT** | JSON Web Token | Authentication token format (used for magic links) |
 | **MFA** | Multi-Factor Authentication | Enhanced security (planned) |
 | **MVP** | Minimum Viable Product | Initial feature release |
 | **NPS** | Net Promoter Score | Recommendation metric (-100 to +100) |
@@ -396,6 +498,9 @@ Quick reference for all workflow states:
 | **UID** | Unique Identifier | Swiss business ID number |
 | **URL** | Uniform Resource Locator | Web address |
 | **UUID** | Universally Unique Identifier | Database ID format |
+| **WCAG** | Web Content Accessibility Guidelines | Accessibility standard (2.1 AA) |
+| **WYSIWYG** | What You See Is What You Get | Rich-text editor style (TinyMCE) |
+| **XLSX** | Excel Open XML Spreadsheet | Export format for analytics data |
 
 ---
 

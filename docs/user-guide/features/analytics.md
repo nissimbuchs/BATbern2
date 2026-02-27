@@ -1,4 +1,4 @@
-# Event Analytics `[PLANNED]`
+# Analytics
 
 ## Overview
 
@@ -10,7 +10,45 @@ The Event Analytics dashboard provides organizers with actionable insights into 
 - **Demonstrate ROI** - Show partners and stakeholders quantifiable event value
 - **Data-Driven Decisions** - Replace gut feelings with evidence-based planning
 
-> **Note**: This feature is currently in planning stages. The documentation below describes the intended functionality. Check [Feature Status](../appendix/feature-status.md) for implementation timeline.
+## Implementation Status
+
+| Analytics Area | Status | Details |
+|----------------|--------|---------|
+| Partner Attendance Analytics | ✅ `[IMPLEMENTED]` | Attendance table, cost-per-attendee KPI, XLSX export (Epic 8) |
+| Organizer Workflow Analytics | ✅ `[IMPLEMENTED]` | Event progress tracking, speaker pipeline, team activity feed |
+| Full Event Analytics Suite | 📋 `[PLANNED]` | Attendance funnel, session ratings, NPS surveys, financial metrics |
+
+---
+
+## Implemented Analytics
+
+### Partner Attendance Analytics Dashboard (Epic 8)
+
+Available to partners at **Partner Portal → Analytics**. Provides a comprehensive view of each partner company's participation history across BATbern events:
+
+- **Attendance summary table** — Event, date, company attendees, total attendance, and percentage
+- **Time period toggle** — Last 5 Years / Full History
+- **Cost-per-Attendee metric** — Partnership investment ÷ attendees (CHF)
+- **XLSX export** — Download the full attendance history as an Excel file
+
+Partners see only their own company's data. Organizers can access any company's analytics. See [Partner Portal: Analytics Dashboard](../partner-portal/analytics.md) for full details.
+
+### Organizer Workflow Analytics (Epic 5)
+
+Built into the organizer dashboard:
+
+- **Event workflow progress** — Visual progress bar showing current state in the 9-state machine with completion percentage
+- **Speaker pipeline** — Status breakdown across all speaker states (Invited / Accepted / Content Submitted / Approved / Published)
+- **Team Activity Feed** — Chronological log of organizer actions (edits, state transitions, assignments) with mark-as-read and delete
+- **Organizer Analytics Page** — Aggregate statistics across all events and speakers on the platform
+
+---
+
+## Planned: Comprehensive Event Analytics Suite
+
+The sections below document the **planned** analytics capabilities. These features are not yet implemented. Check [Feature Status](../appendix/feature-status.md) for the current roadmap.
+
+---
 
 ## When to Use This Feature
 

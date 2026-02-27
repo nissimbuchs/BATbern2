@@ -28,13 +28,14 @@ BATbern follows a **microservices architecture** with:
 
 ## User Roles
 
-BATbern supports 3 distinct roles:
+BATbern supports 4 distinct roles:
 
-| Role | Access Level | Typical Responsibilities |
-|------|--------------|-------------------------|
-| **Organizer** | Event planning & coordination | Plan events, manage speakers, coordinate partners, manage all entities |
-| **Speaker** | Speaker profile management | Update profile, submit content, manage session assignments |
-| **Attendee** | Public registration | Register for events, view schedules, access materials |
+| Role | Badge | Access Level | Typical Responsibilities |
+|------|-------|--------------|-------------------------|
+| **Organizer** | <span style="background:#2C5F7C;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">ORGANIZER</span> | Full platform access | Plan events, manage speakers, coordinate partners, manage all entities |
+| **Speaker** | <span style="background:#4A90B8;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">SPEAKER</span> | Speaker portal | Accept invitations, submit content, view session dashboard |
+| **Attendee** | <span style="background:#3498DB;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">ATTENDEE</span> | Public registration | Register for events, browse archive, access presentation materials |
+| **Partner** | <span style="background:#9B59B6;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;">PARTNER</span> | Partner portal | View attendance analytics, vote on topics, receive meeting invites |
 
 **You are an Organizer** - you have full permissions for event planning, coordination, and entity management.
 

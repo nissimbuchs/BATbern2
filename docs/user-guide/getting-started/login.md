@@ -6,7 +6,16 @@
 
 ## Overview
 
-BATbern uses **AWS Cognito** for secure authentication. All authentication flows are implemented, including login, password reset, email verification, and account creation.
+BATbern supports **two authentication flows** depending on your role:
+
+| Role | Authentication Method | Entry Point |
+|------|-----------------------|-------------|
+| **Organizer / Admin** | Email + password (AWS Cognito) | Standard login page |
+| **Partner** | Email + password (AWS Cognito) | Standard login page (redirects to Partner Portal) |
+| **Speaker** | Magic link (JWT email link) | Invitation email → auto-login |
+| **Attendee** | Email + password (AWS Cognito) | Event registration page |
+
+All Cognito flows (login, password reset, email verification) are fully implemented.
 
 ## Logging In
 
@@ -48,6 +57,69 @@ If this is your first time logging in, you may need to:
 1. **Verify your email** - Check your inbox for a verification code
 2. **Complete your profile** - Add your name and preferences
 3. **Accept terms** - Review and accept the platform terms of use
+
+### Partner Login
+
+Partners log in using the same email/password flow as organizers. After authentication, the platform detects the PARTNER role and redirects automatically to the **Partner Portal** (analytics, topic voting, meeting coordination) instead of the organizer dashboard.
+
+> **Note**: Partners see only their own company's data. If you are expecting organizer-level access, contact an administrator to verify your role.
+
+---
+
+## Speaker Authentication: Magic Link
+
+<span class="feature-status implemented">Implemented</span>
+
+Speakers authenticate using a **magic link** — a secure, time-limited URL emailed to them as part of the invitation process. No account creation or password is required.
+
+### How It Works
+
+<div class="step" data-step="1">
+
+**Organizer Sends Invitation**
+
+The organizer sends a speaker invitation from the event's Speaker Outreach tab. BATbern emails the speaker with a unique magic link.
+</div>
+
+<div class="step" data-step="2">
+
+**Speaker Clicks the Link**
+
+The speaker clicks the link in the email. No password entry required — the link itself is the authentication credential.
+</div>
+
+<div class="step" data-step="3">
+
+**Auto-Login & Portal Access**
+
+The speaker is automatically logged in and redirected to the Speaker Portal, where they can accept/decline the invitation and submit presentation materials.
+</div>
+
+### Magic Link Properties
+
+| Property | Value |
+|----------|-------|
+| **Format** | JWT (RS256-signed) |
+| **Session duration** | 30 days |
+| **Reusable** | Yes — same link works throughout the 30-day window |
+| **Scope** | Speaker's own events only |
+| **Cookie** | HTTP-only, secure |
+
+### Troubleshooting Magic Links
+
+**Link expired?**
+- Magic links are valid for 30 days from invitation
+- Ask the organizer to resend the invitation to generate a fresh link
+
+**Link not working?**
+- Ensure you're clicking the link from the original invitation email (not a forwarded copy — links are personalized)
+- Try opening in a private/incognito browser window
+- Contact the organizer at info@berner-architekten-treffen.ch
+
+**Received a new invitation but old link still works?**
+- Both links remain valid until their respective 30-day windows expire
+
+---
 
 ## Forgot Password
 
@@ -210,6 +282,8 @@ Your session expired due to inactivity.
 
 - [Dashboard Navigation →](dashboard.md) - What you see after logging in
 - [User Management →](../entity-management/users.md) - Managing user accounts and roles
+- [Speaker Portal →](../speaker-portal/README.md) - Speaker magic link authentication and self-service
+- [Partner Portal →](../partner-portal/README.md) - Partner login and portal capabilities
 - [Troubleshooting Authentication →](../troubleshooting/authentication.md) - Detailed troubleshooting guide
 
 ## API Access (Advanced)

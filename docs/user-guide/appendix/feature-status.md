@@ -4,7 +4,7 @@
 
 This page tracks implementation status of all BATbern features. Use this to understand what's available now, what's in progress, and what's coming soon.
 
-**Last Updated**: 2026-02-23
+**Last Updated**: 2026-02-27
 
 **MVP Status**: ✅ **100% COMPLETE & PRODUCTION READY** - All 5 MVP epics (1-5) complete. Epics 6 and 8 also complete.
 
@@ -132,7 +132,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 **Note:** Epic 5 workflow is now a **parallel workflow architecture** with event states, per-speaker workflows, and configurable tasks - not a linear 16-step process.
 
-### Phase A: Setup (Steps 1-3)
+### Phase A: Setup
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
@@ -140,16 +140,16 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 2: Topic Selection | ✅ `[IMPLEMENTED]` | Topic backlog with heat map | [Phase A](../workflow/phase-a-setup.md#step-2) |
 | Step 3: Speaker Brainstorming | ✅ `[IMPLEMENTED]` | Identify 8-10+ speakers | [Phase A](../workflow/phase-a-setup.md#step-3) |
 
-### Phase B: Outreach (Steps 4-6)
+### Phase B: Outreach
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
 | Step 4: Outreach Initiated | ✅ `[IMPLEMENTED]` | Email invitations to speakers | [Phase B](../workflow/phase-b-outreach.md#step-4) |
 | Step 5: Status Management | ✅ `[IMPLEMENTED]` | Track Accepted/Rejected/Pending | [Phase B](../workflow/phase-b-outreach.md#step-5) |
 | Step 6: Content Collection | ✅ `[IMPLEMENTED]` | Gather presentation materials (≤1000 chars) | [Phase B](../workflow/phase-b-outreach.md#step-6) |
-| Automated Reminders | 📋 `[PLANNED]` | Q1 2025 | Email reminders for non-responders | [Notifications](../features/notifications.md) |
+| Automated Reminders | ✅ `[IMPLEMENTED]` | Speaker invitation emails + 3-tier deadline reminder escalation (Epic 6) | [Notifications](../features/notifications.md) |
 
-### Phase C: Quality (Steps 7-8)
+### Phase C: Quality Review
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
@@ -157,7 +157,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 8: Threshold Validation | ✅ `[IMPLEMENTED]` | Minimum 10 approved speakers (full-day) | [Phase C](../workflow/phase-c-quality.md#step-8) |
 | Review Queue | ✅ `[IMPLEMENTED]` | Prioritized review interface | [Phase C](../workflow/phase-c-quality.md#review-queue) |
 
-### Phase D: Assignment (Steps 9-10)
+### Phase D: Slot Assignment & Publishing
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
@@ -165,7 +165,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 10: Slot Assignment | ✅ `[IMPLEMENTED]` | Drag-and-drop time slot assignment | [Phase D](../workflow/phase-d-assignment.md#step-10) |
 | Conflict Detection | ✅ `[IMPLEMENTED]` | Speaker unavailability, double-booking | [Phase D](../workflow/phase-d-assignment.md#conflicts) |
 
-### Phase E: Publishing (Steps 11-12)
+### Phase E: Archival & Publishing
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
@@ -235,6 +235,16 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Unified Multi-Role Navigation | 📋 `[PLANNED]` | Story 9.5 — speaker + attendee portal in single session |
 | Epic 6 Token Migration Script | 📋 `[PLANNED]` | Story 9.4 — 7-day grace period migration of staging token-based users |
 
+### Epic 10: Admin Tools & Email Templates 🔨 In Progress
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Organizer Admin Page | 🔨 `[IN PROGRESS]` | Story 10.1 — `/organizer/admin` with 4 tabs: Event Types, Import Data, Task Templates, Email Templates |
+| Event Type Configuration | 🔨 `[IN PROGRESS]` | Slot templates for FULL_DAY, AFTERNOON, EVENING |
+| Historical Data Import | 🔨 `[IN PROGRESS]` | 5 batch import modals: Events, Sessions, Companies, Speakers, Participants; CSV/JSON with validation and error export |
+| Task Template Management | 🔨 `[IN PROGRESS]` | Default read-only templates + custom template CRUD with trigger states and timing |
+| Email Template Editor | 🔨 `[IN PROGRESS]` | Story 10.2 — Monaco editor (layout templates) + TinyMCE WYSIWYG (content templates); 22 system templates seeded; DE/EN toggle; live preview |
+
 ---
 
 ## Advanced Features
@@ -259,24 +269,25 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Auto-Conversion | 📋 `[PLANNED]` | Q2 2025 | PPTX/KEY → PDF |
 | Virus Scanning | 📋 `[PLANNED]` | Q2 2025 | ClamAV integration |
 
-### Notifications 📋
+### Notifications
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
-| In-App Notifications | 📋 `[PLANNED]` | Q1 2025 | Real-time bell icon alerts | [Notifications](../features/notifications.md) |
-| Email Notifications | 📋 `[PLANNED]` | Q1 2025 | Immediate, digest, weekly | [Notifications](../features/notifications.md) |
-| Escalation Alerts | 📋 `[PLANNED]` | Q1 2025 | Deadline reminders, overdue actions | [Notifications](../features/notifications.md) |
-| Custom Rules | 📋 `[PLANNED]` | Q2 2025 | Per-event, per-category settings |
+| Transactional Email Notifications | ✅ `[IMPLEMENTED]` | Speaker invitations, deadline reminders, registration confirmations, partner ICS | [Notifications](../features/notifications.md) |
+| Speaker Deadline Reminder Escalation | ✅ `[IMPLEMENTED]` | 3-tier: 1 month / 2 weeks / 3 days before content deadline | [Notifications](../features/notifications.md) |
+| In-App Notification Center | 🔨 `[IN PROGRESS]` | Feed with mark-as-read, delete, view all; full rules engine planned | [Notifications](../features/notifications.md) |
+| Custom Notification Rules | 📋 `[PLANNED]` | Per-event settings, quiet hours, digest scheduling |
 
-### Event Analytics 📋
+### Analytics
 
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
-| Attendance Analytics | 📋 `[PLANNED]` | Q2 2025 | Registration funnel, no-show rates | [Analytics](../features/analytics.md) |
-| Content Performance | 📋 `[PLANNED]` | Q2 2025 | Session attendance, ratings | [Analytics](../features/analytics.md) |
-| Engagement Metrics | 📋 `[PLANNED]` | Q2 2025 | Q&A, networking, downloads | [Analytics](../features/analytics.md) |
-| Satisfaction Surveys | 📋 `[PLANNED]` | Q2 2025 | CSAT, NPS, open feedback | [Analytics](../features/analytics.md) |
-| Financial Analytics | 📋 `[PLANNED]` | Q3 2025 | Cost per attendee, ROI | [Analytics](../features/analytics.md) |
+| Partner Attendance Analytics | ✅ `[IMPLEMENTED]` | Attendance table, cost-per-attendee KPI, XLSX export (Epic 8) | [Analytics](../features/analytics.md) |
+| Organizer Workflow Analytics | ✅ `[IMPLEMENTED]` | Event progress, speaker pipeline, team activity feed | [Analytics](../features/analytics.md) |
+| Full Attendance Funnel | 📋 `[PLANNED]` | Registration funnel, no-show rates, dropout analysis | [Analytics](../features/analytics.md) |
+| Content Performance | 📋 `[PLANNED]` | Session attendance, speaker ratings | [Analytics](../features/analytics.md) |
+| Satisfaction Surveys (CSAT/NPS) | 📋 `[PLANNED]` | Post-event surveys, open feedback | [Analytics](../features/analytics.md) |
+| Financial Analytics | 📋 `[PLANNED]` | Budget variance, ROI, cost breakdown | [Analytics](../features/analytics.md) |
 
 ### Keyboard Shortcuts 📋
 
@@ -370,7 +381,7 @@ Features are prioritized based on:
 
 **Beta Features** (available for testing):
 - Currently no beta features available
-- Check back Q1 2025 for notification system beta
+- Check back when Epic 10 Admin Tools reach release-candidate status
 
 **Sign Up**:
 1. Email beta@batbern.ch with subject "Beta Interest"

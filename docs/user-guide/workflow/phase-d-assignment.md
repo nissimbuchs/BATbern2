@@ -1,4 +1,4 @@
-# Phase D: Assignment (Steps 9-10)
+# Phase D: Slot Assignment & Publishing
 
 > Assign speakers to time slots and publish the agenda
 

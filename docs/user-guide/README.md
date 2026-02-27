@@ -8,17 +8,22 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 **Target Audience**: Event organizers and coordinators responsible for planning, executing, and managing BATbern conferences.
 
-**Platform Version**: Development (Epics 1-5)
+**Platform Version**: Production Ready (Epics 1–6 & 8 Complete; Epic 9 In Progress)
 
 ## Platform Status
 
-| Epic                            | Status         | Progress | Key Features                                                           |
-| ------------------------------- | -------------- | -------- | ---------------------------------------------------------------------- |
-| **Epic 1: Foundation**          | ✅ Complete    | 100%     | Infrastructure, Authentication, API Gateway, Monitoring                |
-| **Epic 2: Entity CRUD**         | ✅ Complete    | 100%     | Company, User, Event, Partner Management                               |
-| **Epic 3: Data Migration**      | ✅ Complete    | 100%     | Historical data import (tooling ready, production import pending)      |
-| **Epic 4: Public Website**      | ✅ Complete    | 100%     | Landing pages, Registration flow, Testing, SEO, Performance, Archive Browsing, Content Search |
-| **Epic 5: Organizer Workflows** | ✅ Complete    | 100%     | Event workflow, Speaker workflow, Task system, Auto-publishing, Event lifecycle automation |
+| Epic                                   | Status              | Progress | Key Features                                                                                         |
+| -------------------------------------- | ------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| **Epic 1: Foundation**                 | ✅ Complete         | 100%     | Infrastructure, Authentication, API Gateway, Monitoring                                              |
+| **Epic 2: Entity CRUD**                | ✅ Complete         | 100%     | Company, User, Event, Partner Management                                                             |
+| **Epic 3: Data Migration**             | ✅ Complete         | 100%     | Historical data import tooling (production import pending)                                           |
+| **Epic 4: Public Website**             | ✅ Complete         | 100%     | Landing pages, Registration flow, Archive Browsing, Content Search, SEO                              |
+| **Epic 5: Organizer Workflows**        | ✅ Complete         | 100%     | 9-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation         |
+| **Epic 6: Speaker Portal**             | ✅ Complete         | 100%     | Magic link invitations, Self-service response/content submission, Speaker dashboard (WCAG 2.1 AA)    |
+| **Epic 7: Attendee Enhancements**      | 📦 Deferred         | 0%       | Personal dashboard, Bookmarks, PWA — deferred to Phase 3                                            |
+| **Epic 8: Partner Coordination**       | ✅ Complete         | 100%     | Attendance analytics (XLSX export), Topic voting, Meeting coordination (ICS invites)                 |
+| **Epic 9: Speaker Auth Integration**   | 🔨 In Progress      | 20%      | 9.1 JWT magic link done; 9.2–9.5 (Cognito account creation, dual auth, migration) planned           |
+| **Epic 10: Admin Tools**               | 🔨 In Progress      | 40%      | Admin page (event types, import data, task templates, email template management)                     |
 
 ## Quick Navigation
 
@@ -41,7 +46,7 @@ Manage core platform entities:
 - [Companies](entity-management/companies.md) <span class="feature-status implemented">Implemented</span>
   - Swiss UID validation, logo upload, search/autocomplete
 - [Users](entity-management/users.md) <span class="feature-status implemented">Implemented</span>
-  - 3 roles (Organizer, Speaker, Attendee), GDPR compliance
+  - 4 roles (Organizer, Speaker, Attendee, Partner), GDPR compliance
 - [Events](entity-management/events.md) <span class="feature-status implemented">Implemented</span>
   - Full-day, afternoon, evening formats, timeline management
 - [Partners](entity-management/partners.md) <span class="feature-status implemented">Implemented</span>
@@ -91,12 +96,12 @@ Powerful tools for organizers:
 
 - [Topic Heat Map](features/heat-maps.md) <span class="feature-status implemented">Implemented</span>
   - 20+ years historical visualization
-- [Notification System](features/notifications.md) <span class="feature-status planned">Planned</span>
-  - In-app, email, escalation rules
+- [Notification System](features/notifications.md) <span class="feature-status in-progress">In Progress</span>
+  - Email notifications implemented (task reminders, speaker invites, reminders, calendar invites); in-app center planned
 - [File Uploads](features/file-uploads.md) <span class="feature-status implemented">Implemented</span>
   - Presigned S3 URLs, validation
-- [Analytics & Reporting](features/analytics.md) <span class="feature-status planned">Planned</span>
-  - Event metrics, speaker engagement
+- [Analytics & Reporting](features/analytics.md) <span class="feature-status in-progress">In Progress</span>
+  - Partner attendance analytics with XLSX export (Epic 8 complete); organizer event metrics planned
 
 ### 🔧 Troubleshooting
 

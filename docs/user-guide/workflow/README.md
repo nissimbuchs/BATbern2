@@ -16,7 +16,7 @@ These screencasts demonstrate the complete event lifecycle from creation to arch
 - Phase B: Speaker outreach with Kanban board
 - Phase C: Quality review and content approval
 - Phase D: Slot assignment and agenda publishing
-- Phase E: Event archival
+- Phase E: Auto-publishing, lifecycle automation, archival
 
 **Features**: Full HD (1920x1080), professional narration in both languages, dual subtitle tracks (German + English), 36 workflow steps demonstrated in real-time.
 
@@ -55,7 +55,7 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 | **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | All confirmed speakers assigned   | Agenda published                     |
 | **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action             | Manual finalization (2 weeks before) |
 | **AGENDA_FINALIZED**       | Agenda locked for printing              | Finalize agenda action            | Event day arrives                    |
-| **EVENT_LIVE**             | Event currently happening               | Event day                         | Manual transition after event        |
+| **EVENT_LIVE**             | Event currently happening               | Automatic when event start time passed (hourly check) | Automatic when event end time passed |
 | **EVENT_COMPLETED**        | Event finished, post-processing         | Post-event trigger                | Manual archival                      |
 | **ARCHIVED**               | Event archived for history              | Archival action                   | Terminal state                       |
 
@@ -87,10 +87,10 @@ For documentation purposes, we organize the 9 states into user-friendly phases:
 - Actions: Assign presentations to time slots, publish agenda
 - [Learn more →](phase-d-assignment.md)
 
-**Phase E: Archival** <span class="feature-status implemented">Implemented</span>
+**Phase E: Publishing & Lifecycle** <span class="feature-status implemented">Implemented</span>
 
-- States: Any state → ARCHIVED
-- Actions: Archive completed event, preserve historical data
+- States: AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+- Actions: Auto-publish speakers (30 days before) and agenda (14 days before) via CloudFront CDN; automated EVENT_LIVE and EVENT_COMPLETED transitions; manual archival
 - [Learn more →](phase-e-publishing.md)
 
 **Phase F: Communication** <span class="feature-status implemented">Implemented</span>
@@ -193,6 +193,36 @@ Tasks are automatically created when the event transitions to their trigger stat
 - Event reaches TOPIC_SELECTION → creates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
 - Event reaches AGENDA_PUBLISHED → creates Newsletter: Speakers task
 - Event reaches AGENDA_FINALIZED → creates Newsletter: Final, Catering tasks
+
+---
+
+## Auto-Publishing & Lifecycle Automation
+
+The platform automates two critical parts of the event lifecycle, removing the need for manual monitoring.
+
+### Auto-Publishing Schedule
+
+| Content | When | Required Event State |
+|---------|------|----------------------|
+| Speaker profiles | 30 days before event date | `AGENDA_PUBLISHED` or `AGENDA_FINALIZED` |
+| Full agenda | 14 days before event date | `AGENDA_FINALIZED` |
+
+Both run via a daily cron job (00:00 UTC). If the event has already passed the 30-day or 14-day mark without publishing, the job publishes on the next run (catch-up behaviour).
+
+**Manual override**: Available from the event's Publishing tab — "Publish Speakers Now" / "Publish Agenda Now". Manual publish prevents duplicate auto-publishing (checked via `publishedAt` timestamps).
+
+**CDN delivery**: Published content is served through **AWS CloudFront** — changes reach the public website within seconds of the publish job completing.
+
+### Automatic State Transitions
+
+| Transition | Trigger | Check Frequency |
+|------------|---------|----------------|
+| `AGENDA_FINALIZED` → `EVENT_LIVE` | Event start date/time reached | Hourly |
+| `EVENT_LIVE` → `EVENT_COMPLETED` | Event end date/time passed | Hourly |
+
+Both transitions require no organizer action. The event enters `EVENT_COMPLETED` for post-event processing, then moves to `ARCHIVED` via a manual organizer action.
+
+See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full details including dropout handling and CDN configuration.
 
 ---
 
@@ -461,7 +491,7 @@ Tasks are automatically created when the event transitions to their trigger stat
 - [Phase B: Outreach →](phase-b-outreach.md) - Speaker engagement
 - [Phase C: Quality →](phase-c-quality.md) - Content review
 - [Phase D: Assignment →](phase-d-assignment.md) - Slot assignment and publishing
-- [Phase E: Archival →](phase-e-publishing.md) - Event archival
+- [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) - Event archival
 
 ### Entity Management
 
@@ -479,4 +509,4 @@ Tasks are automatically created when the event transitions to their trigger stat
 2. **Speaker Outreach**: Continue with [Phase B: Outreach →](phase-b-outreach.md)
 3. **Content Review**: Proceed to [Phase C: Quality →](phase-c-quality.md)
 4. **Publishing**: Move to [Phase D: Assignment →](phase-d-assignment.md)
-5. **Archival**: Complete with [Phase E: Archival →](phase-e-publishing.md)
+5. **Publishing & Lifecycle**: Complete with [Phase E: Publishing & Lifecycle →](phase-e-publishing.md)

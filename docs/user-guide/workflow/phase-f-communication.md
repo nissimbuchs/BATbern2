@@ -1,4 +1,4 @@
-# Phase F: Communication (Steps 13-16)
+# Phase F: Task Management & Communication
 
 > Execute event and archive for historical reference
 
