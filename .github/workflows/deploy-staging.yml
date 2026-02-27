@@ -285,9 +285,10 @@ jobs:
           # 1. No infrastructure changes
           # 2. No Dockerfile changes
           # 3. No database migrations
-          # 4. Only service code changes
+          # 4. Only service code changes (NOT frontend - frontend requires CDK BucketDeployment)
 
           if [ "${{ steps.changes.outputs.infrastructure }}" != "true" ] && \
+             [ "${{ steps.changes.outputs.frontend }}" != "true" ] && \
              ! echo "$CHANGED_FILES" | grep -qE "Dockerfile|db/migration/V[0-9]+.*\.sql" && \
              [ -n "${{ steps.changes.outputs.changed_services }}" ] && \
              [ "${{ steps.changes.outputs.changed_services }}" != "all-services" ]; then
