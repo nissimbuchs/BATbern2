@@ -36,8 +36,13 @@ paths:
     post:
       summary: "Suggest a new topic"
       description: |
-        Partner submits a new topic suggestion.
-        `companyName` and `suggestedBy` are extracted from the JWT principal.
+        Partner or Organizer submits a new topic suggestion.
+
+        - **PARTNER**: `companyName` is resolved from the JWT principal; any `companyName` field in
+          the request body is ignored (security: partners cannot spoof their company).
+        - **ORGANIZER**: must supply `companyName` in the request body to record the suggestion on
+          behalf of the specified partner company (e.g. during a partner meeting). Returns 400 if
+          `companyName` is missing or blank.
       operationId: "suggestTopic"
       tags: ["Partner Topics"]
       requestBody:
@@ -54,9 +59,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/TopicDTO"
         "400":
-          description: "Validation error"
+          description: "Validation error or missing companyName (organizer path)"
         "403":
-          description: "Forbidden — only PARTNER role may suggest topics"
+          description: "Forbidden — requires PARTNER or ORGANIZER role"
       security:
         - bearerAuth: []
 
@@ -192,6 +197,12 @@ components:
           maxLength: 500
           nullable: true
           description: "Short description (optional, max 500 chars)"
+        companyName:
+          type: string
+          nullable: true
+          description: |
+            Organizer-only: the partner company on whose behalf the topic is submitted.
+            Required when caller has ORGANIZER role; ignored for PARTNER callers.
       required: [title]
 
     TopicStatusUpdateRequest:

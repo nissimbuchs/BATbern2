@@ -22,8 +22,13 @@ export interface paths {
     put?: never;
     /**
      * Suggest a new topic
-     * @description Partner submits a new topic suggestion.
-     *     `companyName` and `suggestedBy` are extracted from the JWT principal.
+     * @description Partner or Organizer submits a new topic suggestion.
+     *
+     *     - **PARTNER**: `companyName` is resolved from the JWT principal; any `companyName` field in
+     *       the request body is ignored (security: partners cannot spoof their company).
+     *     - **ORGANIZER**: must supply `companyName` in the request body to record the suggestion on
+     *       behalf of the specified partner company (e.g. during a partner meeting). Returns 400 if
+     *       `companyName` is missing or blank.
      */
     post: operations['suggestTopic'];
     delete?: never;
@@ -114,6 +119,11 @@ export interface components {
       title: string;
       /** @description Short description (optional, max 500 chars) */
       description?: string | null;
+      /**
+       * @description Organizer-only: the partner company on whose behalf the topic is submitted.
+       *     Required when caller has ORGANIZER role; ignored for PARTNER callers.
+       */
+      companyName?: string | null;
     };
     TopicStatusUpdateRequest: {
       /**
@@ -185,14 +195,14 @@ export interface operations {
           'application/json': components['schemas']['TopicDTO'];
         };
       };
-      /** @description Validation error */
+      /** @description Validation error or missing companyName (organizer path) */
       400: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description Forbidden — only PARTNER role may suggest topics */
+      /** @description Forbidden — requires PARTNER or ORGANIZER role */
       403: {
         headers: {
           [name: string]: unknown;

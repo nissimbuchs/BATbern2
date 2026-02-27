@@ -78,30 +78,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/topics/{topicCode}/override-staleness': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Override staleness score
-     * @description Manually override the staleness score with justification.
-     *
-     *     **Acceptance Criteria**: AC7 (Story 5.2)
-     *
-     *     Requires ORGANIZER role.
-     */
-    put: operations['overrideStaleness'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/topics/{topicCode}/similar': {
     parameters: {
       query?: never;
@@ -140,28 +116,6 @@ export interface paths {
     get: operations['getTopicUsageHistory'];
     put?: never;
     post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/topics/recalculate-staleness': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Recalculate staleness scores
-     * @description Recalculate staleness scores for all topics.
-     *
-     *     **Authorization**: ORGANIZER role required
-     */
-    post: operations['recalculateStaleness'];
     delete?: never;
     options?: never;
     head?: never;
@@ -387,18 +341,6 @@ export interface components {
        * @example Security
        */
       category: string;
-    };
-    OverrideStalenessRequest: {
-      /**
-       * @description New staleness score
-       * @example 80
-       */
-      stalenessScore: number;
-      /**
-       * @description Reason for overriding the score
-       * @example Topic remains highly relevant due to recent industry developments
-       */
-      justification: string;
     };
     SelectTopicForEventRequest: {
       /**
@@ -650,37 +592,6 @@ export interface operations {
       404: components['responses']['NotFound'];
     };
   };
-  overrideStaleness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Topic code (slug-format identifier) */
-        topicCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['OverrideStalenessRequest'];
-      };
-    };
-    responses: {
-      /** @description Staleness score overridden */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Topic'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
   getSimilarTopics: {
     parameters: {
       query?: never;
@@ -729,31 +640,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       404: components['responses']['NotFound'];
-    };
-  };
-  recalculateStaleness: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Recalculation completed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': {
-            /** @example Staleness scores recalculated for 42 topics */
-            message?: string;
-          };
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
     };
   };
   calculateSimilarities: {
