@@ -1,6 +1,17 @@
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js';
 import fs from 'fs-extra';
+
+// HTML-escape for plain (un-highlighted) code blocks such as ASCII wireframes.
+// highlight.js handles its own escaping for highlighted blocks; we need this
+// only when bypassing hljs entirely.
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 import path from 'path';
 import * as cheerio from 'cheerio';
 import { fileURLToPath } from 'url';
@@ -37,7 +48,11 @@ class MarkdownProcessor {
             console.warn(`Failed to highlight code block with language '${lang}':`, err.message);
           }
         }
-        return hljs.highlightAuto(code).value;
+        // No language specified (e.g. ASCII wireframes) — return plain escaped
+        // text. Calling highlightAuto() on ASCII art produces random token
+        // colours and triggers the hljs theme's white background, making the
+        // content nearly unreadable on the dark page.
+        return escapeHtml(code);
       }
     });
 
@@ -117,11 +132,14 @@ class MarkdownProcessor {
     this.md.renderer.rules.code_block = function(tokens, idx, options, env, renderer) {
       const token = tokens[idx];
       const lang = token.info ? token.info.trim() : '';
-      const highlighted = options.highlight ? options.highlight(token.content, lang) : token.content;
+      const highlighted = options.highlight ? options.highlight(token.content, lang) : escapeHtml(token.content);
+      // Use "hljs language-X" only for recognised languages so the hljs theme
+      // CSS (white background, syntax colours) applies only where intended.
+      const codeClass = lang ? `hljs language-${lang}` : 'plaintext';
 
       return `<div class="code-block">
         ${lang ? `<div class="code-header">${lang}</div>` : ''}
-        <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
+        <pre><code class="${codeClass}">${highlighted}</code></pre>
       </div>`;
     };
 
@@ -141,11 +159,12 @@ class MarkdownProcessor {
         </div>`;
       }
 
-      const highlighted = options.highlight ? options.highlight(token.content, lang) : token.content;
+      const highlighted = options.highlight ? options.highlight(token.content, lang) : escapeHtml(token.content);
+      const codeClass = lang ? `hljs language-${lang}` : 'plaintext';
 
       return `<div class="code-block">
         ${lang ? `<div class="code-header">${lang}</div>` : ''}
-        <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
+        <pre><code class="${codeClass}">${highlighted}</code></pre>
       </div>`;
     };
 
