@@ -190,6 +190,7 @@
       "meetings": "Meetings",
       "analytics": "Analysen",
       "notes": "Notizen",
+      "topics": "Themenvorschläge",
       "settings": "Einstellungen"
     },
     "overviewTab": {
@@ -298,6 +299,7 @@
       "col": {
         "topic": "Thema",
         "company": "Unternehmen",
+        "date": "Datum",
         "actions": "Aktionen"
       },
       "status": {
@@ -323,6 +325,7 @@
           "title": "Titel",
           "company": "Unternehmen",
           "votes": "Abstimmungen",
+          "date": "Datum",
           "actions": "Aktionen"
         },
         "status": "Status",

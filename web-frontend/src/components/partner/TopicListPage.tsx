@@ -33,6 +33,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import { TopicSuggestionForm } from './TopicSuggestionForm';
@@ -48,7 +49,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SortKey = 'title' | 'suggestedByCompany' | 'voteCount';
+type SortKey = 'title' | 'suggestedByCompany' | 'voteCount' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 
 // ─── Status badge colours ─────────────────────────────────────────────────────
@@ -66,6 +67,8 @@ function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] 
     let cmp = 0;
     if (key === 'voteCount') {
       cmp = a.voteCount - b.voteCount;
+    } else if (key === 'createdAt') {
+      cmp = a.createdAt.localeCompare(b.createdAt); // ISO strings sort lexicographically
     } else {
       cmp = (a[key] ?? '').localeCompare(b[key] ?? '');
     }
@@ -108,7 +111,7 @@ const TopicListPage: React.FC = () => {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'voteCount' ? 'desc' : 'asc');
+      setSortDir(key === 'voteCount' || key === 'createdAt' ? 'desc' : 'asc');
     }
   };
 
@@ -260,7 +263,7 @@ const TopicListPage: React.FC = () => {
                     {t('portal.topics.col.topic')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: '20%' }}>
+                <TableCell sx={{ fontWeight: 700, width: '15%' }}>
                   <TableSortLabel
                     active={sortKey === 'suggestedByCompany'}
                     direction={sortKey === 'suggestedByCompany' ? sortDir : 'asc'}
@@ -269,7 +272,16 @@ const TopicListPage: React.FC = () => {
                     {t('portal.topics.col.company')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: '25%' }} align="right">
+                <TableCell sx={{ fontWeight: 700, width: '10%' }}>
+                  <TableSortLabel
+                    active={sortKey === 'createdAt'}
+                    direction={sortKey === 'createdAt' ? sortDir : 'desc'}
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    {t('portal.topics.col.date')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '20%' }} align="right">
                   {t('portal.topics.col.actions')}
                 </TableCell>
               </TableRow>
@@ -316,6 +328,13 @@ const TopicListPage: React.FC = () => {
                         maxWidth={80}
                         maxHeight={48}
                       />
+                    </TableCell>
+
+                    {/* Date column */}
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                      </Typography>
                     </TableCell>
 
                     {/* Actions column */}

@@ -109,7 +109,7 @@ describe('PartnerTabNavigation', () => {
     const tablist = screen.getByRole('tablist');
     fireEvent.keyDown(tablist, { key: 'End' });
 
-    expect(mockOnTabChange).toHaveBeenCalledWith(5);
+    expect(mockOnTabChange).toHaveBeenCalledWith(6); // 7 tabs: 0-6
   });
 
   // Story 8.4: should hide Notes tab for PARTNER role
@@ -119,6 +119,8 @@ describe('PartnerTabNavigation', () => {
     expect(screen.queryByRole('tab', { name: /notes/i })).not.toBeInTheDocument();
     // Settings also hidden for PARTNER
     expect(screen.queryByRole('tab', { name: /settings/i })).not.toBeInTheDocument();
+    // Topics also hidden for PARTNER (organizer meeting workflow)
+    expect(screen.queryByRole('tab', { name: /topics/i })).not.toBeInTheDocument();
     // Other tabs still visible
     expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /analytics/i })).toBeInTheDocument();
@@ -141,9 +143,9 @@ describe('PartnerTabNavigation', () => {
 
   // Additional test: should wrap around when using arrow keys at boundaries
   it('should_wrapAround_when_arrowKeyAtBoundary', () => {
-    // At last tab, right arrow should wrap to first
+    // At last tab (index 6 = Settings), right arrow should wrap to first (0)
     const { unmount } = render(
-      <PartnerTabNavigation activeTab={5} onTabChange={mockOnTabChange} />
+      <PartnerTabNavigation activeTab={6} onTabChange={mockOnTabChange} />
     );
     const tablist = screen.getByRole('tablist');
     fireEvent.keyDown(tablist, { key: 'ArrowRight' });
@@ -152,14 +154,14 @@ describe('PartnerTabNavigation', () => {
 
     mockOnTabChange.mockClear();
 
-    // At first tab, left arrow should wrap to last
+    // At first tab, left arrow should wrap to last (index 6 = Settings)
     render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} />);
     const tablist2 = screen.getByRole('tablist');
     fireEvent.keyDown(tablist2, { key: 'ArrowLeft' });
-    expect(mockOnTabChange).toHaveBeenCalledWith(5);
+    expect(mockOnTabChange).toHaveBeenCalledWith(6);
   });
 
-  // Additional test: should display all 6 tab labels
+  // Additional test: should display all 7 tab labels (including new Topics tab)
   it('should_displayAllTabLabels_when_rendered', () => {
     render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} />);
 
@@ -168,6 +170,7 @@ describe('PartnerTabNavigation', () => {
     expect(screen.getByRole('tab', { name: /meetings/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /analytics/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /notes/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /topics/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
   });
 });

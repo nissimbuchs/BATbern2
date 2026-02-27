@@ -25,14 +25,18 @@ export const PartnerTabNavigation: React.FC<PartnerTabNavigationProps> = ({
     { key: 'meetings', label: t('detail.tabs.meetings') },
     { key: 'analytics', label: t('detail.tabs.analytics') },
     { key: 'notes', label: t('detail.tabs.notes') },
+    { key: 'topics', label: t('detail.tabs.topics') },
     { key: 'settings', label: t('detail.tabs.settings') },
   ];
 
   // Story 8.0: Settings tab hidden for PARTNER role
   // Story 8.4: Notes tab also hidden for PARTNER (organizer-internal notes)
+  // Topics tab: hidden for PARTNER — organizer-only meeting workflow
   const visibleTabs =
     role === 'PARTNER'
-      ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes')
+      ? allTabs.filter(
+          (tab) => tab.key !== 'settings' && tab.key !== 'notes' && tab.key !== 'topics'
+        )
       : allTabs;
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {

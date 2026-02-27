@@ -20,6 +20,7 @@ import {
   Event as MeetingsIcon,
   BarChart as AnalyticsIcon,
   Note as NotesIcon,
+  Lightbulb as TopicsIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +32,7 @@ import { PartnerTabNavigation } from './PartnerTabNavigation';
 import { PartnerOverviewTab } from './PartnerOverviewTab';
 import { PartnerMeetingsTab } from './PartnerMeetingsTab';
 import PartnerNotesTab from './PartnerNotesTab';
+import { PartnerTopicsTab } from './PartnerTopicsTab';
 import { PartnerSettingsTab } from './PartnerSettingsTab';
 import { PartnerAttendanceDashboard } from '@/components/partner/PartnerAttendanceDashboard';
 import { PartnerCreateEditModal } from './PartnerCreateEditModal';
@@ -244,6 +246,7 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     { key: 'meetings', label: tPartners('detail.tabs.meetings'), icon: <MeetingsIcon /> },
     { key: 'analytics', label: tPartners('detail.tabs.analytics'), icon: <AnalyticsIcon /> },
     { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
+    { key: 'topics', label: tPartners('detail.tabs.topics'), icon: <TopicsIcon /> },
     { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },
   ];
   const visibleTabs = isPartner
@@ -293,8 +296,13 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
             <PartnerNotesTab companyName={partner.companyName} role={currentUser.role} />
           )}
 
-          {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
+          {/* Topics Tab — organizer records partner topic suggestions during meetings */}
           {effectiveTab === 5 && currentUser.role !== 'PARTNER' && (
+            <PartnerTopicsTab companyName={partner.companyName} />
+          )}
+
+          {/* Settings Tab — Story 8.0 H2: explicit role guard in addition to tab nav filtering */}
+          {effectiveTab === 6 && currentUser.role !== 'PARTNER' && (
             <PartnerSettingsTab partner={partner} currentUser={currentUser} />
           )}
         </Box>

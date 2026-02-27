@@ -344,14 +344,46 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
-    void should_return403_when_organizerTriesToSuggestTopic() throws Exception {
+    void should_return400_when_organizerSuggestsTopic_withoutCompanyName() throws Exception {
+        // Organizer must always supply companyName — omitting it is a 400, not 403
         Map<String, String> body = new HashMap<>();
-        body.put("title", "Organizer Topic Attempt");
+        body.put("title", "Organizer Topic Without Company");
 
         mockMvc.perform(post(BASE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    void should_createTopic_when_organizerSubmits_onBehalfOfPartnerCompany() throws Exception {
+        Map<String, String> body = new HashMap<>();
+        body.put("title", "Serverless Architecture Patterns");
+        body.put("companyName", "AlphaCo");
+
+        mockMvc.perform(post(BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title", is("Serverless Architecture Patterns")))
+                .andExpect(jsonPath("$.status", is("PROPOSED")))
+                .andExpect(jsonPath("$.suggestedByCompany", is("AlphaCo")));
+    }
+
+    @Test
+    @WithMockUser(username = "alice", roles = {"PARTNER"})
+    void should_ignoreCompanyName_in_body_when_partnerSubmits() throws Exception {
+        // Security: partners cannot spoof their company name via the request body
+        Map<String, String> body = new HashMap<>();
+        body.put("title", "Platform Engineering Practices");
+        body.put("companyName", "SomeOtherCompany"); // must be ignored
+
+        mockMvc.perform(post(BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.suggestedByCompany", is("AlphaCo"))); // resolved from JWT, not body
     }
 
     @Test

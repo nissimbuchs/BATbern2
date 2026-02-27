@@ -59,14 +59,26 @@ public class TopicController {
 
     /**
      * POST /api/v1/partners/topics
-     * AC3: partner suggests a new topic.
+     * AC3: partner suggests a new topic (company resolved from JWT).
+     * Extended: organizer may submit on behalf of a partner company by supplying {@code companyName}
+     * in the request body. The organizer MUST provide {@code companyName}; partners must NOT —
+     * their company is always resolved from the JWT regardless of what they send.
      */
     @PostMapping
-    @PreAuthorize("hasRole('PARTNER')")
+    @PreAuthorize("hasRole('PARTNER') or hasRole('ORGANIZER')")
     @Timed("partner.topics.suggest")
-    public ResponseEntity<TopicDTO> suggestTopic(@RequestBody TopicSuggestionRequest request) {
-        log.info("POST /partners/topics title={}", request.title());
-        TopicDTO dto = topicService.suggestTopic(request);
+    public ResponseEntity<TopicDTO> suggestTopic(
+            @RequestBody TopicSuggestionRequest request,
+            Authentication authentication) {
+        boolean isOrg = isOrganizer(authentication);
+        if (isOrg && (request.companyName() == null || request.companyName().isBlank())) {
+            log.warn("Organizer attempted to suggest topic without companyName");
+            return ResponseEntity.badRequest().build();
+        }
+        // Partners: onBehalf = null → company resolved from JWT (cannot be overridden)
+        String onBehalf = isOrg ? request.companyName() : null;
+        log.info("POST /partners/topics title={} onBehalf={}", request.title(), onBehalf);
+        TopicDTO dto = topicService.suggestTopic(request, onBehalf);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 

@@ -25,6 +25,8 @@ export interface TopicDTO {
 export interface TopicSuggestionRequest {
   title: string;
   description?: string | null;
+  /** Organizer-only: submit on behalf of a specific partner company. */
+  companyName?: string | null;
 }
 
 export interface TopicStatusUpdateRequest {

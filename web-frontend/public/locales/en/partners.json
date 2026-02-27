@@ -190,6 +190,7 @@
       "meetings": "Meetings",
       "analytics": "Analytics",
       "notes": "Notes",
+      "topics": "Topics",
       "settings": "Settings"
     },
     "overviewTab": {
@@ -298,6 +299,7 @@
       "col": {
         "topic": "Topic",
         "company": "Company",
+        "date": "Date",
         "actions": "Actions"
       },
       "status": {
@@ -323,6 +325,7 @@
           "title": "Title",
           "company": "Company",
           "votes": "Votes",
+          "date": "Date",
           "actions": "Actions"
         },
         "status": "Status",

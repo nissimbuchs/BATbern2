@@ -34,6 +34,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { format, parseISO } from 'date-fns';
 import CompanyLogo from '@/components/shared/Company/CompanyLogo';
 import { TopicSuggestionForm } from '@/components/partner/TopicSuggestionForm';
 import {
@@ -46,7 +47,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type SortKey = 'title' | 'suggestedByCompany' | 'voteCount';
+type SortKey = 'title' | 'suggestedByCompany' | 'voteCount' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 
 // ─── Per-row local state ──────────────────────────────────────────────────────
@@ -64,6 +65,8 @@ function sortTopics(topics: TopicDTO[], key: SortKey, dir: SortDir): TopicDTO[] 
     let cmp = 0;
     if (key === 'voteCount') {
       cmp = a.voteCount - b.voteCount;
+    } else if (key === 'createdAt') {
+      cmp = a.createdAt.localeCompare(b.createdAt); // ISO strings sort lexicographically
     } else {
       cmp = (a[key] ?? '').localeCompare(b[key] ?? '');
     }
@@ -104,7 +107,7 @@ const TopicStatusPanel: React.FC = () => {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortKey(key);
-      setSortDir(key === 'voteCount' ? 'desc' : 'asc');
+      setSortDir(key === 'voteCount' || key === 'createdAt' ? 'desc' : 'asc');
     }
   };
 
@@ -247,7 +250,16 @@ const TopicStatusPanel: React.FC = () => {
                     {t('portal.topics.organizer.col.votes')}
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700, width: '18%' }}>
+                <TableCell sx={{ fontWeight: 700, width: '10%' }}>
+                  <TableSortLabel
+                    active={sortKey === 'createdAt'}
+                    direction={sortKey === 'createdAt' ? sortDir : 'desc'}
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    {t('portal.topics.organizer.col.date')}
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, width: '14%' }}>
                   {t('portal.topics.organizer.status')}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700, width: '16%' }}>
@@ -287,6 +299,13 @@ const TopicStatusPanel: React.FC = () => {
 
                     {/* Vote count */}
                     <TableCell align="right">{topic.voteCount}</TableCell>
+
+                    {/* Date column */}
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                      </Typography>
+                    </TableCell>
 
                     {/* Status select */}
                     <TableCell>

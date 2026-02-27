@@ -55,13 +55,29 @@ public class TopicService {
     }
 
     /**
-     * Submit a new topic suggestion.
-     * companyName and suggestedBy are resolved from the JWT principal.
+     * Submit a new topic suggestion as a PARTNER (company resolved from JWT).
+     * Delegates to the two-argument form with {@code onBehalfOfCompany = null}.
      */
     public TopicDTO suggestTopic(TopicSuggestionRequest request) {
+        return suggestTopic(request, null);
+    }
+
+    /**
+     * Submit a new topic suggestion.
+     *
+     * <p>When {@code onBehalfOfCompany} is non-blank (organizer proxy path), the given company
+     * name is used directly. Otherwise the company is resolved from the JWT principal (partner
+     * self-service path).
+     *
+     * @param request          title + optional description
+     * @param onBehalfOfCompany company name supplied by the organizer; {@code null} for partners
+     */
+    public TopicDTO suggestTopic(TopicSuggestionRequest request, String onBehalfOfCompany) {
         validate(request);
         String username = securityContextHelper.getCurrentUsername();
-        String companyName = resolveCompanyName(username);
+        String companyName = (onBehalfOfCompany != null && !onBehalfOfCompany.isBlank())
+                ? onBehalfOfCompany
+                : resolveCompanyName(username);
 
         TopicSuggestion suggestion = TopicSuggestion.builder()
                 .companyName(companyName)
@@ -72,7 +88,8 @@ public class TopicService {
                 .build();
 
         TopicSuggestion saved = topicRepository.save(suggestion);
-        log.info("Topic suggested: id={} company={} title={}", saved.getId(), companyName, request.title());
+        log.info("Topic suggested: id={} company={} title={} suggestedBy={}",
+                saved.getId(), companyName, request.title(), username);
         return toDTO(saved, 0L, 0L);
     }
 
@@ -117,6 +134,11 @@ public class TopicService {
         }
         topic.setTitle(request.title().strip());
         topic.setDescription(request.description());
+        // Intentional: createdAt is reused as "last activity" timestamp.
+        // When a topic is edited it becomes recent again and should float to the top
+        // when the UI sorts by date descending.  A separate updatedAt column was
+        // deliberately avoided to keep the schema simple — the field name is
+        // slightly misleading but the behaviour is the intended design.
         topic.setCreatedAt(Instant.now());
         TopicSuggestion saved = topicRepository.save(topic);
         long voteCount = topicVoteRepository.countByTopicId(topicId);
