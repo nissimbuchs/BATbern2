@@ -233,6 +233,42 @@ pre code {
   padding: 0;
 }
 
+/* ==================== ASCII Wireframe Code Blocks ==================== */
+/*
+ * Wireframes use plain fenced code blocks (no language specifier).
+ * Prism.js tokenizes unlabelled blocks and colors words as identifiers
+ * (blue) while other text becomes near-invisible light gray.
+ * Fix: give plain blocks a dark terminal background + uniform readable text,
+ * and suppress all Prism token coloring inside them.
+ */
+.markdown-section pre:not([class*="language-"]),
+.markdown-section pre.language-plaintext,
+.markdown-section pre.language-text {
+  background-color: #1a1f2e;
+  border: 1px solid #2d3a53;
+  border-radius: 6px;
+  padding: var(--batbern-spacing-md) var(--batbern-spacing-lg);
+}
+
+.markdown-section pre:not([class*="language-"]) code,
+.markdown-section pre.language-plaintext code,
+.markdown-section pre.language-text code {
+  color: #b8c8e8;
+  font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+  font-size: 0.85em;
+  line-height: 1.7;
+  background: transparent;
+  padding: 0;
+}
+
+/* Suppress Prism token colors inside wireframe blocks */
+.markdown-section pre:not([class*="language-"]) code .token,
+.markdown-section pre.language-plaintext code .token,
+.markdown-section pre.language-text code .token {
+  color: inherit !important;
+  background: transparent !important;
+}
+
 /* ==================== Tables ==================== */
 table {
   width: 100%;
