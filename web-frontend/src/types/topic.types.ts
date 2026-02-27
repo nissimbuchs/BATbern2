@@ -22,9 +22,14 @@ export type TopicUsageHistory = components['schemas']['TopicUsageHistory'];
 export type TopicListResponse = components['schemas']['TopicListResponse'];
 export type PaginationMetadata = components['schemas']['PaginationMetadata'];
 export type CreateTopicRequest = components['schemas']['CreateTopicRequest'];
-export type OverrideStalenessRequest = components['schemas']['OverrideStalenessRequest'];
 export type SelectTopicForEventRequest = components['schemas']['SelectTopicForEventRequest'];
 export type TopicSelectionResponse = components['schemas']['TopicSelectionResponse'];
+
+// Defined locally — no longer generated from OpenAPI (staleness endpoints removed from backend)
+export interface OverrideStalenessRequest {
+  stalenessScore: number;
+  justification: string;
+}
 
 // Backward compatibility alias (fix typo in old code)
 export type OverrideStalenesRequest = OverrideStalenessRequest;
