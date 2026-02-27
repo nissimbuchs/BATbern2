@@ -35,7 +35,7 @@ const SKIP_AUTH = { headers: { 'Skip-Auth': 'true' } };
  */
 export const getPresentationData = async (eventCode: string): Promise<PresentationEventDetail> => {
   const response = await apiClient.get<PresentationEventDetail>(`/events/${eventCode}`, {
-    params: { include: 'topics,venue,sessions' },
+    params: { include: 'topics,venue,sessions,speakers' },
     ...SKIP_AUTH,
   });
   return response.data;
@@ -50,7 +50,7 @@ export const getPresentationSessions = async (
 ): Promise<PresentationSession[]> => {
   const response = await apiClient.get<PresentationSession[] | { data: PresentationSession[] }>(
     `/events/${eventCode}/sessions`,
-    SKIP_AUTH
+    { params: { include: 'speakers' }, ...SKIP_AUTH }
   );
   // API may return paginated { data: [...] } or a plain array
   const raw = response.data;
