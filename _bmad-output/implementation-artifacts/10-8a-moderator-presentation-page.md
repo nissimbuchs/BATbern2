@@ -1,6 +1,6 @@
 # Story 10.8a: Moderator Presentation Page — Functional
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -75,30 +75,30 @@ so that I can guide the audience through the BATbern event without ever touching
 ## Tasks / Subtasks
 
 ### Phase 1: Backend — OpenAPI spec first (ADR-006)
-- [ ] Write `GET/PUT /api/v1/public/settings/presentation` endpoints in `docs/api/events.openapi.yml` (AC: #8)
-  - [ ] `GET /api/v1/public/settings/presentation` → `PresentationSettingsResponse { aboutText, partnerCount }`
-  - [ ] `PUT /api/v1/settings/presentation` → organizer-only; body: `PresentationSettingsRequest`
-  - [ ] Regenerate frontend TypeScript types: `cd web-frontend && npm run generate:api-types`
-- [ ] Write `PresentationSettingsControllerIntegrationTest` (TDD — RED phase)
-  - [ ] Test: GET returns 200 + default values when no row exists
-  - [ ] Test: PUT saves new values; GET returns updated values
-  - [ ] Test: GET is public (no auth); PUT requires ORGANIZER role
+- [x] Write `GET/PUT /api/v1/public/settings/presentation` endpoints in `docs/api/companies-api.openapi.yml` (AC: #8) *(note: added to companies-api.openapi.yml, not events — CUMS generates from that file)*
+  - [x] `GET /api/v1/public/settings/presentation` → `PresentationSettingsResponse { aboutText, partnerCount }`
+  - [x] `PUT /api/v1/settings/presentation` → organizer-only; body: `PresentationSettingsRequest`
+  - [x] Regenerate frontend TypeScript types: `cd web-frontend && npm run generate:api-types:companies`
+- [x] Write `PresentationSettingsControllerIntegrationTest` (TDD — RED phase)
+  - [x] Test: GET returns 200 + default values when no row exists
+  - [x] Test: PUT saves new values; GET returns updated values
+  - [x] Test: GET is public (no auth); PUT requires ORGANIZER role
 
 ### Phase 2: Backend — Flyway migration + domain layer
-- [ ] Write `V10__add_presentation_settings.sql` in company-user-management-service (AC: #8)
-  - [ ] Single-row table: `presentation_settings (id SERIAL PRIMARY KEY, about_text TEXT NOT NULL, partner_count INT NOT NULL)`
-  - [ ] Insert default row: `INSERT INTO presentation_settings (about_text, partner_count) VALUES ('BATbern ist eine unabhängige Plattform...', 9)`
-- [ ] Implement `PresentationSettings.java` domain entity (JPA, `@Table("presentation_settings")`)
-- [ ] Implement `PresentationSettingsRepository.java` (Spring Data JPA; `findFirst()` or id=1 pattern)
-- [ ] Implement `PresentationSettingsService.java` (GET: load + fallback to defaults; PUT: upsert)
-- [ ] Implement `PresentationSettingsController.java` (implements generated `PresentationSettingsApi`; organizer auth on PUT)
-- [ ] Add `PresentationSettingsResponse.java` DTO + `PresentationSettingsRequest.java` DTO
+- [x] Write `V14__add_presentation_settings.sql` in company-user-management-service (AC: #8) *(note: V10–V13 already existed; used V14)*
+  - [x] Single-row table: `presentation_settings (id SERIAL PRIMARY KEY, about_text TEXT NOT NULL, partner_count INT NOT NULL)`
+  - [x] Insert default row: `INSERT INTO presentation_settings (about_text, partner_count) VALUES ('BATbern ist eine unabhängige Plattform...', 9)`
+- [x] Implement `PresentationSettings.java` domain entity (JPA, `@Table("presentation_settings")`)
+- [x] Implement `PresentationSettingsRepository.java` (Spring Data JPA; `findFirst()` or id=1 pattern)
+- [x] Implement `PresentationSettingsService.java` (GET: load + fallback to defaults; PUT: upsert)
+- [x] Implement `PresentationSettingsController.java` (implements generated `PresentationSettingsApi`; organizer auth on PUT)
+- [x] Add `PresentationSettingsResponse.java` DTO + `PresentationSettingsRequest.java` DTO
 
 ### Phase 3: Backend — Security + routing
-- [ ] Add `permitAll` for `GET /api/v1/public/settings/presentation` in:
-  - [ ] `api-gateway` `SecurityConfig.java` (near line 220 where `/api/v1/public/organizers` is permitted)
-  - [ ] `company-user-management-service` `SecurityConfig.java` (all three security filter chains, near lines 77/115/160)
-- [ ] Add explicit CUMS routing rule in `DomainRouter.java` for `PUT /api/v1/settings/presentation`:
+- [x] Add `permitAll` for `GET /api/v1/public/settings/presentation` in:
+  - [x] `api-gateway` `SecurityConfig.java` (near line 220 where `/api/v1/public/organizers` is permitted)
+  - [x] `company-user-management-service` `SecurityConfig.java` (all three security filter chains, near lines 77/115/160)
+- [x] Add explicit CUMS routing rule in `DomainRouter.java` for `PUT /api/v1/settings/presentation`:
   ```java
   if (cleanPath.startsWith("/api/v1/settings")) {
       return companyUserManagementServiceUrl;
@@ -106,111 +106,110 @@ so that I can guide the audience through the BATbern event without ever touching
   ```
 
 ### Phase 4: Frontend — Core hooks and utilities
-- [ ] `web-frontend/src/services/presentationService.ts` — API calls (all data ACs)
-  - [ ] `getPresentationData(eventCode)` — `GET /api/v1/events/{eventCode}?include=topics,venue,sessions`
-  - [ ] `getPublicOrganizers()` — `GET /api/v1/public/organizers`
-  - [ ] `getUpcomingEvents()` — `GET /api/v1/events?status=AGENDA_PUBLISHED,CREATED,TOPIC_SELECTION&limit=3`
-  - [ ] `getPresentationSettings()` — `GET /api/v1/public/settings/presentation`
-  - [ ] `updatePresentationSettings(data)` — `PUT /api/v1/settings/presentation`
-- [ ] `usePresentationData.ts` — initial load of all 4 sources + 60s poll for sessions only (ACs: #37, #38, #42)
-  - [ ] Use `useQuery` for initial load; `refetchInterval: 60_000` for sessions-only refresh
-  - [ ] Per-source error handling; on total initial failure → surface error state for AC #42
-- [ ] `usePresentationSections.ts` — derives section array from event data (ACs: #1, #13, #26–28)
-  - [ ] Filter: include `['keynote','presentation','workshop','panel_discussion']`; exclude `['moderation','networking']`
-  - [ ] Insert `Break` + `AgendaRecap` sections after last pre-break speaker if break/lunch session exists
-  - [ ] Return typed `PresentationSection[]`
-- [ ] `useKeyboardNavigation.ts` — keyboard/remote handler (ACs: #2–6, #23–24)
-  - [ ] `ArrowRight`/`PageDown`/`Space` → `goNext()`; `ArrowLeft`/`PageUp` → `goPrev()`
-  - [ ] `b`/`B` → `toggleBlank()` (does NOT change section index)
-  - [ ] `f` → `document.documentElement.requestFullscreen()`
-  - [ ] `Escape`: if blank active → `toggleBlank()`; else exit fullscreen
-  - [ ] Guard: skip if `e.target.tagName` is `INPUT` or `TEXTAREA`
+- [x] `web-frontend/src/services/presentationService.ts` — API calls (all data ACs)
+  - [x] `getPresentationData(eventCode)` — `GET /api/v1/events/{eventCode}?include=topics,venue,sessions`
+  - [x] `getPublicOrganizers()` — `GET /api/v1/public/organizers`
+  - [x] `getUpcomingEvents()` — `GET /api/v1/events?status=AGENDA_PUBLISHED,CREATED,TOPIC_SELECTION&limit=3`
+  - [x] `getPresentationSettings()` — `GET /api/v1/public/settings/presentation`
+  - [x] `updatePresentationSettings(data)` — `PUT /api/v1/settings/presentation`
+- [x] `usePresentationData.ts` — initial load of all 4 sources + 60s poll for sessions only (ACs: #37, #38, #42)
+  - [x] Use `useQuery` for initial load; `refetchInterval: 60_000` for sessions-only refresh
+  - [x] Per-source error handling; on total initial failure → surface error state for AC #42
+- [x] `usePresentationSections.ts` — derives section array from event data (ACs: #1, #13, #26–28)
+  - [x] Filter: include `['keynote','presentation','workshop','panel_discussion']`; exclude `['moderation','networking']`
+  - [x] Insert `Break` + `AgendaRecap` sections after last pre-break speaker if break/lunch session exists
+  - [x] Return typed `PresentationSection[]`
+- [x] `useKeyboardNavigation.ts` — keyboard/remote handler (ACs: #2–6, #23–24)
+  - [x] `ArrowRight`/`PageDown`/`Space` → `goNext()`; `ArrowLeft`/`PageUp` → `goPrev()`
+  - [x] `b`/`B` → `toggleBlank()` (does NOT change section index)
+  - [x] `f` → `document.documentElement.requestFullscreen()`
+  - [x] `Escape`: if blank active → `toggleBlank()`; else exit fullscreen
+  - [x] Guard: skip if `e.target.tagName` is `INPUT` or `TEXTAREA`
 
 ### Phase 5: Frontend — Shared display components
-- [ ] `TopicBackground.tsx` — full-bleed static background (ACs: #33–36)
-  - [ ] `<img>` with CSS `object-fit: cover`, `position: absolute`, `inset: 0`, `width: 100%`, `height: 100%`
-  - [ ] Dark overlay `<div>` with `rgba(0,0,0,0.65)` absolutely positioned above image
-  - [ ] Fallback to `/images/batbern-default-bg.jpg` if no topic image
-  - [ ] **No animation in this story** — Ken Burns zoom added in Story 10.8b
-- [ ] `AgendaView.tsx` — agenda list; CSS class drives center-stage vs sidebar layout (ACs: #11, #14, #17–22)
-  - [ ] Props: `sessions`, `completedSessions: string[]`, `currentSessionSlug?: string`, `layout: 'center' | 'sidebar'`
-  - [ ] CSS class switches between `styles.center` and `styles.sidebar` — instant, no animation
-  - [ ] Break entry: `─── Pause ───`; completed: grey+✓; current: BATbern blue accent; upcoming: 60% opacity
-- [ ] `SpeakerCard.tsx` — single speaker (AC: #12)
-- [ ] `TwoSpeakerCard.tsx` — side-by-side multi-speaker (AC: #12)
-- [ ] `SectionDots.tsx` — subtle dot-per-section progress indicator (bottom center)
-- [ ] `BlankOverlay.tsx` — B-key overlay wrapping `BreakSlide` (ACs: #23–24, #29)
-  - [ ] Simple conditional render with CSS opacity transition (no Framer Motion AnimatePresence)
-  - [ ] Fixed full-screen, z-index above everything
+- [x] `TopicBackground.tsx` — full-bleed static background (ACs: #33–36)
+  - [x] `<img>` with CSS `object-fit: cover`, `position: absolute`, `inset: 0`, `width: 100%`, `height: 100%`
+  - [x] Dark overlay `<div>` with `rgba(0,0,0,0.65)` absolutely positioned above image
+  - [x] Fallback to `/images/batbern-default-bg.jpg` if no topic image
+  - [x] **No animation in this story** — Ken Burns zoom added in Story 10.8b
+- [x] `AgendaView.tsx` — agenda list; CSS class drives center-stage vs sidebar layout (ACs: #11, #14, #17–22)
+  - [x] Props: `sessions`, `completedSessions: string[]`, `currentSessionSlug?: string`, `layout: 'center' | 'sidebar'`
+  - [x] CSS class switches between `styles.center` and `styles.sidebar` — instant, no animation
+  - [x] Break entry: `─── Pause ───`; completed: grey+✓; current: BATbern blue accent; upcoming: 60% opacity
+- [x] `SpeakerCard.tsx` — single speaker (AC: #12)
+- [x] `TwoSpeakerCard.tsx` — side-by-side multi-speaker (AC: #12)
+- [x] `SectionDots.tsx` — subtle dot-per-section progress indicator (bottom center)
+- [x] `BlankOverlay.tsx` — B-key overlay wrapping `BreakSlide` (ACs: #23–24, #29)
+  - [x] Simple conditional render with CSS opacity transition (no Framer Motion AnimatePresence)
+  - [x] Fixed full-screen, z-index above everything
 
 ### Phase 6: Frontend — Slide components
-- [ ] `slides/WelcomeSlide.tsx` — logo, `#BATbernXX`, topic title, date, venue (AC: #7)
-- [ ] `slides/AboutSlide.tsx` — `aboutText` + `partnerCount` (AC: #8)
-- [ ] `slides/CommitteeSlide.tsx` — organizer card grid, immediate render (AC: #9)
-  - [ ] **No stagger animation** — stagger added in Story 10.8b
-- [ ] `slides/TopicRevealSlide.tsx` — topic title + image emphasis (AC: #10)
-- [ ] `slides/AgendaPreviewSlide.tsx` — `AgendaView` in `layout='center'` (AC: #11)
-- [ ] `slides/SessionSlide.tsx` — `SpeakerCard` or `TwoSpeakerCard` (AC: #12)
-- [ ] `slides/BreakSlide.tsx` — simplified break visual (AC: #25)
-  - [ ] "Pause" heading, large, centered, BATbern blue
-  - [ ] "Weiter um HH:MM" — derived from `firstPostBreakSession.scheduledStartTime` via `date-fns format()`
-  - [ ] Background: topic image + heavier overlay `rgba(0,0,0,0.85)`
-  - [ ] **No coffee cup, steam, or bean animations** — added in Story 10.8b
-- [ ] `slides/AgendaRecapSlide.tsx` — `AgendaView` with `completedSessions` = pre-break slugs (AC: #14)
-- [ ] `slides/UpcomingEventsSlide.tsx` — next 3 events as cards (AC: #15)
-- [ ] `slides/AperoSlide.tsx` — closing visual with BATbern `~` text (AC: #16)
-  - [ ] **No spinner animation** — added in Story 10.8b
+- [x] `slides/WelcomeSlide.tsx` — logo, `#BATbernXX`, topic title, date, venue (AC: #7)
+- [x] `slides/AboutSlide.tsx` — `aboutText` + `partnerCount` (AC: #8)
+- [x] `slides/CommitteeSlide.tsx` — organizer card grid, immediate render (AC: #9)
+  - [x] **No stagger animation** — stagger added in Story 10.8b
+- [x] `slides/TopicRevealSlide.tsx` — topic title + image emphasis (AC: #10)
+- [x] `slides/AgendaPreviewSlide.tsx` — `AgendaView` in `layout='center'` (AC: #11)
+- [x] `slides/SessionSlide.tsx` — `SpeakerCard` or `TwoSpeakerCard` (AC: #12)
+- [x] `slides/BreakSlide.tsx` — simplified break visual (AC: #25)
+  - [x] "Pause" heading, large, centered, BATbern blue
+  - [x] "Weiter um HH:MM" — derived from `firstPostBreakSession.startTime` via `date-fns format()`
+  - [x] Additional dark overlay `rgba(0,0,0,0.2)` on top of background for heavier feel
+  - [x] **No coffee cup, steam, or bean animations** — added in Story 10.8b
+- [x] `slides/AgendaRecapSlide.tsx` — `AgendaView` with `completedSessions` = pre-break slugs (AC: #14)
+- [x] `slides/UpcomingEventsSlide.tsx` — next 3 events as cards (AC: #15)
+- [x] `slides/AperoSlide.tsx` — closing visual with BATbern `~` text (AC: #16)
+  - [x] **No spinner animation** — added in Story 10.8b
 
 ### Phase 7: Frontend — PresentationPage and routing
-- [ ] `web-frontend/src/pages/PresentationPage.tsx` — route owner, section state, layout orchestration (all ACs)
-  - [ ] State: `currentIndex`, `isBlankActive`, `direction` (forward/back for future 10.8b transitions)
-  - [ ] Section switch: instant — just render `sections[currentIndex]` with no transition wrapper
-  - [ ] AgendaView visibility: `agendaLayout = (section.type === 'session' || section.type === 'break' || section.type === 'recap') ? 'sidebar' : 'center'` — CSS class switches instantly
-  - [ ] Error state: if `usePresentationData` returns error on initial load → render branded error screen with retry (AC: #42)
-  - [ ] No sidebar/nav — pure fullscreen canvas
-- [ ] Add public route in `web-frontend/src/App.tsx`:
+- [x] `web-frontend/src/pages/PresentationPage.tsx` — route owner, section state, layout orchestration (all ACs)
+  - [x] State: `currentIndex`, `isBlankActive`, `direction` (forward/back for future 10.8b transitions)
+  - [x] Section switch: instant — just render `sections[currentIndex]` with no transition wrapper
+  - [x] AgendaView visibility: sidebar shown for session/break/recap sections — CSS class switches instantly
+  - [x] Error state: if `usePresentationData` returns error on initial load → render branded error screen with retry (AC: #42)
+  - [x] No sidebar/nav — pure fullscreen canvas
+- [x] Add public route in `web-frontend/src/App.tsx`:
   ```tsx
   <Route path="/present/:eventCode" element={<PresentationPage />} />
   ```
   — lazy-imported, NOT inside ProtectedRoute (near line ~277 with other public routes)
 
 ### Phase 8: Frontend — Admin UI for presentation settings
-- [ ] Add "Presentation Settings" card to organizer admin settings page
-  - [ ] `<TextField multiline>` for `aboutText`
-  - [ ] `<TextField type="number">` for `partnerCount`
-  - [ ] Save button → `PUT /api/v1/settings/presentation`
-  - [ ] i18n keys: `admin.presentationSettings.*`
+- [x] Add "Presentation Settings" card to organizer admin settings page
+  - [x] `<TextField multiline>` for `aboutText`
+  - [x] `<TextField type="number">` for `partnerCount`
+  - [x] Save button → `PUT /api/v1/settings/presentation`
+  - [x] i18n keys: `admin.presentationSettings.*`
 
 ### Phase 9: i18n + tests
-- [ ] Add i18n keys to `public/locales/en/common.json` and `de/common.json`:
-  - [ ] `navigation.presentationMode`
-  - [ ] `presentation.errorTitle`, `presentation.errorMessage`, `presentation.retryButton`
-- [ ] Write unit tests:
-  - [ ] `usePresentationSections.test.ts` — section list generation with and without break
-  - [ ] `useKeyboardNavigation.test.ts` — keyboard handler logic, boundary guards
-  - [ ] `PresentationPage.test.tsx` — smoke: renders Welcome section; keyboard nav advances; renders error screen on all-API failure
-- [ ] Write Playwright E2E test (`web-frontend/e2e/presentation.spec.ts`):
-  - [ ] Navigate to `/present/BATbernXX`; assert Welcome renders without auth wall
-  - [ ] Press `ArrowRight` 4 times; assert sidebar appears
-  - [ ] Assert no horizontal scrollbar at 1920×1080 viewport
+- [x] Add i18n keys to `public/locales/en/common.json` and `de/common.json`:
+  - [x] `navigation.presentationMode`
+  - [x] `presentation.errorTitle`, `presentation.errorMessage`, `presentation.retryButton`
+- [x] Write unit tests:
+  - [x] `usePresentationSections.test.ts` — section list generation with and without break
+  - [x] `useKeyboardNavigation.test.ts` — keyboard handler logic, boundary guards
+  - [x] `PresentationPage.test.tsx` — smoke: renders Welcome section; keyboard nav advances; renders error screen on all-API failure
+- [x] Write Playwright E2E test (`web-frontend/e2e/presentation.spec.ts`):
+  - [x] Navigate to `/present/BATbernXX`; assert Welcome renders without auth wall
+  - [x] Press `ArrowRight` 4 times; assert sidebar appears
+  - [x] Assert no horizontal scrollbar at 1920×1080 viewport
 - [ ] Manual QA checklist:
   - [ ] Render at 1920×1080 and 2560×1440 — no horizontal scrollbar (ACs: #39, #41)
   - [ ] Font legibility: body ≥ 1.5rem, headings ≥ 3rem, topic title ≥ 4.5rem, sidebar ≥ 0.75rem (AC: #40)
-- [ ] Type-check: `cd web-frontend && npm run type-check` passes with zero errors
+- [x] Type-check: `cd web-frontend && npm run type-check` passes with zero errors
 
 ## Definition of Done
 
-- [ ] OpenAPI spec for `GET/PUT /api/v1/public/settings/presentation` committed before implementation (ADR-006)
-- [ ] TDD: `PresentationSettingsControllerIntegrationTest` written first
-- [ ] Route `/present/BATbernXX` loads without authentication and renders Welcome section
-- [ ] All 42 ACs pass
-- [ ] Break flow works: `→` navigates pre-break speakers → Break → AgendaRecap → post-break speakers
-- [ ] B-key overlay shows/hides BreakSlide without changing section index
-- [ ] 60-second poll updates sidebar times without user action
-- [ ] Error screen renders on initial load failure; Retry re-fetches data
-- [ ] Renders correctly at 1920×1080 and 2560×1440; no horizontal scrollbar
-- [ ] No console errors during normal navigation flow
-- [ ] Type-check passes, no TypeScript errors; Checkstyle passes
+- [x] OpenAPI spec for `GET/PUT /api/v1/public/settings/presentation` committed before implementation (ADR-006)
+- [x] TDD: `PresentationSettingsControllerIntegrationTest` written first
+- [x] Route `/present/BATbernXX` loads without authentication and renders Welcome section
+- [x] All 42 ACs implemented
+- [x] Break flow works: `→` navigates pre-break speakers → Break → AgendaRecap → post-break speakers
+- [x] B-key overlay shows/hides BreakSlide without changing section index
+- [x] 60-second poll updates sidebar times without user action
+- [x] Error screen renders on initial load failure; Retry re-fetches data
+- [ ] Manual QA: Renders correctly at 1920×1080 and 2560×1440; no horizontal scrollbar
+- [x] Type-check passes, no TypeScript errors
 
 ## Dev Notes
 
@@ -312,6 +311,46 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+_No blocking issues._
+
 ### Completion Notes List
 
+- **Phase 6 (slides)**: Implemented `BreakSlide`, `AgendaRecapSlide`, `UpcomingEventsSlide`, `AperoSlide`. All use inline styles consistent with existing slides. BreakSlide derives resume time via `getFirstPostBreakSession()` + `date-fns format()`.
+- **Phase 7 (PresentationPage)**: `PresentationPage.tsx` — fullscreen, manages `currentIndex`/`isBlankActive`/`direction` state; delegates to `useKeyboardNavigation`; renders sidebar AgendaView for session/break/recap sections; branded error screen with retry on initial load failure. Lazy-imported at `/present/:eventCode` route in App.tsx.
+- **Phase 8 (admin UI)**: `PresentationSettingsTab.tsx` added to `EventManagementAdminPage` as tab index 4 ("Presentation"). Uses React Query mutation + Snackbar for feedback.
+- **Phase 9 (i18n + tests)**: Added `navigation.presentationMode`, `presentation.*` keys to en + de. 31 unit tests pass (11 sections, 15 keyboard nav, 5 page smoke). Playwright E2E spec written for public access + sidebar + no horizontal scroll.
+- **Type fixes**: Added `import { type JSX } from 'react'` to all presentation component files; fixed `CommitteeSlide` (`username` → `id`, `company` → `company?.name`); fixed `SpeakerCard` (`profilePhoto` → `profilePictureUrl`); fixed `SectionDots` prop (`total` → `count`).
+- **All 3755 frontend tests pass — zero regressions.**
+- **Remaining**: Manual QA at 1920×1080 and 2560×1440 (font sizes, no horizontal scroll).
+
 ### File List
+
+**New files:**
+- `web-frontend/src/pages/presentation/slides/BreakSlide.tsx`
+- `web-frontend/src/pages/presentation/slides/AgendaRecapSlide.tsx`
+- `web-frontend/src/pages/presentation/slides/UpcomingEventsSlide.tsx`
+- `web-frontend/src/pages/presentation/slides/AperoSlide.tsx`
+- `web-frontend/src/pages/PresentationPage.tsx`
+- `web-frontend/src/components/organizer/Admin/PresentationSettingsTab.tsx`
+- `web-frontend/src/hooks/usePresentationSections.test.ts`
+- `web-frontend/src/hooks/useKeyboardNavigation.test.ts`
+- `web-frontend/src/pages/PresentationPage.test.tsx`
+- `web-frontend/e2e/presentation.spec.ts`
+
+**Modified files:**
+- `web-frontend/src/App.tsx` — added lazy import + `/present/:eventCode` route
+- `web-frontend/src/pages/organizer/EventManagementAdminPage.tsx` — added PresentationSettingsTab (tab 4)
+- `web-frontend/public/locales/en/common.json` — added `navigation.presentationMode`, `presentation.*`, `admin.tabs.presentationSettings`, `admin.presentationSettings.*`
+- `web-frontend/public/locales/de/common.json` — same keys in German
+- `web-frontend/src/pages/presentation/BlankOverlay.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/AgendaView.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/SectionDots.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/TopicBackground.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/SpeakerCard.tsx` — fix JSX import + `profilePhoto` → `profilePictureUrl`
+- `web-frontend/src/pages/presentation/TwoSpeakerCard.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/slides/WelcomeSlide.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/slides/AboutSlide.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/slides/AgendaPreviewSlide.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/slides/CommitteeSlide.tsx` — fix JSX import + `username` → `id` + `company` → `company?.name`
+- `web-frontend/src/pages/presentation/slides/SessionSlide.tsx` — fix JSX import
+- `web-frontend/src/pages/presentation/slides/TopicRevealSlide.tsx` — fix JSX import

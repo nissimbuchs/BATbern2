@@ -271,10 +271,84 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/settings/presentation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get presentation settings (public)
+     * @description Returns the moderator presentation page settings.
+     *
+     *     **Story 10.8a**: Moderator Presentation Page — Functional
+     *
+     *     **Security**: No authentication required — public endpoint.
+     */
+    get: operations['getPresentationSettings'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/settings/presentation': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update presentation settings
+     * @description Updates the moderator presentation page settings.
+     *
+     *     **Story 10.8a**: Moderator Presentation Page — Functional
+     *
+     *     **Authorization**: ORGANIZER role required.
+     */
+    put: operations['updatePresentationSettings'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Moderator presentation page settings (Story 10.8a) */
+    PresentationSettingsResponse: {
+      /**
+       * @description Verein purpose text displayed on the About slide
+       * @example BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
+       */
+      aboutText: string;
+      /**
+       * @description Number of active partner companies shown on About slide
+       * @example 9
+       */
+      partnerCount: number;
+    };
+    /** @description Request body for updating moderator presentation page settings (Story 10.8a) */
+    PresentationSettingsRequest: {
+      /**
+       * @description Verein purpose text displayed on the About slide
+       * @example BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
+       */
+      aboutText: string;
+      /**
+       * @description Number of active partner companies shown on About slide
+       * @example 9
+       */
+      partnerCount: number;
+    };
     /**
      * @description Company response with meaningful IDs.
      *     Story 1.16.2: name field is the unique identifier (no separate id field).
@@ -851,6 +925,55 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getPresentationSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Presentation settings returned successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresentationSettingsResponse'];
+        };
+      };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  updatePresentationSettings: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PresentationSettingsRequest'];
+      };
+    };
+    responses: {
+      /** @description Presentation settings updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PresentationSettingsResponse'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
     };
   };

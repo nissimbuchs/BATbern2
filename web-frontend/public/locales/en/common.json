@@ -18,6 +18,7 @@
     "profile": "Profile",
     "logout": "Logout",
     "myEvents": "My Events",
+    "presentationMode": "Presentation Mode",
     "myContent": "My Content",
     "myRegistrations": "My Registrations",
     "about": "About",
@@ -552,15 +553,30 @@
       "allFieldsRequired": "Template key, subject, and HTML body are required."
     }
   },
+  "presentation": {
+    "errorTitle": "Event could not be loaded",
+    "errorMessage": "Please check your network connection and try again.",
+    "retryButton": "Retry"
+  },
   "admin": {
     "tabs": {
       "eventTypes": "Event Types",
       "importData": "Import Data",
       "taskTemplates": "Task Templates",
-      "emailTemplates": "Email Templates"
+      "emailTemplates": "Email Templates",
+      "presentationSettings": "Presentation"
     },
     "accessDenied": "Access Denied",
     "organizerOnly": "This page is for organizers only.",
+    "presentationSettings": {
+      "title": "Presentation Settings",
+      "subtitle": "These values appear on the moderator presentation page (/present/:eventCode).",
+      "aboutText": "About Text",
+      "partnerCount": "Partner Count",
+      "save": "Save",
+      "saved": "Settings saved.",
+      "saveFailed": "Save failed. Please try again."
+    },
     "taskTemplates": {
       "defaultSection": "Default Templates",
       "customSection": "Custom Templates",

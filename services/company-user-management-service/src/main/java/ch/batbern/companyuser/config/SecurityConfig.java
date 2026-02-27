@@ -3,6 +3,7 @@ package ch.batbern.companyuser.config;
 import ch.batbern.companyuser.security.VpcInternalAuthorizationManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
@@ -75,6 +76,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 10.8a: Public presentation settings (moderator page)
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Public user profile endpoint (GET only for service-to-service calls from localhost)
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users/*").permitAll()
                 // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
@@ -113,6 +116,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 10.8a: Public presentation settings (moderator page)
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Service-to-service: Allow user profile lookups from VPC internal network
@@ -158,6 +163,8 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
                 // Public organizers endpoint for About page
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
+                // Story 10.8a: Public presentation settings (moderator page)
+                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
                 // Test environment: Enforce authentication for all user endpoints

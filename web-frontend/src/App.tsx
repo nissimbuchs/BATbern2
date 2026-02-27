@@ -130,6 +130,9 @@ const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage')
 // Dev tool: local email inbox (no auth, no layout)
 const DevEmailInboxPage = React.lazy(() => import('@pages/dev/DevEmailInboxPage'));
 
+// Story 10.8a: Fullscreen moderator presentation page (no auth, no layout wrapper)
+const PresentationPage = React.lazy(() => import('@pages/PresentationPage'));
+
 // Loading fallback component for Suspense
 const PageLoader = () => (
   <Box
@@ -275,6 +278,9 @@ function App() {
 
                     {/* Story 10.7: Newsletter unsubscribe */}
                     <Route path="/unsubscribe" element={<UnsubscribePage />} />
+
+                    {/* Story 10.8a: Fullscreen moderator presentation page — public, no auth */}
+                    <Route path="/present/:eventCode" element={<PresentationPage />} />
 
                     {/* Dev tool: local email inbox — no auth, no layout */}
                     <Route path="/dev/emails" element={<DevEmailInboxPage />} />

@@ -96,7 +96,8 @@ public class DomainRouter {
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
                 || cleanPath.startsWith("/api/v1/logos")
-                || cleanPath.startsWith("/api/v1/public")) {
+                || cleanPath.startsWith("/api/v1/public")
+                || cleanPath.startsWith("/api/v1/settings")) { // Story 10.8a: Presentation settings
             return "company-user-management-service";
         } else {
             throw new RoutingException("No route found for path: " + cleanPath);

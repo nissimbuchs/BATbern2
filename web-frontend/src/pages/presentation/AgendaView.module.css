@@ -1,0 +1,80 @@
+/*
+ * AgendaView CSS
+ * Story 10.8a: Moderator Presentation Page — Functional
+ *
+ * CSS class drives center-stage vs sidebar layout instantly (no FLIP animation).
+ * FLIP spring animation is added in Story 10.8b.
+ *
+ * ACs: #11, #14, #17–22
+ */
+
+.center {
+  /* Use most of the screen on big pages (agenda preview / recap) */
+  width: min(1100px, 88vw);
+  margin: 0 auto;
+  font-size: 1.4rem;
+}
+
+.sidebar {
+  position: absolute;
+  left: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  /* Wide enough for wrapped titles without being too prominent */
+  width: 280px;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.sessionRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.15s;
+}
+
+.sessionRow.current {
+  color: #4f9cf9; /* BATbern blue accent */
+  font-weight: 600;
+}
+
+.sessionRow.completed {
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: line-through;
+}
+
+.sessionRow.upcoming {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sessionTime {
+  white-space: nowrap;
+  min-width: 3.5rem;
+  font-variant-numeric: tabular-nums;
+  /* Keep time pinned to top when title wraps */
+  align-self: flex-start;
+}
+
+.sessionTitle {
+  flex: 1;
+  /* Allow wrapping — both layouts have enough vertical space */
+  white-space: normal;
+  overflow: visible;
+  line-height: 1.35;
+}
+
+.breakRow {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  padding: 0.25rem 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+.checkmark {
+  margin-left: 0.25rem;
+  color: rgba(255, 255, 255, 0.3);
+  align-self: flex-start;
+}

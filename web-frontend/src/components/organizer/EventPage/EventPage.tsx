@@ -36,6 +36,7 @@ import {
   Publish as PublishIcon,
   Settings as SettingsIcon,
   EmailOutlined as NewsletterIcon,
+  Slideshow as SlideshowIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useEvent } from '@/hooks/useEvents';
@@ -212,6 +213,15 @@ export const EventPage: React.FC = () => {
               {event.title}
             </Typography>
           </Box>
+          <Button
+            variant="outlined"
+            startIcon={<SlideshowIcon />}
+            href={`/present/${eventCode}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Präsentation starten
+          </Button>
         </Stack>
 
         {/* Desktop Tabs */}
