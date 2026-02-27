@@ -42,25 +42,6 @@ export const getPresentationData = async (eventCode: string): Promise<Presentati
 };
 
 /**
- * Fetches only the sessions for an event (used for 60-second poll).
- * Public endpoint — no auth required.
- */
-export const getPresentationSessions = async (
-  eventCode: string
-): Promise<PresentationSession[]> => {
-  const response = await apiClient.get<PresentationSession[] | { data: PresentationSession[] }>(
-    `/events/${eventCode}/sessions`,
-    { params: { include: 'speakers' }, ...SKIP_AUTH }
-  );
-  // API may return paginated { data: [...] } or a plain array
-  const raw = response.data;
-  if (Array.isArray(raw)) {
-    return raw;
-  }
-  return (raw as { data: PresentationSession[] }).data ?? [];
-};
-
-/**
  * Fetches all active organizers for the Committee slide.
  * Public endpoint — no auth required.
  */
@@ -110,7 +91,6 @@ export const updatePresentationSettings = async (
 
 export const presentationService = {
   getPresentationData,
-  getPresentationSessions,
   getPublicOrganizers,
   getUpcomingEvents,
   getPresentationSettings,

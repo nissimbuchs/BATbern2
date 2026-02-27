@@ -2,8 +2,13 @@
  * usePresentationData Hook
  * Story 10.8a: Moderator Presentation Page — Functional
  *
- * Loads all 4 data sources for the moderator presentation page and sets up
- * a 60-second poll for sessions to reflect Watch cascade updates.
+ * Loads all data for the moderator presentation page with 4 queries:
+ *   1. Main event (topics, venue, sessions, speakers) — polled every 60 s
+ *   2. Public organizers (Committee slide)
+ *   3. Upcoming events (Upcoming Events slide)
+ *   4. Presentation settings (About slide)
+ *
+ * Sessions and speakers are embedded in query 1 — no separate sessions call needed.
  *
  * ACs: #1, #37, #38, #42
  */
@@ -11,7 +16,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   getPresentationData,
-  getPresentationSessions,
   getPublicOrganizers,
   getUpcomingEvents,
   getPresentationSettings,
@@ -42,17 +46,11 @@ const DEFAULT_ABOUT_TEXT =
   'BATbern ist eine unabhängige Plattform, die Berner Architekten und Ingenieure vernetzt.';
 
 export function usePresentationData(eventCode: string): UsePresentationDataResult {
+  // Single event call — includes topics, venue, sessions and speakers.
+  // Polled every 60 s to pick up session updates (replaces separate sessions poll).
   const eventQuery = useQuery({
     queryKey: ['presentation-event', eventCode],
     queryFn: () => getPresentationData(eventCode),
-    retry: 1,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // 60-second poll — sessions only (Watch cascade updates)
-  const sessionsQuery = useQuery({
-    queryKey: ['presentation-sessions', eventCode],
-    queryFn: () => getPresentationSessions(eventCode),
     refetchInterval: 60_000,
     refetchIntervalInBackground: true,
     retry: 1,
@@ -90,18 +88,12 @@ export function usePresentationData(eventCode: string): UsePresentationDataResul
   const isInitialLoadError =
     !isLoading && (eventQuery.isError || settingsQuery.isError) && eventQuery.data == null;
 
-  // Use polled sessions if available, fall back to event.sessions
-  // Guard: event.sessions may be a paginated object rather than a plain array
-  const rawEventSessions = eventQuery.data?.sessions;
-  const eventSessions: PresentationSession[] = Array.isArray(rawEventSessions)
-    ? rawEventSessions
-    : [];
-
-  const sessions: PresentationSession[] = sessionsQuery.data ?? eventSessions;
+  // Sessions are embedded in the event response — guard against paginated shape
+  const rawSessions = eventQuery.data?.sessions;
+  const sessions: PresentationSession[] = Array.isArray(rawSessions) ? rawSessions : [];
 
   const refetch = () => {
     void eventQuery.refetch();
-    void sessionsQuery.refetch();
     void organizersQuery.refetch();
     void upcomingQuery.refetch();
     void settingsQuery.refetch();
