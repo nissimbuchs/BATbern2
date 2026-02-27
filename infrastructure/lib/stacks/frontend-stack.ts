@@ -142,12 +142,12 @@ function handler(event) {
         contentSecurityPolicy: {
           contentSecurityPolicy:
             "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
+            "script-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdn.tiny.cloud; " +
             "worker-src blob:; " +
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tiny.cloud; " +
             "img-src 'self' data: https:; " +
             "font-src 'self' data: https://fonts.gstatic.com https://assets.unicorn.studio https://cdn.tiny.cloud; " +
-            "connect-src 'self' https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud; " +
+            "connect-src 'self' blob: https://*.amazonaws.com https://*.amazoncognito.com https://*.cloudfront.net https://fonts.googleapis.com https://fonts.gstatic.com https://storage.googleapis.com https://api.staging.batbern.ch https://api.batbern.ch https://cdn.tiny.cloud; " +
             "frame-src 'self' https://maps.google.com https://www.google.com; " +
             "object-src 'none'; " +
             "base-uri 'self'; " +

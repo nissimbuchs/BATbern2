@@ -622,10 +622,13 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   // ─── TICK HANDLER (D3 mutates DOM directly) ───────────────────────────────
 
   const tickHandler = useCallback((g: d3.Selection<SVGGElement, unknown, null, undefined>) => {
-    // Ghost orbit — advance each ghost's angle and pin it to the orbit path via fx/fy.
-    // Skips the currently-dragged node so the user has full position control.
+    // Ghost orbit — advance each ghost's angle and apply a soft spring toward the orbit target.
+    // Using a spring (instead of hard fx/fy pinning) lets D3's forceCollide and forceManyBody
+    // act on ghost nodes so they repel each other and other blobs, while still drifting
+    // along their orbital paths.  Skips the currently-dragged node.
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
+    const ORBIT_SPRING = 0.15;
     nodesRef.current.forEach((node) => {
       if (
         node.type !== 'ghost-backlog' &&
@@ -636,8 +639,14 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       if (node.id === draggingNodeIdRef.current) return;
       const ghost = node as GhostNode;
       ghost.ghostOrbitAngle += ghost.ghostOrbitSpeed;
-      ghost.fx = cx + ghost.ghostOrbitRadius * Math.cos(ghost.ghostOrbitAngle);
-      ghost.fy = cy + ghost.ghostOrbitRadius * Math.sin(ghost.ghostOrbitAngle);
+      const targetX = cx + ghost.ghostOrbitRadius * Math.cos(ghost.ghostOrbitAngle);
+      const targetY = cy + ghost.ghostOrbitRadius * Math.sin(ghost.ghostOrbitAngle);
+      // Free the node from hard pinning so D3 forces can act on it.
+      ghost.fx = null;
+      ghost.fy = null;
+      // Spring pull toward orbit target — keeps ghosts roughly on orbit while allowing repulsion.
+      ghost.vx = (ghost.vx ?? 0) + (targetX - (ghost.x ?? targetX)) * ORBIT_SPRING;
+      ghost.vy = (ghost.vy ?? 0) + (targetY - (ghost.y ?? targetY)) * ORBIT_SPRING;
     });
 
     // Custom green attraction — alpha-independent so blobs keep moving until absorbed,
