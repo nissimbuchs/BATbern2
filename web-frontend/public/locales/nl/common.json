@@ -77,7 +77,11 @@
     "submit": "Indienen",
     "close": "Sluiten",
     "sending": "Verzenden...",
-    "loading": "Laden..."
+    "loading": "Laden...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "Taal selecteren",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Wacht {{seconds}} seconden",
@@ -117,7 +122,6 @@
     "viewDetails": "Details bekijken voor {{name}}",
     "noCompaniesFound": "Geen bedrijven gevonden",
     "adjustFilters": "Probeer uw zoekopdracht of filters aan te passen",
-    "backToList": "Terug",
     "viewMode": {
       "grid": "Rasterweergave",
       "list": "Lijstweergave",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Overzicht",
         "users": "Gebruikers",
         "statistics": "Statistieken",
         "activity": "Activiteit"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Laden van bedrijf mislukt",
       "saveFailed": "Er is een fout opgetreden bij het opslaan van het bedrijf",
-      "deleteFailed": "Verwijderen van bedrijf mislukt",
-      "retry": "Opnieuw proberen"
+      "deleteFailed": "Verwijderen van bedrijf mislukt"
     },
     "search": {
       "placeholder": "Bedrijven zoeken..."
@@ -235,12 +237,10 @@
       "importButton": "Alles importeren",
       "cancelButton": "Annuleren",
       "status": {
-        "pending": "In behandeling",
         "importing": "Importeren...",
         "success": "Geïmporteerd",
         "updated": "Bijgewerkt",
         "willUpdate": "Wordt bijgewerkt",
-        "error": "Fout",
         "skipped": "Overgeslagen (bestaat)"
       },
       "progress": "Importeren {{current}} van {{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Weergavenaam",
         "name": "API-naam",
         "industry": "Branche",
-        "website": "Website",
-        "status": "Status"
+        "website": "Website"
       },
       "errors": {
         "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "{{count}} evenementen importeren",
       "columns": {
         "eventNumber": "#",
-        "title": "Titel",
-        "date": "Datum",
-        "organizer": "Organisator",
-        "status": "Status"
+        "organizer": "Organisator"
       },
       "errors": {
         "invalidFile": "Ongeldig bestandstype. Upload een JSON-bestand.",
@@ -417,7 +413,6 @@
       "urgent": "Dringend",
       "soon": "Binnenkort",
       "onTime": "Op tijd",
-      "actions": "Acties",
       "pastEvent": "Afgelopen evenement",
       "materialAvailable": "Materiaal beschikbaar",
       "noMaterials": "Geen materialen"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}} actieve filters"
     },
     "sort": {
-      "label": "Sorteren op",
       "newest": "Nieuwste eerst",
       "oldest": "Oudste eerst"
     },
@@ -592,6 +586,28 @@
       "noCustom": "Nog geen aangepaste sjablonen.",
       "confirmDelete": "Sjabloon verwijderen?",
       "deleteFailed": "Verwijderen van sjabloon mislukt. Probeer het opnieuw."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

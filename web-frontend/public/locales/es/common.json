@@ -77,7 +77,11 @@
     "submit": "Enviar",
     "close": "Cerrar",
     "sending": "Enviando...",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "Seleccionar idioma",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Espera {{seconds}} segundos",
@@ -117,7 +122,6 @@
     "viewDetails": "Ver detalles de {{name}}",
     "noCompaniesFound": "No se encontraron empresas",
     "adjustFilters": "Intenta ajustar tu búsqueda o filtros",
-    "backToList": "Atrás",
     "viewMode": {
       "grid": "Vista de cuadrícula",
       "list": "Vista de lista",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Resumen",
         "users": "Usuarios",
         "statistics": "Estadísticas",
         "activity": "Actividad"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Error al cargar la empresa",
       "saveFailed": "Se produjo un error al guardar la empresa",
-      "deleteFailed": "Error al eliminar la empresa",
-      "retry": "Reintentar"
+      "deleteFailed": "Error al eliminar la empresa"
     },
     "search": {
       "placeholder": "Buscar empresas..."
@@ -235,12 +237,10 @@
       "importButton": "Importar todo",
       "cancelButton": "Cancelar",
       "status": {
-        "pending": "Pendiente",
         "importing": "Importando...",
         "success": "Importado",
         "updated": "Actualizado",
         "willUpdate": "Se actualizará",
-        "error": "Error",
         "skipped": "Omitido (existe)"
       },
       "progress": "Importando {{current}} de {{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Nombre de visualización",
         "name": "Nombre API",
         "industry": "Sector",
-        "website": "Sitio web",
-        "status": "Estado"
+        "website": "Sitio web"
       },
       "errors": {
         "invalidFile": "Tipo de archivo inválido. Por favor, sube un archivo JSON.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "Importar {{count}} eventos",
       "columns": {
         "eventNumber": "#",
-        "title": "Título",
-        "date": "Fecha",
-        "organizer": "Organizador",
-        "status": "Estado"
+        "organizer": "Organizador"
       },
       "errors": {
         "invalidFile": "Tipo de archivo inválido. Por favor, sube un archivo JSON.",
@@ -417,7 +413,6 @@
       "urgent": "Urgente",
       "soon": "Próximamente",
       "onTime": "A tiempo",
-      "actions": "Acciones",
       "pastEvent": "Evento pasado",
       "materialAvailable": "Material disponible",
       "noMaterials": "Sin materiales"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}} filtros activos"
     },
     "sort": {
-      "label": "Ordenar por",
       "newest": "Más recientes primero",
       "oldest": "Más antiguos primero"
     },
@@ -592,6 +586,28 @@
       "noCustom": "Aún no hay plantillas personalizadas.",
       "confirmDelete": "¿Eliminar plantilla?",
       "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

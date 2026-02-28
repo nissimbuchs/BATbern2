@@ -167,15 +167,11 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
             sx={{ minWidth: 160 }}
             aria-label="Language selector"
           >
-            <MenuItem value="de">DE — Deutsch</MenuItem>
-            <MenuItem value="en">EN — English</MenuItem>
-            <MenuItem value="fr">FR — Français</MenuItem>
-            <MenuItem value="it">IT — Italiano</MenuItem>
-            <MenuItem value="rm">RM — Rumantsch</MenuItem>
-            <MenuItem value="es">ES — Español</MenuItem>
-            <MenuItem value="fi">FI — Suomi</MenuItem>
-            <MenuItem value="nl">NL — Nederlands</MenuItem>
-            <MenuItem value="ja">JA — 日本語</MenuItem>
+            {Object.keys(i18n.options.resources ?? {}).map((code) => (
+              <MenuItem key={code} value={code}>
+                {code.toUpperCase()} — {t(`language.${code}`)}
+              </MenuItem>
+            ))}
           </Select>
         </Box>
       </Box>

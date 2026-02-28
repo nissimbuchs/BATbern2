@@ -77,7 +77,11 @@
     "submit": "Lähetä",
     "close": "Sulje",
     "sending": "Lähetetään...",
-    "loading": "Ladataan..."
+    "loading": "Ladataan...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "Valitse kieli",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Odota {{seconds}} sekuntia",
@@ -117,7 +122,6 @@
     "viewDetails": "Näytä tiedot: {{name}}",
     "noCompaniesFound": "Yrityksiä ei löydy",
     "adjustFilters": "Kokeile muuttaa hakua tai suodattimia",
-    "backToList": "Takaisin",
     "viewMode": {
       "grid": "Ruudukkonäkymä",
       "list": "Listanäkymä",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Yleiskatsaus",
         "users": "Käyttäjät",
         "statistics": "Tilastot",
         "activity": "Toiminto"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Yrityksen lataaminen epäonnistui",
       "saveFailed": "Yrityksen tallentamisessa tapahtui virhe",
-      "deleteFailed": "Yrityksen poistaminen epäonnistui",
-      "retry": "Yritä uudelleen"
+      "deleteFailed": "Yrityksen poistaminen epäonnistui"
     },
     "search": {
       "placeholder": "Etsi yrityksiä..."
@@ -235,12 +237,10 @@
       "importButton": "Tuo kaikki",
       "cancelButton": "Peruuta",
       "status": {
-        "pending": "Odottaa",
         "importing": "Tuodaan...",
         "success": "Tuotu",
         "updated": "Päivitetty",
         "willUpdate": "Päivitetään",
-        "error": "Virhe",
         "skipped": "Ohitettu (on olemassa)"
       },
       "progress": "Tuodaan {{current}}/{{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Näyttönimi",
         "name": "API-nimi",
         "industry": "Toimiala",
-        "website": "Verkkosivusto",
-        "status": "Tila"
+        "website": "Verkkosivusto"
       },
       "errors": {
         "invalidFile": "Virheellinen tiedostotyyppi. Lataa JSON-tiedosto.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "Tuo {{count}} tapahtumaa",
       "columns": {
         "eventNumber": "#",
-        "title": "Otsikko",
-        "date": "Päivämäärä",
-        "organizer": "Järjestäjä",
-        "status": "Tila"
+        "organizer": "Järjestäjä"
       },
       "errors": {
         "invalidFile": "Virheellinen tiedostotyyppi. Lataa JSON-tiedosto.",
@@ -417,7 +413,6 @@
       "urgent": "Kiireellinen",
       "soon": "Pian erääntyvä",
       "onTime": "Ajallaan",
-      "actions": "Toiminnot",
       "pastEvent": "Mennyt tapahtuma",
       "materialAvailable": "Materiaali saatavilla",
       "noMaterials": "Ei materiaaleja"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}} aktiivista suodatinta"
     },
     "sort": {
-      "label": "Lajittele",
       "newest": "Uusimmat ensin",
       "oldest": "Vanhimmat ensin"
     },
@@ -592,6 +586,28 @@
       "noCustom": "Ei vielä mukautettuja pohjia.",
       "confirmDelete": "Poistetaanko pohja?",
       "deleteFailed": "Pohjan poistaminen epäonnistui. Yritä uudelleen."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

@@ -77,7 +77,11 @@
     "submit": "Soumettre",
     "close": "Fermer",
     "sending": "Envoi...",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "Sélectionner la langue",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Attendez {{seconds}} secondes",
@@ -117,7 +122,6 @@
     "viewDetails": "Voir les détails de {{name}}",
     "noCompaniesFound": "Aucune entreprise trouvée",
     "adjustFilters": "Essayez d'ajuster votre recherche ou vos filtres",
-    "backToList": "Retour",
     "viewMode": {
       "grid": "Vue grille",
       "list": "Vue liste",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Aperçu",
         "users": "Utilisateurs",
         "statistics": "Statistiques",
         "activity": "Activité"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Échec du chargement de l'entreprise",
       "saveFailed": "Une erreur s'est produite lors de l'enregistrement de l'entreprise",
-      "deleteFailed": "Échec de la suppression de l'entreprise",
-      "retry": "Réessayer"
+      "deleteFailed": "Échec de la suppression de l'entreprise"
     },
     "search": {
       "placeholder": "Rechercher des entreprises..."
@@ -235,12 +237,10 @@
       "importButton": "Tout importer",
       "cancelButton": "Annuler",
       "status": {
-        "pending": "En attente",
         "importing": "Importation...",
         "success": "Importé",
         "updated": "Mis à jour",
         "willUpdate": "Sera mis à jour",
-        "error": "Erreur",
         "skipped": "Ignoré (existe)"
       },
       "progress": "Importation de {{current}} sur {{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Nom d'affichage",
         "name": "Nom API",
         "industry": "Secteur",
-        "website": "Site web",
-        "status": "Statut"
+        "website": "Site web"
       },
       "errors": {
         "invalidFile": "Type de fichier invalide. Veuillez télécharger un fichier JSON.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "Importer {{count}} événements",
       "columns": {
         "eventNumber": "#",
-        "title": "Titre",
-        "date": "Date",
-        "organizer": "Organisateur",
-        "status": "Statut"
+        "organizer": "Organisateur"
       },
       "errors": {
         "invalidFile": "Type de fichier invalide. Veuillez télécharger un fichier JSON.",
@@ -417,7 +413,6 @@
       "urgent": "Urgent",
       "soon": "Bientôt dû",
       "onTime": "Dans les temps",
-      "actions": "Actions",
       "pastEvent": "Événement passé",
       "materialAvailable": "Matériel disponible",
       "noMaterials": "Aucun matériel"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}} filtres actifs"
     },
     "sort": {
-      "label": "Trier par",
       "newest": "Les plus récents",
       "oldest": "Les plus anciens"
     },
@@ -592,6 +586,28 @@
       "noCustom": "Aucun modèle personnalisé pour le moment.",
       "confirmDelete": "Supprimer le modèle ?",
       "deleteFailed": "Échec de la suppression du modèle. Veuillez réessayer."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

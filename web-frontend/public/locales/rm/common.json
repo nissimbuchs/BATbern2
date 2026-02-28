@@ -77,7 +77,11 @@
     "submit": "Trametter",
     "close": "Serrar",
     "sending": "Trametter...",
-    "loading": "Chargiar..."
+    "loading": "Chargiar...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "Tscherner lingua",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Spetgai {{seconds}} secundas",
@@ -117,7 +122,6 @@
     "viewDetails": "Vesair detagls per {{name}}",
     "noCompaniesFound": "Naginas empresas chattadas",
     "adjustFilters": "Empruvai dad adaptar la tscherca u ils filtels",
-    "backToList": "Enavos",
     "viewMode": {
       "grid": "Vista da grella",
       "list": "Vista da glista",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Survista",
         "users": "Utilisaders",
         "statistics": "Statisticas",
         "activity": "Activitad"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Chargiar l'empresa n'è betg reussì",
       "saveFailed": "In'errur è accudida durant il guardar l'empresa",
-      "deleteFailed": "Stizzar l'empresa n'è betg reussì",
-      "retry": "Reempruvar"
+      "deleteFailed": "Stizzar l'empresa n'è betg reussì"
     },
     "search": {
       "placeholder": "Tschertgar empresas..."
@@ -235,12 +237,10 @@
       "importButton": "Importar tut",
       "cancelButton": "Interrumper",
       "status": {
-        "pending": "En speta",
         "importing": "Importaziun...",
         "success": "Importà",
         "updated": "Actualisà",
         "willUpdate": "Vegn actualisà",
-        "error": "Errur",
         "skipped": "Surpassà (exista)"
       },
       "progress": "Importaziun {{current}} da {{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Num da visualisaziun",
         "name": "Num API",
         "industry": "Sectur",
-        "website": "Lieu web",
-        "status": "Status"
+        "website": "Lieu web"
       },
       "errors": {
         "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "Importar {{count}} events",
       "columns": {
         "eventNumber": "#",
-        "title": "Titel",
-        "date": "Data",
-        "organizer": "Organisader",
-        "status": "Status"
+        "organizer": "Organisader"
       },
       "errors": {
         "invalidFile": "Tip da file nunvalid. Chargiai in file JSON.",
@@ -417,7 +413,6 @@
       "urgent": "Urgent",
       "soon": "Bainbaud",
       "onTime": "En temp",
-      "actions": "Acziuns",
       "pastEvent": "Event passà",
       "materialAvailable": "Material disponibel",
       "noMaterials": "Nagin material"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}} filtels activi"
     },
     "sort": {
-      "label": "Sortir tenor",
       "newest": "Il pli nov",
       "oldest": "Il pli vegl"
     },
@@ -592,6 +586,28 @@
       "noCustom": "Nagins moduls persunalisads fin uss.",
       "confirmDelete": "Stizzar il modul?",
       "deleteFailed": "Stizzar il modul n'è betg reussì. Empruvai danovamain."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

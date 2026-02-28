@@ -77,7 +77,11 @@
     "submit": "送信",
     "close": "閉じる",
     "sending": "送信中...",
-    "loading": "読み込み中..."
+    "loading": "読み込み中...",
+    "retry": "Retry",
+    "back": "Back",
+    "confirm": "Confirm",
+    "clearFilters": "Clear filters"
   },
   "language": {
     "select": "言語を選択",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "{{seconds}}秒お待ちください",
@@ -117,7 +122,6 @@
     "viewDetails": "{{name}}の詳細を見る",
     "noCompaniesFound": "企業が見つかりません",
     "adjustFilters": "検索条件やフィルターを調整してみてください",
-    "backToList": "戻る",
     "viewMode": {
       "grid": "グリッド表示",
       "list": "リスト表示",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "概要",
         "users": "ユーザー",
         "statistics": "統計",
         "activity": "アクティビティ"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "企業の読み込みに失敗しました",
       "saveFailed": "企業の保存中にエラーが発生しました",
-      "deleteFailed": "企業の削除に失敗しました",
-      "retry": "再試行"
+      "deleteFailed": "企業の削除に失敗しました"
     },
     "search": {
       "placeholder": "企業を検索..."
@@ -235,12 +237,10 @@
       "importButton": "すべてインポート",
       "cancelButton": "キャンセル",
       "status": {
-        "pending": "保留中",
         "importing": "インポート中...",
         "success": "インポート済み",
         "updated": "更新済み",
         "willUpdate": "更新予定",
-        "error": "エラー",
         "skipped": "スキップ済み（既存）"
       },
       "progress": "{{total}}件中{{current}}件をインポート中...",
@@ -254,8 +254,7 @@
         "displayName": "表示名",
         "name": "API名",
         "industry": "業種",
-        "website": "ウェブサイト",
-        "status": "ステータス"
+        "website": "ウェブサイト"
       },
       "errors": {
         "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "{{count}}件のイベントをインポート",
       "columns": {
         "eventNumber": "#",
-        "title": "タイトル",
-        "date": "日付",
-        "organizer": "主催者",
-        "status": "ステータス"
+        "organizer": "主催者"
       },
       "errors": {
         "invalidFile": "無効なファイル形式です。JSONファイルをアップロードしてください。",
@@ -417,7 +413,6 @@
       "urgent": "緊急",
       "soon": "まもなく期限",
       "onTime": "期限内",
-      "actions": "アクション",
       "pastEvent": "過去のイベント",
       "materialAvailable": "資料あり",
       "noMaterials": "資料なし"
@@ -501,7 +496,6 @@
       "activeCount_other": "{{count}}件のアクティブなフィルター"
     },
     "sort": {
-      "label": "並び替え",
       "newest": "新しい順",
       "oldest": "古い順"
     },
@@ -592,6 +586,28 @@
       "noCustom": "カスタムテンプレートはまだありません。",
       "confirmDelete": "テンプレートを削除しますか？",
       "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。"
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Title",
+    "date": "Date",
+    "overview": "Overview",
+    "sortBy": "Sort by",
+    "actions": "Actions",
+    "company": "Company",
+    "email": "Email",
+    "dueDate": "Due Date",
+    "emailAddress": "Email Address"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "error": "Error"
     }
   }
 }

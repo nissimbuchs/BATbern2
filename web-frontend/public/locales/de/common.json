@@ -77,7 +77,11 @@
     "submit": "Absenden",
     "close": "Schliessen",
     "sending": "Wird gesendet...",
-    "loading": "Wird geladen..."
+    "loading": "Wird geladen...",
+    "retry": "Wiederholen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "clearFilters": "Filter löschen"
   },
   "language": {
     "select": "Sprache wählen",
@@ -89,7 +93,8 @@
     "es": "Español",
     "fi": "Suomi",
     "nl": "Nederlands",
-    "ja": "日本語"
+    "ja": "日本語",
+    "gsw-BE": "Bärndütsch 🐻"
   },
   "status": {
     "wait": "Warten Sie {{seconds}} Sekunden",
@@ -117,7 +122,6 @@
     "viewDetails": "Details anzeigen für {{name}}",
     "noCompaniesFound": "Keine Unternehmen gefunden",
     "adjustFilters": "Versuchen Sie, Ihre Such- oder Filterkriterien anzupassen",
-    "backToList": "Zurück",
     "viewMode": {
       "grid": "Rasteransicht",
       "list": "Listenansicht",
@@ -207,7 +211,6 @@
     },
     "detail": {
       "tabs": {
-        "overview": "Übersicht",
         "users": "Benutzer",
         "statistics": "Statistiken",
         "activity": "Aktivität"
@@ -218,8 +221,7 @@
     "errors": {
       "loadFailed": "Fehler beim Laden des Unternehmens",
       "saveFailed": "Fehler beim Speichern des Unternehmens",
-      "deleteFailed": "Fehler beim Löschen des Unternehmens",
-      "retry": "Wiederholen"
+      "deleteFailed": "Fehler beim Löschen des Unternehmens"
     },
     "search": {
       "placeholder": "Unternehmen suchen..."
@@ -235,12 +237,10 @@
       "importButton": "Alle importieren",
       "cancelButton": "Abbrechen",
       "status": {
-        "pending": "Ausstehend",
         "importing": "Wird importiert...",
         "success": "Importiert",
         "updated": "Aktualisiert",
         "willUpdate": "Wird aktualisiert",
-        "error": "Fehler",
         "skipped": "Übersprungen (existiert)"
       },
       "progress": "Importiere {{current}} von {{total}}...",
@@ -254,8 +254,7 @@
         "displayName": "Anzeigename",
         "name": "API-Name",
         "industry": "Branche",
-        "website": "Website",
-        "status": "Status"
+        "website": "Website"
       },
       "errors": {
         "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
@@ -300,10 +299,7 @@
       "importButtonWithCount": "{{count}} Events importieren",
       "columns": {
         "eventNumber": "Nr.",
-        "title": "Titel",
-        "date": "Datum",
-        "organizer": "Organisator",
-        "status": "Status"
+        "organizer": "Organisator"
       },
       "errors": {
         "invalidFile": "Ungültiger Dateityp. Bitte laden Sie eine JSON-Datei hoch.",
@@ -418,7 +414,6 @@
       "urgent": "Dringend",
       "soon": "Bald fällig",
       "onTime": "Pünktlich",
-      "actions": "Aktionen",
       "pastEvent": "Vergangene Veranstaltung",
       "materialAvailable": "Material verfügbar",
       "noMaterials": "Kein Material"
@@ -502,7 +497,6 @@
       "activeCount_other": "{{count}} aktive Filter"
     },
     "sort": {
-      "label": "Sortieren nach",
       "newest": "Neueste zuerst",
       "oldest": "Älteste zuerst"
     },
@@ -593,6 +587,28 @@
       "noCustom": "Noch keine benutzerdefinierten Vorlagen.",
       "confirmDelete": "Vorlage löschen?",
       "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
+    }
+  },
+  "labels": {
+    "status": "Status",
+    "title": "Titel",
+    "date": "Datum",
+    "overview": "Übersicht",
+    "sortBy": "Sortieren nach",
+    "actions": "Aktionen",
+    "company": "Unternehmen",
+    "email": "E-Mail",
+    "dueDate": "Fälligkeitsdatum",
+    "emailAddress": "E-Mail-Adresse"
+  },
+  "filters": {
+    "status": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "pending": "Ausstehend",
+      "confirmed": "Bestätigt",
+      "error": "Fehler"
     }
   }
 }

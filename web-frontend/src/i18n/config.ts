@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+import commonGswBe from '../../public/locales/gsw-BE/common.json';
 import commonDe from '../../public/locales/de/common.json';
 import commonEn from '../../public/locales/en/common.json';
 import commonFr from '../../public/locales/fr/common.json';
@@ -12,6 +13,7 @@ import commonFi from '../../public/locales/fi/common.json';
 import commonNl from '../../public/locales/nl/common.json';
 import commonJa from '../../public/locales/ja/common.json';
 
+import authGswBe from '../../public/locales/gsw-BE/auth.json';
 import authDe from '../../public/locales/de/auth.json';
 import authEn from '../../public/locales/en/auth.json';
 import authFr from '../../public/locales/fr/auth.json';
@@ -22,6 +24,7 @@ import authFi from '../../public/locales/fi/auth.json';
 import authNl from '../../public/locales/nl/auth.json';
 import authJa from '../../public/locales/ja/auth.json';
 
+import validationGswBe from '../../public/locales/gsw-BE/validation.json';
 import validationDe from '../../public/locales/de/validation.json';
 import validationEn from '../../public/locales/en/validation.json';
 import validationFr from '../../public/locales/fr/validation.json';
@@ -32,6 +35,7 @@ import validationFi from '../../public/locales/fi/validation.json';
 import validationNl from '../../public/locales/nl/validation.json';
 import validationJa from '../../public/locales/ja/validation.json';
 
+import userManagementGswBe from '../../public/locales/gsw-BE/userManagement.json';
 import userManagementDe from '../../public/locales/de/userManagement.json';
 import userManagementEn from '../../public/locales/en/userManagement.json';
 import userManagementFr from '../../public/locales/fr/userManagement.json';
@@ -42,6 +46,7 @@ import userManagementFi from '../../public/locales/fi/userManagement.json';
 import userManagementNl from '../../public/locales/nl/userManagement.json';
 import userManagementJa from '../../public/locales/ja/userManagement.json';
 
+import eventsGswBe from '../../public/locales/gsw-BE/events.json';
 import eventsDe from '../../public/locales/de/events.json';
 import eventsEn from '../../public/locales/en/events.json';
 import eventsFr from '../../public/locales/fr/events.json';
@@ -52,6 +57,7 @@ import eventsFi from '../../public/locales/fi/events.json';
 import eventsNl from '../../public/locales/nl/events.json';
 import eventsJa from '../../public/locales/ja/events.json';
 
+import partnersGswBe from '../../public/locales/gsw-BE/partners.json';
 import partnersDe from '../../public/locales/de/partners.json';
 import partnersEn from '../../public/locales/en/partners.json';
 import partnersFr from '../../public/locales/fr/partners.json';
@@ -62,6 +68,7 @@ import partnersFi from '../../public/locales/fi/partners.json';
 import partnersNl from '../../public/locales/nl/partners.json';
 import partnersJa from '../../public/locales/ja/partners.json';
 
+import organizerGswBe from '../../public/locales/gsw-BE/organizer.json';
 import organizerDe from '../../public/locales/de/organizer.json';
 import organizerEn from '../../public/locales/en/organizer.json';
 import organizerFr from '../../public/locales/fr/organizer.json';
@@ -72,6 +79,7 @@ import organizerFi from '../../public/locales/fi/organizer.json';
 import organizerNl from '../../public/locales/nl/organizer.json';
 import organizerJa from '../../public/locales/ja/organizer.json';
 
+import aboutGswBe from '../../public/locales/gsw-BE/about.json';
 import aboutDe from '../../public/locales/de/about.json';
 import aboutEn from '../../public/locales/en/about.json';
 import aboutFr from '../../public/locales/fr/about.json';
@@ -82,6 +90,7 @@ import aboutFi from '../../public/locales/fi/about.json';
 import aboutNl from '../../public/locales/nl/about.json';
 import aboutJa from '../../public/locales/ja/about.json';
 
+import registrationGswBe from '../../public/locales/gsw-BE/registration.json';
 import registrationDe from '../../public/locales/de/registration.json';
 import registrationEn from '../../public/locales/en/registration.json';
 import registrationFr from '../../public/locales/fr/registration.json';
@@ -93,6 +102,17 @@ import registrationNl from '../../public/locales/nl/registration.json';
 import registrationJa from '../../public/locales/ja/registration.json';
 
 const resources = {
+  'gsw-BE': {
+    common: commonGswBe,
+    auth: authGswBe,
+    validation: validationGswBe,
+    userManagement: userManagementGswBe,
+    events: eventsGswBe,
+    partners: partnersGswBe,
+    organizer: organizerGswBe,
+    about: aboutGswBe,
+    registration: registrationGswBe,
+  },
   de: {
     common: commonDe,
     auth: authDe,
