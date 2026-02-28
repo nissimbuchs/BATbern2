@@ -68,7 +68,7 @@ export function UpcomingEventsSlide({ events }: UpcomingEventsSlideProps): JSX.E
 
 function EventCard({ event }: { event: Event }): JSX.Element {
   const dateStr = event.date ? format(new Date(event.date), 'dd. MMMM yyyy') : '—';
-  const topicDisplay = event.topicCode ?? 'TBD';
+  const titleDisplay = event.title ?? 'TBD';
 
   return (
     <div
@@ -107,10 +107,10 @@ function EventCard({ event }: { event: Event }): JSX.Element {
         style={{
           fontSize: '1.1rem',
           color: 'rgba(255,255,255,0.5)',
-          fontStyle: topicDisplay === 'TBD' ? 'italic' : 'normal',
+          fontStyle: titleDisplay === 'TBD' ? 'italic' : 'normal',
         }}
       >
-        {topicDisplay}
+        {titleDisplay}
       </div>
     </div>
   );
